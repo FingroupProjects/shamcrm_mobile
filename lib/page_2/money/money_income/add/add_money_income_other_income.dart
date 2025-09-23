@@ -53,7 +53,7 @@ class _AddMoneyIncomeOtherIncomeState extends State<AddMoneyIncomeOtherIncome> {
     }
   }
 
-  void _createDocument() async {
+  void _createDocument({bool approve = false}) {
     if (!_formKey.currentState!.validate()) return;
 
     if (selectedIncomeCategory == null) {
@@ -98,6 +98,7 @@ class _AddMoneyIncomeOtherIncomeState extends State<AddMoneyIncomeOtherIncome> {
         comment: _commentController.text.trim(),
         operationType: OperationType.other_incomes.name,
         cashRegisterId: selectedCashRegister?.id,
+        approve: approve,
       ));
     } catch (e) {
       setState(() => _isLoading = false);
@@ -147,13 +148,18 @@ class _AddMoneyIncomeOtherIncomeState extends State<AddMoneyIncomeOtherIncome> {
           listeners: [
             BlocListener<MoneyIncomeBloc, MoneyIncomeState>(
               listener: (context, state) {
-                setState(() => _isLoading = false);
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (!mounted) return;
 
-                if (state is MoneyIncomeCreateSuccess && mounted) {
-                  Navigator.pop(context, true);
-                } else if (state is MoneyIncomeCreateError && mounted) {
-                  _showSnackBar(state.message, false);
-                }
+
+                  if (state is MoneyIncomeCreateSuccess) {
+                    setState(() => _isLoading = false);
+                    Navigator.pop(context, true);
+                  } else if (state is MoneyIncomeCreateError) {
+                    setState(() => _isLoading = false);
+                    _showSnackBar(state.message, false);
+                  }
+                });
               },
             ),
             // Добавлен слушатель для GetAllIncomeCategoryBloc
@@ -384,6 +390,17 @@ class _AddMoneyIncomeOtherIncomeState extends State<AddMoneyIncomeOtherIncome> {
     );
   }
 
+  // Новый метод для сохранения и проведения
+  void _createAndApproveDocument() {
+    _createDocument(approve: true);
+  }
+
+  // Обновленный метод для обычного сохранения
+  void _saveDocument() {
+    _createDocument(approve: false);
+  }
+
+  // Обновленный виджет кнопок действий (+ "Сохранить и провести")
   Widget _buildActionButtons(AppLocalizations localizations) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -398,61 +415,104 @@ class _AddMoneyIncomeOtherIncomeState extends State<AddMoneyIncomeOtherIncome> {
           ),
         ],
       ),
-      child: Row(
+      child: Column(
         children: [
-          Expanded(
-            child: ElevatedButton(
-              onPressed: _isLoading ? null : () => Navigator.pop(context),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xffF4F7FD),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                elevation: 0,
-              ),
-              child: Text(
-                AppLocalizations.of(context)!.translate('close') ?? 'Отмена',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black,
+          Container(
+            width: double.infinity,
+            height: 48,
+            decoration: BoxDecoration(
+              border: Border.all(color: const Color(0xff4CAF50), width: 1.5),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: _isLoading ? null : _createAndApproveDocument,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.check_circle_outline,
+                        size: 20,
+                        color: _isLoading ? const Color(0xff99A4BA) : const Color(0xff4CAF50),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        localizations.translate('save_and_approve') ?? 'Сохранить и провести',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w600,
+                          color: _isLoading ? const Color(0xff99A4BA) : const Color(0xff4CAF50),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: ElevatedButton(
-              onPressed: _isLoading ? null : _createDocument,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xff4759FF),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                elevation: 0,
-              ),
-              child: _isLoading
-                  ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
-                  : Text(
-                AppLocalizations.of(context)!.translate('save') ?? 'Создать',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
+          SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xffF4F7FD),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    localizations.translate('close') ?? 'Отмена',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black,
+                    ),
+                  ),
                 ),
               ),
-            ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _saveDocument,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xff4759FF),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    elevation: 0,
+                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                      : Text(
+                    localizations.translate('save') ?? 'Сохранить',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

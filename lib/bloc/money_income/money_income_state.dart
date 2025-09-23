@@ -81,11 +81,12 @@ class MoneyIncomeDeleteLoading extends MoneyIncomeState {}
 
 class MoneyIncomeDeleteSuccess extends MoneyIncomeState {
   final String message;
+  final bool reload;
 
-  const MoneyIncomeDeleteSuccess(this.message);
+  const MoneyIncomeDeleteSuccess(this.message, {this.reload = true});
 
   @override
-  List<Object> get props => [message];
+  List<Object> get props => [message, reload];
 }
 
 class MoneyIncomeDeleteError extends MoneyIncomeState {

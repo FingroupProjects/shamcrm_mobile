@@ -1,4 +1,8 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';
+import 'package:crm_task_manager/bloc/lead_list/lead_list_event.dart';
+import 'package:crm_task_manager/bloc/lead_list/lead_list_state.dart';
+import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -22,12 +26,11 @@ class IncomeFilterScreen extends StatefulWidget {
   final DateTime? initialFromDate;
   final DateTime? initialToDate;
   final String? initialSupplier;
-  final String? initialWarehouse;
   final String? initialStatus;
   final String? initialAuthor;
+  final String? initialLead;
+  final String? initialCashRegister;
   final bool? initialIsDeleted;
-  final List<String>? initialSupplierIds;
-  final List<String>? initialWarehouseIds;
 
   const IncomeFilterScreen({
     Key? key,
@@ -36,12 +39,11 @@ class IncomeFilterScreen extends StatefulWidget {
     this.initialFromDate,
     this.initialToDate,
     this.initialSupplier,
-    this.initialWarehouse,
     this.initialStatus,
     this.initialAuthor,
+    this.initialLead,
+    this.initialCashRegister,
     this.initialIsDeleted,
-    this.initialSupplierIds,
-    this.initialWarehouseIds,
   }) : super(key: key);
 
   @override
@@ -56,6 +58,7 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
   SupplierData? _selectedSupplier;
   AuthorData? selectedAuthor;
   CashRegisterData? _selectedCashRegister;
+  LeadData? _selectedLead;
   String? _selectedStatus;
   bool? _isDeleted;
 
@@ -63,6 +66,7 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
   List<SupplierData> suppliersList = [];
   List<CashRegisterData> cashRegistersList = [];
   List<AuthorData> authorsList = [];
+  List<LeadData> leadsList = [];
 
   @override
   void initState() {
@@ -92,6 +96,12 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
     if (authorState is! GetAllAuthorSuccess) {
       context.read<GetAllAuthorBloc>().add(GetAllAuthorEv());
     }
+
+    // Проверяем и загружаем lead
+    final leadState = context.read<GetAllLeadBloc>().state;
+    if (authorState is! GetAllLeadSuccess) {
+      context.read<GetAllLeadBloc>().add(GetAllLeadEv());
+    }
   }
 
   void _initializeData() async {
@@ -101,8 +111,11 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
       _selectedSupplier = widget.initialSupplier != null
           ? SupplierData(id: int.tryParse(widget.initialSupplier!) ?? 0, name: widget.initialSupplier!)
           : null;
-      _selectedCashRegister = widget.initialWarehouse != null
-          ? CashRegisterData(id: int.tryParse(widget.initialWarehouse!) ?? 0, name: widget.initialWarehouse!)
+      _selectedLead = widget.initialLead != null
+          ? LeadData(id: int.tryParse(widget.initialLead!) ?? 0, name: widget.initialLead!)
+          : null;
+      _selectedCashRegister = widget.initialCashRegister != null
+          ? CashRegisterData(id: int.tryParse(widget.initialCashRegister!) ?? 0, name: widget.initialCashRegister!)
           : null;
       _selectedStatus = widget.initialStatus;
       _isDeleted = widget.initialIsDeleted;
@@ -147,6 +160,12 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
           final cashRegisterId = prefs.getInt('income_cash_register_id');
           if (cashRegisterName != null && cashRegisterId != null) {
             _selectedCashRegister = CashRegisterData(id: cashRegisterId, name: cashRegisterName);
+          }
+
+          final leadName = prefs.getString('income_cash_register');
+          final leadId = prefs.getInt('income_cash_register_id');
+          if (leadName != null && leadId != null) {
+            _selectedLead = LeadData(id: leadId, name: leadName);
           }
 
           final authorName = prefs.getString('income_author');
@@ -198,6 +217,14 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
         await prefs.remove('income_cash_register_id');
       }
 
+      if (_selectedLead != null) {
+        await prefs.setString('income_lead', _selectedLead!.name);
+        await prefs.setInt('income_lead_id', _selectedLead!.id);
+      } else {
+        await prefs.remove('income_lead');
+        await prefs.remove('income_lead_id');
+      }
+
       if (_selectedStatus != null) {
         await prefs.setString('money_income_status', _selectedStatus!);
       } else {
@@ -231,6 +258,7 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
         _toDateController.clear();
         _selectedSupplier = null;
         _selectedCashRegister = null;
+        _selectedLead = null;
         _selectedStatus = null;
         selectedAuthor = null;
         _isDeleted = null;
@@ -247,6 +275,7 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
         _toDate != null ||
         _selectedSupplier != null ||
         _selectedCashRegister != null ||
+        _selectedLead != null ||
         _selectedStatus != null ||
         selectedAuthor != null ||
         _isDeleted != null;
@@ -271,6 +300,7 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
         'date_to': _toDate,
         'supplier_id': _selectedSupplier?.id.toString(),
         'storage_id': _selectedCashRegister?.id.toString(),
+        'lead_id': _selectedLead?.id.toString(),
         'approved': _selectedStatus,
         'author_id': selectedAuthor?.id.toString(),
         'deleted': _isDeleted == null ? null : _isDeleted == true ? '1' : '0'
@@ -563,6 +593,147 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
     );
   }
 
+  Widget _buildLeadWidget() {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              AppLocalizations.of(context)!.translate('clients') ?? 'Клиенты',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Gilroy',
+                color: Color(0xff1E2E52),
+              ),
+            ),
+            const SizedBox(height: 4),
+            BlocConsumer<GetAllLeadBloc, GetAllLeadState>(
+              listener: (context, state) {
+                if (state is GetAllLeadSuccess) {
+                  setState(() {
+                    leadsList = state.dataLead.result ?? [];
+                  });
+                }
+              },
+              builder: (context, state) {
+                if (state is GetAllLeadInitial || (state is GetAllLeadSuccess && leadsList.isEmpty)) {
+                  context.read<GetAllLeadBloc>().add(GetAllLeadEv());
+                  return const DropdownLoadingState();
+                }
+
+                if (state is GetAllLeadLoading) {
+                  return const DropdownLoadingState();
+                }
+
+                if (state is GetAllLeadError) {
+                  return Container(
+                    height: 50,
+                    alignment: Alignment.center,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text('Ошибка загрузки', style: TextStyle(color: Colors.red, fontSize: 12)),
+                        TextButton(
+                          onPressed: () {
+                            context.read<GetAllLeadBloc>().add(GetAllLeadEv());
+                          },
+                          child: Text('Повторить', style: TextStyle(fontSize: 12)),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                // Если список пуст даже после успешной загрузки, показываем placeholder
+                if (state is GetAllLeadSuccess && leadsList.isEmpty) {
+                  return Container(
+                    height: 50,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: const Color(0xffF4F7FD),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      AppLocalizations.of(context)!.translate('select_client') ?? 'Выберите клиента',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: 'Gilroy',
+                        color: Color(0xff1E2E52),
+                      ),
+                    ),
+                  );
+                }
+
+                return CustomDropdown<LeadData>.search(
+                  items: leadsList,
+                  searchHintText: AppLocalizations.of(context)!.translate('search') ?? 'Поиск',
+                  overlayHeight: 300,
+                  enabled: true,
+                  decoration: CustomDropdownDecoration(
+                    closedFillColor: const Color(0xffF4F7FD),
+                    expandedFillColor: Colors.white,
+                    closedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
+                    closedBorderRadius: BorderRadius.circular(12),
+                    expandedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
+                    expandedBorderRadius: BorderRadius.circular(12),
+                  ),
+                  listItemBuilder: (context, item, isSelected, onItemSelect) {
+                    return Text(
+                      item.name,
+                      style: const TextStyle(
+                        color: Color(0xff1E2E52),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: 'Gilroy',
+                      ),
+                    );
+                  },
+                  headerBuilder: (context, selectedItem, enabled) {
+                    return Text(
+                      selectedItem?.name ?? AppLocalizations.of(context)!.translate('select_client') ?? 'Выберите клиента',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: 'Gilroy',
+                        color: Color(0xff1E2E52),
+                      ),
+                    );
+                  },
+                  hintBuilder: (context, hint, enabled) => Text(
+                    AppLocalizations.of(context)!.translate('select_cash_register') ?? 'Выберите кассу',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Gilroy',
+                      color: Color(0xff1E2E52),
+                    ),
+                  ),
+                  initialItem: _selectedLead != null && leadsList.any((c) => c.id == _selectedLead!.id)
+                      ? leadsList.firstWhere((c) => c.id == _selectedLead!.id)
+                      : null,
+                  onChanged: (value) {
+                    if (value != null && mounted) {
+                      setState(() {
+                        _selectedLead = value;
+                      });
+                      FocusScope.of(context).unfocus();
+                    }
+                  },
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildAuthorWidget() {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -827,6 +998,10 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
 
                     // Cash Register Widget
                     _buildCashRegisterWidget(),
+                    const SizedBox(height: 8),
+
+                    // Cash Register Widget
+                    _buildLeadWidget(),
                     const SizedBox(height: 8),
 
                     // Status Dropdown with localization

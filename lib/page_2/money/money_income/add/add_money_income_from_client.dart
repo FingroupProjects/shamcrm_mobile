@@ -60,7 +60,7 @@ class _AddMoneyIncomeFromClientState extends State<AddMoneyIncomeFromClient> {
     }
   }
 
-  void _createDocument() async {
+  void _createDocument({bool approve = false}) async {
     if (!_formKey.currentState!.validate()) return;
 
     if (_selectedLead == null) {
@@ -105,6 +105,7 @@ class _AddMoneyIncomeFromClientState extends State<AddMoneyIncomeFromClient> {
         comment: _commentController.text.trim(),
         operationType: OperationType.client_payment.name,
         cashRegisterId: selectedCashRegister?.id,
+        approve: approve, // Передаем параметр approve
       ));
     } catch (e) {
       setState(() => _isLoading = false);
@@ -113,6 +114,143 @@ class _AddMoneyIncomeFromClientState extends State<AddMoneyIncomeFromClient> {
               'Ошибка создания документа: $e',
           false);
     }
+  }
+
+
+  Widget _buildLeadWidget() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          AppLocalizations.of(context)!.translate('lead') ?? 'Сделка',
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Gilroy',
+            color: Color(0xff1E2E52),
+          ),
+        ),
+        const SizedBox(height: 4),
+        BlocConsumer<GetAllLeadBloc, GetAllLeadState>(
+          listener: (context, state) {
+            if (state is GetAllLeadSuccess) {
+              setState(() {
+                leadsList = state.dataLead.result ?? [];
+              });
+            }
+          },
+          builder: (context, state) {
+            if (state is GetAllLeadInitial || (state is GetAllLeadSuccess && leadsList.isEmpty)) {
+              context.read<GetAllLeadBloc>().add(GetAllLeadEv());
+              return const DropdownLoadingState();
+            }
+
+            if (state is GetAllLeadLoading) {
+              return const DropdownLoadingState();
+            }
+
+            if (state is GetAllLeadError) {
+              return Container(
+                height: 50,
+                alignment: Alignment.center,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(AppLocalizations.of(context)!.translate('error_loading_leads') ?? 'Ошибка загрузки лидов',
+                        style: const TextStyle(color: Colors.red, fontSize: 12)),
+                    TextButton(
+                      onPressed: () {
+                        context.read<GetAllLeadBloc>().add(GetAllLeadEv());
+                      },
+                      child: Text(AppLocalizations.of(context)!.translate('retry') ?? 'Повторить',
+                          style: const TextStyle(fontSize: 12)),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            // Если список пуст даже после успешной загрузки, показываем placeholder
+            if (state is GetAllLeadSuccess && leadsList.isEmpty) {
+              return Container(
+                height: 50,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: const Color(0xffF4F7FD),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  AppLocalizations.of(context)!.translate('select_lead') ?? 'Выберите сделку',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Gilroy',
+                    color: Color(0xff1E2E52),
+                  ),
+                ),
+              );
+            }
+
+            return CustomDropdown<LeadData>.search(
+              items: leadsList,
+              searchHintText: AppLocalizations.of(context)!.translate('search') ?? 'Поиск',
+              overlayHeight: 300,
+              enabled: true,
+              decoration: CustomDropdownDecoration(
+                closedFillColor: const Color(0xffF4F7FD),
+                expandedFillColor: Colors.white,
+                closedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
+                closedBorderRadius: BorderRadius.circular(12),
+                expandedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
+                expandedBorderRadius: BorderRadius.circular(12),
+              ),
+              listItemBuilder: (context, item, isSelected, onItemSelect) {
+                return Text(
+                  item.name ?? item.id?.toString() ?? 'Unknown Lead',
+                  style: const TextStyle(
+                    color: Color(0xff1E2E52),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Gilroy',
+                  ),
+                );
+              },
+              headerBuilder: (context, selectedItem, enabled) {
+                return Text(
+                  selectedItem.name,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Gilroy',
+                    color: Color(0xff1E2E52),
+                  ),
+                );
+              },
+              hintBuilder: (context, hint, enabled) => Text(
+                AppLocalizations.of(context)!.translate('select_lead') ?? 'Выберите сделку',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'Gilroy',
+                  color: Color(0xff1E2E52),
+                ),
+              ),
+              initialItem: _selectedLead != null && leadsList.any((l) => l.id == _selectedLead!.id)
+                  ? leadsList.firstWhere((l) => l.id == _selectedLead!.id)
+                  : null,
+              onChanged: (value) {
+                if (value != null && mounted) {
+                  setState(() {
+                    _selectedLead = value;
+                  });
+                  FocusScope.of(context).unfocus();
+                }
+              },
+            );
+          },
+        ),
+      ],
+    );
   }
 
   void _showSnackBar(String message, bool isSuccess) {
@@ -151,13 +289,18 @@ class _AddMoneyIncomeFromClientState extends State<AddMoneyIncomeFromClient> {
         listeners: [
           BlocListener<MoneyIncomeBloc, MoneyIncomeState>(
             listener: (context, state) {
-              setState(() => _isLoading = false);
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
 
-              if (state is MoneyIncomeCreateSuccess && mounted) {
-                Navigator.pop(context, true);
-              } else if (state is MoneyIncomeCreateError && mounted) {
-                _showSnackBar(state.message, false);
-              }
+
+                if (state is MoneyIncomeCreateSuccess) {
+                  setState(() => _isLoading = false);
+                  Navigator.pop(context, true);
+                } else if (state is MoneyIncomeCreateError) {
+                  setState(() => _isLoading = false);
+                  _showSnackBar(state.message, false);
+                }
+              });
             },
           ),
           BlocListener<GetAllLeadBloc, GetAllLeadState>(
@@ -304,6 +447,19 @@ class _AddMoneyIncomeFromClientState extends State<AddMoneyIncomeFromClient> {
         });
   }
 
+
+
+  // Новый метод для сохранения и проведения
+  void _createAndApproveDocument() {
+    _createDocument(approve: true);
+  }
+
+  // Обновленный метод для обычного сохранения
+  void _saveDocument() {
+    _createDocument(approve: false);
+  }
+
+  // Обновленный виджет кнопок действий (+ "Сохранить и провести")
   Widget _buildActionButtons(AppLocalizations localizations) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -318,61 +474,104 @@ class _AddMoneyIncomeFromClientState extends State<AddMoneyIncomeFromClient> {
           ),
         ],
       ),
-      child: Row(
+      child: Column(
         children: [
-          Expanded(
-            child: ElevatedButton(
-              onPressed: _isLoading ? null : () => Navigator.pop(context),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xffF4F7FD),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                elevation: 0,
-              ),
-              child: Text(
-                AppLocalizations.of(context)!.translate('close') ?? 'Отмена',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black,
+          Container(
+            width: double.infinity,
+            height: 48,
+            decoration: BoxDecoration(
+              border: Border.all(color: const Color(0xff4CAF50), width: 1.5),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: _isLoading ? null : _createAndApproveDocument,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.check_circle_outline,
+                        size: 20,
+                        color: _isLoading ? const Color(0xff99A4BA) : const Color(0xff4CAF50),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        localizations.translate('save_and_approve') ?? 'Сохранить и провести',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w600,
+                          color: _isLoading ? const Color(0xff99A4BA) : const Color(0xff4CAF50),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: ElevatedButton(
-              onPressed: _isLoading ? null : _createDocument,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xff4759FF),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                elevation: 0,
-              ),
-              child: _isLoading
-                  ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
-                  : Text(
-                AppLocalizations.of(context)!.translate('save') ?? 'Создать',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
+          SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xffF4F7FD),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    localizations.translate('close') ?? 'Отмена',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black,
+                    ),
+                  ),
                 ),
               ),
-            ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _saveDocument,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xff4759FF),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    elevation: 0,
+                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                      : Text(
+                    localizations.translate('save') ?? 'Сохранить',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

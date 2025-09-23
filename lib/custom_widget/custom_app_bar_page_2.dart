@@ -792,19 +792,22 @@ void navigateToOrderFilterScreen(BuildContext context) {
     DateTime? initialFromDate = widget.currentFilters['date_from'];
     DateTime? initialToDate = widget.currentFilters['date_to'];
     String? initialSupplier;
-    String? initialWarehouse;
     String? initialStatus;
     String? initialAuthor;
+    String? initialCashRegister;
+    String? initialLead;
     bool? initialIsDeleted;
-    List<String>? initialSupplierIds;
-    List<String>? initialWarehouseIds;
 
     if (widget.currentFilters.containsKey('supplier_id')) {
         initialSupplier = widget.currentFilters['supplier_id'];
     }
 
-    if (widget.currentFilters.containsKey('storage_id')) {
-        initialWarehouse = widget.currentFilters['storage_id'];
+    if (widget.currentFilters.containsKey('cash_register_id')) {
+        initialCashRegister = widget.currentFilters['cash_register_id'];
+    }
+
+    if (widget.currentFilters.containsKey('lead_id')) {
+      initialLead = widget.currentFilters['lead_id'].toString();
     }
 
     if (widget.currentFilters.containsKey('status')) {
@@ -837,6 +840,8 @@ void navigateToOrderFilterScreen(BuildContext context) {
                   filters['supplier'] != null ||
                   filters['approved'] != null ||
                   filters['author'] != null ||
+                  filters['lead_id'] != null ||
+                  filters['cash_register_id'] != null ||
                   filters['isDeleted'] != null;
             });
             debugPrint("_isIncomeFiltering: $_isIncomeFiltering");
@@ -856,12 +861,11 @@ void navigateToOrderFilterScreen(BuildContext context) {
           initialFromDate: initialFromDate,
           initialToDate: initialToDate,
           initialSupplier: initialSupplier,
-          initialWarehouse: initialWarehouse,
           initialStatus: initialStatus,
           initialAuthor: initialAuthor,
+          initialLead: initialLead,
+          initialCashRegister: initialCashRegister,
           initialIsDeleted: initialIsDeleted,
-          initialSupplierIds: initialSupplierIds,
-          initialWarehouseIds: initialWarehouseIds,
         ),
       ),
     );

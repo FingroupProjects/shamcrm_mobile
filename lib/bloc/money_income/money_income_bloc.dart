@@ -187,6 +187,7 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
         cashRegisterId: event.cashRegisterId,
         comment: event.comment,
         supplierId: event.supplierId,
+        approve: event.approve,
       );
 
       emit(const MoneyIncomeCreateSuccess('document_created_successfully'));
@@ -218,12 +219,12 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
   }
 
   Future<void> _onDeleteMoneyIncome(DeleteMoneyIncome event, Emitter<MoneyIncomeState> emit) async {
-    emit(MoneyIncomeLoading());
+    if (event.reload) emit(MoneyIncomeLoading());
     try {
       final result = await apiService.deleteMoneyIncomeDocument(event.documentId);
       if (result) {
-        emit(const MoneyIncomeDeleteSuccess('document_deleted_successfully'));
-        add(RemoveLocalFromList(event.documentId));
+        if (event.reload) emit(MoneyIncomeDeleteSuccess('document_deleted_successfully', reload: event.reload));
+        if (event.reload) add(RemoveLocalFromList(event.documentId));
       } else {
         emit(const MoneyIncomeDeleteError('failed_to_delete_document'));
       }

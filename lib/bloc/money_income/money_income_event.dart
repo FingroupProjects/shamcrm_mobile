@@ -63,8 +63,9 @@ class UpdateMoneyIncome extends MoneyIncomeEvent {
 
 class DeleteMoneyIncome extends MoneyIncomeEvent {
   final int documentId;
+  final bool reload;
 
-  const DeleteMoneyIncome(this.documentId);
+  const DeleteMoneyIncome(this.documentId, {this.reload = true});
 
   @override
   List<Object> get props => [documentId];
@@ -95,6 +96,7 @@ class CreateMoneyIncome extends MoneyIncomeEvent {
   final int? cashRegisterId;
   final int? senderCashRegisterId;
   final int? supplierId;
+  final bool approve;
 
   CreateMoneyIncome({
     required this.date,
@@ -106,6 +108,7 @@ class CreateMoneyIncome extends MoneyIncomeEvent {
     this.cashRegisterId,
     this.senderCashRegisterId,
     this.supplierId,
+    required this.approve,
   });
 
   @override
@@ -120,6 +123,7 @@ class CreateMoneyIncome extends MoneyIncomeEvent {
         cashRegisterId ?? '',
         senderCashRegisterId ?? '',
         supplierId ?? 0,
+        approve,
       ];
 }
 

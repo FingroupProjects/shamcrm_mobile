@@ -431,6 +431,8 @@
   "enter_textfield": "Nomni kiriting",
   "select_leads": "Lidlarni tanlang",
   "select_lead": "Mijozni tanlang",
+  "select_clients": "Mijozlarni tanlang",
+  "select_client": "Mijozni tanlang",
   "please_select_status_task": "Iltimos, vazifa holatini tanlang",
   "error_create_task": "Vazifa yaratishda xatolik!",
   "start_date_history": "Boshlanish sanasi: ",
