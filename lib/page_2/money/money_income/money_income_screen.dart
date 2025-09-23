@@ -340,6 +340,11 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
             },
             child: BlocBuilder<MoneyIncomeBloc, MoneyIncomeState>(
               builder: (context, state) {
+
+                if (kDebugMode) {
+                  print("📝 [UI] Текущий статус MoneyIncomeBloc: $state");
+                }
+
                 if (
                 state is MoneyIncomeLoading
                 ) {
