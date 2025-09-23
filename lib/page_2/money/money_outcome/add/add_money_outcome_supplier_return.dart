@@ -84,7 +84,7 @@ class _AddMoneyOutcomeSupplierReturnState extends State<AddMoneyOutcomeSupplierR
     bloc.add(CreateMoneyOutcome(
       date: isoDate,
       amount: double.parse(_amountController.text.trim()),
-      cashRegisterId: selectedCashRegister!.id.toString(),
+      cashRegisterId: selectedCashRegister!.id,
       comment: _commentController.text.trim(),
       supplierId: int.parse(selectedSupplier!.id.toString()),
       operationType: OperationType.supplier_payment.name

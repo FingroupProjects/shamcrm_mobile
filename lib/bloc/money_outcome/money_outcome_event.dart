@@ -27,8 +27,8 @@ class UpdateMoneyOutcome extends MoneyOutcomeEvent {
   final String movementType = "RKO";
   final int? leadId;
   final String comment;
-  final String? cashRegisterId;
-  final String? senderCashRegisterId;
+  final int? cashRegisterId;
+  final int? senderCashRegisterId;
   final int? supplierId;
   final bool approved;
 
@@ -91,8 +91,8 @@ class CreateMoneyOutcome extends MoneyOutcomeEvent {
   final String movementType = "RKO";
   final int? leadId;
   final String comment;
-  final String? cashRegisterId;
-  final String? senderCashRegisterId;
+  final int? cashRegisterId;
+  final int? senderCashRegisterId;
   final int? supplierId;
 
   CreateMoneyOutcome({

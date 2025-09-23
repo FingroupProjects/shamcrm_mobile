@@ -97,7 +97,7 @@ class _AddMoneyIncomeOtherIncomeState extends State<AddMoneyIncomeOtherIncome> {
         articleId: selectedIncomeCategory?.id,
         comment: _commentController.text.trim(),
         operationType: OperationType.other_incomes.name,
-        cashRegisterId: selectedCashRegister?.id.toString(),
+        cashRegisterId: selectedCashRegister?.id,
       ));
     } catch (e) {
       setState(() => _isLoading = false);

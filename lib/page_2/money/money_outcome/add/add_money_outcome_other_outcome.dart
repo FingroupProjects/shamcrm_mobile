@@ -88,7 +88,7 @@ class _AddMoneyOutcomeOtherOutcomeState extends State<AddMoneyOutcomeOtherOutcom
         leadId: int.parse(selectedLead!),
         comment: _commentController.text.trim(),
         operationType: OperationType.other_expenses.name,
-        cashRegisterId: selectedCashRegister?.id.toString(),
+        cashRegisterId: selectedCashRegister?.id,
       ));
     } catch (e) {
       setState(() => _isLoading = false);

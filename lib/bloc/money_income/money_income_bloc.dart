@@ -17,6 +17,7 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
   Map<String, dynamic>? _filters;
   String? _search = '';
   List<Document> _allData = [];
+  Set<Document> _selectedDocuments = {};
 
   MoneyIncomeBloc() : super(MoneyIncomeInitial()) {
     on<FetchMoneyIncome>(_onFetchMoneyIncome);
@@ -25,20 +26,83 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
     on<DeleteMoneyIncome>(_onDeleteMoneyIncome);
     on<RestoreMoneyIncome>(_onRestoreMoneyIncome);
     on<AddMoneyIncome>(_onAddMoneyIncome);
-    // on<MassApproveMoneyIncomeDocuments>(_onMassApproveMoneyIncomeDocuments);
+    on<MassApproveMoneyIncomeDocuments>(_onMassApproveMoneyIncomeDocuments);
+    on<MassDisapproveMoneyIncomeDocuments>(_onMassDisapproveMoneyIncomeDocuments);
+    on<MassDeleteMoneyIncomeDocuments>(_onMassDeleteMoneyIncomeDocuments);
+    on<MassRestoreMoneyIncomeDocuments>(_onMassRestoreMoneyIncomeDocuments);
     on<ToggleApproveOneMoneyIncomeDocument>(_onToggleApproveOneMoneyIncomeDocument);
     on<RemoveLocalFromList>(_onRemoveLocalFromList);
+    on<SelectDocument>(_onSelectDocument);
+    on<UnselectAllDocuments>(_onUnselectAllDocuments);
   }
 
-  // Future<void> _onMassApproveMoneyIncomeDocuments(MassApproveMoneyIncomeDocuments event, Emitter<MoneyIncomeState> emit) async {
-  //   final allApproved = await apiService.masApproveMoneyIncomeDocuments(event.documentIds);
-  //
-  //   if (allApproved) {
-  //     emit(MoneyIncomeApproveMassSuccess(""));
-  //   } else {
-  //     emit(MoneyIncomeApproveMassError("approve_mass_error"));
-  //   }
-  // }
+  Future<void> _onMassApproveMoneyIncomeDocuments(MassApproveMoneyIncomeDocuments event, Emitter<MoneyIncomeState> emit) async {
+    final ls = _selectedDocuments.where((e) => e.approved == false && e.deletedAt == null).map((e) => e.id!).toList();
+    debugPrint("_onMassApproveMoneyIncomeDocuments. IDs: $ls");
+    add(UnselectAllDocuments());
+
+    final allApproved = await apiService.masApproveMoneyIncomeDocuments(ls);
+    try {
+      if (allApproved) {
+        emit(MoneyIncomeApproveMassSuccess(""));
+      } else {
+        emit(MoneyIncomeApproveMassError("approve_mass_error"));
+      }
+    } on Exception catch (e) {
+      emit(MoneyIncomeToggleOneApproveError(e.toString()));
+    }
+  }
+
+  Future<void> _onMassDisapproveMoneyIncomeDocuments(MassDisapproveMoneyIncomeDocuments event, Emitter<MoneyIncomeState> emit) async {
+    final ls = _selectedDocuments.where((e) => e.approved == true && e.deletedAt == null).map((e) => e.id!).toList();
+    debugPrint("_onMassDisapproveMoneyIncomeDocuments. IDs: $ls");
+    add(UnselectAllDocuments());
+
+    try {
+      final allDisapproved = await apiService.masDisapproveMoneyIncomeDocuments(ls);
+      if (allDisapproved) {
+        emit(MoneyIncomeDisapproveMassSuccess("Подтверждение отменено"));
+      } else {
+        emit(MoneyIncomeDisapproveMassError("Ошибка при отмене подтверждения"));
+      }
+    } on Exception catch (e) {
+      emit(MoneyIncomeDisapproveMassError(e.toString()));
+    }
+  }
+
+  Future<void> _onMassDeleteMoneyIncomeDocuments(MassDeleteMoneyIncomeDocuments event, Emitter<MoneyIncomeState> emit) async {
+    final ls = _selectedDocuments.where((e) => e.deletedAt == null).map((e) => e.id!).toList();
+    debugPrint("_onMassDeleteMoneyIncomeDocuments. IDs: $ls");
+    add(UnselectAllDocuments());
+
+    try {
+      final allDeleted = await apiService.masDeleteMoneyIncomeDocuments(ls);
+      if (allDeleted) {
+        emit(MoneyIncomeDeleteMassSuccess("Документы удалены"));
+      } else {
+        emit(MoneyIncomeDeleteMassError("Ошибка при удалении документов"));
+      }
+    } on Exception catch (e) {
+      emit(MoneyIncomeDeleteMassError(e.toString()));
+    }
+  }
+
+  Future<void> _onMassRestoreMoneyIncomeDocuments(MassRestoreMoneyIncomeDocuments event, Emitter<MoneyIncomeState> emit) async {
+    final ls = _selectedDocuments.where((e) => e.deletedAt != null).map((e) => e.id!).toList();
+    debugPrint("_onMassRestoreMoneyIncomeDocuments. IDs: $ls");
+    add(UnselectAllDocuments());
+
+    try {
+      final allRestored = await apiService.masRestoreMoneyIncomeDocuments(ls);
+      if (allRestored) {
+        emit(MoneyIncomeRestoreMassSuccess("Документы восстановлены"));
+      } else {
+        emit(MoneyIncomeRestoreMassError("Ошибка при восстановлении документов"));
+      }
+    } on Exception catch (e) {
+      emit(MoneyIncomeRestoreMassError(e.toString()));
+    }
+  }
 
   Future<void> _onToggleApproveOneMoneyIncomeDocument(
       ToggleApproveOneMoneyIncomeDocument event, Emitter<MoneyIncomeState> emit) async {
@@ -94,10 +158,15 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
         _currentPage++;
       }
 
+      final selectedDocuments = _allData
+          .where((doc) => _selectedDocuments.contains(doc))
+          .toList();
+
       emit(MoneyIncomeLoaded(
         data: List.from(_allData),
         pagination: response.result?.pagination,
         hasReachedMax: hasReachedMax,
+        selectedData: selectedDocuments,
       ));
     } catch (e) {
       emit(MoneyIncomeError(e.toString()));
@@ -105,7 +174,7 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
   }
 
   Future<void> _onCreateMoneyIncome(CreateMoneyIncome event, Emitter<MoneyIncomeState> emit) async {
-    emit(MoneyIncomeCreateLoading());
+    emit(MoneyIncomeLoading());
     try {
       await apiService.createMoneyIncomeDocument(
         date: event.date,
@@ -127,7 +196,7 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
   }
 
   Future<void> _onUpdateMoneyIncome(UpdateMoneyIncome event, Emitter<MoneyIncomeState> emit) async {
-    emit(MoneyIncomeUpdateLoading());
+    emit(MoneyIncomeLoading());
     try {
       await apiService.updateMoneyIncomeDocument(
         documentId: event.id!,
@@ -149,8 +218,7 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
   }
 
   Future<void> _onDeleteMoneyIncome(DeleteMoneyIncome event, Emitter<MoneyIncomeState> emit) async {
-    emit(MoneyIncomeDeleteLoading());
-    await Future.delayed(const Duration(seconds: 5));
+    emit(MoneyIncomeLoading());
     try {
       final result = await apiService.deleteMoneyIncomeDocument(event.documentId);
       if (result) {
@@ -165,7 +233,7 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
   }
 
   Future<void> _onRestoreMoneyIncome(RestoreMoneyIncome event, Emitter<MoneyIncomeState> emit) async {
-    emit(MoneyIncomeRestoreLoading());
+    emit(MoneyIncomeLoading());
     try {
       final result = await apiService.restoreMoneyIncomeDocument(event.documentId);
       if (result['result'] == 'Success') {
@@ -179,15 +247,11 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
   }
 
   Future<void> _onRemoveLocalFromList(RemoveLocalFromList event, Emitter<MoneyIncomeState> emit) async {
-    // Проверяем процент оставшихся
-    // Если удалено >= 30%, сразу подгружаем новые данные с сервера (форсированно) иначе просто удаляем из локального списка
-
-    final deletedPercent = 1 - (_allData.length / (_perPage));
-    if (deletedPercent >= 0.3) {
-      debugPrint('Force refresh due to high deletion percentage: $deletedPercent');
+    emit(MoneyIncomeLoading());
+    final double remainingPercentage = _allData.length / _perPage;
+    if (remainingPercentage < 0.3) {
       add(FetchMoneyIncome(forceRefresh: true));
     } else {
-      debugPrint('Local removal, deletion percentage: $deletedPercent');
       _allData.removeWhere((doc) => doc.id == event.documentId);
       emit(MoneyIncomeLoaded(
         data: List.from(_allData),
@@ -196,4 +260,42 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
       ));
     }
   }
+
+  Future<void> _onSelectDocument(SelectDocument event, Emitter<MoneyIncomeState> emit) async {
+    if (state is MoneyIncomeLoaded) {
+      final currentState = state as MoneyIncomeLoaded;
+
+      if (_selectedDocuments.contains(event.document)) {
+        _selectedDocuments.remove(event.document);
+      } else {
+        _selectedDocuments.add(event.document);
+      }
+
+      final selectedDocuments = currentState.data
+          .where((doc) => _selectedDocuments.contains(doc))
+          .toList();
+
+      emit(MoneyIncomeLoaded(
+        data: currentState.data,
+        pagination: currentState.pagination,
+        hasReachedMax: currentState.hasReachedMax,
+        selectedData: selectedDocuments,
+      ));
+    }
+  }
+
+  Future<void> _onUnselectAllDocuments(UnselectAllDocuments event, Emitter<MoneyIncomeState> emit) async {
+    _selectedDocuments = {};
+
+    if (state is MoneyIncomeLoaded) {
+      final currentState = state as MoneyIncomeLoaded;
+      emit(MoneyIncomeLoaded(
+        data: currentState.data,
+        pagination: currentState.pagination,
+        hasReachedMax: currentState.hasReachedMax,
+        selectedData: [],
+      ));
+    }
+  }
 }
+

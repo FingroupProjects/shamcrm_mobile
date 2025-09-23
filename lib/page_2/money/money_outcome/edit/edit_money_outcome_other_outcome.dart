@@ -146,7 +146,7 @@ class _EditMoneyOutcomeOtherOutcomeState extends State<EditMoneyOutcomeOtherOutc
         operationType: OperationType.other_expenses.name,
         leadId: selectedLead != null ? int.parse(selectedLead!) : null,
         comment: _commentController.text.trim(),
-        cashRegisterId: selectedCashRegister?.id.toString(),
+        cashRegisterId: selectedCashRegister?.id,
         approved: _isApproved,
       ));
     } catch (e) {

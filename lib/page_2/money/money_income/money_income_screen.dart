@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../bloc/money_income/money_income_bloc.dart';
+import '../../../custom_widget/app_bar_selection_mode.dart';
 import '../../../widgets/snackbar_widget.dart';
 import 'add/add_money_income_from_another_cash_register.dart';
 import 'add/add_money_income_from_client.dart';
@@ -38,7 +39,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
   String? _search = null;
   late MoneyIncomeBloc _moneyIncomeBloc;
 
-  bool _isInitialLoad = true;
+  bool _selectionMode = false;
   bool _isLoadingMore = false;
   bool _hasReachedMax = false;
 
@@ -61,7 +62,6 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
   void _onFilterSelected(Map<String, dynamic> filters) {
     setState(() {
       _currentFilters = Map.from(filters);
-      _isInitialLoad = true;
       _hasReachedMax = false;
       _isLoadingMore = false;
     });
@@ -79,7 +79,6 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
   void _onResetFilters() {
     setState(() {
       _currentFilters.clear();
-      _isInitialLoad = true;
       _hasReachedMax = false;
       _isLoadingMore = false;
       _searchController.clear();
@@ -92,6 +91,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
       search: null,
     ));
   }
+
   void _onScroll() {
     if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200 &&
         !_isLoadingMore &&
@@ -119,7 +119,6 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
 
   Future<void> _onRefresh() async {
     setState(() {
-      _isInitialLoad = true;
       _hasReachedMax = false;
     });
     _moneyIncomeBloc.add(const FetchMoneyIncome(forceRefresh: true));
@@ -169,57 +168,121 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
 
   void showDeleteDialog({required BuildContext context, required Document document, required VoidCallback onDelete}) {
     showDialog(
-        context: context,
-        builder: (_) => BlocProvider.value(
-          value: context.read<MoneyIncomeBloc>(),
-          child: MoneyIncomeDeleteDialog(documentId: document.id!, onDelete: (id) {
-            onDelete();
-          }),
-        ),
-      ).then((value) {
-        if (mounted) {
-          FocusScope.of(context).requestFocus(FocusNode());
-        }
-      });
+      context: context,
+      builder: (_) => BlocProvider.value(
+        value: context.read<MoneyIncomeBloc>(),
+        child: MoneyIncomeDeleteDialog(
+            documentId: document.id!,
+            onDelete: (id) {
+              onDelete();
+            }),
+      ),
+    ).then((value) {
+      if (mounted) {
+        FocusScope.of(context).requestFocus(FocusNode());
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context);
+    final localizations = AppLocalizations.of(context)!;
+
     return BlocProvider.value(
       value: _moneyIncomeBloc,
       child: Scaffold(
           backgroundColor: Colors.white,
           appBar: AppBar(
             forceMaterialTransparency: true,
-            title: CustomAppBarPage2(
-              title: localizations!.translate('appbar_money_income'),
-              showSearchIcon: true,
-              showFilterIcon: false,
-              showFilterOrderIcon: false,
-              showFilterIncomeIcon: true,
-              onFilterIncomeSelected: _onFilterSelected,
-              onIncomeResetFilters: _onResetFilters,
-              onChangedSearchInput: _onSearch,
-              textEditingController: _searchController,
-              focusNode: _focusNode,
-              clearButtonClick: (value) {
-                if (!value) {
-                  setState(() {
-                    _isSearching = false;
-                    _searchController.clear();
-                    _search = null; // Очищаем поиск
-                  });
-                  _moneyIncomeBloc.add(FetchMoneyIncome(
-                    forceRefresh: true,
-                    filters: _currentFilters, // Сохраняем фильтры при очистке поиска
-                  ));
-                }
-              },
-              onClickProfileAvatar: () {},
-              clearButtonClickFiltr: (bool p1) {},
-              currentFilters: _currentFilters,
-            ),
+            automaticallyImplyLeading: !_selectionMode,
+            title: _selectionMode
+                ? BlocBuilder<MoneyIncomeBloc, MoneyIncomeState>(
+                    builder: (context, state) {
+                      if (state is MoneyIncomeLoaded) {
+
+                        bool showApprove = state.selectedData!.any((doc) => doc.approved == false && doc.deletedAt == null);
+                        bool showDisapprove = state.selectedData!.any((doc) => doc.approved == true && doc.deletedAt == null);
+                        bool showDelete = state.selectedData!.any((doc) => doc.deletedAt == null);
+                        bool showRestore = state.selectedData!.any((doc) => doc.deletedAt != null);
+
+                        return AppBarSelectionMode(
+                            title: localizations.translate('appbar_money_income'),
+                            onDismiss: () {
+                              setState(() {
+                                _selectionMode = false;
+                              });
+                              _moneyIncomeBloc.add(UnselectAllDocuments());
+                            },
+                            onApprove: () {
+                              setState(() {
+                                _selectionMode = false;
+                              });
+                              _moneyIncomeBloc.add(MassApproveMoneyIncomeDocuments());
+                            },
+                            onDisapprove: () {
+                              setState(() {
+                                _selectionMode = false;
+                              });
+                              _moneyIncomeBloc.add(MassDisapproveMoneyIncomeDocuments());
+                            },
+                            onDelete: () {
+                              setState(() {
+                                _selectionMode = false;
+                              });
+                              _moneyIncomeBloc.add(MassDeleteMoneyIncomeDocuments());
+                            },
+                            onRestore: () {
+                              setState(() {
+                                _selectionMode = false;
+                              });
+                              _moneyIncomeBloc.add(MassRestoreMoneyIncomeDocuments());
+                            },
+                            showApprove: showApprove,
+                            showDelete: showDelete,
+                            showDisapprove: showDisapprove,
+                            showRestore: showRestore,
+                        );
+                      }
+
+                      return AppBarSelectionMode(
+                        title: localizations.translate('appbar_money_income'),
+                        onDismiss: () {
+                          setState(() {
+                            _selectionMode = false;
+                          });
+                          _moneyIncomeBloc.add(UnselectAllDocuments());
+                        },
+                      );
+                    },
+                  )
+                : CustomAppBarPage2(
+                    title: localizations.translate('appbar_money_income'),
+                    showSearchIcon: true,
+                    showFilterIcon: false,
+                    showFilterOrderIcon: false,
+                    showFilterIncomeIcon: true,
+                    onFilterIncomeSelected: _onFilterSelected,
+                    onIncomeResetFilters: _onResetFilters,
+                    onChangedSearchInput: _onSearch,
+                    textEditingController: _searchController,
+                    focusNode: _focusNode,
+                    clearButtonClick: (value) {
+                      if (!value) {
+                        setState(() {
+                          _isSearching = false;
+                          _searchController.clear();
+                          _search = null; // Очищаем поиск
+                        });
+                        _moneyIncomeBloc.add(FetchMoneyIncome(
+                          forceRefresh: true,
+                          filters: _currentFilters, // Сохраняем фильтры при очистке поиска
+                        ));
+                      }
+                    },
+                    onClickProfileAvatar: () {},
+                    clearButtonClickFiltr: (bool p1) {},
+                    currentFilters: _currentFilters,
+                  ),
           ),
           body: BlocListener<MoneyIncomeBloc, MoneyIncomeState>(
             listener: (context, state) {
@@ -228,42 +291,62 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
               if (state is MoneyIncomeLoaded) {
                 setState(() {
                   _hasReachedMax = state.hasReachedMax;
-                  _isInitialLoad = false;
                   _isLoadingMore = false;
                 });
               } else if (state is MoneyIncomeError) {
                 setState(() {
-                  _isInitialLoad = false;
                   _isLoadingMore = false;
                 });
-                showCustomSnackBar(context: context, message: state.message, isSuccess:  false);
+                showCustomSnackBar(context: context, message: state.message, isSuccess: false);
               } else if (state is MoneyIncomeCreateSuccess) {
-                showCustomSnackBar(context: context, message: state.message, isSuccess:  true);
+                showCustomSnackBar(context: context, message: state.message, isSuccess: true);
               } else if (state is MoneyIncomeCreateError) {
-                showCustomSnackBar(context: context, message: state.message, isSuccess:  false);
+                showCustomSnackBar(context: context, message: state.message, isSuccess: false);
               } else if (state is MoneyIncomeUpdateSuccess) {
-                showCustomSnackBar(context: context, message: state.message, isSuccess:  true);
+                showCustomSnackBar(context: context, message: state.message, isSuccess: true);
               } else if (state is MoneyIncomeUpdateError) {
-                showCustomSnackBar(context: context, message: state.message, isSuccess:  false);
-              }  else if (state is MoneyIncomeToggleOneApproveSuccess) {
-                showCustomSnackBar(context: context, message: localizations.translate('status_changed_successfully_approve'), isSuccess:  true);
+                showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+              } else if (state is MoneyIncomeToggleOneApproveSuccess) {
+                showCustomSnackBar(context: context, message: localizations.translate('status_changed_successfully_approve'), isSuccess: true);
               } else if (state is MoneyIncomeToggleOneApproveError) {
-                showCustomSnackBar(context: context, message: state.message, isSuccess:  false);
+                showCustomSnackBar(context: context, message: state.message, isSuccess: false);
               } else if (state is MoneyIncomeDeleteSuccess) {
-                showCustomSnackBar(context: context, message: state.message, isSuccess:  true);
+                showCustomSnackBar(context: context, message: state.message, isSuccess: true);
               } else if (state is MoneyIncomeRestoreSuccess) {
-                showCustomSnackBar(context: context, message: state.message, isSuccess:  true);
+                showCustomSnackBar(context: context, message: state.message, isSuccess: true);
               } else if (state is MoneyIncomeRestoreError) {
-                showCustomSnackBar(context: context, message: state.message, isSuccess:  false);
+                showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+              } else if (state is MoneyIncomeApproveMassSuccess) {
+                showCustomSnackBar(context: context, message: state.message, isSuccess: true);
+                _moneyIncomeBloc.add(const FetchMoneyIncome(forceRefresh: true));
+              } else if (state is MoneyIncomeApproveMassError) {
+                showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+              } else if (state is MoneyIncomeDisapproveMassSuccess) {
+                showCustomSnackBar(context: context, message: state.message, isSuccess: true);
+                _moneyIncomeBloc.add(const FetchMoneyIncome(forceRefresh: true));
+              } else if (state is MoneyIncomeDisapproveMassError) {
+                showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+              } else if (state is MoneyIncomeDeleteMassSuccess) {
+                showCustomSnackBar(context: context, message: state.message, isSuccess: true);
+                _moneyIncomeBloc.add(const FetchMoneyIncome(forceRefresh: true));
+              } else if (state is MoneyIncomeDeleteMassError) {
+                showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+              } else if (state is MoneyIncomeRestoreMassSuccess) {
+                showCustomSnackBar(context: context, message: state.message, isSuccess: true);
+                _moneyIncomeBloc.add(const FetchMoneyIncome(forceRefresh: true));
+              } else if (state is MoneyIncomeRestoreMassError) {
+                showCustomSnackBar(context: context, message: state.message, isSuccess: false);
               }
             },
             child: BlocBuilder<MoneyIncomeBloc, MoneyIncomeState>(
               builder: (context, state) {
-                if (state is MoneyIncomeLoading || _isInitialLoad) {
+                if (
+                state is MoneyIncomeLoading
+                ) {
                   return Center(
                     child: PlayStoreImageLoading(
                       size: 80.0,
-                      duration: const Duration(milliseconds: 500),
+                      duration: const Duration(milliseconds: 1000),
                     ),
                   );
                 }
@@ -330,6 +413,9 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                           alignment: Alignment.centerRight,
                           child: const Icon(Icons.delete, color: Colors.white, size: 24),
                         ),
+                        confirmDismiss: (direction) async {
+                          return document.deletedAt == null;
+                        },
                         onDismissed: (direction) {
                           print("🗑️ [UI] Удаление dokumenta ID: ${document.id}");
                           setState(() {
@@ -340,11 +426,36 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(12),
                           child: MoneyIncomeCard(
+                            isSelectionMode: _selectionMode,
+                            isSelected: (state as MoneyIncomeLoaded).selectedData?.contains(document) ?? false,
                             document: document,
-                            onUpdate: (document) {
-                          _navigateToEditScreen(context, document);
-                        },
-                        onDelete: () {
+                            onLongPress: (document) {
+                              if (_selectionMode) return;
+                              setState(() {
+                                _selectionMode = true;
+                              });
+                              _moneyIncomeBloc.add(SelectDocument(document));
+                            },
+                            onClick: (document) {
+                              if (_selectionMode) {
+                                final currentState = context.read<MoneyIncomeBloc>().state;
+                                if (currentState is MoneyIncomeLoaded) {
+                                  final selectedCount = currentState.selectedData?.length ?? 0;
+                                  if (selectedCount <= 1 && currentState.selectedData?.contains(document) == true) {
+                                    setState(() {
+                                      _selectionMode = false;
+                                    });
+                                  }
+                                }
+
+                                _moneyIncomeBloc.add(SelectDocument(document));
+                              } else {
+                                if (document.deletedAt == null) {
+                                  _navigateToEditScreen(context, document);
+                                }
+                              }
+                            },
+                            onDelete: () {
                               debugPrint("show delete dialog for document ID: ${document.id}");
                               showDeleteDialog(
                                   context: context,
@@ -505,10 +616,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
             child: Container(
               width: 56,
               height: 56,
-              decoration: const BoxDecoration(
-                color: Color(0xff1E2E52),
-                borderRadius: BorderRadius.all(Radius.circular(18))
-              ),
+              decoration: const BoxDecoration(color: Color(0xff1E2E52), borderRadius: BorderRadius.all(Radius.circular(18))),
               child: const Icon(
                 Icons.add,
                 color: Colors.white,

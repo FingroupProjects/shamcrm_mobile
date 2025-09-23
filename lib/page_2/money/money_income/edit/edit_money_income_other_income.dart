@@ -161,7 +161,7 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
         operationType: OperationType.other_incomes.name,
         articleId: selectedIncomeCategory?.id,
         comment: _commentController.text.trim(),
-        cashRegisterId: selectedCashRegister?.id.toString(),
+        cashRegisterId: selectedCashRegister?.id,
       ));
     }
 

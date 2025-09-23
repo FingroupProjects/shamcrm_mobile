@@ -6,6 +6,10 @@ void showCustomSnackBar({
   required String message,
   bool isSuccess = true,
 }) {
+
+  if (message.isEmpty) return;
+  if (!context.mounted) return;
+
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       content: Text(

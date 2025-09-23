@@ -161,7 +161,7 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
         operationType: OperationType.return_supplier.name,
         supplierId: _selectedSupplier!.id,
         comment: _commentController.text.trim(),
-        cashRegisterId: selectedCashRegister?.id.toString(),
+        cashRegisterId: selectedCashRegister?.id,
       ));
     }
 

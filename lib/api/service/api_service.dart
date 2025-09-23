@@ -13,8 +13,6 @@ import 'package:crm_task_manager/models/money/expense_model.dart';
 import 'package:crm_task_manager/models/money/add_expense_model.dart';
 import 'package:crm_task_manager/models/money/income_model.dart';
 import 'package:crm_task_manager/models/money/add_income_model.dart';
-import 'package:crm_task_manager/models/money/add_outcome_model.dart';
-import 'package:crm_task_manager/models/money/outcome_model.dart';
 import 'package:crm_task_manager/models/chatById_model.dart';
 import 'package:crm_task_manager/models/chatGetId_model.dart';
 import 'package:crm_task_manager/models/chatTaskProfile_model.dart';
@@ -11782,8 +11780,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     String? comment,
     int? leadId,
     int? articleId,
-    String? senderCashRegisterId,
-    String? cashRegisterId,
+    int? senderCashRegisterId,
+    int? cashRegisterId,
     int? supplierId,
   }) async {
 
@@ -11940,8 +11938,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     String? comment,
     int? leadId,
     int? articleId,
-    String? senderCashRegisterId,
-    String? cashRegisterId,
+    int? senderCashRegisterId,
+    int? cashRegisterId,
     int? supplierId,
   }) async {
     final path = await _appendQueryParams('/checking-account/$documentId');
@@ -11972,23 +11970,23 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     }
   }
 
-  // Future<bool> masApproveMoneyIncomeDocuments(List<int> ids) async {
-  //   final path = await _appendQueryParams('/checking-account/mass-approve');
-  //
-  //   try {
-  //     final response = await _patchRequest(path, {
-  //       'ids': ids,
-  //     });
-  //
-  //     if (response.statusCode == 200 || response.statusCode == 201) {
-  //       return true;
-  //     } else {
-  //       throw Exception('Ошибка при массовом проведении документов прихода');
-  //     }
-  //   } catch (e) {
-  //     throw Exception('Ошибка при массовом проведении документов прихода: $e');
-  //   }
-  // }
+  Future<bool> masApproveMoneyIncomeDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/checking-account/mass-approve');
+
+    try {
+      final response = await _patchRequest(path, {
+        'ids': ids,
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return true;
+      } else {
+        throw Exception('Ошибка при массовом проведении документов прихода');
+      }
+    } catch (e) {
+      throw Exception('Ошибка при массовом проведении документов прихода: $e');
+    }
+  }
 
   Future<bool> toggleApproveOneMoneyIncomeDocument(int id, bool approve) async {
     final path = approve
@@ -12008,6 +12006,60 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     }
   }
 
+  Future<bool> masDisapproveMoneyIncomeDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/checking-account/mass-unapprove');
+
+    try {
+      final response = await _patchRequest(path, {
+        'ids': ids,
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return true;
+      } else {
+        throw Exception('Ошибка при массовой отмене подтверждения документов прихода');
+      }
+    } catch (e) {
+      throw Exception('Ошибка при массовой отмене подтверждения документов прихода: $e');
+    }
+  }
+
+  Future<bool> masDeleteMoneyIncomeDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/checking-account/mass-delete');
+
+    try {
+      final response = await _deleteRequestWithBody(path, {
+        'ids': ids,
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return true;
+      } else {
+        throw Exception('Ошибка при массовом удалении документов прихода');
+      }
+    } catch (e) {
+      throw Exception('Ошибка при массовом удалении документов прихода: $e');
+    }
+  }
+
+  Future<bool> masRestoreMoneyIncomeDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/checking-account/mass-restore');
+
+    try {
+      final response = await _deleteRequestWithBody(path, {
+        'ids': ids,
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return true;
+      } else {
+        throw Exception('Ошибка при массовом восстановлении документов прихода');
+      }
+    } catch (e) {
+      throw Exception('Ошибка при массовом восстановлении документов прихода: $e');
+    }
+  }
+
   // ============================= MONEY OUTCOME API METHODS =============================
 
   Future<void> createMoneyOutcomeDocument({required String date,
@@ -12016,8 +12068,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     required String movementType,
     String? comment,
     int? leadId,
-    String? senderCashRegisterId,
-    String? cashRegisterId,
+    int? senderCashRegisterId,
+    int? cashRegisterId,
     int? supplierId,
   }) async {
 
@@ -12171,8 +12223,8 @@ Future<void> updateMoneyOutcomeDocument({
     required String movementType,
     String? comment,
     int? leadId,
-    String? senderCashRegisterId,
-    String? cashRegisterId,
+    int? senderCashRegisterId,
+    int? cashRegisterId,
     int? supplierId,
     required bool approved,
   }) async {

@@ -130,7 +130,7 @@ class _EditMoneyOutcomeSupplierReturnState extends State<EditMoneyOutcomeSupplie
       date: isoDate,
       amount: double.parse(_amountController.text.trim()),
       operationType: OperationType.supplier_payment.name,
-      cashRegisterId: selectedCashRegister!.id.toString(),
+      cashRegisterId: selectedCashRegister!.id,
       comment: _commentController.text.trim(),
       supplierId: int.parse(selectedSupplier!.id.toString()),
       approved: _isApproved,
