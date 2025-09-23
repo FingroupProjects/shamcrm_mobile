@@ -74,6 +74,7 @@ class ClientSaleBloc extends Bloc<ClientSaleEvent, ClientSaleState> {
         documentGoods: event.documentGoods,
         organizationId: event.organizationId,
         salesFunnelId: event.salesFunnelId,
+        approve: event.approve, // Передаем новый параметр
       );
 
       emit(ClientSaleCreateSuccess('Документ успешно создан'));

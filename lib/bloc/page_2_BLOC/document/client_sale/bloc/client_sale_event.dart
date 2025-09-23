@@ -39,6 +39,7 @@ class CreateClientSalesDocument extends ClientSaleEvent {
   final List<Map<String, dynamic>> documentGoods;
   final int organizationId;
   final int salesFunnelId;
+  final bool approve; // Новый параметр
 
   const CreateClientSalesDocument({
     required this.date,
@@ -48,7 +49,20 @@ class CreateClientSalesDocument extends ClientSaleEvent {
     required this.documentGoods,
     required this.organizationId,
     required this.salesFunnelId,
+    this.approve = false, // По умолчанию false
   });
+
+  @override
+  List<Object> get props => [
+    date,
+    storageId,
+    comment,
+    counterpartyId,
+    documentGoods,
+    organizationId,
+    salesFunnelId,
+    approve, // Добавляем в props
+  ];
 }
 
 class UpdateClientSalesDocument extends ClientSaleEvent {

@@ -10537,6 +10537,7 @@ Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
     required List<Map<String, dynamic>> documentGoods,
     required int organizationId,
     required int salesFunnelId,
+    required bool approve,
   }) async {
     final token = await getToken();
     if (token == null) throw Exception('Токен не найден');
@@ -10550,6 +10551,7 @@ Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
       'document_goods': documentGoods,
       'organization_id': organizationId,
       'sales_funnel_id': salesFunnelId,
+      'approve': approve,
     });
 
     if (response.statusCode == 200 || response.statusCode == 201) {
@@ -11642,6 +11644,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     required List<Map<String, dynamic>> documentGoods,
     required int organizationId,
     required int salesFunnelId,
+    required bool approve,
   }) async {
     final token = await getToken();
     if (token == null) throw Exception('Токен не найден');
@@ -11656,6 +11659,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       'document_goods': documentGoods,
       'organization_id': organizationId,
       'sales_funnel_id': salesFunnelId,
+      'approve': approve,
     });
 
     final response = await http.post(
@@ -12652,6 +12656,7 @@ Future<void> updateMoneyOutcomeDocument({
     required String comment,
     required List<Map<String, dynamic>> documentGoods,
     required int organizationId,
+    required bool approve,
   }) async {
     final token = await getToken();
     if (token == null) throw Exception('Токен не найден');
@@ -12663,6 +12668,7 @@ Future<void> updateMoneyOutcomeDocument({
       'comment': comment,
       'document_goods': documentGoods,
       'organization_id': organizationId,
+      'approve': approve,
     });
 
     if (response.statusCode == 200 || response.statusCode == 201) {
@@ -12902,6 +12908,7 @@ Future<void> updateMoneyOutcomeDocument({
     required String comment,
     required List<Map<String, dynamic>> documentGoods,
     required int organizationId,
+    required bool approve,
   }) async {
     final token = await getToken();
     if (token == null) throw Exception('Токен не найден');
@@ -12914,6 +12921,7 @@ Future<void> updateMoneyOutcomeDocument({
       'comment': comment,
       'document_goods': documentGoods,
       'organization_id': organizationId,
+      'approve': approve,
     });
 
     if (response.statusCode == 200 || response.statusCode == 201) {

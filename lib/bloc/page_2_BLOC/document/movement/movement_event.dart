@@ -31,6 +31,7 @@ class CreateMovementDocument extends MovementEvent {
   final String comment;
   final List<Map<String, dynamic>> documentGoods;
   final int organizationId;
+  final bool approve; // Новый параметр
 
   const CreateMovementDocument({
     required this.date,
@@ -39,6 +40,7 @@ class CreateMovementDocument extends MovementEvent {
     required this.comment,
     required this.documentGoods,
     required this.organizationId,
+    this.approve = false, // По умолчанию false
   });
 
   @override
@@ -49,6 +51,7 @@ class CreateMovementDocument extends MovementEvent {
     comment,
     documentGoods,
     organizationId,
+    approve, // Добавляем в props
   ];
 }
 

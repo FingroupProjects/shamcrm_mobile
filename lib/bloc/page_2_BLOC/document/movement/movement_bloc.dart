@@ -81,6 +81,7 @@ class MovementBloc extends Bloc<MovementEvent, MovementState> {
         comment: event.comment,
         documentGoods: event.documentGoods,
         organizationId: event.organizationId,
+        approve: event.approve, // Передаем новый параметр
       );
 
       if (isClosed) return;
