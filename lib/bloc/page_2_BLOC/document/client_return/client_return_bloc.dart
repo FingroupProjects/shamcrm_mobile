@@ -71,6 +71,7 @@ class ClientReturnBloc extends Bloc<ClientReturnEvent, ClientReturnState> {
         documentGoods: event.documentGoods,
         organizationId: event.organizationId,
         salesFunnelId: event.salesFunnelId,
+        approve: event.approve, // Передаем новый параметр
       );
       emit(ClientReturnCreateSuccess('Документ успешно создан'));
     } catch (e) {
