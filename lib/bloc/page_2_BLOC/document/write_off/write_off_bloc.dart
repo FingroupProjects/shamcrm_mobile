@@ -60,8 +60,7 @@ class WriteOffBloc extends Bloc<WriteOffEvent, WriteOffState> {
     }
   }
 
-  _onCreateWriteOffDocument(
-      CreateWriteOffDocument event, Emitter<WriteOffState> emit) async {
+  _onCreateWriteOffDocument(CreateWriteOffDocument event, Emitter<WriteOffState> emit) async {
     emit(WriteOffCreateLoading());
     try {
       await apiService.createWriteOffDocument(
@@ -70,6 +69,7 @@ class WriteOffBloc extends Bloc<WriteOffEvent, WriteOffState> {
         comment: event.comment,
         documentGoods: event.documentGoods,
         organizationId: event.organizationId,
+        approve: event.approve,
       );
       emit(WriteOffCreateSuccess('Документ успешно создан'));
     } catch (e) {

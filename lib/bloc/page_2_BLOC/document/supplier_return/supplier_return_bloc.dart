@@ -83,6 +83,7 @@ class SupplierReturnBloc extends Bloc<SupplierReturnEvent, SupplierReturnState> 
         documentGoods: event.documentGoods,
         organizationId: event.organizationId,
         salesFunnelId: event.salesFunnelId,
+        approve: event.approve, // Передаем новый параметр
       );
 
       await Future.delayed(const Duration(milliseconds: 100));

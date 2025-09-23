@@ -51,6 +51,18 @@ class CreateClientReturnDocument extends ClientReturnEvent {
     required this.salesFunnelId,
     this.approve = false, // По умолчанию false
   });
+
+  @override
+  List<Object> get props => [
+    date,
+    storageId,
+    comment,
+    counterpartyId,
+    documentGoods,
+    organizationId,
+    salesFunnelId,
+    approve, // Добавляем в props
+  ];
 }
 
 class UpdateClientReturnDocument extends ClientReturnEvent {

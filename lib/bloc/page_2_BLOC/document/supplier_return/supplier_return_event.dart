@@ -31,6 +31,7 @@ class CreateSupplierReturn extends SupplierReturnEvent {
   final List<Map<String, dynamic>> documentGoods;
   final int organizationId;
   final int salesFunnelId;
+  final bool approve; // Новый параметр
 
   CreateSupplierReturn({
     required this.date,
@@ -40,6 +41,7 @@ class CreateSupplierReturn extends SupplierReturnEvent {
     required this.documentGoods,
     required this.organizationId,
     required this.salesFunnelId,
+    this.approve = false, // По умолчанию false
   });
 
   @override
@@ -51,6 +53,7 @@ class CreateSupplierReturn extends SupplierReturnEvent {
         documentGoods,
         organizationId,
         salesFunnelId,
+        approve, // Добавляем в props
       ];
 }
 
