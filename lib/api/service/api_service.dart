@@ -10279,46 +10279,49 @@ Future<IncomingDocument> getIncomingDocumentById(int documentId) async {
 
 
   Future<void> createIncomingDocument({
-    required String date,
-    required int storageId,
-    required String comment,
-    required int counterpartyId,
-    required List<Map<String, dynamic>> documentGoods,
-    required int organizationId,
-    required int salesFunnelId,
-  }) async {
-    final token = await getToken();
-    if (token == null) throw Exception('Токен не найден');
+  required String date,
+  required int storageId,
+  required String comment,
+  required int counterpartyId,
+  required List<Map<String, dynamic>> documentGoods,
+  required int organizationId,
+  required int salesFunnelId,
+  bool approve = false, // Новый параметр
+}) async {
+  final token = await getToken();
+  if (token == null) throw Exception('Токен не найден');
+  
+  final path = await _appendQueryParams('/income-documents');
+  final uri = Uri.parse('$baseUrl$path');
+  
+  final body = jsonEncode({
+    'date': date,
+    'storage_id': storageId,
+    'comment': comment,
+    'counterparty_id': counterpartyId,
+    'document_goods': documentGoods,
+    'organization_id': organizationId,
+    'sales_funnel_id': salesFunnelId,
+    'approve': approve, // Добавляем новый параметр
+  });
 
-    final path = await _appendQueryParams('/income-documents');
-    final uri = Uri.parse('$baseUrl$path'); // Исправлено здесь
-    final body = jsonEncode({
-      'date': date,
-      'storage_id': storageId,
-      'comment': comment,
-      'counterparty_id': counterpartyId,
-      'document_goods': documentGoods,
-      'organization_id': organizationId,
-      'sales_funnel_id': salesFunnelId,
-    });
+  final response = await http.post(
+    uri,
+    headers: {
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'Device': 'mobile',
+    },
+    body: body,
+  );
 
-    final response = await http.post(
-      uri,
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Device': 'mobile',
-      },
-      body: body,
-    );
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return;
-    } else {
-      throw Exception('Ошибка создания документа: ${response.body}');
-    }
+  if (response.statusCode == 200 || response.statusCode == 201) {
+    return;
+  } else {
+    throw Exception('Ошибка создания документа: ${response.body}');
   }
+}
 
 Future<void> updateIncomingDocument({
   required int documentId,

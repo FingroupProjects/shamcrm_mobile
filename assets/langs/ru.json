@@ -1414,7 +1414,8 @@
   "supplier_payment": "Оплата поставщику",
   "other_expenses": "Прочие расходы",
   "send_another_cash_register": "Отправление на другую кассу",
-  "status_changed_successfully_approve": "Статус успешно изменён!"
+  "status_changed_successfully_approve": "Статус успешно изменён!",
+  "save_and_approve": "Сохранить и провести"
 
  
 
