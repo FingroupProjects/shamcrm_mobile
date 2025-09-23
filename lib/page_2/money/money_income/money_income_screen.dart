@@ -184,14 +184,6 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
     });
   }
 
-  Future<void> onDismiss() async {
-    if (!mounted) return;
-    setState(() {
-      _selectionMode = false;
-    });
-    _moneyIncomeBloc.add(UnselectAllDocuments());
-  }
-
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;

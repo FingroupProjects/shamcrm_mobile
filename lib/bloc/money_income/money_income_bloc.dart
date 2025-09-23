@@ -37,9 +37,11 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
   }
 
   Future<void> _onMassApproveMoneyIncomeDocuments(MassApproveMoneyIncomeDocuments event, Emitter<MoneyIncomeState> emit) async {
-    final ls = _selectedDocuments.where((e) => e.approved == false).map((e) => e.id!).toList();
-    final allApproved = await apiService.masApproveMoneyIncomeDocuments(ls);
+    final ls = _selectedDocuments.where((e) => e.approved == false && e.deletedAt == null).map((e) => e.id!).toList();
+    debugPrint("_onMassApproveMoneyIncomeDocuments. IDs: $ls");
+    add(UnselectAllDocuments());
 
+    final allApproved = await apiService.masApproveMoneyIncomeDocuments(ls);
     try {
       if (allApproved) {
         emit(MoneyIncomeApproveMassSuccess(""));
@@ -52,8 +54,10 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
   }
 
   Future<void> _onMassDisapproveMoneyIncomeDocuments(MassDisapproveMoneyIncomeDocuments event, Emitter<MoneyIncomeState> emit) async {
-    final ls = _selectedDocuments.where((e) => e.approved == true).map((e) => e.id!).toList();
-    
+    final ls = _selectedDocuments.where((e) => e.approved == true && e.deletedAt == null).map((e) => e.id!).toList();
+    debugPrint("_onMassDisapproveMoneyIncomeDocuments. IDs: $ls");
+    add(UnselectAllDocuments());
+
     try {
       final allDisapproved = await apiService.masDisapproveMoneyIncomeDocuments(ls);
       if (allDisapproved) {
@@ -68,7 +72,9 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
 
   Future<void> _onMassDeleteMoneyIncomeDocuments(MassDeleteMoneyIncomeDocuments event, Emitter<MoneyIncomeState> emit) async {
     final ls = _selectedDocuments.where((e) => e.deletedAt == null).map((e) => e.id!).toList();
-    
+    debugPrint("_onMassDeleteMoneyIncomeDocuments. IDs: $ls");
+    add(UnselectAllDocuments());
+
     try {
       final allDeleted = await apiService.masDeleteMoneyIncomeDocuments(ls);
       if (allDeleted) {
@@ -83,7 +89,9 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
 
   Future<void> _onMassRestoreMoneyIncomeDocuments(MassRestoreMoneyIncomeDocuments event, Emitter<MoneyIncomeState> emit) async {
     final ls = _selectedDocuments.where((e) => e.deletedAt != null).map((e) => e.id!).toList();
-    
+    debugPrint("_onMassRestoreMoneyIncomeDocuments. IDs: $ls");
+    add(UnselectAllDocuments());
+
     try {
       final allRestored = await apiService.masRestoreMoneyIncomeDocuments(ls);
       if (allRestored) {
@@ -277,7 +285,7 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
   }
 
   Future<void> _onUnselectAllDocuments(UnselectAllDocuments event, Emitter<MoneyIncomeState> emit) async {
-    _selectedDocuments.clear();
+    _selectedDocuments = {};
 
     if (state is MoneyIncomeLoaded) {
       final currentState = state as MoneyIncomeLoaded;
