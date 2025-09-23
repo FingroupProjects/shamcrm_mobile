@@ -340,6 +340,11 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
             },
             child: BlocBuilder<MoneyIncomeBloc, MoneyIncomeState>(
               builder: (context, state) {
+
+                if (kDebugMode) {
+                  print("📝 [UI] Текущий статус MoneyIncomeBloc: $state");
+                }
+
                 if (
                 state is MoneyIncomeLoading
                 ) {
@@ -421,7 +426,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                           setState(() {
                             currentData.removeAt(index);
                           });
-                          _moneyIncomeBloc.add(DeleteMoneyIncome(document.id!));
+                          _moneyIncomeBloc.add(DeleteMoneyIncome(document.id!, reload: false));
                         },
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(12),
