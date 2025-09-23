@@ -39,6 +39,7 @@ class CreateClientReturnDocument extends ClientReturnEvent {
   final List<Map<String, dynamic>> documentGoods;
   final int organizationId;
   final int salesFunnelId;
+  final bool approve; // Новый параметр
 
   const CreateClientReturnDocument({
     required this.date,
@@ -48,6 +49,7 @@ class CreateClientReturnDocument extends ClientReturnEvent {
     required this.documentGoods,
     required this.organizationId,
     required this.salesFunnelId,
+    this.approve = false, // По умолчанию false
   });
 }
 

@@ -12395,6 +12395,7 @@ Future<void> updateMoneyOutcomeDocument({
     required List<Map<String, dynamic>> documentGoods,
     required int organizationId,
     required int salesFunnelId,
+    required bool approve,
   }) async {
     final token = await getToken();
     if (token == null) throw Exception('Токен не найден');
@@ -12408,6 +12409,7 @@ Future<void> updateMoneyOutcomeDocument({
       'document_goods': documentGoods,
       'organization_id': organizationId,
       'sales_funnel_id': salesFunnelId,
+      'approve': approve,
     });
 
     if (response.statusCode == 200 || response.statusCode == 201) {
