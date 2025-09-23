@@ -106,10 +106,10 @@ class MovementCard extends StatelessWidget {
                 _buildRecipientStorageRow(localizations),
                 const SizedBox(height: 8),
                 _buildQuantityRow(localizations),
-                if (document.comment != null && document.comment!.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  _buildCommentRow(localizations),
-                ],
+                // if (document.comment != null && document.comment!.isNotEmpty) ...[
+                //   const SizedBox(height: 8),
+                //   _buildCommentRow(localizations),
+                // ],
               ],
             ),
           ),

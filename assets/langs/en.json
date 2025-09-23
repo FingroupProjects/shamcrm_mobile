@@ -1421,7 +1421,10 @@
     "edit_incoming_document": "Edit incoming",
     "edit_pricetype": "Edit price type",
     "edit_warehouse": "Edit warehouse",
-    "save_and_approve": "Save and approve"
+    "save_and_approve": "Save and approve",
+    "add_warehouse": "Add warehouse",
+    "enter_warehouse_name": "Enter warehouse name"
+  
 
 
 

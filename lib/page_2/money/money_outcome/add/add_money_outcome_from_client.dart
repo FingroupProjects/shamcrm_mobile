@@ -1,17 +1,19 @@
 import 'package:crm_task_manager/bloc/money_outcome/money_outcome_bloc.dart';
-import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';  // Добавлен импорт
-import 'package:crm_task_manager/bloc/lead_list/lead_list_event.dart';  // Добавлен импорт
-import 'package:crm_task_manager/bloc/lead_list/lead_list_state.dart';  // Добавлен импорт
+import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';
+import 'package:crm_task_manager/bloc/lead_list/lead_list_event.dart';
+import 'package:crm_task_manager/bloc/lead_list/lead_list_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/models/cash_register_list_model.dart';
 import 'package:crm_task_manager/page_2/money/widgets/cash_register_radio_group.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
+// Импортируем переиспользуемый виджет (замените путь на правильный)
 import '../operation_type.dart';
 
 class AddMoneyOutcomeFromClient extends StatefulWidget {
@@ -26,9 +28,9 @@ class _AddMoneyOutcomeFromClientState extends State<AddMoneyOutcomeFromClient> {
   final TextEditingController _dateController = TextEditingController();
   final TextEditingController _commentController = TextEditingController();
   final TextEditingController _amountController = TextEditingController();
-  String? selectedLead;
+  
+  LeadData? _selectedLead;
   CashRegisterData? selectedCashRegister;
-
   bool _isLoading = false;
 
   @override
@@ -36,18 +38,30 @@ class _AddMoneyOutcomeFromClientState extends State<AddMoneyOutcomeFromClient> {
     super.initState();
     _dateController.text = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
     
-    // Инициализация BLoC для загрузки лидов - ИСПРАВЛЕНИЕ
-    try {
-      context.read<GetAllLeadBloc>().add(GetAllLeadEv());
-    } catch (e) {
-      print('Error initializing GetAllLeadBloc: $e');
+    // Предзагружаем данные если их еще нет
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _preloadDataIfNeeded();
+    });
+  }
+
+  void _preloadDataIfNeeded() {
+    final leadBloc = context.read<GetAllLeadBloc>();
+    final leadState = leadBloc.state;
+    
+    // Проверяем кэш в блоке
+    final cachedLeads = leadBloc.getCachedLeads();
+    
+    if (cachedLeads == null && leadState is! GetAllLeadLoading) {
+      if (mounted) {
+        context.read<GetAllLeadBloc>().add(GetAllLeadEv());
+      }
     }
   }
 
   void _createDocument() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (selectedLead == null) {
+    if (_selectedLead == null) {
       _showSnackBar(
         AppLocalizations.of(context)!.translate('select_lead') ?? 'Пожалуйста, выберите сделку',
         false,
@@ -85,14 +99,18 @@ class _AddMoneyOutcomeFromClientState extends State<AddMoneyOutcomeFromClient> {
       bloc.add(CreateMoneyOutcome(
         date: isoDate,
         amount: double.parse(_amountController.text.trim()),
-        leadId: int.parse(selectedLead!),
+        leadId: _selectedLead!.id!,
         comment: _commentController.text.trim(),
         operationType: OperationType.client_return.name,
         cashRegisterId: selectedCashRegister?.id,
       ));
     } catch (e) {
       setState(() => _isLoading = false);
-      _showSnackBar(AppLocalizations.of(context)!.translate('error_creating_document').replaceAll('{error}', e.toString()) ?? 'Ошибка создания документа: $e', false);
+      _showSnackBar(
+        AppLocalizations.of(context)!.translate('error_creating_document')?.replaceAll('{error}', e.toString()) ?? 
+        'Ошибка создания документа: $e', 
+        false
+      );
     }
   }
 
@@ -128,141 +146,86 @@ class _AddMoneyOutcomeFromClientState extends State<AddMoneyOutcomeFromClient> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: _buildAppBar(localizations),
-      body: MultiBlocProvider(
-        // Добавлен MultiBlocProvider - ИСПРАВЛЕНИЕ
-        providers: [
-          BlocProvider(create: (_) => GetAllLeadBloc()),
-        ],
-        child: MultiBlocListener(
-          // Заменен BlocListener на MultiBlocListener - ИСПРАВЛЕНИЕ
-          listeners: [
-            BlocListener<MoneyOutcomeBloc, MoneyOutcomeState>(
-              listener: (context, state) {
-                setState(() => _isLoading = false);
+      body: MultiBlocListener(
+        listeners: [
+          BlocListener<MoneyOutcomeBloc, MoneyOutcomeState>(
+            listener: (context, state) {
+              setState(() => _isLoading = false);
 
-                if (state is MoneyOutcomeCreateSuccess && mounted) {
-                  Navigator.pop(context, true);
-                } else if (state is MoneyOutcomeCreateError && mounted) {
-                  _showSnackBar(state.message, false);
-                }
-              },
-            ),
-            // Добавлен слушатель для GetAllLeadBloc - ИСПРАВЛЕНИЕ
-            BlocListener<GetAllLeadBloc, GetAllLeadState>(
-              listener: (context, state) {
-                if (state is GetAllLeadError && mounted) {
-                  print('Lead loading error: ${state.toString()}');
-                  _showSnackBar(AppLocalizations.of(context)!.translate('error_loading_leads') ?? 'Ошибка загрузки лидов', false);
-                }
-              },
-            ),
-          ],
-          child: Form(
-            key: _formKey,
-            child: Column(
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 8),
-                        // Обернул в try-catch для безопасности - ИСПРАВЛЕНИЕ
-                        _buildLeadSelection(),
-                        const SizedBox(height: 16),
-                        _buildDateField(localizations),
-                        const SizedBox(height: 16),
-                        CashRegisterGroupWidget(
-                          selectedCashRegisterId: selectedCashRegister?.id.toString(),
-                          onSelectCashRegister: (CashRegisterData selectedRegionData) {
-                            try {
-                              setState(() {
-                                selectedCashRegister = selectedRegionData;
-                              });
-                            } catch (e) {
-                              print('Error selecting cash register: $e');
-                              _showSnackBar(AppLocalizations.of(context)!.translate('error_selecting_cash_register') ?? 'Ошибка выбора кассы', false);
-                            }
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        _buildAmountField(localizations),
-                        const SizedBox(height: 16),
-                        _buildCommentField(localizations),
-                        const SizedBox(height: 16),
-                      ],
-                    ),
+              if (state is MoneyOutcomeCreateSuccess && mounted) {
+                Navigator.pop(context, true);
+              } else if (state is MoneyOutcomeCreateError && mounted) {
+                _showSnackBar(state.message, false);
+              }
+            },
+          ),
+          BlocListener<GetAllLeadBloc, GetAllLeadState>(
+            listener: (context, state) {
+              if (state is GetAllLeadError && mounted) {
+                debugPrint('Lead loading error: ${state.toString()}');
+                _showSnackBar(
+                  AppLocalizations.of(context)!.translate('error_loading_leads') ?? 'Ошибка загрузки лидов', 
+                  false
+                );
+              }
+            },
+          ),
+        ],
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 8),
+                      // Используем переиспользуемый виджет LeadRadioGroupWidget
+                      LeadRadioGroupWidget(
+                        selectedLead: _selectedLead?.id.toString(),
+                        onSelectLead: (LeadData selectedLeadData) {
+                          if (mounted) {
+                            setState(() {
+                              _selectedLead = selectedLeadData;
+                            });
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      _buildDateField(localizations),
+                      const SizedBox(height: 16),
+                      CashRegisterGroupWidget(
+                        selectedCashRegisterId: selectedCashRegister?.id.toString(),
+                        onSelectCashRegister: (CashRegisterData selectedRegionData) {
+                          try {
+                            setState(() {
+                              selectedCashRegister = selectedRegionData;
+                            });
+                          } catch (e) {
+                            debugPrint('Error selecting cash register: $e');
+                            _showSnackBar(
+                              AppLocalizations.of(context)!.translate('error_selecting_cash_register') ?? 'Ошибка выбора кассы',
+                              false
+                            );
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      _buildAmountField(localizations),
+                      const SizedBox(height: 16),
+                      _buildCommentField(localizations),
+                      const SizedBox(height: 16),
+                    ],
                   ),
                 ),
-                _buildActionButtons(localizations),
-              ],
-            ),
+              ),
+              _buildActionButtons(localizations),
+            ],
           ),
         ),
       ),
-    );
-  }
-
-  // Новый метод для безопасного построения выбора лидов - ИСПРАВЛЕНИЕ
-  Widget _buildLeadSelection() {
-    return BlocBuilder<GetAllLeadBloc, GetAllLeadState>(
-      builder: (context, state) {
-        // if (state is GetAllLeadLoading) {
-        //   return Container(
-        //     padding: const EdgeInsets.all(16),
-        //     child: const Center(
-        //       child: CircularProgressIndicator(
-        //         color: Color(0xff1E2E52),
-        //       ),
-        //     ),
-        //   );
-        // }
-        //
-        // if (state is GetAllLeadError) {
-        //   return Container(
-        //     padding: const EdgeInsets.all(16),
-        //     child: Column(
-        //       children: [
-        //         Text(
-        //           AppLocalizations.of(context)!.translate('error_loading_leads') ?? 'Ошибка загрузки лидов',
-        //           style: const TextStyle(
-        //             color: Colors.red,
-        //             fontFamily: 'Gilroy',
-        //             fontSize: 14,
-        //           ),
-        //         ),
-        //         const SizedBox(height: 8),
-        //         ElevatedButton(
-        //           onPressed: () {
-        //             context.read<GetAllLeadBloc>().add(GetAllLeadEv());
-        //           },
-        //           child: Text(AppLocalizations.of(context)!.translate('retry') ?? 'Повторить'),
-        //         ),
-        //       ],
-        //     ),
-        //   );
-        // }
-
-        return LeadRadioGroupWidget(
-          selectedLead: selectedLead,
-          onSelectLead: (LeadData selectedRegionData) {
-            // try {
-            //   print('Selected lead data: ${selectedRegionData.toString()}'); // Для отладки
-            //   if (selectedRegionData.id != null) {
-                setState(() {
-                  selectedLead = selectedRegionData.id.toString();
-                });
-             // } else {
-             //    throw Exception('Lead ID is null');
-             //  }
-            // } catch (e) {
-            //   print('Error selecting lead: $e');
-            //   _showSnackBar(AppLocalizations.of(context)!.translate('error_selecting_lead')?.replaceAll('{error}', e.toString()) ?? 'Ошибка выбора лида: $e', false);
-            // }
-          },
-        );
-      },
     );
   }
 
@@ -315,6 +278,9 @@ class _AddMoneyOutcomeFromClientState extends State<AddMoneyOutcomeFromClient> {
 
   Widget _buildAmountField(AppLocalizations localizations) {
     return CustomTextField(
+      inputFormatters: [
+        MoneyInputFormatter(),
+      ],
       controller: _amountController,
       label: AppLocalizations.of(context)!.translate('amount') ?? 'Сумма',
       hintText: AppLocalizations.of(context)!.translate('enter_amount') ?? 'Введите сумму',

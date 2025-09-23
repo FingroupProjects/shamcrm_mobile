@@ -39,7 +39,7 @@ import 'package:crm_task_manager/models/history_model_my-task.dart';
 import 'package:crm_task_manager/models/integration_model.dart';
 import 'package:crm_task_manager/models/lead_deal_model.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
-import 'package:crm_task_manager/models/lead_multi_model.dart';
+import 'package:crm_task_manager/models/lead_multi_model.dart' hide LeadData;
 import 'package:crm_task_manager/models/lead_navigate_to_chat.dart'
     hide Integration;
 import 'package:crm_task_manager/models/main_field_model.dart';
@@ -2091,32 +2091,84 @@ class ApiService {
   }
 
 //Метод для получения лида
-  Future<LeadsDataResponse> getAllLead() async {
-    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/lead');
-    if (kDebugMode) {
-      //print('ApiService: getAllLead - Generated path: $path');
-    }
-
-    final response = await _getRequest(path);
-
-    late LeadsDataResponse dataLead;
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['result'] != null) {
-        dataLead = LeadsDataResponse.fromJson(data);
-      } else {
-        throw Exception('Результат отсутствует в ответе');
+Future<LeadsDataResponse> getAllLeadWithAllPages() async {
+  List<LeadData> allLeads = [];
+  int currentPage = 1;
+  bool hasMorePages = true;
+  
+  while (hasMorePages) {
+    try {
+      // Добавляем параметр page к запросу
+      final path = await _appendQueryParams('/lead?page=$currentPage');
+      
+      if (kDebugMode) {
+        print('ApiService: getAllLeadWithAllPages - Loading page $currentPage, path: $path');
       }
-    } else {
-      throw Exception('Ошибка при получении данных!');
+      
+      final response = await _getRequest(path);
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        
+        if (data['result'] != null) {
+          final pageResponse = LeadsDataResponse.fromJson(data);
+          
+          if (pageResponse.result != null && pageResponse.result!.isNotEmpty) {
+            allLeads.addAll(pageResponse.result!);
+            
+            // Проверяем, есть ли еще страницы
+            // Предполагаем, что если количество элементов меньше размера страницы, то это последняя страница
+            if (pageResponse.result!.length < 20) {
+              hasMorePages = false;
+            } else {
+              currentPage++;
+            }
+            
+            if (kDebugMode) {
+              print('ApiService: Loaded page $currentPage, items: ${pageResponse.result!.length}, total collected: ${allLeads.length}');
+            }
+          } else {
+            hasMorePages = false;
+          }
+        } else {
+          hasMorePages = false;
+        }
+      } else {
+        throw Exception('Ошибка при получении данных со страницы $currentPage!');
+      }
+      
+      // Небольшая задержка между запросами, чтобы не перегружать сервер
+      if (hasMorePages) {
+        await Future.delayed(const Duration(milliseconds: 100));
+      }
+      
+    } catch (e) {
+      if (kDebugMode) {
+        print('ApiService: Error loading page $currentPage: $e');
+      }
+      // Если ошибка на первой странице - пробрасываем её
+      if (currentPage == 1) {
+        rethrow;
+      }
+      // Если ошибка на последующих страницах - просто прекращаем загрузку
+      hasMorePages = false;
     }
-
-    if (kDebugMode) {}
-
-    return dataLead;
   }
+  
+  if (kDebugMode) {
+    print('ApiService: Total leads loaded: ${allLeads.length}');
+  }
+  
+  return LeadsDataResponse(
+    result: allLeads,
+    errors: null,
+  );
+}
+
+// Обновляем существующий метод, чтобы использовать новую логику
+Future<LeadsDataResponse> getAllLead() async {
+  return await getAllLeadWithAllPages();
+}
 
 // Метод для Удаления Статуса Лида
   Future<Map<String, dynamic>> deleteLeadStatuses(int leadStatusId) async {
