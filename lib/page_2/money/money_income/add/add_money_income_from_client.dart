@@ -15,7 +15,6 @@ import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-// Импортируем наш переиспользуемый виджет
 import '../operation_type.dart';
 
 class AddMoneyIncomeFromClient extends StatefulWidget {
@@ -116,143 +115,6 @@ class _AddMoneyIncomeFromClientState extends State<AddMoneyIncomeFromClient> {
     }
   }
 
-
-  Widget _buildLeadWidget() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          AppLocalizations.of(context)!.translate('lead') ?? 'Сделка',
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
-          ),
-        ),
-        const SizedBox(height: 4),
-        BlocConsumer<GetAllLeadBloc, GetAllLeadState>(
-          listener: (context, state) {
-            if (state is GetAllLeadSuccess) {
-              setState(() {
-                leadsList = state.dataLead.result ?? [];
-              });
-            }
-          },
-          builder: (context, state) {
-            if (state is GetAllLeadInitial || (state is GetAllLeadSuccess && leadsList.isEmpty)) {
-              context.read<GetAllLeadBloc>().add(GetAllLeadEv());
-              return const DropdownLoadingState();
-            }
-
-            if (state is GetAllLeadLoading) {
-              return const DropdownLoadingState();
-            }
-
-            if (state is GetAllLeadError) {
-              return Container(
-                height: 50,
-                alignment: Alignment.center,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(AppLocalizations.of(context)!.translate('error_loading_leads') ?? 'Ошибка загрузки лидов',
-                        style: const TextStyle(color: Colors.red, fontSize: 12)),
-                    TextButton(
-                      onPressed: () {
-                        context.read<GetAllLeadBloc>().add(GetAllLeadEv());
-                      },
-                      child: Text(AppLocalizations.of(context)!.translate('retry') ?? 'Повторить',
-                          style: const TextStyle(fontSize: 12)),
-                    ),
-                  ],
-                ),
-              );
-            }
-
-            // Если список пуст даже после успешной загрузки, показываем placeholder
-            if (state is GetAllLeadSuccess && leadsList.isEmpty) {
-              return Container(
-                height: 50,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: const Color(0xffF4F7FD),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  AppLocalizations.of(context)!.translate('select_lead') ?? 'Выберите сделку',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
-                  ),
-                ),
-              );
-            }
-
-            return CustomDropdown<LeadData>.search(
-              items: leadsList,
-              searchHintText: AppLocalizations.of(context)!.translate('search') ?? 'Поиск',
-              overlayHeight: 300,
-              enabled: true,
-              decoration: CustomDropdownDecoration(
-                closedFillColor: const Color(0xffF4F7FD),
-                expandedFillColor: Colors.white,
-                closedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
-                closedBorderRadius: BorderRadius.circular(12),
-                expandedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
-                expandedBorderRadius: BorderRadius.circular(12),
-              ),
-              listItemBuilder: (context, item, isSelected, onItemSelect) {
-                return Text(
-                  item.name ?? item.id?.toString() ?? 'Unknown Lead',
-                  style: const TextStyle(
-                    color: Color(0xff1E2E52),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                  ),
-                );
-              },
-              headerBuilder: (context, selectedItem, enabled) {
-                return Text(
-                  selectedItem.name,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
-                  ),
-                );
-              },
-              hintBuilder: (context, hint, enabled) => Text(
-                AppLocalizations.of(context)!.translate('select_lead') ?? 'Выберите сделку',
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
-                ),
-              ),
-              initialItem: _selectedLead != null && leadsList.any((l) => l.id == _selectedLead!.id)
-                  ? leadsList.firstWhere((l) => l.id == _selectedLead!.id)
-                  : null,
-              onChanged: (value) {
-                if (value != null && mounted) {
-                  setState(() {
-                    _selectedLead = value;
-                  });
-                  FocusScope.of(context).unfocus();
-                }
-              },
-            );
-          },
-        ),
-      ],
-    );
-  }
-
   void _showSnackBar(String message, bool isSuccess) {
     if (!mounted) return;
 
@@ -291,7 +153,6 @@ class _AddMoneyIncomeFromClientState extends State<AddMoneyIncomeFromClient> {
             listener: (context, state) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (!mounted) return;
-
 
                 if (state is MoneyIncomeCreateSuccess) {
                   setState(() => _isLoading = false);
@@ -447,19 +308,17 @@ class _AddMoneyIncomeFromClientState extends State<AddMoneyIncomeFromClient> {
         });
   }
 
-
-
-  // Новый метод для сохранения и проведения
+  // Метод для сохранения и проведения
   void _createAndApproveDocument() {
     _createDocument(approve: true);
   }
 
-  // Обновленный метод для обычного сохранения
+  // Метод для обычного сохранения
   void _saveDocument() {
     _createDocument(approve: false);
   }
 
-  // Обновленный виджет кнопок действий (+ "Сохранить и провести")
+  // Виджет кнопок действий с "Сохранить и провести"
   Widget _buildActionButtons(AppLocalizations localizations) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -476,6 +335,7 @@ class _AddMoneyIncomeFromClientState extends State<AddMoneyIncomeFromClient> {
       ),
       child: Column(
         children: [
+          // Кнопка "Сохранить и провести"
           Container(
             width: double.infinity,
             height: 48,
@@ -514,7 +374,8 @@ class _AddMoneyIncomeFromClientState extends State<AddMoneyIncomeFromClient> {
               ),
             ),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
+          // Ряд кнопок "Отмена" и "Сохранить"
           Row(
             children: [
               Expanded(
