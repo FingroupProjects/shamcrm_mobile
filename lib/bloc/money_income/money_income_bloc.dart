@@ -166,7 +166,7 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
   }
 
   Future<void> _onCreateMoneyIncome(CreateMoneyIncome event, Emitter<MoneyIncomeState> emit) async {
-    emit(MoneyIncomeCreateLoading());
+    emit(MoneyIncomeLoading());
     try {
       await apiService.createMoneyIncomeDocument(
         date: event.date,
@@ -188,7 +188,7 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
   }
 
   Future<void> _onUpdateMoneyIncome(UpdateMoneyIncome event, Emitter<MoneyIncomeState> emit) async {
-    emit(MoneyIncomeUpdateLoading());
+    emit(MoneyIncomeLoading());
     try {
       await apiService.updateMoneyIncomeDocument(
         documentId: event.id!,
@@ -210,8 +210,7 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
   }
 
   Future<void> _onDeleteMoneyIncome(DeleteMoneyIncome event, Emitter<MoneyIncomeState> emit) async {
-    emit(MoneyIncomeDeleteLoading());
-    await Future.delayed(const Duration(seconds: 5));
+    emit(MoneyIncomeLoading());
     try {
       final result = await apiService.deleteMoneyIncomeDocument(event.documentId);
       if (result) {
@@ -226,7 +225,7 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
   }
 
   Future<void> _onRestoreMoneyIncome(RestoreMoneyIncome event, Emitter<MoneyIncomeState> emit) async {
-    emit(MoneyIncomeRestoreLoading());
+    emit(MoneyIncomeLoading());
     try {
       final result = await apiService.restoreMoneyIncomeDocument(event.documentId);
       if (result['result'] == 'Success') {
@@ -240,15 +239,11 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
   }
 
   Future<void> _onRemoveLocalFromList(RemoveLocalFromList event, Emitter<MoneyIncomeState> emit) async {
-    // Проверяем процент оставшихся
-    // Если удалено >= 30%, сразу подгружаем новые данные с сервера (форсированно) иначе просто удаляем из локального списка
-
-    final deletedPercent = 1 - (_allData.length / (_perPage));
-    if (deletedPercent >= 0.3) {
-      debugPrint('Force refresh due to high deletion percentage: $deletedPercent');
+    emit(MoneyIncomeLoading());
+    final double remainingPercentage = _allData.length / _perPage;
+    if (remainingPercentage < 0.3) {
       add(FetchMoneyIncome(forceRefresh: true));
     } else {
-      debugPrint('Local removal, deletion percentage: $deletedPercent');
       _allData.removeWhere((doc) => doc.id == event.documentId);
       emit(MoneyIncomeLoaded(
         data: List.from(_allData),

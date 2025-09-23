@@ -40,7 +40,6 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
   late MoneyIncomeBloc _moneyIncomeBloc;
 
   bool _selectionMode = false;
-  bool _isInitialLoad = true;
   bool _isLoadingMore = false;
   bool _hasReachedMax = false;
 
@@ -63,7 +62,6 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
   void _onFilterSelected(Map<String, dynamic> filters) {
     setState(() {
       _currentFilters = Map.from(filters);
-      _isInitialLoad = true;
       _hasReachedMax = false;
       _isLoadingMore = false;
     });
@@ -81,7 +79,6 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
   void _onResetFilters() {
     setState(() {
       _currentFilters.clear();
-      _isInitialLoad = true;
       _hasReachedMax = false;
       _isLoadingMore = false;
       _searchController.clear();
@@ -122,7 +119,6 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
 
   Future<void> _onRefresh() async {
     setState(() {
-      _isInitialLoad = true;
       _hasReachedMax = false;
     });
     _moneyIncomeBloc.add(const FetchMoneyIncome(forceRefresh: true));
@@ -212,8 +208,8 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                     builder: (context, state) {
                       if (state is MoneyIncomeLoaded) {
 
-                        bool showApprove = state.selectedData!.any((doc) => doc.approved == false);
-                        bool showDisapprove = state.selectedData!.any((doc) => doc.approved == true);
+                        bool showApprove = state.selectedData!.any((doc) => doc.approved == false && doc.deletedAt == null);
+                        bool showDisapprove = state.selectedData!.any((doc) => doc.approved == true && doc.deletedAt == null);
                         bool showDelete = state.selectedData!.any((doc) => doc.deletedAt == null);
                         bool showRestore = state.selectedData!.any((doc) => doc.deletedAt != null);
 
@@ -303,12 +299,10 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
               if (state is MoneyIncomeLoaded) {
                 setState(() {
                   _hasReachedMax = state.hasReachedMax;
-                  _isInitialLoad = false;
                   _isLoadingMore = false;
                 });
               } else if (state is MoneyIncomeError) {
                 setState(() {
-                  _isInitialLoad = false;
                   _isLoadingMore = false;
                 });
                 showCustomSnackBar(context: context, message: state.message, isSuccess: false);
@@ -354,7 +348,9 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
             },
             child: BlocBuilder<MoneyIncomeBloc, MoneyIncomeState>(
               builder: (context, state) {
-                if (state is MoneyIncomeLoading || _isInitialLoad) {
+                if (
+                state is MoneyIncomeLoading
+                ) {
                   return Center(
                     child: PlayStoreImageLoading(
                       size: 80.0,
