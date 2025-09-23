@@ -74,24 +74,28 @@ Future<void> _onRestoreIncoming(RestoreIncoming event, Emitter<IncomingState> em
   }
 
   Future<void> _onCreateIncoming(CreateIncoming event, Emitter<IncomingState> emit) async {
-    emit(IncomingCreateLoading());
-    try {
-      await apiService.createIncomingDocument(
-        date: event.date,
-        storageId: event.storageId,
-        comment: event.comment,
-        counterpartyId: event.counterpartyId,
-        documentGoods: event.documentGoods,
-        organizationId: event.organizationId,
-        salesFunnelId: event.salesFunnelId,
-      );
-
-      await Future.delayed(const Duration(milliseconds: 100));
-      emit(IncomingCreateSuccess('Документ успешно создан'));
-    } catch (e) {
-      emit(IncomingCreateError(e.toString()));
-    }
+  emit(IncomingCreateLoading());
+  try {
+    await apiService.createIncomingDocument(
+      date: event.date,
+      storageId: event.storageId,
+      comment: event.comment,
+      counterpartyId: event.counterpartyId,
+      documentGoods: event.documentGoods,
+      organizationId: event.organizationId,
+      salesFunnelId: event.salesFunnelId,
+      approve: event.approve, // Передаем новый параметр
+    );
+    await Future.delayed(const Duration(milliseconds: 100));
+    emit(IncomingCreateSuccess(
+      event.approve 
+        ? 'Документ успешно создан и проведен' 
+        : 'Документ успешно создан'
+    ));
+  } catch (e) {
+    emit(IncomingCreateError(e.toString()));
   }
+}
   Future<void> _onUpdateIncoming(UpdateIncoming event, Emitter<IncomingState> emit) async {
     emit(IncomingUpdateLoading());
     try {

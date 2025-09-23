@@ -31,6 +31,7 @@ class CreateIncoming extends IncomingEvent {
   final List<Map<String, dynamic>> documentGoods;
   final int organizationId;
   final int salesFunnelId;
+  final bool approve; // Новый параметр
 
   CreateIncoming({
     required this.date,
@@ -40,18 +41,20 @@ class CreateIncoming extends IncomingEvent {
     required this.documentGoods,
     required this.organizationId,
     required this.salesFunnelId,
+    this.approve = false, // По умолчанию false
   });
 
   @override
   List<Object> get props => [
-        date,
-        storageId,
-        comment,
-        counterpartyId,
-        documentGoods,
-        organizationId,
-        salesFunnelId,
-      ];
+    date,
+    storageId,
+    comment,
+    counterpartyId,
+    documentGoods,
+    organizationId,
+    salesFunnelId,
+    approve, // Добавляем в props
+  ];
 }
 
 class UpdateIncoming extends IncomingEvent {
