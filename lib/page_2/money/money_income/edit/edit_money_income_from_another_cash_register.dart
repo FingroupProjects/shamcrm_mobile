@@ -203,11 +203,11 @@ class _EditMoneyIncomeAnotherCashRegisterState extends State<EditMoneyIncomeAnot
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (!mounted) return;
 
-                setState(() => _isLoading = false);
-
                 if (state is MoneyIncomeUpdateSuccess) {
+                  setState(() => _isLoading = false);
                   Navigator.pop(context, true);
                 } else if (state is MoneyIncomeUpdateError) {
+                  setState(() => _isLoading = false);
                   _showSnackBar(state.message, false);
                 }
                 if (state is MoneyIncomeToggleOneApproveSuccess) {
