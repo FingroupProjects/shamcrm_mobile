@@ -6,6 +6,7 @@ import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/models/cash_register_list_model.dart';
 import 'package:crm_task_manager/models/money/money_outcome_document_model.dart';
+import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/page_2/money/widgets/cash_register_radio_group.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/styled_action_button.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
@@ -14,7 +15,6 @@ import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:crm_task_manager/models/lead_list_model.dart';
 // Импортируем переиспользуемый виджет (замените путь на правильный)
 import '../operation_type.dart';
 
@@ -35,7 +35,7 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
   final TextEditingController _dateController = TextEditingController();
   final TextEditingController _commentController = TextEditingController();
   final TextEditingController _amountController = TextEditingController();
-  
+
   LeadData? _selectedLead;
   CashRegisterData? selectedCashRegister;
   bool _isLoading = false;
@@ -45,7 +45,7 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
   void initState() {
     super.initState();
     _initializeFields();
-    
+
     // Предзагружаем данные если их еще нет
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _preloadDataIfNeeded();
@@ -55,10 +55,10 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
   void _preloadDataIfNeeded() {
     final leadBloc = context.read<GetAllLeadBloc>();
     final leadState = leadBloc.state;
-    
+
     // Проверяем кэш в блоке
     final cachedLeads = leadBloc.getCachedLeads();
-    
+
     if (cachedLeads == null && leadState is! GetAllLeadLoading) {
       if (mounted) {
         context.read<GetAllLeadBloc>().add(GetAllLeadEv());
@@ -91,20 +91,20 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
       _commentController.text = widget.document.comment!;
     }
 
+    // Initialize selected lead with proper object structure
+    if (widget.document.model?.id != null) {
+      _selectedLead = LeadData(
+        id: widget.document.model!.id!,
+        name: widget.document.model!.name ?? widget.document.model!.id.toString(),
+        managerId: null,
+      );
+    }
+
     // Initialize selected cash register
     if (widget.document.cashRegister != null) {
       selectedCashRegister = CashRegisterData(
         id: widget.document.cashRegister!.id!,
         name: widget.document.cashRegister!.name!,
-      );
-    }
-
-    // Initialize selected lead - создаем LeadData объект из документа
-    if (widget.document.model?.id != null) {
-      _selectedLead = LeadData(
-        id: widget.document.model!.id!,
-        name: widget.document.model!.name ?? 'Без названия',
-        managerId: null, // Если есть информация о менеджере в модели документа, добавьте ее
       );
     }
   }
@@ -149,7 +149,17 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
       return;
     }
 
-    try {
+    final bloc = context.read<MoneyOutcomeBloc>();
+
+    final dataChanged = !_areDatesEqual(widget.document.date ?? '', isoDate) ||
+        widget.document.amount != _amountController.text.trim() ||
+        (widget.document.comment ?? '') != _commentController.text.trim() ||
+        widget.document.model?.id.toString() != _selectedLead!.id.toString() ||
+        widget.document.cashRegister?.id != selectedCashRegister?.id;
+
+    final approvalChanged = widget.document.approved != _isApproved;
+
+    if (dataChanged) {
       final bloc = context.read<MoneyOutcomeBloc>();
       bloc.add(UpdateMoneyOutcome(
         id: widget.document.id,
@@ -159,18 +169,18 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
         leadId: _selectedLead!.id,
         comment: _commentController.text.trim(),
         cashRegisterId: selectedCashRegister?.id,
-        approved: _isApproved,
       ));
-    } catch (e) {
+    }
+
+    if (approvalChanged) {
+      bloc.add(ToggleApproveOneMoneyOutcomeDocument(widget.document.id!, _isApproved));
+    }
+
+    if (!dataChanged && !approvalChanged) {
       if (mounted) {
         setState(() => _isLoading = false);
       }
-      final localizations = AppLocalizations.of(context)!;
-      _showSnackBar(
-        localizations.translate('error_updating_document')?.replaceAll('{error}', e.toString()) ?? 
-        'Ошибка обновления документа: $e', 
-        false
-      );
+      Navigator.pop(context);
     }
   }
 
@@ -220,11 +230,16 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (!mounted) return;
 
-                setState(() => _isLoading = false);
-
                 if (state is MoneyOutcomeUpdateSuccess) {
+                  setState(() => _isLoading = false);
                   Navigator.pop(context, true);
                 } else if (state is MoneyOutcomeUpdateError) {
+                  setState(() => _isLoading = false);
+                  _showSnackBar(state.message, false);
+                }
+                if (state is MoneyOutcomeToggleOneApproveSuccess) {
+                  Navigator.pop(context, true);
+                } else if (state is MoneyOutcomeToggleOneApproveError) {
                   _showSnackBar(state.message, false);
                 }
               });
@@ -234,7 +249,10 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
             listener: (context, state) {
               if (state is GetAllLeadError && mounted) {
                 debugPrint('Lead loading error: ${state.toString()}');
-                _showSnackBar('Ошибка загрузки лидов', false);
+                _showSnackBar(
+                    AppLocalizations.of(context)!.translate('error_loading_leads') ?? 'Ошибка загрузки лидов',
+                    false
+                );
               }
             },
           ),
@@ -275,7 +293,10 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
                             });
                           } catch (e) {
                             debugPrint('Error selecting cash register: $e');
-                            _showSnackBar('Ошибка выбора кассы', false);
+                            _showSnackBar(
+                                AppLocalizations.of(context)!.translate('error_selecting_cash_register') ?? 'Ошибка выбора кассы',
+                                false
+                            );
                           }
                         },
                       ),
@@ -306,7 +327,7 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
-        AppLocalizations.of(context)!.translate('edit_outgoing_document') ?? 'Редактировать расход',
+        AppLocalizations.of(context)!.translate('edit_outcoming_document') ?? 'Редактировать доход',
         style: const TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
@@ -321,7 +342,7 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
   Widget _buildDateField(AppLocalizations localizations) {
     return CustomTextFieldDate(
       controller: _dateController,
-      label: localizations.translate('date') ?? 'Дата',
+      label: AppLocalizations.of(context)!.translate('date') ?? 'Дата',
       withTime: true,
       onDateSelected: (date) {
         if (mounted) {
@@ -336,8 +357,8 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
   Widget _buildCommentField(AppLocalizations localizations) {
     return CustomTextField(
       controller: _commentController,
-      label: localizations.translate('comment') ?? 'Комментарий',
-      hintText: localizations.translate('enter_comment') ?? 'Введите комментарий',
+      label: AppLocalizations.of(context)!.translate('comment') ?? 'Комментарий',
+      hintText: AppLocalizations.of(context)!.translate('enter_comment') ?? 'Введите комментарий',
       maxLines: 3,
       keyboardType: TextInputType.multiline,
     );
@@ -345,38 +366,38 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
 
   Widget _buildAmountField(AppLocalizations localizations) {
     return CustomTextField(
-      inputFormatters: [
-        MoneyInputFormatter(),
-      ],
-      controller: _amountController,
-      label: localizations.translate('amount') ?? 'Сумма',
-      hintText: localizations.translate('enter_amount') ?? 'Введите сумму',
-      maxLines: 1,
-      keyboardType: TextInputType.number,
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return localizations.translate('enter_amount') ?? 'Введите сумму';
-        }
-        
-        final doubleValue = double.tryParse(value.trim());
-        if (doubleValue == null) {
-          return localizations.translate('enter_valid_amount') ?? 'Введите корректную сумму';
-        }
-        
-        if (doubleValue <= 0) {
-          return localizations.translate('amount_must_be_greater_than_zero') ?? 'Сумма должна быть больше нуля';
-        }
+        inputFormatters: [
+          MoneyInputFormatter(),
+        ],
+        controller: _amountController,
+        label: AppLocalizations.of(context)!.translate('amount') ?? 'Сумма',
+        hintText: AppLocalizations.of(context)!.translate('enter_amount') ?? 'Введите сумму',
+        maxLines: 1,
+        keyboardType: TextInputType.number,
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return AppLocalizations.of(context)!.translate('enter_amount') ?? 'Введите сумму';
+          }
 
-        return null;
-      }
+          final doubleValue = double.tryParse(value.trim());
+          if (doubleValue == null) {
+            return AppLocalizations.of(context)!.translate('enter_valid_amount') ?? 'Введите корректную сумму';
+          }
+
+          if (doubleValue <= 0) {
+            return AppLocalizations.of(context)!.translate('amount_must_be_greater_than_zero') ?? 'Сумма должна быть больше нуля';
+          }
+
+          return null;
+        }
     );
   }
 
   Widget _buildApproveButton(AppLocalizations localizations) {
     return StyledActionButton(
-      text: !_isApproved 
-        ? localizations.translate('approve_document') ?? 'Провести'
-        : localizations.translate('unapprove_document') ?? 'Отменить проведение',
+      text: !_isApproved
+          ? AppLocalizations.of(context)!.translate('approve_document') ?? 'Провести'
+          : AppLocalizations.of(context)!.translate('unapprove_document') ?? 'Отменить проведение',
       icon: !_isApproved ? Icons.check_circle_outline : Icons.close_outlined,
       color: !_isApproved ? const Color(0xFF4CAF50) : const Color(0xFFFFA500),
       onPressed: () {
@@ -470,5 +491,24 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
     _commentController.dispose();
     _amountController.dispose();
     super.dispose();
+  }
+}
+
+bool _areDatesEqual(String backendDateStr, String frontendDateStr) {
+  try {
+    debugPrint("Comparing dates: backend='$backendDateStr', frontend='$frontendDateStr'");
+
+    final backendDate = DateTime.parse(backendDateStr);
+    final frontendDate = DateTime.parse(frontendDateStr);
+
+    return backendDate.year == frontendDate.year &&
+        backendDate.month == frontendDate.month &&
+        backendDate.day == frontendDate.day &&
+        backendDate.hour == frontendDate.hour &&
+        backendDate.minute == frontendDate.minute &&
+        backendDate.second == frontendDate.second;
+  } catch (e) {
+    debugPrint('Error comparing dates: $e');
+    return false;
   }
 }

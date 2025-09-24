@@ -123,6 +123,7 @@ import '../../models/income_categories_data_response.dart';
 import '../../models/login_model.dart';
 import '../../models/money/money_income_document_model.dart';
 import '../../models/money/money_outcome_document_model.dart';
+import '../../models/outcome_categories_data_response.dart';
 
 // final String baseUrl = 'https://fingroup-back.shamcrm.com/api';
 // final String baseUrl = 'https://ede8-95-142-94-22.ngrok-free.app';
@@ -139,7 +140,18 @@ class ApiService {
     _initializeIfDomainExists();
   }
 
- // Обновленный метод инициализации с проверкой сессии
+
+// Новый метод для получения message из body ответа
+String? _extractErrorMessageFromResponse(http.Response response) {
+  final body = jsonDecode(response.body) as Map<String, dynamic>;
+  final rawMessage = body['message'] ?? body['error'] ?? body['errors'];
+  final message = jsonDecode(jsonEncode(rawMessage));
+
+  return message;
+}
+
+  // Также нужно обновить метод _initializeIfDomainExists
+  // Обновленный метод инициализации с проверкой сессии
   Future<void> _initializeIfDomainExists() async {
     // Сначала проверяем валидность сессии
     if (!await _isSessionValid()) {
@@ -10487,11 +10499,8 @@ Future<IncomingDocument> getIncomingDocumentById(int documentId) async {
   if (response.statusCode == 200 || response.statusCode == 201) {
     return;
   } else {
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-    final rawMessage = body['message'] ?? 'Неизвестная ошибка';
-    final message = jsonDecode(jsonEncode(rawMessage));
-
-    throw message;
+    final message = _extractErrorMessageFromResponse(response);
+    throw message ?? 'Неизвестная ошибка';
   }
 }
 
@@ -10534,11 +10543,8 @@ Future<void> updateIncomingDocument({
   if (response.statusCode == 200 || response.statusCode == 201) {
     return;
   } else {
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-    final rawMessage = body['message'] ?? 'Неизвестная ошибка';
-    final message = jsonDecode(jsonEncode(rawMessage));
-
-    throw message;
+    final message = _extractErrorMessageFromResponse(response);
+    throw message ?? 'Неизвестная ошибка';
   }
 }
 Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
@@ -10681,11 +10687,8 @@ Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
     if (response.statusCode == 200 || response.statusCode == 201) {
       return;
     } else {
-      final body = jsonDecode(response.body) as Map<String, dynamic>;
-      final rawMessage = body['message'] ?? 'Неизвестная ошибка';
-      final message = jsonDecode(jsonEncode(rawMessage));
-
-      throw message;
+      final message = _extractErrorMessageFromResponse(response);
+      throw message ?? 'Неизвестная ошибка';
     }
   }
 
@@ -11804,11 +11807,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     if (response.statusCode == 200 || response.statusCode == 201) {
       return;
     } else {
-      final body = jsonDecode(response.body) as Map<String, dynamic>;
-      final rawMessage = body['message'] ?? 'Неизвестная ошибка';
-      final message = jsonDecode(jsonEncode(rawMessage));
-
-      throw message;
+      final message = _extractErrorMessageFromResponse(response);
+      throw message ?? 'Неизвестная ошибка';
     }
   }
 
@@ -11924,24 +11924,6 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     return cashRegistersData;
   }
 
-  //Метод для получения income categories
-  Future<IncomeCategoriesDataResponse> getAllIncomeCategories() async {
-    final path = await _appendQueryParams('/article?type=income');
-
-    final response = await _getRequest(path);;
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['result'] != null) {
-        return IncomeCategoriesDataResponse.fromJson(data);
-      } else {
-        throw Exception('Результат отсутствует в ответе');
-      }
-    } else {
-      throw Exception('Ошибка при получении данных!');
-    }
-  }
-
   //Метод для получения suppliers
   Future<SuppliersDataResponse> getAllSuppliers() async {
     final path = await _appendQueryParams('/suppliers');
@@ -11964,6 +11946,32 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     return cashRegistersData;
   }
 
+  //______________________________STARTED: MONEY INCOME APIS____________________________//
+
+  //Метод для получения income categories
+  Future<IncomeCategoriesDataResponse> getAllIncomeCategories() async {
+    final path = await _appendQueryParams('/article?type=income');
+
+    try {
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = json.decode(response.body);
+        if (data['result'] != null) {
+          return IncomeCategoriesDataResponse.fromJson(data);
+        } else {
+          final message = _extractErrorMessageFromResponse(response);
+          throw message ?? 'Ошибка при получении данных!';
+        }
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw message ?? 'Ошибка при получении данных!';
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<void> createMoneyIncomeDocument({required String date,
     required num amount,
     required String operationType,
@@ -11976,7 +11984,6 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     int? supplierId,
     required bool approve,
   }) async {
-
     final path = await _appendQueryParams('/checking-account');
 
     try {
@@ -11993,17 +12000,15 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         'supplier_id': supplierId,
         'approved': approve,
       });
-      if (response.statusCode == 200) {
-        final rawData = json.decode(response.body);
-        debugPrint("Полученные данные по приходу: $rawData");
+      if (response.statusCode == 200 || response.statusCode == 201) {
         return;
       } else {
-        throw Exception('Ошибка сервера: ${response.statusCode}');
+        final message = _extractErrorMessageFromResponse(response);
+        throw message ?? 'Ошибка при создании документа прихода!';
       }
     } catch (e) {
-      throw Exception('Ошибка получения данных прихода: $e');
+     rethrow;
     }
-
   }
 
   Future<MoneyIncomeDocumentModel> getMoneyIncomeDocuments({
@@ -12063,69 +12068,69 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
       try {
         final response = await _getRequest(path);
-        if (response.statusCode == 200) {
+        if (response.statusCode == 200 || response.statusCode == 201) {
           final rawData = json.decode(response.body);
           debugPrint("Полученные данные по приходу: $rawData");
           return MoneyIncomeDocumentModel.fromJson(rawData);
         } else {
-          throw Exception('Ошибка сервера: ${response.statusCode}');
+          final message = _extractErrorMessageFromResponse(response);
+          throw message ?? 'Ошибка при получении данных прихода!';
         }
       } catch (e) {
-        throw Exception('Ошибка получения данных прихода: ${e}');
+        rethrow;
       }
     }
 
-
   Future<bool> deleteMoneyIncomeDocument(int documentId) async {
-    final path = '/checking-account/$documentId';
+    final path = await _appendQueryParams('/checking-account/mass-delete');
 
     try {
       final response = await _deleteRequestWithBody(path, {
         'ids': [documentId],
       });
 
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200 || response.statusCode == 201) {
         return true;
       } else {
-        throw Exception('Failed to delete money income document!');
+        final message = _extractErrorMessageFromResponse(response);
+        throw message ?? 'Ошибка при удалении документа прихода!';
       }
     } catch (e) {
-      throw Exception(e.toString());
+      rethrow;
     }
   }
 
-  Future<Map<String, dynamic>> restoreMoneyIncomeDocument(
-      int documentId) async {
-    final token = await getToken();
-    if (token == null) throw Exception('Токен не найден');
-
-    final pathWithParams =
-    await _appendQueryParams('/checking-account/restore');
-    final uri = Uri.parse('$baseUrl$pathWithParams');
-
-    final body = jsonEncode({
-      'ids': [documentId],
-    });
-
-    final response = await http.post(
-      uri,
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Device': 'mobile',
-      },
-      body: body,
-    );
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'result': 'Success'};
-    } else {
-      final jsonResponse = jsonDecode(response.body);
-      throw Exception(
-          jsonResponse['message'] ?? 'Ошибка при восстановлении документа');
-    }
-  }
+  // Future<Map<String, dynamic>> restoreMoneyIncomeDocument(
+  //     int documentId) async {
+  //   final token = await getToken();
+  //   if (token == null) throw Exception('Токен не найден');
+  //
+  //   final pathWithParams = await _appendQueryParams('/checking-account/restore');
+  //   final uri = Uri.parse('$baseUrl$pathWithParams');
+  //
+  //   final body = jsonEncode({
+  //     'ids': [documentId],
+  //   });
+  //
+  //   final response = await http.post(
+  //     uri,
+  //     headers: {
+  //       'Authorization': 'Bearer $token',
+  //       'Accept': 'application/json',
+  //       'Content-Type': 'application/json',
+  //       'Device': 'mobile',
+  //     },
+  //     body: body,
+  //   );
+  //
+  //   if (response.statusCode == 200 || response.statusCode == 201) {
+  //     return {'result': 'Success'};
+  //   } else {
+  //     final jsonResponse = jsonDecode(response.body);
+  //     throw Exception(
+  //         jsonResponse['message'] ?? 'Ошибка при восстановлении документа');
+  //   }
+  // }
 
   Future<void> updateMoneyIncomeDocument({
     required int documentId,
@@ -12155,12 +12160,13 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         'cash_register_id': cashRegisterId,
         'supplier_id': supplierId,
       });
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200 || response.statusCode == 201) {
         final rawData = json.decode(response.body);
         debugPrint("Полученные данные по обновлению прихода: $rawData");
         return;
       } else {
-        throw Exception('Ошибка сервера: ${response.statusCode}');
+        final message = _extractErrorMessageFromResponse(response);
+        throw message ?? 'Ошибка при обновлении документа прихода!';
       }
     } catch (e) {
       debugPrint("Ошибка при обновлении документа прихода: $e");
@@ -12168,7 +12174,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     }
   }
 
-  Future<bool> masApproveMoneyIncomeDocuments(List<int> ids) async {
+  Future<void> masApproveMoneyIncomeDocuments(List<int> ids) async {
     final path = await _appendQueryParams('/checking-account/mass-approve');
 
     try {
@@ -12177,16 +12183,17 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       });
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        return true;
+        return;
       } else {
-        throw Exception('Ошибка при массовом проведении документов прихода');
+       final message = _extractErrorMessageFromResponse(response);
+       throw message ?? 'Ошибка при массовом проведении документов прихода!';
       }
     } catch (e) {
-      throw Exception('Ошибка при массовом проведении документов прихода: $e');
+      rethrow;
     }
   }
 
-  Future<bool> toggleApproveOneMoneyIncomeDocument(int id, bool approve) async {
+  Future<void> toggleApproveOneMoneyIncomeDocument(int id, bool approve) async {
     final path = approve
         ? await _appendQueryParams('/checking-account/mass-approve')
         : await _appendQueryParams('/checking-account/mass-unapprove');
@@ -12196,15 +12203,19 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         'ids': [id],
       });
 
-     final body = json.decode(response.body);
-     return (body['result']['approved_count'] as int) == 1;
+      if (response.statusCode != 200 && response.statusCode != 204 && response.statusCode != 201) {
+       final message = _extractErrorMessageFromResponse(response);
+       throw message ?? 'Ошибка при изменении статуса документа прихода!';
+      }
+
+     return;
 
     } catch (e) {
-      throw Exception('Ошибка при массовом проведении документов прихода: $e');
+      rethrow;
     }
   }
 
-  Future<bool> masDisapproveMoneyIncomeDocuments(List<int> ids) async {
+  Future<void> masDisapproveMoneyIncomeDocuments(List<int> ids) async {
     final path = await _appendQueryParams('/checking-account/mass-unapprove');
 
     try {
@@ -12213,16 +12224,17 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       });
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        return true;
+        return;
       } else {
-        throw Exception('Ошибка при массовой отмене подтверждения документов прихода');
+        final message = _extractErrorMessageFromResponse(response);
+        throw message ?? 'Ошибка при массовом снятии проведения документов прихода!';
       }
     } catch (e) {
-      throw Exception('Ошибка при массовой отмене подтверждения документов прихода: $e');
+      rethrow;
     }
   }
 
-  Future<bool> masDeleteMoneyIncomeDocuments(List<int> ids) async {
+  Future<void> masDeleteMoneyIncomeDocuments(List<int> ids) async {
     final path = await _appendQueryParams('/checking-account/mass-delete');
 
     try {
@@ -12231,34 +12243,56 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       });
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        return true;
+        return;
       } else {
-        throw Exception('Ошибка при массовом удалении документов прихода');
+        final message = _extractErrorMessageFromResponse(response);
+        throw message ?? 'Ошибка при массовом удалении документов прихода!';
       }
     } catch (e) {
-      throw Exception('Ошибка при массовом удалении документов прихода: $e');
+      rethrow;
     }
   }
 
-  Future<bool> masRestoreMoneyIncomeDocuments(List<int> ids) async {
+  Future<void> masRestoreMoneyIncomeDocuments(List<int> ids) async {
     final path = await _appendQueryParams('/checking-account/mass-restore');
 
     try {
-      final response = await _deleteRequestWithBody(path, {
+      final response = await _postRequest(path, {
         'ids': ids,
       });
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        return true;
+        return;
       } else {
-        throw Exception('Ошибка при массовом восстановлении документов прихода');
+        final message = _extractErrorMessageFromResponse(response);
+        throw message ?? 'Ошибка при массовом восстановлении документов прихода!';
       }
     } catch (e) {
-      throw Exception('Ошибка при массовом восстановлении документов прихода: $e');
+      rethrow;
     }
   }
 
-  // ============================= MONEY OUTCOME API METHODS =============================
+  // ============================= END: MONEY INCOME API METHODS ============================= //
+
+  // ============================= STARTED: MONEY OUTCOME API METHODS ============================= //
+
+  //Метод для получения outcome categories
+  Future<OutcomeCategoriesDataResponse> getAllOutcomeCategories() async {
+    final path = await _appendQueryParams('/article?type=expense');
+
+    final response = await _getRequest(path);;
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['result'] != null) {
+        return OutcomeCategoriesDataResponse.fromJson(data);
+      } else {
+        throw Exception('Результат отсутствует в ответе');
+      }
+    } else {
+      throw Exception('Ошибка при получении данных!');
+    }
+  }
 
   Future<void> createMoneyOutcomeDocument({required String date,
     required num amount,
@@ -12266,9 +12300,11 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     required String movementType,
     String? comment,
     int? leadId,
+    int? articleId,
     int? senderCashRegisterId,
     int? cashRegisterId,
     int? supplierId,
+    required bool approve,
   }) async {
 
     final path = await _appendQueryParams('/checking-account');
@@ -12280,20 +12316,22 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         'operation_type': operationType,
         'movement_type': movementType,
         'lead_id': leadId,
+        'article_id': articleId,
         'sender_cash_register_id': senderCashRegisterId,
         'comment': comment,
         'cash_register_id': cashRegisterId,
         'supplier_id': supplierId,
+        'approved': approve,
       });
       if (response.statusCode == 200) {
         final rawData = json.decode(response.body);
-        debugPrint("Полученные данные по расходу: $rawData");
+        debugPrint("Полученные данные по приходу: $rawData");
         return;
       } else {
         throw Exception('Ошибка сервера: ${response.statusCode}');
       }
     } catch (e) {
-      throw Exception('Ошибка получения данных расхода: $e');
+      throw Exception('Ошибка получения данных прихода: $e');
     }
 
   }
@@ -12309,17 +12347,9 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       path += '&search=$search';
     }
 
-    debugPrint("Фильтры для расхода: $filters");
+    debugPrint("Фильтры для прихода: $filters");
 
     if (filters != null) {
-      if (filters.containsKey('author_id') && filters['author_id'] != null) {
-        path += '&author_id=${filters['author_id']}';
-      }
-
-      if (filters.containsKey('status') && filters['status'] != null) {
-        path += '&status=${filters['status']}';
-      }
-
       if (filters.containsKey('date_from') && filters['date_from'] != null) {
         final dateFrom = filters['date_from'] as DateTime;
         path += '&date_from=${dateFrom.toIso8601String()}';
@@ -12333,36 +12363,49 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       if (filters.containsKey('deleted') && filters['deleted'] != null) {
         path += '&deleted=${filters['deleted']}';
       }
-      if (filters.containsKey('storage_id') && filters['storage_id'] != null) {
-        path += '&storage_id=${filters['storage_id']}';
+
+      if (filters.containsKey('lead_id') && filters['lead_id'] != null) {
+        path += '&lead_id=${filters['lead_id']}';
+      }
+
+      if (filters.containsKey('cash_register_id') && filters['cash_register_id'] != null) {
+        path += '&cash_register_id=${filters['cash_register_id']}';
       }
 
       if (filters.containsKey('supplier_id') && filters['supplier_id'] != null) {
         path += '&supplier_id=${filters['supplier_id']}';
       }
-    }
 
-      // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-      path = await _appendQueryParams(path);
-      if (kDebugMode) {
-        print('ApiService: getMoneyOutcomeDocuments - Generated path: $path');
+      if (filters.containsKey('author_id') && filters['author_id'] != null) {
+        path += '&author_id=${filters['author_id']}';
       }
 
-      try {
-        final response = await _getRequest(path);
-        if (response.statusCode == 200) {
-          final rawData = json.decode(response.body);
-          debugPrint("Полученные данные по расходу: $rawData");
-          return MoneyOutcomeDocumentModel.fromJson(rawData);
-        } else {
-          throw Exception('Ошибка сервера: ${response.statusCode}');
-        }
-      } catch (e) {
-        throw Exception('Ошибка получения данных расхода: ${e}');
+      if (filters.containsKey('approved') && filters['approved'] != null) {
+        path += '&approved=${filters['approved']}';
       }
     }
 
-  Future<Map<String, dynamic>> deleteMoneyOutcomeDocument(int documentId) async {
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    path = await _appendQueryParams(path);
+    if (kDebugMode) {
+      print('ApiService: getMoneyOutcomeDocuments - Generated path: $path');
+    }
+
+    try {
+      final response = await _getRequest(path);
+      if (response.statusCode == 200) {
+        final rawData = json.decode(response.body);
+        debugPrint("Полученные данные по приходу: $rawData");
+        return MoneyOutcomeDocumentModel.fromJson(rawData);
+      } else {
+        throw Exception('Ошибка сервера: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Ошибка получения данных прихода: ${e}');
+    }
+  }
+
+  Future<bool> deleteMoneyOutcomeDocument(int documentId) async {
     final path = '/checking-account/$documentId';
 
     try {
@@ -12371,12 +12414,12 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       });
 
       if (response.statusCode == 200) {
-        return {'result': 'Success'};
+        return true;
       } else {
         throw Exception('Failed to delete money outcome document!');
       }
     } catch (e) {
-      throw Exception('Ошибка удаления документа расхода: $e');
+      throw Exception(e.toString());
     }
   }
 
@@ -12413,7 +12456,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     }
   }
 
-Future<void> updateMoneyOutcomeDocument({
+  Future<void> updateMoneyOutcomeDocument({
     required int documentId,
     required String date,
     required num amount,
@@ -12421,10 +12464,10 @@ Future<void> updateMoneyOutcomeDocument({
     required String movementType,
     String? comment,
     int? leadId,
+    int? articleId,
     int? senderCashRegisterId,
     int? cashRegisterId,
     int? supplierId,
-    required bool approved,
   }) async {
     final path = await _appendQueryParams('/checking-account/$documentId');
 
@@ -12435,26 +12478,126 @@ Future<void> updateMoneyOutcomeDocument({
         'operation_type': operationType,
         'movement_type': movementType,
         'lead_id': leadId,
+        'article_id': articleId,
         'sender_cash_register_id': senderCashRegisterId,
         'comment': comment,
         'cash_register_id': cashRegisterId,
         'supplier_id': supplierId,
-        'approved': approved,
       });
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200 || response.statusCode == 201) {
         final rawData = json.decode(response.body);
-        debugPrint("Полученные данные по обновлению расхода: $rawData");
+        debugPrint("Полученные данные по обновлению прихода: $rawData");
         return;
       } else {
-        throw Exception('Ошибка сервера: ${response.statusCode}');
+        final message = _extractErrorMessageFromResponse(response);
+        throw message ?? 'Неизвестная ошибка';
       }
     } catch (e) {
-      debugPrint("Ошибка при обновлении документа расхода: $e");
+      debugPrint("Ошибка при обновлении документа прихода: $e");
       rethrow;
     }
   }
 
-  // ============================= END MONEY OUTCOME API METHODS =============================
+  Future<void> masApproveMoneyOutcomeDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/checking-account/mass-approve');
+
+    try {
+      final response = await _patchRequest(path, {
+        'ids': ids,
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw message ?? 'Неизвестная ошибка';
+      }
+    } catch (e) {
+      throw 'Ошибка при массовом проведении документов прихода: $e';
+    }
+  }
+
+  Future<bool> toggleApproveOneMoneyOutcomeDocument(int id, bool approve) async {
+    final path = approve
+        ? await _appendQueryParams('/checking-account/mass-approve')
+        : await _appendQueryParams('/checking-account/mass-unapprove');
+
+    try {
+      final response = await _patchRequest(path, {
+        'ids': [id],
+      });
+
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        final message = _extractErrorMessageFromResponse(response);
+        throw message ?? 'Неизвестная ошибка';
+      }
+
+      final body = json.decode(response.body);
+      return (body['result']['approved_count'] as int) == 1;
+
+    } catch (e) {
+      throw Exception('Ошибка при изменении статуса документа прихода: $e');
+    }
+  }
+
+  Future<void> masDisapproveMoneyOutcomeDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/checking-account/mass-unapprove');
+
+    try {
+      final response = await _patchRequest(path, {
+        'ids': ids,
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw message ?? 'Неизвестная ошибка';
+      }
+    } catch (e) {
+      throw Exception('Ошибка при массовой отмене подтверждения документов прихода: $e');
+    }
+  }
+
+  Future<void> masDeleteMoneyOutcomeDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/checking-account/mass-delete');
+
+    try {
+      final response = await _deleteRequestWithBody(path, {
+        'ids': ids,
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw message ?? 'Неизвестная ошибка';
+      }
+    } catch (e) {
+      throw Exception('Ошибка при массовом удалении документов прихода: $e');
+    }
+  }
+
+  Future<void> masRestoreMoneyOutcomeDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/checking-account/mass-restore');
+
+    try {
+      final response = await _deleteRequestWithBody(path, {
+        'ids': ids,
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw message ?? 'Неизвестная ошибка';
+      }
+    } catch (e) {
+      throw Exception('Ошибка при массовом восстановлении документов прихода: $e');
+    }
+  }
+
+  // ============================= END MONEY OUTCOME API METHODS ============================= //
 
 //_______________________________end cash register and suppliers____________________________//
 
@@ -12551,11 +12694,8 @@ Future<void> updateMoneyOutcomeDocument({
     if (response.statusCode == 200 || response.statusCode == 201) {
       return;
     } else {
-      final body = jsonDecode(response.body) as Map<String, dynamic>;
-      final rawMessage = body['message'] ?? 'Неизвестная ошибка';
-      final message = jsonDecode(jsonEncode(rawMessage));
-
-      throw message;
+      final message = _extractErrorMessageFromResponse(response);
+      throw message ?? 'Неизвестная ошибка';
     }
   }
 
@@ -12810,11 +12950,8 @@ Future<void> updateMoneyOutcomeDocument({
     if (response.statusCode == 200 || response.statusCode == 201) {
       return;
     } else {
-      final body = jsonDecode(response.body) as Map<String, dynamic>;
-      final rawMessage = body['message'] ?? 'Неизвестная ошибка';
-      final message = jsonDecode(jsonEncode(rawMessage));
-
-      throw message;
+      final message = _extractErrorMessageFromResponse(response);
+      throw message ?? 'Неизвестная ошибка';
     }
   }
 
@@ -13067,11 +13204,8 @@ Future<void> updateMoneyOutcomeDocument({
     if (response.statusCode == 200 || response.statusCode == 201) {
       return;
     } else {
-      final body = jsonDecode(response.body) as Map<String, dynamic>;
-      final rawMessage = body['message'] ?? 'Неизвестная ошибка';
-      final message = jsonDecode(jsonEncode(rawMessage));
-
-      throw message;
+      final message = _extractErrorMessageFromResponse(response);
+      throw message ?? 'Неизвестная ошибка';
     }
   }
 

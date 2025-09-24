@@ -141,6 +141,25 @@ class AppStyles {
   );
 }
 
+
+bool areDatesEqual(String backendDateStr, String frontendDateStr) {
+  try {
+    debugPrint("Comparing dates: backend='$backendDateStr', frontend='$frontendDateStr'");
+
+    final backendDate = DateTime.parse(backendDateStr);
+    final frontendDate = DateTime.parse(frontendDateStr);
+
+    return backendDate.year == frontendDate.year &&
+        backendDate.month == frontendDate.month &&
+        backendDate.day == frontendDate.day &&
+        backendDate.hour == frontendDate.hour &&
+        backendDate.minute == frontendDate.minute;
+  } catch (e) {
+    debugPrint('Error comparing dates: $e');
+    return false;
+  }
+}
+
 class MoneyInputFormatter extends TextInputFormatter {
   final int decimalRange;
 

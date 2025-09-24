@@ -1,4 +1,3 @@
-import 'package:crm_task_manager/bloc/money_outcome/money_outcome_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/models/cash_register_list_model.dart';
@@ -9,6 +8,7 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import '../../../../bloc/money_outcome/money_outcome_bloc.dart';
 import '../operation_type.dart';
 
 class EditMoneyOutcomeAnotherCashRegister extends StatefulWidget {
@@ -37,6 +37,15 @@ class _EditMoneyOutcomeAnotherCashRegisterState extends State<EditMoneyOutcomeAn
   void initState() {
     super.initState();
     _initializeFields();
+
+    // Предзагружаем данные если их еще нет
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _preloadDataIfNeeded();
+    });
+  }
+
+  void _preloadDataIfNeeded() {
+    // Здесь можно добавить предзагрузку данных если нужно
   }
 
   void _initializeFields() {
@@ -115,16 +124,37 @@ class _EditMoneyOutcomeAnotherCashRegisterState extends State<EditMoneyOutcomeAn
     }
 
     final bloc = context.read<MoneyOutcomeBloc>();
-    bloc.add(UpdateMoneyOutcome(
-      id: widget.document.id,
-      date: isoDate,
-      amount: double.parse(_amountController.text.trim()),
-      operationType: OperationType.send_another_cash_register.name,
-      comment: _commentController.text.trim(),
-      cashRegisterId: selectedCashRegister?.id,
-      senderCashRegisterId: selectedSenderCashRegister?.id,
-      approved: _isApproved,
-    ));
+
+    final dataChanged = !_areDatesEqual(widget.document.date ?? '', isoDate) ||
+        widget.document.amount != _amountController.text.trim() ||
+        (widget.document.comment ?? '') != _commentController.text.trim() ||
+        widget.document.cashRegister?.id.toString() != selectedCashRegister?.id.toString() ||
+        widget.document.senderCashregister?.id.toString() != selectedSenderCashRegister?.id.toString();
+
+    final approvalChanged = widget.document.approved != _isApproved;
+
+    if (dataChanged) {
+      bloc.add(UpdateMoneyOutcome(
+        id: widget.document.id,
+        date: isoDate,
+        amount: double.parse(_amountController.text.trim()),
+        operationType: OperationType.send_another_cash_register.name,
+        comment: _commentController.text.trim(),
+        cashRegisterId: selectedCashRegister?.id,
+        senderCashRegisterId: selectedSenderCashRegister?.id,
+      ));
+    }
+
+    if (approvalChanged) {
+      bloc.add(ToggleApproveOneMoneyOutcomeDocument(widget.document.id!, _isApproved));
+    }
+
+    if (!dataChanged && !approvalChanged) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+      Navigator.pop(context);
+    }
   }
 
   void _showSnackBar(String message, bool isSuccess) {
@@ -166,20 +196,29 @@ class _EditMoneyOutcomeAnotherCashRegisterState extends State<EditMoneyOutcomeAn
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: _buildAppBar(localizations),
-      body: BlocListener<MoneyOutcomeBloc, MoneyOutcomeState>(
-        listener: (context, state) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!mounted) return;
+      body: MultiBlocListener(
+        listeners: [
+          BlocListener<MoneyOutcomeBloc, MoneyOutcomeState>(
+            listener: (context, state) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
 
-            if (state is MoneyOutcomeUpdateSuccess) {
-              setState(() => _isLoading = false);
-              Navigator.pop(context, true);
-            } else if (state is MoneyOutcomeUpdateError) {
-              setState(() => _isLoading = false);
-              _showSnackBar(state.message, false);
-            }
-          });
-        },
+                if (state is MoneyOutcomeUpdateSuccess) {
+                  setState(() => _isLoading = false);
+                  Navigator.pop(context, true);
+                } else if (state is MoneyOutcomeUpdateError) {
+                  setState(() => _isLoading = false);
+                  _showSnackBar(state.message, false);
+                }
+                if (state is MoneyOutcomeToggleOneApproveSuccess) {
+                  Navigator.pop(context, true);
+                } else if (state is MoneyOutcomeToggleOneApproveError) {
+                  _showSnackBar(state.message, false);
+                }
+              });
+            },
+          ),
+        ],
         child: Form(
           key: _formKey,
           child: Column(
@@ -197,9 +236,16 @@ class _EditMoneyOutcomeAnotherCashRegisterState extends State<EditMoneyOutcomeAn
                         title: AppLocalizations.of(context)!.translate('sender_cash_register') ?? 'Касса-отправитель',
                         selectedCashRegisterId: selectedSenderCashRegister?.id.toString(),
                         onSelectCashRegister: (CashRegisterData selectedRegionData) {
-                          setState(() {
-                            selectedSenderCashRegister = selectedRegionData;
-                          });
+                          try {
+                            setState(() {
+                              selectedSenderCashRegister = selectedRegionData;
+                            });
+                          } catch (e) {
+                            debugPrint('Error selecting sender cash register: $e');
+                            _showSnackBar(
+                                AppLocalizations.of(context)!.translate('error_selecting_cash_register') ?? 'Ошибка выбора кассы',
+                                false);
+                          }
                         },
                       ),
                       const SizedBox(height: 16),
@@ -209,9 +255,16 @@ class _EditMoneyOutcomeAnotherCashRegisterState extends State<EditMoneyOutcomeAn
                         title: AppLocalizations.of(context)!.translate('receiver_cash_register') ?? 'Касса-получатель',
                         selectedCashRegisterId: selectedCashRegister?.id.toString(),
                         onSelectCashRegister: (CashRegisterData selectedRegionData) {
-                          setState(() {
-                            selectedCashRegister = selectedRegionData;
-                          });
+                          try {
+                            setState(() {
+                              selectedCashRegister = selectedRegionData;
+                            });
+                          } catch (e) {
+                            debugPrint('Error selecting receiver cash register: $e');
+                            _showSnackBar(
+                                AppLocalizations.of(context)!.translate('error_selecting_cash_register') ?? 'Ошибка выбора кассы',
+                                false);
+                          }
                         },
                       ),
                       const SizedBox(height: 16),
@@ -241,7 +294,7 @@ class _EditMoneyOutcomeAnotherCashRegisterState extends State<EditMoneyOutcomeAn
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
-        AppLocalizations.of(context)!.translate('edit_outgoing_document') ?? 'Редактировать расход',
+        AppLocalizations.of(context)!.translate('edit_outcoming_document') ?? 'Редактировать доход',
         style: const TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
@@ -280,14 +333,14 @@ class _EditMoneyOutcomeAnotherCashRegisterState extends State<EditMoneyOutcomeAn
 
   Widget _buildApproveButton(AppLocalizations localizations) {
     return StyledActionButton(
-      text: !_isApproved ? AppLocalizations.of(context)!.translate('approve_document') ?? 'Провести' :  AppLocalizations.of(context)!.translate('unapprove_document') ?? 'Отменить проведение',
-      icon: !_isApproved ? Icons.check_circle_outline :  Icons.close_outlined,
-      color: !_isApproved ? const Color(0xFF4CAF50) : const Color(0xFFFFA500),
-      onPressed: () {
-        setState(() {
-          _isApproved = !_isApproved;
-        });
-      }
+        text: !_isApproved ? AppLocalizations.of(context)!.translate('approve_document') ?? 'Провести' :  AppLocalizations.of(context)!.translate('unapprove_document') ?? 'Отменить проведение',
+        icon: !_isApproved ? Icons.check_circle_outline :  Icons.close_outlined,
+        color: !_isApproved ? const Color(0xFF4CAF50) : const Color(0xFFFFA500),
+        onPressed: () {
+          setState(() {
+            _isApproved = !_isApproved;
+          });
+        }
     );
   }
 
@@ -302,9 +355,16 @@ class _EditMoneyOutcomeAnotherCashRegisterState extends State<EditMoneyOutcomeAn
           if (value == null || value.isEmpty) {
             return AppLocalizations.of(context)!.translate('enter_amount') ?? 'Введите сумму';
           }
-          if (double.tryParse(value) == null) {
+
+          final doubleValue = double.tryParse(value.trim());
+          if (doubleValue == null) {
             return AppLocalizations.of(context)!.translate('enter_valid_amount') ?? 'Введите корректную сумму';
           }
+
+          if (doubleValue <= 0) {
+            return AppLocalizations.of(context)!.translate('amount_must_be_greater_than_zero') ?? 'Сумма должна быть больше нуля';
+          }
+
           return null;
         }
     );
@@ -387,11 +447,34 @@ class _EditMoneyOutcomeAnotherCashRegisterState extends State<EditMoneyOutcomeAn
     );
   }
 
+
+
+
   @override
   void dispose() {
     _dateController.dispose();
     _amountController.dispose();
     _commentController.dispose();
     super.dispose();
+  }
+}
+
+
+bool _areDatesEqual(String backendDateStr, String frontendDateStr) {
+  try {
+    debugPrint("Comparing dates: backend='$backendDateStr', frontend='$frontendDateStr'");
+
+    final backendDate = DateTime.parse(backendDateStr);
+    final frontendDate = DateTime.parse(frontendDateStr);
+
+    return backendDate.year == frontendDate.year &&
+        backendDate.month == frontendDate.month &&
+        backendDate.day == frontendDate.day &&
+        backendDate.hour == frontendDate.hour &&
+        backendDate.minute == frontendDate.minute &&
+        backendDate.second == frontendDate.second;
+  } catch (e) {
+    debugPrint('Error comparing dates: $e');
+    return false;
   }
 }
