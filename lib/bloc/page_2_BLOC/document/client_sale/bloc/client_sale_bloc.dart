@@ -62,8 +62,7 @@ class ClientSaleBloc extends Bloc<ClientSaleEvent, ClientSaleState> {
     }
   }
 
-  _onCreateClientSalesDocument(
-      CreateClientSalesDocument event, Emitter<ClientSaleState> emit) async {
+  _onCreateClientSalesDocument(CreateClientSalesDocument event, Emitter<ClientSaleState> emit) async {
     emit(ClientSaleCreateLoading());
     try {
       final response = await apiService.createClientSaleDocument(
@@ -79,7 +78,7 @@ class ClientSaleBloc extends Bloc<ClientSaleEvent, ClientSaleState> {
 
       emit(ClientSaleCreateSuccess('Документ успешно создан'));
     } catch (e) {
-      emit(ClientSaleError(e.toString()));
+      emit(ClientSaleCreateError(e.toString()));
     }
   }
 

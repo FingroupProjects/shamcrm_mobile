@@ -10557,7 +10557,11 @@ Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
     if (response.statusCode == 200 || response.statusCode == 201) {
       return;
     } else {
-      throw Exception('Ошибка создания документа: ${response.body}');
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      final rawMessage = body['message'] ?? 'Неизвестная ошибка';
+      final message = jsonDecode(jsonEncode(rawMessage));
+
+      throw Exception('Ошибка создания документа: $message');
     }
   }
 
