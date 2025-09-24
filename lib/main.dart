@@ -122,6 +122,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'bloc/cash_register_list/cash_register_list_bloc.dart';
 import 'bloc/supplier_list/supplier_list_bloc.dart';
 import 'screens/auth/login_screen.dart';
@@ -130,6 +131,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+
 
 void main() async {
   try {
@@ -142,15 +144,27 @@ void main() async {
     final apiService = ApiService();
     final authService = AuthService();
     
-    // Проверка домена
-    final bool isDomainChecked = await apiService.isDomainChecked();
-    if (isDomainChecked) {
-      await apiService.initialize();
-    }
+    // Глобальная проверка валидности данных
+    final sessionValidation = await _validateApplicationSession(apiService);
     
-    // Получение токена и PIN
-    final String? token = await apiService.getToken();
-    final String? pin = await authService.getPin();
+    // Получение токена и PIN только если сессия валидна
+    String? token;
+    String? pin;
+    bool isDomainChecked = false;
+    
+    if (sessionValidation.isValid) {
+      token = await apiService.getToken();
+      pin = await authService.getPin();
+      isDomainChecked = await apiService.isDomainChecked();
+      
+      if (isDomainChecked) {
+        await apiService.initialize();
+      }
+    } else {
+      // При невалидной сессии очищаем все данные
+      print('main: Invalid session detected, clearing all data');
+      await _clearAllApplicationData(apiService, authService);
+    }
 
     // App Tracking Transparency
     await AppTrackingTransparency.requestTrackingAuthorization();
@@ -176,11 +190,12 @@ void main() async {
     runApp(MyApp(
       apiService: apiService,
       authService: authService,
-      isDomainChecked: isDomainChecked,
-      token: token,
-      pin: pin,
+      isDomainChecked: isDomainChecked && sessionValidation.isValid,
+      token: sessionValidation.isValid ? token : null,
+      pin: sessionValidation.isValid ? pin : null,
       initialLocale: savedLocale,
-      initialMessage: null, // Инициализируем как null, получим позже
+      initialMessage: null,
+      sessionValid: sessionValidation.isValid,
     ));
   } catch (e, stackTrace) {
     print('Критическая ошибка при запуске приложения: $e');
@@ -190,55 +205,6 @@ void main() async {
     runApp(ErrorApp(error: e.toString()));
   }
 }
-
-// Безопасная инициализация Firebase
-Future<void> _initializeFirebase() async {
-  try {
-    // Проверяем, не инициализирован ли уже Firebase
-    if (Firebase.apps.isEmpty) {
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-      print('Firebase успешно инициализирован');
-    } else {
-      print('Firebase уже инициализирован');
-    }
-  } catch (e) {
-    print('Ошибка инициализации Firebase: $e');
-    // Не бросаем исключение, продолжаем работу без Firebase
-  }
-}
-
-// Безопасная инициализация Firebase Messaging
-Future<void> _initializeFirebaseMessaging(ApiService apiService) async {
-  try {
-    if (Firebase.apps.isNotEmpty) {
-      await FirebaseMessaging.instance.requestPermission();
-      await getFCMTokens(apiService);
-
-      FirebaseApi firebaseApi = FirebaseApi();
-      await firebaseApi.initNotifications();
-      
-      // Получение initial message перенесено в отдельный метод
-    }
-  } catch (e) {
-    print('Ошибка инициализации Firebase Messaging: $e');
-    // Продолжаем работу без push уведомлений
-  }
-}
-
-Future<void> getFCMTokens(ApiService apiService) async {
-  try {
-    final String? fcmToken = await FirebaseMessaging.instance.getToken();
-    if (fcmToken != null) {
-      print('FCM Token получен: ${fcmToken.substring(0, 20)}...');
-      // Отправка токена в API может быть выполнена позже
-    }
-  } catch (e) {
-    print('Ошибка получения FCM токена: $e');
-  }
-}
-
 // Экран ошибки для критических сбоев
 class ErrorApp extends StatelessWidget {
   final String error;
@@ -294,6 +260,130 @@ class ErrorApp extends StatelessWidget {
   }
 }
 
+// Класс для результата валидации сессии
+class SessionValidationResult {
+  final bool isValid;
+  final String? errorMessage;
+  
+  SessionValidationResult({required this.isValid, this.errorMessage});
+}
+
+// Новая функция для валидации сессии приложения
+Future<SessionValidationResult> _validateApplicationSession(ApiService apiService) async {
+  try {
+    print('main: Validating application session');
+    
+    // Проверяем токен
+    final token = await apiService.getToken();
+    if (token == null || token.isEmpty) {
+      print('main: No token found');
+      return SessionValidationResult(isValid: false, errorMessage: 'No token');
+    }
+
+    // Проверяем домен
+    String? domain = await apiService.getVerifiedDomain();
+    if (domain == null || domain.isEmpty) {
+      // Пробуем QR данные
+      Map<String, String?> qrData = await apiService.getQrData();
+      String? qrDomain = qrData['domain'];
+      String? qrMainDomain = qrData['mainDomain'];
+      
+      if (qrDomain == null || qrDomain.isEmpty || 
+          qrMainDomain == null || qrMainDomain.isEmpty) {
+        // Пробуем старую логику
+        Map<String, String?> domains = await apiService.getEnteredDomain();
+        String? enteredDomain = domains['enteredDomain'];
+        String? enteredMainDomain = domains['enteredMainDomain'];
+        
+        if (enteredDomain == null || enteredDomain.isEmpty ||
+            enteredMainDomain == null || enteredMainDomain.isEmpty) {
+          print('main: No valid domain configuration found');
+          return SessionValidationResult(isValid: false, errorMessage: 'No domain');
+        }
+      }
+    }
+
+    // Проверяем организацию
+    final organizationId = await apiService.getSelectedOrganization();
+    if (organizationId == null || organizationId.isEmpty) {
+      print('main: No organization selected');
+      // Организацию можем установить позже, это не критично
+    }
+
+    print('main: Session validation successful');
+    return SessionValidationResult(isValid: true);
+    
+  } catch (e) {
+    print('main: Error validating session: $e');
+    return SessionValidationResult(isValid: false, errorMessage: e.toString());
+  }
+}
+
+// Функция для полной очистки данных приложения
+Future<void> _clearAllApplicationData(ApiService apiService, AuthService authService) async {
+  try {
+    print('main: Clearing all application data');
+    
+    // Очищаем данные API сервиса
+    await apiService.logout();
+    await apiService.reset();
+    
+    // Очищаем PIN данные
+    await authService.clearPin();
+    
+    // Очищаем SharedPreferences полностью
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+    
+    print('main: All application data cleared');
+  } catch (e) {
+    print('main: Error clearing application data: $e');
+  }
+}
+
+// Безопасная инициализация Firebase
+Future<void> _initializeFirebase() async {
+  try {
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      print('Firebase успешно инициализирован');
+    } else {
+      print('Firebase уже инициализирован');
+    }
+  } catch (e) {
+    print('Ошибка инициализации Firebase: $e');
+  }
+}
+
+// Безопасная инициализация Firebase Messaging
+Future<void> _initializeFirebaseMessaging(ApiService apiService) async {
+  try {
+    if (Firebase.apps.isNotEmpty) {
+      await FirebaseMessaging.instance.requestPermission();
+      await getFCMTokens(apiService);
+
+      FirebaseApi firebaseApi = FirebaseApi();
+      await firebaseApi.initNotifications();
+    }
+  } catch (e) {
+    print('Ошибка инициализации Firebase Messaging: $e');
+  }
+}
+
+Future<void> getFCMTokens(ApiService apiService) async {
+  try {
+    final String? fcmToken = await FirebaseMessaging.instance.getToken();
+    if (fcmToken != null) {
+      print('FCM Token получен: ${fcmToken.substring(0, 20)}...');
+    }
+  } catch (e) {
+    print('Ошибка получения FCM токена: $e');
+  }
+}
+
+// Обновленный MyApp класс
 class MyApp extends StatefulWidget {
   final ApiService apiService;
   final AuthService authService;
@@ -302,6 +392,7 @@ class MyApp extends StatefulWidget {
   final String? pin;
   final Locale initialLocale;
   final RemoteMessage? initialMessage;
+  final bool sessionValid; // Новый параметр
 
   const MyApp({
     required this.apiService,
@@ -311,6 +402,7 @@ class MyApp extends StatefulWidget {
     this.pin,
     required this.initialLocale,
     this.initialMessage,
+    required this.sessionValid, // Новый обязательный параметр
   });
 
   static void setLocale(BuildContext context, Locale newLocale) {
@@ -334,10 +426,8 @@ class _MyAppState extends State<MyApp> {
     _initializeApp();
   }
 
-  // Асинхронная инициализация компонентов
   Future<void> _initializeApp() async {
     try {
-      // Получаем initial message после полной инициализации Firebase
       if (Firebase.apps.isNotEmpty) {
         FirebaseApi firebaseApi = FirebaseApi();
         _initialMessage = firebaseApi.getInitialMessage();
@@ -349,7 +439,7 @@ class _MyAppState extends State<MyApp> {
     } catch (e) {
       print('Ошибка инициализации приложения: $e');
       setState(() {
-        _isInitialized = true; // Продолжаем работу даже с ошибкой
+        _isInitialized = true;
       });
     }
   }
@@ -362,27 +452,26 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    // Показываем загрузку пока приложение инициализируется
-  if (!_isInitialized) {
-  return MaterialApp(
-    home: Scaffold(
-      backgroundColor: Colors.white,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            PlayStoreImageLoading(
-              size: 80.0,
-              duration: Duration(milliseconds: 1000),
+    if (!_isInitialized) {
+      return MaterialApp(
+        home: Scaffold(
+          backgroundColor: Colors.white,
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                PlayStoreImageLoading(
+                  size: 80.0,
+                  duration: Duration(milliseconds: 1000),
+                ),
+                SizedBox(height: 20),
+                Text('Инициализация...'),
+              ],
             ),
-            SizedBox(height: 20),
-            Text('Инициализация...'),
-          ],
+          ),
         ),
-      ),
-    ),
-  );
-}
+      );
+    }
 
     return MultiProvider(
       providers: [
@@ -530,7 +619,7 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => WriteOffBloc(widget.apiService)), 
         BlocProvider(create: (context) => MovementBloc(widget.apiService)), 
 
-   ],
+ ],
       child: MaterialApp(
         locale: _locale ?? const Locale('ru'),
         color: Colors.white,
@@ -563,6 +652,12 @@ class _MyAppState extends State<MyApp> {
         },
         home: Builder(
           builder: (context) {
+            // Если сессия невалидна, всегда идем на AuthScreen
+            if (!widget.sessionValid) {
+              return AuthScreen();
+            }
+            
+            // Стандартная логика роутинга при валидной сессии
             if (widget.token == null) {
               return AuthScreen();
             } else if (widget.pin == null) {
@@ -587,7 +682,3 @@ class _MyAppState extends State<MyApp> {
     );
   }
 }
-
-/*
-
-*/

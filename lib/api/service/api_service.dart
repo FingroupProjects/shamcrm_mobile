@@ -140,17 +140,26 @@ class ApiService {
     _initializeIfDomainExists();
   }
 
-  // Новый метод для получения message из body ответа
-  String? _extractErrorMessageFromResponse(http.Response response) {
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-    final rawMessage = body['message'] ?? body['error'] ?? body['errors'];
-    final message = jsonDecode(jsonEncode(rawMessage));
 
-    return message;
-  }
+// Новый метод для получения message из body ответа
+String? _extractErrorMessageFromResponse(http.Response response) {
+  final body = jsonDecode(response.body) as Map<String, dynamic>;
+  final rawMessage = body['message'] ?? body['error'] ?? body['errors'];
+  final message = jsonDecode(jsonEncode(rawMessage));
 
-// Также нужно обновить метод _initializeIfDomainExists
+  return message;
+}
+
+  // Также нужно обновить метод _initializeIfDomainExists
+  // Обновленный метод инициализации с проверкой сессии
   Future<void> _initializeIfDomainExists() async {
+    // Сначала проверяем валидность сессии
+    if (!await _isSessionValid()) {
+      print('ApiService: Session is invalid, redirecting to auth');
+      await _forceLogoutAndRedirect();
+      return;
+    }
+
     // Проверяем новую логику (email)
     String? verifiedDomain = await getVerifiedDomain();
     if (verifiedDomain != null && verifiedDomain.isNotEmpty) {
@@ -175,6 +184,9 @@ class ApiService {
     bool isDomainSet = await isDomainChecked();
     if (isDomainSet) {
       await initialize();
+    } else {
+      // Если ничего не найдено, перенаправляем на авторизацию
+      await _forceLogoutAndRedirect();
     }
   }
 
@@ -262,12 +274,19 @@ class ApiService {
   }
 
   // Общая обработка ответа от сервера 401
-  Future<http.Response> _handleResponse(http.Response response) async {
+    Future<http.Response> _handleResponse(http.Response response) async {
     if (response.statusCode == 401) {
-      await logout();
-      _redirectToLogin();
+      print('ApiService: Received 401, forcing logout and redirect');
+      await _forceLogoutAndRedirect();
       throw Exception('Неавторизованный доступ!');
     }
+    
+    // Дополнительная проверка на другие критические ошибки
+    if (response.statusCode >= 500) {
+      print('ApiService: Server error ${response.statusCode}');
+      // Можно добавить дополнительную логику для серверных ошибок
+    }
+    
     return response;
   }
 
@@ -437,7 +456,13 @@ class ApiService {
 
   //_________________________________ START___API__METHOD__GET__POST__PATCH__DELETE____________________________________________//
 
-  Future<http.Response> _getRequest(String path) async {
+   Future<http.Response> _getRequest(String path) async {
+    // Проверяем сессию перед каждым запросом
+    if (!await _isSessionValid()) {
+      await _forceLogoutAndRedirect();
+      throw Exception('Session is invalid');
+    }
+
     if (baseUrl == null) {
       await _initializeIfDomainExists();
       if (baseUrl == null) {
@@ -459,8 +484,14 @@ class ApiService {
     return _handleResponse(response);
   }
 
-  Future<http.Response> _postRequest(
+   Future<http.Response> _postRequest(
       String path, Map<String, dynamic> body) async {
+    // Проверяем сессию перед каждым запросом
+    if (!await _isSessionValid()) {
+      await _forceLogoutAndRedirect();
+      throw Exception('Session is invalid');
+    }
+
     if (baseUrl == null) {
       await _initializeIfDomainExists();
       if (baseUrl == null) {
@@ -511,8 +542,13 @@ class ApiService {
     return _handleResponse(response);
   }
 
-  Future<http.Response> _patchRequest(
+Future<http.Response> _patchRequest(
       String path, Map<String, dynamic> body) async {
+    if (!await _isSessionValid()) {
+      await _forceLogoutAndRedirect();
+      throw Exception('Session is invalid');
+    }
+
     final token = await getToken();
     final updatedPath = await _appendQueryParams(path);
     final response = await http.patch(
@@ -530,6 +566,11 @@ class ApiService {
 
   Future<http.Response> _putRequest(
       String path, Map<String, dynamic> body) async {
+    if (!await _isSessionValid()) {
+      await _forceLogoutAndRedirect();
+      throw Exception('Session is invalid');
+    }
+
     final token = await getToken();
     final updatedPath = await _appendQueryParams(path);
     final response = await http.put(
@@ -546,6 +587,11 @@ class ApiService {
   }
 
   Future<http.Response> _deleteRequest(String path) async {
+    if (!await _isSessionValid()) {
+      await _forceLogoutAndRedirect();
+      throw Exception('Session is invalid');
+    }
+
     final token = await getToken();
     final updatedPath = await _appendQueryParams(path);
     final response = await http.delete(
@@ -577,6 +623,78 @@ class ApiService {
     final streamedResponse = await request.send();
     final response = await http.Response.fromStream(streamedResponse);
     return _handleResponse(response);
+  }
+// Новый метод для проверки валидности сессии
+  Future<bool> _isSessionValid() async {
+    try {
+      // Проверяем токен
+      final token = await getToken();
+      if (token == null || token.isEmpty) {
+        print('ApiService: Token is null or empty');
+        return false;
+      }
+
+      // Проверяем домен
+      String? domain = await getVerifiedDomain();
+      if (domain == null || domain.isEmpty) {
+        // Пробуем QR данные
+        Map<String, String?> qrData = await getQrData();
+        String? qrDomain = qrData['domain'];
+        String? qrMainDomain = qrData['mainDomain'];
+        
+        if (qrDomain == null || qrDomain.isEmpty || 
+            qrMainDomain == null || qrMainDomain.isEmpty) {
+          // Пробуем старую логику
+          Map<String, String?> domains = await getEnteredDomain();
+          String? enteredDomain = domains['enteredDomain'];
+          String? enteredMainDomain = domains['enteredMainDomain'];
+          
+          if (enteredDomain == null || enteredDomain.isEmpty ||
+              enteredMainDomain == null || enteredMainDomain.isEmpty) {
+            print('ApiService: No valid domain found');
+            return false;
+          }
+        }
+      }
+
+      // Проверяем организацию
+      final organizationId = await getSelectedOrganization();
+      if (organizationId == null || organizationId.isEmpty) {
+        print('ApiService: Organization ID is null or empty');
+        return false;
+      }
+
+      return true;
+    } catch (e) {
+      print('ApiService: Error checking session validity: $e');
+      return false;
+    }
+  }
+
+  // Новый метод для принудительного сброса к начальному экрану
+  Future<void> _forceLogoutAndRedirect() async {
+    try {
+      print('ApiService: Force logout and redirect to auth');
+      
+      // Полная очистка данных
+      await logout();
+      await reset();
+      
+      // Очищаем дополнительные данные
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+      
+      // Перенаправляем на экран авторизации
+      final context = navigatorKey.currentContext;
+      if (context != null) {
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          '/local_auth',
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      print('ApiService: Error in force logout: $e');
+    }
   }
 
   //_________________________________ END___API__METHOD__GET__POST__PATCH__DELETE____________________________________________//
