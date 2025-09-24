@@ -254,6 +254,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
     // Функция скролла закомментирована
   }
   */
+// Новый метод для принудительного выхода при ошибках
+  Future<void> _forceLogout() async {
+    try {
+      await ApiService().logout();
+      if (mounted) {
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/local_auth',
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      print('ProfileScreen: Error in force logout: $e');
+      // Даже при ошибке пытаемся перейти на экран авторизации
+      if (mounted) {
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/local_auth',
+          (route) => false,
+        );
+      }
+    }
+  }
 
   Future<void> _checkPermission() async {
     bool hasLeadCreatePermission =
@@ -328,7 +351,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
           .add(LoadProcessSpeedDataManager());
     }
   }
-
+ // Виджет кнопки выхода для случаев ошибок
+  Widget _buildErrorLogoutButton() {
+    final localizations = AppLocalizations.of(context)!;
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+      child: ElevatedButton.icon(
+        onPressed: _forceLogout,
+        icon: const Icon(Icons.logout, color: Colors.white),
+        label: Text(
+          localizations.translate('logout'),
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            fontFamily: 'Gilroy',
+            color: Colors.white,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.red.shade600,
+          padding: const EdgeInsets.symmetric(vertical: 15),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          elevation: 2,
+        ),
+      ),
+    );
+  }
   void _openSupportChat() async {
     const tgUrl = 'https://t.me/shamcrm_support_bot';
     const webUrl = 'https://t.me/shamcrm_support_bot:';
@@ -339,7 +390,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  @override
+   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
     return Scaffold(
@@ -388,29 +439,48 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ],
                           );
                         } else if (state is OrganizationError) {
+                          // Проверяем, является ли это ошибкой авторизации
                           if (state.message.contains(
                               localizations.translate("unauthorized_access"))) {
-                            ApiService().logout().then((_) {
-                              Navigator.pushAndRemoveUntil(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) => LoginScreen()),
-                                (Route<dynamic> route) => false,
-                              );
+                            // В случае ошибки авторизации сразу выполняем выход
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              _forceLogout();
                             });
-                          }
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 20),
-                            child: Center(
-                              child: Text(
-                                '${state.message}',
-                                style: const TextStyle(
-                                    fontFamily: 'Gilroy',
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.black),
+                            return const Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(20),
+                                child: PlayStoreImageLoading(
+                                    size: 80.0, duration: Duration(milliseconds: 1000)),
                               ),
-                            ),
+                            );
+                          }
+                          
+                          // Для других ошибок показываем сообщение и кнопку выхода
+                          return Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const SizedBox(height: 50),
+                              Icon(
+                                Icons.error_outline,
+                                size: 80,
+                                color: Colors.red.shade400,
+                              ),
+                              const SizedBox(height: 20),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 20),
+                                child: Text(
+                                  state.message,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                      fontFamily: 'Gilroy',
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.black87),
+                                ),
+                              ),
+                              const SizedBox(height: 30),
+                              _buildErrorLogoutButton(),
+                            ],
                           );
                         }
                         return const SizedBox.shrink();
