@@ -307,11 +307,13 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
               } else if (state is MoneyIncomeUpdateError) {
                 showCustomSnackBar(context: context, message: state.message, isSuccess: false);
               } else if (state is MoneyIncomeToggleOneApproveSuccess) {
-                showCustomSnackBar(context: context, message: localizations.translate('status_changed_successfully_approve'), isSuccess: true);
+                showCustomSnackBar(context: context, message: state.message, isSuccess: true);
               } else if (state is MoneyIncomeToggleOneApproveError) {
                 showCustomSnackBar(context: context, message: state.message, isSuccess: false);
               } else if (state is MoneyIncomeDeleteSuccess) {
                 showCustomSnackBar(context: context, message: state.message, isSuccess: true);
+              } else if (state is MoneyIncomeDeleteError) {
+                showCustomSnackBar(context: context, message: state.message, isSuccess: false);
               } else if (state is MoneyIncomeRestoreSuccess) {
                 showCustomSnackBar(context: context, message: state.message, isSuccess: true);
               } else if (state is MoneyIncomeRestoreError) {
@@ -358,7 +360,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
 
                 final List<Document> currentData = state is MoneyIncomeLoaded ? state.data : [];
 
-                if (currentData.isEmpty && state is MoneyIncomeLoaded) {
+                if (currentData.isEmpty) {
                   return Center(
                     child: Text(
                       _isSearching ? localizations.translate('nothing_found') : localizations.translate('no_money_income'),
@@ -426,7 +428,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                           setState(() {
                             currentData.removeAt(index);
                           });
-                          _moneyIncomeBloc.add(DeleteMoneyIncome(document.id!, reload: false));
+                          _moneyIncomeBloc.add(DeleteMoneyIncome(document, reload: false));
                         },
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(12),
@@ -466,7 +468,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                                   context: context,
                                   document: currentData[index],
                                   onDelete: () {
-                                    _moneyIncomeBloc.add(DeleteMoneyIncome(document.id!));
+                                    _moneyIncomeBloc.add(DeleteMoneyIncome(document));
                                   });
                             },
                           ),

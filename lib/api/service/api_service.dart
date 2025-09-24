@@ -140,6 +140,15 @@ class ApiService {
     _initializeIfDomainExists();
   }
 
+  // Новый метод для получения message из body ответа
+  String? _extractErrorMessageFromResponse(http.Response response) {
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    final rawMessage = body['message'] ?? body['error'] ?? body['errors'];
+    final message = jsonDecode(jsonEncode(rawMessage));
+
+    return message;
+  }
+
 // Также нужно обновить метод _initializeIfDomainExists
   Future<void> _initializeIfDomainExists() async {
     // Проверяем новую логику (email)
@@ -10372,11 +10381,8 @@ Future<IncomingDocument> getIncomingDocumentById(int documentId) async {
   if (response.statusCode == 200 || response.statusCode == 201) {
     return;
   } else {
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-    final rawMessage = body['message'] ?? 'Неизвестная ошибка';
-    final message = jsonDecode(jsonEncode(rawMessage));
-
-    throw message;
+    final message = _extractErrorMessageFromResponse(response);
+    throw message ?? 'Неизвестная ошибка';
   }
 }
 
@@ -10419,11 +10425,8 @@ Future<void> updateIncomingDocument({
   if (response.statusCode == 200 || response.statusCode == 201) {
     return;
   } else {
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-    final rawMessage = body['message'] ?? 'Неизвестная ошибка';
-    final message = jsonDecode(jsonEncode(rawMessage));
-
-    throw message;
+    final message = _extractErrorMessageFromResponse(response);
+    throw message ?? 'Неизвестная ошибка';
   }
 }
 Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
@@ -10566,11 +10569,8 @@ Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
     if (response.statusCode == 200 || response.statusCode == 201) {
       return;
     } else {
-      final body = jsonDecode(response.body) as Map<String, dynamic>;
-      final rawMessage = body['message'] ?? 'Неизвестная ошибка';
-      final message = jsonDecode(jsonEncode(rawMessage));
-
-      throw message;
+      final message = _extractErrorMessageFromResponse(response);
+      throw message ?? 'Неизвестная ошибка';
     }
   }
 
@@ -11689,11 +11689,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     if (response.statusCode == 200 || response.statusCode == 201) {
       return;
     } else {
-      final body = jsonDecode(response.body) as Map<String, dynamic>;
-      final rawMessage = body['message'] ?? 'Неизвестная ошибка';
-      final message = jsonDecode(jsonEncode(rawMessage));
-
-      throw message;
+      final message = _extractErrorMessageFromResponse(response);
+      throw message ?? 'Неизвестная ошибка';
     }
   }
 
@@ -11837,17 +11834,23 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
   Future<IncomeCategoriesDataResponse> getAllIncomeCategories() async {
     final path = await _appendQueryParams('/article?type=income');
 
-    final response = await _getRequest(path);;
+    try {
+      final response = await _getRequest(path);
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['result'] != null) {
-        return IncomeCategoriesDataResponse.fromJson(data);
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = json.decode(response.body);
+        if (data['result'] != null) {
+          return IncomeCategoriesDataResponse.fromJson(data);
+        } else {
+          final message = _extractErrorMessageFromResponse(response);
+          throw message ?? 'Ошибка при получении данных!';
+        }
       } else {
-        throw Exception('Результат отсутствует в ответе');
+        final message = _extractErrorMessageFromResponse(response);
+        throw message ?? 'Ошибка при получении данных!';
       }
-    } else {
-      throw Exception('Ошибка при получении данных!');
+    } catch (e) {
+      rethrow;
     }
   }
 
@@ -11863,7 +11866,6 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     int? supplierId,
     required bool approve,
   }) async {
-
     final path = await _appendQueryParams('/checking-account');
 
     try {
@@ -11880,17 +11882,15 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         'supplier_id': supplierId,
         'approved': approve,
       });
-      if (response.statusCode == 200) {
-        final rawData = json.decode(response.body);
-        debugPrint("Полученные данные по приходу: $rawData");
+      if (response.statusCode == 200 || response.statusCode == 201) {
         return;
       } else {
-        throw Exception('Ошибка сервера: ${response.statusCode}');
+        final message = _extractErrorMessageFromResponse(response);
+        throw message ?? 'Ошибка при создании документа прихода!';
       }
     } catch (e) {
-      throw Exception('Ошибка получения данных прихода: $e');
+     rethrow;
     }
-
   }
 
   Future<MoneyIncomeDocumentModel> getMoneyIncomeDocuments({
@@ -11950,68 +11950,69 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
       try {
         final response = await _getRequest(path);
-        if (response.statusCode == 200) {
+        if (response.statusCode == 200 || response.statusCode == 201) {
           final rawData = json.decode(response.body);
           debugPrint("Полученные данные по приходу: $rawData");
           return MoneyIncomeDocumentModel.fromJson(rawData);
         } else {
-          throw Exception('Ошибка сервера: ${response.statusCode}');
+          final message = _extractErrorMessageFromResponse(response);
+          throw message ?? 'Ошибка при получении данных прихода!';
         }
       } catch (e) {
-        throw Exception('Ошибка получения данных прихода: ${e}');
+        rethrow;
       }
     }
 
   Future<bool> deleteMoneyIncomeDocument(int documentId) async {
-    final path = '/checking-account/$documentId';
+    final path = await _appendQueryParams('/checking-account/mass-delete');
 
     try {
       final response = await _deleteRequestWithBody(path, {
         'ids': [documentId],
       });
 
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200 || response.statusCode == 201) {
         return true;
       } else {
-        throw Exception('Failed to delete money income document!');
+        final message = _extractErrorMessageFromResponse(response);
+        throw message ?? 'Ошибка при удалении документа прихода!';
       }
     } catch (e) {
-      throw Exception(e.toString());
+      rethrow;
     }
   }
 
-  Future<Map<String, dynamic>> restoreMoneyIncomeDocument(
-      int documentId) async {
-    final token = await getToken();
-    if (token == null) throw Exception('Токен не найден');
-
-    final pathWithParams =
-    await _appendQueryParams('/checking-account/restore');
-    final uri = Uri.parse('$baseUrl$pathWithParams');
-
-    final body = jsonEncode({
-      'ids': [documentId],
-    });
-
-    final response = await http.post(
-      uri,
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Device': 'mobile',
-      },
-      body: body,
-    );
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'result': 'Success'};
-    } else {
-      final jsonResponse = jsonDecode(response.body);
-      throw Exception(
-          jsonResponse['message'] ?? 'Ошибка при восстановлении документа');
-    }
-  }
+  // Future<Map<String, dynamic>> restoreMoneyIncomeDocument(
+  //     int documentId) async {
+  //   final token = await getToken();
+  //   if (token == null) throw Exception('Токен не найден');
+  //
+  //   final pathWithParams = await _appendQueryParams('/checking-account/restore');
+  //   final uri = Uri.parse('$baseUrl$pathWithParams');
+  //
+  //   final body = jsonEncode({
+  //     'ids': [documentId],
+  //   });
+  //
+  //   final response = await http.post(
+  //     uri,
+  //     headers: {
+  //       'Authorization': 'Bearer $token',
+  //       'Accept': 'application/json',
+  //       'Content-Type': 'application/json',
+  //       'Device': 'mobile',
+  //     },
+  //     body: body,
+  //   );
+  //
+  //   if (response.statusCode == 200 || response.statusCode == 201) {
+  //     return {'result': 'Success'};
+  //   } else {
+  //     final jsonResponse = jsonDecode(response.body);
+  //     throw Exception(
+  //         jsonResponse['message'] ?? 'Ошибка при восстановлении документа');
+  //   }
+  // }
 
   Future<void> updateMoneyIncomeDocument({
     required int documentId,
@@ -12046,11 +12047,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         debugPrint("Полученные данные по обновлению прихода: $rawData");
         return;
       } else {
-        final body = jsonDecode(response.body) as Map<String, dynamic>;
-        final rawMessage = body['message'] ?? 'Неизвестная ошибка';
-        final message = jsonDecode(jsonEncode(rawMessage));
-
-        throw message;
+        final message = _extractErrorMessageFromResponse(response);
+        throw message ?? 'Ошибка при обновлении документа прихода!';
       }
     } catch (e) {
       debugPrint("Ошибка при обновлении документа прихода: $e");
@@ -12069,18 +12067,15 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       if (response.statusCode == 200 || response.statusCode == 201) {
         return;
       } else {
-        final body = jsonDecode(response.body) as Map<String, dynamic>;
-        final rawMessage = body['message'] ?? 'Неизвестная ошибка';
-        final message = jsonDecode(jsonEncode(rawMessage));
-
-        throw message;
+       final message = _extractErrorMessageFromResponse(response);
+       throw message ?? 'Ошибка при массовом проведении документов прихода!';
       }
     } catch (e) {
-      throw 'Ошибка при массовом проведении документов прихода: $e';
+      rethrow;
     }
   }
 
-  Future<bool> toggleApproveOneMoneyIncomeDocument(int id, bool approve) async {
+  Future<void> toggleApproveOneMoneyIncomeDocument(int id, bool approve) async {
     final path = approve
         ? await _appendQueryParams('/checking-account/mass-approve')
         : await _appendQueryParams('/checking-account/mass-unapprove');
@@ -12090,19 +12085,15 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         'ids': [id],
       });
 
-      if (response.statusCode != 200 && response.statusCode != 201) {
-        final body = jsonDecode(response.body) as Map<String, dynamic>;
-        final rawMessage = body['message'] ?? 'Неизвестная ошибка';
-        final message = jsonDecode(jsonEncode(rawMessage));
-
-        throw message;
+      if (response.statusCode != 200 && response.statusCode != 204 && response.statusCode != 201) {
+       final message = _extractErrorMessageFromResponse(response);
+       throw message ?? 'Ошибка при изменении статуса документа прихода!';
       }
 
-     final body = json.decode(response.body);
-     return (body['result']['approved_count'] as int) == 1;
+     return;
 
     } catch (e) {
-      throw Exception('Ошибка при изменении статуса документа прихода: $e');
+      rethrow;
     }
   }
 
@@ -12117,14 +12108,11 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       if (response.statusCode == 200 || response.statusCode == 201) {
         return;
       } else {
-        final body = jsonDecode(response.body) as Map<String, dynamic>;
-        final rawMessage = body['message'] ?? 'Неизвестная ошибка';
-        final message = jsonDecode(jsonEncode(rawMessage));
-
-        throw message;
+        final message = _extractErrorMessageFromResponse(response);
+        throw message ?? 'Ошибка при массовом снятии проведения документов прихода!';
       }
     } catch (e) {
-      throw Exception('Ошибка при массовой отмене подтверждения документов прихода: $e');
+      rethrow;
     }
   }
 
@@ -12139,14 +12127,11 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       if (response.statusCode == 200 || response.statusCode == 201) {
         return;
       } else {
-        final body = jsonDecode(response.body) as Map<String, dynamic>;
-        final rawMessage = body['message'] ?? 'Неизвестная ошибка';
-        final message = jsonDecode(jsonEncode(rawMessage));
-
-        throw message;
+        final message = _extractErrorMessageFromResponse(response);
+        throw message ?? 'Ошибка при массовом удалении документов прихода!';
       }
     } catch (e) {
-      throw Exception('Ошибка при массовом удалении документов прихода: $e');
+      rethrow;
     }
   }
 
@@ -12154,21 +12139,18 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     final path = await _appendQueryParams('/checking-account/mass-restore');
 
     try {
-      final response = await _deleteRequestWithBody(path, {
+      final response = await _postRequest(path, {
         'ids': ids,
       });
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return;
       } else {
-        final body = jsonDecode(response.body) as Map<String, dynamic>;
-        final rawMessage = body['message'] ?? 'Неизвестная ошибка';
-        final message = jsonDecode(jsonEncode(rawMessage));
-
-        throw message;
+        final message = _extractErrorMessageFromResponse(response);
+        throw message ?? 'Ошибка при массовом восстановлении документов прихода!';
       }
     } catch (e) {
-      throw Exception('Ошибка при массовом восстановлении документов прихода: $e');
+      rethrow;
     }
   }
 
@@ -12389,11 +12371,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         debugPrint("Полученные данные по обновлению прихода: $rawData");
         return;
       } else {
-        final body = jsonDecode(response.body) as Map<String, dynamic>;
-        final rawMessage = body['message'] ?? 'Неизвестная ошибка';
-        final message = jsonDecode(jsonEncode(rawMessage));
-
-        throw message;
+        final message = _extractErrorMessageFromResponse(response);
+        throw message ?? 'Неизвестная ошибка';
       }
     } catch (e) {
       debugPrint("Ошибка при обновлении документа прихода: $e");
@@ -12412,11 +12391,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       if (response.statusCode == 200 || response.statusCode == 201) {
         return;
       } else {
-        final body = jsonDecode(response.body) as Map<String, dynamic>;
-        final rawMessage = body['message'] ?? 'Неизвестная ошибка';
-        final message = jsonDecode(jsonEncode(rawMessage));
-
-        throw message;
+        final message = _extractErrorMessageFromResponse(response);
+        throw message ?? 'Неизвестная ошибка';
       }
     } catch (e) {
       throw 'Ошибка при массовом проведении документов прихода: $e';
@@ -12434,11 +12410,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       });
 
       if (response.statusCode != 200 && response.statusCode != 201) {
-        final body = jsonDecode(response.body) as Map<String, dynamic>;
-        final rawMessage = body['message'] ?? 'Неизвестная ошибка';
-        final message = jsonDecode(jsonEncode(rawMessage));
-
-        throw message;
+        final message = _extractErrorMessageFromResponse(response);
+        throw message ?? 'Неизвестная ошибка';
       }
 
       final body = json.decode(response.body);
@@ -12460,11 +12433,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       if (response.statusCode == 200 || response.statusCode == 201) {
         return;
       } else {
-        final body = jsonDecode(response.body) as Map<String, dynamic>;
-        final rawMessage = body['message'] ?? 'Неизвестная ошибка';
-        final message = jsonDecode(jsonEncode(rawMessage));
-
-        throw message;
+        final message = _extractErrorMessageFromResponse(response);
+        throw message ?? 'Неизвестная ошибка';
       }
     } catch (e) {
       throw Exception('Ошибка при массовой отмене подтверждения документов прихода: $e');
@@ -12482,11 +12452,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       if (response.statusCode == 200 || response.statusCode == 201) {
         return;
       } else {
-        final body = jsonDecode(response.body) as Map<String, dynamic>;
-        final rawMessage = body['message'] ?? 'Неизвестная ошибка';
-        final message = jsonDecode(jsonEncode(rawMessage));
-
-        throw message;
+        final message = _extractErrorMessageFromResponse(response);
+        throw message ?? 'Неизвестная ошибка';
       }
     } catch (e) {
       throw Exception('Ошибка при массовом удалении документов прихода: $e');
@@ -12504,11 +12471,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       if (response.statusCode == 200 || response.statusCode == 201) {
         return;
       } else {
-        final body = jsonDecode(response.body) as Map<String, dynamic>;
-        final rawMessage = body['message'] ?? 'Неизвестная ошибка';
-        final message = jsonDecode(jsonEncode(rawMessage));
-
-        throw message;
+        final message = _extractErrorMessageFromResponse(response);
+        throw message ?? 'Неизвестная ошибка';
       }
     } catch (e) {
       throw Exception('Ошибка при массовом восстановлении документов прихода: $e');
@@ -12612,11 +12576,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     if (response.statusCode == 200 || response.statusCode == 201) {
       return;
     } else {
-      final body = jsonDecode(response.body) as Map<String, dynamic>;
-      final rawMessage = body['message'] ?? 'Неизвестная ошибка';
-      final message = jsonDecode(jsonEncode(rawMessage));
-
-      throw message;
+      final message = _extractErrorMessageFromResponse(response);
+      throw message ?? 'Неизвестная ошибка';
     }
   }
 
@@ -12871,11 +12832,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     if (response.statusCode == 200 || response.statusCode == 201) {
       return;
     } else {
-      final body = jsonDecode(response.body) as Map<String, dynamic>;
-      final rawMessage = body['message'] ?? 'Неизвестная ошибка';
-      final message = jsonDecode(jsonEncode(rawMessage));
-
-      throw message;
+      final message = _extractErrorMessageFromResponse(response);
+      throw message ?? 'Неизвестная ошибка';
     }
   }
 
@@ -13128,11 +13086,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     if (response.statusCode == 200 || response.statusCode == 201) {
       return;
     } else {
-      final body = jsonDecode(response.body) as Map<String, dynamic>;
-      final rawMessage = body['message'] ?? 'Неизвестная ошибка';
-      final message = jsonDecode(jsonEncode(rawMessage));
-
-      throw message;
+      final message = _extractErrorMessageFromResponse(response);
+      throw message ?? 'Неизвестная ошибка';
     }
   }
 

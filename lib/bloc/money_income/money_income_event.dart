@@ -62,28 +62,23 @@ class UpdateMoneyIncome extends MoneyIncomeEvent {
 }
 
 class DeleteMoneyIncome extends MoneyIncomeEvent {
-  final int documentId;
+  final Document document;
   final bool reload;
 
-  const DeleteMoneyIncome(this.documentId, {this.reload = true});
+  const DeleteMoneyIncome(this.document, {this.reload = true});
 
   @override
-  List<Object> get props => [documentId];
+  List<Object> get props => [document];
 }
-
-class RestoreMoneyIncome extends MoneyIncomeEvent {
-  final int documentId;
-
-  const RestoreMoneyIncome(this.documentId);
-
-  @override
-  List<Object> get props => [documentId];
-}
-
-class AddMoneyIncome extends MoneyIncomeEvent {
-  @override
-  List<Object> get props => [];
-}
+//
+// class RestoreMoneyIncome extends MoneyIncomeEvent {
+//   final int documentId;
+//
+//   const RestoreMoneyIncome(this.documentId);
+//
+//   @override
+//   List<Object> get props => [documentId];
+// }
 
 class CreateMoneyIncome extends MoneyIncomeEvent {
   final String date;
