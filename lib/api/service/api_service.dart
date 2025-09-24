@@ -10341,7 +10341,7 @@ Future<IncomingDocument> getIncomingDocumentById(int documentId) async {
   bool approve = false, // Новый параметр
 }) async {
   final token = await getToken();
-  if (token == null) throw Exception('Токен не найден');
+  if (token == null) throw 'Токен не найден';
   
   final path = await _appendQueryParams('/income-documents');
   final uri = Uri.parse('$baseUrl$path');
@@ -10371,7 +10371,11 @@ Future<IncomingDocument> getIncomingDocumentById(int documentId) async {
   if (response.statusCode == 200 || response.statusCode == 201) {
     return;
   } else {
-    throw Exception('Ошибка создания документа: ${response.body}');
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    final rawMessage = body['message'] ?? 'Неизвестная ошибка';
+    final message = jsonDecode(jsonEncode(rawMessage));
+
+    throw message;
   }
 }
 
@@ -10386,7 +10390,7 @@ Future<void> updateIncomingDocument({
   required int salesFunnelId,
 }) async {
   final token = await getToken();
-  if (token == null) throw Exception('Токен не найден');
+  if (token == null) throw 'Токен не найден';
 
   final path = await _appendQueryParams('/income-documents/$documentId');
   final uri = Uri.parse('$baseUrl$path');
@@ -10414,7 +10418,11 @@ Future<void> updateIncomingDocument({
   if (response.statusCode == 200 || response.statusCode == 201) {
     return;
   } else {
-    throw Exception('Ошибка обновления документа: ${response.body}');
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    final rawMessage = body['message'] ?? 'Неизвестная ошибка';
+    final message = jsonDecode(jsonEncode(rawMessage));
+
+    throw message;
   }
 }
 Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
@@ -10557,7 +10565,11 @@ Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
     if (response.statusCode == 200 || response.statusCode == 201) {
       return;
     } else {
-      throw Exception('Ошибка создания документа: ${response.body}');
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      final rawMessage = body['message'] ?? 'Неизвестная ошибка';
+      final message = jsonDecode(jsonEncode(rawMessage));
+
+      throw message;
     }
   }
 
@@ -11647,7 +11659,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     required bool approve,
   }) async {
     final token = await getToken();
-    if (token == null) throw Exception('Токен не найден');
+    if (token == null) throw 'Токен не найден';
 
     final path = await _appendQueryParams('/supplier-return-documents');
     final uri = Uri.parse('$baseUrl$path');
@@ -11676,7 +11688,11 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     if (response.statusCode == 200 || response.statusCode == 201) {
       return;
     } else {
-      throw Exception('Ошибка создания документа: ${response.body}');
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      final rawMessage = body['message'] ?? 'Неизвестная ошибка';
+      final message = jsonDecode(jsonEncode(rawMessage));
+
+      throw message;
     }
   }
 
@@ -12402,7 +12418,7 @@ Future<void> updateMoneyOutcomeDocument({
     required bool approve,
   }) async {
     final token = await getToken();
-    if (token == null) throw Exception('Токен не найден');
+    if (token == null) throw 'Токен не найден';
 
     final path = await _appendQueryParams('/client-return-documents');
     final response = await _postRequest(path, {
@@ -12419,7 +12435,11 @@ Future<void> updateMoneyOutcomeDocument({
     if (response.statusCode == 200 || response.statusCode == 201) {
       return;
     } else {
-      throw Exception('Ошибка создания документа: ${response.body}');
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      final rawMessage = body['message'] ?? 'Неизвестная ошибка';
+      final message = jsonDecode(jsonEncode(rawMessage));
+
+      throw message;
     }
   }
 
@@ -12659,7 +12679,7 @@ Future<void> updateMoneyOutcomeDocument({
     required bool approve,
   }) async {
     final token = await getToken();
-    if (token == null) throw Exception('Токен не найден');
+    if (token == null) throw 'Токен не найден';
 
     final path = await _appendQueryParams('/write-off-documents');
     final response = await _postRequest(path, {
@@ -12674,7 +12694,11 @@ Future<void> updateMoneyOutcomeDocument({
     if (response.statusCode == 200 || response.statusCode == 201) {
       return;
     } else {
-      throw Exception('Ошибка создания документа: ${response.body}');
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      final rawMessage = body['message'] ?? 'Неизвестная ошибка';
+      final message = jsonDecode(jsonEncode(rawMessage));
+
+      throw message;
     }
   }
 
@@ -12911,7 +12935,7 @@ Future<void> updateMoneyOutcomeDocument({
     required bool approve,
   }) async {
     final token = await getToken();
-    if (token == null) throw Exception('Токен не найден');
+    if (token == null) throw 'Токен не найден';
 
     final path = await _appendQueryParams('/movement-documents');
     final response = await _postRequest(path, {
@@ -12927,7 +12951,11 @@ Future<void> updateMoneyOutcomeDocument({
     if (response.statusCode == 200 || response.statusCode == 201) {
       return;
     } else {
-      throw Exception('Ошибка создания документа: ${response.body}');
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      final rawMessage = body['message'] ?? 'Неизвестная ошибка';
+      final message = jsonDecode(jsonEncode(rawMessage));
+
+      throw message;
     }
   }
 
