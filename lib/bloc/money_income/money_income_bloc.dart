@@ -38,74 +38,53 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
 
   Future<void> _onMassApproveMoneyIncomeDocuments(MassApproveMoneyIncomeDocuments event, Emitter<MoneyIncomeState> emit) async {
     final ls = _selectedDocuments.where((e) => e.approved == false && e.deletedAt == null).map((e) => e.id!).toList();
-    debugPrint("_onMassApproveMoneyIncomeDocuments. IDs: $ls");
     add(UnselectAllDocuments());
 
-    final allApproved = await apiService.masApproveMoneyIncomeDocuments(ls);
+    final response = await apiService.masApproveMoneyIncomeDocuments(ls);
     try {
-      if (allApproved) {
-        emit(MoneyIncomeApproveMassSuccess(""));
-      } else {
-        emit(MoneyIncomeApproveMassError("approve_mass_error"));
-      }
-    } on Exception catch (e) {
+      emit(MoneyIncomeApproveMassSuccess(""));
+    } catch (e) {
       emit(MoneyIncomeToggleOneApproveError(e.toString()));
     }
   }
 
   Future<void> _onMassDisapproveMoneyIncomeDocuments(MassDisapproveMoneyIncomeDocuments event, Emitter<MoneyIncomeState> emit) async {
     final ls = _selectedDocuments.where((e) => e.approved == true && e.deletedAt == null).map((e) => e.id!).toList();
-    debugPrint("_onMassDisapproveMoneyIncomeDocuments. IDs: $ls");
     add(UnselectAllDocuments());
 
     try {
-      final allDisapproved = await apiService.masDisapproveMoneyIncomeDocuments(ls);
-      if (allDisapproved) {
+      final response = await apiService.masDisapproveMoneyIncomeDocuments(ls);
         emit(MoneyIncomeDisapproveMassSuccess("Подтверждение отменено"));
-      } else {
-        emit(MoneyIncomeDisapproveMassError("Ошибка при отмене подтверждения"));
-      }
-    } on Exception catch (e) {
+    } catch (e) {
       emit(MoneyIncomeDisapproveMassError(e.toString()));
     }
   }
 
   Future<void> _onMassDeleteMoneyIncomeDocuments(MassDeleteMoneyIncomeDocuments event, Emitter<MoneyIncomeState> emit) async {
     final ls = _selectedDocuments.where((e) => e.deletedAt == null).map((e) => e.id!).toList();
-    debugPrint("_onMassDeleteMoneyIncomeDocuments. IDs: $ls");
     add(UnselectAllDocuments());
 
     try {
-      final allDeleted = await apiService.masDeleteMoneyIncomeDocuments(ls);
-      if (allDeleted) {
+      final response = await apiService.masDeleteMoneyIncomeDocuments(ls);
         emit(MoneyIncomeDeleteMassSuccess("Документы удалены"));
-      } else {
-        emit(MoneyIncomeDeleteMassError("Ошибка при удалении документов"));
-      }
-    } on Exception catch (e) {
+    } catch (e) {
       emit(MoneyIncomeDeleteMassError(e.toString()));
     }
   }
 
   Future<void> _onMassRestoreMoneyIncomeDocuments(MassRestoreMoneyIncomeDocuments event, Emitter<MoneyIncomeState> emit) async {
     final ls = _selectedDocuments.where((e) => e.deletedAt != null).map((e) => e.id!).toList();
-    debugPrint("_onMassRestoreMoneyIncomeDocuments. IDs: $ls");
     add(UnselectAllDocuments());
 
     try {
-      final allRestored = await apiService.masRestoreMoneyIncomeDocuments(ls);
-      if (allRestored) {
+      final response = await apiService.masRestoreMoneyIncomeDocuments(ls);
         emit(MoneyIncomeRestoreMassSuccess("Документы восстановлены"));
-      } else {
-        emit(MoneyIncomeRestoreMassError("Ошибка при восстановлении документов"));
-      }
-    } on Exception catch (e) {
+    } catch (e) {
       emit(MoneyIncomeRestoreMassError(e.toString()));
     }
   }
 
-  Future<void> _onToggleApproveOneMoneyIncomeDocument(
-      ToggleApproveOneMoneyIncomeDocument event, Emitter<MoneyIncomeState> emit) async {
+  Future<void> _onToggleApproveOneMoneyIncomeDocument(ToggleApproveOneMoneyIncomeDocument event, Emitter<MoneyIncomeState> emit) async {
     try {
       final approved = await apiService.toggleApproveOneMoneyIncomeDocument(event.documentId, event.approve);
       if (approved) {
