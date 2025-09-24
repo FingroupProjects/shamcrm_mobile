@@ -4,9 +4,9 @@ import 'package:crm_task_manager/models/money/money_outcome_document_model.dart'
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:flutter/foundation.dart';
 
 part 'money_outcome_event.dart';
+
 part 'money_outcome_state.dart';
 
 class MoneyOutcomeBloc extends Bloc<MoneyOutcomeEvent, MoneyOutcomeState> {
@@ -16,7 +16,7 @@ class MoneyOutcomeBloc extends Bloc<MoneyOutcomeEvent, MoneyOutcomeState> {
   Map<String, dynamic>? _filters;
   String? _search = '';
   List<Document> _allData = [];
-
+  Set<Document> _selectedDocuments = {};
 
   MoneyOutcomeBloc() : super(MoneyOutcomeInitial()) {
     on<FetchMoneyOutcome>(_onFetchMoneyOutcome);
@@ -25,6 +25,75 @@ class MoneyOutcomeBloc extends Bloc<MoneyOutcomeEvent, MoneyOutcomeState> {
     on<DeleteMoneyOutcome>(_onDeleteMoneyOutcome);
     on<RestoreMoneyOutcome>(_onRestoreMoneyOutcome);
     on<AddMoneyOutcome>(_onAddMoneyOutcome);
+    on<MassApproveMoneyOutcomeDocuments>(_onMassApproveMoneyOutcomeDocuments);
+    on<MassDisapproveMoneyOutcomeDocuments>(_onMassDisapproveMoneyOutcomeDocuments);
+    on<MassDeleteMoneyOutcomeDocuments>(_onMassDeleteMoneyOutcomeDocuments);
+    on<MassRestoreMoneyOutcomeDocuments>(_onMassRestoreMoneyOutcomeDocuments);
+    on<ToggleApproveOneMoneyOutcomeDocument>(_onToggleApproveOneMoneyOutcomeDocument);
+    on<RemoveLocalFromList>(_onRemoveLocalFromList);
+    on<SelectDocument>(_onSelectDocument);
+    on<UnselectAllDocuments>(_onUnselectAllDocuments);
+  }
+
+  Future<void> _onMassApproveMoneyOutcomeDocuments(MassApproveMoneyOutcomeDocuments event, Emitter<MoneyOutcomeState> emit) async {
+    final ls = _selectedDocuments.where((e) => e.approved == false && e.deletedAt == null).map((e) => e.id!).toList();
+    add(UnselectAllDocuments());
+
+    final response = await apiService.masApproveMoneyOutcomeDocuments(ls);
+    try {
+      emit(MoneyOutcomeApproveMassSuccess(""));
+    } catch (e) {
+      emit(MoneyOutcomeToggleOneApproveError(e.toString()));
+    }
+  }
+
+  Future<void> _onMassDisapproveMoneyOutcomeDocuments(MassDisapproveMoneyOutcomeDocuments event, Emitter<MoneyOutcomeState> emit) async {
+    final ls = _selectedDocuments.where((e) => e.approved == true && e.deletedAt == null).map((e) => e.id!).toList();
+    add(UnselectAllDocuments());
+
+    try {
+      final response = await apiService.masDisapproveMoneyOutcomeDocuments(ls);
+      emit(MoneyOutcomeDisapproveMassSuccess("Подтверждение отменено"));
+    } catch (e) {
+      emit(MoneyOutcomeDisapproveMassError(e.toString()));
+    }
+  }
+
+  Future<void> _onMassDeleteMoneyOutcomeDocuments(MassDeleteMoneyOutcomeDocuments event, Emitter<MoneyOutcomeState> emit) async {
+    final ls = _selectedDocuments.where((e) => e.deletedAt == null).map((e) => e.id!).toList();
+    add(UnselectAllDocuments());
+
+    try {
+      final response = await apiService.masDeleteMoneyOutcomeDocuments(ls);
+      emit(MoneyOutcomeDeleteMassSuccess("Документы удалены"));
+    } catch (e) {
+      emit(MoneyOutcomeDeleteMassError(e.toString()));
+    }
+  }
+
+  Future<void> _onMassRestoreMoneyOutcomeDocuments(MassRestoreMoneyOutcomeDocuments event, Emitter<MoneyOutcomeState> emit) async {
+    final ls = _selectedDocuments.where((e) => e.deletedAt != null).map((e) => e.id!).toList();
+    add(UnselectAllDocuments());
+
+    try {
+      final response = await apiService.masRestoreMoneyOutcomeDocuments(ls);
+      emit(MoneyOutcomeRestoreMassSuccess("Документы восстановлены"));
+    } catch (e) {
+      emit(MoneyOutcomeRestoreMassError(e.toString()));
+    }
+  }
+
+  Future<void> _onToggleApproveOneMoneyOutcomeDocument(ToggleApproveOneMoneyOutcomeDocument event, Emitter<MoneyOutcomeState> emit) async {
+    try {
+      final approved = await apiService.toggleApproveOneMoneyOutcomeDocument(event.documentId, event.approve);
+      if (approved) {
+        emit(MoneyOutcomeToggleOneApproveSuccess(""));
+      } else {
+        emit(MoneyOutcomeToggleOneApproveError("approve_error"));
+      }
+    } catch (e) {
+      emit(MoneyOutcomeToggleOneApproveError(e.toString()));
+    }
   }
 
   Future<void> _onAddMoneyOutcome(AddMoneyOutcome event, Emitter<MoneyOutcomeState> emit) async {
@@ -32,14 +101,13 @@ class MoneyOutcomeBloc extends Bloc<MoneyOutcomeEvent, MoneyOutcomeState> {
   }
 
   Future<void> _onFetchMoneyOutcome(FetchMoneyOutcome event, Emitter<MoneyOutcomeState> emit) async {
-    // Always emit loading for force refresh or initial load
     if (event.forceRefresh || _allData.isEmpty) {
       emit(MoneyOutcomeLoading());
     }
 
     if (event.forceRefresh) {
       _currentPage = 1;
-      _allData.clear(); // Use clear() instead of = []
+      _allData.clear();
       _filters = event.filters;
       _search = event.search;
     } else if (state is MoneyOutcomeLoaded && (state as MoneyOutcomeLoaded).hasReachedMax) {
@@ -47,10 +115,6 @@ class MoneyOutcomeBloc extends Bloc<MoneyOutcomeEvent, MoneyOutcomeState> {
     }
 
     try {
-      if (kDebugMode) {
-        print('MoneyOutcomeBloc: Fetching page $_currentPage with filters: $_filters search: ${event.search}');
-      }
-
       final response = await apiService.getMoneyOutcomeDocuments(
         page: _currentPage,
         perPage: _perPage,
@@ -58,16 +122,10 @@ class MoneyOutcomeBloc extends Bloc<MoneyOutcomeEvent, MoneyOutcomeState> {
         search: _search,
       );
 
-      if (kDebugMode) {
-        print('MoneyOutcomeBloc: Response received');
-        print('MoneyOutcomeBloc: Data count: ${response.result?.data?.length ?? 0}');
-      }
-
       final newData = response.result?.data ?? [];
 
-      // Clear and rebuild for force refresh, append for pagination
       if (event.forceRefresh) {
-        _allData = List.from(newData); // Create new list instance
+        _allData = List.from(newData);
       } else {
         _allData.addAll(newData);
       }
@@ -78,48 +136,46 @@ class MoneyOutcomeBloc extends Bloc<MoneyOutcomeEvent, MoneyOutcomeState> {
         _currentPage++;
       }
 
-      // Always emit a new state instance
+      final selectedDocuments = _allData
+          .where((doc) => _selectedDocuments.contains(doc))
+          .toList();
+
       emit(MoneyOutcomeLoaded(
-        data: List.from(_allData), // Create new list instance for the state
+        data: List.from(_allData),
         pagination: response.result?.pagination,
         hasReachedMax: hasReachedMax,
+        selectedData: selectedDocuments,
       ));
-
-      if (kDebugMode) {
-        print('MoneyOutcomeBloc: Emitted MoneyOutcomeLoaded with ${_allData.length} total items, hasReachedMax: $hasReachedMax');
-      }
     } catch (e) {
-      if (kDebugMode) {
-        print('MoneyOutcomeBloc: Error occurred: $e');
-      }
       emit(MoneyOutcomeError(e.toString()));
     }
   }
 
   Future<void> _onCreateMoneyOutcome(CreateMoneyOutcome event, Emitter<MoneyOutcomeState> emit) async {
-    emit(MoneyOutcomeCreateLoading());
+    emit(MoneyOutcomeLoading());
     try {
-      // operation types are different but api method is the same for 4 types of operations, OperationType enum is used to distinguish them
       await apiService.createMoneyOutcomeDocument(
         date: event.date,
         amount: event.amount,
         operationType: event.operationType,
         movementType: event.movementType,
         leadId: event.leadId,
+        articleId: event.articleId,
         senderCashRegisterId: event.senderCashRegisterId,
         cashRegisterId: event.cashRegisterId,
         comment: event.comment,
         supplierId: event.supplierId,
+        approve: event.approve,
       );
 
-      emit(const MoneyOutcomeCreateSuccess('Документ успешно создан'));
+      emit(const MoneyOutcomeCreateSuccess('document_created_successfully'));
     } catch (e) {
       emit(MoneyOutcomeCreateError(e.toString()));
     }
   }
 
   Future<void> _onUpdateMoneyOutcome(UpdateMoneyOutcome event, Emitter<MoneyOutcomeState> emit) async {
-    emit(MoneyOutcomeUpdateLoading());
+    emit(MoneyOutcomeLoading());
     try {
       await apiService.updateMoneyOutcomeDocument(
         documentId: event.id!,
@@ -128,45 +184,97 @@ class MoneyOutcomeBloc extends Bloc<MoneyOutcomeEvent, MoneyOutcomeState> {
         operationType: event.operationType,
         movementType: event.movementType,
         leadId: event.leadId,
+        articleId: event.articleId,
         senderCashRegisterId: event.senderCashRegisterId,
         cashRegisterId: event.cashRegisterId,
         comment: event.comment,
         supplierId: event.supplierId,
-        approved: event.approved,
       );
-      emit(const MoneyOutcomeUpdateSuccess('Документ успешно обновлен'));
+      emit(const MoneyOutcomeUpdateSuccess('document_updated_successfully'));
     } catch (e) {
       emit(MoneyOutcomeUpdateError(e.toString()));
     }
   }
 
   Future<void> _onDeleteMoneyOutcome(DeleteMoneyOutcome event, Emitter<MoneyOutcomeState> emit) async {
-    emit(MoneyOutcomeDeleteLoading());
+    if (event.reload) emit(MoneyOutcomeLoading());
     try {
       final result = await apiService.deleteMoneyOutcomeDocument(event.documentId);
-      if (result['result'] == 'Success') {
-        await Future.delayed(const Duration(milliseconds: 100));
-        emit(const MoneyOutcomeDeleteSuccess('Документ успешно удален'));
+      if (result) {
+        if (event.reload) emit(MoneyOutcomeDeleteSuccess('document_deleted_successfully', reload: event.reload));
+        if (event.reload) add(RemoveLocalFromList(event.documentId));
       } else {
-        emit(const MoneyOutcomeDeleteError('Не удалось удалить документ'));
+        emit(const MoneyOutcomeDeleteError('failed_to_delete_document'));
       }
     } catch (e) {
-      emit(MoneyOutcomeDeleteError('Ошибка при удалении документа: ${e.toString()}'));
+      emit(MoneyOutcomeDeleteError(e.toString()));
     }
   }
 
   Future<void> _onRestoreMoneyOutcome(RestoreMoneyOutcome event, Emitter<MoneyOutcomeState> emit) async {
-    emit(MoneyOutcomeRestoreLoading());
+    emit(MoneyOutcomeLoading());
     try {
       final result = await apiService.restoreMoneyOutcomeDocument(event.documentId);
       if (result['result'] == 'Success') {
-        await Future.delayed(const Duration(milliseconds: 100));
-        emit(const MoneyOutcomeRestoreSuccess('Документ успешно восстановлен'));
+        emit(const MoneyOutcomeRestoreSuccess('document_restored_successfully'));
       } else {
-        emit(const MoneyOutcomeRestoreError('Не удалось восстановить документ'));
+        emit(const MoneyOutcomeRestoreError('failed_to_restore_document'));
       }
     } catch (e) {
-      emit(MoneyOutcomeRestoreError('Ошибка при восстановлении документа: ${e.toString()}'));
+      emit(MoneyOutcomeRestoreError('error_restoring_document: ${e.toString()}'));
+    }
+  }
+
+  Future<void> _onRemoveLocalFromList(RemoveLocalFromList event, Emitter<MoneyOutcomeState> emit) async {
+    emit(MoneyOutcomeLoading());
+    final double remainingPercentage = _allData.length / _perPage;
+    if (remainingPercentage < 0.3) {
+      add(FetchMoneyOutcome(forceRefresh: true));
+    } else {
+      _allData.removeWhere((doc) => doc.id == event.documentId);
+      emit(MoneyOutcomeLoaded(
+        data: List.from(_allData),
+        pagination: null,
+        hasReachedMax: false,
+      ));
+    }
+  }
+
+  Future<void> _onSelectDocument(SelectDocument event, Emitter<MoneyOutcomeState> emit) async {
+    if (state is MoneyOutcomeLoaded) {
+      final currentState = state as MoneyOutcomeLoaded;
+
+      if (_selectedDocuments.contains(event.document)) {
+        _selectedDocuments.remove(event.document);
+      } else {
+        _selectedDocuments.add(event.document);
+      }
+
+      final selectedDocuments = currentState.data
+          .where((doc) => _selectedDocuments.contains(doc))
+          .toList();
+
+      emit(MoneyOutcomeLoaded(
+        data: currentState.data,
+        pagination: currentState.pagination,
+        hasReachedMax: currentState.hasReachedMax,
+        selectedData: selectedDocuments,
+      ));
+    }
+  }
+
+  Future<void> _onUnselectAllDocuments(UnselectAllDocuments event, Emitter<MoneyOutcomeState> emit) async {
+    _selectedDocuments = {};
+
+    if (state is MoneyOutcomeLoaded) {
+      final currentState = state as MoneyOutcomeLoaded;
+      emit(MoneyOutcomeLoaded(
+        data: currentState.data,
+        pagination: currentState.pagination,
+        hasReachedMax: currentState.hasReachedMax,
+        selectedData: [],
+      ));
     }
   }
 }
+

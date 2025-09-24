@@ -1,22 +1,24 @@
 import 'package:crm_task_manager/bloc/money_outcome/money_outcome_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class MoneyOutcomeDeleteDialog extends StatelessWidget {
   final int documentId;
+  final Function(int)? onDelete;
 
-  const MoneyOutcomeDeleteDialog({super.key, required this.documentId});
+  const MoneyOutcomeDeleteDialog({super.key, required this.documentId, this.onDelete});
 
   @override
   Widget build(BuildContext context) {
     return BlocListener<MoneyOutcomeBloc, MoneyOutcomeState>(
       listener: (context, state) {
-        if (state is MoneyOutcomeDeleteSuccess) {
+        if (state is MoneyOutcomeDeleteError) {
+          showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+        } else if (state is MoneyOutcomeDeleteSuccess) {
           Navigator.of(context).pop(true);
-        } else if (state is MoneyOutcomeDeleteError) {
-          Navigator.of(context).pop(false);
         }
       },
       child: AlertDialog(
@@ -34,7 +36,7 @@ class MoneyOutcomeDeleteDialog extends StatelessWidget {
         ),
         content: Text(
           AppLocalizations.of(context)?.translate('delete_money_outcome_confirm') ??
-              AppLocalizations.of(context)!.translate('confirm_delete_money_income_document') ?? 'Вы уверены, что хотите удалить этот документ денежного дохода?',
+              AppLocalizations.of(context)?.translate('confirm_delete_outcome_document') ?? 'Вы уверены, что хотите удалить этот документ дохода?',
           style: TextStyle(
             fontSize: 16,
             fontFamily: 'Gilroy',
@@ -61,7 +63,7 @@ class MoneyOutcomeDeleteDialog extends StatelessWidget {
                 child: CustomButton(
                   buttonText: AppLocalizations.of(context)!.translate('delete'),
                   onPressed: () {
-                    context.read<MoneyOutcomeBloc>().add(DeleteMoneyOutcome(documentId));
+                    onDelete != null ? onDelete!(documentId) : null;
                   },
                   buttonColor: Color(0xff1E2E52),
                   textColor: Colors.white,

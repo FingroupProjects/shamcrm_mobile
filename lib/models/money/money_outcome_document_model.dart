@@ -1,7 +1,9 @@
-class MoneyOutcomeDocumentModel {
+import 'package:equatable/equatable.dart';
+
+class MoneyOutcomeDocumentModel extends Equatable {
   final Result? result;
 
-  MoneyOutcomeDocumentModel({this.result});
+  const MoneyOutcomeDocumentModel({this.result});
 
   factory MoneyOutcomeDocumentModel.fromJson(Map<String, dynamic> json) {
     try {
@@ -17,13 +19,16 @@ class MoneyOutcomeDocumentModel {
   Map<String, dynamic> toJson() => {
     "result": result?.toJson(),
   };
+
+  @override
+  List<Object?> get props => [result];
 }
 
-class Result {
+class Result extends Equatable {
   final List<Document>? data;
   final Pagination? pagination;
 
-  Result({this.data, this.pagination});
+  const Result({this.data, this.pagination});
 
   factory Result.fromJson(Map<String, dynamic> json) {
     try {
@@ -47,9 +52,12 @@ class Result {
     "data": data?.map((e) => e.toJson()).toList(),
     "pagination": pagination?.toJson(),
   };
+
+  @override
+  List<Object?> get props => [data, pagination];
 }
 
-class MoneyOrganization {
+class MoneyOrganization extends Equatable {
   final int? id;
   final String? name;
   final int? usersCount;
@@ -69,7 +77,7 @@ class MoneyOrganization {
   final String? telephony;
   final bool? autoResponder;
 
-  MoneyOrganization({
+  const MoneyOrganization({
     this.id,
     this.name,
     this.usersCount,
@@ -119,7 +127,6 @@ class MoneyOrganization {
     }
   }
 
-  // Helper method to safely parse strings
   static String? _parseString(dynamic value) {
     if (value == null) return null;
     if (value is String) return value;
@@ -148,16 +155,38 @@ class MoneyOrganization {
       'auto_responder': autoResponder,
     };
   }
+
+  @override
+  List<Object?> get props => [
+    id,
+    name,
+    usersCount,
+    instagram,
+    facebook,
+    tgNick,
+    whatsapp,
+    tgId,
+    hasClientBot,
+    taskBotToken,
+    osonSms,
+    last1cUpdate,
+    integration1c,
+    telegramMiniAppBot,
+    hasTelegramB2B,
+    integrationEmail,
+    telephony,
+    autoResponder,
+  ];
 }
 
-class Document {
+class Document extends Equatable {
   final int? id;
   final String? docNumber;
   final String? date;
   final MoneyOrganization? organization;
   final CashRegister? cashRegister;
   final CashRegister? senderCashregister;
-  final String? article;
+  final Article? article;
   final String? amount;
   final Model? model;
   final String? comment;
@@ -167,7 +196,7 @@ class Document {
   final String? createdAt;
   final String? deletedAt;
 
-  Document({
+  const Document({
     this.id,
     this.docNumber,
     this.date,
@@ -200,7 +229,7 @@ class Document {
         senderCashregister: json['sender_cashregister'] != null
             ? CashRegister.fromJson(json['sender_cashregister'])
             : null,
-        article: _parseString(json['article']),
+        article: json['article'] != null ? Article.fromJson(json['article']) : null,
         amount: _parseString(json['amount']),
         model: json['model'] != null ? Model.fromJson(json['model']) : null,
         comment: _parseString(json['comment']),
@@ -230,7 +259,7 @@ class Document {
     "organization": organization?.toJson(),
     "cash_register": cashRegister?.toJson(),
     "sender_cashregister": senderCashregister?.toJson(),
-    "article": article,
+    "article": article?.toJson(),
     "amount": amount,
     "model": model?.toJson(),
     "comment": comment,
@@ -240,15 +269,70 @@ class Document {
     "created_at": createdAt,
     "deleted_at": deletedAt,
   };
+
+  Document copyWith({
+    int? id,
+    String? docNumber,
+    String? date,
+    MoneyOrganization? organization,
+    CashRegister? cashRegister,
+    CashRegister? senderCashregister,
+    Article? article,
+    String? amount,
+    Model? model,
+    String? comment,
+    String? operationType,
+    Author? author,
+    bool? approved,
+    String? createdAt,
+    String? deletedAt,
+  }) {
+    return Document(
+      id: id ?? this.id,
+      docNumber: docNumber ?? this.docNumber,
+      date: date ?? this.date,
+      organization: organization ?? this.organization,
+      cashRegister: cashRegister ?? this.cashRegister,
+      senderCashregister: senderCashregister ?? this.senderCashregister,
+      article: article ?? this.article,
+      amount: amount ?? this.amount,
+      model: model ?? this.model,
+      comment: comment ?? this.comment,
+      operationType: operationType ?? this.operationType,
+      author: author ?? this.author,
+      approved: approved ?? this.approved,
+      createdAt: createdAt ?? this.createdAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+    );
+  }
+
+  @override
+  List<Object?> get props => [
+    id,
+    docNumber,
+    date,
+    organization,
+    cashRegister,
+    senderCashregister,
+    article,
+    amount,
+    model,
+    comment,
+    operationType,
+    author,
+    approved,
+    createdAt,
+    deletedAt,
+  ];
 }
 
-class CashRegister {
+class CashRegister extends Equatable {
   final int? id;
   final String? name;
   final String? createdAt;
   final String? updatedAt;
 
-  CashRegister({
+  const CashRegister({
     this.id,
     this.name,
     this.createdAt,
@@ -281,9 +365,60 @@ class CashRegister {
     "created_at": createdAt,
     "updated_at": updatedAt,
   };
+
+  @override
+  List<Object?> get props => [id, name, createdAt, updatedAt];
 }
 
-class Model {
+class Article extends Equatable {
+  final int? id;
+  final String? name;
+  final String? type; // income, expense
+  final String? createdAt;
+  final String? updatedAt;
+
+  const Article({
+    this.id,
+    this.name,
+    this.type,
+    this.createdAt,
+    this.updatedAt,
+  });
+
+  factory Article.fromJson(Map<String, dynamic> json) {
+    try {
+      return Article(
+        id: json['id'],
+        name: _parseString(json['name']),
+        type: _parseString(json['type']),
+        createdAt: _parseString(json['created_at']),
+        updatedAt: _parseString(json['updated_at']),
+      );
+    } catch (e) {
+      print('Error parsing Article: $e');
+      rethrow;
+    }
+  }
+
+  static String? _parseString(dynamic value) {
+    if (value == null) return null;
+    if (value is String) return value;
+    return value.toString();
+  }
+
+  Map<String, dynamic> toJson() => {
+    "id": id,
+    "name": name,
+    "type": type,
+    "created_at": createdAt,
+    "updated_at": updatedAt,
+  };
+
+  @override
+  List<Object?> get props => [id, name, type, createdAt, updatedAt];
+}
+
+class Model extends Equatable {
   final int? id;
   final int? leadId;
   final String? name;
@@ -327,7 +462,7 @@ class Model {
   final dynamic activeScenarioExecutionId;
   final dynamic tiktokCommenterId;
 
-  Model({
+  const Model({
     this.id,
     this.leadId,
     this.name,
@@ -474,9 +609,55 @@ class Model {
     "active_scenario_execution_id": activeScenarioExecutionId,
     "tiktok_commenter_id": tiktokCommenterId,
   };
+
+  @override
+  List<Object?> get props => [
+    id,
+    leadId,
+    name,
+    sourceId,
+    facebookId,
+    facebookLogin,
+    instaId,
+    instaLogin,
+    tgNick,
+    tgId,
+    regionId,
+    birthday,
+    description,
+    leadStatusId,
+    position,
+    managerId,
+    waName,
+    waPhone,
+    address,
+    phone,
+    lead,
+    email,
+    dialogState,
+    organizationId,
+    sentTo1c,
+    createdAt,
+    updatedAt,
+    instagramPlatformIdId,
+    deletedAt,
+    authorId,
+    processingSpeed,
+    isClient,
+    messageStatus,
+    firstResponseAt,
+    shamId,
+    priceTypeId,
+    verificationCode,
+    phoneVerifiedAt,
+    bonus,
+    salesFunnelId,
+    activeScenarioExecutionId,
+    tiktokCommenterId,
+  ];
 }
 
-class Author {
+class Author extends Equatable {
   final int? id;
   final String? name;
   final String? lastname;
@@ -493,7 +674,7 @@ class Author {
   final int? isFirstLogin;
   final String? uniqueId;
 
-  Author({
+  const Author({
     this.id,
     this.name,
     this.lastname,
@@ -559,16 +740,35 @@ class Author {
     "is_first_login": isFirstLogin,
     "unique_id": uniqueId,
   };
+
+  @override
+  List<Object?> get props => [
+    id,
+    name,
+    lastname,
+    login,
+    email,
+    phone,
+    image,
+    lastSeen,
+    deletedAt,
+    telegramUserId,
+    jobTitle,
+    online,
+    fullName,
+    isFirstLogin,
+    uniqueId,
+  ];
 }
 
-class Pagination {
+class Pagination extends Equatable {
   final int? total;
   final int? count;
   final int? perPage;
   final int? currentPage;
   final int? totalPages;
 
-  Pagination({
+  const Pagination({
     this.total,
     this.count,
     this.perPage,
@@ -593,4 +793,7 @@ class Pagination {
     "current_page": currentPage,
     "total_pages": totalPages,
   };
+
+  @override
+  List<Object?> get props => [total, count, perPage, currentPage, totalPages];
 }
