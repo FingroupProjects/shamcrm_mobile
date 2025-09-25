@@ -5,6 +5,7 @@ import 'dart:io';
 // import 'package:crm_task_manager/models/dashboard_charts_models/lead_conversion_model.dart';
 // import 'package:crm_task_manager/firebase_options.dart';
 import 'package:crm_task_manager/models/LeadStatusForFilter.dart';
+import 'package:crm_task_manager/models/api_exception_model.dart';
 import 'package:crm_task_manager/models/author_data_response.dart';
 import 'package:crm_task_manager/models/calendar_model.dart';
 import 'package:crm_task_manager/models/money/add_cash_desk_model.dart';
@@ -11961,7 +11962,10 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
           return IncomeCategoriesDataResponse.fromJson(data);
         } else {
           final message = _extractErrorMessageFromResponse(response);
-          throw message ?? 'Ошибка при получении данных!';
+          throw ApiException(
+            message ?? 'Ошибка при получении данных прихода!',
+            response.statusCode,
+          );
         }
       } else {
         final message = _extractErrorMessageFromResponse(response);
@@ -12004,7 +12008,10 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         return;
       } else {
         final message = _extractErrorMessageFromResponse(response);
-        throw message ?? 'Ошибка при создании документа прихода!';
+        throw ApiException(
+          message ?? 'Ошибка при создании документа прихода!',
+          response.statusCode,
+        );
       }
     } catch (e) {
      rethrow;
@@ -12074,7 +12081,10 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
           return MoneyIncomeDocumentModel.fromJson(rawData);
         } else {
           final message = _extractErrorMessageFromResponse(response);
-          throw message ?? 'Ошибка при получении данных прихода!';
+          throw ApiException(
+            message ?? 'Ошибка при получении данных прихода!',
+            response.statusCode,
+          );
         }
       } catch (e) {
         rethrow;
@@ -12093,7 +12103,10 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         return true;
       } else {
         final message = _extractErrorMessageFromResponse(response);
-        throw message ?? 'Ошибка при удалении документа прихода!';
+        throw ApiException(
+          message ?? 'Ошибка при удалении документа прихода!',
+          response.statusCode,
+        );
       }
     } catch (e) {
       rethrow;
@@ -12166,7 +12179,10 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         return;
       } else {
         final message = _extractErrorMessageFromResponse(response);
-        throw message ?? 'Ошибка при обновлении документа прихода!';
+        throw ApiException(
+          message ?? 'Ошибка при обновлении документа прихода!',
+          response.statusCode,
+        );
       }
     } catch (e) {
       debugPrint("Ошибка при обновлении документа прихода: $e");
@@ -12185,10 +12201,13 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       if (response.statusCode == 200 || response.statusCode == 201) {
         return;
       } else {
-       final message = _extractErrorMessageFromResponse(response);
-       throw message ?? 'Ошибка при массовом проведении документов прихода!';
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при массовом удалении документов прихода!',
+          response.statusCode,
+        );
       }
-    } catch (e) {
+    }  catch (e) {
       rethrow;
     }
   }
@@ -12205,7 +12224,10 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
       if (response.statusCode != 200 && response.statusCode != 204 && response.statusCode != 201) {
        final message = _extractErrorMessageFromResponse(response);
-       throw message ?? 'Ошибка при изменении статуса документа прихода!';
+       throw ApiException(
+         message ?? 'Ошибка при изменении статуса документа прихода!',
+         response.statusCode,
+       );
       }
 
      return;
@@ -12227,7 +12249,10 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         return;
       } else {
         final message = _extractErrorMessageFromResponse(response);
-        throw message ?? 'Ошибка при массовом снятии проведения документов прихода!';
+        throw ApiException(
+          message ?? 'Ошибка при массовом снятии проведения документов прихода!',
+          response.statusCode,
+        );
       }
     } catch (e) {
       rethrow;
@@ -12246,7 +12271,10 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         return;
       } else {
         final message = _extractErrorMessageFromResponse(response);
-        throw message ?? 'Ошибка при массовом удалении документов прихода!';
+        throw ApiException(
+          message ?? 'Ошибка при массовом удалении документов прихода!',
+          response.statusCode,
+        );
       }
     } catch (e) {
       rethrow;
@@ -12265,7 +12293,10 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         return;
       } else {
         final message = _extractErrorMessageFromResponse(response);
-        throw message ?? 'Ошибка при массовом восстановлении документов прихода!';
+        throw ApiException(
+          message ?? 'Ошибка при массовом восстановлении документов прихода!',
+          response.statusCode,
+        );
       }
     } catch (e) {
       rethrow;

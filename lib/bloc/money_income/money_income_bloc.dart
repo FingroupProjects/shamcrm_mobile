@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:crm_task_manager/models/api_exception_model.dart';
 import 'package:crm_task_manager/models/money/money_income_document_model.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
@@ -39,10 +40,14 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
     add(UnselectAllDocuments());
 
     try {
-      final response = await apiService.masApproveMoneyIncomeDocuments(ls);
+      await apiService.masApproveMoneyIncomeDocuments(ls);
       emit(MoneyIncomeApproveMassSuccess(""));
     } catch (e) {
-      emit(MoneyIncomeToggleOneApproveError(e.toString()));
+      if (e is ApiException && e.statusCode == 409) {
+        emit(MoneyIncomeToggleOneApproveError(e.toString(), statusCode: e.statusCode));
+      } else {
+        emit(MoneyIncomeToggleOneApproveError(e.toString()));
+      }
       add(FetchMoneyIncome(forceRefresh: true));
     }
 
@@ -54,10 +59,14 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
     add(UnselectAllDocuments());
 
     try {
-      final response = await apiService.masDisapproveMoneyIncomeDocuments(ls);
+      await apiService.masDisapproveMoneyIncomeDocuments(ls);
         emit(MoneyIncomeDisapproveMassSuccess(""));
     } catch (e) {
-      emit(MoneyIncomeDisapproveMassError(e.toString()));
+      if (e is ApiException && e.statusCode == 409) {
+        emit(MoneyIncomeDisapproveMassError(e.toString(), statusCode: e.statusCode));
+      } else {
+        emit(MoneyIncomeDisapproveMassError(e.toString()));
+      }
       add(FetchMoneyIncome(forceRefresh: true));
     }
 
@@ -69,10 +78,14 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
     add(UnselectAllDocuments());
 
     try {
-      final response = await apiService.masDeleteMoneyIncomeDocuments(ls);
+      await apiService.masDeleteMoneyIncomeDocuments(ls);
         emit(MoneyIncomeDeleteMassSuccess(""));
     } catch (e) {
-      emit(MoneyIncomeDeleteMassError(e.toString()));
+      if (e is ApiException && e.statusCode == 409) {
+        emit(MoneyIncomeDeleteMassError(e.toString(), statusCode: e.statusCode));
+      } else {
+        emit(MoneyIncomeDeleteMassError(e.toString()));
+      }
       add(FetchMoneyIncome(forceRefresh: true));
     }
 
@@ -84,10 +97,14 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
     add(UnselectAllDocuments());
 
     try {
-      final response = await apiService.masRestoreMoneyIncomeDocuments(ls);
+      await apiService.masRestoreMoneyIncomeDocuments(ls);
       emit(MoneyIncomeRestoreMassSuccess(""));
     } catch (e) {
-      emit(MoneyIncomeRestoreMassError(e.toString()));
+      if (e is ApiException && e.statusCode == 409) {
+        emit(MoneyIncomeRestoreMassError(e.toString(), statusCode: e.statusCode));
+      } else {
+        emit(MoneyIncomeRestoreMassError(e.toString()));
+      }
       add(FetchMoneyIncome(forceRefresh: true));
     }
 
@@ -96,10 +113,14 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
 
   Future<void> _onToggleApproveOneMoneyIncomeDocument(ToggleApproveOneMoneyIncomeDocument event, Emitter<MoneyIncomeState> emit) async {
     try {
-      final approved = await apiService.toggleApproveOneMoneyIncomeDocument(event.documentId, event.approve);
+      await apiService.toggleApproveOneMoneyIncomeDocument(event.documentId, event.approve);
       emit(MoneyIncomeToggleOneApproveSuccess(""));
     } catch (e) {
-      emit(MoneyIncomeToggleOneApproveError(e.toString()));
+      if (e is ApiException && e.statusCode == 409) {
+        emit(MoneyIncomeToggleOneApproveError(e.toString(), statusCode: e.statusCode));
+      } else {
+        emit(MoneyIncomeToggleOneApproveError(e.toString()));
+      }
     }
 
     emit(MoneyIncomeLoaded(data: _allData));
@@ -152,7 +173,11 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
         selectedData: selectedDocuments,
       ));
     } catch (e) {
-      emit(MoneyIncomeError(e.toString()));
+      if (e is ApiException && e.statusCode == 409) {
+        emit(MoneyIncomeError(e.toString(), statusCode: e.statusCode));
+      } else {
+        emit(MoneyIncomeError(e.toString()));
+      }
     }
 
     emit(MoneyIncomeLoaded(data: _allData));
@@ -177,7 +202,11 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
 
       emit(const MoneyIncomeCreateSuccess('document_created_successfully'));
     } catch (e) {
-      emit(MoneyIncomeCreateError(e.toString()));
+      if (e is ApiException && e.statusCode == 409) {
+        emit(MoneyIncomeCreateError(e.toString(), statusCode: e.statusCode));
+      } else {
+        emit(MoneyIncomeCreateError(e.toString()));
+      }
     }
 
     emit(MoneyIncomeLoaded(data: _allData));
@@ -201,7 +230,11 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
       );
       emit(const MoneyIncomeUpdateSuccess('document_updated_successfully'));
     } catch (e) {
-      emit(MoneyIncomeUpdateError(e.toString()));
+      if (e is ApiException && e.statusCode == 409) {
+        emit(MoneyIncomeUpdateError(e.toString(), statusCode: e.statusCode));
+      } else {
+        emit(MoneyIncomeUpdateError(e.toString()));
+      }
     }
 
     emit(MoneyIncomeLoaded(data: _allData));
@@ -221,7 +254,11 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
         failed = true;
       }
     } catch (e) {
-      emit(MoneyIncomeDeleteError(e.toString()));
+      if (e is ApiException && e.statusCode == 409) {
+        emit(MoneyIncomeDeleteError(e.toString(), statusCode: e.statusCode));
+      } else {
+        emit(MoneyIncomeDeleteError(e.toString()));
+      }
       failed = true;
     }
 
@@ -247,6 +284,8 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
   //
   //   emit(MoneyIncomeLoaded(data: _allData));
   // }
+
+  /// LOCAL LIST MANAGEMENT WITHOUT API CALLS
 
   Future<void> _onRemoveLocalFromList(RemoveLocalFromList event, Emitter<MoneyIncomeState> emit) async {
     emit(MoneyIncomeLoading());

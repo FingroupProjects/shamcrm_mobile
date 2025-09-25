@@ -3,6 +3,7 @@ import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/models/money/money_income_document_model.dart';
 import 'package:crm_task_manager/page_2/money/money_income/widgets/money_income_card.dart';
 import 'package:crm_task_manager/page_2/money/money_income/widgets/money_income_deletion.dart';
+import 'package:crm_task_manager/page_2/money/widgets/error_dialog.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -184,6 +185,15 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
     });
   }
 
+  void showSimpleErrorDialog(BuildContext context, String title, String errorMessage) {
+    showDialog(
+        context: context,
+        barrierColor: Colors.black.withOpacity(0.5),
+        builder: (BuildContext context) {
+          return ErrorDialog(title: title, errorMessage: errorMessage);
+        });
+  }
+
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
@@ -199,7 +209,6 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                 ? BlocBuilder<MoneyIncomeBloc, MoneyIncomeState>(
                     builder: (context, state) {
                       if (state is MoneyIncomeLoaded) {
-
                         bool showApprove = state.selectedData!.any((doc) => doc.approved == false && doc.deletedAt == null);
                         bool showDisapprove = state.selectedData!.any((doc) => doc.approved == true && doc.deletedAt == null);
                         bool showDelete = state.selectedData!.any((doc) => doc.deletedAt == null);
@@ -301,55 +310,80 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
               } else if (state is MoneyIncomeCreateSuccess) {
                 showCustomSnackBar(context: context, message: state.message, isSuccess: true);
               } else if (state is MoneyIncomeCreateError) {
+                if (state.statusCode == 409) {
+                  showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                  return;
+                }
                 showCustomSnackBar(context: context, message: state.message, isSuccess: false);
               } else if (state is MoneyIncomeUpdateSuccess) {
                 showCustomSnackBar(context: context, message: state.message, isSuccess: true);
               } else if (state is MoneyIncomeUpdateError) {
+                if (state.statusCode == 409) {
+                  showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                  return;
+                }
                 showCustomSnackBar(context: context, message: state.message, isSuccess: false);
               } else if (state is MoneyIncomeToggleOneApproveSuccess) {
                 showCustomSnackBar(context: context, message: state.message, isSuccess: true);
               } else if (state is MoneyIncomeToggleOneApproveError) {
+                if (state.statusCode == 409) {
+                  showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                  return;
+                }
                 showCustomSnackBar(context: context, message: state.message, isSuccess: false);
               } else if (state is MoneyIncomeDeleteSuccess) {
                 showCustomSnackBar(context: context, message: state.message, isSuccess: true);
               } else if (state is MoneyIncomeDeleteError) {
-                showCustomSnackBar(context: context, message: state.message, isSuccess: false);
-              } else if (state is MoneyIncomeRestoreSuccess) {
-                showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-              } else if (state is MoneyIncomeRestoreError) {
+                if (state.statusCode == 409) {
+                  showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                  return;
+                }
                 showCustomSnackBar(context: context, message: state.message, isSuccess: false);
               } else if (state is MoneyIncomeApproveMassSuccess) {
                 showCustomSnackBar(context: context, message: state.message, isSuccess: true);
                 _moneyIncomeBloc.add(const FetchMoneyIncome(forceRefresh: true));
               } else if (state is MoneyIncomeApproveMassError) {
+                if (state.statusCode == 409) {
+                  showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                  return;
+                }
                 showCustomSnackBar(context: context, message: state.message, isSuccess: false);
               } else if (state is MoneyIncomeDisapproveMassSuccess) {
                 showCustomSnackBar(context: context, message: state.message, isSuccess: true);
                 _moneyIncomeBloc.add(const FetchMoneyIncome(forceRefresh: true));
               } else if (state is MoneyIncomeDisapproveMassError) {
+                if (state.statusCode == 409) {
+                  showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                  return;
+                }
                 showCustomSnackBar(context: context, message: state.message, isSuccess: false);
               } else if (state is MoneyIncomeDeleteMassSuccess) {
                 showCustomSnackBar(context: context, message: state.message, isSuccess: true);
                 _moneyIncomeBloc.add(const FetchMoneyIncome(forceRefresh: true));
               } else if (state is MoneyIncomeDeleteMassError) {
+                if (state.statusCode == 409) {
+                  showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                  return;
+                }
                 showCustomSnackBar(context: context, message: state.message, isSuccess: false);
               } else if (state is MoneyIncomeRestoreMassSuccess) {
                 showCustomSnackBar(context: context, message: state.message, isSuccess: true);
                 _moneyIncomeBloc.add(const FetchMoneyIncome(forceRefresh: true));
               } else if (state is MoneyIncomeRestoreMassError) {
+                if (state.statusCode == 409) {
+                  showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                  return;
+                }
                 showCustomSnackBar(context: context, message: state.message, isSuccess: false);
               }
             },
             child: BlocBuilder<MoneyIncomeBloc, MoneyIncomeState>(
               builder: (context, state) {
-
                 if (kDebugMode) {
                   print("📝 [UI] Текущий статус MoneyIncomeBloc: $state");
                 }
 
-                if (
-                state is MoneyIncomeLoading
-                ) {
+                if (state is MoneyIncomeLoading) {
                   return Center(
                     child: PlayStoreImageLoading(
                       size: 80.0,

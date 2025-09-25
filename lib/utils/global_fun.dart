@@ -141,7 +141,7 @@ class AppStyles {
   );
 }
 
-
+/// used on money income/outcome cards to compare backend and frontend dates
 bool areDatesEqual(String backendDateStr, String frontendDateStr) {
   try {
     debugPrint("Comparing dates: backend='$backendDateStr', frontend='$frontendDateStr'");
@@ -160,6 +160,7 @@ bool areDatesEqual(String backendDateStr, String frontendDateStr) {
   }
 }
 
+/// used on money income/outcome forms to format money input
 class MoneyInputFormatter extends TextInputFormatter {
   final int decimalRange;
 
