@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../../bloc/money_outcome/money_outcome_bloc.dart';
-import '../operation_type.dart';
+import '../money_outcome_operation_type.dart';
 
 class AddMoneyOutcomeAnotherCashRegister extends StatefulWidget {
   const AddMoneyOutcomeAnotherCashRegister({super.key});
@@ -87,7 +87,7 @@ class _AddMoneyOutcomeAnotherCashRegisterState extends State<AddMoneyOutcomeAnot
       cashRegisterId: selectedCashRegister!.id,
       senderCashRegisterId: selectedSenderCashRegister?.id,
       comment: _commentController.text.trim(),
-      operationType: OperationType.send_another_cash_register.name,
+      operationType: MoneyOutcomeOperationType.send_another_cash_register.name,
       approve: approve,
     ));
   }

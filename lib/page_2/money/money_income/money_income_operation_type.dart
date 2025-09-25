@@ -1,15 +1,15 @@
-enum OperationType {
+enum MoneyIncomeOperationType {
   send_another_cash_register,
   other_incomes,
   return_supplier,
   client_payment,
 }
 
-OperationType? getOperationTypeFromString(String? operationTypeString) {
+MoneyIncomeOperationType? getOperationTypeFromString(String? operationTypeString) {
   if (operationTypeString == null) return null;
 
   try {
-    return OperationType.values.firstWhere(
+    return MoneyIncomeOperationType.values.firstWhere(
           (e) => e.name == operationTypeString,
     );
   } catch (e) {

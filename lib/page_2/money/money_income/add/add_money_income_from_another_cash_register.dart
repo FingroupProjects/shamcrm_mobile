@@ -7,7 +7,7 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import '../operation_type.dart';
+import '../money_income_operation_type.dart';
 
 class AddMoneyIncomeAnotherCashRegister extends StatefulWidget {
   const AddMoneyIncomeAnotherCashRegister({super.key});
@@ -87,7 +87,7 @@ class _AddMoneyIncomeAnotherCashRegisterState extends State<AddMoneyIncomeAnothe
       cashRegisterId: selectedCashRegister!.id,
       senderCashRegisterId: selectedSenderCashRegister?.id,
       comment: _commentController.text.trim(),
-      operationType: OperationType.send_another_cash_register.name,
+      operationType: MoneyIncomeOperationType.send_another_cash_register.name,
       approve: approve,
     ));
   }

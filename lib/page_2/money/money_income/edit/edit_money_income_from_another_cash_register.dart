@@ -10,7 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../../utils/global_fun.dart';
-import '../operation_type.dart';
+import '../money_income_operation_type.dart';
 
 class EditMoneyIncomeAnotherCashRegister extends StatefulWidget {
   final Document document;
@@ -139,7 +139,7 @@ class _EditMoneyIncomeAnotherCashRegisterState extends State<EditMoneyIncomeAnot
         id: widget.document.id,
         date: isoDate,
         amount: double.parse(_amountController.text.trim()),
-        operationType: OperationType.send_another_cash_register.name,
+        operationType: MoneyIncomeOperationType.send_another_cash_register.name,
         comment: _commentController.text.trim(),
         cashRegisterId: selectedCashRegister?.id,
         senderCashRegisterId: selectedSenderCashRegister?.id,

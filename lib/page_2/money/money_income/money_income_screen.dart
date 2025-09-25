@@ -19,7 +19,7 @@ import 'edit/edit_money_income_from_another_cash_register.dart';
 import 'edit/edit_money_income_from_client.dart';
 import 'edit/edit_money_income_other_income.dart';
 import 'edit/edit_money_income_supplier_return.dart';
-import 'operation_type.dart';
+import 'money_income_operation_type.dart';
 
 class MoneyIncomeScreen extends StatefulWidget {
   final int? organizationId;
@@ -137,16 +137,16 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
     Widget? targetScreen;
 
     switch (operationType) {
-      case OperationType.client_payment:
+      case MoneyIncomeOperationType.client_payment:
         targetScreen = EditMoneyIncomeFromClient(document: document);
         break;
-      case OperationType.send_another_cash_register:
+      case MoneyIncomeOperationType.send_another_cash_register:
         targetScreen = EditMoneyIncomeAnotherCashRegister(document: document);
         break;
-      case OperationType.other_incomes:
+      case MoneyIncomeOperationType.other_incomes:
         targetScreen = EditMoneyIncomeOtherIncome(document: document);
         break;
-      case OperationType.return_supplier:
+      case MoneyIncomeOperationType.return_supplier:
         targetScreen = EditMoneyIncomeSupplierReturn(document: document);
         break;
     }
@@ -487,13 +487,13 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
 
               Widget targetScreen;
 
-              if (value == OperationType.client_payment.name) {
+              if (value == MoneyIncomeOperationType.client_payment.name) {
                 targetScreen = const AddMoneyIncomeFromClient();
-              } else if (value == OperationType.send_another_cash_register.name) {
+              } else if (value == MoneyIncomeOperationType.send_another_cash_register.name) {
                 targetScreen = const AddMoneyIncomeAnotherCashRegister();
-              } else if (value == OperationType.other_incomes.name) {
+              } else if (value == MoneyIncomeOperationType.other_incomes.name) {
                 targetScreen = const AddMoneyIncomeOtherIncome();
-              } else if (value == OperationType.return_supplier.name) {
+              } else if (value == MoneyIncomeOperationType.return_supplier.name) {
                 targetScreen = const AddMoneyIncomeSupplierReturn();
               } else {
                 return;
@@ -516,7 +516,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
             itemBuilder: (BuildContext context) {
               return [
                 PopupMenuItem<String>(
-                  value: OperationType.client_payment.name,
+                  value: MoneyIncomeOperationType.client_payment.name,
                   child: Row(
                     children: [
                       const Icon(
@@ -540,7 +540,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                   ),
                 ),
                 PopupMenuItem<String>(
-                  value: OperationType.send_another_cash_register.name,
+                  value: MoneyIncomeOperationType.send_another_cash_register.name,
                   child: Row(
                     children: [
                       const Icon(
@@ -564,7 +564,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                   ),
                 ),
                 PopupMenuItem<String>(
-                  value: OperationType.other_incomes.name,
+                  value: MoneyIncomeOperationType.other_incomes.name,
                   child: Row(
                     children: [
                       const Icon(
@@ -588,7 +588,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                   ),
                 ),
                 PopupMenuItem<String>(
-                  value: OperationType.return_supplier.name,
+                  value: MoneyIncomeOperationType.return_supplier.name,
                   child: Row(
                     children: [
                       const Icon(

@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/page_2/money/money_outcome/operation_type.dart';
+import 'package:crm_task_manager/page_2/money/money_outcome/money_outcome_operation_type.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/models/money/money_outcome_document_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -142,7 +142,7 @@ class MoneyOutcomeCard extends StatelessWidget {
                     ),
                   ],
 
-                  if (document.operationType == OperationType.send_another_cash_register.name) ...[
+                  if (document.operationType == MoneyOutcomeOperationType.send_another_cash_register.name) ...[
                     const SizedBox(height: 8),
                     Text(
                       localizations

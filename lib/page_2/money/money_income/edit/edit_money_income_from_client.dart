@@ -17,8 +17,7 @@ import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-// Импортируем переиспользуемый виджет (замените путь на правильный)
-import '../operation_type.dart';
+import '../money_income_operation_type.dart';
 
 class EditMoneyIncomeFromClient extends StatefulWidget {
   final Document document;
@@ -167,7 +166,7 @@ class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
         id: widget.document.id,
         date: isoDate,
         amount: double.parse(_amountController.text.trim()),
-        operationType: OperationType.client_payment.name,
+        operationType: MoneyIncomeOperationType.client_payment.name,
         leadId: _selectedLead!.id,
         comment: _commentController.text.trim(),
         cashRegisterId: selectedCashRegister?.id,

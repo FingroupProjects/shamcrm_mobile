@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/page_2/money/money_income/operation_type.dart';
+import 'package:crm_task_manager/page_2/money/money_income/money_income_operation_type.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/models/money/money_income_document_model.dart';
@@ -145,7 +145,7 @@ class MoneyIncomeCard extends StatelessWidget {
                     ),
                   ],
 
-                  if (document.operationType == OperationType.send_another_cash_register.name) ...[
+                  if (document.operationType == MoneyIncomeOperationType.send_another_cash_register.name) ...[
                     const SizedBox(height: 8),
                     Text(
                       localizations

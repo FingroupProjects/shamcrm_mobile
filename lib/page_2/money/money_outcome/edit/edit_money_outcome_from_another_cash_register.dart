@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/bloc/money_outcome/money_outcome_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/models/cash_register_list_model.dart';
@@ -8,8 +9,8 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import '../../../../bloc/money_outcome/money_outcome_bloc.dart';
-import '../operation_type.dart';
+import '../../../../utils/global_fun.dart';
+import '../money_outcome_operation_type.dart';
 
 class EditMoneyOutcomeAnotherCashRegister extends StatefulWidget {
   final Document document;
@@ -125,7 +126,7 @@ class _EditMoneyOutcomeAnotherCashRegisterState extends State<EditMoneyOutcomeAn
 
     final bloc = context.read<MoneyOutcomeBloc>();
 
-    final dataChanged = !_areDatesEqual(widget.document.date ?? '', isoDate) ||
+    final dataChanged = !areDatesEqual(widget.document.date ?? '', isoDate) ||
         widget.document.amount != _amountController.text.trim() ||
         (widget.document.comment ?? '') != _commentController.text.trim() ||
         widget.document.cashRegister?.id.toString() != selectedCashRegister?.id.toString() ||
@@ -138,7 +139,7 @@ class _EditMoneyOutcomeAnotherCashRegisterState extends State<EditMoneyOutcomeAn
         id: widget.document.id,
         date: isoDate,
         amount: double.parse(_amountController.text.trim()),
-        operationType: OperationType.send_another_cash_register.name,
+        operationType: MoneyOutcomeOperationType.send_another_cash_register.name,
         comment: _commentController.text.trim(),
         cashRegisterId: selectedCashRegister?.id,
         senderCashRegisterId: selectedSenderCashRegister?.id,
@@ -208,12 +209,12 @@ class _EditMoneyOutcomeAnotherCashRegisterState extends State<EditMoneyOutcomeAn
                   Navigator.pop(context, true);
                 } else if (state is MoneyOutcomeUpdateError) {
                   setState(() => _isLoading = false);
-                  _showSnackBar(state.message, false);
                 }
                 if (state is MoneyOutcomeToggleOneApproveSuccess) {
+                  setState(() => _isLoading = false);
                   Navigator.pop(context, true);
                 } else if (state is MoneyOutcomeToggleOneApproveError) {
-                  _showSnackBar(state.message, false);
+                  setState(() => _isLoading = false);
                 }
               });
             },
@@ -294,7 +295,7 @@ class _EditMoneyOutcomeAnotherCashRegisterState extends State<EditMoneyOutcomeAn
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
-        AppLocalizations.of(context)!.translate('edit_outcoming_document') ?? 'Редактировать доход',
+        AppLocalizations.of(context)!.translate('edit_incoming_document') ?? 'Редактировать доход',
         style: const TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
@@ -346,6 +347,9 @@ class _EditMoneyOutcomeAnotherCashRegisterState extends State<EditMoneyOutcomeAn
 
   Widget _buildAmountField(AppLocalizations localizations) {
     return CustomTextField(
+        inputFormatters: [
+          MoneyInputFormatter(),
+        ],
         controller: _amountController,
         label: AppLocalizations.of(context)!.translate('amount') ?? 'Сумма',
         hintText: AppLocalizations.of(context)!.translate('enter_amount') ?? 'Введите сумму',
@@ -447,34 +451,11 @@ class _EditMoneyOutcomeAnotherCashRegisterState extends State<EditMoneyOutcomeAn
     );
   }
 
-
-
-
   @override
   void dispose() {
     _dateController.dispose();
     _amountController.dispose();
     _commentController.dispose();
     super.dispose();
-  }
-}
-
-
-bool _areDatesEqual(String backendDateStr, String frontendDateStr) {
-  try {
-    debugPrint("Comparing dates: backend='$backendDateStr', frontend='$frontendDateStr'");
-
-    final backendDate = DateTime.parse(backendDateStr);
-    final frontendDate = DateTime.parse(frontendDateStr);
-
-    return backendDate.year == frontendDate.year &&
-        backendDate.month == frontendDate.month &&
-        backendDate.day == frontendDate.day &&
-        backendDate.hour == frontendDate.hour &&
-        backendDate.minute == frontendDate.minute &&
-        backendDate.second == frontendDate.second;
-  } catch (e) {
-    debugPrint('Error comparing dates: $e');
-    return false;
   }
 }

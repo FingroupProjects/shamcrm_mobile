@@ -14,7 +14,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import '../../../../bloc/money_outcome/money_outcome_bloc.dart';
-import '../operation_type.dart';
+import '../money_outcome_operation_type.dart';
 
 class AddMoneyOutcomeSupplierReturn extends StatefulWidget {
   const AddMoneyOutcomeSupplierReturn({super.key});
@@ -96,7 +96,7 @@ class _AddMoneyOutcomeSupplierReturnState extends State<AddMoneyOutcomeSupplierR
         amount: double.parse(_amountController.text.trim()),
         supplierId: _selectedSupplier!.id,
         comment: _commentController.text.trim(),
-        operationType: OperationType.supplier_payment.name,
+        operationType: MoneyOutcomeOperationType.supplier_payment.name,
         cashRegisterId: selectedCashRegister?.id,
         approve: approve,
       ));

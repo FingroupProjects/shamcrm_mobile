@@ -16,7 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../../utils/global_fun.dart';
-import '../operation_type.dart';
+import '../money_income_operation_type.dart';
 
 class EditMoneyIncomeOtherIncome extends StatefulWidget {
   final Document document;
@@ -159,7 +159,7 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
         id: widget.document.id,
         date: isoDate,
         amount: double.parse(_amountController.text.trim()),
-        operationType: OperationType.other_incomes.name,
+        operationType: MoneyIncomeOperationType.other_incomes.name,
         articleId: selectedIncomeCategory?.id,
         comment: _commentController.text.trim(),
         cashRegisterId: selectedCashRegister?.id,

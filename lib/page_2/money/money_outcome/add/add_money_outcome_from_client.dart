@@ -13,7 +13,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../../bloc/money_outcome/money_outcome_bloc.dart';
-import '../operation_type.dart';
+import '../money_outcome_operation_type.dart';
 
 class AddMoneyOutcomeFromClient extends StatefulWidget {
   const AddMoneyOutcomeFromClient({super.key});
@@ -100,7 +100,7 @@ class _AddMoneyOutcomeFromClientState extends State<AddMoneyOutcomeFromClient> {
         amount: double.parse(_amountController.text.trim()),
         leadId: _selectedLead!.id,
         comment: _commentController.text.trim(),
-        operationType: OperationType.client_return.name,
+        operationType: MoneyOutcomeOperationType.client_return.name,
         cashRegisterId: selectedCashRegister?.id,
         approve: approve, // Передаем параметр approve
       ));
