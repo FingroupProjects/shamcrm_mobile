@@ -220,6 +220,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     context.read<GetAllRegionBloc>().add(GetAllRegionEv());
     context.read<SalesFunnelBloc>().add(FetchSalesFunnels());
+    context.read<LeadBloc>().add(FetchLeadStatuses());
     _fetchAndAddDirectoryFields();
   }
 
@@ -777,13 +778,14 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                         ),
                         const SizedBox(height: 8),
                         LeadStatusEditpWidget(
-                          selectedStatus: _selectedStatuses?.toString(),
-                          onSelectStatus: (LeadStatus selectedStatusData) {
-                            setState(() {
-                              _selectedStatuses = selectedStatusData.id;
-                            });
-                          },
-                        ),
+  selectedStatus: _selectedStatuses?.toString(), // Проверяем, что это не null
+  salesFunnelId: selectedSalesFunnel, // Убеждаемся, что передаем salesFunnelId
+  onSelectStatus: (LeadStatus selectedStatusData) {
+    setState(() {
+      _selectedStatuses = selectedStatusData.id;
+    });
+  },
+),
                         const SizedBox(height: 8),
                         CustomPhoneNumberInput(
                           controller: phoneController,
