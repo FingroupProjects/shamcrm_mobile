@@ -145,6 +145,8 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
       return;
     }
 
+    final bloc = context.read<MoneyIncomeBloc>();
+
     final dataChanged = !areDatesEqual(widget.document.date ?? '', isoDate) ||
         widget.document.amount != _amountController.text.trim() ||
         (widget.document.comment ?? '') != _commentController.text.trim() ||
@@ -153,8 +155,7 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
 
     final approvalChanged = widget.document.approved != _isApproved;
 
-    if (dataChanged) {
-      final bloc = context.read<MoneyIncomeBloc>();
+    if (dataChanged && !approvalChanged) {
       bloc.add(UpdateMoneyIncome(
         id: widget.document.id,
         date: isoDate,
@@ -166,9 +167,22 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
       ));
     }
 
-    if (approvalChanged) {
-      final bloc = context.read<MoneyIncomeBloc>();
+    if (!dataChanged && approvalChanged) {
       bloc.add(ToggleApproveOneMoneyIncomeDocument(widget.document.id!, _isApproved));
+    }
+
+    if (dataChanged && approvalChanged) {
+      debugPrint("Data and approval changed, using combined event");
+      bloc.add(UpdateThenToggleOneMoneyIncomeDocument(
+        id: widget.document.id!,
+        date: isoDate,
+        amount: double.parse(_amountController.text.trim()),
+        operationType: MoneyIncomeOperationType.other_incomes.name,
+        articleId: selectedIncomeCategory!.id,
+        comment: _commentController.text.trim(),
+        cashRegisterId: selectedCashRegister!.id,
+        approve: _isApproved,
+      ));
     }
 
     if (!dataChanged && !approvalChanged) {
@@ -242,6 +256,10 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
                     Navigator.pop(context, true);
                   } else if (state is MoneyIncomeToggleOneApproveError) {
                     setState(() => _isLoading = false);
+                  }
+                  if (state is MoneyIncomeUpdateThenToggleOneApproveSuccess) {
+                    setState(() => _isLoading = false);
+                    Navigator.pop(context, true);
                   }
                 });
               },

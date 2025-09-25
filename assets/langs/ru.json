@@ -1427,7 +1427,8 @@
   "mass_disapprove_success_message": "Документы успешно отменены",
   "mass_delete_success_message": "Документы успешно удалены",
   "mass_restore_success_message" : "Документы успешно восстановлены",
-  "toggle_approve_success_message" : "Статус успешно изменён"
+  "toggle_approve_success_message" : "Статус успешно изменён",
+  "document_updated_and_approve_toggled_successfully": "Документ успешно обновлен и статус изменён"
 
  
 

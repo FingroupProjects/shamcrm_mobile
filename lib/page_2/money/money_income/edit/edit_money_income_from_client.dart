@@ -1,11 +1,9 @@
-import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/money_income/money_income_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_event.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
-import 'package:crm_task_manager/custom_widget/dropdown_loading_state.dart';
 import 'package:crm_task_manager/models/cash_register_list_model.dart';
 import 'package:crm_task_manager/models/money/money_income_document_model.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
@@ -160,7 +158,7 @@ class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
 
     final approvalChanged = widget.document.approved != _isApproved;
 
-    if (dataChanged) {
+    if (dataChanged && !approvalChanged) {
       final bloc = context.read<MoneyIncomeBloc>();
       bloc.add(UpdateMoneyIncome(
         id: widget.document.id,
@@ -173,8 +171,22 @@ class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
       ));
     }
 
-    if (approvalChanged) {
+    if (!dataChanged && approvalChanged) {
       bloc.add(ToggleApproveOneMoneyIncomeDocument(widget.document.id!, _isApproved));
+    }
+
+    if (dataChanged && approvalChanged) {
+      debugPrint("Data and approval changed, using combined event");
+      bloc.add(UpdateThenToggleOneMoneyIncomeDocument(
+        id: widget.document.id!,
+        date: isoDate,
+        amount: double.parse(_amountController.text.trim()),
+        operationType: MoneyIncomeOperationType.client_payment.name,
+        leadId: _selectedLead!.id,
+        comment: _commentController.text.trim(),
+        cashRegisterId: selectedCashRegister!.id,
+        approve: _isApproved,
+      ));
     }
 
     if (!dataChanged && !approvalChanged) {
@@ -242,6 +254,11 @@ class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
                   Navigator.pop(context, true);
                 } else if (state is MoneyIncomeToggleOneApproveError) {
                   setState(() => _isLoading = false);
+                }
+
+                if (state is MoneyIncomeUpdateThenToggleOneApproveSuccess) {
+                  setState(() => _isLoading = false);
+                  Navigator.pop(context, true);
                 }
               });
             },

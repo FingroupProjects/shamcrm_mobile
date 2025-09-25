@@ -366,6 +366,9 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                   return;
                 }
                 showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+              } else if (state is MoneyIncomeUpdateThenToggleOneApproveSuccess) {
+                showCustomSnackBar(context: context, message: state.message, isSuccess: true);
+                _moneyIncomeBloc.add(const FetchMoneyIncome(forceRefresh: true));
               }
             },
             child: BlocBuilder<MoneyIncomeBloc, MoneyIncomeState>(

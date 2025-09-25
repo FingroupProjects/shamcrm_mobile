@@ -30,6 +30,7 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
     on<MassDeleteMoneyIncomeDocuments>(_onMassDeleteMoneyIncomeDocuments);
     on<MassRestoreMoneyIncomeDocuments>(_onMassRestoreMoneyIncomeDocuments);
     on<ToggleApproveOneMoneyIncomeDocument>(_onToggleApproveOneMoneyIncomeDocument);
+    on<UpdateThenToggleOneMoneyIncomeDocument>(_onUpdateThenToggleOneMoneyIncomeDocument);
     on<RemoveLocalFromList>(_onRemoveLocalFromList);
     on<SelectDocument>(_onSelectDocument);
     on<UnselectAllDocuments>(_onUnselectAllDocuments);
@@ -44,9 +45,9 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
       emit(MoneyIncomeApproveMassSuccess("mass_approve_success_message"));
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
-        emit(MoneyIncomeToggleOneApproveError(e.toString(), statusCode: e.statusCode));
+        emit(MoneyIncomeApproveMassError(e.toString(), statusCode: e.statusCode));
       } else {
-        emit(MoneyIncomeToggleOneApproveError(e.toString()));
+        emit(MoneyIncomeApproveMassError(e.toString()));
       }
       add(FetchMoneyIncome(forceRefresh: true));
     }
@@ -214,8 +215,9 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
 
   Future<void> _onUpdateMoneyIncome(UpdateMoneyIncome event, Emitter<MoneyIncomeState> emit) async {
     emit(MoneyIncomeLoading());
+    // use the same on UpdateThenToggleOneMoneyIncomeDocument
     try {
-      await apiService.updateMoneyIncomeDocument(
+      final response = await apiService.updateMoneyIncomeDocument(
         documentId: event.id!,
         date: event.date,
         amount: event.amount,
@@ -234,6 +236,60 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
         emit(MoneyIncomeUpdateError(e.toString(), statusCode: e.statusCode));
       } else {
         emit(MoneyIncomeUpdateError(e.toString()));
+      }
+    }
+
+    emit(MoneyIncomeLoaded(data: _allData));
+  }
+
+  Future<void> _onUpdateThenToggleOneMoneyIncomeDocument(UpdateThenToggleOneMoneyIncomeDocument event, Emitter<MoneyIncomeState> emit) async {
+    // send two requests, first update, then toggle approve
+    bool firstFailed = false;
+
+    // use the same on UpdateMoneyIncome
+    // first update
+    try {
+      final response = await apiService.updateMoneyIncomeDocument(
+        documentId: event.id,
+        date: event.date,
+        amount: event.amount,
+        operationType: event.operationType,
+        movementType: event.movementType,
+        leadId: event.leadId,
+        articleId: event.articleId,
+        senderCashRegisterId: event.senderCashRegisterId,
+        cashRegisterId: event.cashRegisterId,
+        comment: event.comment,
+        supplierId: event.supplierId,
+      );
+    } catch (e) {
+      firstFailed = true;
+      if (e is ApiException && e.statusCode == 409) {
+        emit(MoneyIncomeUpdateError(e.toString(), statusCode: e.statusCode));
+      } else {
+        emit(MoneyIncomeUpdateError(e.toString()));
+      }
+    }
+
+    // send only if first succeeded
+    if (firstFailed) {
+      emit(MoneyIncomeLoaded(data: _allData));
+      return;
+    }
+
+    await Future.delayed(const Duration(milliseconds: 2000));
+
+    // then toggle approve
+    try {
+      await apiService.toggleApproveOneMoneyIncomeDocument(event.id, event.approve);
+      // emit(const MoneyIncomeUpdateSuccess('document_updated_successfully'));
+      // emit(MoneyIncomeToggleOneApproveSuccess("toggle_approve_success_message"));
+      emit(MoneyIncomeUpdateThenToggleOneApproveSuccess("document_updated_and_approve_toggled_successfully"));
+    } catch (e) {
+      if (e is ApiException && e.statusCode == 409) {
+        emit(MoneyIncomeToggleOneApproveError(e.toString(), statusCode: e.statusCode));
+      } else {
+        emit(MoneyIncomeToggleOneApproveError(e.toString()));
       }
     }
 

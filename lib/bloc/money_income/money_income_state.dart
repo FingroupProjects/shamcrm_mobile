@@ -214,3 +214,13 @@ class MoneyIncomeRestoreMassError extends MoneyIncomeState {
   @override
   List<Object?> get props => [message, statusCode];
 }
+
+// ---------------------  Update Then Toggle One Approve ---------------------
+class MoneyIncomeUpdateThenToggleOneApproveSuccess extends MoneyIncomeState {
+  final String message;
+
+  const MoneyIncomeUpdateThenToggleOneApproveSuccess(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}

@@ -134,7 +134,7 @@ class _EditMoneyIncomeAnotherCashRegisterState extends State<EditMoneyIncomeAnot
 
     final approvalChanged = widget.document.approved != _isApproved;
 
-    if (dataChanged) {
+    if (dataChanged && !approvalChanged) {
       bloc.add(UpdateMoneyIncome(
         id: widget.document.id,
         date: isoDate,
@@ -146,8 +146,22 @@ class _EditMoneyIncomeAnotherCashRegisterState extends State<EditMoneyIncomeAnot
       ));
     }
 
-    if (approvalChanged) {
+    if (!dataChanged && approvalChanged) {
       bloc.add(ToggleApproveOneMoneyIncomeDocument(widget.document.id!, _isApproved));
+    }
+
+    if (dataChanged && approvalChanged) {
+      debugPrint("Data and approval changed, using combined event");
+      bloc.add(UpdateThenToggleOneMoneyIncomeDocument(
+        id: widget.document.id!,
+        date: isoDate,
+        amount: double.parse(_amountController.text.trim()),
+        operationType: MoneyIncomeOperationType.send_another_cash_register.name,
+        comment: _commentController.text.trim(),
+        cashRegisterId: selectedCashRegister!.id,
+        senderCashRegisterId: selectedSenderCashRegister!.id,
+        approve: _isApproved,
+      ));
     }
 
     if (!dataChanged && !approvalChanged) {
@@ -215,6 +229,10 @@ class _EditMoneyIncomeAnotherCashRegisterState extends State<EditMoneyIncomeAnot
                   Navigator.pop(context, true);
                 } else if (state is MoneyIncomeToggleOneApproveError) {
                   setState(() => _isLoading = false);
+                }
+                if (state is MoneyIncomeUpdateThenToggleOneApproveSuccess) {
+                  setState(() => _isLoading = false);
+                  Navigator.pop(context, true);
                 }
               });
             },

@@ -156,6 +156,51 @@ class ToggleApproveOneMoneyIncomeDocument extends MoneyIncomeEvent {
   List<Object> get props => [documentId, approve];
 }
 
+class UpdateThenToggleOneMoneyIncomeDocument extends MoneyIncomeEvent {
+  final int id;
+  final String date;
+  final num amount;
+  final String operationType;
+  final String movementType = "PKO";
+  final int? leadId;
+  final int? articleId;
+  final String comment;
+  final int? cashRegisterId;
+  final int? senderCashRegisterId;
+  final int? supplierId;
+  final bool approve;
+
+  UpdateThenToggleOneMoneyIncomeDocument({
+    required this.id,
+    required this.date,
+    required this.amount,
+    this.leadId,
+    this.articleId,
+    required this.comment,
+    required this.operationType,
+    this.cashRegisterId,
+    this.senderCashRegisterId,
+    this.supplierId,
+    required this.approve,
+  });
+
+  @override
+  List<Object> get props => [
+        id,
+        date,
+        amount,
+        operationType,
+        movementType,
+        leadId ?? 0,
+        articleId ?? 0,
+        comment,
+        cashRegisterId ?? '',
+        senderCashRegisterId ?? '',
+        supplierId ?? 0,
+        approve,
+      ];
+}
+
 class RemoveLocalFromList extends MoneyIncomeEvent {
   final int documentId;
 
