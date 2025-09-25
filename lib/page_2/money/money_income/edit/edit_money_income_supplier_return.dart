@@ -16,7 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../../utils/global_fun.dart';
-import '../operation_type.dart';
+import '../money_income_operation_type.dart';
 
 class EditMoneyIncomeSupplierReturn extends StatefulWidget {
   final Document document;
@@ -182,7 +182,7 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
         id: widget.document.id,
         date: isoDate,
         amount: double.parse(_amountController.text.trim()),
-        operationType: OperationType.return_supplier.name,
+        operationType: MoneyIncomeOperationType.return_supplier.name,
         supplierId: _selectedSupplier!.id,
         comment: _commentController.text.trim(),
         cashRegisterId: selectedCashRegister?.id,

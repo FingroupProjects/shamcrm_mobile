@@ -24,7 +24,7 @@ class OutcomeRadioGroupWidget extends StatefulWidget {
 }
 
 class _OutcomeRadioGroupWidgetState extends State<OutcomeRadioGroupWidget> {
-  List<OutcomeCategoryData> incomeCategoriesList = [];
+  List<OutcomeCategoryData> outcomeCategoriesList = [];
   OutcomeCategoryData? selectedOutcomeCategoryData;
 
   @override
@@ -34,7 +34,7 @@ class _OutcomeRadioGroupWidgetState extends State<OutcomeRadioGroupWidget> {
       if (mounted) {
         final state = context.read<GetAllOutcomeCategoryBloc>().state;
         if (state is GetAllOutcomeCategorySuccess) {
-          incomeCategoriesList = state.dataOutcomeCategories.result ?? [];
+          outcomeCategoriesList = state.dataOutcomeCategories.result ?? [];
           _updateSelectedOutcomeCategoryData();
         }
         if (state is! GetAllOutcomeCategorySuccess) {
@@ -45,9 +45,9 @@ class _OutcomeRadioGroupWidgetState extends State<OutcomeRadioGroupWidget> {
   }
 
   void _updateSelectedOutcomeCategoryData() {
-    if (widget.selectedOutcomeCategoryId != null && incomeCategoriesList.isNotEmpty) {
+    if (widget.selectedOutcomeCategoryId != null && outcomeCategoriesList.isNotEmpty) {
       try {
-        selectedOutcomeCategoryData = incomeCategoriesList.firstWhere(
+        selectedOutcomeCategoryData = outcomeCategoriesList.firstWhere(
               (category) => category.id.toString() == widget.selectedOutcomeCategoryId.toString(),
         );
         // Убираем автоматический вызов callback - это вызывает setState during build
@@ -66,7 +66,7 @@ class _OutcomeRadioGroupWidgetState extends State<OutcomeRadioGroupWidget> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          widget.title ?? AppLocalizations.of(context)!.translate('income_category'),
+          widget.title ?? AppLocalizations.of(context)!.translate('outcome_category'),
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
@@ -78,13 +78,13 @@ class _OutcomeRadioGroupWidgetState extends State<OutcomeRadioGroupWidget> {
         BlocBuilder<GetAllOutcomeCategoryBloc, GetAllOutcomeCategoryState>(
           builder: (context, state) {
             if (state is GetAllOutcomeCategorySuccess) {
-              incomeCategoriesList = state.dataOutcomeCategories.result ?? [];
+              outcomeCategoriesList = state.dataOutcomeCategories.result ?? [];
               _updateSelectedOutcomeCategoryData();
             }
 
             return CustomDropdown<OutcomeCategoryData>.search(
           closeDropDownOnClearFilterSearch: true,
-          items: incomeCategoriesList,
+          items: outcomeCategoriesList,
           searchHintText: AppLocalizations.of(context)!.translate('search'),
           overlayHeight: 400,
           enabled: true,
@@ -116,7 +116,7 @@ class _OutcomeRadioGroupWidgetState extends State<OutcomeRadioGroupWidget> {
           headerBuilder: (context, selectedItem, enabled) {
             if (state is GetAllOutcomeCategoryLoading) {
               return Text(
-                AppLocalizations.of(context)!.translate('select_income_category'),
+                AppLocalizations.of(context)!.translate('select_outcome_category'),
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
@@ -136,7 +136,7 @@ class _OutcomeRadioGroupWidgetState extends State<OutcomeRadioGroupWidget> {
             );
           },
           hintBuilder: (context, hint, enabled) => Text(
-            AppLocalizations.of(context)!.translate('select_income_category'),
+            AppLocalizations.of(context)!.translate('select_outcome_category'),
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
@@ -145,7 +145,7 @@ class _OutcomeRadioGroupWidgetState extends State<OutcomeRadioGroupWidget> {
             ),
           ),
           excludeSelected: false,
-          initialItem: incomeCategoriesList.contains(selectedOutcomeCategoryData)
+          initialItem: outcomeCategoriesList.contains(selectedOutcomeCategoryData)
               ? selectedOutcomeCategoryData
               : null,
           validator: (value) {

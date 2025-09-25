@@ -23,8 +23,7 @@ class MoneyOutcomeBloc extends Bloc<MoneyOutcomeEvent, MoneyOutcomeState> {
     on<CreateMoneyOutcome>(_onCreateMoneyOutcome);
     on<UpdateMoneyOutcome>(_onUpdateMoneyOutcome);
     on<DeleteMoneyOutcome>(_onDeleteMoneyOutcome);
-    on<RestoreMoneyOutcome>(_onRestoreMoneyOutcome);
-    on<AddMoneyOutcome>(_onAddMoneyOutcome);
+    // on<RestoreMoneyOutcome>(_onRestoreMoneyOutcome);
     on<MassApproveMoneyOutcomeDocuments>(_onMassApproveMoneyOutcomeDocuments);
     on<MassDisapproveMoneyOutcomeDocuments>(_onMassDisapproveMoneyOutcomeDocuments);
     on<MassDeleteMoneyOutcomeDocuments>(_onMassDeleteMoneyOutcomeDocuments);
@@ -39,12 +38,15 @@ class MoneyOutcomeBloc extends Bloc<MoneyOutcomeEvent, MoneyOutcomeState> {
     final ls = _selectedDocuments.where((e) => e.approved == false && e.deletedAt == null).map((e) => e.id!).toList();
     add(UnselectAllDocuments());
 
-    final response = await apiService.masApproveMoneyOutcomeDocuments(ls);
     try {
+      final response = await apiService.masApproveMoneyOutcomeDocuments(ls);
       emit(MoneyOutcomeApproveMassSuccess(""));
     } catch (e) {
       emit(MoneyOutcomeToggleOneApproveError(e.toString()));
+      add(FetchMoneyOutcome(forceRefresh: true));
     }
+
+    emit(MoneyOutcomeLoaded(data: _allData));
   }
 
   Future<void> _onMassDisapproveMoneyOutcomeDocuments(MassDisapproveMoneyOutcomeDocuments event, Emitter<MoneyOutcomeState> emit) async {
@@ -53,10 +55,13 @@ class MoneyOutcomeBloc extends Bloc<MoneyOutcomeEvent, MoneyOutcomeState> {
 
     try {
       final response = await apiService.masDisapproveMoneyOutcomeDocuments(ls);
-      emit(MoneyOutcomeDisapproveMassSuccess("Подтверждение отменено"));
+      emit(MoneyOutcomeDisapproveMassSuccess(""));
     } catch (e) {
       emit(MoneyOutcomeDisapproveMassError(e.toString()));
+      add(FetchMoneyOutcome(forceRefresh: true));
     }
+
+    emit(MoneyOutcomeLoaded(data: _allData));
   }
 
   Future<void> _onMassDeleteMoneyOutcomeDocuments(MassDeleteMoneyOutcomeDocuments event, Emitter<MoneyOutcomeState> emit) async {
@@ -65,10 +70,13 @@ class MoneyOutcomeBloc extends Bloc<MoneyOutcomeEvent, MoneyOutcomeState> {
 
     try {
       final response = await apiService.masDeleteMoneyOutcomeDocuments(ls);
-      emit(MoneyOutcomeDeleteMassSuccess("Документы удалены"));
+      emit(MoneyOutcomeDeleteMassSuccess(""));
     } catch (e) {
       emit(MoneyOutcomeDeleteMassError(e.toString()));
+      add(FetchMoneyOutcome(forceRefresh: true));
     }
+
+    emit(MoneyOutcomeLoaded(data: _allData));
   }
 
   Future<void> _onMassRestoreMoneyOutcomeDocuments(MassRestoreMoneyOutcomeDocuments event, Emitter<MoneyOutcomeState> emit) async {
@@ -77,27 +85,24 @@ class MoneyOutcomeBloc extends Bloc<MoneyOutcomeEvent, MoneyOutcomeState> {
 
     try {
       final response = await apiService.masRestoreMoneyOutcomeDocuments(ls);
-      emit(MoneyOutcomeRestoreMassSuccess("Документы восстановлены"));
+      emit(MoneyOutcomeRestoreMassSuccess(""));
     } catch (e) {
       emit(MoneyOutcomeRestoreMassError(e.toString()));
+      add(FetchMoneyOutcome(forceRefresh: true));
     }
+
+    emit(MoneyOutcomeLoaded(data: _allData));
   }
 
   Future<void> _onToggleApproveOneMoneyOutcomeDocument(ToggleApproveOneMoneyOutcomeDocument event, Emitter<MoneyOutcomeState> emit) async {
     try {
       final approved = await apiService.toggleApproveOneMoneyOutcomeDocument(event.documentId, event.approve);
-      if (approved) {
-        emit(MoneyOutcomeToggleOneApproveSuccess(""));
-      } else {
-        emit(MoneyOutcomeToggleOneApproveError("approve_error"));
-      }
+      emit(MoneyOutcomeToggleOneApproveSuccess(""));
     } catch (e) {
       emit(MoneyOutcomeToggleOneApproveError(e.toString()));
     }
-  }
 
-  Future<void> _onAddMoneyOutcome(AddMoneyOutcome event, Emitter<MoneyOutcomeState> emit) async {
-    emit(MoneyOutcomeNavigateToAdd());
+    emit(MoneyOutcomeLoaded(data: _allData));
   }
 
   Future<void> _onFetchMoneyOutcome(FetchMoneyOutcome event, Emitter<MoneyOutcomeState> emit) async {
@@ -149,6 +154,8 @@ class MoneyOutcomeBloc extends Bloc<MoneyOutcomeEvent, MoneyOutcomeState> {
     } catch (e) {
       emit(MoneyOutcomeError(e.toString()));
     }
+
+    emit(MoneyOutcomeLoaded(data: _allData));
   }
 
   Future<void> _onCreateMoneyOutcome(CreateMoneyOutcome event, Emitter<MoneyOutcomeState> emit) async {
@@ -172,6 +179,8 @@ class MoneyOutcomeBloc extends Bloc<MoneyOutcomeEvent, MoneyOutcomeState> {
     } catch (e) {
       emit(MoneyOutcomeCreateError(e.toString()));
     }
+
+    emit(MoneyOutcomeLoaded(data: _allData));
   }
 
   Future<void> _onUpdateMoneyOutcome(UpdateMoneyOutcome event, Emitter<MoneyOutcomeState> emit) async {
@@ -194,40 +203,55 @@ class MoneyOutcomeBloc extends Bloc<MoneyOutcomeEvent, MoneyOutcomeState> {
     } catch (e) {
       emit(MoneyOutcomeUpdateError(e.toString()));
     }
+
+    emit(MoneyOutcomeLoaded(data: _allData));
   }
 
   Future<void> _onDeleteMoneyOutcome(DeleteMoneyOutcome event, Emitter<MoneyOutcomeState> emit) async {
+    bool failed = false;
+
     if (event.reload) emit(MoneyOutcomeLoading());
     try {
-      final result = await apiService.deleteMoneyOutcomeDocument(event.documentId);
+      final result = await apiService.deleteMoneyOutcomeDocument(event.document.id!);
       if (result) {
         if (event.reload) emit(MoneyOutcomeDeleteSuccess('document_deleted_successfully', reload: event.reload));
-        if (event.reload) add(RemoveLocalFromList(event.documentId));
+        if (event.reload) add(RemoveLocalFromList(event.document.id!));
       } else {
         emit(const MoneyOutcomeDeleteError('failed_to_delete_document'));
+        failed = true;
       }
     } catch (e) {
       emit(MoneyOutcomeDeleteError(e.toString()));
+      failed = true;
+    }
+
+    if (failed) {
+      add(FetchMoneyOutcome(forceRefresh: true));
+    } else {
+      emit(MoneyOutcomeLoaded(data: _allData));
     }
   }
 
-  Future<void> _onRestoreMoneyOutcome(RestoreMoneyOutcome event, Emitter<MoneyOutcomeState> emit) async {
-    emit(MoneyOutcomeLoading());
-    try {
-      final result = await apiService.restoreMoneyOutcomeDocument(event.documentId);
-      if (result['result'] == 'Success') {
-        emit(const MoneyOutcomeRestoreSuccess('document_restored_successfully'));
-      } else {
-        emit(const MoneyOutcomeRestoreError('failed_to_restore_document'));
-      }
-    } catch (e) {
-      emit(MoneyOutcomeRestoreError('error_restoring_document: ${e.toString()}'));
-    }
-  }
+  // Future<void> _onRestoreMoneyOutcome(RestoreMoneyOutcome event, Emitter<MoneyOutcomeState> emit) async {
+  //   emit(MoneyOutcomeLoading());
+  //   try {
+  //     final result = await apiService.restoreMoneyOutcomeDocument(event.documentId);
+  //     if (result['result'] == 'Success') {
+  //       emit(const MoneyOutcomeRestoreSuccess('document_restored_successfully'));
+  //     } else {
+  //       emit(const MoneyOutcomeRestoreError('failed_to_restore_document'));
+  //     }
+  //   } catch (e) {
+  //     emit(MoneyOutcomeRestoreError('error_restoring_document: ${e.toString()}'));
+  //   }
+  //
+  //   emit(MoneyOutcomeLoaded(data: _allData));
+  // }
 
   Future<void> _onRemoveLocalFromList(RemoveLocalFromList event, Emitter<MoneyOutcomeState> emit) async {
     emit(MoneyOutcomeLoading());
     final double remainingPercentage = _allData.length / _perPage;
+
     if (remainingPercentage < 0.3) {
       add(FetchMoneyOutcome(forceRefresh: true));
     } else {

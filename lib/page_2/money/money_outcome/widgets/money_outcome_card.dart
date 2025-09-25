@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/page_2/money/money_outcome/operation_type.dart';
+import 'package:crm_task_manager/page_2/money/money_outcome/money_outcome_operation_type.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/models/money/money_outcome_document_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -76,7 +76,7 @@ class MoneyOutcomeCard extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          '${localizations.translate('outcome') ?? 'Доход'} №${document.docNumber}',
+                          '${localizations.translate('outcome') ?? 'Расход'} №${document.id ?? ''}',
                           style: const TextStyle(
                             fontSize: 18,
                             fontFamily: 'Gilroy',
@@ -142,13 +142,12 @@ class MoneyOutcomeCard extends StatelessWidget {
                     ),
                   ],
 
-                  if (document.operationType == OperationType.send_another_cash_register.name) ...[
+                  if (document.operationType == MoneyOutcomeOperationType.send_another_cash_register.name) ...[
                     const SizedBox(height: 8),
                     Text(
                       localizations
-                          .translate('receiving_from_another_cash_register')
-                          .replaceAll('{cashRegister}', document.cashRegister?.name ?? '') ??
-                          'Получение с другой кассы: ${document.cashRegister?.name}',
+                          .translate("sending_to_another_cash_register")
+                          .replaceAll('{cashRegister}', document.cashRegister?.name ?? '') ?? 'Перевод в другую кассу ${document.cashRegister?.name ?? ''}',
                       style: const TextStyle(
                         fontSize: 14,
                         fontFamily: 'Gilroy',

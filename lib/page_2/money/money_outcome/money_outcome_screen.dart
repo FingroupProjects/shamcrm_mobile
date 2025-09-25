@@ -19,7 +19,7 @@ import 'edit/edit_money_outcome_from_another_cash_register.dart';
 import 'edit/edit_money_outcome_from_client.dart';
 import 'edit/edit_money_outcome_other_outcome.dart';
 import 'edit/edit_money_outcome_supplier_return.dart';
-import 'operation_type.dart';
+import 'money_outcome_operation_type.dart';
 
 class MoneyOutcomeScreen extends StatefulWidget {
   final int? organizationId;
@@ -128,6 +128,9 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
   Future<void> _navigateToEditScreen(BuildContext context, Document document) async {
     if (!mounted) return;
 
+    debugPrint("Тип операции: ${document.operationType}");
+    debugPrint("📝 [UI] Навигация к экрану редактирования для документа ID: ${document}");
+
     final operationType = getOperationTypeFromString(document.operationType);
 
     if (operationType == null) {
@@ -137,16 +140,16 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
     Widget? targetScreen;
 
     switch (operationType) {
-      case OperationType.client_return:
+      case MoneyOutcomeOperationType.client_return:
         targetScreen = EditMoneyOutcomeFromClient(document: document);
         break;
-      case OperationType.send_another_cash_register:
+      case MoneyOutcomeOperationType.send_another_cash_register:
         targetScreen = EditMoneyOutcomeAnotherCashRegister(document: document);
         break;
-      case OperationType.other_expenses:
+      case MoneyOutcomeOperationType.other_expenses:
         targetScreen = EditMoneyOutcomeOtherOutcome(document: document);
         break;
-      case OperationType.supplier_payment:
+      case MoneyOutcomeOperationType.supplier_payment:
         targetScreen = EditMoneyOutcomeSupplierReturn(document: document);
         break;
     }
@@ -307,11 +310,13 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
               } else if (state is MoneyOutcomeUpdateError) {
                 showCustomSnackBar(context: context, message: state.message, isSuccess: false);
               } else if (state is MoneyOutcomeToggleOneApproveSuccess) {
-                showCustomSnackBar(context: context, message: localizations.translate('status_changed_successfully_approve'), isSuccess: true);
+                showCustomSnackBar(context: context, message: state.message, isSuccess: true);
               } else if (state is MoneyOutcomeToggleOneApproveError) {
                 showCustomSnackBar(context: context, message: state.message, isSuccess: false);
               } else if (state is MoneyOutcomeDeleteSuccess) {
                 showCustomSnackBar(context: context, message: state.message, isSuccess: true);
+              } else if (state is MoneyOutcomeDeleteError) {
+                showCustomSnackBar(context: context, message: state.message, isSuccess: false);
               } else if (state is MoneyOutcomeRestoreSuccess) {
                 showCustomSnackBar(context: context, message: state.message, isSuccess: true);
               } else if (state is MoneyOutcomeRestoreError) {
@@ -358,7 +363,7 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
 
                 final List<Document> currentData = state is MoneyOutcomeLoaded ? state.data : [];
 
-                if (currentData.isEmpty && state is MoneyOutcomeLoaded) {
+                if (currentData.isEmpty) {
                   return Center(
                     child: Text(
                       _isSearching ? localizations.translate('nothing_found') : localizations.translate('no_money_outcome'),
@@ -426,7 +431,7 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                           setState(() {
                             currentData.removeAt(index);
                           });
-                          _moneyOutcomeBloc.add(DeleteMoneyOutcome(document.id!, reload: false));
+                          _moneyOutcomeBloc.add(DeleteMoneyOutcome(document, reload: false));
                         },
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(12),
@@ -466,7 +471,7 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                                   context: context,
                                   document: currentData[index],
                                   onDelete: () {
-                                    _moneyOutcomeBloc.add(DeleteMoneyOutcome(document.id!));
+                                    _moneyOutcomeBloc.add(DeleteMoneyOutcome(document));
                                   });
                             },
                           ),
@@ -485,13 +490,13 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
 
               Widget targetScreen;
 
-              if (value == OperationType.client_return.name) {
+              if (value == MoneyOutcomeOperationType.client_return.name) {
                 targetScreen = const AddMoneyOutcomeFromClient();
-              } else if (value == OperationType.send_another_cash_register.name) {
+              } else if (value == MoneyOutcomeOperationType.send_another_cash_register.name) {
                 targetScreen = const AddMoneyOutcomeAnotherCashRegister();
-              } else if (value == OperationType.other_expenses.name) {
+              } else if (value == MoneyOutcomeOperationType.other_expenses.name) {
                 targetScreen = const AddMoneyOutcomeOtherOutcome();
-              } else if (value == OperationType.supplier_payment.name) {
+              } else if (value == MoneyOutcomeOperationType.supplier_payment.name) {
                 targetScreen = const AddMoneyOutcomeSupplierReturn();
               } else {
                 return;
@@ -514,7 +519,7 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
             itemBuilder: (BuildContext context) {
               return [
                 PopupMenuItem<String>(
-                  value: OperationType.client_return.name,
+                  value: MoneyOutcomeOperationType.client_return.name,
                   child: Row(
                     children: [
                       const Icon(
@@ -525,7 +530,7 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          localizations.translate('client_payment'),
+                          localizations.translate(MoneyOutcomeOperationType.client_return.name),
                           style: const TextStyle(
                             fontSize: 14,
                             fontFamily: 'Gilroy',
@@ -538,7 +543,7 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                   ),
                 ),
                 PopupMenuItem<String>(
-                  value: OperationType.send_another_cash_register.name,
+                  value: MoneyOutcomeOperationType.send_another_cash_register.name,
                   child: Row(
                     children: [
                       const Icon(
@@ -549,7 +554,7 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          localizations.translate('cash_register_transfer'),
+                          localizations.translate(MoneyOutcomeOperationType.send_another_cash_register.name),
                           style: const TextStyle(
                             fontSize: 14,
                             fontFamily: 'Gilroy',
@@ -562,7 +567,7 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                   ),
                 ),
                 PopupMenuItem<String>(
-                  value: OperationType.other_expenses.name,
+                  value: MoneyOutcomeOperationType.other_expenses.name,
                   child: Row(
                     children: [
                       const Icon(
@@ -573,7 +578,7 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          localizations.translate('other_outcome'),
+                          localizations.translate(MoneyOutcomeOperationType.other_expenses.name),
                           style: const TextStyle(
                             fontSize: 14,
                             fontFamily: 'Gilroy',
@@ -586,7 +591,7 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                   ),
                 ),
                 PopupMenuItem<String>(
-                  value: OperationType.supplier_payment.name,
+                  value: MoneyOutcomeOperationType.supplier_payment.name,
                   child: Row(
                     children: [
                       const Icon(
@@ -597,7 +602,7 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          localizations.translate('supplier_return'),
+                          localizations.translate(MoneyOutcomeOperationType.supplier_payment.name),
                           style: const TextStyle(
                             fontSize: 14,
                             fontFamily: 'Gilroy',

@@ -15,7 +15,8 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import '../operation_type.dart';
+import '../../../../utils/global_fun.dart';
+import '../money_outcome_operation_type.dart';
 
 class EditMoneyOutcomeSupplierReturn extends StatefulWidget {
   final Document document;
@@ -144,7 +145,7 @@ class _EditMoneyOutcomeSupplierReturnState extends State<EditMoneyOutcomeSupplie
 
     final bloc = context.read<MoneyOutcomeBloc>();
 
-    final dataChanged = !_areDatesEqual(widget.document.date ?? '', isoDate) ||
+    final dataChanged = !areDatesEqual(widget.document.date ?? '', isoDate) ||
         widget.document.amount != _amountController.text.trim() ||
         (widget.document.comment ?? '') != _commentController.text.trim() ||
         widget.document.model?.id.toString() != _selectedSupplier!.id.toString() ||
@@ -152,13 +153,36 @@ class _EditMoneyOutcomeSupplierReturnState extends State<EditMoneyOutcomeSupplie
 
     final approvalChanged = widget.document.approved != _isApproved;
 
+    debugPrint("dataChanged: $dataChanged, approvalChanged: $approvalChanged");
+
+    // if (dataChanged) {
+    //   debugPrint("Data changed:");
+    //   if (!_areDatesEqual(widget.document.date ?? '', isoDate)) {
+    //     debugPrint("- Date changed from '${widget.document.date}' to '$isoDate'");
+    //   }
+    //   if (widget.document.amount != _amountController.text.trim()) {
+    //     debugPrint("- Amount changed from '${widget.document.amount}' to '${_amountController.text.trim()}'");
+    //   }
+    //   if ((widget.document.comment ?? '') != _commentController.text.trim()) {
+    //     debugPrint("- Comment changed from '${widget.document.comment}' to '${_commentController.text.trim()}'");
+    //   }
+    //   if (widget.document.model?.id.toString() != _selectedSupplier!.id.toString()) {
+    //     debugPrint("- Supplier changed from '${widget.document.model?.id}' to '${_selectedSupplier!.id}'");
+    //   }
+    //   if (widget.document.cashRegister?.id != selectedCashRegister?.id) {
+    //     debugPrint("- Cash Register changed from '${widget.document.cashRegister?.id}' to '${selectedCashRegister?.id}'");
+    //   }
+    // } else {
+    //   debugPrint("No data changes detected.");
+    // }
+
     if (dataChanged) {
       final bloc = context.read<MoneyOutcomeBloc>();
       bloc.add(UpdateMoneyOutcome(
         id: widget.document.id,
         date: isoDate,
         amount: double.parse(_amountController.text.trim()),
-        operationType: OperationType.supplier_payment.name,
+        operationType: MoneyOutcomeOperationType.supplier_payment.name,
         supplierId: _selectedSupplier!.id,
         comment: _commentController.text.trim(),
         cashRegisterId: selectedCashRegister?.id,
@@ -370,12 +394,12 @@ class _EditMoneyOutcomeSupplierReturnState extends State<EditMoneyOutcomeSupplie
                   Navigator.pop(context, true);
                 } else if (state is MoneyOutcomeUpdateError) {
                   setState(() => _isLoading = false);
-                  _showSnackBar(state.message, false);
                 }
                 if (state is MoneyOutcomeToggleOneApproveSuccess) {
+                  setState(() => _isLoading = false);
                   Navigator.pop(context, true);
                 } else if (state is MoneyOutcomeToggleOneApproveError) {
-                  _showSnackBar(state.message, false);
+                  setState(() => _isLoading = false);
                 }
               });
             },
@@ -452,7 +476,7 @@ class _EditMoneyOutcomeSupplierReturnState extends State<EditMoneyOutcomeSupplie
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
-        AppLocalizations.of(context)!.translate('edit_outcoming_document') ?? 'Редактировать доход',
+        AppLocalizations.of(context)!.translate('edit_incoming_document') ?? 'Редактировать доход',
         style: const TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
@@ -491,6 +515,9 @@ class _EditMoneyOutcomeSupplierReturnState extends State<EditMoneyOutcomeSupplie
 
   Widget _buildAmountField(AppLocalizations localizations) {
     return CustomTextField(
+        inputFormatters: [
+          MoneyInputFormatter(),
+        ],
         controller: _amountController,
         label: AppLocalizations.of(context)!.translate('amount') ?? 'Сумма',
         hintText: AppLocalizations.of(context)!.translate('enter_amount') ?? 'Введите сумму',
@@ -611,24 +638,5 @@ class _EditMoneyOutcomeSupplierReturnState extends State<EditMoneyOutcomeSupplie
     _commentController.dispose();
     _amountController.dispose();
     super.dispose();
-  }
-}
-
-bool _areDatesEqual(String backendDateStr, String frontendDateStr) {
-  try {
-    debugPrint("Comparing dates: backend='$backendDateStr', frontend='$frontendDateStr'");
-
-    final backendDate = DateTime.parse(backendDateStr);
-    final frontendDate = DateTime.parse(frontendDateStr);
-
-    return backendDate.year == frontendDate.year &&
-        backendDate.month == frontendDate.month &&
-        backendDate.day == frontendDate.day &&
-        backendDate.hour == frontendDate.hour &&
-        backendDate.minute == frontendDate.minute &&
-        backendDate.second == frontendDate.second;
-  } catch (e) {
-    debugPrint('Error comparing dates: $e');
-    return false;
   }
 }

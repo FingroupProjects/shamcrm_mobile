@@ -14,7 +14,7 @@ import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import '../operation_type.dart';
+import '../money_income_operation_type.dart';
 
 class AddMoneyIncomeOtherIncome extends StatefulWidget {
   const AddMoneyIncomeOtherIncome({super.key});
@@ -96,7 +96,7 @@ class _AddMoneyIncomeOtherIncomeState extends State<AddMoneyIncomeOtherIncome> {
         amount: double.parse(_amountController.text.trim()),
         articleId: selectedIncomeCategory?.id,
         comment: _commentController.text.trim(),
-        operationType: OperationType.other_incomes.name,
+        operationType: MoneyIncomeOperationType.other_incomes.name,
         cashRegisterId: selectedCashRegister?.id,
         approve: approve,
       ));
