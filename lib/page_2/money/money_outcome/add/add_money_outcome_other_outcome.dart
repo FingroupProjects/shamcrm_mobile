@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../money_outcome_operation_type.dart';
+import '../money_outcome_screen.dart';
 
 class AddMoneyOutcomeOtherOutcome extends StatefulWidget {
   const AddMoneyOutcomeOtherOutcome({super.key});
@@ -157,7 +158,6 @@ class _AddMoneyOutcomeOtherOutcomeState extends State<AddMoneyOutcomeOtherOutcom
                     Navigator.pop(context, true);
                   } else if (state is MoneyOutcomeCreateError) {
                     setState(() => _isLoading = false);
-                    _showSnackBar(state.message, false);
                   }
                 });
               },

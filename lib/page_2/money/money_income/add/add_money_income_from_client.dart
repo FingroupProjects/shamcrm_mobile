@@ -160,11 +160,6 @@ class _AddMoneyIncomeFromClientState extends State<AddMoneyIncomeFromClient> {
                   Navigator.pop(context, true);
                 } else if (state is MoneyIncomeCreateError) {
                   setState(() => _isLoading = false);
-                  if (state.statusCode == 409) {
-                    showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
-                    return;
-                  }
-                  _showSnackBar(state.message, false);
                 }
               });
             },

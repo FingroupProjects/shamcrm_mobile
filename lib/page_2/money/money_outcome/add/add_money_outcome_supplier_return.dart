@@ -15,6 +15,7 @@ import 'package:intl/intl.dart';
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import '../../../../bloc/money_outcome/money_outcome_bloc.dart';
 import '../money_outcome_operation_type.dart';
+import '../money_outcome_screen.dart';
 
 class AddMoneyOutcomeSupplierReturn extends StatefulWidget {
   const AddMoneyOutcomeSupplierReturn({super.key});
@@ -290,7 +291,6 @@ class _AddMoneyOutcomeSupplierReturnState extends State<AddMoneyOutcomeSupplierR
                   Navigator.pop(context, true);
                 } else if (state is MoneyOutcomeCreateError) {
                   setState(() => _isLoading = false);
-                  _showSnackBar(state.message, false);
                 }
               });
             },

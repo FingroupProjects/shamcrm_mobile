@@ -110,7 +110,7 @@ class _EditMoneyOutcomeOtherOutcomeState extends State<EditMoneyOutcomeOtherOutc
 
     if (selectedOutcomeCategory == null) {
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('select_outcome_category') ?? 'Выберите категорию дохода',
+        AppLocalizations.of(context)!.translate('select_outcome_category') ?? 'Пожалуйста, выберите категорию дохода',
         false,
       );
       return;
@@ -145,6 +145,8 @@ class _EditMoneyOutcomeOtherOutcomeState extends State<EditMoneyOutcomeOtherOutc
       return;
     }
 
+    final bloc = context.read<MoneyOutcomeBloc>();
+
     final dataChanged = !areDatesEqual(widget.document.date ?? '', isoDate) ||
         widget.document.amount != _amountController.text.trim() ||
         (widget.document.comment ?? '') != _commentController.text.trim() ||
@@ -153,8 +155,7 @@ class _EditMoneyOutcomeOtherOutcomeState extends State<EditMoneyOutcomeOtherOutc
 
     final approvalChanged = widget.document.approved != _isApproved;
 
-    if (dataChanged) {
-      final bloc = context.read<MoneyOutcomeBloc>();
+    if (dataChanged && !approvalChanged) {
       bloc.add(UpdateMoneyOutcome(
         id: widget.document.id,
         date: isoDate,
@@ -166,9 +167,22 @@ class _EditMoneyOutcomeOtherOutcomeState extends State<EditMoneyOutcomeOtherOutc
       ));
     }
 
-    if (approvalChanged) {
-      final bloc = context.read<MoneyOutcomeBloc>();
+    if (!dataChanged && approvalChanged) {
       bloc.add(ToggleApproveOneMoneyOutcomeDocument(widget.document.id!, _isApproved));
+    }
+
+    if (dataChanged && approvalChanged) {
+      debugPrint("Data and approval changed, using combined event");
+      bloc.add(UpdateThenToggleOneMoneyOutcomeDocument(
+        id: widget.document.id!,
+        date: isoDate,
+        amount: double.parse(_amountController.text.trim()),
+        operationType: MoneyOutcomeOperationType.other_expenses.name,
+        articleId: selectedOutcomeCategory!.id,
+        comment: _commentController.text.trim(),
+        cashRegisterId: selectedCashRegister!.id,
+        approve: _isApproved,
+      ));
     }
 
     if (!dataChanged && !approvalChanged) {
@@ -242,6 +256,10 @@ class _EditMoneyOutcomeOtherOutcomeState extends State<EditMoneyOutcomeOtherOutc
                     Navigator.pop(context, true);
                   } else if (state is MoneyOutcomeToggleOneApproveError) {
                     setState(() => _isLoading = false);
+                  }
+                  if (state is MoneyOutcomeUpdateThenToggleOneApproveSuccess) {
+                    setState(() => _isLoading = false);
+                    Navigator.pop(context, true);
                   }
                 });
               },
@@ -414,7 +432,7 @@ class _EditMoneyOutcomeOtherOutcomeState extends State<EditMoneyOutcomeOtherOutc
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
-        AppLocalizations.of(context)!.translate('edit_incoming_document') ?? 'Редактировать доход',
+        AppLocalizations.of(context)!.translate('edit_outcoming_document') ?? 'Редактировать доход',
         style: const TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
