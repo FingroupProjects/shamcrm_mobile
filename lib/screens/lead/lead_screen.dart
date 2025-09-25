@@ -201,18 +201,14 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   }
 
 Future<void> _onRefresh(int currentStatusId) async {
-  print('LeadScreen: _onRefresh called - FULL REFRESH for all statuses, currentStatusId: $currentStatusId');
-  
-  // СОХРАНЯЕМ текущий индекс таба ПЕРЕД очисткой
-  final currentTabIndex = _currentTabIndex;
-  print('LeadScreen: Saving current tab index: $currentTabIndex for statusId: $currentStatusId');
+  print('LeadScreen: _onRefresh called - FULL REFRESH for all statuses');
   
   try {
     // ПОЛНАЯ очистка всего кэша
-    await LeadCache.clearAllData();
+    await LeadCache.clearAllData(); // Новый метод для полной очистки
     print('LeadScreen: _onRefresh - Cleared ALL cache data');
     
-    // Сбрасываем все фильтры и состояние (НО НЕ текущий индекс таба)
+    // Сбрасываем все фильтры и состояние
     if (mounted) {
       setState(() {
         _isSearching = false;
@@ -237,20 +233,18 @@ Future<void> _onRefresh(int currentStatusId) async {
         _hasDeal = false;
         _daysWithoutActivity = null;
         _directoryValues.clear();
-        
-        // ВАЖНО: НЕ сбрасываем _currentTabIndex - сохраняем текущий таб!
-        // _currentTabIndex = 0; // УБИРАЕМ эту строку!
       });
     }
     
-    // Заново загружаем статусы с сохранением текущего таба
+    // Заново загружаем статусы и лиды с сервера
     final leadBloc = BlocProvider.of<LeadBloc>(context);
-    leadBloc.add(FetchLeadStatuses(forceRefresh: true));
+    leadBloc.add(FetchLeadStatuses(forceRefresh: true)); // Принудительная загрузка с сервера
     
-    print('LeadScreen: _onRefresh - Full refresh completed, preserved tab index: $currentTabIndex');
+    print('LeadScreen: _onRefresh - Full refresh completed');
     
   } catch (e) {
     print('LeadScreen: _onRefresh error: $e');
+    // Показываем ошибку пользователю
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -1390,53 +1384,39 @@ Widget _buildTabBarView() {
   return BlocListener<LeadBloc, LeadState>(
     listener: (context, state) async {
       print('LeadScreen: BlocListener received state: ${state.runtimeType}');
-     if (state is LeadLoaded) {
-  print('LeadScreen: LeadLoaded state, caching lead statuses: ${state.leadStatuses}');
-  await LeadCache.cacheLeadStatuses(state.leadStatuses);
-  if (mounted) {
-    setState(() {
-      _tabTitles = state.leadStatuses
-          .where((status) => _canReadLeadStatus)
-          .map((status) => {
-                'id': status.id,
-                'title': status.title,
-                'leads_count': status.leadsCount,
-              })
-          .toList();
-      _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
-      _isSwitchingFunnel = false;
+      if (state is LeadLoaded) {
+        print('LeadScreen: LeadLoaded state, caching lead statuses: ${state.leadStatuses}');
+        await LeadCache.cacheLeadStatuses(state.leadStatuses);
+        if (mounted) {
+          setState(() {
+            _tabTitles = state.leadStatuses
+                .where((status) => _canReadLeadStatus)
+                .map((status) => {
+                      'id': status.id,
+                      'title': status.title,
+                      'leads_count': status.leadsCount,
+                    })
+                .toList();
+            _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
+            _isSwitchingFunnel = false;
 
-      if (_tabTitles.isNotEmpty) {
-        print('LeadScreen: Initializing TabController with length: ${_tabTitles.length}');
-        _tabController = TabController(length: _tabTitles.length, vsync: this);
-        
-        // ИСПРАВЛЕНИЕ: Сохраняем текущий индекс таба или находим статус по ID
-        int targetIndex = _currentTabIndex;
-        
-        // Если текущий индекс больше количества табов, корректируем его
-        if (targetIndex >= _tabTitles.length) {
-          targetIndex = _tabTitles.length - 1;
-        }
-        
-        // Устанавливаем правильный индекс
-        _tabController.index = targetIndex;
-        _currentTabIndex = targetIndex;
-        
-        print('LeadScreen: Restored tab index to: $targetIndex');
-        
-        _tabController.addListener(() {
-          if (!_tabController.indexIsChanging) {
-            setState(() {
-              _currentTabIndex = _tabController.index;
-            });
-            final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-            if (tabScrollController.hasClients) {
-              _scrollToActiveTab();
-            }
-            context.read<LeadBloc>().add(FetchLeads(
-              currentStatusId,
-              salesFunnelId: _selectedFunnel?.id,
-              ignoreCache: false,
+            if (_tabTitles.isNotEmpty) {
+              print('LeadScreen: Initializing TabController with length: ${_tabTitles.length}');
+              _tabController = TabController(length: _tabTitles.length, vsync: this);
+              _tabController.addListener(() {
+                if (!_tabController.indexIsChanging) {
+                  print('LeadScreen: TabController listener triggered, new index: ${_tabController.index}');
+                  setState(() {
+                    _currentTabIndex = _tabController.index;
+                  });
+                  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+                  if (tabScrollController.hasClients) {
+                    _scrollToActiveTab();
+                  }
+                  context.read<LeadBloc>().add(FetchLeads(
+                    currentStatusId,
+                    salesFunnelId: _selectedFunnel?.id,
+                    ignoreCache: false,
                     query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
                     managerIds: _selectedManagers.isNotEmpty
                         ? _selectedManagers.map((manager) => manager.id).toList()
@@ -1465,15 +1445,7 @@ Widget _buildTabBarView() {
                   print('LeadScreen: FetchLeads dispatched for statusId: $currentStatusId');
                 }
               });
- // Загружаем лиды для ТЕКУЩЕГО статуса (не первого!)
-        final currentStatusId = _tabTitles[targetIndex]['id'];
-        print('LeadScreen: Loading leads for CURRENT status: $currentStatusId (index: $targetIndex)');
-        context.read<LeadBloc>().add(FetchLeads(
-          currentStatusId,
-          salesFunnelId: _selectedFunnel?.id,
-          ignoreCache: false,
-        ));
-        print('LeadScreen: FetchLeads dispatched for current statusId: $currentStatusId');
+
               // Установка начального индекса
               int initialIndex = state.leadStatuses
                   .indexWhere((status) => status.id == widget.initialStatusId);
@@ -1564,7 +1536,7 @@ Widget _buildTabBarView() {
                 onRefresh: () => _onRefresh(status['id']),
                 color: const Color(0xff1E2E52),
                 backgroundColor: Colors.white,
-             child: LeadColumn(
+                child: LeadColumn(
   isLeadScreenTutorialCompleted: _isLeadScreenTutorialCompleted,
   statusId: status['id'],
   title: status['title'],

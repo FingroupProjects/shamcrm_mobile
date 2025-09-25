@@ -35,7 +35,7 @@ class _LeadColumnState extends State<LeadColumn> {
   bool _hasPermissionToAddLead = false;
   bool _isSwitch = false;
   final ApiService _apiService = ApiService();
-  // УБИРАЕМ собственный LeadBloc! Используем только главный из контекста
+  late final LeadBloc _leadBloc;
   final ScrollController _scrollController = ScrollController();
 
   List<TargetFocus> targets = [];
@@ -51,17 +51,15 @@ class _LeadColumnState extends State<LeadColumn> {
   @override
   void initState() {
     super.initState();
-    // УБИРАЕМ создание собственного блока! Используем главный блок из контекста
+    _leadBloc = LeadBloc(_apiService)..add(FetchLeads(widget.statusId));
     _checkPermission();
     _loadFeatureState();
     _scrollController.addListener(() {
-      if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
-        // Используем главный блок из контекста
-        final mainLeadBloc = BlocProvider.of<LeadBloc>(context);
-        if (mainLeadBloc.state is LeadDataLoaded && !mainLeadBloc.allLeadsFetched) {
-          mainLeadBloc.add(FetchMoreLeads(
-              widget.statusId, (mainLeadBloc.state as LeadDataLoaded).currentPage));
-        }
+      if (_scrollController.position.pixels ==
+              _scrollController.position.maxScrollExtent &&
+          !_leadBloc.allLeadsFetched) {
+        _leadBloc.add(FetchMoreLeads(
+            widget.statusId, (_leadBloc.state as LeadDataLoaded).currentPage));
       }
     });
   }
@@ -69,7 +67,7 @@ class _LeadColumnState extends State<LeadColumn> {
   @override
   void dispose() {
     _scrollController.dispose();
-    // УБИРАЕМ закрытие собственного блока
+    _leadBloc.close();
     super.dispose();
   }
 
@@ -93,346 +91,6 @@ class _LeadColumnState extends State<LeadColumn> {
       });
     }
   }
-
-  Future<void> _completeTutorialAsync() async {
-    try {
-      await _apiService.markPageCompleted("leads", "index");
-    } catch (e) {
-      print('LeadColumn: Error marking page completed on skip: $e');
-    }
-  }
-
-  Future<void> _onRefresh() async {
-    print('LeadColumn: _onRefresh called for statusId: ${widget.statusId} - triggering FULL refresh');
-    
-    // Получаем главный LeadBloc из контекста
-    final mainLeadBloc = BlocProvider.of<LeadBloc>(context);
-    
-    // Полная очистка кэша
-    await LeadCache.clearAllData();
-    print('LeadColumn: _onRefresh - Cleared all cache data');
-    
-    // Запускаем полное обновление статусов с принудительным обновлением
-    mainLeadBloc.add(FetchLeadStatuses(forceRefresh: true));
-    
-    // Дожидаемся короткой задержки для завершения операции
-    await Future.delayed(Duration(milliseconds: 500));
-    
-    print('LeadColumn: _onRefresh completed');
-    return;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    print('LeadColumn: Building widget for statusId: ${widget.statusId}');
-    // ИСПОЛЬЗУЕМ главный LeadBloc из контекста вместо собственного
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: BlocBuilder<LeadBloc, LeadState>(
-        builder: (context, state) {
-          print('LeadColumn: BlocBuilder state: ${state.runtimeType}');
-          if (state is LeadLoading) {
-            return const Center(
-              child: PlayStoreImageLoading(
-                size: 80.0,
-                duration: Duration(milliseconds: 1000),
-              ),
-            );
-          } else if (state is LeadDataLoaded) {
-            final leads = state.leads
-                .where((lead) => lead.statusId == widget.statusId)
-                .toList();
-            print(
-                'LeadColumn: LeadDataLoaded, leads count for statusId ${widget.statusId}: ${leads.length}');
-
-            if (leads.isNotEmpty) {
-              if (!_isInitialized &&
-                  !_isTutorialShown &&
-                  !widget.isLeadScreenTutorialCompleted) {
-                _isInitialized = true;
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  // _startTutorialLogic();
-                });
-              }
-              return Column(
-                children: [
-                  SizedBox(height: 8),
-                  Expanded(
-                    child: RefreshIndicator(
-                      onRefresh: _onRefresh,
-                      color: const Color(0xff1E2E52),
-                      backgroundColor: Colors.white,
-                      child: ListView.builder(
-                        controller: _scrollController,
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        itemCount: leads.length,
-                        itemBuilder: (context, index) {
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 8),
-                            child: LeadCard(
-                              key: index == 0 ? keyLeadCard : null,
-                              dropdownStatusKey:
-                                  index == 0 ? keyStatusDropdown : null,
-                              lead: leads[index],
-                              title: widget.title,
-                              statusId: widget.statusId,
-                              onStatusUpdated: () async {
-                                print('LeadColumn: Lead status updated for lead: ${leads[index].id}');
-                                final newStatusId = leads[index].statusId;
-                                if (newStatusId != widget.statusId) {
-                                  // Перемещаем лид в кэше
-                                  await LeadCache.moveLeadToStatus(
-                                    leads[index],
-                                    widget.statusId,
-                                    newStatusId,
-                                  );
-                                  print('LeadColumn: Moved lead ${leads[index].id} from status ${widget.statusId} to $newStatusId in cache');
-                                  
-                                  // Обновляем временные счетчики
-                                  await LeadCache.updateLeadCountTemporary(widget.statusId, newStatusId);
-                                  
-                                  // Используем главный блок для обновления
-                                  final mainLeadBloc = BlocProvider.of<LeadBloc>(context);
-                                  mainLeadBloc.add(RestoreCountsFromCache());
-                                  
-                                  // ВАЖНО: Перезагружаем лиды для ОБОИХ статусов
-                                  mainLeadBloc.add(FetchLeads(widget.statusId, ignoreCache: true));
-                                  mainLeadBloc.add(FetchLeads(newStatusId, ignoreCache: true));
-                                }
-                              },
-                              onStatusId: (StatusLeadId) {
-                                print('LeadColumn: onStatusId called with id: $StatusLeadId');
-                                widget.onStatusId(StatusLeadId);
-                              },
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            } else {
-              if (!_isInitialized &&
-                  !_isTutorialShown &&
-                  !widget.isLeadScreenTutorialCompleted) {
-                _isInitialized = true;
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  // _startTutorialLogic();
-                });
-              }
-              return RefreshIndicator(
-                onRefresh: _onRefresh,
-                color: const Color(0xff1E2E52),
-                backgroundColor: Colors.white,
-                child: ListView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  children: [
-                    SizedBox(height: MediaQuery.of(context).size.height * 0.4),
-                    Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            AppLocalizations.of(context)!
-                                .translate('no_lead_in_status'),
-                            style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                                fontFamily: 'Gilroy'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }
-          } else if (state is LeadError) {
-            print('LeadColumn: LeadError state: ${state.message}');
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    AppLocalizations.of(context)!.translate(state.message),
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  behavior: SnackBarBehavior.floating,
-                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  backgroundColor: Colors.red,
-                  elevation: 3,
-                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  duration: Duration(seconds: 3),
-                ),
-              );
-            });
-            return RefreshIndicator(
-              onRefresh: _onRefresh,
-              color: const Color(0xff1E2E52),
-              backgroundColor: Colors.white,
-              child: ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                children: const [SizedBox()],
-              ),
-            );
-          }
-          return RefreshIndicator(
-            onRefresh: _onRefresh,
-            color: const Color(0xff1E2E52),
-            backgroundColor: Colors.white,
-            child: ListView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              children: const [SizedBox()],
-            ),
-          );
-        },
-      ),
-      floatingActionButton: _hasPermissionToAddLead
-          ? FloatingActionButton(
-              key: keyFloatingActionButton,
-              onPressed: () {
-                print('LeadColumn: FloatingActionButton pressed');
-                if (_isSwitch) {
-                  showModalBottomSheet(
-                    backgroundColor: Colors.white,
-                    context: context,
-                    shape: RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.vertical(top: Radius.circular(20)),
-                    ),
-                    builder: (BuildContext context) {
-                      return Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              AppLocalizations.of(context)!
-                                  .translate('add_for_current_status'),
-                              style: TextStyle(
-                                color: Color(0xff1E2E52),
-                                fontSize: 20,
-                                fontFamily: "Gilroy",
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            SizedBox(height: 8),
-                            Divider(color: Color(0xff1E2E52)),
-                            ListTile(
-                              title: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    AppLocalizations.of(context)!
-                                        .translate('new_lead_in_switch'),
-                                    style: TextStyle(
-                                      color: Color(0xff1E2E52),
-                                      fontSize: 16,
-                                      fontFamily: "Gilroy",
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  Icon(
-                                    Icons.add,
-                                    color: Color(0xff1E2E52),
-                                    size: 25,
-                                  ),
-                                ],
-                              ),
-                              onTap: () {
-                                Navigator.pop(context);
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => LeadAddScreen(
-                                        statusId: widget.statusId),
-                                  ),
-                                ).then((_) {
-                                  // Используем главный блок
-                                  final mainLeadBloc = BlocProvider.of<LeadBloc>(context);
-                                  mainLeadBloc.add(FetchLeads(widget.statusId, ignoreCache: true));
-                                });
-                              },
-                            ),
-                            ListTile(
-                              title: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    AppLocalizations.of(context)!
-                                        .translate('import_contact'),
-                                    style: TextStyle(
-                                      color: Color(0xff1E2E52),
-                                      fontSize: 16,
-                                      fontFamily: "Gilroy",
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  Icon(
-                                    Icons.contacts,
-                                    color: Color(0xff1E2E52),
-                                    size: 25,
-                                  ),
-                                ],
-                              ),
-                              onTap: () {
-                                Navigator.pop(context);
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => ContactsScreen(
-                                        statusId: widget.statusId),
-                                  ),
-                                ).then((_) {
-                                  // Используем главный блок
-                                  final mainLeadBloc = BlocProvider.of<LeadBloc>(context);
-                                  mainLeadBloc.add(FetchLeads(widget.statusId, ignoreCache: true));
-                                });
-                              },
-                            ),
-                            SizedBox(height: 10),
-                          ],
-                        ),
-                      );
-                    },
-                  );
-                } else {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          LeadAddScreen(statusId: widget.statusId),
-                    ),
-                  ).then((_) {
-                    // Используем главный блок
-                    final mainLeadBloc = BlocProvider.of<LeadBloc>(context);
-                    mainLeadBloc.add(FetchLeads(widget.statusId, ignoreCache: true));
-                  });
-                }
-              },
-              backgroundColor: Color(0xff1E2E52),
-              child: Image.asset(
-                'assets/icons/tabBar/add.png',
-                width: 24,
-                height: 24,
-              ),
-            )
-          : null,
-    );
-  }
-}
-
 
   // void _initTutorialTargets() {
   //   targets.clear();
@@ -579,3 +237,293 @@ class _LeadColumnState extends State<LeadColumn> {
   //     },
   //   ).show(context: context);
   // }
+
+  Future<void> _completeTutorialAsync() async {
+    try {
+      await _apiService.markPageCompleted("leads", "index");
+    } catch (e) {
+      print('LeadColumn: Error marking page completed on skip: $e');
+    }
+  }
+
+  Future<void> _onRefresh() async {
+    BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
+    _leadBloc.add(FetchLeads(widget.statusId));
+    return Future.delayed(Duration(milliseconds: 1));
+  }
+
+ @override
+Widget build(BuildContext context) {
+  print('LeadColumn: Building widget for statusId: ${widget.statusId}');
+  return BlocProvider.value(
+    value: _leadBloc,
+    child: Scaffold(
+      backgroundColor: Colors.white,
+      body: BlocBuilder<LeadBloc, LeadState>(
+        builder: (context, state) {
+          print('LeadColumn: BlocBuilder state: ${state.runtimeType}');
+          if (state is LeadLoading) {
+            return const Center(
+              child: PlayStoreImageLoading(
+                size: 80.0,
+                duration: Duration(milliseconds: 1000),
+              ),
+            );
+          } else if (state is LeadDataLoaded) {
+            final leads = state.leads
+                .where((lead) => lead.statusId == widget.statusId)
+                .toList();
+            print(
+                'LeadColumn: LeadDataLoaded, leads count for statusId ${widget.statusId}: ${leads.length}');
+
+            if (leads.isNotEmpty) {
+              if (!_isInitialized &&
+                  !_isTutorialShown &&
+                  !widget.isLeadScreenTutorialCompleted) {
+                _isInitialized = true;
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  // _startTutorialLogic();
+                });
+              }
+              return Column(
+                children: [
+                  SizedBox(height: 8),
+                  Expanded(
+                    child: ListView.builder(
+                      controller: _scrollController,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      itemCount: leads.length,
+                      itemBuilder: (context, index) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
+                          child: LeadCard(
+                            key: index == 0 ? keyLeadCard : null,
+                            dropdownStatusKey:
+                                index == 0 ? keyStatusDropdown : null,
+                            lead: leads[index],
+                            title: widget.title,
+                            statusId: widget.statusId,
+                            onStatusUpdated: () async {
+                              print('LeadColumn: Lead status updated for lead: ${leads[index].id}');
+                              final newStatusId = leads[index].statusId;
+                              if (newStatusId != widget.statusId) {
+                                await LeadCache.moveLeadToStatus(
+                                  leads[index],
+                                  widget.statusId,
+                                  newStatusId,
+                                );
+                                print('LeadColumn: Moved lead ${leads[index].id} from status ${widget.statusId} to $newStatusId in cache');
+                                await LeadCache.updateLeadCountTemporary(widget.statusId, newStatusId);
+                                final currentBloc = BlocProvider.of<LeadBloc>(context);
+                                currentBloc.add(RestoreCountsFromCache());
+                              }
+                            },
+                            onStatusId: (StatusLeadId) {
+                              print(
+                                  'LeadColumn: onStatusId called with id: $StatusLeadId');
+                              widget.onStatusId(StatusLeadId);
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              );
+            } else {
+              if (!_isInitialized &&
+                  !_isTutorialShown &&
+                  !widget.isLeadScreenTutorialCompleted) {
+                _isInitialized = true;
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  // _startTutorialLogic();
+                });
+              }
+              return ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  SizedBox(
+                      height: MediaQuery.of(context).size.height * 0.4),
+                  Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          AppLocalizations.of(context)!
+                              .translate('no_lead_in_status'),
+                          style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              fontFamily: 'Gilroy'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            }
+          } else if (state is LeadError) {
+            print('LeadColumn: LeadError state: ${state.message}');
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    AppLocalizations.of(context)!.translate(state.message),
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                  behavior: SnackBarBehavior.floating,
+                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  backgroundColor: Colors.red,
+                  elevation: 3,
+                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  duration: Duration(seconds: 3),
+                ),
+              );
+            });
+            return ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: const [SizedBox()],
+            );
+          }
+          return ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            children: const [SizedBox()],
+          );
+        },
+      ),
+      floatingActionButton: _hasPermissionToAddLead
+          ? FloatingActionButton(
+              key: keyFloatingActionButton,
+              onPressed: () {
+                print('LeadColumn: FloatingActionButton pressed');
+                if (_isSwitch) {
+                  showModalBottomSheet(
+                    backgroundColor: Colors.white,
+                    context: context,
+                    shape: RoundedRectangleBorder(
+                      borderRadius:
+                          BorderRadius.vertical(top: Radius.circular(20)),
+                    ),
+                    builder: (BuildContext context) {
+                      return Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              AppLocalizations.of(context)!
+                                  .translate('add_for_current_status'),
+                              style: TextStyle(
+                                color: Color(0xff1E2E52),
+                                fontSize: 20,
+                                fontFamily: "Gilroy",
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            SizedBox(height: 8),
+                            Divider(color: Color(0xff1E2E52)),
+                            ListTile(
+                              title: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    AppLocalizations.of(context)!
+                                        .translate('new_lead_in_switch'),
+                                    style: TextStyle(
+                                      color: Color(0xff1E2E52),
+                                      fontSize: 16,
+                                      fontFamily: "Gilroy",
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  Icon(
+                                    Icons.add,
+                                    color: Color(0xff1E2E52),
+                                    size: 25,
+                                  ),
+                                ],
+                              ),
+                              onTap: () {
+                                Navigator.pop(context);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => LeadAddScreen(
+                                        statusId: widget.statusId),
+                                  ),
+                                ).then((_) => _leadBloc
+                                    .add(FetchLeads(widget.statusId)));
+                              },
+                            ),
+                            ListTile(
+                              title: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    AppLocalizations.of(context)!
+                                        .translate('import_contact'),
+                                    style: TextStyle(
+                                      color: Color(0xff1E2E52),
+                                      fontSize: 16,
+                                      fontFamily: "Gilroy",
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  Icon(
+                                    Icons.contacts,
+                                    color: Color(0xff1E2E52),
+                                    size: 25,
+                                  ),
+                                ],
+                              ),
+                              onTap: () {
+                                Navigator.pop(context);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ContactsScreen(
+                                        statusId: widget.statusId),
+                                  ),
+                                ).then((_) => _leadBloc
+                                    .add(FetchLeads(widget.statusId)));
+                              },
+                            ),
+                            SizedBox(height: 10),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                } else {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          LeadAddScreen(statusId: widget.statusId),
+                    ),
+                  ).then((_) => _leadBloc.add(FetchLeads(widget.statusId)));
+                }
+              },
+              backgroundColor: Color(0xff1E2E52),
+              child: Image.asset(
+                'assets/icons/tabBar/add.png',
+                width: 24,
+                height: 24,
+              ),
+            )
+          : null,
+    ),
+  );
+}
+}
