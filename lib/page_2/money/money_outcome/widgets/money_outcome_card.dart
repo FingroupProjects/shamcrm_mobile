@@ -142,20 +142,20 @@ class MoneyOutcomeCard extends StatelessWidget {
                     ),
                   ],
 
-                  if (document.operationType == MoneyOutcomeOperationType.send_another_cash_register.name) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      localizations
-                          .translate("sending_to_another_cash_register")
-                          .replaceAll('{cashRegister}', document.cashRegister?.name ?? '') ?? 'Перевод в другую кассу ${document.cashRegister?.name ?? ''}',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w400,
-                        color: Color(0xff99A4BA),
-                      ),
-                    )
-                  ],
+                  // if (document.operationType == MoneyOutcomeOperationType.send_another_cash_register.name) ...[
+                  //   const SizedBox(height: 8),
+                  //   Text(
+                  //     localizations
+                  //         .translate("sending_to_another_cash_register")
+                  //         .replaceAll('{cashRegister}', document.cashRegister?.name ?? '') ?? 'Перевод в другую кассу ${document.cashRegister?.name ?? ''}',
+                  //     style: const TextStyle(
+                  //       fontSize: 14,
+                  //       fontFamily: 'Gilroy',
+                  //       fontWeight: FontWeight.w400,
+                  //       color: Color(0xff99A4BA),
+                  //     ),
+                  //   )
+                  // ],
                 ],
               ),
             ),

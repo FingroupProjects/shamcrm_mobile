@@ -1,5 +1,5 @@
 enum MoneyOutcomeOperationType {
-  send_another_cash_register,
+  // send_another_cash_register,
   other_expenses,
   supplier_payment,
   client_return,

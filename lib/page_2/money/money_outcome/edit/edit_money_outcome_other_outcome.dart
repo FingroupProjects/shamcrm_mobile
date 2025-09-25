@@ -110,7 +110,7 @@ class _EditMoneyOutcomeOtherOutcomeState extends State<EditMoneyOutcomeOtherOutc
 
     if (selectedOutcomeCategory == null) {
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('select_outcome_category') ?? 'Пожалуйста, выберите категорию дохода',
+        AppLocalizations.of(context)!.translate('select_outcome_category') ?? 'Выберите категорию дохода',
         false,
       );
       return;

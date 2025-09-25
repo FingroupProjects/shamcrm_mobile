@@ -143,9 +143,9 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
       case MoneyOutcomeOperationType.client_return:
         targetScreen = EditMoneyOutcomeFromClient(document: document);
         break;
-      case MoneyOutcomeOperationType.send_another_cash_register:
+      /*case MoneyOutcomeOperationType.send_another_cash_register:
         targetScreen = EditMoneyOutcomeAnotherCashRegister(document: document);
-        break;
+        break;*/
       case MoneyOutcomeOperationType.other_expenses:
         targetScreen = EditMoneyOutcomeOtherOutcome(document: document);
         break;
@@ -492,9 +492,9 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
 
               if (value == MoneyOutcomeOperationType.client_return.name) {
                 targetScreen = const AddMoneyOutcomeFromClient();
-              } else if (value == MoneyOutcomeOperationType.send_another_cash_register.name) {
+              }/* else if (value == MoneyOutcomeOperationType.send_another_cash_register.name) {
                 targetScreen = const AddMoneyOutcomeAnotherCashRegister();
-              } else if (value == MoneyOutcomeOperationType.other_expenses.name) {
+              } */else if (value == MoneyOutcomeOperationType.other_expenses.name) {
                 targetScreen = const AddMoneyOutcomeOtherOutcome();
               } else if (value == MoneyOutcomeOperationType.supplier_payment.name) {
                 targetScreen = const AddMoneyOutcomeSupplierReturn();
@@ -542,30 +542,30 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                     ],
                   ),
                 ),
-                PopupMenuItem<String>(
-                  value: MoneyOutcomeOperationType.send_another_cash_register.name,
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.swap_horiz,
-                        color: Color(0xff1E2E52),
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          localizations.translate(MoneyOutcomeOperationType.send_another_cash_register.name),
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xff1E2E52),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                // PopupMenuItem<String>(
+                //   value: MoneyOutcomeOperationType.send_another_cash_register.name,
+                //   child: Row(
+                //     children: [
+                //       const Icon(
+                //         Icons.swap_horiz,
+                //         color: Color(0xff1E2E52),
+                //         size: 20,
+                //       ),
+                //       const SizedBox(width: 12),
+                //       Expanded(
+                //         child: Text(
+                //           localizations.translate(MoneyOutcomeOperationType.send_another_cash_register.name),
+                //           style: const TextStyle(
+                //             fontSize: 14,
+                //             fontFamily: 'Gilroy',
+                //             fontWeight: FontWeight.w500,
+                //             color: Color(0xff1E2E52),
+                //           ),
+                //         ),
+                //       ),
+                //     ],
+                //   ),
+                // ),
                 PopupMenuItem<String>(
                   value: MoneyOutcomeOperationType.other_expenses.name,
                   child: Row(
@@ -616,7 +616,7 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                 ),
               ];
             },
-            offset: const Offset(0, -220),
+            offset: const Offset(0, -170),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
