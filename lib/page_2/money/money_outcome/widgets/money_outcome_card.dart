@@ -8,7 +8,7 @@ class MoneyOutcomeCard extends StatelessWidget {
   final Document document;
   final Function(Document) onClick;
   final Function(Document) onLongPress;
-  final VoidCallback onDelete;
+  // final VoidCallback onDelete;
   final bool isSelectionMode;
   final bool isSelected;
 
@@ -16,7 +16,7 @@ class MoneyOutcomeCard extends StatelessWidget {
     Key? key,
     required this.document,
     required this.onClick,
-    required this.onDelete,
+    // required this.onDelete,
     required this.onLongPress,
     required this.isSelectionMode,
     required this.isSelected,
@@ -76,7 +76,7 @@ class MoneyOutcomeCard extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          '${localizations.translate('outcome') ?? 'Расход'} №${document.id ?? ''}',
+                          '${localizations.translate('outcome') ?? 'Доход'} №${document.docNumber}',
                           style: const TextStyle(
                             fontSize: 18,
                             fontFamily: 'Gilroy',
@@ -103,15 +103,15 @@ class MoneyOutcomeCard extends StatelessWidget {
                               ),
                             ),
                           ),
-                          if (!isSelectionMode && document.deletedAt == null) ...[const SizedBox(width: 8),
-                            GestureDetector(
-                              onTap: () => onDelete(),
-                              child: Image.asset(
-                                'assets/icons/delete.png',
-                                width: 24,
-                                height: 24,
-                              ),
-                            ),]
+                          /*if (!isSelectionMode && document.deletedAt == null) ...[const SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: () => onDelete(),
+                            child: Image.asset(
+                              'assets/icons/delete.png',
+                              width: 24,
+                              height: 24,
+                            ),
+                          ),]*/
                         ],
                       ),
                     ],
@@ -142,20 +142,21 @@ class MoneyOutcomeCard extends StatelessWidget {
                     ),
                   ],
 
-                  if (document.operationType == MoneyOutcomeOperationType.send_another_cash_register.name) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      localizations
-                          .translate("sending_to_another_cash_register")
-                          .replaceAll('{cashRegister}', document.cashRegister?.name ?? '') ?? 'Перевод в другую кассу ${document.cashRegister?.name ?? ''}',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w400,
-                        color: Color(0xff99A4BA),
-                      ),
-                    )
-                  ],
+                  // if (document.operationType == MoneyOutcomeOperationType.send_another_cash_register.name) ...[
+                  //   const SizedBox(height: 8),
+                  //   Text(
+                  //     localizations
+                  //         .translate('sending_to_another_cash_register') // Отправка на другую кассу: {cashRegister}
+                  //         .replaceAll('{cashRegister}', document.cashRegister?.name ?? '') ??
+                  //         'Перевод в другую кассу ${document.cashRegister?.name ?? ''}',
+                  //     style: const TextStyle(
+                  //       fontSize: 14,
+                  //       fontFamily: 'Gilroy',
+                  //       fontWeight: FontWeight.w400,
+                  //       color: Color(0xff99A4BA),
+                  //     ),
+                  //   )
+                  // ],
                 ],
               ),
             ),

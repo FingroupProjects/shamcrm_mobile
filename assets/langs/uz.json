@@ -1211,7 +1211,7 @@
   "supplier_return": "Ta’minotchiga qaytarish",
   "appbar_money_income": "Tushum",
   "client_payment": "Mijoz to'lovi",
-  "cash_register_transfer": "Boshqa kassadan tushum",
+  "cash_register_transfer": "Boshqa kassaga jo'natish",
   "other_income": "Boshqa tushumlar",
   "no_money_income": "Pul tushumi yo'q",
   "select_supplier": "Iltimos, ta'minotchini tanlang",
@@ -1379,11 +1379,12 @@
   "delete_income_confirm": "Siz ushbu tushumni o‘chirishni istaysizmi?",
   "expense_type": "Chiqim turlari",
   "income_type": "Tushum turlari",
-  "income_category": "Daromad kategoriyasi",
+  "income_category": "Tushum kategoriyasi",
   "outcome_category": "Chiqim kategoriyasi",
-  "select_income_category": "Daromad kategoriyasini tanlang",
-  "error_loading_income_categories": "Daromad kategoriyalarini yuklashda xatolik",
-  "error_selecting_income_category": "Daromad kategoriyasini tanlashda xatolik",
+  "select_income_category": "Tushum kategoriyasini tanlang",
+  "select_outcome_category": "Chiqim kategoriyasini tanlang",
+  "error_loading_income_categories": "Tushum kategoriyalarini yuklashda xatolik",
+  "error_selecting_income_category": "Tushum kategoriyasini tanlashda xatolik",
   "cash_registers_must_be_different": "Yuboruvchi va qabul qiluvchi kassalar turli bo'lishi kerak",
   "enter_expense_name": "Chiqim nomini kiriting*",
   "enter_income_name": "Tushum nomini kiriting*",
@@ -1430,7 +1431,14 @@
     "edit_warehouse": "Omborni tahrirlash",
     "save_and_approve": "Saqlash va tasdiqlash",
     "add_warehouse": "Ombor qo‘shish",
-    "enter_warehouse_name": "Ombor nomini kiriting"
+    "enter_warehouse_name": "Ombor nomini kiriting",
+
+  "mass_approve_success_message" : "Hujjatlar muvaffaqiyatli tasdiqlandi",
+  "mass_disapprove_success_message": "Hujjatlar muvaffaqiyatli bekor qilindi",
+  "mass_delete_success_message": "Hujjatlar muvaffaqiyatli o‘chirildi",
+  "mass_restore_success_message" : "Hujjatlar muvaffaqiyatli tiklandi",
+  "toggle_approve_success_message" : "Status muvaffaqiyatli o‘zgartirildi",
+  "document_updated_and_approve_toggled_successfully": "Hujjat muvaffaqiyatli yangilandi va status o‘zgartirildi"
   
 
 

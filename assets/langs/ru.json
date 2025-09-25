@@ -1205,7 +1205,7 @@
 "supplier_return": "Возврат поставщику",
 "appbar_money_income": "Приход",
 "client_payment": "Оплата от клиента",
-"cash_register_transfer": "Получение с другой кассы",
+"cash_register_transfer": "Отправка на другую кассу",
 "other_income": "Прочие доходы",
 "no_money_income": "Нет денежных поступлений",
 "select_cash_register": "Пожалуйста, выберите кассу",
@@ -1350,6 +1350,7 @@
   "income_category": "Статья дохода",
   "outcome_category": "Статья расхода",
   "select_income_category": "Выберите статью дохода",
+  "select_outcome_category": "Выберите статью расхода",
   "error_loading_income_categories": "Ошибка загрузки категорий дохода",
   "error_selecting_income_category": "Ошибка выбора категории дохода",
   "cash_registers_must_be_different": "Касса-отправитель и касса-получатель должны быть разными",
@@ -1421,7 +1422,13 @@
   "status_changed_successfully_approve": "Статус успешно изменён!",
   "save_and_approve": "Сохранить и провести",
   "add_warehouse": "Добавить склад",
-  "enter_warehouse_name": "Введите название склада"
+  "enter_warehouse_name": "Введите название склада",
+  "mass_approve_success_message" : "Документы успешно проведены",
+  "mass_disapprove_success_message": "Документы успешно отменены",
+  "mass_delete_success_message": "Документы успешно удалены",
+  "mass_restore_success_message" : "Документы успешно восстановлены",
+  "toggle_approve_success_message" : "Статус успешно изменён",
+  "document_updated_and_approve_toggled_successfully": "Документ успешно обновлен и статус изменён"
 
  
 

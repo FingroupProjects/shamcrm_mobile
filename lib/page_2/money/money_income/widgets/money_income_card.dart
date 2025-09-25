@@ -11,7 +11,7 @@ class MoneyIncomeCard extends StatelessWidget {
   final Document document;
   final Function(Document) onClick;
   final Function(Document) onLongPress;
-  final VoidCallback onDelete;
+  // final VoidCallback onDelete;
   final bool isSelectionMode;
   final bool isSelected;
 
@@ -19,7 +19,7 @@ class MoneyIncomeCard extends StatelessWidget {
     Key? key,
     required this.document,
     required this.onClick,
-    required this.onDelete,
+    // required this.onDelete,
     required this.onLongPress,
     required this.isSelectionMode,
     required this.isSelected,
@@ -106,7 +106,7 @@ class MoneyIncomeCard extends StatelessWidget {
                               ),
                             ),
                           ),
-                          if (!isSelectionMode && document.deletedAt == null) ...[const SizedBox(width: 8),
+                          /*if (!isSelectionMode && document.deletedAt == null) ...[const SizedBox(width: 8),
                           GestureDetector(
                             onTap: () => onDelete(),
                             child: Image.asset(
@@ -114,7 +114,7 @@ class MoneyIncomeCard extends StatelessWidget {
                               width: 24,
                               height: 24,
                             ),
-                          ),]
+                          ),]*/
                         ],
                       ),
                     ],
@@ -149,9 +149,9 @@ class MoneyIncomeCard extends StatelessWidget {
                     const SizedBox(height: 8),
                     Text(
                       localizations
-                          .translate('receiving_from_another_cash_register')
+                          .translate('sending_to_another_cash_register') // Отправка на другую кассу: {cashRegister}
                           .replaceAll('{cashRegister}', document.cashRegister?.name ?? '') ??
-                          'Получение с другой кассы: ${document.cashRegister?.name}',
+                          'Перевод в другую кассу ${document.cashRegister?.name ?? ''}',
                       style: const TextStyle(
                         fontSize: 14,
                         fontFamily: 'Gilroy',

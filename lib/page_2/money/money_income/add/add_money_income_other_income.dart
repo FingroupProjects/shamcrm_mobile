@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../money_income_operation_type.dart';
+import '../money_income_screen.dart';
 
 class AddMoneyIncomeOtherIncome extends StatefulWidget {
   const AddMoneyIncomeOtherIncome({super.key});
@@ -157,7 +158,6 @@ class _AddMoneyIncomeOtherIncomeState extends State<AddMoneyIncomeOtherIncome> {
                     Navigator.pop(context, true);
                   } else if (state is MoneyIncomeCreateError) {
                     setState(() => _isLoading = false);
-                    _showSnackBar(state.message, false);
                   }
                 });
               },

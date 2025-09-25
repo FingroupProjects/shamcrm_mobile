@@ -706,7 +706,7 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
                     );
                   },
                   hintBuilder: (context, hint, enabled) => Text(
-                    AppLocalizations.of(context)!.translate('select_cash_register') ?? 'Выберите кассу',
+                    AppLocalizations.of(context)!.translate('select_client') ?? 'Выберите клиента',
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,

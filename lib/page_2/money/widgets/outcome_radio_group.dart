@@ -116,7 +116,7 @@ class _OutcomeRadioGroupWidgetState extends State<OutcomeRadioGroupWidget> {
           headerBuilder: (context, selectedItem, enabled) {
             if (state is GetAllOutcomeCategoryLoading) {
               return Text(
-                AppLocalizations.of(context)!.translate('select_outcome_category'),
+                AppLocalizations.of(context)!.translate('select_outcome_category') ?? 'Выберите категорию дохода',
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
@@ -136,7 +136,7 @@ class _OutcomeRadioGroupWidgetState extends State<OutcomeRadioGroupWidget> {
             );
           },
           hintBuilder: (context, hint, enabled) => Text(
-            AppLocalizations.of(context)!.translate('select_outcome_category'),
+            AppLocalizations.of(context)!.translate('select_outcome_category') ?? 'Выберите категорию дохода',
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,

@@ -14,6 +14,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../../bloc/money_outcome/money_outcome_bloc.dart';
 import '../money_outcome_operation_type.dart';
+import '../money_outcome_screen.dart';
 
 class AddMoneyOutcomeFromClient extends StatefulWidget {
   const AddMoneyOutcomeFromClient({super.key});
@@ -157,7 +158,6 @@ class _AddMoneyOutcomeFromClientState extends State<AddMoneyOutcomeFromClient> {
                   Navigator.pop(context, true);
                 } else if (state is MoneyOutcomeCreateError) {
                   setState(() => _isLoading = false);
-                  _showSnackBar(state.message, false);
                 }
               });
             },

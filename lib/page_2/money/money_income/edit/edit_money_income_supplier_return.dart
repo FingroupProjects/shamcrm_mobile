@@ -153,31 +153,7 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
 
     final approvalChanged = widget.document.approved != _isApproved;
 
-    debugPrint("dataChanged: $dataChanged, approvalChanged: $approvalChanged");
-
-    // if (dataChanged) {
-    //   debugPrint("Data changed:");
-    //   if (!_areDatesEqual(widget.document.date ?? '', isoDate)) {
-    //     debugPrint("- Date changed from '${widget.document.date}' to '$isoDate'");
-    //   }
-    //   if (widget.document.amount != _amountController.text.trim()) {
-    //     debugPrint("- Amount changed from '${widget.document.amount}' to '${_amountController.text.trim()}'");
-    //   }
-    //   if ((widget.document.comment ?? '') != _commentController.text.trim()) {
-    //     debugPrint("- Comment changed from '${widget.document.comment}' to '${_commentController.text.trim()}'");
-    //   }
-    //   if (widget.document.model?.id.toString() != _selectedSupplier!.id.toString()) {
-    //     debugPrint("- Supplier changed from '${widget.document.model?.id}' to '${_selectedSupplier!.id}'");
-    //   }
-    //   if (widget.document.cashRegister?.id != selectedCashRegister?.id) {
-    //     debugPrint("- Cash Register changed from '${widget.document.cashRegister?.id}' to '${selectedCashRegister?.id}'");
-    //   }
-    // } else {
-    //   debugPrint("No data changes detected.");
-    // }
-
-    if (dataChanged) {
-      final bloc = context.read<MoneyIncomeBloc>();
+    if (dataChanged && !approvalChanged) {
       bloc.add(UpdateMoneyIncome(
         id: widget.document.id,
         date: isoDate,
@@ -189,8 +165,22 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
       ));
     }
 
-    if (approvalChanged) {
+    if (!dataChanged && approvalChanged) {
       bloc.add(ToggleApproveOneMoneyIncomeDocument(widget.document.id!, _isApproved));
+    }
+
+    if (dataChanged && approvalChanged) {
+      debugPrint("Data and approval changed, using combined event");
+      bloc.add(UpdateThenToggleOneMoneyIncomeDocument(
+        id: widget.document.id!,
+        date: isoDate,
+        amount: double.parse(_amountController.text.trim()),
+        operationType: MoneyIncomeOperationType.return_supplier.name,
+        supplierId: _selectedSupplier!.id,
+        comment: _commentController.text.trim(),
+        cashRegisterId: selectedCashRegister!.id,
+        approve: _isApproved,
+      ));
     }
 
     if (!dataChanged && !approvalChanged) {
@@ -400,6 +390,10 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
                   Navigator.pop(context, true);
                 } else if (state is MoneyIncomeToggleOneApproveError) {
                   setState(() => _isLoading = false);
+                }
+                if (state is MoneyIncomeUpdateThenToggleOneApproveSuccess) {
+                  setState(() => _isLoading = false);
+                  Navigator.pop(context, true);
                 }
               });
             },

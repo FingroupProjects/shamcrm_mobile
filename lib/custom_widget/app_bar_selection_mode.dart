@@ -69,27 +69,30 @@ class AppBarSelectionMode extends StatelessWidget {
           ),
           if (showDelete)
             ...[_buildAction(
-              icon: Icons.delete_sharp,
+              icon: Icons.delete,
               // color: Colors.red,
               onTap: onDelete,
             ),
-          const SizedBox(width: 8),],
+          const SizedBox(width: 8),
+            ],
 
           if (showRestore)
            ...[ _buildAction(
-              icon: Icons.restore_from_trash_sharp,
+              icon: Icons.restore_from_trash,
               // color: const Color(0xFF4CAF50),
               onTap: onRestore,
             ),
-          const SizedBox(width: 8)],
+          const SizedBox(width: 8)
+           ],
 
           if (showDisapprove)
             ...[_buildAction(
-              icon: Icons.cancel_outlined,
+              icon: Icons.undo_rounded,
               // color: const Color(0xFFFFA500),
               onTap: onDisapprove,
             ),
-          const SizedBox(width: 8)],
+              const SizedBox(width: 8),
+            ],
 
           if (showApprove)
             _buildAction(

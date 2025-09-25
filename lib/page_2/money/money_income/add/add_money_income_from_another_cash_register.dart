@@ -7,7 +7,9 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import '../../widgets/error_dialog.dart';
 import '../money_income_operation_type.dart';
+import '../money_income_screen.dart';
 
 class AddMoneyIncomeAnotherCashRegister extends StatefulWidget {
   const AddMoneyIncomeAnotherCashRegister({super.key});
@@ -143,7 +145,6 @@ class _AddMoneyIncomeAnotherCashRegisterState extends State<AddMoneyIncomeAnothe
                   Navigator.pop(context, true);
                 } else if (state is MoneyIncomeCreateError) {
                   setState(() => _isLoading = false);
-                  _showSnackBar(state.message, false);
                 }
               });
             },

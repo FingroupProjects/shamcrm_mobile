@@ -15,7 +15,6 @@ import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-// Импортируем переиспользуемый виджет (замените путь на правильный)
 import '../money_outcome_operation_type.dart';
 
 class EditMoneyOutcomeFromClient extends StatefulWidget {
@@ -159,7 +158,7 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
 
     final approvalChanged = widget.document.approved != _isApproved;
 
-    if (dataChanged) {
+    if (dataChanged && !approvalChanged) {
       final bloc = context.read<MoneyOutcomeBloc>();
       bloc.add(UpdateMoneyOutcome(
         id: widget.document.id,
@@ -172,8 +171,22 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
       ));
     }
 
-    if (approvalChanged) {
+    if (!dataChanged && approvalChanged) {
       bloc.add(ToggleApproveOneMoneyOutcomeDocument(widget.document.id!, _isApproved));
+    }
+
+    if (dataChanged && approvalChanged) {
+      debugPrint("Data and approval changed, using combined event");
+      bloc.add(UpdateThenToggleOneMoneyOutcomeDocument(
+        id: widget.document.id!,
+        date: isoDate,
+        amount: double.parse(_amountController.text.trim()),
+        operationType: MoneyOutcomeOperationType.client_return.name,
+        leadId: _selectedLead!.id,
+        comment: _commentController.text.trim(),
+        cashRegisterId: selectedCashRegister!.id,
+        approve: _isApproved,
+      ));
     }
 
     if (!dataChanged && !approvalChanged) {
@@ -241,6 +254,11 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
                   Navigator.pop(context, true);
                 } else if (state is MoneyOutcomeToggleOneApproveError) {
                   setState(() => _isLoading = false);
+                }
+
+                if (state is MoneyOutcomeUpdateThenToggleOneApproveSuccess) {
+                  setState(() => _isLoading = false);
+                  Navigator.pop(context, true);
                 }
               });
             },
@@ -327,7 +345,7 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
-        AppLocalizations.of(context)!.translate('edit_incoming_document') ?? 'Редактировать доход',
+        AppLocalizations.of(context)!.translate('edit_outcoming_document') ?? 'Редактировать доход',
         style: const TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',

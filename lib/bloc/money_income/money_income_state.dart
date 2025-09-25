@@ -28,14 +28,19 @@ class MoneyIncomeLoaded extends MoneyIncomeState {
   List<Object?> get props => [data, pagination, hasReachedMax, selectedData];
 }
 
+// --------------------- Errors & Success States ---------------------
+
 class MoneyIncomeError extends MoneyIncomeState {
   final String message;
+  final int? statusCode;
 
-  const MoneyIncomeError(this.message);
+  const MoneyIncomeError(this.message, {this.statusCode});
 
   @override
-  List<Object> get props => [message];
+  List<Object?> get props => [message, statusCode];
 }
+
+// --------------------- Create ---------------------
 
 class MoneyIncomeCreateLoading extends MoneyIncomeState {}
 
@@ -45,17 +50,20 @@ class MoneyIncomeCreateSuccess extends MoneyIncomeState {
   const MoneyIncomeCreateSuccess(this.message);
 
   @override
-  List<Object> get props => [message];
+  List<Object?> get props => [message];
 }
 
 class MoneyIncomeCreateError extends MoneyIncomeState {
   final String message;
+  final int? statusCode;
 
-  const MoneyIncomeCreateError(this.message);
+  const MoneyIncomeCreateError(this.message, {this.statusCode});
 
   @override
-  List<Object> get props => [message];
+  List<Object?> get props => [message, statusCode];
 }
+
+// --------------------- Update ---------------------
 
 class MoneyIncomeUpdateLoading extends MoneyIncomeState {}
 
@@ -65,17 +73,20 @@ class MoneyIncomeUpdateSuccess extends MoneyIncomeState {
   const MoneyIncomeUpdateSuccess(this.message);
 
   @override
-  List<Object> get props => [message];
+  List<Object?> get props => [message];
 }
 
 class MoneyIncomeUpdateError extends MoneyIncomeState {
   final String message;
+  final int? statusCode;
 
-  const MoneyIncomeUpdateError(this.message);
+  const MoneyIncomeUpdateError(this.message, {this.statusCode});
 
   @override
-  List<Object> get props => [message];
+  List<Object?> get props => [message, statusCode];
 }
+
+// --------------------- Delete ---------------------
 
 class MoneyIncomeDeleteLoading extends MoneyIncomeState {}
 
@@ -86,39 +97,20 @@ class MoneyIncomeDeleteSuccess extends MoneyIncomeState {
   const MoneyIncomeDeleteSuccess(this.message, {this.reload = true});
 
   @override
-  List<Object> get props => [message, reload];
+  List<Object?> get props => [message, reload];
 }
 
 class MoneyIncomeDeleteError extends MoneyIncomeState {
   final String message;
+  final int? statusCode;
 
-  const MoneyIncomeDeleteError(this.message);
-
-  @override
-  List<Object> get props => [message];
-}
-
-class MoneyIncomeRestoreLoading extends MoneyIncomeState {}
-
-class MoneyIncomeRestoreSuccess extends MoneyIncomeState {
-  final String message;
-
-  const MoneyIncomeRestoreSuccess(this.message);
+  const MoneyIncomeDeleteError(this.message, {this.statusCode});
 
   @override
-  List<Object> get props => [message];
+  List<Object?> get props => [message, statusCode];
 }
 
-class MoneyIncomeRestoreError extends MoneyIncomeState {
-  final String message;
-
-  const MoneyIncomeRestoreError(this.message);
-
-  @override
-  List<Object> get props => [message];
-}
-
-class MoneyIncomeNavigateToAdd extends MoneyIncomeState {}
+// --------------------- Toggle One Approve ---------------------
 
 class MoneyIncomeToggleOneApproveSuccess extends MoneyIncomeState {
   final String message;
@@ -126,17 +118,20 @@ class MoneyIncomeToggleOneApproveSuccess extends MoneyIncomeState {
   const MoneyIncomeToggleOneApproveSuccess(this.message);
 
   @override
-  List<Object> get props => [message];
+  List<Object?> get props => [message];
 }
 
 class MoneyIncomeToggleOneApproveError extends MoneyIncomeState {
   final String message;
+  final int? statusCode;
 
-  const MoneyIncomeToggleOneApproveError(this.message);
+  const MoneyIncomeToggleOneApproveError(this.message, {this.statusCode});
 
   @override
-  List<Object> get props => [message];
+  List<Object?> get props => [message, statusCode];
 }
+
+// --------------------- Approve Mass ---------------------
 
 class MoneyIncomeApproveMassSuccess extends MoneyIncomeState {
   final String message;
@@ -144,17 +139,20 @@ class MoneyIncomeApproveMassSuccess extends MoneyIncomeState {
   const MoneyIncomeApproveMassSuccess(this.message);
 
   @override
-  List<Object> get props => [message];
+  List<Object?> get props => [message];
 }
 
 class MoneyIncomeApproveMassError extends MoneyIncomeState {
   final String message;
+  final int? statusCode;
 
-  const MoneyIncomeApproveMassError(this.message);
+  const MoneyIncomeApproveMassError(this.message, {this.statusCode});
 
   @override
-  List<Object> get props => [message];
+  List<Object?> get props => [message, statusCode];
 }
+
+// --------------------- Disapprove Mass ---------------------
 
 class MoneyIncomeDisapproveMassSuccess extends MoneyIncomeState {
   final String message;
@@ -162,17 +160,20 @@ class MoneyIncomeDisapproveMassSuccess extends MoneyIncomeState {
   const MoneyIncomeDisapproveMassSuccess(this.message);
 
   @override
-  List<Object> get props => [message];
+  List<Object?> get props => [message];
 }
 
 class MoneyIncomeDisapproveMassError extends MoneyIncomeState {
   final String message;
+  final int? statusCode;
 
-  const MoneyIncomeDisapproveMassError(this.message);
+  const MoneyIncomeDisapproveMassError(this.message, {this.statusCode});
 
   @override
-  List<Object> get props => [message];
+  List<Object?> get props => [message, statusCode];
 }
+
+// --------------------- Delete Mass ---------------------
 
 class MoneyIncomeDeleteMassSuccess extends MoneyIncomeState {
   final String message;
@@ -180,17 +181,20 @@ class MoneyIncomeDeleteMassSuccess extends MoneyIncomeState {
   const MoneyIncomeDeleteMassSuccess(this.message);
 
   @override
-  List<Object> get props => [message];
+  List<Object?> get props => [message];
 }
 
 class MoneyIncomeDeleteMassError extends MoneyIncomeState {
   final String message;
+  final int? statusCode;
 
-  const MoneyIncomeDeleteMassError(this.message);
+  const MoneyIncomeDeleteMassError(this.message, {this.statusCode});
 
   @override
-  List<Object> get props => [message];
+  List<Object?> get props => [message, statusCode];
 }
+
+// --------------------- Restore Mass ---------------------
 
 class MoneyIncomeRestoreMassSuccess extends MoneyIncomeState {
   final String message;
@@ -198,14 +202,25 @@ class MoneyIncomeRestoreMassSuccess extends MoneyIncomeState {
   const MoneyIncomeRestoreMassSuccess(this.message);
 
   @override
-  List<Object> get props => [message];
+  List<Object?> get props => [message];
 }
 
 class MoneyIncomeRestoreMassError extends MoneyIncomeState {
   final String message;
+  final int? statusCode;
 
-  const MoneyIncomeRestoreMassError(this.message);
+  const MoneyIncomeRestoreMassError(this.message, {this.statusCode});
 
   @override
-  List<Object> get props => [message];
+  List<Object?> get props => [message, statusCode];
+}
+
+// ---------------------  Update Then Toggle One Approve ---------------------
+class MoneyIncomeUpdateThenToggleOneApproveSuccess extends MoneyIncomeState {
+  final String message;
+
+  const MoneyIncomeUpdateThenToggleOneApproveSuccess(this.message);
+
+  @override
+  List<Object?> get props => [message];
 }

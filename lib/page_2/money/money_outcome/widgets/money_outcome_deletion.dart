@@ -15,9 +15,7 @@ class MoneyOutcomeDeleteDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocListener<MoneyOutcomeBloc, MoneyOutcomeState>(
       listener: (context, state) {
-        if (state is MoneyOutcomeDeleteError) {
-          showCustomSnackBar(context: context, message: state.message, isSuccess: false);
-        } else if (state is MoneyOutcomeDeleteSuccess) {
+        if (state is MoneyOutcomeDeleteError || state is MoneyOutcomeDeleteSuccess) {
           Navigator.of(context).pop(true);
         }
       },
