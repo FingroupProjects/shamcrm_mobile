@@ -659,12 +659,3 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
     );
   }
 }
-
-void showSimpleErrorDialog(BuildContext context, String title, String errorMessage) {
-  showDialog(
-      context: context,
-      barrierColor: Colors.black.withOpacity(0.5),
-      builder: (BuildContext context) {
-        return ErrorDialog(title: title, errorMessage: errorMessage);
-      });
-}

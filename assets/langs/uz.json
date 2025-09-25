@@ -1226,7 +1226,7 @@
   "appbar_client_sales": "Mijozga realizatsiya",
   "create_client_sale": "Mijozga realizatsiya yaratish",
   "delete_document": "Hujjatni o‘chirish",
-  "confirm_delete_document": "Ushbu hujjatni o‘chirishni xohlaysizmi?",
+  "delete_document_confirm": "Ushbu hujjatni o‘chirishni xohlaysizmi?",
   "references": "Ma’lumotnomalar",
   "reference_data": "Ma’lumotnoma ma’lumotlari",
   "select_reference_type": "Ma’lumotlar bilan ishlash uchun ma’lumotnoma turini tanlang",

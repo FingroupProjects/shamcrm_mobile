@@ -8,6 +8,8 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../money/widgets/error_dialog.dart';
+
 class ClientSaleDeleteDocumentDialog extends StatelessWidget {
   final int documentId; // Изменили тип на int
 
@@ -18,6 +20,11 @@ class ClientSaleDeleteDocumentDialog extends StatelessWidget {
     return BlocListener<ClientSaleBloc, ClientSaleState>(
         listener: (context, state) {
           if (state is ClientSaleError) {
+            if (state.statusCode == 409) {
+              final localizations = AppLocalizations.of(context)!;
+              showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+              return;
+            }
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(

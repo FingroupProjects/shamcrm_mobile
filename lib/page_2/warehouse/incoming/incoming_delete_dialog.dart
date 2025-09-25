@@ -100,7 +100,7 @@ class _DeleteDocumentDialogState extends State<DeleteDocumentDialog> {
               ],
             )
           : Text(
-              AppLocalizations.of(context)!.translate('confirm_delete_document') ?? 'Вы уверены, что хотите удалить этот документ?',
+              AppLocalizations.of(context)!.translate('delete_document_confirm') ?? 'Вы уверены, что хотите удалить этот документ?',
               style: TextStyle(
                 fontSize: 16,
                 fontFamily: 'Gilroy',

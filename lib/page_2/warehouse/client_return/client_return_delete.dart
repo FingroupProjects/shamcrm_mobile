@@ -4,6 +4,8 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../money/widgets/error_dialog.dart';
+
 class ClientReturnDeleteDocumentDialog extends StatelessWidget {
   final int documentId;
 
@@ -14,6 +16,11 @@ class ClientReturnDeleteDocumentDialog extends StatelessWidget {
     return BlocListener<ClientReturnBloc, ClientReturnState>(
       listener: (context, state) {
         if (state is ClientReturnError) {
+          final localizations = AppLocalizations.of(context)!;
+          if (state.statusCode == 409) {
+            showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+            return;
+          }
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(

@@ -28,11 +28,12 @@ final class ClientReturnLoaded extends ClientReturnState {
 
 final class ClientReturnError extends ClientReturnState {
   final String message;
+  final int? statusCode;
 
-  const ClientReturnError(this.message);
+  const ClientReturnError(this.message, {this.statusCode});
 
   @override
-  List<Object> get props => [message];
+  List<Object> get props => [message, statusCode ?? -1];
 }
 
 final class ClientReturnCreateLoading extends ClientReturnState {}
@@ -48,11 +49,12 @@ final class ClientReturnCreateSuccess extends ClientReturnState {
 
 final class ClientReturnCreateError extends ClientReturnState {
   final String message;
+  final int? statusCode;
 
-  const ClientReturnCreateError(this.message);
+  const ClientReturnCreateError(this.message, {this.statusCode});
 
   @override
-  List<Object> get props => [message];
+  List<Object> get props => [message, statusCode ?? -1];
 }
 
 final class ClientReturnUpdateSuccess extends ClientReturnState {
@@ -66,9 +68,10 @@ final class ClientReturnUpdateSuccess extends ClientReturnState {
 
 final class ClientReturnUpdateError extends ClientReturnState {
   final String message;
+  final int? statusCode;
 
-  const ClientReturnUpdateError(this.message);
+  const ClientReturnUpdateError(this.message, {this.statusCode});
 
   @override
-  List<Object> get props => [message];
+  List<Object> get props => [message, statusCode ?? -1];
 }

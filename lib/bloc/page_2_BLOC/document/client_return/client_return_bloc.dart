@@ -3,6 +3,8 @@ import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../models/api_exception_model.dart';
+
 part 'client_return_event.dart';
 part 'client_return_state.dart';
 
@@ -55,7 +57,11 @@ class ClientReturnBloc extends Bloc<ClientReturnEvent, ClientReturnState> {
         hasReachedMax: hasReachedMax,
       ));
     } catch (e) {
-      emit(ClientReturnError(e.toString()));
+      if (e is ApiException) {
+        emit(ClientReturnError(e.toString(), statusCode: e.statusCode));
+      } else {
+        emit(ClientReturnError(e.toString()));
+      }
     }
   }
 
@@ -75,7 +81,11 @@ class ClientReturnBloc extends Bloc<ClientReturnEvent, ClientReturnState> {
       );
       emit(ClientReturnCreateSuccess('Документ успешно создан'));
     } catch (e) {
-      emit(ClientReturnError(e.toString()));
+      if (e is ApiException) {
+        emit(ClientReturnCreateError(e.toString(), statusCode: e.statusCode));
+      } else {
+        emit(ClientReturnCreateError(e.toString()));
+      }
     }
   }
 
@@ -85,7 +95,11 @@ class ClientReturnBloc extends Bloc<ClientReturnEvent, ClientReturnState> {
       await apiService.deleteClientReturnDocument(event.documentId);
       add(FetchClientReturns(forceRefresh: true, filters: _filters));
     } catch (e) {
-      emit(ClientReturnError(e.toString()));
+      if (e is ApiException) {
+        emit(ClientReturnError(e.toString(), statusCode: e.statusCode));
+      } else {
+        emit(ClientReturnError(e.toString()));
+      }
     }
   }
 
@@ -105,7 +119,11 @@ class ClientReturnBloc extends Bloc<ClientReturnEvent, ClientReturnState> {
       );
       emit(ClientReturnUpdateSuccess('Документ успешно обновлен'));
     } catch (e) {
-      emit(ClientReturnUpdateError(e.toString()));
+      if (e is ApiException) {
+        emit(ClientReturnUpdateError(e.toString(), statusCode: e.statusCode));
+      } else {
+        emit(ClientReturnUpdateError(e.toString()));
+      }
     }
   }
 }

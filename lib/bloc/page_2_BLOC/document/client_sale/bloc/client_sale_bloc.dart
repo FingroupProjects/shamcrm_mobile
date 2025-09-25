@@ -4,6 +4,8 @@ import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../../models/api_exception_model.dart';
+
 part 'client_sale_event.dart';
 part 'client_sale_state.dart';
 
@@ -19,7 +21,6 @@ class ClientSaleBloc extends Bloc<ClientSaleEvent, ClientSaleState> {
     on<CreateClientSalesDocument>(_onCreateClientSalesDocument);
     on<DeleteClientSalesDocument>(_delete);
     on<UpdateClientSalesDocument>(_onUpdateClientSalesDocument);
-
   }
 
   _onFetchData(FetchClientSales event, Emitter<ClientSaleState> emit) async {
@@ -58,7 +59,11 @@ class ClientSaleBloc extends Bloc<ClientSaleEvent, ClientSaleState> {
         hasReachedMax: hasReachedMax,
       ));
     } catch (e) {
-      emit(ClientSaleError(e.toString()));
+      if (e is ApiException) {
+        emit(ClientSaleError(e.toString(), statusCode: e.statusCode));
+      } else {
+        emit(ClientSaleError(e.toString()));
+      }
     }
   }
 
@@ -78,7 +83,11 @@ class ClientSaleBloc extends Bloc<ClientSaleEvent, ClientSaleState> {
 
       emit(ClientSaleCreateSuccess('Документ успешно создан'));
     } catch (e) {
-      emit(ClientSaleCreateError(e.toString()));
+      if (e is ApiException) {
+        emit(ClientSaleCreateError(e.toString(), statusCode: e.statusCode));
+      } else {
+        emit(ClientSaleCreateError(e.toString()));
+      }
     }
   }
 
@@ -89,9 +98,14 @@ class ClientSaleBloc extends Bloc<ClientSaleEvent, ClientSaleState> {
       // emit(ClientSaleDeleteSuccess('Документ успешно удален'));
       add(FetchClientSales(forceRefresh: true, filters: _filters));
     } catch (e) {
-      emit(ClientSaleError(e.toString()));
+      if (e is ApiException) {
+        emit(ClientSaleError(e.toString(), statusCode: e.statusCode));
+      } else {
+        emit(ClientSaleError(e.toString()));
+      }
     }
   }
+
   _onUpdateClientSalesDocument(
   UpdateClientSalesDocument event, Emitter<ClientSaleState> emit) async {
   emit(ClientSaleCreateLoading());
@@ -108,7 +122,11 @@ class ClientSaleBloc extends Bloc<ClientSaleEvent, ClientSaleState> {
     );
     emit(ClientSaleUpdateSuccess('Документ успешно обновлен'));
   } catch (e) {
-    emit(ClientSaleUpdateError(e.toString()));
+    if (e is ApiException) {
+      emit(ClientSaleUpdateError(e.toString(), statusCode: e.statusCode));
+    } else {
+      emit(ClientSaleUpdateError(e.toString()));
+    }
   }
 }
 }
