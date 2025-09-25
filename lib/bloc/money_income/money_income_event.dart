@@ -63,9 +63,8 @@ class UpdateMoneyIncome extends MoneyIncomeEvent {
 
 class DeleteMoneyIncome extends MoneyIncomeEvent {
   final Document document;
-  final bool reload;
 
-  const DeleteMoneyIncome(this.document, {this.reload = true});
+  const DeleteMoneyIncome(this.document);
 
   @override
   List<Object> get props => [document];

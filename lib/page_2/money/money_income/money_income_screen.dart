@@ -185,15 +185,6 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
     });
   }*/
 
-  void showSimpleErrorDialog(BuildContext context, String title, String errorMessage) {
-    showDialog(
-        context: context,
-        barrierColor: Colors.black.withOpacity(0.5),
-        builder: (BuildContext context) {
-          return ErrorDialog(title: title, errorMessage: errorMessage);
-        });
-  }
-
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
@@ -462,7 +453,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                           setState(() {
                             currentData.removeAt(index);
                           });
-                          _moneyIncomeBloc.add(DeleteMoneyIncome(document, reload: false));
+                          _moneyIncomeBloc.add(DeleteMoneyIncome(document));
                         },
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(12),
@@ -667,4 +658,13 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
           )),
     );
   }
+}
+
+void showSimpleErrorDialog(BuildContext context, String title, String errorMessage) {
+  showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.5),
+      builder: (BuildContext context) {
+        return ErrorDialog(title: title, errorMessage: errorMessage);
+      });
 }

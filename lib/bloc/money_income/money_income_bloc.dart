@@ -240,19 +240,20 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
     emit(MoneyIncomeLoaded(data: _allData));
   }
 
+  // only by swiping
   Future<void> _onDeleteMoneyIncome(DeleteMoneyIncome event, Emitter<MoneyIncomeState> emit) async {
     bool failed = false;
 
-    if (event.reload) emit(MoneyIncomeLoading());
+    // if (event.reload) emit(MoneyIncomeLoading());
     try {
       final result = await apiService.deleteMoneyIncomeDocument(event.document.id!);
       if (result) {
-        if (event.reload) emit(MoneyIncomeDeleteSuccess('document_deleted_successfully', reload: event.reload));
-        if (event.reload) add(RemoveLocalFromList(event.document.id!));
-      } else {
+        // if (event.reload) emit(MoneyIncomeDeleteSuccess('document_deleted_successfully', reload: event.reload));
+        // if (event.reload) add(RemoveLocalFromList(event.document.id!));
+      }/* else {
         emit(const MoneyIncomeDeleteError('failed_to_delete_document'));
         failed = true;
-      }
+      }*/
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         emit(MoneyIncomeDeleteError(e.toString(), statusCode: e.statusCode));

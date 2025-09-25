@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../money_income_operation_type.dart';
+import '../money_income_screen.dart';
 
 class AddMoneyIncomeFromClient extends StatefulWidget {
   const AddMoneyIncomeFromClient({super.key});
@@ -159,6 +160,10 @@ class _AddMoneyIncomeFromClientState extends State<AddMoneyIncomeFromClient> {
                   Navigator.pop(context, true);
                 } else if (state is MoneyIncomeCreateError) {
                   setState(() => _isLoading = false);
+                  if (state.statusCode == 409) {
+                    showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                    return;
+                  }
                   _showSnackBar(state.message, false);
                 }
               });
