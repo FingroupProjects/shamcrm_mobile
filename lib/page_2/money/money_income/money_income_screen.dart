@@ -167,7 +167,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
     }
   }
 
-  void showDeleteDialog({required BuildContext context, required Document document, required VoidCallback onDelete}) {
+/*  void showDeleteDialog({required BuildContext context, required Document document, required VoidCallback onDelete}) {
     showDialog(
       context: context,
       builder: (_) => BlocProvider.value(
@@ -183,7 +183,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
         FocusScope.of(context).requestFocus(FocusNode());
       }
     });
-  }
+  }*/
 
   void showSimpleErrorDialog(BuildContext context, String title, String errorMessage) {
     showDialog(
@@ -496,7 +496,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                                 }
                               }
                             },
-                            onDelete: () {
+                            /*onDelete: () {
                               debugPrint("show delete dialog for document ID: ${document.id}");
                               showDeleteDialog(
                                   context: context,
@@ -504,7 +504,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                                   onDelete: () {
                                     _moneyIncomeBloc.add(DeleteMoneyIncome(document));
                                   });
-                            },
+                            },*/
                           ),
                         ),
                       );

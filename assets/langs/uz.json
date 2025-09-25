@@ -1431,7 +1431,13 @@
     "edit_warehouse": "Omborni tahrirlash",
     "save_and_approve": "Saqlash va tasdiqlash",
     "add_warehouse": "Ombor qo‘shish",
-    "enter_warehouse_name": "Ombor nomini kiriting"
+    "enter_warehouse_name": "Ombor nomini kiriting",
+
+  "mass_approve_success_message" : "Hujjatlar muvaffaqiyatli tasdiqlandi",
+  "mass_disapprove_success_message": "Hujjatlar muvaffaqiyatli bekor qilindi",
+  "mass_delete_success_message": "Hujjatlar muvaffaqiyatli o‘chirildi",
+  "mass_restore_success_message" : "Hujjatlar muvaffaqiyatli tiklandi",
+  "toggle_approve_success_message" : "Status muvaffaqiyatli o‘zgartirildi"
   
 
 

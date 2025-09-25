@@ -41,7 +41,7 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
 
     try {
       await apiService.masApproveMoneyIncomeDocuments(ls);
-      emit(MoneyIncomeApproveMassSuccess(""));
+      emit(MoneyIncomeApproveMassSuccess("mass_approve_success_message"));
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         emit(MoneyIncomeToggleOneApproveError(e.toString(), statusCode: e.statusCode));
@@ -60,7 +60,7 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
 
     try {
       await apiService.masDisapproveMoneyIncomeDocuments(ls);
-        emit(MoneyIncomeDisapproveMassSuccess(""));
+        emit(MoneyIncomeDisapproveMassSuccess("mass_disapprove_success_message"));
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         emit(MoneyIncomeDisapproveMassError(e.toString(), statusCode: e.statusCode));
@@ -79,7 +79,7 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
 
     try {
       await apiService.masDeleteMoneyIncomeDocuments(ls);
-        emit(MoneyIncomeDeleteMassSuccess(""));
+        emit(MoneyIncomeDeleteMassSuccess("mass_delete_success_message"));
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         emit(MoneyIncomeDeleteMassError(e.toString(), statusCode: e.statusCode));
@@ -98,7 +98,7 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
 
     try {
       await apiService.masRestoreMoneyIncomeDocuments(ls);
-      emit(MoneyIncomeRestoreMassSuccess(""));
+      emit(MoneyIncomeRestoreMassSuccess("mass_restore_success_message"));
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         emit(MoneyIncomeRestoreMassError(e.toString(), statusCode: e.statusCode));
@@ -114,7 +114,7 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
   Future<void> _onToggleApproveOneMoneyIncomeDocument(ToggleApproveOneMoneyIncomeDocument event, Emitter<MoneyIncomeState> emit) async {
     try {
       await apiService.toggleApproveOneMoneyIncomeDocument(event.documentId, event.approve);
-      emit(MoneyIncomeToggleOneApproveSuccess(""));
+      emit(MoneyIncomeToggleOneApproveSuccess("toggle_approve_success_message"));
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         emit(MoneyIncomeToggleOneApproveError(e.toString(), statusCode: e.statusCode));

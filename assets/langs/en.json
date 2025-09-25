@@ -1426,8 +1426,14 @@
     "edit_warehouse": "Edit warehouse",
     "save_and_approve": "Save and approve",
     "add_warehouse": "Add warehouse",
-    "enter_warehouse_name": "Enter warehouse name"
-  
+    "enter_warehouse_name": "Enter warehouse name",
+
+    "mass_approve_success_message" : "Documents approved successfully",
+    "mass_disapprove_success_message": "Documents disapproved successfully",
+    "mass_delete_success_message": "Documents deleted successfully",
+    "mass_restore_success_message" : "Documents restored successfully",
+    "toggle_approve_success_message" : "Status changed successfully"
+
 
 
 

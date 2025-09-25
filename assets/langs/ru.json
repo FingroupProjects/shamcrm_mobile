@@ -1422,7 +1422,12 @@
   "status_changed_successfully_approve": "Статус успешно изменён!",
   "save_and_approve": "Сохранить и провести",
   "add_warehouse": "Добавить склад",
-  "enter_warehouse_name": "Введите название склада"
+  "enter_warehouse_name": "Введите название склада",
+  "mass_approve_success_message" : "Документы успешно проведены",
+  "mass_disapprove_success_message": "Документы успешно отменены",
+  "mass_delete_success_message": "Документы успешно удалены",
+  "mass_restore_success_message" : "Документы успешно восстановлены",
+  "toggle_approve_success_message" : "Статус успешно изменён"
 
  
 
