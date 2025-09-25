@@ -530,7 +530,7 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          localizations.translate('clint_return'),
+                          localizations.translate(MoneyOutcomeOperationType.client_return.name),
                           style: const TextStyle(
                             fontSize: 14,
                             fontFamily: 'Gilroy',
@@ -554,7 +554,7 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          localizations.translate('cash_register_transfer'),
+                          localizations.translate(MoneyOutcomeOperationType.send_another_cash_register.name),
                           style: const TextStyle(
                             fontSize: 14,
                             fontFamily: 'Gilroy',
@@ -578,7 +578,7 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          localizations.translate('other_outcome'),
+                          localizations.translate(MoneyOutcomeOperationType.other_expenses.name),
                           style: const TextStyle(
                             fontSize: 14,
                             fontFamily: 'Gilroy',
@@ -602,7 +602,7 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          localizations.translate('supplier_return'),
+                          localizations.translate(MoneyOutcomeOperationType.supplier_payment.name),
                           style: const TextStyle(
                             fontSize: 14,
                             fontFamily: 'Gilroy',

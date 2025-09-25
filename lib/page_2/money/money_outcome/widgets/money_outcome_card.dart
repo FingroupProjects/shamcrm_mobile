@@ -76,7 +76,7 @@ class MoneyOutcomeCard extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          '${localizations.translate('outcome') ?? 'Доход'} №${document.docNumber}',
+                          '${localizations.translate('outcome') ?? 'Расход'} №${document.id ?? ''}',
                           style: const TextStyle(
                             fontSize: 18,
                             fontFamily: 'Gilroy',
@@ -146,9 +146,8 @@ class MoneyOutcomeCard extends StatelessWidget {
                     const SizedBox(height: 8),
                     Text(
                       localizations
-                          .translate('receiving_from_another_cash_register')
-                          .replaceAll('{cashRegister}', document.cashRegister?.name ?? '') ??
-                          'Получение с другой кассы: ${document.cashRegister?.name}',
+                          .translate("sending_to_another_cash_register")
+                          .replaceAll('{cashRegister}', document.cashRegister?.name ?? '') ?? 'Перевод в другую кассу ${document.cashRegister?.name ?? ''}',
                       style: const TextStyle(
                         fontSize: 14,
                         fontFamily: 'Gilroy',

@@ -241,7 +241,7 @@ class _AddMoneyOutcomeFromClientState extends State<AddMoneyOutcomeFromClient> {
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
-        AppLocalizations.of(context)!.translate('create_outgoing_document') ?? 'Создать расход',
+        AppLocalizations.of(context)!.translate('create_outcoming_document') ?? 'Создать расход',
         style: const TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
