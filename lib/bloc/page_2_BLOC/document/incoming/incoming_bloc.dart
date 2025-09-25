@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
+import '../../../../models/api_exception_model.dart';
 import 'incoming_event.dart';
 import 'incoming_state.dart';
 
@@ -15,25 +16,28 @@ class IncomingBloc extends Bloc<IncomingEvent, IncomingState> {
     on<FetchIncoming>(_onFetchIncoming);
     on<CreateIncoming>(_onCreateIncoming);
     on<UpdateIncoming>(_onUpdateIncoming);
-      on<DeleteIncoming>(_onDeleteIncoming);  // Добавьте эту строку
-        on<RestoreIncoming>(_onRestoreIncoming); // Добавить эту строку
-
-
+    on<DeleteIncoming>(_onDeleteIncoming);  // Добавьте эту строку
+    on<RestoreIncoming>(_onRestoreIncoming); // Добавить эту строку
   }
-Future<void> _onRestoreIncoming(RestoreIncoming event, Emitter<IncomingState> emit) async {
-  emit(IncomingRestoreLoading());
-  try {
-    final result = await apiService.restoreIncomingDocument(event.documentId);
-    if (result['result'] == 'Success') {
-      await Future.delayed(const Duration(milliseconds: 100));
-      emit(IncomingRestoreSuccess('Документ успешно восстановлен'));
-    } else {
-      emit(IncomingRestoreError('Не удалось восстановить документ'));
+
+  Future<void> _onRestoreIncoming(RestoreIncoming event, Emitter<IncomingState> emit) async {
+    emit(IncomingRestoreLoading());
+    try {
+      final result = await apiService.restoreIncomingDocument(event.documentId);
+      if (result['result'] == 'Success') {
+        await Future.delayed(const Duration(milliseconds: 100));
+        emit(IncomingRestoreSuccess('Документ успешно восстановлен'));
+      } else {
+        emit(IncomingRestoreError('Не удалось восстановить документ'));
+      }
+    } catch (e) {
+      if (e is ApiException) {
+        emit(IncomingRestoreError('Ошибка при восстановлении документа: ${e.toString()}', statusCode: e.statusCode));
+      } else {
+        emit(IncomingRestoreError('Ошибка при восстановлении документа: ${e.toString()}'));
+      }
     }
-  } catch (e) {
-    emit(IncomingRestoreError('Ошибка при восстановлении документа: ${e.toString()}'));
   }
-}
 
   Future<void> _onFetchIncoming(FetchIncoming event, Emitter<IncomingState> emit) async {
     if (event.forceRefresh) {
@@ -69,33 +73,42 @@ Future<void> _onRestoreIncoming(RestoreIncoming event, Emitter<IncomingState> em
         hasReachedMax: hasReachedMax,
       ));
     } catch (e) {
-      emit(IncomingError(e.toString()));
+      if (e is ApiException) {
+        emit(IncomingError(e.toString(), statusCode: e.statusCode));
+      } else {
+        emit(IncomingError(e.toString()));
+      }
     }
   }
 
   Future<void> _onCreateIncoming(CreateIncoming event, Emitter<IncomingState> emit) async {
-  emit(IncomingCreateLoading());
-  try {
-    await apiService.createIncomingDocument(
-      date: event.date,
-      storageId: event.storageId,
-      comment: event.comment,
-      counterpartyId: event.counterpartyId,
-      documentGoods: event.documentGoods,
-      organizationId: event.organizationId,
-      salesFunnelId: event.salesFunnelId,
-      approve: event.approve, // Передаем новый параметр
-    );
-    await Future.delayed(const Duration(milliseconds: 100));
-    emit(IncomingCreateSuccess(
-      event.approve 
-        ? 'Документ успешно создан и проведен' 
-        : 'Документ успешно создан'
-    ));
-  } catch (e) {
-    emit(IncomingCreateError(e.toString()));
+    emit(IncomingCreateLoading());
+    try {
+      await apiService.createIncomingDocument(
+        date: event.date,
+        storageId: event.storageId,
+        comment: event.comment,
+        counterpartyId: event.counterpartyId,
+        documentGoods: event.documentGoods,
+        organizationId: event.organizationId,
+        salesFunnelId: event.salesFunnelId,
+        approve: event.approve, // Передаем новый параметр
+      );
+      await Future.delayed(const Duration(milliseconds: 100));
+      emit(IncomingCreateSuccess(
+          event.approve
+              ? 'Документ успешно создан и проведен'
+              : 'Документ успешно создан'
+      ));
+    } catch (e) {
+      if (e is ApiException) {
+        emit(IncomingCreateError(e.toString(), statusCode: e.statusCode));
+      } else {
+        emit(IncomingCreateError(e.toString()));
+      }
+    }
   }
-}
+
   Future<void> _onUpdateIncoming(UpdateIncoming event, Emitter<IncomingState> emit) async {
     emit(IncomingUpdateLoading());
     try {
@@ -113,22 +126,30 @@ Future<void> _onRestoreIncoming(RestoreIncoming event, Emitter<IncomingState> em
       await Future.delayed(const Duration(milliseconds: 100));
       emit(IncomingUpdateSuccess('Документ успешно обновлен'));
     } catch (e) {
-      emit(IncomingUpdateError(e.toString()));
+      if (e is ApiException) {
+        emit(IncomingUpdateError(e.toString(), statusCode: e.statusCode));
+      } else {
+        emit(IncomingUpdateError(e.toString()));
+      }
     }
   }
 
-Future<void> _onDeleteIncoming(DeleteIncoming event, Emitter<IncomingState> emit) async {
-  emit(IncomingDeleteLoading()); // Эта строка должна быть!
-  try {
-    final result = await apiService.deleteIncomingDocument(event.documentId);
-    if (result['result'] == 'Success') {
-      await Future.delayed(const Duration(milliseconds: 100));
-      emit(IncomingDeleteSuccess('Документ успешно удален'));
-    } else {
-      emit(IncomingDeleteError('Не удалось удалить документ'));
+  Future<void> _onDeleteIncoming(DeleteIncoming event, Emitter<IncomingState> emit) async {
+    emit(IncomingDeleteLoading()); // Эта строка должна быть!
+    try {
+      final result = await apiService.deleteIncomingDocument(event.documentId);
+      if (result['result'] == 'Success') {
+        await Future.delayed(const Duration(milliseconds: 100));
+        emit(IncomingDeleteSuccess('Документ успешно удален'));
+      } else {
+        emit(IncomingDeleteError('Не удалось удалить документ'));
+      }
+    } catch (e) {
+      if (e is ApiException) {
+        emit(IncomingDeleteError('Ошибка при удалении документа: ${e.toString()}', statusCode: e.statusCode));
+      } else {
+        emit(IncomingDeleteError('Ошибка при удалении документа: ${e.toString()}'));
+      }
     }
-  } catch (e) {
-    emit(IncomingDeleteError('Ошибка при удалении документа: ${e.toString()}'));
   }
-}
 }

@@ -29,11 +29,12 @@ class IncomingLoaded extends IncomingState {
 
 class IncomingError extends IncomingState {
   final String message;
+  final int? statusCode;
 
-  const IncomingError(this.message);
+  const IncomingError(this.message, {this.statusCode});
 
   @override
-  List<Object> get props => [message];
+  List<Object> get props => [message, statusCode ?? -1];
 }
 
 class IncomingCreateLoading extends IncomingState {}
@@ -49,12 +50,14 @@ class IncomingCreateSuccess extends IncomingState {
 
 class IncomingCreateError extends IncomingState {
   final String message;
+  final int? statusCode;
 
-  const IncomingCreateError(this.message);
+  const IncomingCreateError(this.message, {this.statusCode});
 
   @override
-  List<Object> get props => [message];
+  List<Object> get props => [message, statusCode ?? -1];
 }
+
 class IncomingUpdateLoading extends IncomingState {}
 
 class IncomingUpdateSuccess extends IncomingState {
@@ -68,11 +71,12 @@ class IncomingUpdateSuccess extends IncomingState {
 
 class IncomingUpdateError extends IncomingState {
   final String message;
+  final int? statusCode;
 
-  const IncomingUpdateError(this.message);
+  const IncomingUpdateError(this.message, {this.statusCode});
 
   @override
-  List<Object> get props => [message];
+  List<Object> get props => [message, statusCode ?? -1];
 }
 
 class IncomingDeleteLoading extends IncomingState {}
@@ -88,13 +92,13 @@ class IncomingDeleteSuccess extends IncomingState {
 
 class IncomingDeleteError extends IncomingState {
   final String message;
+  final int? statusCode;
 
-  const IncomingDeleteError(this.message);
+  const IncomingDeleteError(this.message, {this.statusCode});
 
   @override
-  List<Object> get props => [message];
+  List<Object> get props => [message, statusCode ?? -1];
 }
-
 
 class IncomingRestoreLoading extends IncomingState {}
 
@@ -109,9 +113,10 @@ class IncomingRestoreSuccess extends IncomingState {
 
 class IncomingRestoreError extends IncomingState {
   final String message;
+  final int? statusCode;
 
-  const IncomingRestoreError(this.message);
+  const IncomingRestoreError(this.message, {this.statusCode});
 
   @override
-  List<Object> get props => [message];
+  List<Object> get props => [message, statusCode ?? -1];
 }

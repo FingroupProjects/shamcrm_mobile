@@ -11,6 +11,8 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../money/widgets/error_dialog.dart';
+
 class ClientSaleScreen extends StatefulWidget {
   const ClientSaleScreen({super.key, this.organizationId});
   final int? organizationId;
@@ -148,6 +150,10 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
                 _isInitialLoad = false;
                 _isLoadingMore = false;
               });
+              if (state.statusCode == 409) {
+                showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                return;
+              }
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(

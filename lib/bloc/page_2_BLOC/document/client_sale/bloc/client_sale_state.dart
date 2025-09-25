@@ -28,11 +28,12 @@ final class ClientSaleLoaded extends ClientSaleState {
 
 final class ClientSaleError extends ClientSaleState {
   final String message;
+  final int? statusCode;
 
-  const ClientSaleError(this.message);
+  const ClientSaleError(this.message, {this.statusCode});
 
   @override
-  List<Object> get props => [message];
+  List<Object> get props => [message, statusCode ?? -1];
 }
 
 final class ClientSaleCreateLoading extends ClientSaleState {}
@@ -41,28 +42,36 @@ final class ClientSaleCreateSuccess extends ClientSaleState {
   final String message;
 
   const ClientSaleCreateSuccess(this.message);
+
   @override
   List<Object> get props => [message];
 }
 
 final class ClientSaleCreateError extends ClientSaleState {
   final String message;
+  final int? statusCode;
 
-  const ClientSaleCreateError(this.message);
+  const ClientSaleCreateError(this.message, {this.statusCode});
+
   @override
-  List<Object> get props => [message];
+  List<Object> get props => [message, statusCode ?? -1];
 }
 
 final class ClientSaleUpdateSuccess extends ClientSaleState {
   final String message;
+
   const ClientSaleUpdateSuccess(this.message);
+
   @override
   List<Object> get props => [message];
 }
 
 final class ClientSaleUpdateError extends ClientSaleState {
   final String message;
-  const ClientSaleUpdateError(this.message);
+  final int? statusCode;
+
+  const ClientSaleUpdateError(this.message, {this.statusCode});
+
   @override
-  List<Object> get props => [message];
+  List<Object> get props => [message, statusCode ?? -1];
 }

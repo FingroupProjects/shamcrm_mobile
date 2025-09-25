@@ -6,6 +6,8 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../money/widgets/error_dialog.dart';
+
 class DeleteDocumentDialog extends StatefulWidget {
   final int documentId;
 
@@ -32,6 +34,12 @@ class _DeleteDocumentDialogState extends State<DeleteDocumentDialog> {
           
           // Дополнительная проверка перед показом SnackBar
           if (mounted && context.mounted) {
+            final localizations = AppLocalizations.of(context)!;
+            if (state.statusCode == 409) {
+              showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+              return;
+            }
+
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
@@ -100,7 +108,7 @@ class _DeleteDocumentDialogState extends State<DeleteDocumentDialog> {
               ],
             )
           : Text(
-              AppLocalizations.of(context)!.translate('confirm_delete_document') ?? 'Вы уверены, что хотите удалить этот документ?',
+              AppLocalizations.of(context)!.translate('delete_document_confirm') ?? 'Вы уверены, что хотите удалить этот документ?',
               style: TextStyle(
                 fontSize: 16,
                 fontFamily: 'Gilroy',
