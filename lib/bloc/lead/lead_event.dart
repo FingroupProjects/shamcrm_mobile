@@ -3,7 +3,12 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 
 abstract class LeadEvent {}
 
-class FetchLeadStatuses extends LeadEvent {}
+// ОБНОВЛЕННЫЙ класс с поддержкой forceRefresh
+class FetchLeadStatuses extends LeadEvent {
+  final bool forceRefresh;
+  
+  FetchLeadStatuses({this.forceRefresh = false});
+}
 
 class FetchLeads extends LeadEvent {
   final int statusId;

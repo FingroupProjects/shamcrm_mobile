@@ -154,64 +154,106 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
 
 
 
+// Заменить метод _fetchLeadStatuses в LeadBloc на этот:
+
 Future<void> _fetchLeadStatuses(FetchLeadStatuses event, Emitter<LeadState> emit) async {
-  // //print('LeadBloc: _fetchLeadStatuses - Starting');
+  print('LeadBloc: _fetchLeadStatuses - Starting with forceRefresh: ${event.forceRefresh}');
   emit(LeadLoading());
 
-  if (!await _checkInternetConnection()) {
-    // //print('LeadBloc: _fetchLeadStatuses - No internet connection');
-    final cachedStatuses = await LeadCache.getLeadStatuses();
-    if (cachedStatuses.isNotEmpty) {
-      final statuses = cachedStatuses.map((status) => LeadStatus.fromJson(status)).toList();
+  try {
+    List<LeadStatus> response;
+
+    // Если forceRefresh = true, игнорируем кэш и загружаем с сервера
+    if (event.forceRefresh) {
+      print('LeadBloc: Force refresh - loading from API');
+      if (!await _checkInternetConnection()) {
+        emit(LeadError('Нет подключения к интернету для обновления данных'));
+        return;
+      }
+      response = await apiService.getLeadStatuses();
       
-      // КРИТИЧНО: Восстанавливаем ВСЕ постоянные счетчики
+      // При принудительном обновлении ПОЛНОСТЬЮ ПЕРЕЗАПИСЫВАЕМ кэш
+      await LeadCache.clearAllData(); // Очищаем ВСЕ данные
+      await LeadCache.cacheLeadStatuses(response); // Кэшируем новые статусы
+      
+      // Сбрасываем локальные счетчики и устанавливаем новые
+      _leadCounts.clear();
+      for (var status in response) {
+        _leadCounts[status.id] = status.leadsCount;
+        await LeadCache.setPersistentLeadCount(status.id, status.leadsCount);
+      }
+      
+      print('LeadBloc: Force refresh completed - new leadCounts: $_leadCounts');
+      
+    } else {
+      // Стандартная логика с использованием кэша
+      if (!await _checkInternetConnection()) {
+        print('LeadBloc: No internet connection, using cache');
+        final cachedStatuses = await LeadCache.getLeadStatuses();
+        if (cachedStatuses.isNotEmpty) {
+          final statuses = cachedStatuses.map((status) => LeadStatus.fromJson(status)).toList();
+          
+          // Восстанавливаем ВСЕ постоянные счетчики
+          _leadCounts.clear();
+          final allPersistentCounts = await LeadCache.getPersistentLeadCounts();
+          for (String statusIdStr in allPersistentCounts.keys) {
+            int statusId = int.parse(statusIdStr);
+            int count = allPersistentCounts[statusIdStr] ?? 0;
+            _leadCounts[statusId] = count;
+          }
+          
+          print('LeadBloc: Using cached statuses with persistent counts: $_leadCounts');
+          emit(LeadLoaded(statuses, leadCounts: Map.from(_leadCounts)));
+        } else {
+          print('LeadBloc: No cached statuses available');
+          emit(LeadError('Нет подключения к интернету и нет кэшированных данных'));
+        }
+        return;
+      }
+
+      // Сначала проверяем кэш
+      final cachedStatuses = await LeadCache.getLeadStatuses();
+      if (cachedStatuses.isNotEmpty) {
+        print('LeadBloc: Using cached statuses');
+        response = cachedStatuses.map((status) => LeadStatus.fromJson(status)).toList();
+      } else {
+        print('LeadBloc: No cache found, loading from API');
+        response = await apiService.getLeadStatuses();
+        await LeadCache.cacheLeadStatuses(response);
+      }
+
+      // КРИТИЧНО: Восстанавливаем постоянные счетчики, если они есть, иначе используем из API
       _leadCounts.clear();
       final allPersistentCounts = await LeadCache.getPersistentLeadCounts();
-      for (String statusIdStr in allPersistentCounts.keys) {
-        int statusId = int.parse(statusIdStr);
-        int count = allPersistentCounts[statusIdStr] ?? 0;
-        _leadCounts[statusId] = count;
-      }
       
-      // //print('LeadBloc: _fetchLeadStatuses - Emitting cached statuses with persistent counts: $_leadCounts');
-      emit(LeadLoaded(statuses, leadCounts: Map.from(_leadCounts)));
-    } else {
-      // //print('LeadBloc: _fetchLeadStatuses - No cached statuses available');
-      emit(LeadError('Нет подключения к интернету и нет кэшированных данных'));
-    }
-    return;
-  }
-
-  try {
-    final response = await apiService.getLeadStatuses();
-    // //print('LeadBloc: _fetchLeadStatuses - Retrieved statuses: ${response.map((s) => {'id': s.id, 'title': s.title, 'leads_count': s.leadsCount})}');
-
-    // Кэшируем статусы и обновляем постоянные счетчики ТОЛЬКО если их еще нет
-    await LeadCache.cacheLeadStatuses(response);
-
-    // КРИТИЧНО: Восстанавливаем постоянные счетчики, если они есть, иначе используем из API
-    _leadCounts.clear();
-    final allPersistentCounts = await LeadCache.getPersistentLeadCounts();
-    
-    for (var status in response) {
-      final statusIdStr = status.id.toString();
-      
-      // Если есть постоянный счетчик - используем его, иначе - из API
-      if (allPersistentCounts.containsKey(statusIdStr)) {
-        _leadCounts[status.id] = allPersistentCounts[statusIdStr] ?? 0;
-        // //print('LeadBloc: Using persistent count for status ${status.id}: ${_leadCounts[status.id]}');
-      } else {
-        _leadCounts[status.id] = status.leadsCount;
-        // Сохраняем как постоянный счетчик для будущего использования
-        await LeadCache.setPersistentLeadCount(status.id, status.leadsCount);
-        // //print('LeadBloc: Setting initial persistent count for status ${status.id}: ${status.leadsCount}');
+      for (var status in response) {
+        final statusIdStr = status.id.toString();
+        
+        // Если есть постоянный счетчик - используем его, иначе - из API
+        if (allPersistentCounts.containsKey(statusIdStr)) {
+          _leadCounts[status.id] = allPersistentCounts[statusIdStr] ?? 0;
+          print('LeadBloc: Using persistent count for status ${status.id}: ${_leadCounts[status.id]}');
+        } else {
+          _leadCounts[status.id] = status.leadsCount;
+          // Сохраняем как постоянный счетчик для будущего использования
+          await LeadCache.setPersistentLeadCount(status.id, status.leadsCount);
+          print('LeadBloc: Setting initial persistent count for status ${status.id}: ${status.leadsCount}');
+        }
       }
     }
 
-    // //print('LeadBloc: _fetchLeadStatuses - Final leadCounts: $_leadCounts');
+    print('LeadBloc: _fetchLeadStatuses - Final leadCounts: $_leadCounts');
     emit(LeadLoaded(response, leadCounts: Map.from(_leadCounts)));
+
+    // После загрузки статусов, загружаем лиды для первого статуса (если есть)
+    if (response.isNotEmpty) {
+      final firstStatusId = response.first.id;
+      print('LeadBloc: Loading leads for first status: $firstStatusId');
+      add(FetchLeads(firstStatusId, ignoreCache: event.forceRefresh));
+    }
+
   } catch (e) {
-    // //print('LeadBloc: _fetchLeadStatuses - Error: $e');
+    print('LeadBloc: _fetchLeadStatuses - Error: $e');
     emit(LeadError('Не удалось загрузить статусы: $e'));
   }
 }

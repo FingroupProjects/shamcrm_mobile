@@ -5,24 +5,44 @@ import 'package:shared_preferences/shared_preferences.dart';
 class LeadCache {
   static const String _cachedLeadStatusesKey = 'cachedLeadStatuses';
   static const String _cachedLeadsKey = 'cachedLeads';
-  static const String _persistentLeadCountsKey = 'persistentLeadCounts'; // Новый ключ для постоянных счетчиков
+  static const String _persistentLeadCountsKey = 'persistentLeadCounts';
+
+  // НОВЫЙ МЕТОД: Полная очистка всех данных (для RefreshIndicator)
+  static Future<void> clearAllData() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    
+    // Получаем все ключи и удаляем все связанные с лидами
+    final keys = prefs.getKeys();
+    final leadRelatedKeys = keys.where((key) => 
+      key.startsWith('cachedLeads_') || 
+      key == _cachedLeadStatusesKey || 
+      key == _persistentLeadCountsKey
+    ).toList();
+
+    // Удаляем все ключи
+    for (var key in leadRelatedKeys) {
+      await prefs.remove(key);
+    }
+    
+    print('LeadCache: FULL DATA CLEAR - Removed ${leadRelatedKeys.length} cache keys: $leadRelatedKeys');
+  }
 
   // Кэширование лидов для статуса БЕЗ изменения постоянного счетчика
-static Future<void> cacheLeadsForStatus(int? statusId, List<Lead> leads, {bool updatePersistentCount = false}) async {
-  final SharedPreferences prefs = await SharedPreferences.getInstance();
-  final String key = 'cachedLeads_$statusId';
-  final String encodedLeads = json.encode(leads.map((lead) => lead.toJson()).toList());
-  await prefs.setString(key, encodedLeads);
-  
-  // ВАЖНО: Обновляем постоянный счетчик ТОЛЬКО если это явно запрошено
-  // Например, при первоначальной загрузке из API, но НЕ при пагинации
-  if (updatePersistentCount) {
-    await setPersistentLeadCount(statusId, leads.length);
-    print('LeadCache: Cached leads for statusId: $statusId, count: ${leads.length} (updated persistent count)');
-  } else {
-    print('LeadCache: Cached leads for statusId: $statusId, count: ${leads.length} (persistent count preserved)');
+  static Future<void> cacheLeadsForStatus(int? statusId, List<Lead> leads, {bool updatePersistentCount = false}) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String key = 'cachedLeads_$statusId';
+    final String encodedLeads = json.encode(leads.map((lead) => lead.toJson()).toList());
+    await prefs.setString(key, encodedLeads);
+    
+    // ВАЖНО: Обновляем постоянный счетчик ТОЛЬКО если это явно запрошено
+    // Например, при первоначальной загрузке из API, но НЕ при пагинации
+    if (updatePersistentCount) {
+      await setPersistentLeadCount(statusId, leads.length);
+      print('LeadCache: Cached leads for statusId: $statusId, count: ${leads.length} (updated persistent count)');
+    } else {
+      print('LeadCache: Cached leads for statusId: $statusId, count: ${leads.length} (persistent count preserved)');
+    }
   }
-}
 
   // Получение лидов для статуса
   static Future<List<Lead>> getLeadsForStatus(int? statusId) async {
@@ -118,45 +138,44 @@ static Future<void> cacheLeadsForStatus(int? statusId, List<Lead> leads, {bool u
     print('LeadCache: Updated persistent counts - old: $oldStatusId (${persistentCounts['$oldStatusId']}), new: $newStatusId (${persistentCounts['$newStatusId']})');
   }
 
-  // Перемещение лида между статусами
-// Перемещение лида между статусами БЕЗ автоматического обновления постоянных счетчиков
-static Future<void> moveLeadToStatus(Lead lead, int oldStatusId, int newStatusId) async {
-  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  // Перемещение лида между статусами БЕЗ автоматического обновления постоянных счетчиков
+  static Future<void> moveLeadToStatus(Lead lead, int oldStatusId, int newStatusId) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
 
-  // Удаляем из старого статуса
-  final String oldKey = 'cachedLeads_$oldStatusId';
-  final String? oldCachedLeads = prefs.getString(oldKey);
-  List<Lead> oldLeads = [];
-  if (oldCachedLeads != null) {
-    final List<dynamic> decodedData = json.decode(oldCachedLeads);
-    oldLeads = decodedData.map((lead) => Lead.fromJson(lead, oldStatusId)).toList();
+    // Удаляем из старого статуса
+    final String oldKey = 'cachedLeads_$oldStatusId';
+    final String? oldCachedLeads = prefs.getString(oldKey);
+    List<Lead> oldLeads = [];
+    if (oldCachedLeads != null) {
+      final List<dynamic> decodedData = json.decode(oldCachedLeads);
+      oldLeads = decodedData.map((lead) => Lead.fromJson(lead, oldStatusId)).toList();
+    }
+
+    oldLeads.removeWhere((l) => l.id == lead.id);
+    await prefs.setString(oldKey, json.encode(oldLeads.map((lead) => lead.toJson()).toList()));
+
+    // Добавляем в новый статус
+    final String newKey = 'cachedLeads_$newStatusId';
+    final String? newCachedLeads = prefs.getString(newKey);
+    List<Lead> newLeads = [];
+    if (newCachedLeads != null) {
+      final List<dynamic> decodedData = json.decode(newCachedLeads);
+      newLeads = decodedData.map((lead) => Lead.fromJson(lead, newStatusId)).toList();
+    }
+
+    final updatedLead = Lead.fromJson(lead.toJson(), newStatusId);
+    newLeads.add(updatedLead);
+    await prefs.setString(newKey, json.encode(newLeads.map((lead) => lead.toJson()).toList()));
+
+    // Обновляем счетчики только в кэшированных статусах (для совместимости)
+    await updateLeadCount(oldStatusId, oldLeads.length);
+    await updateLeadCount(newStatusId, newLeads.length);
+    
+    // КРИТИЧНО: НЕ обновляем постоянные счетчики автоматически!
+    // Они должны обновляться только через специальные методы
+    
+    print('LeadCache: Moved lead ${lead.id}: $oldStatusId (${oldLeads.length}) -> $newStatusId (${newLeads.length}) - persistent counts preserved');
   }
-
-  oldLeads.removeWhere((l) => l.id == lead.id);
-  await prefs.setString(oldKey, json.encode(oldLeads.map((lead) => lead.toJson()).toList()));
-
-  // Добавляем в новый статус
-  final String newKey = 'cachedLeads_$newStatusId';
-  final String? newCachedLeads = prefs.getString(newKey);
-  List<Lead> newLeads = [];
-  if (newCachedLeads != null) {
-    final List<dynamic> decodedData = json.decode(newCachedLeads);
-    newLeads = decodedData.map((lead) => Lead.fromJson(lead, newStatusId)).toList();
-  }
-
-  final updatedLead = Lead.fromJson(lead.toJson(), newStatusId);
-  newLeads.add(updatedLead);
-  await prefs.setString(newKey, json.encode(newLeads.map((lead) => lead.toJson()).toList()));
-
-  // Обновляем счетчики только в кэшированных статусах (для совместимости)
-  await updateLeadCount(oldStatusId, oldLeads.length);
-  await updateLeadCount(newStatusId, newLeads.length);
-  
-  // КРИТИЧНО: НЕ обновляем постоянные счетчики автоматически!
-  // Они должны обновляться только через специальные методы
-  
-  print('LeadCache: Moved lead ${lead.id}: $oldStatusId (${oldLeads.length}) -> $newStatusId (${newLeads.length}) - persistent counts preserved');
-}
 
   // Стандартное обновление счетчика (для совместимости)
   static Future<void> updateLeadCount(int statusId, int count) async {

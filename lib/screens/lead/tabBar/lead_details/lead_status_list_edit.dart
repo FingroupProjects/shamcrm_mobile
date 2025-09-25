@@ -37,7 +37,31 @@ class _LeadStatusEditpWidgetState extends State<LeadStatusEditpWidget> {
   @override
   void initState() {
     super.initState();
-    // Не вызываем FetchLeadStatuses здесь, так как это делается в SalesFunnelWidget
+    // Добавляем загрузку статусов, если они еще не загружены
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final currentState = context.read<LeadBloc>().state;
+      if (currentState is! LeadLoaded || currentState.leadStatuses.isEmpty) {
+        context.read<LeadBloc>().add(FetchLeadStatuses());
+      } else {
+        // Если данные уже есть, сразу инициализируем
+        _initializeFromState(currentState);
+      }
+    });
+  }
+
+  void _initializeFromState(LeadLoaded state) {
+    setState(() {
+      statusList = state.leadStatuses;
+      if (widget.selectedStatus != null && statusList.isNotEmpty) {
+        try {
+          selectedStatusData = statusList.firstWhere(
+            (status) => status.id.toString() == widget.selectedStatus,
+          );
+        } catch (e) {
+          selectedStatusData = null;
+        }
+      }
+    });
   }
 
   @override
@@ -76,21 +100,14 @@ class _LeadStatusEditpWidgetState extends State<LeadStatusEditpWidget> {
                     );
                   } catch (e) {
                     selectedStatusData = null; // Сбрасываем, если статус не найден
-                    widget.onSelectStatus(statusList.first); // Выбираем первый статус по умолчанию
                   }
-                } else if (statusList.isNotEmpty) {
-                  selectedStatusData = statusList.first;
-                  widget.onSelectStatus(statusList.first);
-                }
+                } 
               });
             }
           },
           child: BlocBuilder<LeadBloc, LeadState>(
             builder: (context, state) {
-              if (state is LeadLoading) {
-                return const Center(child: CircularProgressIndicator());
-              }
-
+              // Убираем отображение загрузки - всегда показываем поле
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -110,9 +127,10 @@ class _LeadStatusEditpWidgetState extends State<LeadStatusEditpWidget> {
                     ),
                     child: CustomDropdown<LeadStatus>.search(
                       closeDropDownOnClearFilterSearch: true,
-                      items: statusList,
+                      items: statusList, // Используем локальный список
                       searchHintText: AppLocalizations.of(context)!.translate('search'),
                       overlayHeight: 400,
+                      enabled: true, // Всегда включено
                       decoration: CustomDropdownDecoration(
                         closedFillColor: const Color(0xffF4F7FD),
                         expandedFillColor: Colors.white,

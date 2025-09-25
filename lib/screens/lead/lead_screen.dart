@@ -201,53 +201,69 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   }
 
 Future<void> _onRefresh(int currentStatusId) async {
-  print('LeadScreen: _onRefresh called for statusId: $currentStatusId');
-  final leadBloc = BlocProvider.of<LeadBloc>(context);
+  print('LeadScreen: _onRefresh called - FULL REFRESH for all statuses');
   
-  // Очищаем только кэш лидов для текущего статуса, но не статусы
-  await LeadCache.clearLeadsForStatus(currentStatusId);
-  print('LeadScreen: _onRefresh - Cleared leads cache for statusId: $currentStatusId');
-  
-  // Загружаем статусы только если они отсутствуют в кэше
-  final cachedStatuses = await LeadCache.getLeadStatuses();
-  if (cachedStatuses.isEmpty) {
-    leadBloc.add(FetchLeadStatuses());
-    await Future.delayed(Duration(milliseconds: 100));
+  try {
+    // ПОЛНАЯ очистка всего кэша
+    await LeadCache.clearAllData(); // Новый метод для полной очистки
+    print('LeadScreen: _onRefresh - Cleared ALL cache data');
+    
+    // Сбрасываем все фильтры и состояние
+    if (mounted) {
+      setState(() {
+        _isSearching = false;
+        _lastSearchQuery = '';
+        _searchController.clear();
+        _showCustomTabBar = true;
+        // Сбрасываем все фильтры
+        _selectedManagers.clear();
+        _selectedRegions.clear();
+        _selectedSources.clear();
+        _selectedStatuses = null;
+        _fromDate = null;
+        _toDate = null;
+        _hasSuccessDeals = false;
+        _hasInProgressDeals = false;
+        _hasFailureDeals = false;
+        _hasNotices = false;
+        _hasContact = false;
+        _hasChat = false;
+        _hasNoReplies = false;
+        _hasUnreadMessages = false;
+        _hasDeal = false;
+        _daysWithoutActivity = null;
+        _directoryValues.clear();
+      });
+    }
+    
+    // Заново загружаем статусы и лиды с сервера
+    final leadBloc = BlocProvider.of<LeadBloc>(context);
+    leadBloc.add(FetchLeadStatuses(forceRefresh: true)); // Принудительная загрузка с сервера
+    
+    print('LeadScreen: _onRefresh - Full refresh completed');
+    
+  } catch (e) {
+    print('LeadScreen: _onRefresh error: $e');
+    // Показываем ошибку пользователю
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Ошибка при обновлении данных',
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
+          ),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
   }
-  
-  // Загружаем лиды с учётом всех фильтров
-  leadBloc.add(FetchLeads(
-    currentStatusId,
-    salesFunnelId: _selectedFunnel?.id,
-    ignoreCache: true,
-    query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-    managerIds: _selectedManagers.isNotEmpty
-        ? _selectedManagers.map((manager) => manager.id).toList()
-        : null,
-    regionsIds: _selectedRegions.isNotEmpty
-        ? _selectedRegions.map((region) => region.id).toList()
-        : null,
-    sourcesIds: _selectedSources.isNotEmpty
-        ? _selectedSources.map((source) => source.id).toList()
-        : null,
-    statusIds: _selectedStatuses,
-    fromDate: _fromDate,
-    toDate: _toDate,
-    hasSuccessDeals: _hasSuccessDeals,
-    hasInProgressDeals: _hasInProgressDeals,
-    hasFailureDeals: _hasFailureDeals,
-    hasNotices: _hasNotices,
-    hasContact: _hasContact,
-    hasChat: _hasChat,
-    hasNoReplies: _hasNoReplies,
-    hasUnreadMessages: _hasUnreadMessages,
-    hasDeal: _hasDeal,
-    daysWithoutActivity: _daysWithoutActivity,
-    directoryValues: _directoryValues,
-  ));
-  print('LeadScreen: _onRefresh - FetchLeads dispatched for statusId: $currentStatusId');
 }
-
   Future<void> _checkPermissions() async {
     final canRead = await _apiService.hasPermission('leadStatus.read');
     final canCreate = await _apiService.hasPermission('leadStatus.create');
@@ -1521,48 +1537,58 @@ Widget _buildTabBarView() {
                 color: const Color(0xff1E2E52),
                 backgroundColor: Colors.white,
                 child: LeadColumn(
-                  isLeadScreenTutorialCompleted: _isLeadScreenTutorialCompleted,
-                  statusId: status['id'],
-                  title: status['title'],
-                  onStatusId: (newStatusId) {
-                    print('LeadScreen: onStatusId called with id: $newStatusId');
-                    final index = _tabTitles.indexWhere((s) => s['id'] == newStatusId);
-                    if (index != -1) {
-                      _tabController.animateTo(index);
-                      print('LeadScreen: Animated to tab index: $index for statusId: $newStatusId');
-                      context.read<LeadBloc>().add(FetchLeads(
-                        newStatusId,
-                        salesFunnelId: _selectedFunnel?.id,
-                        ignoreCache: false,
-                        query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-                        managerIds: _selectedManagers.isNotEmpty
-                            ? _selectedManagers.map((manager) => manager.id).toList()
-                            : null,
-                        regionsIds: _selectedRegions.isNotEmpty
-                            ? _selectedRegions.map((region) => region.id).toList()
-                            : null,
-                        sourcesIds: _selectedSources.isNotEmpty
-                            ? _selectedSources.map((source) => source.id).toList()
-                            : null,
-                        statusIds: _selectedStatuses,
-                        fromDate: _fromDate,
-                        toDate: _toDate,
-                        hasSuccessDeals: _hasSuccessDeals,
-                        hasInProgressDeals: _hasInProgressDeals,
-                        hasFailureDeals: _hasFailureDeals,
-                        hasNotices: _hasNotices,
-                        hasContact: _hasContact,
-                        hasChat: _hasChat,
-                        hasNoReplies: _hasNoReplies,
-                        hasUnreadMessages: _hasUnreadMessages,
-                        hasDeal: _hasDeal,
-                        daysWithoutActivity: _daysWithoutActivity,
-                        directoryValues: _directoryValues,
-                      ));
-                      print('LeadScreen: FetchLeads dispatched for statusId: $newStatusId');
-                    }
-                  },
-                ),
+  isLeadScreenTutorialCompleted: _isLeadScreenTutorialCompleted,
+  statusId: status['id'],
+  title: status['title'],
+  onStatusId: (newStatusId) {
+    print('LeadScreen: onStatusId called with id: $newStatusId');
+    final index = _tabTitles.indexWhere((s) => s['id'] == newStatusId);
+    if (index != -1) {
+      _tabController.animateTo(index);
+      print('LeadScreen: Animated to tab index: $index for statusId: $newStatusId');
+      // ИСПРАВЛЯЕМ: используем уже загруженные данные или загружаем при необходимости
+      final currentLeadBloc = context.read<LeadBloc>();
+      if (currentLeadBloc.state is LeadDataLoaded) {
+        final currentState = currentLeadBloc.state as LeadDataLoaded;
+        final hasLeadsForStatus = currentState.leads.any((lead) => lead.statusId == newStatusId);
+        
+        // Загружаем только если нет данных для этого статуса
+        if (!hasLeadsForStatus) {
+          currentLeadBloc.add(FetchLeads(
+            newStatusId,
+            salesFunnelId: _selectedFunnel?.id,
+            ignoreCache: false,
+            query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+            managerIds: _selectedManagers.isNotEmpty
+                ? _selectedManagers.map((manager) => manager.id).toList()
+                : null,
+            regionsIds: _selectedRegions.isNotEmpty
+                ? _selectedRegions.map((region) => region.id).toList()
+                : null,
+            sourcesIds: _selectedSources.isNotEmpty
+                ? _selectedSources.map((source) => source.id).toList()
+                : null,
+            statusIds: _selectedStatuses,
+            fromDate: _fromDate,
+            toDate: _toDate,
+            hasSuccessDeals: _hasSuccessDeals,
+            hasInProgressDeals: _hasInProgressDeals,
+            hasFailureDeals: _hasFailureDeals,
+            hasNotices: _hasNotices,
+            hasContact: _hasContact,
+            hasChat: _hasChat,
+            hasNoReplies: _hasNoReplies,
+            hasUnreadMessages: _hasUnreadMessages,
+            hasDeal: _hasDeal,
+            daysWithoutActivity: _daysWithoutActivity,
+            directoryValues: _directoryValues,
+          ));
+          print('LeadScreen: FetchLeads dispatched for statusId: $newStatusId');
+        }
+      }
+    }
+  },
+),
               );
             }).toList(),
           ),
