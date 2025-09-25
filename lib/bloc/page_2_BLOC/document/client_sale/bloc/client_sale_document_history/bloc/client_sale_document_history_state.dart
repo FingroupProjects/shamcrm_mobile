@@ -26,9 +26,10 @@ final class ClientSaleDocumentHistoryLoaded
 final class ClientSaleDocumentHistoryError
     extends ClientSaleDocumentHistoryState {
   final String message;
+  final int? statusCode;
 
-  const ClientSaleDocumentHistoryError(this.message);
+  const ClientSaleDocumentHistoryError(this.message, {this.statusCode});
 
   @override
-  List<Object> get props => [message];
+  List<Object> get props => [message, statusCode ?? -1];
 }

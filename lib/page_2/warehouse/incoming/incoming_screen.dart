@@ -10,6 +10,7 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
+import '../../money/widgets/error_dialog.dart';
 import 'incoming_document_create_screen.dart';
 
 class IncomingScreen extends StatefulWidget {
@@ -158,10 +159,18 @@ class _IncomingScreenState extends State<IncomingScreen> {
     } else if (state is IncomingCreateSuccess) {
       _showSnackBar(state.message, true);
     } else if (state is IncomingCreateError) {
+      if (state.statusCode == 409) {
+        showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+        return;
+      }
       _showSnackBar(state.message, false);
     } else if (state is IncomingUpdateSuccess) {
       _showSnackBar(state.message, true);
     } else if (state is IncomingUpdateError) {
+      if (state.statusCode == 409) {
+        showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+        return;
+      }
       _showSnackBar(state.message, false);
     } else if (state is IncomingDeleteSuccess) {
       // Показываем SnackBar только если мы находимся на IncomingScreen

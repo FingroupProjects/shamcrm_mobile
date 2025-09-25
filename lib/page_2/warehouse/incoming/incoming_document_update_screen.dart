@@ -16,6 +16,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
+import '../../money/widgets/error_dialog.dart';
+
 class IncomingDocumentEditScreen extends StatefulWidget {
   final IncomingDocument document;
 
@@ -219,6 +221,10 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
           if (state is IncomingUpdateSuccess && mounted) {
             Navigator.pop(context, true);
           } else if (state is IncomingUpdateError && mounted) {
+            if (state.statusCode == 409) {
+              showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+              return;
+            }
             _showSnackBar(state.message, false);
           }
         },

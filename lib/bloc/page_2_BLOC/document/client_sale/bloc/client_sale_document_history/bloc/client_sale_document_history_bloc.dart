@@ -3,6 +3,8 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_history_model.dart';
 import 'package:equatable/equatable.dart';
 
+import '../../../../../../../models/api_exception_model.dart';
+
 part 'client_sale_document_history_event.dart';
 part 'client_sale_document_history_state.dart';
 
@@ -20,11 +22,14 @@ class ClientSaleDocumentHistoryBloc extends Bloc<ClientSaleDocumentHistoryEvent,
   ) async {
     emit(ClientSaleDocumentHistoryLoading());
     try {
-      final response =
-          await apiService.getIncomingDocumentHistory(event.documentId);
+      final response = await apiService.getIncomingDocumentHistory(event.documentId);
       emit(ClientSaleDocumentHistoryLoaded(response.history ?? []));
     } catch (e) {
-      emit(ClientSaleDocumentHistoryError(e.toString()));
+      if (e is ApiException) {
+        emit(ClientSaleDocumentHistoryError(e.toString(), statusCode: e.statusCode));
+      } else {
+        emit(ClientSaleDocumentHistoryError(e.toString()));
+      }
     }
   }
 }
