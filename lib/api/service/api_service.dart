@@ -136,7 +136,13 @@ class ApiService {
   String? baseUrlSocket;
   static final GlobalKey<NavigatorState> navigatorKey =
       GlobalKey<NavigatorState>();
-
+  // Добавьте этот список эндпоинтов, которые не требуют проверки сессии
+  static const List<String> _noSessionCheckEndpoints = [
+    '/login',
+    '/get-user-by-email',
+    '/checkDomain',
+    '/add-fcm-token',
+  ];
   ApiService() {
     _initializeIfDomainExists();
   }
@@ -485,42 +491,44 @@ String? _extractErrorMessageFromResponse(http.Response response) {
     return _handleResponse(response);
   }
 
-   Future<http.Response> _postRequest(
-      String path, Map<String, dynamic> body) async {
-    // Проверяем сессию перед каждым запросом
+  Future<http.Response> _postRequest(
+    String path, Map<String, dynamic> body) async {
+  // Проверяем сессию только если эндпоинт требует этого
+  if (!_noSessionCheckEndpoints.any((endpoint) => path.contains(endpoint))) {
     if (!await _isSessionValid()) {
       await _forceLogoutAndRedirect();
       throw Exception('Session is invalid');
     }
-
-    if (baseUrl == null) {
-      await _initializeIfDomainExists();
-      if (baseUrl == null) {
-        print('Error: baseUrl is null');
-        throw Exception('Base URL is not initialized');
-      }
-    }
-
-    final token = await getToken();
-    final updatedPath = await _appendQueryParams(path);
-    print('ApiService: _postRequest with updatedPath: $baseUrl$updatedPath');
-    print('ApiService: Request body: ${json.encode(body)}');
-
-    final response = await http.post(
-      Uri.parse('$baseUrl$updatedPath'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
-        'Device': 'mobile'
-      },
-      body: json.encode(body),
-    );
-
-    print('ApiService: _postRequest response status: ${response.statusCode}');
-    print('ApiService: _postRequest response body: ${response.body}');
-    return _handleResponse(response);
   }
+
+  if (baseUrl == null) {
+    await _initializeIfDomainExists();
+    if (baseUrl == null) {
+      print('Error: baseUrl is null');
+      throw Exception('Base URL is not initialized');
+    }
+  }
+
+  final token = await getToken();
+  final updatedPath = await _appendQueryParams(path);
+  print('ApiService: _postRequest with updatedPath: $baseUrl$updatedPath');
+  print('ApiService: Request body: ${json.encode(body)}');
+
+  final response = await http.post(
+    Uri.parse('$baseUrl$updatedPath'),
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+      'Device': 'mobile'
+    },
+    body: json.encode(body),
+  );
+
+  print('ApiService: _postRequest response status: ${response.statusCode}');
+  print('ApiService: _postRequest response body: ${response.body}');
+  return _handleResponse(response);
+}
 
   /// Новый метод для обработки MultipartRequest
   Future<http.Response> _multipartPostRequest(
@@ -627,50 +635,50 @@ Future<http.Response> _patchRequest(
   }
 // Новый метод для проверки валидности сессии
   Future<bool> _isSessionValid() async {
-    try {
-      // Проверяем токен
-      final token = await getToken();
-      if (token == null || token.isEmpty) {
-        print('ApiService: Token is null or empty');
-        return false;
-      }
-
-      // Проверяем домен
-      String? domain = await getVerifiedDomain();
-      if (domain == null || domain.isEmpty) {
-        // Пробуем QR данные
-        Map<String, String?> qrData = await getQrData();
-        String? qrDomain = qrData['domain'];
-        String? qrMainDomain = qrData['mainDomain'];
-        
-        if (qrDomain == null || qrDomain.isEmpty || 
-            qrMainDomain == null || qrMainDomain.isEmpty) {
-          // Пробуем старую логику
-          Map<String, String?> domains = await getEnteredDomain();
-          String? enteredDomain = domains['enteredDomain'];
-          String? enteredMainDomain = domains['enteredMainDomain'];
-          
-          if (enteredDomain == null || enteredDomain.isEmpty ||
-              enteredMainDomain == null || enteredMainDomain.isEmpty) {
-            print('ApiService: No valid domain found');
-            return false;
-          }
-        }
-      }
-
-      // Проверяем организацию
-      final organizationId = await getSelectedOrganization();
-      if (organizationId == null || organizationId.isEmpty) {
-        print('ApiService: Organization ID is null or empty');
-        return false;
-      }
-
-      return true;
-    } catch (e) {
-      print('ApiService: Error checking session validity: $e');
+  try {
+    // Проверяем токен
+    final token = await getToken();
+    if (token == null || token.isEmpty) {
+      print('ApiService: Token is null or empty');
       return false;
     }
+
+    // Проверяем домен
+    String? domain = await getVerifiedDomain();
+    if (domain == null || domain.isEmpty) {
+      // Пробуем QR данные
+      Map<String, String?> qrData = await getQrData();
+      String? qrDomain = qrData['domain'];
+      String? qrMainDomain = qrData['mainDomain'];
+      
+      if (qrDomain == null || qrDomain.isEmpty || 
+          qrMainDomain == null || qrMainDomain.isEmpty) {
+        // Пробуем старую логику
+        Map<String, String?> domains = await getEnteredDomain();
+        String? enteredDomain = domains['enteredDomain'];
+        String? enteredMainDomain = domains['enteredMainDomain'];
+        
+        if (enteredDomain == null || enteredDomain.isEmpty ||
+            enteredMainDomain == null || enteredMainDomain.isEmpty) {
+          print('ApiService: No valid domain found');
+          return false;
+        }
+      }
+    }
+
+    // Проверяем организацию
+    final organizationId = await getSelectedOrganization();
+    if (organizationId == null || organizationId.isEmpty) {
+      print('ApiService: Organization ID is null or empty');
+      return false;
+    }
+
+    return true;
+  } catch (e) {
+    print('ApiService: Error checking session validity: $e');
+    return false;
   }
+}
 
   // Новый метод для принудительного сброса к начальному экрану
   Future<void> _forceLogoutAndRedirect() async {
@@ -942,38 +950,52 @@ Future<http.Response> _patchRequest(
 //_________________________________ START___API__LOGIN____________________________________________//
 
 // Метод для проверки логина и пароля
-  Future<LoginResponse> login(LoginModel loginModel) async {
-    final organizationId = await getSelectedOrganization();
-    final response = await _postRequest(
-      '/login${organizationId != null ? '?organization_id=$organizationId' : ''}',
-      loginModel.toJson(),
-    );
-
-    if (kDebugMode) {
-      print('ApiService: login - Response: ${response.body}');
+ Future<LoginResponse> login(LoginModel loginModel) async {
+  print('ApiService: Starting login process');
+  print('ApiService: Login model: ${json.encode(loginModel.toJson())}');
+  
+  final organizationId = await getSelectedOrganization();
+  print('ApiService: Using organization_id: $organizationId');
+  
+  // Проверяем baseUrl перед запросом
+  if (baseUrl == null) {
+    print('ApiService: baseUrl is null, trying to initialize');
+    await _initializeIfDomainExists();
+    if (baseUrl == null) {
+      throw Exception('Failed to initialize baseUrl for login');
     }
+  }
+  print('ApiService: Current baseUrl: $baseUrl');
+  
+  final response = await _postRequest(
+    '/login${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    loginModel.toJson(),
+  );
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      final loginResponse = LoginResponse.fromJson(data);
+  if (kDebugMode) {
+    print('ApiService: login - Response: ${response.body}');
+  }
 
-      await _saveToken(loginResponse.token);
-      await savePermissions(loginResponse.permissions);
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    final loginResponse = LoginResponse.fromJson(data);
 
-      // Проверяем organization_id из ответа
-      String? effectiveOrgId = loginResponse.organizationId;
-      if (effectiveOrgId != null && effectiveOrgId.isNotEmpty) {
-        await saveSelectedOrganization(effectiveOrgId);
-        if (kDebugMode) {
-          print(
-              'ApiService: login - Saved organization_id from response: $effectiveOrgId');
-        }
-      } else {
-        if (kDebugMode) {
-          print(
-              'ApiService: login - Warning: organization_id is null, trying /organization');
-        }
-        // Пробуем получить organization_id из /organization
+    await _saveToken(loginResponse.token);
+    await savePermissions(loginResponse.permissions);
+
+    // Проверяем organization_id из ответа
+    String? effectiveOrgId = loginResponse.organizationId;
+    if (effectiveOrgId != null && effectiveOrgId.isNotEmpty) {
+      await saveSelectedOrganization(effectiveOrgId);
+      if (kDebugMode) {
+        print('ApiService: login - Saved organization_id from response: $effectiveOrgId');
+      }
+    } else {
+      if (kDebugMode) {
+        print('ApiService: login - Warning: organization_id is null, trying /organization');
+      }
+      // Пробуем получить organization_id из /organization
+      try {
         final organizationsResponse = await _getRequest('/organization');
         if (organizationsResponse.statusCode == 200) {
           final organizations = json.decode(organizationsResponse.body);
@@ -985,45 +1007,59 @@ Future<http.Response> _patchRequest(
             if (effectiveOrgId != null && effectiveOrgId.isNotEmpty) {
               await saveSelectedOrganization(effectiveOrgId);
               if (kDebugMode) {
-                print(
-                    'ApiService: login - Saved organization_id from /organization: $effectiveOrgId');
+                print('ApiService: login - Saved organization_id from /organization: $effectiveOrgId');
               }
             } else {
               effectiveOrgId = '1'; // Дефолт id = 1
               await saveSelectedOrganization(effectiveOrgId);
               if (kDebugMode) {
-                print(
-                    'ApiService: login - No valid organization_id, using default: $effectiveOrgId');
+                print('ApiService: login - No valid organization_id, using default: $effectiveOrgId');
               }
             }
           } else {
             effectiveOrgId = '1'; // Дефолт id = 1
             await saveSelectedOrganization(effectiveOrgId);
             if (kDebugMode) {
-              print(
-                  'ApiService: login - Empty organizations list, using default: $effectiveOrgId');
+              print('ApiService: login - Empty organizations list, using default: $effectiveOrgId');
             }
           }
         } else {
           effectiveOrgId = '1'; // Дефолт id = 1
           await saveSelectedOrganization(effectiveOrgId);
           if (kDebugMode) {
-            print(
-                'ApiService: login - Failed to fetch /organization, using default: $effectiveOrgId');
+            print('ApiService: login - Failed to fetch /organization, using default: $effectiveOrgId');
           }
         }
+      } catch (e) {
+        effectiveOrgId = '1'; // Дефолт id = 1
+        await saveSelectedOrganization(effectiveOrgId);
+        if (kDebugMode) {
+          print('ApiService: login - Exception fetching /organization: $e, using default: $effectiveOrgId');
+        }
       }
-
-      return loginResponse;
-    } else {
-      if (kDebugMode) {
-        print(
-            'ApiService: login - Error: Status ${response.statusCode}, Body: ${response.body}');
-      }
-      throw Exception(
-          'Неправильный Логин или Пароль! Status: ${response.statusCode}');
     }
+
+    print('ApiService: Login successful, token saved');
+    return loginResponse;
+  } else {
+    if (kDebugMode) {
+      print('ApiService: login - Error: Status ${response.statusCode}, Body: ${response.body}');
+    }
+    
+    // Извлекаем сообщение об ошибке из ответа сервера
+    String errorMessage = 'Неправильный Логин или Пароль!';
+    try {
+      final errorData = json.decode(response.body);
+      if (errorData['message'] != null) {
+        errorMessage = errorData['message'].toString();
+      }
+    } catch (e) {
+      print('ApiService: login - Error parsing error response: $e');
+    }
+    
+    throw Exception('$errorMessage Status: ${response.statusCode}');
   }
+}
 
 // Сохранение прав доступа в SharedPreferences
   Future<void> savePermissions(List<String> permissions) async {
@@ -6432,31 +6468,27 @@ Future<List<Deal>> getDeals(
   }
 
 // Сохранение выбранной организации
-  Future<void> saveSelectedOrganization(String organizationId) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setString('selectedOrganization', organizationId);
-    if (kDebugMode) {
-      print(
-          'ApiService: saveSelectedOrganization - Saved organization_id: $organizationId');
-    }
+Future<String?> getSelectedOrganization() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  final orgId = prefs.getString('selectedOrganization');
+  if (kDebugMode) {
+    print('ApiService: getSelectedOrganization - orgId: $orgId');
   }
+  return orgId;
+}
 
-// Получение выбранной организации
-  Future<String?> getSelectedOrganization() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    final organizationId = prefs.getString('selectedOrganization');
-    if (kDebugMode) {
-      // print(
-      //     'ApiService: getSelectedOrganization - Retrieved organization_id: $organizationId');
-    }
-    return organizationId;
+Future<void> saveSelectedOrganization(String organizationId) async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  await prefs.setString('selectedOrganization', organizationId);
+  if (kDebugMode) {
+    print('ApiService: saveSelectedOrganization - Saved: $organizationId');
   }
+}
 
-// Метод для удаления токена (используется при логауте)
-  Future<void> _removeOrganizationId() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.remove('selectedOrganization'); // Удаляем токен
-  }
+Future<void> _removeOrganizationId() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  await prefs.remove('selectedOrganization');
+}
 
   Future<void> logoutAccount() async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id

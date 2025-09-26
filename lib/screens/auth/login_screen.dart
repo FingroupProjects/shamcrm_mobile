@@ -48,6 +48,12 @@ class LoginScreen extends StatelessWidget {
                 await prefs.setString('userAllRoles', 'No role assigned');
               }
 
+              // НОВОЕ: Сохраняем информацию о hasMiniApp из ответа сервера
+              bool hasMiniApp = state.hasMiniApp; // Теперь это поле есть в LoginLoaded
+              
+              await prefs.setBool('hasMiniApp', hasMiniApp);
+              print('Saved hasMiniApp: $hasMiniApp');
+
               // Получение и отправка FCM-токена с проверкой APNS
               try {
                 String? fcmToken;

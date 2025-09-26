@@ -355,6 +355,13 @@ class _AuthScreenState extends State<AuthScreen> {
                                       await prefs.setString('userName', loginState.user.name.toString());
                                       await prefs.setString('userID', loginState.user.id.toString());
                                       await prefs.setString('userLogin', loginState.user.login.toString());
+
+                                      // НОВОЕ: Сохраняем информацию о hasMiniApp из ответа сервера
+                                      bool hasMiniApp = loginState.hasMiniApp; // Теперь это поле есть в LoginLoaded
+                                      
+                                      await prefs.setBool('hasMiniApp', hasMiniApp);
+                                      print('AuthScreen: Saved hasMiniApp: $hasMiniApp');
+
                                       final organizationId = await context.read<ApiService>().getSelectedOrganization();
                                       print('AuthScreen: Login successful, organization_id: $organizationId');
                                       await Future.delayed(const Duration(seconds: 2));
