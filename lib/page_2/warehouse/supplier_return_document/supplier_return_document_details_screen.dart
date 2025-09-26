@@ -14,6 +14,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
+import '../../../models/api_exception_model.dart';
+import '../../money/widgets/error_dialog.dart';
+
 class SupplierReturnDocumentDetailsScreen extends StatefulWidget {
   final int documentId;
   final String docNumber;
@@ -74,6 +77,11 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
       setState(() {
         _isLoading = false;
       });
+      if (e is ApiException && e.statusCode == 409) {
+        final localizations = AppLocalizations.of(context)!;
+        showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
+        return;
+      }
       _showSnackBar('Ошибка загрузки документа: $e', false);
     }
   }
@@ -192,6 +200,11 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
       _updateStatusOnly();
       _showSnackBar('Документ проведен', true);
     } catch (e) {
+      if (e is ApiException && e.statusCode == 409) {
+        final localizations = AppLocalizations.of(context)!;
+        showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
+        return;
+      }
       _showSnackBar('Ошибка при проведении документа: $e', false);
     } finally {
       setState(() {
@@ -213,6 +226,12 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
       _updateStatusOnly();
       _showSnackBar('Проведение документа отменено', true);
     } catch (e) {
+      if (e is ApiException && e.statusCode == 409) {
+      final localizations = AppLocalizations.of(context)!;
+      showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
+      return;
+    }
+
       _showSnackBar('Ошибка при отмене проведения документа: $e', false);
     } finally {
       setState(() {
@@ -234,6 +253,11 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
       _updateStatusOnly();
       _showSnackBar('Документ восстановлен', true);
     } catch (e) {
+      if (e is ApiException && e.statusCode == 409) {
+        final localizations = AppLocalizations.of(context)!;
+        showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
+        return;
+      }
       _showSnackBar('Ошибка при восстановлении документа: $e', false);
     } finally {
       setState(() {

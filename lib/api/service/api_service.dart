@@ -11632,9 +11632,6 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     }
 
     final path = await _appendQueryParams(url);
-    if (kDebugMode) {
-      print('ApiService: getSupplierReturnDocuments - Generated path: $path');
-    }
 
     try {
       final response = await _getRequest(path);
@@ -11642,31 +11639,39 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         final rawData = json.decode(response.body)['result']; // Как в JSON
         return IncomingResponse.fromJson(rawData);
       } else {
-        throw Exception('Ошибка сервера: ${response.statusCode}');
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка получения данных возврата поставщику',
+          response.statusCode,
+        );
       }
     } catch (e) {
-      throw Exception('Ошибка получения данных возврата поставщику: $e');
+      rethrow;
     }
   }
 
   Future<IncomingDocument> getSupplierReturnDocumentById(int documentId) async {
-    String url = '/supplier-return-documents/$documentId';
-
-    final path = await _appendQueryParams(url);
-    if (kDebugMode) {
-      print('ApiService: getSupplierReturnDocumentById - Generated path: $path');
-    }
-
     try {
+      String url = '/supplier-return-documents/$documentId';
+
+      final path = await _appendQueryParams(url);
+      if (kDebugMode) {
+        print('ApiService: getSupplierReturnDocumentById - Generated path: $path');
+      }
+
       final response = await _getRequest(path);
       if (response.statusCode == 200) {
         final rawData = json.decode(response.body)['result'];
         return IncomingDocument.fromJson(rawData);
       } else {
-        throw Exception('Ошибка сервера: ${response.statusCode}');
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка получения данных документа',
+          response.statusCode,
+        );
       }
     } catch (e) {
-      throw Exception('Ошибка получения данных документа: $e');
+      rethrow;
     }
   }
 
@@ -11679,35 +11684,21 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     }
 
     try {
-      final token = await getToken();
-      if (token == null) throw Exception('Токен не найден');
-
-      final uri = Uri.parse('$baseUrl$path');
-      final response = await http.post(
-        uri,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Device': 'mobile',
-        },
-        body: jsonEncode({
-          'ids': [documentId]
-        }),
-      );
+      final response = await _postRequest(path, {
+        'ids': [documentId]
+      });
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        if (kDebugMode) {
-          print(
-              'ApiService: approveSupplierReturnDocument - Document $documentId approved successfully');
-        }
+        return;
       } else {
-        final jsonResponse = jsonDecode(response.body);
-        throw Exception(
-            jsonResponse['message'] ?? 'Ошибка при проведении документа');
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при проведении документа',
+          response.statusCode,
+        );
       }
     } catch (e) {
-      throw Exception('Ошибка проведения документа: $e');
+      rethrow;
     }
   }
 
@@ -11720,75 +11711,25 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     }
 
     try {
-      final token = await getToken();
-      if (token == null) throw Exception('Токен не найден');
-
-      final uri = Uri.parse('$baseUrl$path');
-      final response = await http.post(
-        uri,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Device': 'mobile',
-        },
-        body: jsonEncode({
-          'ids': [documentId]
-        }),
-      );
+      final response = await _postRequest(path, {
+        'ids': [documentId]
+      });
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        if (kDebugMode) {
-          print(
-              'ApiService: unApproveSupplierReturnDocument - Document $documentId unapproved successfully');
-        }
+        return;
       } else {
-        final jsonResponse = jsonDecode(response.body);
-        throw Exception(jsonResponse['message'] ??
-            'Ошибка при отмене проведения документа');
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при отмене проведения документа',
+          response.statusCode,
+        );
       }
     } catch (e) {
-      throw Exception('Ошибка отмены проведения документа: $e');
+      rethrow;
     }
   }
 
-  Future<Map<String, dynamic>> restoreSupplierReturnDocument(int documentId) async {
-    final token = await getToken();
-    if (token == null) throw Exception('Токен не найден');
-
-    final pathWithParams = await _appendQueryParams('/supplier-return-documents/restore');
-    final uri = Uri.parse('$baseUrl$pathWithParams');
-
-    final body = jsonEncode({
-      'ids': [documentId],
-    });
-
-    if (kDebugMode) {
-      print('ApiService: restoreSupplierReturnDocument - Request body: $body');
-    }
-
-    final response = await http.post(
-      uri,
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Device': 'mobile',
-      },
-      body: body,
-    );
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      if (kDebugMode) {
-        print('ApiService: restoreSupplierReturnDocument - Document $documentId restored successfully');
-      }
-      return {'result': 'Success'};
-    } else {
-      final jsonResponse = jsonDecode(response.body);
-      throw Exception(jsonResponse['message'] ?? 'Ошибка при восстановлении документа');
-    }
-  }
-
+  // TODO remove if is not used anywhere
   Future<IncomingDocumentHistoryResponse> getSupplierReturnDocumentHistory(
       int documentId) async {
     String url = '/supplier-return-documents/history/$documentId';
@@ -11804,10 +11745,11 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         final rawData = json.decode(response.body)['result'];
         return IncomingDocumentHistoryResponse.fromJson(rawData);
       } else {
-        throw Exception('Ошибка сервера: ${response.statusCode}');
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(message ?? "Ошибка получения истории документа", response.statusCode);
       }
     } catch (e) {
-      throw Exception('Ошибка получения истории документа: $e');
+     rethrow;
     }
   }
 
@@ -11821,38 +11763,42 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     required int salesFunnelId,
     required bool approve,
   }) async {
-    final token = await getToken();
-    if (token == null) throw 'Токен не найден';
+    try {
+      final token = await getToken();
+      if (token == null) throw 'Токен не найден';
 
-    final path = await _appendQueryParams('/supplier-return-documents');
-    final uri = Uri.parse('$baseUrl$path');
-    final body = jsonEncode({
-      'date': date,
-      'storage_id': storageId,
-      'comment': comment,
-      'counterparty_id': counterpartyId,
-      'document_goods': documentGoods,
-      'organization_id': organizationId,
-      'sales_funnel_id': salesFunnelId,
-      'approve': approve,
-    });
+      final path = await _appendQueryParams('/supplier-return-documents');
+      final uri = Uri.parse('$baseUrl$path');
+      final body = jsonEncode({
+        'date': date,
+        'storage_id': storageId,
+        'comment': comment,
+        'counterparty_id': counterpartyId,
+        'document_goods': documentGoods,
+        'organization_id': organizationId,
+        'sales_funnel_id': salesFunnelId,
+        'approve': approve,
+      });
 
-    final response = await http.post(
-      uri,
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Device': 'mobile',
-      },
-      body: body,
-    );
+      final response = await http.post(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Device': 'mobile',
+        },
+        body: body,
+      );
 
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return;
-    } else {
-      final message = _extractErrorMessageFromResponse(response);
-      throw message ?? 'Неизвестная ошибка';
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(message ?? "Ошибка создании документа", response.statusCode);
+      }
+    } catch (e) {
+      rethrow;
     }
   }
 
@@ -11866,79 +11812,130 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     required int organizationId,
     required int salesFunnelId,
   }) async {
-    final token = await getToken();
-    if (token == null) throw Exception('Токен не найден');
+    try {
+      final token = await getToken();
+      if (token == null) throw 'Токен не найден';
 
-    final path = await _appendQueryParams('/supplier-return-documents/$documentId');
-    final uri = Uri.parse('$baseUrl$path');
-    final body = jsonEncode({
-      'date': date,
-      'storage_id': storageId,
-      'comment': comment,
-      'counterparty_id': counterpartyId,
-      'document_goods': documentGoods,
-      'organization_id': organizationId,
-      'sales_funnel_id': salesFunnelId,
-    });
+      final path = await _appendQueryParams('/supplier-return-documents/$documentId');
+      final uri = Uri.parse('$baseUrl$path');
+      final body = jsonEncode({
+        'date': date,
+        'storage_id': storageId,
+        'comment': comment,
+        'counterparty_id': counterpartyId,
+        'document_goods': documentGoods,
+        'organization_id': organizationId,
+        'sales_funnel_id': salesFunnelId,
+      });
 
-    final response = await http.put(
-      uri,
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Device': 'mobile',
-      },
-      body: body,
-    );
+      final response = await http.put(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Device': 'mobile',
+        },
+        body: body,
+      );
 
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return;
-    } else {
-      throw Exception('Ошибка обновления документа: ${response.body}');
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(message ?? "Ошибка обновления документа", response.statusCode);
+      }
+    } catch (e) {
+      rethrow;
     }
   }
 
   Future<Map<String, dynamic>> deleteSupplierReturnDocument(int documentId) async {
-    final token = await getToken();
-    if (token == null) throw Exception('Токен не найден');
+    try {
+      final token = await getToken();
+      if (token == null) throw 'Токен не найден';
 
-    // Используем _appendQueryParams для получения параметров, но извлекаем их для тела запроса
-    final pathWithParams = await _appendQueryParams('/supplier-return-documents');
-    final uri = Uri.parse('$baseUrl$pathWithParams');
+      // Используем _appendQueryParams для получения параметров, но извлекаем их для тела запроса
+      final pathWithParams = await _appendQueryParams('/supplier-return-documents');
+      final uri = Uri.parse('$baseUrl$pathWithParams');
 
-    // Извлекаем organization_id и sales_funnel_id из query параметров
-    final organizationId = uri.queryParameters['organization_id'];
-    final salesFunnelId = uri.queryParameters['sales_funnel_id'];
+      // Извлекаем organization_id и sales_funnel_id из query параметров
+      final organizationId = uri.queryParameters['organization_id'];
+      final salesFunnelId = uri.queryParameters['sales_funnel_id'];
 
-    // Создаем чистый URI без параметров для DELETE запроса
-    final cleanUri = Uri.parse('$baseUrl/supplier-return-documents');
+      // Создаем чистый URI без параметров для DELETE запроса
+      final cleanUri = Uri.parse('$baseUrl/supplier-return-documents');
 
-    final body = jsonEncode({
-      'ids': [documentId],
-      'organization_id': organizationId ?? '1',
-      'sales_funnel_id': salesFunnelId ?? '1',
-    });
+      final body = jsonEncode({
+        'ids': [documentId],
+        'organization_id': organizationId ?? '1',
+        'sales_funnel_id': salesFunnelId ?? '1',
+      });
 
-    if (kDebugMode) {
-      print('ApiService: deleteSupplierReturnDocument - Request body: $body');
+      if (kDebugMode) {
+        print('ApiService: deleteSupplierReturnDocument - Request body: $body');
+      }
+
+      final response = await http.delete(
+        cleanUri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Device': 'mobile',
+        },
+        body: body,
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return {'result': 'Success'};
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(message ?? "Ошибка удалении документа", response.statusCode);
+      }
+    } catch (e) {
+      rethrow;
     }
+  }
 
-    final response = await http.delete(
-      cleanUri,
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Device': 'mobile',
-      },
-      body: body,
-    );
+  Future<Map<String, dynamic>> restoreSupplierReturnDocument(int documentId) async {
+    try {
+      final token = await getToken();
+      if (token == null) throw 'Токен не найден';
 
-    if (response.statusCode == 200 || response.statusCode == 204) {
-      return {'result': 'Success'};
-    } else {
-      throw Exception('Failed to delete supplier return document: ${response.body}');
+      final pathWithParams = await _appendQueryParams('/supplier-return-documents/restore');
+      final uri = Uri.parse('$baseUrl$pathWithParams');
+
+      final body = jsonEncode({
+        'ids': [documentId],
+      });
+
+      if (kDebugMode) {
+        print('ApiService: restoreSupplierReturnDocument - Request body: $body');
+      }
+
+      final response = await http.post(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Device': 'mobile',
+        },
+        body: body,
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        if (kDebugMode) {
+          print('ApiService: restoreSupplierReturnDocument - Document $documentId restored successfully');
+        }
+        return {'result': 'Success'};
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(message ?? 'Ошибка при восстановлении документа', response.statusCode);
+      }
+    } catch (e) {
+      rethrow;
     }
   }
 
