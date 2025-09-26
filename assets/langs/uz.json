@@ -1438,9 +1438,8 @@
   "mass_delete_success_message": "Hujjatlar muvaffaqiyatli o‘chirildi",
   "mass_restore_success_message" : "Hujjatlar muvaffaqiyatli tiklandi",
   "toggle_approve_success_message" : "Status muvaffaqiyatli o‘zgartirildi",
-  "document_updated_and_approve_toggled_successfully": "Hujjat muvaffaqiyatli yangilandi va status o‘zgartirildi"
-  
-
+  "document_updated_and_approve_toggled_successfully": "Hujjat muvaffaqiyatli yangilandi va status o‘zgartirildi",
+  "replace": "Almashtirish"
 
 
 

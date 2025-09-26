@@ -11,10 +11,12 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 
 class SimpleGoodsSelectionBottomSheet extends StatefulWidget {
   final List<Map<String, dynamic>> existingItems;
+  final String? buttonText;
 
   const SimpleGoodsSelectionBottomSheet({
     Key? key,
     required this.existingItems,
+    this.buttonText // defult: "Добавить"
   }) : super(key: key);
 
   @override
@@ -418,7 +420,7 @@ class _SimpleGoodsSelectionBottomSheetState extends State<SimpleGoodsSelectionBo
         ),
         child: Center(
           child: Text(
-            AppLocalizations.of(context)!.translate('add') ?? 'Добавить',
+            widget.buttonText ?? AppLocalizations.of(context)!.translate('add') ?? 'Добавить',
             style: const TextStyle(
               fontSize: 16,
               fontFamily: 'Gilroy',
