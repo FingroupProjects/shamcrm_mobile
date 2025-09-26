@@ -28,11 +28,12 @@ final class WriteOffLoaded extends WriteOffState {
 
 final class WriteOffError extends WriteOffState {
   final String message;
+  final int? statusCode;
 
-  const WriteOffError(this.message);
+  const WriteOffError(this.message, {this.statusCode});
 
   @override
-  List<Object> get props => [message];
+  List<Object> get props => [message, statusCode ?? -1];
 }
 
 final class WriteOffCreateLoading extends WriteOffState {}
@@ -48,11 +49,12 @@ final class WriteOffCreateSuccess extends WriteOffState {
 
 final class WriteOffCreateError extends WriteOffState {
   final String message;
+  final int? statusCode;
 
-  const WriteOffCreateError(this.message);
+  const WriteOffCreateError(this.message, {this.statusCode});
 
   @override
-  List<Object> get props => [message];
+  List<Object> get props => [message, statusCode ?? -1];
 }
 
 final class WriteOffUpdateSuccess extends WriteOffState {
@@ -66,9 +68,10 @@ final class WriteOffUpdateSuccess extends WriteOffState {
 
 final class WriteOffUpdateError extends WriteOffState {
   final String message;
+  final int? statusCode;
 
-  const WriteOffUpdateError(this.message);
+  const WriteOffUpdateError(this.message, {this.statusCode});
 
   @override
-  List<Object> get props => [message];
+  List<Object> get props => [message, statusCode ?? -1];
 }

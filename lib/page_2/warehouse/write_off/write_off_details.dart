@@ -2,6 +2,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/write_off/write_off_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
+import 'package:crm_task_manager/models/api_exception_model.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/goods_details_screen.dart';
 
@@ -12,6 +13,8 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+
+import '../../money/widgets/error_dialog.dart';
 
 class WriteOffDocumentDetailsScreen extends StatefulWidget {
   final int documentId;
@@ -75,6 +78,11 @@ class _WriteOffDocumentDetailsScreenState
       setState(() {
         _isLoading = false;
       });
+      if (e is ApiException && e.statusCode  == 409) {
+        final localizations = AppLocalizations.of(context)!;
+        showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
+        return;
+      }
       _showSnackBar(
           AppLocalizations.of(context)!.translate('error_loading_document') ??
               'Ошибка загрузки документа: $e',
@@ -183,6 +191,11 @@ class _WriteOffDocumentDetailsScreenState
               'Документ проведен',
           true);
     } catch (e) {
+      if (e is ApiException && e.statusCode  == 409) {
+        final localizations = AppLocalizations.of(context)!;
+        showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
+        return;
+      }
       _showSnackBar(
           AppLocalizations.of(context)!.translate('error_approving_document') ??
               'Ошибка при проведении документа: $e',
@@ -210,6 +223,11 @@ class _WriteOffDocumentDetailsScreenState
               'Проведение документа отменено',
           true);
     } catch (e) {
+      if (e is ApiException && e.statusCode  == 409) {
+        final localizations = AppLocalizations.of(context)!;
+        showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
+        return;
+      }
       _showSnackBar(
           AppLocalizations.of(context)!.translate('error_unapproving_document') ??
               'Ошибка при отмене проведения документа: $e',
@@ -235,6 +253,11 @@ class _WriteOffDocumentDetailsScreenState
           true);
       context.read<WriteOffBloc>().add(FetchWriteOffs(forceRefresh: true));
     } catch (e) {
+      if (e is ApiException && e.statusCode  == 409) {
+        final localizations = AppLocalizations.of(context)!;
+        showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
+        return;
+      }
       _showSnackBar(
           AppLocalizations.of(context)!.translate('error_restoring_document') ??
               'Ошибка при восстановлении документа: $e',
