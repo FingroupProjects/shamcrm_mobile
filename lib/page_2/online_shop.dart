@@ -34,7 +34,7 @@ class _OnlineStoreScreenState extends State<OnlineStoreScreen> {
     
     try {
       // Категории
-      if (await _apiService.hasPermission('product.read')) {
+      if (await _apiService.hasPermission('category.read')) {
         sections.add(StoreSection(
           title: 'appbar_categories',
           icon: 'assets/icons/MyNavBar/category_ON.png',
