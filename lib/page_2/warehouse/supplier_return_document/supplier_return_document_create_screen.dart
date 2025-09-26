@@ -16,6 +16,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
+import '../../money/widgets/error_dialog.dart';
+
 class SupplierReturnDocumentCreateScreen extends StatefulWidget {
   final int? organizationId;
 
@@ -190,6 +192,11 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
           if (state is SupplierReturnCreateSuccess && mounted) {
             Navigator.pop(context, true);
           } else if (state is SupplierReturnCreateError && mounted) {
+            if (state.statusCode  == 409) {
+              final localizations = AppLocalizations.of(context)!;
+              showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+              return;
+            }
             _showSnackBar(state.message, false);
           }
         },

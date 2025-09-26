@@ -29,11 +29,12 @@ class SupplierReturnLoaded extends SupplierReturnState {
 
 class SupplierReturnError extends SupplierReturnState {
   final String message;
+  final int? statusCode;
 
-  const SupplierReturnError(this.message);
+  const SupplierReturnError(this.message, {this.statusCode});
 
   @override
-  List<Object> get props => [message];
+  List<Object> get props => [message, statusCode ?? -1];
 }
 
 class SupplierReturnCreateLoading extends SupplierReturnState {}
@@ -49,11 +50,12 @@ class SupplierReturnCreateSuccess extends SupplierReturnState {
 
 class SupplierReturnCreateError extends SupplierReturnState {
   final String message;
+  final int? statusCode;
 
-  const SupplierReturnCreateError(this.message);
+  const SupplierReturnCreateError(this.message, {this.statusCode});
 
   @override
-  List<Object> get props => [message];
+  List<Object> get props => [message, statusCode ?? -1];
 }
 
 class SupplierReturnUpdateLoading extends SupplierReturnState {}
@@ -69,11 +71,12 @@ class SupplierReturnUpdateSuccess extends SupplierReturnState {
 
 class SupplierReturnUpdateError extends SupplierReturnState {
   final String message;
+  final int? statusCode;
 
-  const SupplierReturnUpdateError(this.message);
+  const SupplierReturnUpdateError(this.message, {this.statusCode});
 
   @override
-  List<Object> get props => [message];
+  List<Object> get props => [message, statusCode ?? -1];
 }
 
 class SupplierReturnDeleteLoading extends SupplierReturnState {}
@@ -89,11 +92,12 @@ class SupplierReturnDeleteSuccess extends SupplierReturnState {
 
 class SupplierReturnDeleteError extends SupplierReturnState {
   final String message;
+  final int? statusCode;
 
-  const SupplierReturnDeleteError(this.message);
+  const SupplierReturnDeleteError(this.message, {this.statusCode});
 
   @override
-  List<Object> get props => [message];
+  List<Object> get props => [message, statusCode ?? -1];
 }
 
 class SupplierReturnRestoreLoading extends SupplierReturnState {}
@@ -109,9 +113,10 @@ class SupplierReturnRestoreSuccess extends SupplierReturnState {
 
 class SupplierReturnRestoreError extends SupplierReturnState {
   final String message;
+  final int? statusCode;
 
-  const SupplierReturnRestoreError(this.message);
+  const SupplierReturnRestoreError(this.message, {this.statusCode});
 
   @override
-  List<Object> get props => [message];
+  List<Object> get props => [message, statusCode ?? -1];
 }

@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
+import '../../../../models/api_exception_model.dart';
 import 'supplier_return_event.dart';
 import 'supplier_return_state.dart';
 
@@ -30,7 +31,11 @@ class SupplierReturnBloc extends Bloc<SupplierReturnEvent, SupplierReturnState> 
         emit(SupplierReturnRestoreError('Не удалось восстановить документ'));
       }
     } catch (e) {
-      emit(SupplierReturnRestoreError('Ошибка при восстановлении документа: ${e.toString()}'));
+      if (e is ApiException) {
+        emit(SupplierReturnRestoreError('Ошибка при восстановлении документа: ${e.toString()}', statusCode: e.statusCode));
+      } else {
+        emit(SupplierReturnRestoreError('Ошибка при восстановлении документа: ${e.toString()}'));
+      }
     }
   }
 
@@ -68,7 +73,11 @@ class SupplierReturnBloc extends Bloc<SupplierReturnEvent, SupplierReturnState> 
         hasReachedMax: hasReachedMax,
       ));
     } catch (e) {
-      emit(SupplierReturnError(e.toString()));
+      if (e is ApiException) {
+        emit(SupplierReturnError(e.toString(), statusCode: e.statusCode));
+      } else {
+        emit(SupplierReturnError(e.toString()));
+      }
     }
   }
 
@@ -89,7 +98,11 @@ class SupplierReturnBloc extends Bloc<SupplierReturnEvent, SupplierReturnState> 
       await Future.delayed(const Duration(milliseconds: 100));
       emit(SupplierReturnCreateSuccess('Документ успешно создан'));
     } catch (e) {
-      emit(SupplierReturnCreateError(e.toString()));
+      if (e is ApiException) {
+        emit(SupplierReturnCreateError(e.toString(), statusCode: e.statusCode));
+      } else {
+        emit(SupplierReturnCreateError(e.toString()));
+      }
     }
   }
 
@@ -110,7 +123,11 @@ class SupplierReturnBloc extends Bloc<SupplierReturnEvent, SupplierReturnState> 
       await Future.delayed(const Duration(milliseconds: 100));
       emit(SupplierReturnUpdateSuccess('Документ успешно обновлен'));
     } catch (e) {
-      emit(SupplierReturnUpdateError(e.toString()));
+      if (e is ApiException) {
+        emit(SupplierReturnUpdateError(e.toString(), statusCode: e.statusCode));
+      } else {
+        emit(SupplierReturnUpdateError(e.toString()));
+      }
     }
   }
 
@@ -125,7 +142,11 @@ class SupplierReturnBloc extends Bloc<SupplierReturnEvent, SupplierReturnState> 
         emit(SupplierReturnDeleteError('Не удалось удалить документ'));
       }
     } catch (e) {
-      emit(SupplierReturnDeleteError('Ошибка при удалении документа: ${e.toString()}'));
+      if (e is ApiException) {
+        emit(SupplierReturnDeleteError('Ошибка при удалении документа: ${e.toString()}', statusCode: e.statusCode));
+      } else {
+        emit(SupplierReturnDeleteError('Ошибка при удалении документа: ${e.toString()}'));
+      }
     }
   }
 }

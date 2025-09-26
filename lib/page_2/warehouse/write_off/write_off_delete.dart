@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/write_off/write_off_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/page_2/money/widgets/error_dialog.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -14,6 +15,11 @@ class WriteOffDeleteDocumentDialog extends StatelessWidget {
     return BlocListener<WriteOffBloc, WriteOffState>(
       listener: (context, state) {
         if (state is WriteOffError) {
+          if (state.statusCode  == 409) {
+            final localizations = AppLocalizations.of(context)!;
+            showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+            return;
+          }
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
