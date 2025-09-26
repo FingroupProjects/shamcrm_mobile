@@ -1439,7 +1439,9 @@
   "mass_restore_success_message" : "Hujjatlar muvaffaqiyatli tiklandi",
   "toggle_approve_success_message" : "Status muvaffaqiyatli o‘zgartirildi",
   "document_updated_and_approve_toggled_successfully": "Hujjat muvaffaqiyatli yangilandi va status o‘zgartirildi",
-  "replace": "Almashtirish"
+  "replace": "Almashtirish",
+  "more_details": "Batafsil",
+  "top_selling_products": "Eng ko‘p sotilgan mahsulotlar"
 
 
 

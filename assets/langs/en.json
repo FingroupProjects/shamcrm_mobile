@@ -1434,7 +1434,10 @@
     "mass_restore_success_message" : "Documents restored successfully",
     "toggle_approve_success_message" : "Status changed successfully",
     "document_updated_and_approve_toggled_successfully": "Document updated and status changed successfully",
-    "replace": "Replace"
+    "replace": "Replace",
+    "more_details":"More details",
+    "top_selling_products":"Top selling products",
+    "appbar_sales_dashboard": "Dashboard"
 
 
 
