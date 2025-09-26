@@ -76,14 +76,14 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
         }
         
         if (existingIndex != -1) {
-          // Если товар уже есть, суммируем количество
-          int existingQuantity = _items[existingIndex]['quantity'] as int;
+          // Если товар уже есть, "обновляем" количество
+          //int existingQuantity = _items[existingIndex]['quantity'] as int;
           int newQuantity = newItem['quantity'] as int;
           
           _items[existingIndex] = <String, dynamic>{
             'id': _items[existingIndex]['id'],
             'name': _items[existingIndex]['name'],
-            'quantity': existingQuantity + newQuantity,
+            'quantity': newQuantity,
           };
         } else {
           // Если товара нет, добавляем новый
@@ -112,6 +112,7 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
       backgroundColor: Colors.transparent,
       builder: (context) => SimpleGoodsSelectionBottomSheet(
         existingItems: _items,
+        buttonText: AppLocalizations.of(context)!.translate('replace') ?? 'Заменить',
       ),
     );
 

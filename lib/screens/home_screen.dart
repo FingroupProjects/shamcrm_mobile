@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/page_2/dashboard/sales_dashboard_screen.dart';
 import 'package:crm_task_manager/page_2/goods/goods_screen.dart';
 import 'package:crm_task_manager/page_2/online_shop.dart';
 import 'package:crm_task_manager/page_2/order/order_screen.dart';
@@ -108,12 +109,33 @@ class _HomeScreenState extends State<HomeScreen> {
     inactiveIconsGroup1.add('assets/icons/MyNavBar/chats_OFF.png');
     hasAvailableScreens = true;
 
+
+    /// PAGE 2 ЭКРАНЫ (вторая группа)
+    bool hasDashboard2Access = true;
+    if (hasDashboard2Access) {
+      widgetsGroup2.add(SalesDashboardScreen());
+      titleKeysGroup2.add('appbar_sales_dashboard');
+      navBarTitleKeysGroup2.add('appbar_sales_dashboard');
+      activeIconsGroup2.add('assets/icons/MyNavBar/dashboard_ON.png');
+      inactiveIconsGroup2.add('assets/icons/MyNavBar/dashboard_OFF.png');
+      hasAvailableScreens = true;
+    }
+
+    // ИЗМЕНЕНО: Онлайн магазин (вместо отдельных Category, Goods, Orders)
+    // Проверяем, есть ли доступ к любой части онлайн магазина
+    bool hasOnlineStoreAccess = false;
+    if (await _apiService.hasPermission('product.read') || 
+        await _apiService.hasPermission('order.read')) {
+      hasOnlineStoreAccess = true;
+    }
+
     // ИЗМЕНЕННОЕ: Онлайн магазин - теперь проверяем hasMiniApp вместо permissions
     // Получаем сохраненное значение hasMiniApp из SharedPreferences
     SharedPreferences prefs = await SharedPreferences.getInstance();
     bool hasMiniApp = prefs.getBool('hasMiniApp') ?? false;
     
     print('HomeScreen: hasMiniApp value: $hasMiniApp'); // Для отладки
+
 
     if (hasMiniApp) {
       widgetsGroup2.add(OnlineStoreScreen());

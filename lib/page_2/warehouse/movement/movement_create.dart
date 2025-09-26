@@ -62,8 +62,8 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
         int existingIndex = _items.indexWhere((item) => item['id'] == newItem['id']);
         
         if (existingIndex != -1) {
-          // Если товар уже есть, суммируем количество
-          _items[existingIndex]['quantity'] += newItem['quantity'];
+          // Если товар уже есть, обновляем количество
+          _items[existingIndex]['quantity'] = newItem['quantity'];
         } else {
           // Если товара нет, добавляем новый
           _items.add({
@@ -106,6 +106,8 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
         backgroundColor: Colors.transparent,
         builder: (context) => SimpleGoodsSelectionBottomSheet(
           existingItems: _items,
+          // default text is 'Добавить'
+          buttonText: AppLocalizations.of(context)?.translate('replace') ?? 'Заменить',
         ),
       );
 

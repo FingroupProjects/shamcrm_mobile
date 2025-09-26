@@ -1428,22 +1428,21 @@
   "mass_delete_success_message": "Документы успешно удалены",
   "mass_restore_success_message" : "Документы успешно восстановлены",
   "toggle_approve_success_message" : "Статус успешно изменён",
-  "document_updated_and_approve_toggled_successfully": "Документ успешно обновлен и статус изменён"
-
- 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  "document_updated_and_approve_toggled_successfully": "Документ успешно обновлен и статус изменён",
+  "replace": "Заменить",
+  "more_details": "Подробнее",
+  "top_selling_products": "Топ продаваемых товаров",
+  "sales_dynamics": "Динамика продаж",
+  "net_profit": "Чистая прибыль",
+  "profitability_sales": "Рентабельность продаж",
+  "expense_structure": "Структура затрат",
+  "order_quantity": "Количество заказов",
+  "compare": "Сравнить",
+  "six_months": "6 месяцев",
+  "two_years": "2 года",
+  "current_month": "Текущий месяц",
+  "quarter": "Квартал",
+  "pending": "В ожидании",
+  "cancelled": "Отменено",
+  "appbar_sales_dashboard": "Дашборд"
 }
