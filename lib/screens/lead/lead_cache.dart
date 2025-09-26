@@ -291,9 +291,33 @@ class LeadCache {
   }
 
   // ДОПОЛНИТЕЛЬНЫЙ МЕТОД: Очистка только постоянных счетчиков (если нужна полная перезагрузка)
-  static Future<void> clearPersistentCounts() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_persistentLeadCountsKey);
-    print('LeadCache: Cleared persistent lead counts');
+static Future<void> clearPersistentCounts() async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  await prefs.remove(_persistentLeadCountsKey);
+  print('LeadCache: CLEARED ALL persistent lead counts - complete reset');
+}
+
+// НОВЫЙ МЕТОД: Полная радикальная очистка ВСЕХ данных без исключений
+static Future<void> clearEverything() async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  
+  // Получаем ВСЕ ключи в SharedPreferences
+  final keys = prefs.getKeys();
+  
+  // Находим ВСЕ ключи связанные с лидами (любые, которые начинаются с 'cached' или содержат 'lead')
+  final leadRelatedKeys = keys.where((key) => 
+    key.startsWith('cachedLeads_') || 
+    key == _cachedLeadStatusesKey || 
+    key == _persistentLeadCountsKey ||
+    key.toLowerCase().contains('lead') ||
+    key.startsWith('cached')
+  ).toList();
+
+  // Удаляем ВСЕ найденные ключи
+  for (var key in leadRelatedKeys) {
+    await prefs.remove(key);
   }
+  
+  print('LeadCache: RADICAL CLEAR - Removed ALL ${leadRelatedKeys.length} lead-related keys: $leadRelatedKeys');
+}
 }

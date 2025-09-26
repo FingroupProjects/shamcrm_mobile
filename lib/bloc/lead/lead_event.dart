@@ -241,3 +241,11 @@ class UpdateLeadStatusCount extends LeadEvent {
   UpdateLeadStatusCount(this.oldStatusId, this.newStatusId);
 }
 class RestoreCountsFromCache extends LeadEvent {}
+
+
+class RefreshCurrentStatus extends LeadEvent {
+  final int statusId;
+  final int? salesFunnelId;
+
+  RefreshCurrentStatus(this.statusId, {this.salesFunnelId});
+}

@@ -44,6 +44,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     on<UpdateLeadStatusEdit>(_updateLeadStatusEdit);
     on<FetchLeadStatus>(_fetchLeadStatus);
     on<RestoreCountsFromCache>(_restoreCountsFromCache);
+    on<RefreshCurrentStatus>(_refreshCurrentStatus);
   }
 
   Future<void> _fetchLeadStatus(FetchLeadStatus event, Emitter<LeadState> emit) async {
@@ -156,6 +157,8 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
 
 // Заменить метод _fetchLeadStatuses в LeadBloc на этот:
 
+// Полностью заменить метод _fetchLeadStatuses в LeadBloc на этот:
+
 Future<void> _fetchLeadStatuses(FetchLeadStatuses event, Emitter<LeadState> emit) async {
   print('LeadBloc: _fetchLeadStatuses - Starting with forceRefresh: ${event.forceRefresh}');
   emit(LeadLoading());
@@ -163,37 +166,64 @@ Future<void> _fetchLeadStatuses(FetchLeadStatuses event, Emitter<LeadState> emit
   try {
     List<LeadStatus> response;
 
-    // Если forceRefresh = true, игнорируем кэш и загружаем с сервера
+    // При forceRefresh = true делаем РАДИКАЛЬНУЮ перезагрузку
     if (event.forceRefresh) {
-      print('LeadBloc: Force refresh - loading from API');
+      print('LeadBloc: RADICAL REFRESH - loading everything from server, ignoring all cache');
+      
       if (!await _checkInternetConnection()) {
         emit(LeadError('Нет подключения к интернету для обновления данных'));
         return;
       }
+      
+      // РАДИКАЛЬНАЯ очистка всех локальных данных блока
+      _leadCounts.clear();
+      allLeadsFetched = false;
+      isFetching = false;
+      
+      // Сбрасываем все параметры фильтрации
+      _currentQuery = null;
+      _currentManagerIds = null;
+      _currentRegionIds = null;
+      _currentSourceIds = null;
+      _currentStatusId = null;
+      _currentFromDate = null;
+      _currentToDate = null;
+      _currentHasSuccessDeals = null;
+      _currentHasInProgressDeals = null;
+      _currentHasFailureDeals = null;
+      _currentHasNotices = null;
+      _currentHasContact = null;
+      _currentHasChat = null;
+      _currentHasNoReplies = null;
+      _currentHasUnreadMessages = null;
+      _currentHasDeal = null;
+      _currentDaysWithoutActivity = null;
+      _currentDirectoryValues = null;
+      
+      // Загружаем статусы с сервера
       response = await apiService.getLeadStatuses();
       
-      // При принудительном обновлении ПОЛНОСТЬЮ ПЕРЕЗАПИСЫВАЕМ кэш
-      await LeadCache.clearAllData(); // Очищаем ВСЕ данные
-      await LeadCache.cacheLeadStatuses(response); // Кэшируем новые статусы
+      // ПОЛНОСТЬЮ перезаписываем кэш новыми данными
+      await LeadCache.clearEverything(); // Используем радикальную очистку
+      await LeadCache.cacheLeadStatuses(response);
       
-      // Сбрасываем локальные счетчики и устанавливаем новые
-      _leadCounts.clear();
+      // Устанавливаем новые счетчики ТОЛЬКО из свежих данных API
       for (var status in response) {
         _leadCounts[status.id] = status.leadsCount;
         await LeadCache.setPersistentLeadCount(status.id, status.leadsCount);
       }
       
-      print('LeadBloc: Force refresh completed - new leadCounts: $_leadCounts');
+      print('LeadBloc: RADICAL REFRESH completed - fresh leadCounts from API: $_leadCounts');
       
     } else {
-      // Стандартная логика с использованием кэша
+      // Стандартная логика для обычной загрузки
       if (!await _checkInternetConnection()) {
-        print('LeadBloc: No internet connection, using cache');
+        print('LeadBloc: No internet connection, trying cache');
         final cachedStatuses = await LeadCache.getLeadStatuses();
         if (cachedStatuses.isNotEmpty) {
           final statuses = cachedStatuses.map((status) => LeadStatus.fromJson(status)).toList();
           
-          // Восстанавливаем ВСЕ постоянные счетчики
+          // Восстанавливаем счетчики из кэша
           _leadCounts.clear();
           final allPersistentCounts = await LeadCache.getPersistentLeadCounts();
           for (String statusIdStr in allPersistentCounts.keys) {
@@ -211,7 +241,7 @@ Future<void> _fetchLeadStatuses(FetchLeadStatuses event, Emitter<LeadState> emit
         return;
       }
 
-      // Сначала проверяем кэш
+      // Проверяем кэш
       final cachedStatuses = await LeadCache.getLeadStatuses();
       if (cachedStatuses.isNotEmpty) {
         print('LeadBloc: Using cached statuses');
@@ -222,20 +252,18 @@ Future<void> _fetchLeadStatuses(FetchLeadStatuses event, Emitter<LeadState> emit
         await LeadCache.cacheLeadStatuses(response);
       }
 
-      // КРИТИЧНО: Восстанавливаем постоянные счетчики, если они есть, иначе используем из API
+      // Восстанавливаем или устанавливаем счетчики
       _leadCounts.clear();
       final allPersistentCounts = await LeadCache.getPersistentLeadCounts();
       
       for (var status in response) {
         final statusIdStr = status.id.toString();
         
-        // Если есть постоянный счетчик - используем его, иначе - из API
         if (allPersistentCounts.containsKey(statusIdStr)) {
           _leadCounts[status.id] = allPersistentCounts[statusIdStr] ?? 0;
           print('LeadBloc: Using persistent count for status ${status.id}: ${_leadCounts[status.id]}');
         } else {
           _leadCounts[status.id] = status.leadsCount;
-          // Сохраняем как постоянный счетчик для будущего использования
           await LeadCache.setPersistentLeadCount(status.id, status.leadsCount);
           print('LeadBloc: Setting initial persistent count for status ${status.id}: ${status.leadsCount}');
         }
@@ -245,11 +273,14 @@ Future<void> _fetchLeadStatuses(FetchLeadStatuses event, Emitter<LeadState> emit
     print('LeadBloc: _fetchLeadStatuses - Final leadCounts: $_leadCounts');
     emit(LeadLoaded(response, leadCounts: Map.from(_leadCounts)));
 
-    // После загрузки статусов, загружаем лиды для первого статуса (если есть)
-    if (response.isNotEmpty) {
+    // При обычной загрузке автоматически загружаем лиды для первого статуса
+    // При forceRefresh НЕ загружаем автоматически - это будет делать LeadScreen вручную
+    if (response.isNotEmpty && !event.forceRefresh) {
       final firstStatusId = response.first.id;
-      print('LeadBloc: Loading leads for first status: $firstStatusId');
-      add(FetchLeads(firstStatusId, ignoreCache: event.forceRefresh));
+      print('LeadBloc: Auto-loading leads for first status: $firstStatusId');
+      add(FetchLeads(firstStatusId, ignoreCache: false));
+    } else if (event.forceRefresh) {
+      print('LeadBloc: ForceRefresh mode - NOT auto-loading leads, waiting for manual trigger');
     }
 
   } catch (e) {
@@ -552,11 +583,48 @@ if (event.duplicate != null) 'duplicate': event.duplicate, // Добавляем
   }
 }
 // Метод для очистки всех счетчиков (при смене воронки)
-Future<void> clearAllCountsAndCache() async {
-  _leadCounts.clear();
-  await LeadCache.clearAllLeads();
-  await LeadCache.clearLeadStatuses();
+// Заменить существующий метод clearAllCountsAndCache в LeadBloc на этот:
 
+/// РАДИКАЛЬНАЯ очистка - удаляет ВСЕ данные и сбрасывает состояние блока
+Future<void> clearAllCountsAndCache() async {
+  print('LeadBloc: RADICAL CLEAR - Clearing all counts, cache and resetting state');
+  
+  // Очищаем локальные переменные блока
+  _leadCounts.clear();
+  allLeadsFetched = false;
+  isFetching = false;
+  
+  // Сбрасываем все текущие параметры фильтрации
+  _currentQuery = null;
+  _currentManagerIds = null;
+  _currentRegionIds = null;
+  _currentSourceIds = null;
+  _currentStatusId = null;
+  _currentFromDate = null;
+  _currentToDate = null;
+  _currentHasSuccessDeals = null;
+  _currentHasInProgressDeals = null;
+  _currentHasFailureDeals = null;
+  _currentHasNotices = null;
+  _currentHasContact = null;
+  _currentHasChat = null;
+  _currentHasNoReplies = null;
+  _currentHasUnreadMessages = null;
+  _currentHasDeal = null;
+  _currentDaysWithoutActivity = null;
+  _currentDirectoryValues = null;
+  
+  // Радикальная очистка кэша
+  await LeadCache.clearEverything(); // Используем новый метод полной очистки
+  
+  print('LeadBloc: RADICAL CLEAR completed - all state reset to initial');
+}
+
+/// Дополнительный метод для принудительного сброса всех счетчиков
+Future<void> resetAllCounters() async {
+  _leadCounts.clear();
+  await LeadCache.clearPersistentCounts();
+  print('LeadBloc: Reset all counters to zero');
 }
 /// Вызывать перед переходом между табами
 Future<void> _preserveCurrentCounts() async {
@@ -600,5 +668,34 @@ Future<void> _restoreCountsFromCache(RestoreCountsFromCache event, Emitter<LeadS
     ));
   }
 }
+Future<void> _refreshCurrentStatus(RefreshCurrentStatus event, Emitter<LeadState> emit) async {
+  print('LeadBloc: _refreshCurrentStatus for statusId: ${event.statusId}');
+  
+  try {
+    if (await _checkInternetConnection()) {
+      // Принудительно загружаем лиды для указанного статуса с сервера
+      final leads = await apiService.getLeads(
+        event.statusId,
+        page: 1,
+        perPage: 20,
+        salesFunnelId: event.salesFunnelId,
+      );
 
+      // Кэшируем новые данные, ПЕРЕЗАПИСЫВАЯ старые
+      await LeadCache.cacheLeadsForStatus(event.statusId, leads);
+      
+      // Восстанавливаем все счетчики из постоянного кэша
+      await _restoreAllCounts();
+      
+      print('LeadBloc: _refreshCurrentStatus - Loaded ${leads.length} leads for status ${event.statusId}');
+      emit(LeadDataLoaded(leads, currentPage: 1, leadCounts: Map.from(_leadCounts)));
+    } else {
+      print('LeadBloc: _refreshCurrentStatus - No internet connection');
+      emit(LeadError('Нет подключения к интернету'));
+    }
+  } catch (e) {
+    print('LeadBloc: _refreshCurrentStatus - Error: $e');
+    emit(LeadError('Не удалось обновить данные статуса: $e'));
+  }
+}
 }
