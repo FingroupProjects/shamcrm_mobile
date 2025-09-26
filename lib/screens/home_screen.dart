@@ -14,6 +14,7 @@ import 'package:crm_task_manager/page_2/category/category_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // Добавляем для чтения hasMiniApp
 import '../page_2/money/money_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -108,6 +109,7 @@ class _HomeScreenState extends State<HomeScreen> {
     inactiveIconsGroup1.add('assets/icons/MyNavBar/chats_OFF.png');
     hasAvailableScreens = true;
 
+
     /// PAGE 2 ЭКРАНЫ (вторая группа)
     bool hasDashboard2Access = true;
     if (hasDashboard2Access) {
@@ -127,17 +129,25 @@ class _HomeScreenState extends State<HomeScreen> {
       hasOnlineStoreAccess = true;
     }
 
-    if (hasOnlineStoreAccess) {
+    // ИЗМЕНЕННОЕ: Онлайн магазин - теперь проверяем hasMiniApp вместо permissions
+    // Получаем сохраненное значение hasMiniApp из SharedPreferences
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool hasMiniApp = prefs.getBool('hasMiniApp') ?? false;
+    
+    print('HomeScreen: hasMiniApp value: $hasMiniApp'); // Для отладки
+
+
+    if (hasMiniApp) {
       widgetsGroup2.add(OnlineStoreScreen());
       titleKeysGroup2.add('appbar_online_store');
       navBarTitleKeysGroup2.add('appbar_online_store');
-      activeIconsGroup2.add('assets/icons/MyNavBar/category_ON.png'); // Используем иконку категории
+      activeIconsGroup2.add('assets/icons/MyNavBar/category_ON.png');
       inactiveIconsGroup2.add('assets/icons/MyNavBar/category_OFF.png');
       hasAvailableScreens = true;
     }
 
-    // НОВЫЙ: Учет склада
-    // Проверяем, есть ли доступ к складским операциям
+    // НОВЫЙ: Учет склада - тоже можем привязать к hasMiniApp или оставить на permissions
+    // Пока оставляю на permissions, но можно изменить логику по необходимости
     bool hasWarehouseAccess = false;
     if (await _apiService.hasPermission('product.read') || 
         await _apiService.hasPermission('order.read')) {
@@ -148,7 +158,7 @@ class _HomeScreenState extends State<HomeScreen> {
       widgetsGroup2.add(WarehouseAccountingScreen());
       titleKeysGroup2.add('appbar_warehouse');
       navBarTitleKeysGroup2.add('appbar_warehouse');
-      activeIconsGroup2.add('assets/icons/MyNavBar/goods_ON.png'); // Используем иконку товаров
+      activeIconsGroup2.add('assets/icons/MyNavBar/goods_ON.png');
       inactiveIconsGroup2.add('assets/icons/MyNavBar/goods_OFF.png');
       hasAvailableScreens = true;
     }
@@ -157,42 +167,8 @@ class _HomeScreenState extends State<HomeScreen> {
     widgetsGroup2.add(MoneyScreen());
     titleKeysGroup2.add('money');
     navBarTitleKeysGroup2.add('money');
-    activeIconsGroup2.add('assets/icons/MyNavBar/goods_ON.png'); // Добавьте иконку в assets
+    activeIconsGroup2.add('assets/icons/MyNavBar/goods_ON.png');
     inactiveIconsGroup2.add('assets/icons/MyNavBar/goods_OFF.png');
-
-
-    // Удаляем старые отдельные экраны (они теперь доступны через OnlineStoreScreen):
-    /*
-    // Категории 
-    if (await _apiService.hasPermission('product.read')) {
-      widgetsGroup2.add(CategoryScreen());
-      titleKeysGroup2.add('appbar_categories');
-      navBarTitleKeysGroup2.add('appbar_categories');
-      activeIconsGroup2.add('assets/icons/MyNavBar/category_ON.png');
-      inactiveIconsGroup2.add('assets/icons/MyNavBar/category_OFF.png');
-      hasAvailableScreens = true;
-    }
-    
-    if (await _apiService.hasPermission('product.read')) {
-      // Товары
-      widgetsGroup2.add(GoodsScreen());
-      titleKeysGroup2.add('appbar_goods');
-      navBarTitleKeysGroup2.add('appbar_goods');
-      activeIconsGroup2.add('assets/icons/MyNavBar/goods_ON.png');
-      inactiveIconsGroup2.add('assets/icons/MyNavBar/goods_OFF.png');
-      hasAvailableScreens = true;
-    }
-    
-    // Заказы
-    if (await _apiService.hasPermission('order.read')) {
-      widgetsGroup2.add(OrderScreen());
-      titleKeysGroup2.add('appbar_orders');
-      navBarTitleKeysGroup2.add('appbar_orders');
-      activeIconsGroup2.add('assets/icons/MyNavBar/order_off_2.png');
-      inactiveIconsGroup2.add('assets/icons/MyNavBar/order_on_2.png');
-      hasAvailableScreens = true;
-    }
-    */
 
     if (mounted) {
       setState(() {
@@ -282,4 +258,4 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-}
+} 

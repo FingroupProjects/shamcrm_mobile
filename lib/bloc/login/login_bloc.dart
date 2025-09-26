@@ -29,7 +29,12 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           
           final loginModel = LoginModel(login: event.login, password: event.password);
           final loginResponse = await apiService.login(loginModel);
-          emit(LoginLoaded(loginResponse.token, loginResponse.user));
+          
+          // НОВОЕ: Получаем hasMiniApp из ответа
+          // Предполагаем, что loginResponse содержит поле hasMiniApp
+          bool hasMiniApp = loginResponse.hasMiniApp ?? false;
+          
+          emit(LoginLoaded(loginResponse.token, loginResponse.user, hasMiniApp));
         } catch (e) {
           //print('LoginBloc: Ошибка входа: $e');
           emit(LoginError('Неправильный логин или пароль'));
