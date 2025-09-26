@@ -10,6 +10,8 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../money/widgets/error_dialog.dart';
+
 class MovementScreen extends StatefulWidget {
   const MovementScreen({super.key, this.organizationId});
   final int? organizationId;
@@ -210,6 +212,11 @@ class _MovementScreenState extends State<MovementScreen> {
                     // Безопасный показ SnackBar через addPostFrameCallback
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       if (mounted && context.mounted) {
+                        if (state.statusCode == 409) {
+                          final localizations = AppLocalizations.of(context)!;
+                          showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                          return;
+                        }
                         _showSnackBar(state.message, false);
                       }
                     });

@@ -12,6 +12,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
+import '../../money/widgets/error_dialog.dart';
+
 class CreateMovementDocumentScreen extends StatefulWidget {
   final int? organizationId;
 
@@ -356,6 +358,11 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
             setState(() => _isLoading = false);
             
             if (mounted) {
+              if (state.statusCode == 409) {
+                final localizations = AppLocalizations.of(context)!;
+                showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                return;
+              }
               _showSnackBar(state.message, false);
             }
           }

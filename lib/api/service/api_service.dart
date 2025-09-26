@@ -13291,13 +13291,17 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     try {
       final response = await _getRequest(path);
       if (response.statusCode == 200) {
-        final rawData = json.decode(response.body)['result']; // Как в JSON
+        final rawData = json.decode(response.body)['result'];
         return IncomingResponse.fromJson(rawData);
       } else {
-        throw Exception('Ошибка сервера: ${response.statusCode}');
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при получении данных перемещения!',
+          response.statusCode,
+        );
       }
     } catch (e) {
-      throw Exception('Ошибка получения данных перемещения: $e');
+      rethrow;
     }
   }
 
@@ -13315,10 +13319,14 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         final rawData = json.decode(response.body)['result'];
         return IncomingDocument.fromJson(rawData);
       } else {
-        throw Exception('Ошибка сервера: ${response.statusCode}');
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при получении данных перемещения!',
+          response.statusCode,
+        );
       }
     } catch (e) {
-      throw Exception('Ошибка получения данных документа: $e');
+      rethrow;
     }
   }
 
@@ -13350,24 +13358,29 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       return;
     } else {
       final message = _extractErrorMessageFromResponse(response);
-      throw message ?? 'Неизвестная ошибка';
+      throw ApiException(message ?? 'Неизвестная ошибка', response.statusCode);
     }
   }
 
   //deleteMovementDocument
   Future<void> deleteMovementDocument(int documentId) async {
-    final token = await getToken();
-    if (token == null) throw Exception('Токен не найден');
-    final body = {
-      'ids': [documentId]
-    };
-    final path = await _appendQueryParams('/movement-documents');
-    print('Удаление документа по пути: $path');
-    final response = await _deleteRequestWithBody(path, body);
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return;
-    } else {
-      throw Exception('Ошибка удаления документа: ${response.body}');
+    try {
+      final token = await getToken();
+      if (token == null) throw Exception('Токен не найден');
+      final body = {
+        'ids': [documentId]
+      };
+      final path = await _appendQueryParams('/movement-documents');
+      print('Удаление документа по пути: $path');
+      final response = await _deleteRequestWithBody(path, body);
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(message ?? 'Ошибка удаления документа', response.statusCode);
+      }
+    } catch (e) {
+      rethrow;
     }
   }
 
@@ -13380,36 +13393,41 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     required List<Map<String, dynamic>> documentGoods,
     required int organizationId,
   }) async {
-    final token = await getToken();
-    if (token == null) throw Exception('Токен не найден');
+    try {
+      final token = await getToken();
+      if (token == null) throw Exception('Токен не найден');
 
-    final path = await _appendQueryParams('/movement-documents/$documentId');
-    final uri = Uri.parse('$baseUrl$path');
+      final path = await _appendQueryParams('/movement-documents/$documentId');
+      final uri = Uri.parse('$baseUrl$path');
 
-    final body = jsonEncode({
-      'date': date,
-      'sender_storage_id': senderStorageId,
-      'recipient_storage_id': recipientStorageId,
-      'comment': comment,
-      'document_goods': documentGoods,
-      'organization_id': organizationId,
-    });
+      final body = jsonEncode({
+        'date': date,
+        'sender_storage_id': senderStorageId,
+        'recipient_storage_id': recipientStorageId,
+        'comment': comment,
+        'document_goods': documentGoods,
+        'organization_id': organizationId,
+      });
 
-    final response = await http.put(
-      uri,
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Device': 'mobile',
-      },
-      body: body,
-    );
+      final response = await http.put(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Device': 'mobile',
+        },
+        body: body,
+      );
 
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return;
-    } else {
-      throw Exception('Ошибка обновления документа: ${response.body}');
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(message ?? 'Ошибка обновления документа', response.statusCode);
+      }
+    } catch (e) {
+      rethrow;
     }
   }
 
@@ -13439,11 +13457,11 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       if (response.statusCode == 200 || response.statusCode == 201) {
         // Успешно проведен
       } else {
-        final jsonResponse = jsonDecode(response.body);
-        throw Exception(jsonResponse['message'] ?? 'Ошибка при проведении документа');
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(message ?? 'Ошибка при проведении документа', response.statusCode);
       }
     } catch (e) {
-      throw Exception('Ошибка проведения документа: $e');
+      rethrow;
     }
   }
 
@@ -13473,42 +13491,46 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       if (response.statusCode == 200 || response.statusCode == 201) {
         // Успешно отменено
       } else {
-        final jsonResponse = jsonDecode(response.body);
-        throw Exception(jsonResponse['message'] ?? 'Ошибка при отмене проведения документа');
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(message ?? 'Ошибка при отмене проведения документа', response.statusCode);
       }
     } catch (e) {
-      throw Exception('Ошибка отмены проведения документа: $e');
+      rethrow;
     }
   }
 
   // Восстановление документа перемещения
   Future<Map<String, dynamic>> restoreMovementDocument(int documentId) async {
-    final token = await getToken();
-    if (token == null) throw Exception('Токен не найден');
+    try {
+      final token = await getToken();
+      if (token == null) throw Exception('Токен не найден');
 
-    final pathWithParams = await _appendQueryParams('/movement-documents/restore');
-    final uri = Uri.parse('$baseUrl$pathWithParams');
+      final pathWithParams = await _appendQueryParams('/movement-documents/restore');
+      final uri = Uri.parse('$baseUrl$pathWithParams');
 
-    final body = jsonEncode({
-      'ids': [documentId],
-    });
+      final body = jsonEncode({
+        'ids': [documentId],
+      });
 
-    final response = await http.post(
-      uri,
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Device': 'mobile',
-      },
-      body: body,
-    );
+      final response = await http.post(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Device': 'mobile',
+        },
+        body: body,
+      );
 
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'result': 'Success'};
-    } else {
-      final jsonResponse = jsonDecode(response.body);
-      throw Exception(jsonResponse['message'] ?? 'Ошибка при восстановлении документа');
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {'result': 'Success'};
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(message ?? 'Ошибка при восстановлении документа', response.statusCode);
+      }
+    } catch (e) {
+      rethrow;
     }
   }
 

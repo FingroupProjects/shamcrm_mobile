@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import '../../../../models/api_exception_model.dart';
 import 'movement_event.dart';
 import 'movement_state.dart';
 
@@ -64,7 +65,11 @@ class MovementBloc extends Bloc<MovementEvent, MovementState> {
       }
     } catch (e) {
       if (!isClosed) {
-        emit(MovementError(e.toString()));
+        if (e is ApiException) {
+          emit(MovementError(e.toString(), statusCode: e.statusCode));
+        } else {
+          emit(MovementError(e.toString()));
+        }
       }
     }
   }
@@ -87,13 +92,17 @@ class MovementBloc extends Bloc<MovementEvent, MovementState> {
       if (isClosed) return;
 
       await Future.delayed(const Duration(milliseconds: 100));
-      
+
       if (!isClosed) {
         emit(MovementCreateSuccess('Документ успешно создан'));
       }
     } catch (e) {
       if (!isClosed) {
-        emit(MovementCreateError(e.toString()));
+        if (e is ApiException) {
+          emit(MovementCreateError(e.toString(), statusCode: e.statusCode));
+        } else {
+          emit(MovementCreateError(e.toString()));
+        }
       }
     }
   }
@@ -116,13 +125,17 @@ class MovementBloc extends Bloc<MovementEvent, MovementState> {
       if (isClosed) return;
 
       await Future.delayed(const Duration(milliseconds: 100));
-      
+
       if (!isClosed) {
         emit(MovementUpdateSuccess('Документ успешно обновлен'));
       }
     } catch (e) {
       if (!isClosed) {
-        emit(MovementUpdateError(e.toString()));
+        if (e is ApiException) {
+          emit(MovementUpdateError(e.toString(), statusCode: e.statusCode));
+        } else {
+          emit(MovementUpdateError(e.toString()));
+        }
       }
     }
   }
@@ -133,17 +146,21 @@ class MovementBloc extends Bloc<MovementEvent, MovementState> {
     emit(MovementDeleteLoading());
     try {
       await apiService.deleteMovementDocument(event.documentId);
-      
+
       if (isClosed) return;
 
       await Future.delayed(const Duration(milliseconds: 100));
-      
+
       if (!isClosed) {
         emit(MovementDeleteSuccess('Документ успешно удален'));
       }
     } catch (e) {
       if (!isClosed) {
-        emit(MovementDeleteError('Ошибка при удалении документа: ${e.toString()}'));
+        if (e is ApiException) {
+          emit(MovementDeleteError('Ошибка при удалении документа: ${e.toString()}', statusCode: e.statusCode));
+        } else {
+          emit(MovementDeleteError('Ошибка при удалении документа: ${e.toString()}'));
+        }
       }
     }
   }
@@ -154,12 +171,12 @@ class MovementBloc extends Bloc<MovementEvent, MovementState> {
     emit(MovementRestoreLoading());
     try {
       final result = await apiService.restoreMovementDocument(event.documentId);
-      
+
       if (isClosed) return;
 
       if (result['result'] == 'Success') {
         await Future.delayed(const Duration(milliseconds: 100));
-        
+
         if (!isClosed) {
           emit(MovementRestoreSuccess('Документ успешно восстановлен'));
         }
@@ -170,7 +187,11 @@ class MovementBloc extends Bloc<MovementEvent, MovementState> {
       }
     } catch (e) {
       if (!isClosed) {
-        emit(MovementRestoreError('Ошибка при восстановлении документа: ${e.toString()}'));
+        if (e is ApiException) {
+          emit(MovementRestoreError('Ошибка при восстановлении документа: ${e.toString()}', statusCode: e.statusCode));
+        } else {
+          emit(MovementRestoreError('Ошибка при восстановлении документа: ${e.toString()}'));
+        }
       }
     }
   }

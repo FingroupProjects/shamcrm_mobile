@@ -29,11 +29,12 @@ class MovementLoaded extends MovementState {
 
 class MovementError extends MovementState {
   final String message;
+  final int? statusCode;
 
-  const MovementError(this.message);
+  const MovementError(this.message, {this.statusCode});
 
   @override
-  List<Object> get props => [message];
+  List<Object> get props => [message, statusCode ?? -1];
 }
 
 class MovementCreateLoading extends MovementState {}
@@ -49,11 +50,12 @@ class MovementCreateSuccess extends MovementState {
 
 class MovementCreateError extends MovementState {
   final String message;
+  final int? statusCode;
 
-  const MovementCreateError(this.message);
+  const MovementCreateError(this.message, {this.statusCode});
 
   @override
-  List<Object> get props => [message];
+  List<Object> get props => [message, statusCode ?? -1];
 }
 
 class MovementUpdateLoading extends MovementState {}
@@ -69,11 +71,12 @@ class MovementUpdateSuccess extends MovementState {
 
 class MovementUpdateError extends MovementState {
   final String message;
+  final int? statusCode;
 
-  const MovementUpdateError(this.message);
+  const MovementUpdateError(this.message, {this.statusCode});
 
   @override
-  List<Object> get props => [message];
+  List<Object> get props => [message, statusCode ?? -1];
 }
 
 class MovementDeleteLoading extends MovementState {}
@@ -89,11 +92,12 @@ class MovementDeleteSuccess extends MovementState {
 
 class MovementDeleteError extends MovementState {
   final String message;
+  final int? statusCode;
 
-  const MovementDeleteError(this.message);
+  const MovementDeleteError(this.message, {this.statusCode});
 
   @override
-  List<Object> get props => [message];
+  List<Object> get props => [message, statusCode ?? -1];
 }
 
 class MovementRestoreLoading extends MovementState {}
@@ -109,9 +113,10 @@ class MovementRestoreSuccess extends MovementState {
 
 class MovementRestoreError extends MovementState {
   final String message;
+  final int? statusCode;
 
-  const MovementRestoreError(this.message);
+  const MovementRestoreError(this.message, {this.statusCode});
 
   @override
-  List<Object> get props => [message];
+  List<Object> get props => [message, statusCode ?? -1];
 }
