@@ -5,6 +5,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/document/supplier_return/suppl
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
+import 'package:crm_task_manager/page_2/money/widgets/error_dialog.dart';
 import 'package:crm_task_manager/page_2/warehouse/supplier_return_document/supplier_return_document_card_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -154,14 +155,29 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
                 _isInitialLoad = false;
                 _isLoadingMore = false;
               });
+              if (state.statusCode  == 409) {
+                final localizations = AppLocalizations.of(context)!;
+                showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                return;
+              }
               _showSnackBar(state.message, false);
             } else if (state is SupplierReturnCreateSuccess) {
               _showSnackBar(state.message, true);
             } else if (state is SupplierReturnCreateError) {
+              if (state.statusCode  == 409) {
+                final localizations = AppLocalizations.of(context)!;
+                showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                return;
+              }
               _showSnackBar(state.message, false);
             } else if (state is SupplierReturnUpdateSuccess) {
               _showSnackBar(state.message, true);
             } else if (state is SupplierReturnUpdateError) {
+              if (state.statusCode  == 409) {
+                final localizations = AppLocalizations.of(context)!;
+                showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                return;
+              }
               _showSnackBar(state.message, false);
             } else if (state is SupplierReturnDeleteSuccess) {
               _showSnackBar(state.message, true);
