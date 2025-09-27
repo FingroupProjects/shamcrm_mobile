@@ -1,6 +1,8 @@
 import 'package:crm_task_manager/models/page_2/dashboard/dashboard_goods_report.dart';
 import 'package:crm_task_manager/page_2/dashboard/detailed_report/cards/goods_card.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/goods/sales_dashboard_goods_bloc.dart';
 import 'cards/cash_balance_card.dart';
 import 'cards/our_debts_card.dart';
 import 'cards/owed_to_us_card.dart';
@@ -200,7 +202,10 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
   Widget _buildTabContent(String tabTitle) {
 
     if (tabTitle == 'Товары / Неликвидный товары') {
-      return GoodsContent();
+      return BlocProvider(
+        create: (context) => SalesDashboardGoodsBloc(),
+        child: GoodsContent(),
+      );
     }
 
     return SingleChildScrollView(
