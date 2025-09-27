@@ -16,6 +16,10 @@ class MessagingCubit extends Cubit<MessagingState> {
   Future<void> getMessages(int chatId, {String? search}) async {
     try {
       emit(MessagesLoadingState());
+      
+      // Проверяем инициализацию ApiService
+      await _ensureApiServiceInitialized();
+      
       final messages = await apiService.getMessages(chatId, search: search);
 
       List<Message> pinnedMessages = [];
@@ -31,16 +35,120 @@ class MessagingCubit extends Cubit<MessagingState> {
         emit(MessagesLoadedState(messages: messages));
       }
     } catch (e) {
+      debugPrint('MessagingCubit: getMessages error: $e');
       emit(MessagesErrorState(error: e.toString()));
     }
   }
-Future<void> syncMessagesInBackground(int chatId) async {
+
+  Future<void> getMessagesWithFallback(int chatId, {String? search}) async {
+    emit(MessagesLoadingState());
+    
+    try {
+      // Основная попытка загрузки
+      await _ensureApiServiceInitialized();
+      final messages = await apiService.getMessages(chatId, search: search);
+
+      List<Message> pinnedMessages = [];
+      for (var message in messages) {
+        if (message.isPinned) {
+          pinnedMessages.add(message);
+        }
+      }
+
+      if (pinnedMessages.isNotEmpty) {
+        emit(PinnedMessagesState(pinnedMessages: pinnedMessages, messages: messages));
+      } else {
+        emit(MessagesLoadedState(messages: messages));
+      }
+      
+      debugPrint('MessagingCubit: Successfully loaded ${messages.length} messages');
+    } catch (e) {
+      debugPrint('MessagingCubit: Primary getMessages failed: $e');
+      
+      // Если ошибка связана с URL, пытаемся инициализировать заново
+      if (_isUrlError(e.toString())) {
+        debugPrint('MessagingCubit: URL error detected, attempting recovery...');
+        
+        try {
+          // Попытка 1: Принудительная инициализация
+          await apiService.initialize();
+          final messages = await apiService.getMessages(chatId, search: search);
+          
+          List<Message> pinnedMessages = [];
+          for (var message in messages) {
+            if (message.isPinned) {
+              pinnedMessages.add(message);
+            }
+          }
+
+          if (pinnedMessages.isNotEmpty) {
+            emit(PinnedMessagesState(pinnedMessages: pinnedMessages, messages: messages));
+          } else {
+            emit(MessagesLoadedState(messages: messages));
+          }
+          
+          debugPrint('MessagingCubit: Recovery attempt successful!');
+          return;
+        } catch (e2) {
+          debugPrint('MessagingCubit: Recovery attempt failed: $e2');
+        }
+        
+        // Показываем частичную ошибку с возможностью повтора
+        emit(MessagesPartialErrorState(
+          error: 'Проблема с подключением к серверу. Проверьте настройки домена.',
+          canRetry: true
+        ));
+      } else {
+        // Для других ошибок показываем стандартное сообщение
+        emit(MessagesErrorState(error: _getReadableError(e.toString())));
+      }
+    }
+  }
+
+  // Вспомогательный метод для обеспечения инициализации ApiService
+  Future<void> _ensureApiServiceInitialized() async {
+    try {
+      // Проверяем, инициализирован ли baseUrl
+      final baseUrl = await apiService.getDynamicBaseUrl();
+      if (baseUrl.isEmpty || baseUrl == 'null') {
+        debugPrint('MessagingCubit: BaseURL empty, forcing initialization');
+        await apiService.initialize();
+      }
+    } catch (e) {
+      debugPrint('MessagingCubit: Error ensuring API initialization: $e');
+      throw Exception('Не удалось инициализировать подключение к серверу');
+    }
+  }
+
+  // Проверяет, связана ли ошибка с URL
+  bool _isUrlError(String error) {
+    return error.contains('No host specified in URI null') || 
+           error.contains('Base URL is not initialized') ||
+           error.contains('Домен не установлен') ||
+           error.contains('type \'Null\' is not a subtype of type \'String\'');
+  }
+
+  // Преобразует техническую ошибку в понятную пользователю
+  String _getReadableError(String error) {
+    if (error.contains('type \'Null\' is not a subtype of type \'String\'')) {
+      return 'Ошибка обработки данных с сервера';
+    }
+    if (error.contains('No host specified in URI null')) {
+      return 'Проблема с настройками подключения';
+    }
+    return error;
+  }
+
+  void showEmptyChat() {
+    emit(MessagesLoadedState(messages: []));
+    debugPrint('MessagingCubit: Showing empty chat interface');
+  }
+
+  Future<void> syncMessagesInBackground(int chatId) async {
     try {
       final messages = await apiService.getMessages(chatId);
       if (state is MessagesLoadedState) {
-        // Обновляем сообщения только если текущее состояние MessagesLoadedState
         final currentMessages = (state as MessagesLoadedState).messages;
-        // Обновляем только новые или изменённые сообщения
         final updatedMessages = _mergeMessages(currentMessages, messages);
         emit(MessagesLoadedState(messages: updatedMessages));
         debugPrint('MessagingCubit: Synced messages in background, new count: ${updatedMessages.length}');
@@ -49,22 +157,23 @@ Future<void> syncMessagesInBackground(int chatId) async {
       debugPrint('Error syncing messages in background: $e, StackTrace: $stackTrace');
     }
   }
-void addLocalMessage(Message message) {
-  if (state is MessagesLoadedState) {
-    final currentState = state as MessagesLoadedState;
-    final messages = List<Message>.from(currentState.messages);
-    messages.insert(0, message);
-    emit(MessagesLoadedState(messages: messages));
-  } else if (state is PinnedMessagesState) {
-    final currentState = state as PinnedMessagesState;
-    final messages = List<Message>.from(currentState.messages);
-    messages.insert(0, message);
-    emit(PinnedMessagesState(
-      pinnedMessages: currentState.pinnedMessages, 
-      messages: messages,
-    ));
+
+  void addLocalMessage(Message message) {
+    if (state is MessagesLoadedState) {
+      final currentState = state as MessagesLoadedState;
+      final messages = List<Message>.from(currentState.messages);
+      messages.insert(0, message);
+      emit(MessagesLoadedState(messages: messages));
+    } else if (state is PinnedMessagesState) {
+      final currentState = state as PinnedMessagesState;
+      final messages = List<Message>.from(currentState.messages);
+      messages.insert(0, message);
+      emit(PinnedMessagesState(
+        pinnedMessages: currentState.pinnedMessages, 
+        messages: messages,
+      ));
+    }
   }
-}
 
   void addMessageFormSocket(Message message) {
     if (state is MessagesLoadedState) {
@@ -81,87 +190,88 @@ void addLocalMessage(Message message) {
     }
   }
 
-void updateMessageFromSocket(Message updatedMessage) {
-  if (state is MessagesLoadedState) {
-    final currentState = state as MessagesLoadedState;
-    final messages = List<Message>.from(currentState.messages);
+  void updateMessageFromSocket(Message updatedMessage) {
+    if (state is MessagesLoadedState) {
+      final currentState = state as MessagesLoadedState;
+      final messages = List<Message>.from(currentState.messages);
 
-    final localMessageIndex = messages.indexWhere((msg) => msg.id < 0);
+      final localMessageIndex = messages.indexWhere((msg) => msg.id < 0);
 
-    if (localMessageIndex != -1) {
-      messages[localMessageIndex] = updatedMessage;
-      emit(MessagesLoadedState(messages: messages));
-    } else {
-      final index = messages.indexWhere((msg) => msg.id == updatedMessage.id);
-      if (index != -1) {
-        messages[index] = updatedMessage;
+      if (localMessageIndex != -1) {
+        messages[localMessageIndex] = updatedMessage;
         emit(MessagesLoadedState(messages: messages));
       } else {
-        messages.insert(0, updatedMessage);
-        emit(MessagesLoadedState(messages: messages));
+        final index = messages.indexWhere((msg) => msg.id == updatedMessage.id);
+        if (index != -1) {
+          messages[index] = updatedMessage;
+          emit(MessagesLoadedState(messages: messages));
+        } else {
+          messages.insert(0, updatedMessage);
+          emit(MessagesLoadedState(messages: messages));
+        }
       }
-    }
-  } else if (state is PinnedMessagesState) {
-    final currentState = state as PinnedMessagesState;
-    final messages = List<Message>.from(currentState.messages);
+    } else if (state is PinnedMessagesState) {
+      final currentState = state as PinnedMessagesState;
+      final messages = List<Message>.from(currentState.messages);
 
-    final localMessageIndex = messages.indexWhere((msg) => msg.id < 0);
+      final localMessageIndex = messages.indexWhere((msg) => msg.id < 0);
 
-    if (localMessageIndex != -1) {
-      messages[localMessageIndex] = updatedMessage;
-      emit(PinnedMessagesState(
-        pinnedMessages: currentState.pinnedMessages,
-        messages: messages,
-      ));
-    } else {
-      final index = messages.indexWhere((msg) => msg.id == updatedMessage.id);
-      if (index != -1) {
-        messages[index] = updatedMessage;
+      if (localMessageIndex != -1) {
+        messages[localMessageIndex] = updatedMessage;
         emit(PinnedMessagesState(
           pinnedMessages: currentState.pinnedMessages,
           messages: messages,
         ));
       } else {
-        messages.insert(0, updatedMessage);
-        emit(PinnedMessagesState(
-          pinnedMessages: currentState.pinnedMessages,
-          messages: messages,
-        ));
+        final index = messages.indexWhere((msg) => msg.id == updatedMessage.id);
+        if (index != -1) {
+          messages[index] = updatedMessage;
+          emit(PinnedMessagesState(
+            pinnedMessages: currentState.pinnedMessages,
+            messages: messages,
+          ));
+        } else {
+          messages.insert(0, updatedMessage);
+          emit(PinnedMessagesState(
+            pinnedMessages: currentState.pinnedMessages,
+            messages: messages,
+          ));
+        }
       }
-    }
-  } else if (state is EditingMessageState) {
-    final currentState = state as EditingMessageState;
-    final messages = List<Message>.from(currentState.messages);
+    } else if (state is EditingMessageState) {
+      final currentState = state as EditingMessageState;
+      final messages = List<Message>.from(currentState.messages);
 
-    final localMessageIndex = messages.indexWhere((msg) => msg.id < 0);
+      final localMessageIndex = messages.indexWhere((msg) => msg.id < 0);
 
-    if (localMessageIndex != -1) {
-      messages[localMessageIndex] = updatedMessage;
-      emit(EditingMessageState(
-        editingMessage: currentState.editingMessage,
-        messages: messages,
-        pinnedMessages: currentState.pinnedMessages,
-      ));
-    } else {
-      final index = messages.indexWhere((msg) => msg.id == updatedMessage.id);
-      if (index != -1) {
-        messages[index] = updatedMessage;
+      if (localMessageIndex != -1) {
+        messages[localMessageIndex] = updatedMessage;
         emit(EditingMessageState(
           editingMessage: currentState.editingMessage,
           messages: messages,
           pinnedMessages: currentState.pinnedMessages,
         ));
       } else {
-        messages.insert(0, updatedMessage);
-        emit(EditingMessageState(
-          editingMessage: currentState.editingMessage,
-          messages: messages,
-          pinnedMessages: currentState.pinnedMessages,
-        ));
+        final index = messages.indexWhere((msg) => msg.id == updatedMessage.id);
+        if (index != -1) {
+          messages[index] = updatedMessage;
+          emit(EditingMessageState(
+            editingMessage: currentState.editingMessage,
+            messages: messages,
+            pinnedMessages: currentState.pinnedMessages,
+          ));
+        } else {
+          messages.insert(0, updatedMessage);
+          emit(EditingMessageState(
+            editingMessage: currentState.editingMessage,
+            messages: messages,
+            pinnedMessages: currentState.pinnedMessages,
+          ));
+        }
       }
     }
   }
-}
+
   void startEditingMessage(Message message) {
     _editingMessage = message;
     if (state is MessagesLoadedState) {
@@ -206,23 +316,23 @@ void updateMessageFromSocket(Message updatedMessage) {
     }
   }
 
-void setReplyMessage(Message message) {
-  if (state is MessagesLoadedState || state is PinnedMessagesState) {
-    final messages = (state is MessagesLoadedState)
-        ? (state as MessagesLoadedState).messages
-        : (state as PinnedMessagesState).messages;
-    final pinnedMessages = (state is PinnedMessagesState)
-        ? (state as PinnedMessagesState).pinnedMessages
-        : <Message>[];
-    emit(
-      ReplyingToMessageState(
-        replyingMessage: message,
-        messages: messages,
-        pinnedMessages: pinnedMessages,
-      ),
-    );
+  void setReplyMessage(Message message) {
+    if (state is MessagesLoadedState || state is PinnedMessagesState) {
+      final messages = (state is MessagesLoadedState)
+          ? (state as MessagesLoadedState).messages
+          : (state as PinnedMessagesState).messages;
+      final pinnedMessages = (state is PinnedMessagesState)
+          ? (state as PinnedMessagesState).pinnedMessages
+          : <Message>[];
+      emit(
+        ReplyingToMessageState(
+          replyingMessage: message,
+          messages: messages,
+          pinnedMessages: pinnedMessages,
+        ),
+      );
+    }
   }
-}
 
   void clearReplyMessage() {
     if (state is ReplyingToMessageState) {
@@ -239,30 +349,22 @@ void setReplyMessage(Message message) {
 
   void pinMessage(Message message) {
     if (state is MessagesLoadedState) {
-      // final messages = (state as MessagesLoadedState).messages;
-      // final pinnedMessages = [message];
-      // emit(PinnedMessagesState(pinnedMessages: pinnedMessages, messages: messages));
       apiService.pinMessage(message.id.toString());
     } else if (state is PinnedMessagesState) {
-      // final currentState = state as PinnedMessagesState;
-      // final messages = currentState.messages;
-      // final pinnedMessages = List<Message>.from(currentState.pinnedMessages)..add(message);
-      // emit(PinnedMessagesState(pinnedMessages: pinnedMessages, messages: messages));
       apiService.pinMessage(message.id.toString());
     }
   }
   
   void updatePinnedMessages(List<Message> updatedPinnedMessages) {
-  if (state is MessagesLoadedState) {
-    final messages = (state as MessagesLoadedState).messages;
-    emit(PinnedMessagesState(pinnedMessages: updatedPinnedMessages, messages: messages));
-  } else if (state is PinnedMessagesState) {
-    final currentState = state as PinnedMessagesState;
-    final messages = currentState.messages;
-    emit(PinnedMessagesState(pinnedMessages: updatedPinnedMessages, messages: messages));
+    if (state is MessagesLoadedState) {
+      final messages = (state as MessagesLoadedState).messages;
+      emit(PinnedMessagesState(pinnedMessages: updatedPinnedMessages, messages: messages));
+    } else if (state is PinnedMessagesState) {
+      final currentState = state as PinnedMessagesState;
+      final messages = currentState.messages;
+      emit(PinnedMessagesState(pinnedMessages: updatedPinnedMessages, messages: messages));
+    }
   }
-}
-
 
   void unpinMessage(Message message) {
     if (state is PinnedMessagesState) {
@@ -292,19 +394,19 @@ void setReplyMessage(Message message) {
     }
   }
 
-void unpinMessageFromSocket(int messageId) {
-  if (state is PinnedMessagesState) {
-    final currentState = state as PinnedMessagesState;
-    final messages = currentState.messages;
-    final pinnedMessages = List<Message>.from(currentState.pinnedMessages)
-      ..removeWhere((msg) => msg.id == messageId);
-    if (pinnedMessages.isEmpty) {
-      emit(MessagesLoadedState(messages: messages));
-    } else {
-      emit(PinnedMessagesState(pinnedMessages: pinnedMessages, messages: messages));
+  void unpinMessageFromSocket(int messageId) {
+    if (state is PinnedMessagesState) {
+      final currentState = state as PinnedMessagesState;
+      final messages = currentState.messages;
+      final pinnedMessages = List<Message>.from(currentState.pinnedMessages)
+        ..removeWhere((msg) => msg.id == messageId);
+      if (pinnedMessages.isEmpty) {
+        emit(MessagesLoadedState(messages: messages));
+      } else {
+        emit(PinnedMessagesState(pinnedMessages: pinnedMessages, messages: messages));
+      }
     }
   }
-}
 
   void updateMessageReadStatusFromSocket(Map readData) {
     if (state is MessagesLoadedState || state is PinnedMessagesState || state is EditingMessageState) {
@@ -364,16 +466,15 @@ void unpinMessageFromSocket(int messageId) {
       }
     }
   }
-List<Message> _mergeMessages(List<Message> currentMessages, List<Message> newMessages) {
+
+  List<Message> _mergeMessages(List<Message> currentMessages, List<Message> newMessages) {
     final merged = <Message>[];
     final currentMap = {for (var msg in currentMessages) msg.id: msg};
 
-    // Добавляем новые сообщения и обновляем существующие
     for (var newMsg in newMessages) {
       currentMap[newMsg.id] = newMsg;
     }
 
-    // Преобразуем в список и сортируем по времени (если есть createMessateTime)
     merged.addAll(currentMap.values);
     merged.sort((a, b) => (b.createMessateTime ?? '').compareTo(a.createMessateTime ?? ''));
     return merged;

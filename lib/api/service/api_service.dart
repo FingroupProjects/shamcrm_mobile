@@ -197,33 +197,56 @@ String? _extractErrorMessageFromResponse(http.Response response) {
     }
   }
 
-  Future<void> initialize() async {
+ Future<void> initialize() async {
+  try {
+    debugPrint('ApiService: Starting initialization');
+    
+    // Получаем базовый URL
+    String dynamicBaseUrl = await getDynamicBaseUrl();
+    
+    // Проверяем что URL валидный
+    if (dynamicBaseUrl.isEmpty || dynamicBaseUrl.contains('null')) {
+      throw Exception('Получен недействительный базовый URL: $dynamicBaseUrl');
+    }
+    
+    baseUrl = dynamicBaseUrl;
+    debugPrint('ApiService: Initialized with baseUrl: $baseUrl');
+    
+  } catch (e) {
+    debugPrint('ApiService: initialize error: $e');
+    
+    // Пытаемся установить fallback значения
     try {
+      await _setFallbackDomain();
       baseUrl = await getDynamicBaseUrl();
-      if (baseUrl == null) {
-        // Fallback: пробуем domain/mainDomain
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        String? domain =
-            prefs.getString('enteredDomain') ?? prefs.getString('domain');
-        String? mainDomain = prefs.getString('enteredMainDomain') ??
-            prefs.getString('mainDomain');
-        if (domain != null && mainDomain != null) {
-          baseUrl = 'https://$domain-back.$mainDomain/api';
-          if (kDebugMode) {
-            print('ApiService: initialize - Fallback baseUrl: $baseUrl');
-          }
-        } else {
-          if (kDebugMode) {
-            print('ApiService: initialize - Warning: baseUrl is null');
-          }
-        }
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print('ApiService: initialize - Error: $e');
-      }
+      debugPrint('ApiService: Fallback initialization successful: $baseUrl');
+    } catch (fallbackError) {
+      debugPrint('ApiService: Fallback initialization failed: $fallbackError');
+      throw Exception('Не удалось инициализировать ApiService: $e');
     }
   }
+}
+// Вспомогательный метод для установки резервного домена
+Future<void> _setFallbackDomain() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  
+  // Проверяем, есть ли сохраненные данные пользователя
+  String? userId = prefs.getString('userID');
+  String? token = prefs.getString('token');
+  
+  if (userId != null && token != null) {
+    // Используем базовые значения для восстановления подключения
+    String fallbackMainDomain = 'shamcrm.com';
+    String fallbackDomain = 'default'; // Замените на реальный домен организации
+    
+    await prefs.setString('enteredMainDomain', fallbackMainDomain);
+    await prefs.setString('enteredDomain', fallbackDomain);
+    
+    debugPrint('ApiService: Set fallback domain: $fallbackDomain-back.$fallbackMainDomain');
+  } else {
+    throw Exception('Нет данных для восстановления подключения');
+  }
+}
 
   // Инициализация API с доменом из QR-кода
   Future<void> initializeWithDomain(String domain, String mainDomain) async {
@@ -236,30 +259,36 @@ String? _extractErrorMessageFromResponse(http.Response response) {
     await prefs.setString('mainDomain', mainDomain);
   }
 
-  Future<String> getDynamicBaseUrl() async {
+Future<String> getDynamicBaseUrl() async {
+  try {
     // Сначала пробуем новую логику с email
     String? verifiedDomain = await getVerifiedDomain();
-    if (verifiedDomain != null && verifiedDomain.isNotEmpty) {
+    if (verifiedDomain != null && verifiedDomain.isNotEmpty && verifiedDomain != 'null') {
       return 'https://$verifiedDomain/api';
     }
 
     // Проверяем QR данные
     String? qrDomain = await _getQrDomain();
-    if (qrDomain != null) {
+    if (qrDomain != null && qrDomain.isNotEmpty && qrDomain != 'null') {
       return 'https://$qrDomain/api';
     }
 
-    // Если нет, используем старую логику для обратной совместимости
+    // Используем старую логику для обратной совместимости
     Map<String, String?> domains = await getEnteredDomain();
     String? mainDomain = domains['enteredMainDomain'];
     String? domain = domains['enteredDomain'];
 
-    if (domain != null && domain.isNotEmpty) {
+    if (domain != null && domain.isNotEmpty && domain != 'null' && 
+        mainDomain != null && mainDomain.isNotEmpty && mainDomain != 'null') {
       return 'https://$domain-back.$mainDomain/api';
     } else {
-      throw Exception('Домен не установлен');
+      throw Exception('Домен не установлен или содержит недействительные значения');
     }
+  } catch (e) {
+    debugPrint('getDynamicBaseUrl error: $e');
+    throw Exception('Не удалось определить базовый URL: $e');
   }
+}
 
   Future<String> getSocketBaseUrl() async {
     // Сначала пробуем новую логику с email
@@ -5393,7 +5422,21 @@ Future<List<Deal>> getDeals(
       rethrow;
     }
   }
+Future<String> getDynamicBaseUrlFixed() async {
+  // Сначала проверяем кешированное значение
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  String? cachedBaseUrl = prefs.getString('cached_base_url');
+  
+  if (cachedBaseUrl != null && cachedBaseUrl.isNotEmpty && cachedBaseUrl != 'null') {
+    if (kDebugMode) {
+      print('ApiService: Using cached baseUrl: $cachedBaseUrl');
+    }
+    return cachedBaseUrl;
+  }
 
+  // Если кеша нет, используем старую логику
+  return await getDynamicBaseUrl();
+}
   Future<ChatsGetId> getChatById(int chatId) async {
     final token = await getToken();
     String path = '/v2/chat/$chatId';
@@ -5461,20 +5504,26 @@ Future<List<Deal>> getDeals(
   }
 
 // Метод для получения сообщений по chatId
-  Future<List<Message>> getMessages(
-    int chatId, {
-    String? search,
-  }) async {
+Future<List<Message>> getMessages(
+  int chatId, {
+  String? search,
+}) async {
+  try {
     final token = await getToken();
-    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    
+    // Проверяем инициализацию baseUrl
+    if (baseUrl == null || baseUrl!.isEmpty || baseUrl == 'null') {
+      await initialize();
+      if (baseUrl == null || baseUrl!.isEmpty || baseUrl == 'null') {
+        throw Exception('Base URL не может быть инициализирован');
+      }
+    }
+    
     String path = '/v2/chat/getMessages/$chatId';
     path = await _appendQueryParams(path);
-    if (kDebugMode) {
-      //print('ApiService: getMessages - Generated path: $path');
-    }
-
+    
     if (search != null && search.isNotEmpty) {
-      path += '&search=$search';
+      path += '&search=${Uri.encodeComponent(search)}';
     }
 
     final response = await http.get(
@@ -5482,22 +5531,41 @@ Future<List<Deal>> getDeals(
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
     );
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       if (data['result'] != null) {
-        return (data['result'] as List)
-            .map((msg) => Message.fromJson(msg))
-            .toList();
+        final List<dynamic> messagesList = data['result'] as List<dynamic>;
+        return messagesList.map((msgData) {
+          try {
+            return Message.fromJson(msgData as Map<String, dynamic>);
+          } catch (e) {
+            debugPrint('Error parsing message: $e, data: $msgData');
+            // Возвращаем пустое сообщение с базовыми полями
+            return Message(
+              id: msgData['id'] ?? -1,
+              text: msgData['text']?.toString() ?? 'Ошибка загрузки сообщения',
+              type: msgData['type']?.toString() ?? 'text',
+              createMessateTime: msgData['created_at']?.toString() ?? DateTime.now().toIso8601String(),
+              isMyMessage: false,
+              senderName: msgData['sender']?['name']?.toString() ?? 'Неизвестный отправитель',
+            );
+          }
+        }).toList();
       } else {
         throw Exception('Результат отсутствует в ответе');
       }
     } else {
-      throw Exception('Ошибка ${response.statusCode}!');
+      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
     }
+  } catch (e) {
+    debugPrint('ApiService.getMessages error: $e');
+    rethrow;
   }
+}
 
   Future<void> closeChatSocket(int chatId) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
@@ -6330,64 +6398,43 @@ Future<List<Deal>> getDeals(
   } // Упрощённый метод для получения интеграции лида (теперь не нужен отдельный класс IntegrationForLead)
 
 // Новый метод для получения чата по ID с интеграцией
-  Future<ChatById> getChatByIdWithIntegration(int chatId) async {
+ Future<ChatsGetId> getChatByIdWithIntegration(int chatId) async {
+  try {
     final token = await getToken();
+    
+    if (baseUrl == null || baseUrl!.isEmpty || baseUrl == 'null') {
+      await initialize();
+    }
+    
     String path = '/v2/chat/$chatId';
     path = await _appendQueryParams(path);
 
-    if (kDebugMode) {
-      //print('ApiService: getChatByIdWithIntegration - Generated path: $path');
-    }
+    final response = await http.get(
+      Uri.parse('$baseUrl$path'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'User-Agent': 'FlutterApp/1.0',
+        'Cache-Control': 'no-cache',
+      },
+    );
 
-    final fullUrl = '$baseUrl$path';
-    if (kDebugMode) {
-      //print('ApiService: getChatByIdWithIntegration - Requesting URL: $fullUrl');
-    }
-
-    try {
-      final response = await http.get(
-        Uri.parse(fullUrl),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'User-Agent': 'FlutterApp/1.0',
-          'Cache-Control': 'no-cache',
-        },
-      );
-
-      if (kDebugMode) {
-        //print('ApiService: getChatByIdWithIntegration - Response status: ${response.statusCode}');
-        //print('ApiService: getChatByIdWithIntegration - Response body: ${response.body}');
-      }
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['result'] != null) {
-          final chatById = ChatById.fromJson(data['result']);
-          if (kDebugMode) {
-            //print('ApiService: getChatByIdWithIntegration - Successfully parsed: $chatById');
-          }
-          return chatById;
-        } else {
-          if (kDebugMode) {
-            //print('ApiService: getChatByIdWithIntegration - No result found in response');
-          }
-          throw Exception('Результат отсутствует в ответе');
-        }
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['result'] != null) {
+        return ChatsGetId.fromJson(data['result']);
       } else {
-        if (kDebugMode) {
-          //print('ApiService: getChatByIdWithIntegration - Error ${response.statusCode}: ${response.body}');
-        }
-        throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+        throw Exception('Результат отсутствует в ответе');
       }
-    } catch (e) {
-      if (kDebugMode) {
-        //print('ApiService: getChatByIdWithIntegration - Exception caught: $e');
-      }
-      rethrow;
+    } else {
+      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
     }
+  } catch (e) {
+    debugPrint('getChatByIdWithIntegration error: $e');
+    rethrow;
   }
+}
 
   Future<String> readMessages(int chatId, int messageId) async {
     final token = await getToken();
@@ -6468,13 +6515,25 @@ Future<List<Deal>> getDeals(
   }
 
 // Сохранение выбранной организации
+// Исправленный метод для получения организации с fallback
 Future<String?> getSelectedOrganization() async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  final orgId = prefs.getString('selectedOrganization');
-  if (kDebugMode) {
-    print('ApiService: getSelectedOrganization - orgId: $orgId');
+  try {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? organizationId = prefs.getString('selectedOrganization');
+    
+    debugPrint('ApiService: getSelectedOrganization - orgId: $organizationId');
+    
+    // Возвращаем null если организация не найдена или содержит 'null'
+    if (organizationId == null || organizationId.isEmpty || organizationId == 'null') {
+      debugPrint('ApiService: No valid organization found, using fallback');
+      return '1'; // Дефолтная организация
+    }
+    
+    return organizationId;
+  } catch (e) {
+    debugPrint('getSelectedOrganization error: $e');
+    return '1'; // Fallback значение
   }
-  return orgId;
 }
 
 Future<void> saveSelectedOrganization(String organizationId) async {
@@ -6664,51 +6723,32 @@ Future<void> _removeOrganizationId() async {
   ];
 
 // Централизованный метод для добавления query-параметров
-  Future<String> _appendQueryParams(String path) async {
+Future<String> _appendQueryParams(String path) async {
+  try {
     final organizationId = await getSelectedOrganization();
     final salesFunnelId = await getSelectedSalesFunnel();
-
-    // print('ApiService: _appendQueryParams called for path: $path');
-    // print(
-    //     'ApiService: organization_id: $organizationId, sales_funnel_id: $salesFunnelId');
-    // print('ApiService: Excluded endpoints: $_excludedEndpoints');
-
-    final uri = Uri.parse(path);
-    final basePath = uri.path;
-    final existingQueryParams = uri.queryParametersAll;
-
-    final Map<String, List<String>> newQueryParams = {};
-    existingQueryParams.forEach((key, values) {
-      newQueryParams[key] = values.map((value) => value.toString()).toList();
-    });
-
-    if (organizationId != null &&
-        !newQueryParams.containsKey('organization_id')) {
-      newQueryParams['organization_id'] = [organizationId];
-      // print('ApiService: Added organization_id=$organizationId');
+    
+    // Проверяем, есть ли уже параметры в path
+    bool hasParams = path.contains('?');
+    String separator = hasParams ? '&' : '?';
+    String result = path;
+    
+    if (organizationId != null && organizationId.isNotEmpty && organizationId != 'null') {
+      result += '${separator}organization_id=$organizationId';
+      separator = '&';
     }
-
-    bool isExcluded =
-        _excludedEndpoints.any((endpoint) => basePath.startsWith(endpoint));
-    if (!isExcluded &&
-        salesFunnelId != null &&
-        !newQueryParams.containsKey('sales_funnel_id')) {
-      newQueryParams['sales_funnel_id'] = [salesFunnelId];
-      // print('ApiService: Added sales_funnel_id=$salesFunnelId');
+    
+    if (salesFunnelId != null && salesFunnelId.isNotEmpty && salesFunnelId != 'null') {
+      result += '${separator}sales_funnel_id=$salesFunnelId';
     }
-
-    final queryString = newQueryParams.entries
-        .map((entry) => entry.value
-            .map((value) =>
-                '${Uri.encodeQueryComponent(entry.key)}=${Uri.encodeQueryComponent(value)}')
-            .join('&'))
-        .join('&');
-
-    final finalPath = queryString.isEmpty ? basePath : '$basePath?$queryString';
-    // print('ApiService: Generated queryString: $queryString');
-    // print('ApiService: Final path: $finalPath');
-    return finalPath;
+    
+    return result;
+  } catch (e) {
+    debugPrint('_appendQueryParams error: $e');
+    // Возвращаем исходный path если не удалось добавить параметры
+    return path;
   }
+}
   //_________________________________ END_____API_SCREEN__PROFILE____________________________________________//
 
   //_________________________________ START_____API_SCREEN__NOTIFICATIONS____________________________________________//
