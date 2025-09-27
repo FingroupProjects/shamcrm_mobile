@@ -9,6 +9,8 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../custom_widget/app_bar_selection_mode.dart';
+import '../../../models/page_2/incoming_document_model.dart';
+import '../../../widgets/snackbar_widget.dart';
 import '../../money/widgets/error_dialog.dart';
 import 'incoming_document_create_screen.dart';
 import 'incoming_document_details_screen.dart';
@@ -240,6 +242,42 @@ class _IncomingScreenState extends State<IncomingScreen> {
 
               // Обновляем список после успешного удаления
               _incomingBloc.add(const FetchIncoming(forceRefresh: true));
+            } else if (state is IncomingApproveMassSuccess) {
+              showCustomSnackBar(context: context, message: state.message, isSuccess: true);
+              _incomingBloc.add(const FetchIncoming(forceRefresh: true));
+            } else if (state is IncomingApproveMassError) {
+              if (state.statusCode == 409) {
+                showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message);
+                return;
+              }
+              showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+            } else if (state is IncomingDisapproveMassSuccess) {
+              showCustomSnackBar(context: context, message: state.message, isSuccess: true);
+              _incomingBloc.add(const FetchIncoming(forceRefresh: true));
+            } else if (state is IncomingDisapproveMassError) {
+              if (state.statusCode == 409) {
+                showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message);
+                return;
+              }
+              showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+            } else if (state is IncomingDeleteMassSuccess) {
+              showCustomSnackBar(context: context, message: state.message, isSuccess: true);
+              _incomingBloc.add(const FetchIncoming(forceRefresh: true));
+            } else if (state is IncomingDeleteMassError) {
+              if (state.statusCode == 409) {
+                showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message);
+                return;
+              }
+              showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+            } else if (state is IncomingRestoreMassSuccess) {
+              showCustomSnackBar(context: context, message: state.message, isSuccess: true);
+              _incomingBloc.add(const FetchIncoming(forceRefresh: true));
+            } else if (state is IncomingRestoreMassError) {
+              if (state.statusCode == 409) {
+                showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message);
+                return;
+              }
+              showCustomSnackBar(context: context, message: state.message, isSuccess: false);
             }
           },
           child: BlocBuilder<IncomingBloc, IncomingState>(
@@ -253,7 +291,7 @@ class _IncomingScreenState extends State<IncomingScreen> {
                 );
               }
 
-              final currentData = state is IncomingLoaded ? state.data : [];
+              final List<IncomingDocument> currentData = state is IncomingLoaded ? state.data : [];
 
               if (currentData.isEmpty && state is IncomingLoaded) {
                 return Center(
@@ -323,8 +361,9 @@ class _IncomingScreenState extends State<IncomingScreen> {
                             currentData.removeAt(index);
                           });
                           _incomingBloc.add(DeleteIncoming(
-                            currentData[index],
+                            currentData[index].id!,
                             localizations!,
+                            shouldReload: false,
                           ));
                         },
                         child: ClipRRect(
@@ -346,6 +385,8 @@ class _IncomingScreenState extends State<IncomingScreen> {
                                   }
                                   return;
                                 }
+
+                                if (currentData[index].deletedAt != null) return;
 
                                 Navigator.push(
                                   context,

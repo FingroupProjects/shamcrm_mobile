@@ -95,8 +95,9 @@ class UpdateIncoming extends IncomingEvent {
 class DeleteIncoming extends IncomingEvent {
   final int documentId;
   final AppLocalizations localizations;
+  final bool shouldReload;
 
-  const DeleteIncoming(this.documentId, this.localizations);
+  const DeleteIncoming(this.documentId, this.localizations, {this.shouldReload = true});
 
   @override
   List<Object> get props => [documentId, localizations];
