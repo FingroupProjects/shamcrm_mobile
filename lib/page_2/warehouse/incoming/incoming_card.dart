@@ -8,11 +8,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 class IncomingCard extends StatefulWidget {
   final IncomingDocument document;
   final VoidCallback? onUpdate;
+  final Function() onLongPress;
+  final bool isSelectionMode;
+  final bool isSelected;
 
   const IncomingCard({
     Key? key,
     required this.document,
     this.onUpdate,
+    required this.onLongPress,
+    required this.isSelectionMode,
+    required this.isSelected,
   }) : super(key: key);
 
   @override
@@ -48,12 +54,12 @@ class _IncomingCardState extends State<IncomingCard> {
   String _getLocalizedStatus() {
     final localizations = AppLocalizations.of(context)!;
     final doc = widget.document;
-    
+
     // Приоритет: сначала проверяем deleted_at
     if (doc.deletedAt != null) {
       return localizations.translate('deleted_incoming') ?? 'Удален';
     }
-    
+
     // Затем проверяем approved
     if (doc.approved == 1) {
       return localizations.translate('approved_incoming') ?? 'Проведен';
@@ -64,12 +70,12 @@ class _IncomingCardState extends State<IncomingCard> {
 
   Color _getStatusColor() {
     final doc = widget.document;
-    
+
     // Приоритет: сначала проверяем deleted_at
     if (doc.deletedAt != null) {
       return Colors.red; // Красный цвет для удаленных документов
     }
-    
+
     // Затем проверяем approved
     return doc.approved == 1 ? Colors.green : Colors.orange;
   }
@@ -78,7 +84,7 @@ class _IncomingCardState extends State<IncomingCard> {
   Widget build(BuildContext context) {
     final doc = widget.document;
     final localizations = AppLocalizations.of(context)!;
-    
+
     return GestureDetector(
       onTap: () {
         Navigator.push(

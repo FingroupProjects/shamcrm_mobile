@@ -10,6 +10,7 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
+import '../../../custom_widget/app_bar_selection_mode.dart';
 import '../../money/widgets/error_dialog.dart';
 import 'incoming_document_create_screen.dart';
 
@@ -32,6 +33,7 @@ class _IncomingScreenState extends State<IncomingScreen> {
   bool _isInitialLoad = true;
   bool _isLoadingMore = false;
   bool _hasReachedMax = false;
+  bool _selectionMode = false;
 
   @override
   void initState() {
@@ -118,69 +120,128 @@ class _IncomingScreenState extends State<IncomingScreen> {
         backgroundColor: Colors.white,
         appBar: AppBar(
           forceMaterialTransparency: true,
-          title: CustomAppBarPage2(
-            title: localizations!.translate('appbar_incoming') ?? 'Приходы',
-            showSearchIcon: true,
-            showFilterIcon: false,
-            showFilterOrderIcon: false,
-            onChangedSearchInput: _onSearch,
-            textEditingController: _searchController,
-            focusNode: _focusNode,
-            clearButtonClick: (value) {
-              if (!value) {
-                setState(() {
-                  _isSearching = false;
-                  _searchController.clear();
-                });
-                _incomingBloc.add(const FetchIncoming(forceRefresh: true));
-              }
-            },
-            onClickProfileAvatar: () {},
-            clearButtonClickFiltr: (bool p1) {},
-            currentFilters: {},
-          ),
+          title: _selectionMode
+              ? BlocBuilder<IncomingBloc, IncomingState>(
+                  builder: (context, state) {
+                    if (state is IncomingLoaded) {
+                      bool showApprove = state.selectedData!.any((doc) => doc.approved == false && doc.deletedAt == null);
+                      bool showDisapprove = state.selectedData!.any((doc) => doc.approved == true && doc.deletedAt == null);
+                      bool showDelete = state.selectedData!.any((doc) => doc.deletedAt == null);
+                      bool showRestore = state.selectedData!.any((doc) => doc.deletedAt != null);
+
+                      return AppBarSelectionMode(
+                        title: localizations?.translate('appbar_incoming') ?? 'Приходы',
+                        onDismiss: () {
+                          setState(() {
+                            _selectionMode = false;
+                          });
+                          // _incomingBloc.add(UnselectAllDocuments());
+                        },
+                        onApprove: () {
+                          setState(() {
+                            _selectionMode = false;
+                          });
+                          // _incomingBloc.add(MassApproveMoneyIncomeDocuments());
+                        },
+                        onDisapprove: () {
+                          setState(() {
+                            _selectionMode = false;
+                          });
+                          // _incomingBloc.add(MassDisapproveMoneyIncomeDocuments());
+                        },
+                        onDelete: () {
+                          setState(() {
+                            _selectionMode = false;
+                          });
+                          // _incomingBloc.add(MassDeleteMoneyIncomeDocuments());
+                        },
+                        onRestore: () {
+                          setState(() {
+                            _selectionMode = false;
+                          });
+                          // _incomingBloc.add(MassRestoreMoneyIncomeDocuments());
+                        },
+                        showApprove: showApprove,
+                        showDelete: showDelete,
+                        showDisapprove: showDisapprove,
+                        showRestore: showRestore,
+                      );
+                    }
+
+                    return AppBarSelectionMode(
+                      title: localizations?.translate('appbar_incoming') ?? 'Приходы',
+                      onDismiss: () {
+                        setState(() {
+                          _selectionMode = false;
+                        });
+                        // _incomingBloc.add(UnselectAllDocuments());
+                      },
+                    );
+                  },
+                )
+              : CustomAppBarPage2(
+                  title: localizations!.translate('appbar_incoming') ?? 'Приходы',
+                  showSearchIcon: true,
+                  showFilterIcon: false,
+                  showFilterOrderIcon: false,
+                  onChangedSearchInput: _onSearch,
+                  textEditingController: _searchController,
+                  focusNode: _focusNode,
+                  clearButtonClick: (value) {
+                    if (!value) {
+                      setState(() {
+                        _isSearching = false;
+                        _searchController.clear();
+                      });
+                      _incomingBloc.add(const FetchIncoming(forceRefresh: true));
+                    }
+                  },
+                  onClickProfileAvatar: () {},
+                  clearButtonClickFiltr: (bool p1) {},
+                  currentFilters: {},
+                ),
         ),
         body: BlocListener<IncomingBloc, IncomingState>(
-  listener: (context, state) {
-    if (!mounted) return;
-    
-    if (state is IncomingLoaded) {
-      setState(() {
-        _hasReachedMax = state.hasReachedMax;
-        _isInitialLoad = false;
-        _isLoadingMore = false;
-      });
-    } else if (state is IncomingError) {
-      setState(() {
-        _isInitialLoad = false;
-        _isLoadingMore = false;
-      });
-      _showSnackBar(state.message, false);
-    } else if (state is IncomingCreateSuccess) {
-      _showSnackBar(state.message, true);
-    } else if (state is IncomingCreateError) {
-      if (state.statusCode == 409) {
-        showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
-        return;
-      }
-      _showSnackBar(state.message, false);
-    } else if (state is IncomingUpdateSuccess) {
-      _showSnackBar(state.message, true);
-    } else if (state is IncomingUpdateError) {
-      if (state.statusCode == 409) {
-        showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
-        return;
-      }
-      _showSnackBar(state.message, false);
-    } else if (state is IncomingDeleteSuccess) {
-      // Показываем SnackBar только если мы находимся на IncomingScreen
-      // (т.е. если диалог уже закрыт и мы вернулись сюда)
-      _showSnackBar(state.message, true);
-      
-      // Обновляем список после успешного удаления
-      _incomingBloc.add(const FetchIncoming(forceRefresh: true));
-    }
-  },
+          listener: (context, state) {
+            if (!mounted) return;
+
+            if (state is IncomingLoaded) {
+              setState(() {
+                _hasReachedMax = state.hasReachedMax;
+                _isInitialLoad = false;
+                _isLoadingMore = false;
+              });
+            } else if (state is IncomingError) {
+              setState(() {
+                _isInitialLoad = false;
+                _isLoadingMore = false;
+              });
+              _showSnackBar(state.message, false);
+            } else if (state is IncomingCreateSuccess) {
+              _showSnackBar(state.message, true);
+            } else if (state is IncomingCreateError) {
+              if (state.statusCode == 409) {
+                showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message);
+                return;
+              }
+              _showSnackBar(state.message, false);
+            } else if (state is IncomingUpdateSuccess) {
+              _showSnackBar(state.message, true);
+            } else if (state is IncomingUpdateError) {
+              if (state.statusCode == 409) {
+                showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message);
+                return;
+              }
+              _showSnackBar(state.message, false);
+            } else if (state is IncomingDeleteSuccess) {
+              // Показываем SnackBar только если мы находимся на IncomingScreen
+              // (т.е. если диалог уже закрыт и мы вернулись сюда)
+              _showSnackBar(state.message, true);
+
+              // Обновляем список после успешного удаления
+              _incomingBloc.add(const FetchIncoming(forceRefresh: true));
+            }
+          },
           child: BlocBuilder<IncomingBloc, IncomingState>(
             builder: (context, state) {
               if (state is IncomingLoading) {
@@ -233,8 +294,30 @@ class _IncomingScreenState extends State<IncomingScreen> {
                           : const SizedBox.shrink();
                     }
                     return IncomingCard(
+                      isSelectionMode: _selectionMode,
+                      isSelected: (state as IncomingLoaded).selectedData?.contains(currentData[index]) ?? false,
+                      onLongPress: () {
+                        if (_selectionMode) return;
+                        setState(() {
+                          _selectionMode = true;
+                        });
+                        // _incomingBloc.add(SelectDocument(currentData[index]));
+                      },
                       document: currentData[index],
                       onUpdate: () {
+                        if (_selectionMode) {
+                          final currentState = context
+                              .read<IncomingBloc>()
+                              .state;
+                          if (currentState is IncomingLoaded) {
+                            final selectedCount = currentState.selectedData?.length ?? 0;
+                            if (selectedCount <= 1 && currentState.selectedData?.contains(currentData[index]) == true) {
+                              setState(() {
+                                _selectionMode = false;
+                              });
+                            }
+                          }
+                        }
                         _incomingBloc.add(const FetchIncoming(forceRefresh: true));
                       },
                     );

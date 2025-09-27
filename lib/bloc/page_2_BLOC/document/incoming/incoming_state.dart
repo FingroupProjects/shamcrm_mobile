@@ -16,15 +16,17 @@ class IncomingLoaded extends IncomingState {
   final List<IncomingDocument> data;
   final Pagination? pagination;
   final bool hasReachedMax;
+  final List<IncomingDocument>? selectedData;
 
   const IncomingLoaded({
     required this.data,
     this.pagination,
     this.hasReachedMax = false,
+    this.selectedData = const [],
   });
 
   @override
-  List<Object> get props => [data, hasReachedMax];
+  List<Object> get props => [data, hasReachedMax, selectedData ?? []];
 }
 
 class IncomingError extends IncomingState {
