@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/products/sales_dashboard_goods_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/goods/sales_dashboard_goods_bloc.dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/dialogs/dialog_products_info.dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/charts/expense_structure_chart.dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/charts/net_profit_chart.dart';

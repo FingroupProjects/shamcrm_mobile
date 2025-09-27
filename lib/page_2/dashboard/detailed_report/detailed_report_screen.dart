@@ -10,6 +10,7 @@ import 'cards/net_profit_card.dart';
 import 'cards/sales_profitability_card.dart';
 import 'cards/cost_structure_card.dart';
 import 'cards/orders_count_card.dart';
+import 'goods_content.dart';
 
 class TaskStyles {
   static const Color activeColor = Color(0xff1E2E52);
@@ -197,6 +198,11 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
   }
 
   Widget _buildTabContent(String tabTitle) {
+
+    if (tabTitle == 'Товары / Неликвидный товары') {
+      return GoodsContent();
+    }
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
