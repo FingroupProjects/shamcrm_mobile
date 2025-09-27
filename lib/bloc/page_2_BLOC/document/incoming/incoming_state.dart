@@ -122,3 +122,88 @@ class IncomingRestoreError extends IncomingState {
   @override
   List<Object> get props => [message, statusCode ?? -1];
 }
+
+// New Mass Operation States
+class IncomingApproveMassLoading extends IncomingState {}
+
+class IncomingApproveMassSuccess extends IncomingState {
+  final String message;
+
+  const IncomingApproveMassSuccess(this.message);
+
+  @override
+  List<Object> get props => [message];
+}
+
+class IncomingApproveMassError extends IncomingState {
+  final String message;
+  final int? statusCode;
+
+  const IncomingApproveMassError(this.message, {this.statusCode});
+
+  @override
+  List<Object> get props => [message, statusCode ?? -1];
+}
+
+class IncomingDisapproveMassLoading extends IncomingState {}
+
+class IncomingDisapproveMassSuccess extends IncomingState {
+  final String message;
+
+  const IncomingDisapproveMassSuccess(this.message);
+
+  @override
+  List<Object> get props => [message];
+}
+
+class IncomingDisapproveMassError extends IncomingState {
+  final String message;
+  final int? statusCode;
+
+  const IncomingDisapproveMassError(this.message, {this.statusCode});
+
+  @override
+  List<Object> get props => [message, statusCode ?? -1];
+}
+
+class IncomingDeleteMassLoading extends IncomingState {}
+
+class IncomingDeleteMassSuccess extends IncomingState {
+  final String message;
+
+  const IncomingDeleteMassSuccess(this.message);
+
+  @override
+  List<Object> get props => [message];
+}
+
+class IncomingDeleteMassError extends IncomingState {
+  final String message;
+  final int? statusCode;
+
+  const IncomingDeleteMassError(this.message, {this.statusCode});
+
+  @override
+  List<Object> get props => [message, statusCode ?? -1];
+}
+
+class IncomingRestoreMassLoading extends IncomingState {}
+
+class IncomingRestoreMassSuccess extends IncomingState {
+  final String message;
+
+  const IncomingRestoreMassSuccess(this.message);
+
+  @override
+  List<Object> get props => [message];
+}
+
+class IncomingRestoreMassError extends IncomingState {
+  final String message;
+  final int? statusCode;
+
+  const IncomingRestoreMassError(this.message, {this.statusCode});
+
+  @override
+  List<Object> get props => [message, statusCode ?? -1];
+}

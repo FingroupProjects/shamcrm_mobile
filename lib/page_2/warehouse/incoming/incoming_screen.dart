@@ -4,15 +4,14 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_eve
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
-import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/incoming_card.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:uuid/uuid.dart';
 import '../../../custom_widget/app_bar_selection_mode.dart';
 import '../../money/widgets/error_dialog.dart';
 import 'incoming_document_create_screen.dart';
+import 'incoming_document_details_screen.dart';
 
 class IncomingScreen extends StatefulWidget {
   final int? organizationId;
@@ -119,13 +118,14 @@ class _IncomingScreenState extends State<IncomingScreen> {
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
+          automaticallyImplyLeading: !_selectionMode,
           forceMaterialTransparency: true,
           title: _selectionMode
               ? BlocBuilder<IncomingBloc, IncomingState>(
                   builder: (context, state) {
                     if (state is IncomingLoaded) {
-                      bool showApprove = state.selectedData!.any((doc) => doc.approved == false && doc.deletedAt == null);
-                      bool showDisapprove = state.selectedData!.any((doc) => doc.approved == true && doc.deletedAt == null);
+                      bool showApprove = state.selectedData!.any((doc) => doc.approved == 0 && doc.deletedAt == null);
+                      bool showDisapprove = state.selectedData!.any((doc) => doc.approved == 1 && doc.deletedAt == null);
                       bool showDelete = state.selectedData!.any((doc) => doc.deletedAt == null);
                       bool showRestore = state.selectedData!.any((doc) => doc.deletedAt != null);
 
@@ -135,31 +135,31 @@ class _IncomingScreenState extends State<IncomingScreen> {
                           setState(() {
                             _selectionMode = false;
                           });
-                          // _incomingBloc.add(UnselectAllDocuments());
+                          _incomingBloc.add(UnselectAllDocuments());
                         },
                         onApprove: () {
                           setState(() {
                             _selectionMode = false;
                           });
-                          // _incomingBloc.add(MassApproveMoneyIncomeDocuments());
+                          _incomingBloc.add(MassApproveIncomingDocuments());
                         },
                         onDisapprove: () {
                           setState(() {
                             _selectionMode = false;
                           });
-                          // _incomingBloc.add(MassDisapproveMoneyIncomeDocuments());
+                          _incomingBloc.add(MassDisapproveIncomingDocuments());
                         },
                         onDelete: () {
                           setState(() {
                             _selectionMode = false;
                           });
-                          // _incomingBloc.add(MassDeleteMoneyIncomeDocuments());
+                          _incomingBloc.add(MassDeleteIncomingDocuments());
                         },
                         onRestore: () {
                           setState(() {
                             _selectionMode = false;
                           });
-                          // _incomingBloc.add(MassRestoreMoneyIncomeDocuments());
+                          _incomingBloc.add(MassRestoreIncomingDocuments());
                         },
                         showApprove: showApprove,
                         showDelete: showDelete,
@@ -174,7 +174,7 @@ class _IncomingScreenState extends State<IncomingScreen> {
                         setState(() {
                           _selectionMode = false;
                         });
-                        // _incomingBloc.add(UnselectAllDocuments());
+                        _incomingBloc.add(UnselectAllDocuments());
                       },
                     );
                   },
@@ -275,7 +275,9 @@ class _IncomingScreenState extends State<IncomingScreen> {
                 color: const Color(0xff1E2E52),
                 backgroundColor: Colors.white,
                 onRefresh: _onRefresh,
-                child: ListView.builder(
+                child: ListView.separated(
+                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                  separatorBuilder: (context, index) => const SizedBox(height: 10),
                   controller: _scrollController,
                   physics: const AlwaysScrollableScrollPhysics(),
                   itemCount: currentData.length + (_hasReachedMax ? 0 : 1),
@@ -293,34 +295,82 @@ class _IncomingScreenState extends State<IncomingScreen> {
                             )
                           : const SizedBox.shrink();
                     }
-                    return IncomingCard(
-                      isSelectionMode: _selectionMode,
-                      isSelected: (state as IncomingLoaded).selectedData?.contains(currentData[index]) ?? false,
-                      onLongPress: () {
-                        if (_selectionMode) return;
-                        setState(() {
-                          _selectionMode = true;
-                        });
-                        // _incomingBloc.add(SelectDocument(currentData[index]));
-                      },
-                      document: currentData[index],
-                      onUpdate: () {
-                        if (_selectionMode) {
-                          final currentState = context
-                              .read<IncomingBloc>()
-                              .state;
-                          if (currentState is IncomingLoaded) {
-                            final selectedCount = currentState.selectedData?.length ?? 0;
-                            if (selectedCount <= 1 && currentState.selectedData?.contains(currentData[index]) == true) {
-                              setState(() {
-                                _selectionMode = false;
-                              });
-                            }
-                          }
-                        }
-                        _incomingBloc.add(const FetchIncoming(forceRefresh: true));
-                      },
-                    );
+                    return Dismissible(
+                        key: Key(currentData[index].id.toString()),
+                        direction: DismissDirection.endToStart,
+                        background: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          alignment: Alignment.centerRight,
+                          child: const Icon(Icons.delete, color: Colors.white, size: 24),
+                        ),
+                        confirmDismiss: (direction) async {
+                          return currentData[index].deletedAt == null;
+                        },
+                        onDismissed: (direction) {
+                          print("🗑️ [UI] Удаление dokumenta ID: ${currentData[index].id}");
+                          setState(() {
+                            currentData.removeAt(index);
+                          });
+                          _incomingBloc.add(DeleteIncoming(
+                            currentData[index],
+                            localizations!,
+                          ));
+                        },
+                        child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: IncomingCard(
+                              onTap: () {
+                                if (_selectionMode) {
+                                  _incomingBloc.add(SelectDocument(currentData[index]));
+
+                                  final currentState = context.read<IncomingBloc>().state;
+
+                                  if (currentState is IncomingLoaded) {
+                                    final selectedCount = currentState.selectedData?.length ?? 0;
+                                    if (selectedCount <= 1 && currentState.selectedData?.contains(currentData[index]) == true) {
+                                      setState(() {
+                                        _selectionMode = false;
+                                      });
+                                    }
+                                  }
+                                  return;
+                                }
+
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => IncomingDocumentDetailsScreen(
+                                      documentId: currentData[index].id!,
+                                      docNumber: currentData[index].docNumber ?? 'N/A',
+                                      onDocumentUpdated: () {
+                                        _incomingBloc.add(const FetchIncoming(forceRefresh: true));
+                                      },
+                                    ),
+                                  ),
+                                );
+                              },
+                              isSelectionMode: _selectionMode,
+                              isSelected: (state as IncomingLoaded).selectedData?.contains(currentData[index]) ?? false,
+                              onLongPress: () {
+                                if (_selectionMode) return;
+                                setState(() {
+                                  _selectionMode = true;
+                                });
+                                _incomingBloc.add(SelectDocument(currentData[index]));
+                              },
+                              document: currentData[index],
+                            )));
                   },
                 ),
               );

@@ -1,6 +1,8 @@
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:equatable/equatable.dart';
 
+import '../../../../models/page_2/incoming_document_model.dart';
+
 abstract class IncomingEvent extends Equatable {
   const IncomingEvent();
 
@@ -108,4 +110,43 @@ class RestoreIncoming extends IncomingEvent {
 
   @override
   List<Object> get props => [documentId, localizations];
+}
+
+class MassApproveIncomingDocuments extends IncomingEvent {
+
+  @override
+  List<Object> get props => [];
+}
+
+class MassDisapproveIncomingDocuments extends IncomingEvent {
+
+  @override
+  List<Object> get props => [];
+}
+
+class MassDeleteIncomingDocuments extends IncomingEvent {
+
+  @override
+  List<Object> get props => [];
+}
+
+class MassRestoreIncomingDocuments extends IncomingEvent {
+
+  @override
+  List<Object> get props => [];
+}
+
+
+class SelectDocument extends IncomingEvent {
+  final IncomingDocument document;
+
+  const SelectDocument(this.document);
+
+  @override
+  List<Object> get props => [document];
+}
+
+class UnselectAllDocuments extends IncomingEvent {
+  @override
+  List<Object> get props => [];
 }

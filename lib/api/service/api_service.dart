@@ -10684,6 +10684,117 @@ Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
   }
 }
 
+  Future<void> massApproveIncomingDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/income-documents/mass-approve');
+
+    try {
+      final response = await _patchRequest(path, {
+        'ids': ids,
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при массовом проведении документов прихода!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> toggleApproveOneIncomingDocument(int id, bool approve) async {
+    final path = approve
+        ? await _appendQueryParams('/income-documents/mass-approve')
+        : await _appendQueryParams('/income-documents/mass-unapprove');
+
+    try {
+      final response = await _patchRequest(path, {
+        'ids': [id],
+      });
+
+      if (response.statusCode != 200 && response.statusCode != 204 && response.statusCode != 201) {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при изменении статуса документа прихода!',
+          response.statusCode,
+        );
+      }
+
+      return;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> massDisapproveIncomingDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/income-documents/mass-unapprove');
+
+    try {
+      final response = await _patchRequest(path, {
+        'ids': ids,
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при массовом снятии проведения документов прихода!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> massDeleteIncomingDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/income-documents/mass-delete');
+
+    try {
+      final response = await _deleteRequestWithBody(path, {
+        'ids': ids,
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при массовом удалении документов прихода!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> massRestoreIncomingDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/income-documents/mass-restore');
+
+    try {
+      final response = await _postRequest(path, {
+        'ids': ids,
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при массовом восстановлении документов прихода!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
 
 //______________________________end incoming documents____________________________//
 
