@@ -1,10 +1,8 @@
 import 'package:crm_task_manager/page_2/money/money_income/money_income_operation_type.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/models/money/money_income_document_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-import 'package:crm_task_manager/page_2/money/money_income/widgets/money_income_deletion.dart';
-import 'package:crm_task_manager/bloc/money_income/money_income_bloc.dart';
+import '../../../../bloc/page_2_BLOC/money_income/money_income_bloc.dart';
 import 'package:intl/intl.dart';
 
 class MoneyIncomeCard extends StatelessWidget {

@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/bloc/money_income/money_income_bloc.dart';
+import '../../../../bloc/page_2_BLOC/money_income/money_income_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_event.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_state.dart';

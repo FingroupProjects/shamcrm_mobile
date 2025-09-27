@@ -12,7 +12,7 @@ import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import '../../../../bloc/money_outcome/money_outcome_bloc.dart';
+import '../../../../bloc/page_2_BLOC/money_outcome/money_outcome_bloc.dart';
 import '../money_outcome_operation_type.dart';
 import '../money_outcome_screen.dart';
 

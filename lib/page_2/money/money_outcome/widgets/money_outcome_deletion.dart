@@ -1,7 +1,6 @@
-import 'package:crm_task_manager/bloc/money_outcome/money_outcome_bloc.dart';
+import '../../../../bloc/page_2_BLOC/money_outcome/money_outcome_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

@@ -7,8 +7,7 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
-import '../../../bloc/money_outcome/money_outcome_bloc.dart';
+import '../../../../bloc/page_2_BLOC/money_outcome/money_outcome_bloc.dart';
 import '../../../custom_widget/app_bar_selection_mode.dart';
 import '../../../widgets/snackbar_widget.dart';
 import 'add/add_money_outcome_from_client.dart';
