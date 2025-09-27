@@ -9,6 +9,7 @@ import 'package:crm_task_manager/bloc/cubit/listen_sender_file_cubit.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_text_cubit.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_voice_cubit.dart';
 import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
+import 'package:crm_task_manager/models/integration_model.dart';
 import 'package:crm_task_manager/models/msg_data_in_socket.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chatById_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chatById_task_screen.dart';
@@ -112,20 +113,230 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
 void initState() {
   super.initState();
   _checkPermissions();
+  
+  // Сбрасываем состояния
   context.read<ListenSenderFileCubit>().updateValue(false);
   context.read<ListenSenderVoiceCubit>().updateValue(false);
   context.read<ListenSenderTextCubit>().updateValue(false);
-  setUpServices();
+  
   WidgetsBinding.instance.addPostFrameCallback((_) async {
-    await _fetchBaseUrl(); // Ждём получения baseUrl
-    context.read<MessagingCubit>().getMessages(widget.chatId); // Вызываем после получения baseUrl
-    _scrollToBottom();
-    if (widget.endPointInTab == 'lead') {
-      await _fetchIntegration();
-    }
+    await _initializeServices();
   });
 }
 
+
+// Также добавьте метод для повторной попытки
+Future<void> _retryInitialization() async {
+  try {
+    await _initializeBaseUrl();
+    context.read<MessagingCubit>().getMessages(widget.chatId);
+  } catch (e) {
+    debugPrint('Retry failed: $e');
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Повторная попытка не удалась: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+}
+
+Future<void> _initializeBaseUrl() async {
+  debugPrint('Initializing baseUrl...');
+  
+  final prefs = await SharedPreferences.getInstance();
+  
+  // Получаем домены из той же логики, что используется в сокете
+  final enteredDomainMap = await ApiService().getEnteredDomain();
+  String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+  String? enteredDomain = enteredDomainMap['enteredDomain'];
+
+  // Проверяем домен для email-верификации
+  String? verifiedDomain = await ApiService().getVerifiedDomain();
+  debugPrint('BaseUrl init - enteredMainDomain=$enteredMainDomain, enteredDomain=$enteredDomain, verifiedDomain=$verifiedDomain');
+
+  // Если домены отсутствуют, используем verifiedDomain
+  if (enteredMainDomain == null || enteredDomain == null) {
+    if (verifiedDomain != null && verifiedDomain.isNotEmpty) {
+      enteredMainDomain = verifiedDomain.split('-back.').last;
+      enteredDomain = verifiedDomain.split('-back.').first;
+      debugPrint('BaseUrl init - Using verifiedDomain: $verifiedDomain, parsed mainDomain=$enteredMainDomain, domain=$enteredDomain');
+      
+      // Принудительно сохраняем в SharedPreferences
+      await prefs.setString('enteredMainDomain', enteredMainDomain);
+      await prefs.setString('enteredDomain', enteredDomain);
+    } else {
+      throw Exception('Cannot determine domain for API calls');
+    }
+  }
+
+  // Формируем baseUrl по той же логике, что и сокет
+  baseUrl = 'https://$enteredDomain-back.$enteredMainDomain';
+  debugPrint('BaseUrl initialized: $baseUrl');
+  
+  // ВАЖНО: Сохраняем для использования во ВСЕХ экземплярах ApiService
+  await prefs.setString('cached_base_url', '$baseUrl/api');
+  debugPrint('Cached baseUrl for all ApiService instances: $baseUrl/api');
+}
+
+Future<void> _initializeServices() async {
+  try {
+    debugPrint('ChatSmsScreen: Starting initialization...');
+    
+    // Шаг 1: Проверяем и инициализируем домены
+    await _ensureDomainConfiguration();
+    
+    // Шаг 2: Инициализируем ApiService
+    await apiService.initialize();
+    
+    // Шаг 3: Получаем базовый URL
+    baseUrl = await apiService.getDynamicBaseUrl();
+    debugPrint('ChatSmsScreen: BaseURL initialized: $baseUrl');
+    
+    // Шаг 4: Инициализируем сокет
+    await _initializeSocket();
+    
+    // Шаг 5: Загружаем сообщения
+    context.read<MessagingCubit>().getMessagesWithFallback(widget.chatId);
+    _scrollToBottom();
+    
+    // Шаг 6: Загружаем интеграцию для лидов
+    if (widget.endPointInTab == 'lead') {
+      await _fetchIntegration();
+    }
+    
+    debugPrint('ChatSmsScreen: Initialization completed successfully');
+  } catch (e, stackTrace) {
+    debugPrint('ChatSmsScreen: Initialization error: $e');
+    debugPrint('StackTrace: $stackTrace');
+    
+    // Показываем ошибку пользователю, но пытаемся загрузить хотя бы сообщения
+    if (mounted) {
+      _showInitializationError(e.toString());
+      
+      // Попытка загрузить сообщения даже при ошибке инициализации
+      try {
+        context.read<MessagingCubit>().getMessagesWithFallback(widget.chatId);
+      } catch (e2) {
+        debugPrint('ChatSmsScreen: Failed to load messages after init error: $e2');
+      }
+    }
+  }
+}
+
+Future<void> _ensureDomainConfiguration() async {
+  final prefs = await SharedPreferences.getInstance();
+  
+  // Проверяем текущие домены
+  final enteredDomainMap = await ApiService().getEnteredDomain();
+  String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+  String? enteredDomain = enteredDomainMap['enteredDomain'];
+  
+  // Проверяем email верификацию
+  String? verifiedDomain = await ApiService().getVerifiedDomain();
+  
+  debugPrint('Domain check: enteredMainDomain=$enteredMainDomain, enteredDomain=$enteredDomain, verifiedDomain=$verifiedDomain');
+  
+  // Если домены не настроены, используем verifiedDomain или QR данные
+  if ((enteredMainDomain == null || enteredDomain == null) && verifiedDomain != null) {
+    // Парсим verifiedDomain
+    if (verifiedDomain.contains('-back.')) {
+      final parts = verifiedDomain.split('-back.');
+      enteredDomain = parts[0];
+      enteredMainDomain = parts[1];
+    } else {
+      // Fallback для других форматов
+      enteredDomain = 'default';
+      enteredMainDomain = verifiedDomain;
+    }
+    
+    // Сохраняем распарсенные домены
+    await prefs.setString('enteredMainDomain', enteredMainDomain);
+    await prefs.setString('enteredDomain', enteredDomain);
+    
+    debugPrint('Domain configured from verifiedDomain: $enteredDomain-back.$enteredMainDomain');
+  } else if (enteredMainDomain == null || enteredDomain == null) {
+    // Проверяем QR данные
+    final qrData = await ApiService().getQrData();
+    if (qrData['domain'] != null && qrData['mainDomain'] != null) {
+      await prefs.setString('enteredDomain', qrData['domain']!);
+      await prefs.setString('enteredMainDomain', qrData['mainDomain']!);
+      debugPrint('Domain configured from QR data: ${qrData['domain']}-back.${qrData['mainDomain']}');
+    } else {
+      throw Exception('Не удалось определить домен для подключения');
+    }
+  }
+}
+
+Future<void> _initializeSocket() async {
+  try {
+    // Используем тот же setUpServices, но с дополнительными проверками
+    setUpServices();
+    debugPrint('ChatSmsScreen: Socket initialization completed');
+  } catch (e) {
+    debugPrint('ChatSmsScreen: Socket initialization error: $e');
+    // Сокет не критичен для работы чата, продолжаем без него
+  }
+}
+
+void _showInitializationError(String error) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(
+        'Частичная ошибка подключения: ${_getReadableError(error)}',
+        style: const TextStyle(
+          fontFamily: 'Gilroy',
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          color: Colors.white,
+        ),
+      ),
+      backgroundColor: Colors.orange,
+      duration: const Duration(seconds: 5),
+      action: SnackBarAction(
+        label: 'Повторить',
+        textColor: Colors.white,
+        onPressed: () {
+          _initializeServices();
+        },
+      ),
+    ),
+  );
+}
+
+String _getReadableError(String error) {
+  if (error.contains('type \'Null\' is not a subtype of type \'String\'')) {
+    return 'ошибка данных сервера';
+  }
+  if (error.contains('No host specified in URI null')) {
+    return 'проблема настроек подключения';
+  }
+  if (error.contains('Не удалось определить домен')) {
+    return 'не настроен домен';
+  }
+  return 'неизвестная ошибка';
+}
+
+Future<void> _forceInitializeDomain() async {
+  final prefs = await SharedPreferences.getInstance();
+  
+  // Получаем verifiedDomain
+  String? verifiedDomain = await ApiService().getVerifiedDomain();
+  
+  if (verifiedDomain != null && verifiedDomain.isNotEmpty) {
+    // Парсим домен
+    String enteredMainDomain = verifiedDomain.split('-back.').last;
+    String enteredDomain = verifiedDomain.split('-back.').first;
+    
+    // Принудительно сохраняем в SharedPreferences
+    await prefs.setString('enteredMainDomain', enteredMainDomain);
+    await prefs.setString('enteredDomain', enteredDomain);
+    
+    debugPrint('Force initialized domain: $enteredDomain-back.$enteredMainDomain');
+  }
+}
   Future<void> _markMessagesAsRead() async {
     // Проверяем, не был ли метод уже вызван
     if (_hasMarkedMessagesAsRead) {
@@ -173,21 +384,21 @@ void initState() {
         if (kDebugMode) {
           print('ChatSmsScreen: Ошибка при пометке сообщений как прочитанных: $e');
         }
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              AppLocalizations.of(context)!.translate('error_marking_messages_read'),
-              style: const TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.white,
-              ),
-            ),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
-          ),
-        );
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   // SnackBar(
+        //   //   content: Text(
+        //   //     AppLocalizations.of(context)!.translate('error_marking_messages_read'),
+        //   //     style: const TextStyle(
+        //   //       fontFamily: 'Gilroy',
+        //   //       fontSize: 16,
+        //   //       fontWeight: FontWeight.w500,
+        //   //       color: Colors.white,
+        //   //     ),
+        //   //   ),
+        //   //   backgroundColor: Colors.red,
+        //   //   duration: const Duration(seconds: 3),
+        //   // ),
+        // );
       }
     } else {
       if (kDebugMode) {
@@ -198,24 +409,55 @@ void initState() {
     }
   }
 // Обновлённый метод для получения интеграции в ChatSmsScreen
+
+
+
+// Исправленный метод для получения интеграции в ChatSmsScreen
 Future<void> _fetchIntegration() async {
   final prefs = await SharedPreferences.getInstance();
+  
   try {
-    // Используем новый упрощённый метод
-    final chatData = await widget.apiService.getChatByIdWithIntegration(widget.chatId);
+    debugPrint('ChatSmsScreen: Fetching integration data for chatId: ${widget.chatId}');
     
-    debugPrint('ChatData fetched: integration.username=${chatData.integration?.username}, channel.name=${chatData.channel?.name}');
+    // Сначала пытаемся получить данные чата
+    final chatData = await widget.apiService.getChatById(widget.chatId);
+    debugPrint('ChatSmsScreen: Chat data received');
+    
+    // Пытаемся получить интеграцию отдельным запросом
+    IntegrationForLead? integration;
+    try {
+      integration = await widget.apiService.getIntegrationForLead(widget.chatId);
+      debugPrint('ChatSmsScreen: Integration data received: ${integration.username}');
+    } catch (integrationError) {
+      debugPrint('ChatSmsScreen: Integration request failed: $integrationError');
+      integration = null;
+    }
     
     setState(() {
-      integrationUsername = chatData.integration?.username ?? AppLocalizations.of(context)!.translate('unknown_channel');
-      channelName = chatData.channel?.name ?? 'unknown';
+      // Используем данные интеграции, если они есть
+      if (integration != null) {
+        integrationUsername = integration.username ?? 
+            AppLocalizations.of(context)!.translate('unknown_channel');
+        
+        // Пытаемся определить тип канала из данных интеграции
+        channelName = _determineChannelType(integration) ?? 'unknown';
+      } else {
+        // Fallback к данным чата, если они доступны
+        integrationUsername = chatData.name.isNotEmpty 
+            ? chatData.name 
+            : AppLocalizations.of(context)!.translate('unknown_channel');
+        channelName = 'chat'; // По умолчанию для обычного чата
+      }
       
       // Сохраняем в SharedPreferences для быстрого доступа
       prefs.setString('integration_username_${widget.chatId}', integrationUsername!);
       prefs.setString('channel_name_${widget.chatId}', channelName!);
     });
+    
+    debugPrint('ChatSmsScreen: Integration configured - username: $integrationUsername, channel: $channelName');
+    
   } catch (e) {
-    debugPrint('Ошибка загрузки данных чата: $e');
+    debugPrint('ChatSmsScreen: Error fetching integration data: $e');
     
     // Пытаемся загрузить из кеша
     setState(() {
@@ -223,8 +465,36 @@ Future<void> _fetchIntegration() async {
           AppLocalizations.of(context)!.translate('unknown_channel');
       channelName = prefs.getString('channel_name_${widget.chatId}') ?? 'unknown';
     });
+    
+    debugPrint('ChatSmsScreen: Using cached integration data');
   }
 }
+
+// Вспомогательный метод для определения типа канала из интеграции
+String? _determineChannelType(IntegrationForLead integration) {
+  // Здесь можно определить тип канала на основе данных интеграции
+  // Примеры типов: telegram, whatsapp, instagram, facebook, website
+  
+  if (integration.username != null) {
+    final username = integration.username!.toLowerCase();
+    
+    if (username.contains('telegram') || username.contains('tg')) {
+      return 'telegram';
+    } else if (username.contains('whatsapp') || username.contains('wa')) {
+      return 'whatsapp';
+    } else if (username.contains('instagram') || username.contains('ig')) {
+      return 'instagram';
+    } else if (username.contains('facebook') || username.contains('fb')) {
+      return 'facebook';
+    } else if (username.contains('web') || username.contains('site')) {
+      return 'website';
+    }
+  }
+  
+  // По умолчанию возвращаем общий тип
+  return 'messenger';
+}
+
   Future<void> _playSound() async {
     try {
       await _audioPlayer.setAsset('assets/audio/send.mp3');
@@ -829,13 +1099,143 @@ void _scrollToMessageIndex(DateTime selectedDate) {
   }
 
 
+// Модифицируйте messageListUi для добавления кнопки повтора
 Widget messageListUi() {
   return BlocBuilder<MessagingCubit, MessagingState>(
     builder: (context, state) {
       debugPrint('messageListUi: Building with state: $state');
-      if (state is MessagesErrorState) {
-        return Center(child: Text("Ошибка!"));
+      
+      // НОВОЕ: Обработка частичной ошибки
+      if (state is MessagesPartialErrorState) {
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.warning_amber_rounded, size: 64, color: Colors.orange),
+              SizedBox(height: 16),
+              Text(
+                "Частичная ошибка подключения",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'Gilroy',
+                  color: Colors.orange,
+                ),
+              ),
+              SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Text(
+                  state.error,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontFamily: 'Gilroy',
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ),
+              SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton(
+                    onPressed: () {
+                      context.read<MessagingCubit>().getMessagesWithFallback(widget.chatId);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    ),
+                    child: Text(
+                      "Повторить",
+                      style: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  TextButton(
+                    onPressed: () {
+                      // Показываем пустой чат
+                      context.read<MessagingCubit>().showEmptyChat();
+                    },
+                    child: Text(
+                      "Пустой чат",
+                      style: TextStyle(
+                        fontFamily: 'Gilroy',
+                        color: Colors.grey[600],
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
       }
+      
+      if (state is MessagesErrorState) {
+        // Специальная обработка ошибки с null URL
+        if (state.error.contains('No host specified in URI null')) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.error_outline, size: 64, color: Colors.red),
+                SizedBox(height: 16),
+                Text(
+                  "Ошибка подключения к серверу",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Gilroy',
+                    color: Colors.red,
+                  ),
+                ),
+                SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () {
+                    context.read<MessagingCubit>().getMessagesWithFallback(widget.chatId);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: Text("Повторить попытку"),
+                ),
+                SizedBox(height: 12),
+                TextButton(
+                  onPressed: () {
+                    context.read<MessagingCubit>().showEmptyChat();
+                  },
+                  child: Text("Открыть пустой чат"),
+                ),
+              ],
+            ),
+          );
+        }
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text("Ошибка загрузки сообщений"),
+              SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  context.read<MessagingCubit>().getMessagesWithFallback(widget.chatId);
+                },
+                child: Text("Повторить"),
+              ),
+            ],
+          ),
+        );
+      }
+      
       if (state is MessagesLoadingState) {
         return Center(child: CircularProgressIndicator.adaptive());
       }
@@ -1070,6 +1470,19 @@ Widget inputWidget() {
   }
 
 void setUpServices() async {
+  // Проверяем, что baseUrl инициализирован
+  if (baseUrl.isEmpty || baseUrl == 'null') {
+    debugPrint('BaseURL not initialized, fetching...');
+    baseUrl = await apiService.getDynamicBaseUrl();
+    
+    if (baseUrl.isEmpty || baseUrl == 'null') {
+      debugPrint('Failed to get baseURL, aborting socket setup');
+      return;
+    }
+  }
+  
+  debugPrint('Setting up socket for chatId: ${widget.chatId} with baseURL: $baseUrl');
+  
   debugPrint('Setting up socket for chatId: ${widget.chatId}');
   final prefs = await SharedPreferences.getInstance();
   String? token = prefs.getString('token');

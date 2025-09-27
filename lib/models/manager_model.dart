@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-class ManagerData{
+class ManagerData {
   final int id;
   final String name;
   final String? lastname;
@@ -8,35 +8,32 @@ class ManagerData{
   ManagerData({
     required this.id,
     required this.name,
-    this.lastname
+    this.lastname,
   });
 
-
-
   factory ManagerData.fromJson(Map<String, dynamic> json) => ManagerData(
-    id: json["id"],
-    name: json["name"],
-    lastname: json["lastname"]
-  
+    id: json["id"] ?? 0,
+    name: json["name"]?.toString() ?? '', // Безопасное преобразование
+    lastname: json["lastname"]?.toString(), // Безопасное nullable преобразование
   );
 
   Map<String, dynamic> toJson() => {
     "id": id,
     "name": name,
-    "lastname":lastname
-   
+    "lastname": lastname,
   };
 
   @override
   String toString() {
-    return 'UserData{id: $id, name: $name, lastname:$lastname}';
+    return 'ManagerData{id: $id, name: $name, lastname: $lastname}';
   }
 }
 
+ManagersDataResponse managersDataResponseFromJson(String str) => 
+    ManagersDataResponse.fromJson(json.decode(str));
 
-ManagersDataResponse managersDataResponseFromJson(String str) => ManagersDataResponse.fromJson(json.decode(str));
-
-String managersDataResponseToJson(ManagersDataResponse data) => json.encode(data.toJson());
+String managersDataResponseToJson(ManagersDataResponse data) => 
+    json.encode(data.toJson());
 
 class ManagersDataResponse {
   List<ManagerData>? result;
@@ -48,15 +45,22 @@ class ManagersDataResponse {
   });
 
   factory ManagersDataResponse.fromJson(Map<String, dynamic> json) {
-    // Печать данных для отладки
-    return ManagersDataResponse(
-      result: json["result"] != null && json["result"]["data"] != null
-          ? List<ManagerData>.from(
-              (json["result"]["data"] as List).map((x) => ManagerData.fromJson(x))
-            )
-          : [],
-      errors: json["errors"],
-    );
+    try {
+      return ManagersDataResponse(
+        result: json["result"] != null && json["result"]["data"] != null
+            ? List<ManagerData>.from(
+                (json["result"]["data"] as List).map((x) => ManagerData.fromJson(x))
+              )
+            : <ManagerData>[], // Пустой список вместо null
+        errors: json["errors"],
+      );
+    } catch (e) {
+      print('ManagersDataResponse.fromJson error: $e');
+      return ManagersDataResponse(
+        result: <ManagerData>[],
+        errors: 'Parsing error: $e',
+      );
+    }
   }
 
   Map<String, dynamic> toJson() => {
@@ -64,4 +68,3 @@ class ManagersDataResponse {
     "errors": errors,
   };
 }
-

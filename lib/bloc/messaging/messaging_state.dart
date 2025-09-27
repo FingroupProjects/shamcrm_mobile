@@ -71,3 +71,15 @@ final class PinnedMessagesState extends MessagingState {
   @override
   List<Object?> get props => [pinnedMessages, messages];
 }
+final class MessagesPartialErrorState extends MessagingState {
+  final String error;
+  final bool canRetry;
+  
+  const MessagesPartialErrorState({
+    required this.error, 
+    this.canRetry = true
+  });
+  
+  @override
+  List<Object?> get props => [error, canRetry];
+}

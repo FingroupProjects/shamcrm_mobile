@@ -801,7 +801,7 @@ class _ChatsScreenState extends State<ChatsScreen>
   final myPresenceChannel = socketClient.presenceChannel(
     'presence-user.$userId',
     authorizationDelegate: EndpointAuthorizableChannelTokenAuthorizationDelegate.forPresenceChannel(
-      authorizationEndpoint: Uri.parse('https://$enteredDomain-back.$enteredMainDomain/api/broadcasting/auth'),
+      authorizationEndpoint: Uri.parse('https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth'),
       headers: {
         'Authorization': 'Bearer $token',
         'X-Tenant': '$enteredDomain-back',
