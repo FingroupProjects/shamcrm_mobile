@@ -13,9 +13,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
-import '../../../../bloc/money_outcome/money_outcome_bloc.dart';
 import '../money_outcome_operation_type.dart';
-import '../money_outcome_screen.dart';
+import '../../../../bloc/page_2_BLOC/money_outcome/money_outcome_bloc.dart';
 
 class AddMoneyOutcomeSupplierReturn extends StatefulWidget {
   const AddMoneyOutcomeSupplierReturn({super.key});

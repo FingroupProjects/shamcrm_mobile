@@ -1,9 +1,9 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
-import 'package:crm_task_manager/bloc/money_outcome/money_outcome_bloc.dart';
 import 'package:crm_task_manager/bloc/supplier_list/supplier_list_bloc.dart';
 import 'package:crm_task_manager/bloc/supplier_list/supplier_list_event.dart';
 import 'package:crm_task_manager/bloc/supplier_list/supplier_list_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
+import '../../../../bloc/page_2_BLOC/money_outcome/money_outcome_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/custom_widget/dropdown_loading_state.dart';
 import 'package:crm_task_manager/models/cash_register_list_model.dart';

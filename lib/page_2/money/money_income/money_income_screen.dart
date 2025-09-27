@@ -2,14 +2,13 @@ import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/models/money/money_income_document_model.dart';
 import 'package:crm_task_manager/page_2/money/money_income/widgets/money_income_card.dart';
-import 'package:crm_task_manager/page_2/money/money_income/widgets/money_income_deletion.dart';
 import 'package:crm_task_manager/page_2/money/widgets/error_dialog.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../bloc/money_income/money_income_bloc.dart';
+import '../../../../bloc/page_2_BLOC/money_income/money_income_bloc.dart';
 import '../../../custom_widget/app_bar_selection_mode.dart';
 import '../../../widgets/snackbar_widget.dart';
 import 'add/add_money_income_from_another_cash_register.dart';

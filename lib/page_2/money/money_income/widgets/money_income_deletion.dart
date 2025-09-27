@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/bloc/money_income/money_income_bloc.dart';
+import '../../../../bloc/page_2_BLOC/money_income/money_income_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
