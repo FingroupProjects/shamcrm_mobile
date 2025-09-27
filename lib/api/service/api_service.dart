@@ -13604,9 +13604,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     int page = 1,
     int perPage = 20,
   }) async {
-    String path = '/api/dashboard/goods-report?page=$page&per_page=$perPage';
+    String path = '/dashboard/goods-report?page=$page&per_page=$perPage';
 
-    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     path = await _appendQueryParams(path);
     if (kDebugMode) {
       print('ApiService: getSalesDashboardGoodsReport - Generated path: $path');
@@ -13617,7 +13616,10 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       if (response.statusCode == 200 || response.statusCode == 201) {
         final rawData = json.decode(response.body);
         debugPrint("Полученные данные по отчёту товаров: $rawData");
-        return ResultDashboardGoodsReport.fromJson(rawData);
+
+        // Extract the 'result' object from the response
+        final resultData = rawData['result'] as Map<String, dynamic>;
+        return ResultDashboardGoodsReport.fromJson(resultData);
       } else {
         final message = _extractErrorMessageFromResponse(response);
         throw ApiException(

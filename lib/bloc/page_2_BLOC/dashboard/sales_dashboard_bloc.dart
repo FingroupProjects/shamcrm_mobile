@@ -11,9 +11,8 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
   final apiService = ApiService();
 
   SalesDashboardBloc() : super(SalesDashboardInitial()) {
-    on<SalesDashboardEvent>((event, emit) {});
     on<LoadInitialData>((event, emit) async {
-      final response = await apiService.getSalesDashboardGoodsReport();
+      // Загружаем начальные данные дашборда
     });
   }
 }

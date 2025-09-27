@@ -8,3 +8,4 @@ class LoadInitialData extends SalesDashboardEvent {
   @override
   List<Object> get props => [];
 }
+

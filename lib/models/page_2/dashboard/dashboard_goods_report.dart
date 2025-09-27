@@ -1,5 +1,3 @@
-
-// Data classes for JSON deserialization
 class ResultDashboardGoodsReport {
   final List<DashboardGoods> data;
   final Pagination pagination;
@@ -8,8 +6,8 @@ class ResultDashboardGoodsReport {
 
   factory ResultDashboardGoodsReport.fromJson(Map<String, dynamic> json) {
     return ResultDashboardGoodsReport(
-      data: (json['data'] as List).map((i) => DashboardGoods.fromJson(i)).toList(),
-      pagination: Pagination.fromJson(json['pagination']),
+      data: (json['data'] as List?)?.map((i) => DashboardGoods.fromJson(i)).toList() ?? [],
+      pagination: Pagination.fromJson(json['pagination'] as Map<String, dynamic>),
     );
   }
 }
@@ -31,11 +29,11 @@ class Pagination {
 
   factory Pagination.fromJson(Map<String, dynamic> json) {
     return Pagination(
-      total: json['total'],
-      count: json['count'],
-      per_page: json['per_page'],
-      current_page: json['current_page'],
-      total_pages: json['total_pages'],
+      total: json['total'] as int,
+      count: json['count'] as int,
+      per_page: json['per_page'] as int,
+      current_page: json['current_page'] as int,
+      total_pages: json['total_pages'] as int,
     );
   }
 }
@@ -61,13 +59,13 @@ class DashboardGoods {
 
   factory DashboardGoods.fromJson(Map<String, dynamic> json) {
     return DashboardGoods(
-      id: json['id'],
-      article: json['article'],
-      name: json['name'],
-      category: json['category'],
-      quantity: json['quantity'],
-      daysWithoutMovement: json['days_without_movement'],
-      sum: json['sum'],
+      id: json['id'] as int,
+      article: json['article'] as String,
+      name: json['name'] as String,
+      category: json['category'] as String,
+      quantity: json['quantity'] as String,
+      daysWithoutMovement: json['days_without_movement'] as String,
+      sum: json['sum'] as String,
     );
   }
 }

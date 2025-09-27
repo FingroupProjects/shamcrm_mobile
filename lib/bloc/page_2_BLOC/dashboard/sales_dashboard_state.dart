@@ -8,3 +8,4 @@ final class SalesDashboardInitial extends SalesDashboardState {
   @override
   List<Object> get props => [];
 }
+
