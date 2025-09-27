@@ -40,75 +40,7 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
               child: SingleChildScrollView(
                 child: Column(
                   children: [
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16.0),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: StatCard(
-                              onTap: () {
-                                showSimpleInfoDialog(context);
-                              },
-                              accentColor: Colors.orange,
-                              title: 'ТОВАРЫ/НЕЛИКВИДНЫМИ ТОВАРЫ',
-                              leading: const Icon(Icons.inventory_2, color: Colors.orange),
-                              amountText: '1,0',
-                              showCurrencySymbol: false,
-                              isUp: true,
-                              trendText: '2 с прошлой недели',
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: StatCard(
-                              onTap: () {},
-                              accentColor: Colors.blue,
-                              title: 'ОСТАТОК КАССЫ',
-                              leading: const Icon(Icons.account_balance_wallet, color: Colors.blue),
-                              amount: 487350,
-                              showCurrencySymbol: true,
-                              currencySymbol: '₽',
-                              isUp: true,
-                              trendText: '12.3% за месяц',
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(height: 16),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16.0),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: StatCard(
-                              onTap: () {},
-                              accentColor: Colors.red,
-                              title: 'НАШИ ДОЛГИ',
-                              leading: const Icon(Icons.trending_down, color: Colors.red),
-                              amount: 125000,
-                              showCurrencySymbol: true,
-                              currencySymbol: '₽',
-                              isUp: false,
-                              trendText: '8.5% за месяц',
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: StatCard(
-                              onTap: () {},
-                              accentColor: Colors.green,
-                              title: 'НАМ ДОЛЖНЫ',
-                              leading: const Icon(Icons.trending_up, color: Colors.green),
-                              amountText: '14',
-                              showCurrencySymbol: false,
-                              isUp: true,
-                              trendText: '2 с прошлой недели',
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    TopPart(),
                     TopSellingProductsChart(),
                     SalesDynamicsLineChart(),
                     NetProfitChart(),
@@ -123,5 +55,89 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
         },
       ),
     );
+  }
+}
+
+class TopPart extends StatefulWidget {
+  const TopPart({super.key});
+
+  @override
+  State<TopPart> createState() => _TopPartState();
+}
+
+class _TopPartState extends State<TopPart> {
+  @override
+  Widget build(BuildContext context) {
+    return Column(children: [
+      Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16.0),
+        child: Row(
+          children: [
+            Expanded(
+              child: StatCard(
+                onTap: () {
+                  showSimpleInfoDialog(context);
+                },
+                accentColor: Colors.orange,
+                title: 'ТОВАРЫ/НЕЛИКВИДНЫМИ ТОВАРЫ',
+                leading: const Icon(Icons.inventory_2, color: Colors.orange),
+                amountText: '1,0',
+                showCurrencySymbol: false,
+                isUp: true,
+                trendText: '2 с прошлой недели',
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: StatCard(
+                onTap: () {},
+                accentColor: Colors.blue,
+                title: 'ОСТАТОК КАССЫ',
+                leading: const Icon(Icons.account_balance_wallet, color: Colors.blue),
+                amount: 487350,
+                showCurrencySymbol: true,
+                currencySymbol: '₽',
+                isUp: true,
+                trendText: '12.3% за месяц',
+              ),
+            ),
+          ],
+        ),
+      ),
+      SizedBox(height: 16),
+      Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16.0),
+        child: Row(
+          children: [
+            Expanded(
+              child: StatCard(
+                onTap: () {},
+                accentColor: Colors.red,
+                title: 'НАШИ ДОЛГИ',
+                leading: const Icon(Icons.trending_down, color: Colors.red),
+                amount: 125000,
+                showCurrencySymbol: true,
+                currencySymbol: '₽',
+                isUp: false,
+                trendText: '8.5% за месяц',
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: StatCard(
+                onTap: () {},
+                accentColor: Colors.green,
+                title: 'НАМ ДОЛЖНЫ',
+                leading: const Icon(Icons.trending_up, color: Colors.green),
+                amountText: '14',
+                showCurrencySymbol: false,
+                isUp: true,
+                trendText: '2 с прошлой недели',
+              ),
+            ),
+          ],
+        ),
+      ),
+    ],);
   }
 }
