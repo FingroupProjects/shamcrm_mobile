@@ -62,6 +62,7 @@ import 'package:crm_task_manager/models/page_2/call_statistics1_model.dart';
 import 'package:crm_task_manager/models/page_2/call_summary_stats_model.dart';
 import 'package:crm_task_manager/models/page_2/category_model.dart';
 import 'package:crm_task_manager/models/page_2/character_list_model.dart';
+import 'package:crm_task_manager/models/page_2/dashboard/dashboard_goods_report.dart';
 import 'package:crm_task_manager/models/page_2/delivery_address_model.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_history_model.dart';
@@ -13564,7 +13565,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
   Future<Map<String, dynamic>> restoreMovementDocument(int documentId) async {
     try {
       final token = await getToken();
-      if (token == null) throw Exception('Токен не найден');
+      if (token == null) throw 'Токен не найден';
 
       final pathWithParams = await _appendQueryParams('/movement-documents/restore');
       final uri = Uri.parse('$baseUrl$pathWithParams');
@@ -13597,4 +13598,35 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
 //______________________________end movement____________________________//
 
+//====================================== SALES DASHBOARD ==================================//
+
+  Future<ResultDashboardGoodsReport> getSalesDashboardGoodsReport({
+    int page = 1,
+    int perPage = 20,
+  }) async {
+    String path = '/api/dashboard/goods-report?page=$page&per_page=$perPage';
+
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    path = await _appendQueryParams(path);
+    if (kDebugMode) {
+      print('ApiService: getSalesDashboardGoodsReport - Generated path: $path');
+    }
+
+    try {
+      final response = await _getRequest(path);
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final rawData = json.decode(response.body);
+        debugPrint("Полученные данные по отчёту товаров: $rawData");
+        return ResultDashboardGoodsReport.fromJson(rawData);
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при получении данных отчёта товаров!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
 }
