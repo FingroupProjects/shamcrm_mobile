@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../models/page_2/dashboard/dashboard_goods_report.dart';
 import '../../../../bloc/page_2_BLOC/dashboard/products/sales_dashboard_goods_bloc.dart';
+import '../../detailed_report/detailed_report_screen.dart';
 
 void showSimpleInfoDialog(BuildContext context) {
   // Get the bloc instance from the current context before showing dialog
@@ -563,8 +564,9 @@ class _InfoDialogState extends State<InfoDialog> {
                       Expanded(
                         child: ElevatedButton(
                           onPressed: () {
-                            // TODO: Добавить навигацию к детальному экрану
-                            Navigator.of(context).pop();
+                            debugPrint("Подробнее pressed");
+                            Navigator.of(context).pop(); // Сначала закрываем диалог
+                            Navigator.of(context).push(MaterialPageRoute(builder: (context) => DetailedReportScreen()));
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white,
