@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:intl/intl.dart';
 
-import '../../../models/page_2/dashboard/dashboard_goods_report.dart';
+import '../../../../models/page_2/dashboard/dashboard_goods_report.dart';
 
 class GoodsCard extends StatelessWidget {
   final DashboardGoods goods;
