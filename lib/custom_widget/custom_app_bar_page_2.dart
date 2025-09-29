@@ -19,6 +19,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'filter/page_2/incoming/filter_app_bar_income.dart';
+
 class CustomAppBarPage2 extends StatefulWidget {
   String title;
   Function() onClickProfileAvatar;
@@ -27,14 +29,21 @@ class CustomAppBarPage2 extends StatefulWidget {
   ValueChanged<String>? onChangedSearchInput;
   Function(bool) clearButtonClick;
   Function(bool) clearButtonClickFiltr;
+
   final bool showSearchIcon;
   final bool showFilterIcon;
   final bool showFilterOrderIcon;
   final bool showFilterIncomeIcon;
+  final bool showFilterIncomingIcon;
+
   final Function(Map<String, dynamic>)? onFilterGoodsSelected;
-  final Function(Map<String, dynamic>)? onFilterIncomeSelected;
+  final Function(Map<String, dynamic>)? onFilterIncomeSelected; // money income
+  final Function(Map<String, dynamic>)? onFilterIncomingSelected; // new filter for documents -> incoming screen
+
   final VoidCallback? onGoodsResetFilters;
-  final VoidCallback? onIncomeResetFilters;
+  final VoidCallback? onIncomeResetFilters; // money income
+  final VoidCallback? onIncomingResetFilters; // new filter for documents -> incoming screen
+
   final Map<String, dynamic> currentFilters;
   final List<String>? initialLabels;
 
@@ -51,10 +60,16 @@ class CustomAppBarPage2 extends StatefulWidget {
     this.showFilterIcon = true,
     this.showFilterOrderIcon = true,
     this.showFilterIncomeIcon = false,
+    this.showFilterIncomingIcon = false,
+
     this.onFilterGoodsSelected,
     this.onFilterIncomeSelected,
+    this.onFilterIncomingSelected,
+
     this.onGoodsResetFilters,
     this.onIncomeResetFilters,
+    this.onIncomingResetFilters,
+
     required this.currentFilters,
     this.initialLabels,
   });
@@ -88,6 +103,7 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
   // bool _isGoodsFiltering = false;
   bool _isOrdersFiltering = false; // Новая переменная для фильтров заказов
   bool _isIncomeFiltering = false; // Новая переменная для фильтров доходов
+  bool _isIncomingFiltering = false; //
   
 
   @override
@@ -157,6 +173,15 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
             widget.currentFilters['status'] != null ||
             widget.currentFilters['author_id'] != null ||
             widget.currentFilters['deleted'] != null);
+
+    _isIncomingFiltering = widget.currentFilters.isNotEmpty ||
+        (widget.currentFilters['date_from'] != null ||
+            widget.currentFilters['date_to'] != null ||
+            widget.currentFilters['status'] != null ||
+            widget.currentFilters['author_id'] != null ||
+            widget.currentFilters['deleted'] != null);
+
+
   }
 
   Future<void> _checkPermissions() async {
@@ -609,6 +634,21 @@ Future<void> _scanBarcode() async {
               navigateToIncomeFilterScreen(context);
             },
           ),
+        if (widget.showFilterIncomingIcon)
+          IconButton(
+            icon: Padding(
+              padding: const EdgeInsets.only(left: 0),
+              child: Image.asset(
+                'assets/icons/AppBar/filter.png',
+                width: 24,
+                height: 24,
+                color: _isIncomingFiltering ? _iconColor : null,
+              ),
+            ),
+            onPressed: () {
+              navigateToIncomingFilterScreen(context);
+            },
+          ),
         if (widget.showFilterIcon && _canCreateProduct)
         IconButton(
           icon: Padding(
@@ -870,6 +910,73 @@ void navigateToOrderFilterScreen(BuildContext context) {
       ),
     );
   }
+
+  void navigateToIncomingFilterScreen(BuildContext context) {
+    if (kDebugMode) {
+      // print('CustomAppBarPage2: Переход к экрану фильтров доходов');
+      // print('CustomAppBarPage2: Текущие фильтры: ${widget.currentFilters}');
+    }
+
+    DateTime? initialFromDate = widget.currentFilters['date_from'];
+    DateTime? initialToDate = widget.currentFilters['date_to'];
+    String? initialStatus;
+    String? initialAuthor;
+    bool? initialIsDeleted;
+
+    if (widget.currentFilters.containsKey('status')) {
+      initialStatus = widget.currentFilters['status'].toString();
+    }
+
+    if (widget.currentFilters.containsKey('author_id')) {
+      initialAuthor = widget.currentFilters['author_id'].toString();
+    }
+
+    if (widget.currentFilters.containsKey('deleted')) {
+      final deletedValue = widget.currentFilters['deleted'];
+      if (deletedValue is String) {
+        initialIsDeleted = deletedValue  == '1';
+      }
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => IncomingFilterScreen(
+          onSelectedDataFilter: (filters) {
+            if (kDebugMode) {
+              print('CustomAppBarPage2: Получены фильтры из IncomingFilterScreen: $filters');
+            }
+            setState(() {
+              _isIncomingFiltering = filters.isNotEmpty ||
+                  filters['date_from'] != null ||
+                  filters['date_to'] != null ||
+                  // todo check income screen author sending from filters
+                  filters['author_id'] != null;
+            });
+            debugPrint("_isIncomingFiltering: $_isIncomingFiltering");
+            debugPrint("filters: $filters");
+            widget.onFilterIncomingSelected?.call(filters);
+          },
+          onResetFilters: () {
+            if (kDebugMode) {
+              print('CustomAppBarPage2: Сброс фильтров из IncomingFilterScreen');
+            }
+            setState(() {
+              _isIncomingFiltering = false;
+              widget.currentFilters.clear();
+            });
+            widget.onIncomingResetFilters?.call();
+          },
+          initialFromDate: initialFromDate,
+          initialToDate: initialToDate,
+          initialStatus: initialStatus,
+          initialAuthor: initialAuthor,
+          initialIsDeleted: initialIsDeleted,
+        ),
+      ),
+    );
+  }
+
 }
 
 class _BarcodeScannerScreen extends StatefulWidget {

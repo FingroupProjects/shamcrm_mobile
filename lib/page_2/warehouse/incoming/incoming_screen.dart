@@ -30,8 +30,8 @@ class _IncomingScreenState extends State<IncomingScreen> {
   final FocusNode _focusNode = FocusNode();
   bool _isSearching = false;
   Map<String, dynamic> _currentFilters = {};
+  String? _search;
   late IncomingBloc _incomingBloc;
-  bool _isInitialLoad = true;
   bool _isLoadingMore = false;
   bool _hasReachedMax = false;
   bool _selectionMode = false;
@@ -52,6 +52,39 @@ class _IncomingScreenState extends State<IncomingScreen> {
     super.dispose();
   }
 
+  void _onFilterSelected(Map<String, dynamic> filters) {
+    setState(() {
+      _currentFilters = Map.from(filters);
+      _hasReachedMax = false;
+      _isLoadingMore = false;
+    });
+
+    _searchController.clear();
+    _search = null;
+
+    _incomingBloc.add(FetchIncoming(
+      filters: filters,
+      forceRefresh: true,
+      search: null,
+    ));
+  }
+
+  void _onResetFilters() {
+    setState(() {
+      _currentFilters.clear();
+      _hasReachedMax = false;
+      _isLoadingMore = false;
+      _searchController.clear();
+      _search = null;
+    });
+
+    _incomingBloc.add(const FetchIncoming(
+      filters: {},
+      forceRefresh: true,
+      search: null,
+    ));
+  }
+
   void _onScroll() {
     if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200 &&
         !_isLoadingMore &&
@@ -68,21 +101,17 @@ class _IncomingScreenState extends State<IncomingScreen> {
 
   void _onSearch(String query) {
     setState(() {
-      _isSearching = query.isNotEmpty;
+      _isSearching = query.trim().isNotEmpty;
     });
-    _currentFilters['query'] = query;
+    _search = query;
     _incomingBloc.add(FetchIncoming(
       forceRefresh: true,
-      filters: _currentFilters,
+      search: _search,
     ));
   }
 
   Future<void> _onRefresh() async {
     setState(() {
-      _isSearching = false;
-      _searchController.clear();
-      _currentFilters = {};
-      _isInitialLoad = true;
       _hasReachedMax = false;
     });
     _incomingBloc.add(const FetchIncoming(forceRefresh: true));
@@ -124,84 +153,92 @@ class _IncomingScreenState extends State<IncomingScreen> {
           forceMaterialTransparency: true,
           title: _selectionMode
               ? BlocBuilder<IncomingBloc, IncomingState>(
-                  builder: (context, state) {
-                    if (state is IncomingLoaded) {
-                      bool showApprove = state.selectedData!.any((doc) => doc.approved == 0 && doc.deletedAt == null);
-                      bool showDisapprove = state.selectedData!.any((doc) => doc.approved == 1 && doc.deletedAt == null);
-                      bool showDelete = state.selectedData!.any((doc) => doc.deletedAt == null);
-                      bool showRestore = state.selectedData!.any((doc) => doc.deletedAt != null);
+            builder: (context, state) {
+              if (state is IncomingLoaded) {
+                bool showApprove = state.selectedData!.any((doc) => doc.approved == 0 && doc.deletedAt == null);
+                bool showDisapprove = state.selectedData!.any((doc) => doc.approved == 1 && doc.deletedAt == null);
+                bool showDelete = state.selectedData!.any((doc) => doc.deletedAt == null);
+                bool showRestore = state.selectedData!.any((doc) => doc.deletedAt != null);
 
-                      return AppBarSelectionMode(
-                        title: localizations?.translate('appbar_incoming') ?? 'Приходы',
-                        onDismiss: () {
-                          setState(() {
-                            _selectionMode = false;
-                          });
-                          _incomingBloc.add(UnselectAllDocuments());
-                        },
-                        onApprove: () {
-                          setState(() {
-                            _selectionMode = false;
-                          });
-                          _incomingBloc.add(MassApproveIncomingDocuments());
-                        },
-                        onDisapprove: () {
-                          setState(() {
-                            _selectionMode = false;
-                          });
-                          _incomingBloc.add(MassDisapproveIncomingDocuments());
-                        },
-                        onDelete: () {
-                          setState(() {
-                            _selectionMode = false;
-                          });
-                          _incomingBloc.add(MassDeleteIncomingDocuments());
-                        },
-                        onRestore: () {
-                          setState(() {
-                            _selectionMode = false;
-                          });
-                          _incomingBloc.add(MassRestoreIncomingDocuments());
-                        },
-                        showApprove: showApprove,
-                        showDelete: showDelete,
-                        showDisapprove: showDisapprove,
-                        showRestore: showRestore,
-                      );
-                    }
-
-                    return AppBarSelectionMode(
-                      title: localizations?.translate('appbar_incoming') ?? 'Приходы',
-                      onDismiss: () {
-                        setState(() {
-                          _selectionMode = false;
-                        });
-                        _incomingBloc.add(UnselectAllDocuments());
-                      },
-                    );
+                return AppBarSelectionMode(
+                  title: localizations?.translate('appbar_incoming') ?? 'Приходы',
+                  onDismiss: () {
+                    setState(() {
+                      _selectionMode = false;
+                    });
+                    _incomingBloc.add(UnselectAllDocuments());
                   },
-                )
+                  onApprove: () {
+                    setState(() {
+                      _selectionMode = false;
+                    });
+                    _incomingBloc.add(MassApproveIncomingDocuments());
+                  },
+                  onDisapprove: () {
+                    setState(() {
+                      _selectionMode = false;
+                    });
+                    _incomingBloc.add(MassDisapproveIncomingDocuments());
+                  },
+                  onDelete: () {
+                    setState(() {
+                      _selectionMode = false;
+                    });
+                    _incomingBloc.add(MassDeleteIncomingDocuments());
+                  },
+                  onRestore: () {
+                    setState(() {
+                      _selectionMode = false;
+                    });
+                    _incomingBloc.add(MassRestoreIncomingDocuments());
+                  },
+                  showApprove: showApprove,
+                  showDelete: showDelete,
+                  showDisapprove: showDisapprove,
+                  showRestore: showRestore,
+                );
+              }
+
+              return AppBarSelectionMode(
+                title: localizations?.translate('appbar_incoming') ?? 'Приходы',
+                onDismiss: () {
+                  setState(() {
+                    _selectionMode = false;
+                  });
+                  _incomingBloc.add(UnselectAllDocuments());
+                },
+              );
+            },
+          )
               : CustomAppBarPage2(
-                  title: localizations!.translate('appbar_incoming') ?? 'Приходы',
-                  showSearchIcon: true,
-                  showFilterIcon: false,
-                  showFilterOrderIcon: false,
-                  onChangedSearchInput: _onSearch,
-                  textEditingController: _searchController,
-                  focusNode: _focusNode,
-                  clearButtonClick: (value) {
-                    if (!value) {
-                      setState(() {
-                        _isSearching = false;
-                        _searchController.clear();
-                      });
-                      _incomingBloc.add(const FetchIncoming(forceRefresh: true));
-                    }
-                  },
-                  onClickProfileAvatar: () {},
-                  clearButtonClickFiltr: (bool p1) {},
-                  currentFilters: {},
-                ),
+            title: localizations!.translate('appbar_incoming') ?? 'Приходы',
+            showSearchIcon: true,
+            showFilterIcon: false,
+            showFilterOrderIcon: false,
+            showFilterIncomeIcon: false,
+            showFilterIncomingIcon: true,
+            onFilterIncomingSelected: _onFilterSelected,
+            onIncomingResetFilters: _onResetFilters,
+            onChangedSearchInput: _onSearch,
+            textEditingController: _searchController,
+            focusNode: _focusNode,
+            clearButtonClick: (value) {
+              if (!value) {
+                setState(() {
+                  _isSearching = false;
+                  _searchController.clear();
+                  _search = null;
+                });
+                _incomingBloc.add(FetchIncoming(
+                  forceRefresh: true,
+                  filters: _currentFilters,
+                ));
+              }
+            },
+            onClickProfileAvatar: () {},
+            clearButtonClickFiltr: (bool p1) {},
+            currentFilters: _currentFilters,
+          ),
         ),
         body: BlocListener<IncomingBloc, IncomingState>(
           listener: (context, state) {
@@ -212,12 +249,10 @@ class _IncomingScreenState extends State<IncomingScreen> {
             if (state is IncomingLoaded) {
               setState(() {
                 _hasReachedMax = state.hasReachedMax;
-                _isInitialLoad = false;
                 _isLoadingMore = false;
               });
             } else if (state is IncomingError) {
               setState(() {
-                _isInitialLoad = false;
                 _isLoadingMore = false;
               });
               _showSnackBar(state.message, false);

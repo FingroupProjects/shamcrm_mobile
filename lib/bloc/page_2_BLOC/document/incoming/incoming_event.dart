@@ -14,15 +14,17 @@ class FetchIncoming extends IncomingEvent {
   final bool forceRefresh;
   final Map<String, dynamic>? filters;
   final int? status;
+  final String? search;
 
   const FetchIncoming({
     this.forceRefresh = false,
     this.filters,
     this.status,
+    this.search
   });
 
   @override
-  List<Object> get props => [forceRefresh, filters ?? {}, status ?? 0];
+  List<Object> get props => [forceRefresh, filters ?? {}, status ?? 0, search ?? ''];
 }
 
 class CreateIncoming extends IncomingEvent {
