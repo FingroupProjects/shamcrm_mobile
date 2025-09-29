@@ -163,7 +163,7 @@ class _HomeScreenState extends State<HomeScreen> {
       hasAvailableScreens = true;
     }
 
-    // "Деньги"
+    // // "Деньги"
     widgetsGroup2.add(MoneyScreen());
     titleKeysGroup2.add('money');
     navBarTitleKeysGroup2.add('money');

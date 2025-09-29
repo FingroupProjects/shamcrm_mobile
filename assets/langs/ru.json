@@ -1444,5 +1444,8 @@
   "quarter": "Квартал",
   "pending": "В ожидании",
   "cancelled": "Отменено",
-  "appbar_sales_dashboard": "Дашборд"
+  "appbar_sales_dashboard": "Дашборд",
+  "session_expired_title": "Сессия истекла",
+  "session_expired_description": "Вы вышли из аккаунта.\nВойдите заново, чтобы продолжить работу.",
+  "understand_and_exit": "Dыйти"
 }
