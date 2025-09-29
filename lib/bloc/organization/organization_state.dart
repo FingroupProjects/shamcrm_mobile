@@ -29,13 +29,3 @@ class OrganizationError extends OrganizationState {
   @override
   List<Object> get props => [message];
 }
-
-// Новое состояние специально для ошибок авторизации
-class OrganizationAuthError extends OrganizationState {
-  final String message;
-
-  const OrganizationAuthError(this.message);
-
-  @override
-  List<Object> get props => [message];
-}

@@ -18,10 +18,10 @@ class OrganizationBloc extends Bloc<OrganizationEvent, OrganizationState> {
           emit(OrganizationLoaded(organizations));
         } catch (e) {
           if (e is ApiException && e.statusCode == 401) {
-            // Для ошибок авторизации эмитим специальное состояние
-            emit(OrganizationAuthError('Неавторизованный доступ!'));
+            emit(OrganizationError('Неавторизованный доступ!'));
           } else {
-            emit(OrganizationError('Не удалось загрузить данные!'));
+            emit(OrganizationError(
+                'Не удалось загрузить данные!'));
           }
         }
       } else {

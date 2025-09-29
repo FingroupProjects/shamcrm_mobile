@@ -1,10 +1,8 @@
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-import 'package:crm_task_manager/screens/profile/profile_widget/auth_error_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/organization/organization_bloc.dart';
 import 'package:crm_task_manager/bloc/organization/organization_state.dart';
-// Импортируем наш новый диалог
 
 class OrganizationWidget extends StatefulWidget {
   final String? selectedOrganization;
@@ -77,12 +75,6 @@ class _OrganizationWidgetState extends State<OrganizationWidget> {
               );
             }).toList();
           }
-        } else if (state is OrganizationAuthError) {
-          // Показываем диалог ошибки авторизации
-          AuthErrorHandler.handleAuthError(context, customMessage: state.message);
-          
-          // Возвращаем пустой виджет, так как диалог уже показан
-          return const SizedBox.shrink();
         } else if (state is OrganizationError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(

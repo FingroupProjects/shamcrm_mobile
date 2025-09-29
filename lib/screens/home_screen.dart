@@ -111,15 +111,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
 
     /// PAGE 2 ЭКРАНЫ (вторая группа)
-    // bool hasDashboard2Access = true;
-    // if (hasDashboard2Access) {
-    //   widgetsGroup2.add(SalesDashboardScreen());
-    //   titleKeysGroup2.add('appbar_sales_dashboard');
-    //   navBarTitleKeysGroup2.add('appbar_sales_dashboard');
-    //   activeIconsGroup2.add('assets/icons/MyNavBar/dashboard_ON.png');
-    //   inactiveIconsGroup2.add('assets/icons/MyNavBar/dashboard_OFF.png');
-    //   hasAvailableScreens = true;
-    // }
+    bool hasDashboard2Access = true;
+    if (hasDashboard2Access) {
+      widgetsGroup2.add(SalesDashboardScreen());
+      titleKeysGroup2.add('appbar_sales_dashboard');
+      navBarTitleKeysGroup2.add('appbar_sales_dashboard');
+      activeIconsGroup2.add('assets/icons/MyNavBar/dashboard_ON.png');
+      inactiveIconsGroup2.add('assets/icons/MyNavBar/dashboard_OFF.png');
+      hasAvailableScreens = true;
+    }
 
     // ИЗМЕНЕНО: Онлайн магазин (вместо отдельных Category, Goods, Orders)
     // Проверяем, есть ли доступ к любой части онлайн магазина
@@ -148,27 +148,27 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // НОВЫЙ: Учет склада - тоже можем привязать к hasMiniApp или оставить на permissions
     // Пока оставляю на permissions, но можно изменить логику по необходимости
-    // bool hasWarehouseAccess = false;
-    // if (await _apiService.hasPermission('product.read') || 
-    //     await _apiService.hasPermission('order.read')) {
-    //   hasWarehouseAccess = true;
-    // }
+    bool hasWarehouseAccess = false;
+    if (await _apiService.hasPermission('product.read') || 
+        await _apiService.hasPermission('order.read')) {
+      hasWarehouseAccess = true;
+    }
 
-    // if (hasWarehouseAccess) {
-    //   widgetsGroup2.add(WarehouseAccountingScreen());
-    //   titleKeysGroup2.add('appbar_warehouse');
-    //   navBarTitleKeysGroup2.add('appbar_warehouse');
-    //   activeIconsGroup2.add('assets/icons/MyNavBar/goods_ON.png');
-    //   inactiveIconsGroup2.add('assets/icons/MyNavBar/goods_OFF.png');
-    //   hasAvailableScreens = true;
-    // }
+    if (hasWarehouseAccess) {
+      widgetsGroup2.add(WarehouseAccountingScreen());
+      titleKeysGroup2.add('appbar_warehouse');
+      navBarTitleKeysGroup2.add('appbar_warehouse');
+      activeIconsGroup2.add('assets/icons/MyNavBar/goods_ON.png');
+      inactiveIconsGroup2.add('assets/icons/MyNavBar/goods_OFF.png');
+      hasAvailableScreens = true;
+    }
 
     // // "Деньги"
-    // widgetsGroup2.add(MoneyScreen());
-    // titleKeysGroup2.add('money');
-    // navBarTitleKeysGroup2.add('money');
-    // activeIconsGroup2.add('assets/icons/MyNavBar/goods_ON.png');
-    // inactiveIconsGroup2.add('assets/icons/MyNavBar/goods_OFF.png');
+    widgetsGroup2.add(MoneyScreen());
+    titleKeysGroup2.add('money');
+    navBarTitleKeysGroup2.add('money');
+    activeIconsGroup2.add('assets/icons/MyNavBar/goods_ON.png');
+    inactiveIconsGroup2.add('assets/icons/MyNavBar/goods_OFF.png');
 
     if (mounted) {
       setState(() {
