@@ -19,6 +19,7 @@ import 'movement_details.dart';
 
 class MovementScreen extends StatefulWidget {
   const MovementScreen({super.key, this.organizationId});
+
   final int? organizationId;
 
   @override
@@ -70,8 +71,7 @@ class _MovementScreenState extends State<MovementScreen> {
   void _onScroll() {
     if (!mounted) return;
 
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 200 &&
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200 &&
         !_isLoadingMore &&
         !_hasReachedMax) {
       setState(() {
@@ -153,8 +153,7 @@ class _MovementScreenState extends State<MovementScreen> {
             final result = await Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => CreateMovementDocumentScreen(
-                    organizationId: widget.organizationId),
+                builder: (context) => CreateMovementDocumentScreen(organizationId: widget.organizationId),
               ),
             );
 
@@ -172,86 +171,86 @@ class _MovementScreenState extends State<MovementScreen> {
           forceMaterialTransparency: true,
           title: _selectionMode
               ? BlocBuilder<MovementBloc, MovementState>(
-            builder: (context, state) {
-              if (state is MovementLoaded) {
-                bool showApprove = state.selectedData!.any((doc) => doc.approved == 0 && doc.deletedAt == null);
-                bool showDisapprove = state.selectedData!.any((doc) => doc.approved == 1 && doc.deletedAt == null);
-                bool showDelete = state.selectedData!.any((doc) => doc.deletedAt == null);
-                bool showRestore = state.selectedData!.any((doc) => doc.deletedAt != null);
+                  builder: (context, state) {
+                    if (state is MovementLoaded) {
+                      bool showApprove = state.selectedData!.any((doc) => doc.approved == 0 && doc.deletedAt == null);
+                      bool showDisapprove = state.selectedData!.any((doc) => doc.approved == 1 && doc.deletedAt == null);
+                      bool showDelete = state.selectedData!.any((doc) => doc.deletedAt == null);
+                      bool showRestore = state.selectedData!.any((doc) => doc.deletedAt != null);
 
-                return AppBarSelectionMode(
-                  title: localizations?.translate('appbar_movement') ?? 'Перемещение',
-                  onDismiss: () {
-                    setState(() {
-                      _selectionMode = false;
-                    });
-                    _movementBloc.add(UnselectAllDocuments());
-                  },
-                  onApprove: () {
-                    setState(() {
-                      _selectionMode = false;
-                    });
-                    _movementBloc.add(MassApproveMovementDocuments());
-                  },
-                  onDisapprove: () {
-                    setState(() {
-                      _selectionMode = false;
-                    });
-                    _movementBloc.add(MassDisapproveMovementDocuments());
-                  },
-                  onDelete: () {
-                    setState(() {
-                      _selectionMode = false;
-                    });
-                    _movementBloc.add(MassDeleteMovementDocuments());
-                  },
-                  onRestore: () {
-                    setState(() {
-                      _selectionMode = false;
-                    });
-                    _movementBloc.add(MassRestoreMovementDocuments());
-                  },
-                  showApprove: showApprove,
-                  showDelete: showDelete,
-                  showDisapprove: showDisapprove,
-                  showRestore: showRestore,
-                );
-              }
+                      return AppBarSelectionMode(
+                        title: localizations?.translate('appbar_movement') ?? 'Перемещение',
+                        onDismiss: () {
+                          setState(() {
+                            _selectionMode = false;
+                          });
+                          _movementBloc.add(UnselectAllDocuments());
+                        },
+                        onApprove: () {
+                          setState(() {
+                            _selectionMode = false;
+                          });
+                          _movementBloc.add(MassApproveMovementDocuments());
+                        },
+                        onDisapprove: () {
+                          setState(() {
+                            _selectionMode = false;
+                          });
+                          _movementBloc.add(MassDisapproveMovementDocuments());
+                        },
+                        onDelete: () {
+                          setState(() {
+                            _selectionMode = false;
+                          });
+                          _movementBloc.add(MassDeleteMovementDocuments());
+                        },
+                        onRestore: () {
+                          setState(() {
+                            _selectionMode = false;
+                          });
+                          _movementBloc.add(MassRestoreMovementDocuments());
+                        },
+                        showApprove: showApprove,
+                        showDelete: showDelete,
+                        showDisapprove: showDisapprove,
+                        showRestore: showRestore,
+                      );
+                    }
 
-              return AppBarSelectionMode(
-                title: localizations?.translate('appbar_movement') ?? 'Перемещение',
-                onDismiss: () {
-                  setState(() {
-                    _selectionMode = false;
-                  });
-                  _movementBloc.add(UnselectAllDocuments());
-                },
-              );
-            },
-          )
+                    return AppBarSelectionMode(
+                      title: localizations?.translate('appbar_movement') ?? 'Перемещение',
+                      onDismiss: () {
+                        setState(() {
+                          _selectionMode = false;
+                        });
+                        _movementBloc.add(UnselectAllDocuments());
+                      },
+                    );
+                  },
+                )
               : CustomAppBarPage2(
-            title: localizations?.translate('appbar_movement') ?? 'Перемещение',
-            showSearchIcon: true,
-            showFilterIcon: false,
-            showFilterOrderIcon: false,
-            onChangedSearchInput: _onSearch,
-            textEditingController: _searchController,
-            focusNode: _focusNode,
-            clearButtonClick: (value) {
-              if (!mounted) return;
+                  title: localizations?.translate('appbar_movement') ?? 'Перемещение',
+                  showSearchIcon: true,
+                  showFilterIcon: false,
+                  showFilterOrderIcon: false,
+                  onChangedSearchInput: _onSearch,
+                  textEditingController: _searchController,
+                  focusNode: _focusNode,
+                  clearButtonClick: (value) {
+                    if (!mounted) return;
 
-              if (!value) {
-                setState(() {
-                  _isSearching = false;
-                  _searchController.clear();
-                });
-                _movementBloc.add(const FetchMovements(forceRefresh: true));
-              }
-            },
-            onClickProfileAvatar: () {},
-            clearButtonClickFiltr: (bool p1) {},
-            currentFilters: {},
-          ),
+                    if (!value) {
+                      setState(() {
+                        _isSearching = false;
+                        _searchController.clear();
+                      });
+                      _movementBloc.add(const FetchMovements(forceRefresh: true));
+                    }
+                  },
+                  onClickProfileAvatar: () {},
+                  clearButtonClickFiltr: (bool p1) {},
+                  currentFilters: {},
+                ),
         ),
         body: MultiBlocListener(
           listeners: [
@@ -443,14 +442,14 @@ class _MovementScreenState extends State<MovementScreen> {
                     if (index >= currentData.length) {
                       return _isLoadingMore
                           ? Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Center(
-                          child: PlayStoreImageLoading(
-                            size: 80.0,
-                            duration: const Duration(milliseconds: 1000),
-                          ),
-                        ),
-                      )
+                              padding: const EdgeInsets.all(16.0),
+                              child: Center(
+                                child: PlayStoreImageLoading(
+                                  size: 80.0,
+                                  duration: const Duration(milliseconds: 1000),
+                                ),
+                              ),
+                            )
                           : const SizedBox.shrink();
                     }
 
@@ -507,16 +506,12 @@ class _MovementScreenState extends State<MovementScreen> {
                             return;
                           }
 
-                          if (currentData[index].deletedAt != null) return;
-
-                          // Проверяем валидность данных документа
-                          if (currentData[index].id == null) return;
-
-                          try {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => MovementDocumentDetailsScreen(
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (ctx) => BlocProvider(
+                                create: (context) => MovementBloc(context.read<ApiService>()),
+                                child: MovementDocumentDetailsScreen(
                                   documentId: currentData[index].id!,
                                   docNumber: currentData[index].docNumber ?? '',
                                   onDocumentUpdated: () {
@@ -526,23 +521,8 @@ class _MovementScreenState extends State<MovementScreen> {
                                   },
                                 ),
                               ),
-                            );
-                          } catch (e) {
-                            // Обрабатываем возможные ошибки навигации
-                            if (mounted && context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Ошибка при открытии документа: $e'),
-                                  backgroundColor: Colors.red,
-                                  behavior: SnackBarBehavior.floating,
-                                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                              );
-                            }
-                          }
+                            ),
+                          );
                         },
                         onLongPress: () {
                           if (_selectionMode) return;
