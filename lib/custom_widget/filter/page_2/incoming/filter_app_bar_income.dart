@@ -143,8 +143,8 @@ class _IncomingFilterScreenState extends State<IncomingFilterScreen> {
       final prefs = await SharedPreferences.getInstance();
       if (mounted) {
         setState(() {
-          final fromDateMillis = prefs.getInt('income_from_date');
-          final toDateMillis = prefs.getInt('income_to_date');
+          final fromDateMillis = prefs.getInt('incoming_from_date');
+          final toDateMillis = prefs.getInt('incoming_to_date');
           if (fromDateMillis != null) {
             _fromDate = DateTime.fromMillisecondsSinceEpoch(fromDateMillis);
           }
@@ -152,32 +152,32 @@ class _IncomingFilterScreenState extends State<IncomingFilterScreen> {
             _toDate = DateTime.fromMillisecondsSinceEpoch(toDateMillis);
           }
 
-          final supplierName = prefs.getString('income_supplier');
-          final supplierId = prefs.getInt('income_supplier_id');
+          // final supplierName = prefs.getString('incoming_supplier');
+          // final supplierId = prefs.getInt('incoming_supplier_id');
           // if (supplierName != null && supplierId != null) {
           //   _selectedSupplier = SupplierData(id: supplierId, name: supplierName);
           // }
           //
-          // final cashRegisterName = prefs.getString('income_cash_register');
-          // final cashRegisterId = prefs.getInt('income_cash_register_id');
+          // final cashRegisterName = prefs.getString('incoming_cash_register');
+          // final cashRegisterId = prefs.getInt('incoming_cash_register_id');
           // if (cashRegisterName != null && cashRegisterId != null) {
           //   _selectedCashRegister = CashRegisterData(id: cashRegisterId, name: cashRegisterName);
           // }
           //
-          // final leadName = prefs.getString('income_cash_register');
-          // final leadId = prefs.getInt('income_cash_register_id');
+          // final leadName = prefs.getString('incoming_cash_register');
+          // final leadId = prefs.getInt('incoming_cash_register_id');
           // if (leadName != null && leadId != null) {
           //   _selectedLead = LeadData(id: leadId, name: leadName);
           // }
 
-          final authorName = prefs.getString('income_author');
-          final authorId = prefs.getInt('income_author_id');
+          final authorName = prefs.getString('incoming_author');
+          final authorId = prefs.getInt('incoming_author_id');
           if (authorName != null && authorId != null) {
             selectedAuthor = AuthorData(id: authorId, name: authorName, lastname: '');
           }
 
-          _selectedStatus = prefs.getString('money_income_status') ?? widget.initialStatus;
-          _isDeleted = prefs.getBool('income_is_deleted') ?? widget.initialIsDeleted;
+          _selectedStatus = prefs.getString('money_incoming_status') ?? widget.initialStatus;
+          _isDeleted = prefs.getBool('incoming_is_deleted') ?? widget.initialIsDeleted;
 
           _updateDateControllers();
         });
@@ -192,59 +192,59 @@ class _IncomingFilterScreenState extends State<IncomingFilterScreen> {
       final prefs = await SharedPreferences.getInstance();
 
       if (_fromDate != null) {
-        await prefs.setInt('income_from_date', _fromDate!.millisecondsSinceEpoch);
+        await prefs.setInt('incoming_from_date', _fromDate!.millisecondsSinceEpoch);
       } else {
-        await prefs.remove('income_from_date');
+        await prefs.remove('incoming_from_date');
       }
 
       if (_toDate != null) {
-        await prefs.setInt('income_to_date', _toDate!.millisecondsSinceEpoch);
+        await prefs.setInt('incoming_to_date', _toDate!.millisecondsSinceEpoch);
       } else {
-        await prefs.remove('income_to_date');
+        await prefs.remove('incoming_to_date');
       }
       //
       // if (_selectedSupplier != null) {
-      //   await prefs.setString('income_supplier', _selectedSupplier!.name);
-      //   await prefs.setInt('income_supplier_id', _selectedSupplier!.id);
+      //   await prefs.setString('incoming_supplier', _selectedSupplier!.name);
+      //   await prefs.setInt('incoming_supplier_id', _selectedSupplier!.id);
       // } else {
-      //   await prefs.remove('income_supplier');
-      //   await prefs.remove('income_supplier_id');
+      //   await prefs.remove('incoming_supplier');
+      //   await prefs.remove('incoming_supplier_id');
       // }
       //
       // if (_selectedCashRegister != null) {
-      //   await prefs.setString('income_cash_register', _selectedCashRegister!.name);
-      //   await prefs.setInt('income_cash_register_id', _selectedCashRegister!.id);
+      //   await prefs.setString('incoming_cash_register', _selectedCashRegister!.name);
+      //   await prefs.setInt('incoming_cash_register_id', _selectedCashRegister!.id);
       // } else {
-      //   await prefs.remove('income_cash_register');
-      //   await prefs.remove('income_cash_register_id');
+      //   await prefs.remove('incoming_cash_register');
+      //   await prefs.remove('incoming_cash_register_id');
       // }
       //
       // if (_selectedLead != null) {
-      //   await prefs.setString('income_lead', _selectedLead!.name);
-      //   await prefs.setInt('income_lead_id', _selectedLead!.id);
+      //   await prefs.setString('incoming_lead', _selectedLead!.name);
+      //   await prefs.setInt('incoming_lead_id', _selectedLead!.id);
       // } else {
-      //   await prefs.remove('income_lead');
-      //   await prefs.remove('income_lead_id');
+      //   await prefs.remove('incoming_lead');
+      //   await prefs.remove('incoming_lead_id');
       // }
 
       if (_selectedStatus != null) {
-        await prefs.setString('money_income_status', _selectedStatus!);
+        await prefs.setString('money_incoming_status', _selectedStatus!);
       } else {
-        await prefs.remove('money_income_status');
+        await prefs.remove('money_incoming_status');
       }
 
       if (selectedAuthor != null) {
-        await prefs.setString('income_author', selectedAuthor!.name);
-        await prefs.setInt('income_author_id', selectedAuthor!.id);
+        await prefs.setString('incoming_author', selectedAuthor!.name);
+        await prefs.setInt('incoming_author_id', selectedAuthor!.id);
       } else {
-        await prefs.remove('income_author');
-        await prefs.remove('income_author_id');
+        await prefs.remove('incoming_author');
+        await prefs.remove('incoming_author_id');
       }
 
       if (_isDeleted != null) {
-        await prefs.setBool('income_is_deleted', _isDeleted!);
+        await prefs.setBool('incoming_is_deleted', _isDeleted!);
       } else {
-        await prefs.remove('income_is_deleted');
+        await prefs.remove('incoming_is_deleted');
       }
     } catch (e) {
       debugPrint('Error saving filter state: $e');
