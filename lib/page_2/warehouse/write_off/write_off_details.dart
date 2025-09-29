@@ -29,12 +29,10 @@ class WriteOffDocumentDetailsScreen extends StatefulWidget {
   });
 
   @override
-  _WriteOffDocumentDetailsScreenState createState() =>
-      _WriteOffDocumentDetailsScreenState();
+  _WriteOffDocumentDetailsScreenState createState() => _WriteOffDocumentDetailsScreenState();
 }
 
-class _WriteOffDocumentDetailsScreenState
-    extends State<WriteOffDocumentDetailsScreen> {
+class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsScreen> {
   final ApiService _apiService = ApiService();
   IncomingDocument? currentDocument;
   List<Map<String, dynamic>> details = [];
@@ -78,15 +76,12 @@ class _WriteOffDocumentDetailsScreenState
       setState(() {
         _isLoading = false;
       });
-      if (e is ApiException && e.statusCode  == 409) {
+      if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
         showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
         return;
       }
-      _showSnackBar(
-          AppLocalizations.of(context)!.translate('error_loading_document') ??
-              'Ошибка загрузки документа: $e',
-          false);
+      _showSnackBar(AppLocalizations.of(context)!.translate('error_loading_document') ?? 'Ошибка загрузки документа: $e', false);
     }
   }
 
@@ -103,9 +98,7 @@ class _WriteOffDocumentDetailsScreenState
       },
       {
         'label': '${AppLocalizations.of(context)!.translate('date') ?? 'Дата'}:',
-        'value': document.date != null
-            ? DateFormat('dd.MM.yyyy').format(document.date!)
-            : '',
+        'value': document.date != null ? DateFormat('dd.MM.yyyy').format(document.date!) : '',
       },
       {
         'label': '${AppLocalizations.of(context)!.translate('storage') ?? 'Склад'}:',
@@ -186,20 +179,15 @@ class _WriteOffDocumentDetailsScreenState
         _documentUpdated = true;
       });
       _updateStatusOnly();
-      _showSnackBar(
-          AppLocalizations.of(context)!.translate('document_approved') ??
-              'Документ проведен',
-          true);
+      _showSnackBar(AppLocalizations.of(context)!.translate('document_approved') ?? 'Документ проведен', true);
     } catch (e) {
-      if (e is ApiException && e.statusCode  == 409) {
+      if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
         showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
         return;
       }
       _showSnackBar(
-          AppLocalizations.of(context)!.translate('error_approving_document') ??
-              'Ошибка при проведении документа: $e',
-          false);
+          AppLocalizations.of(context)!.translate('error_approving_document') ?? 'Ошибка при проведении документа: $e', false);
     } finally {
       setState(() {
         _isButtonLoading = false;
@@ -218,19 +206,15 @@ class _WriteOffDocumentDetailsScreenState
         _documentUpdated = true;
       });
       _updateStatusOnly();
-      _showSnackBar(
-          AppLocalizations.of(context)!.translate('document_unapproved') ??
-              'Проведение документа отменено',
-          true);
+      _showSnackBar(AppLocalizations.of(context)!.translate('document_unapproved') ?? 'Проведение документа отменено', true);
     } catch (e) {
-      if (e is ApiException && e.statusCode  == 409) {
+      if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
         showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
         return;
       }
       _showSnackBar(
-          AppLocalizations.of(context)!.translate('error_unapproving_document') ??
-              'Ошибка при отмене проведения документа: $e',
+          AppLocalizations.of(context)!.translate('error_unapproving_document') ?? 'Ошибка при отмене проведения документа: $e',
           false);
     } finally {
       setState(() {
@@ -247,20 +231,16 @@ class _WriteOffDocumentDetailsScreenState
       await _apiService.restoreWriteOffDocument(widget.documentId);
       await _fetchDocumentDetails(); // Полное обновление данных после восстановления
       _documentUpdated = true;
-      _showSnackBar(
-          AppLocalizations.of(context)!.translate('document_restored') ??
-              'Документ восстановлен',
-          true);
+      _showSnackBar(AppLocalizations.of(context)!.translate('document_restored') ?? 'Документ восстановлен', true);
       context.read<WriteOffBloc>().add(FetchWriteOffs(forceRefresh: true));
     } catch (e) {
-      if (e is ApiException && e.statusCode  == 409) {
+      if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
         showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
         return;
       }
       _showSnackBar(
-          AppLocalizations.of(context)!.translate('error_restoring_document') ??
-              'Ошибка при восстановлении документа: $e',
+          AppLocalizations.of(context)!.translate('error_restoring_document') ?? 'Ошибка при восстановлении документа: $e',
           false);
     } finally {
       setState(() {
@@ -383,53 +363,65 @@ class _WriteOffDocumentDetailsScreenState
           create: (context) => WriteOffBloc(context.read<ApiService>()),
         ),
       ],
-      child: PopScope(
-        onPopInvoked: (didPop) {
-          if (didPop && _documentUpdated && widget.onDocumentUpdated != null) {
-            widget.onDocumentUpdated!();
+      child: BlocListener<WriteOffBloc, WriteOffState>(
+        listener: (context, state) {
+          if (state is WriteOffDeleteSuccess) {
+            debugPrint("Details screen: Delete Success");
+            Navigator.pop(context, true);
+          } else if (state is WriteOffError) {
+            if (state.statusCode == 409) {
+              final localizations = AppLocalizations.of(context)!;
+              showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+              return;
+            }
           }
         },
-        child: Scaffold(
-          appBar: _buildAppBar(context),
-          backgroundColor: Colors.white,
-          body: _isLoading
-              ? Center(
-                  child: PlayStoreImageLoading(
-                    size: 80.0,
-                    duration: Duration(milliseconds: 1000),
-                  ),
-                )
-              : currentDocument == null
-                  ? Center(
-                      child: Text(
-                        AppLocalizations.of(context)!.translate('document_data_unavailable') ??
-                            'Данные документа недоступны',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xff99A4BA),
+        child: PopScope(
+          onPopInvoked: (didPop) {
+            if (didPop && _documentUpdated && widget.onDocumentUpdated != null) {
+              widget.onDocumentUpdated!();
+            }
+          },
+          child: Scaffold(
+            appBar: _buildAppBar(context),
+            backgroundColor: Colors.white,
+            body: _isLoading
+                ? Center(
+                    child: PlayStoreImageLoading(
+                      size: 80.0,
+                      duration: Duration(milliseconds: 1000),
+                    ),
+                  )
+                : currentDocument == null
+                    ? Center(
+                        child: Text(
+                          AppLocalizations.of(context)!.translate('document_data_unavailable') ?? 'Данные документа недоступны',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xff99A4BA),
+                          ),
+                        ),
+                      )
+                    : Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                        child: ListView(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 16),
+                              child: Center(child: _buildActionButton()),
+                            ),
+                            _buildDetailsList(),
+                            const SizedBox(height: 16),
+                            if (currentDocument!.documentGoods != null && currentDocument!.documentGoods!.isNotEmpty) ...[
+                              _buildGoodsList(currentDocument!.documentGoods!),
+                              const SizedBox(height: 16),
+                            ],
+                          ],
                         ),
                       ),
-                    )
-                  : Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                      child: ListView(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 16),
-                            child: Center(child: _buildActionButton()),
-                          ),
-                          _buildDetailsList(),
-                          const SizedBox(height: 16),
-                          if (currentDocument!.documentGoods != null &&
-                              currentDocument!.documentGoods!.isNotEmpty) ...[
-                            _buildGoodsList(currentDocument!.documentGoods!),
-                            const SizedBox(height: 16),
-                          ],
-                        ],
-                      ),
-                    ),
+          ),
         ),
       ),
     );
@@ -730,9 +722,7 @@ class _WriteOffDocumentDetailsScreenState
     final goodId = good.good?.id;
     if (goodId == null || goodId == 0) {
       _showSnackBar(
-          AppLocalizations.of(context)!.translate('error_no_good_id') ??
-              'Ошибка: Не удалось определить ID товара',
-          false);
+          AppLocalizations.of(context)!.translate('error_no_good_id') ?? 'Ошибка: Не удалось определить ID товара', false);
       return;
     }
 

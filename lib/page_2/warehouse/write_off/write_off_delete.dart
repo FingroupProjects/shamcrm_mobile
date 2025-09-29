@@ -85,14 +85,11 @@ class WriteOffDeleteDocumentDialog extends StatelessWidget {
               SizedBox(width: 8),
               Expanded(
                 child: CustomButton(
-                  buttonText:
-                      AppLocalizations.of(context)!.translate('delete') ?? 'Удалить',
+                  buttonText: AppLocalizations.of(context)!.translate('delete') ?? 'Удалить',
                   onPressed: () {
-                    context
-                        .read<WriteOffBloc>()
-                        .add(DeleteWriteOffDocument(documentId));
-                    Navigator.of(context).pop();
-                    Navigator.pop(context, true);
+                    context.read<WriteOffBloc>()
+                        .add(DeleteWriteOffDocument(documentId, AppLocalizations.of(context)!, shouldReload: true));
+                    Navigator.of(context).pop(); // close dialog
                   },
                   buttonColor: Color(0xff1E2E52),
                   textColor: Colors.white,

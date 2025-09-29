@@ -17,6 +17,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 import '../../../models/api_exception_model.dart';
+import '../../../widgets/snackbar_widget.dart';
 import '../../money/widgets/error_dialog.dart';
 
 class IncomingDocumentDetailsScreen extends StatefulWidget {
@@ -88,69 +89,68 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
     }
   }
 
- void _updateDetails(IncomingDocument? document) {
-  if (document == null) {
-    details.clear();
-    return;
-  }
+  void _updateDetails(IncomingDocument? document) {
+    if (document == null) {
+      details.clear();
+      return;
+    }
 
-  details = [
-    {
-      'label': '${AppLocalizations.of(context)!.translate('document_number') ?? 'Номер документа'}:',
-      'value': document.docNumber ?? '',
-    },
-    {
-      'label': '${AppLocalizations.of(context)!.translate('date') ?? 'Дата'}:',
-      'value': document.date != null ? DateFormat('dd.MM.yyyy').format(document.date!) : '',
-    },
-    {
-      'label': '${AppLocalizations.of(context)!.translate('storage') ?? 'Склад'}:',
-      'value': document.storage?.name ?? '',
-    },
-    {
-      'label': '${AppLocalizations.of(context)!.translate('supplier') ?? 'Поставщик'}:',
-      'value': document.model?.name ?? '',
-    },
-    {
-      'label': '${AppLocalizations.of(context)!.translate('supplier_phone') ?? 'Телефон поставщика'}:',
-      'value': document.model?.phone ?? '',
-    },
-    {
-      'label': '${AppLocalizations.of(context)!.translate('supplier_inn') ?? 'ИНН поставщика'}:',
-      'value': document.model?.inn?.toString() ?? '',
-    },
-    {
-      'label': '${AppLocalizations.of(context)!.translate('comment') ?? 'Комментарий'}',
-      'value': document.comment ?? '',
-    },
-    {
-      'label': '${AppLocalizations.of(context)!.translate('total_quantity') ?? 'Общее количество'}:',
-      'value': document.totalQuantity.toString(),
-    },
-    {
-      'label': '${AppLocalizations.of(context)!.translate('total_sum') ?? 'Общая сумма'}:',
-      'value': '${document.totalSum.toStringAsFixed(2)} ${document.currency?.symbolCode ?? ''}',
-    },
-    {
-      'label': '${AppLocalizations.of(context)!.translate('status') ?? 'Статус'}:',
-      'value': _getLocalizedStatus(document),
-    },
-    if (document.deletedAt != null)
+    details = [
       {
-        'label': '${AppLocalizations.of(context)!.translate('deleted_at') ?? 'Дата удаления'}:',
-        'value': DateFormat('dd.MM.yyyy HH:mm').format(document.deletedAt!),
+        'label': '${AppLocalizations.of(context)!.translate('document_number') ?? 'Номер документа'}:',
+        'value': document.docNumber ?? '',
       },
-  ];
-}
-
+      {
+        'label': '${AppLocalizations.of(context)!.translate('date') ?? 'Дата'}:',
+        'value': document.date != null ? DateFormat('dd.MM.yyyy').format(document.date!) : '',
+      },
+      {
+        'label': '${AppLocalizations.of(context)!.translate('storage') ?? 'Склад'}:',
+        'value': document.storage?.name ?? '',
+      },
+      {
+        'label': '${AppLocalizations.of(context)!.translate('supplier') ?? 'Поставщик'}:',
+        'value': document.model?.name ?? '',
+      },
+      {
+        'label': '${AppLocalizations.of(context)!.translate('supplier_phone') ?? 'Телефон поставщика'}:',
+        'value': document.model?.phone ?? '',
+      },
+      {
+        'label': '${AppLocalizations.of(context)!.translate('supplier_inn') ?? 'ИНН поставщика'}:',
+        'value': document.model?.inn?.toString() ?? '',
+      },
+      {
+        'label': '${AppLocalizations.of(context)!.translate('comment') ?? 'Комментарий'}',
+        'value': document.comment ?? '',
+      },
+      {
+        'label': '${AppLocalizations.of(context)!.translate('total_quantity') ?? 'Общее количество'}:',
+        'value': document.totalQuantity.toString(),
+      },
+      {
+        'label': '${AppLocalizations.of(context)!.translate('total_sum') ?? 'Общая сумма'}:',
+        'value': '${document.totalSum.toStringAsFixed(2)} ${document.currency?.symbolCode ?? ''}',
+      },
+      {
+        'label': '${AppLocalizations.of(context)!.translate('status') ?? 'Статус'}:',
+        'value': _getLocalizedStatus(document),
+      },
+      if (document.deletedAt != null)
+        {
+          'label': '${AppLocalizations.of(context)!.translate('deleted_at') ?? 'Дата удаления'}:',
+          'value': DateFormat('dd.MM.yyyy HH:mm').format(document.deletedAt!),
+        },
+    ];
+  }
 
   String _getLocalizedStatus(IncomingDocument document) {
     final localizations = AppLocalizations.of(context)!;
-    
+
     if (document.deletedAt != null) {
       return localizations.translate('deleted_incoming') ?? 'Удален';
     }
-    
+
     if (document.approved == 1) {
       return localizations.translate('approved') ?? 'Проведен';
     } else {
@@ -205,7 +205,7 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
-        showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
+        showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message, errorDialogEnum: ErrorDialogEnum.goodsIncomingApprove);
         return;
       }
       _showSnackBar('Ошибка при проведении документа: $e', false);
@@ -231,7 +231,7 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
-        showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
+        showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message, errorDialogEnum: ErrorDialogEnum.goodsIncomingUnapprove);
         return;
       }
       _showSnackBar('Ошибка при отмене проведения документа: $e', false);
@@ -257,7 +257,7 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
-        showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
+        showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message, errorDialogEnum: ErrorDialogEnum.goodsIncomingRestore);
         return;
       }
       _showSnackBar('Ошибка при восстановлении документа: $e', false);
@@ -380,60 +380,75 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
-      providers: [
-        BlocProvider<IncomingDocumentHistoryBloc>(
-          create: (context) => IncomingDocumentHistoryBloc(context.read<ApiService>()),
-        ),
-      ],
-      child: PopScope(
-        onPopInvoked: (didPop) {
-          if (didPop && _documentUpdated && widget.onDocumentUpdated != null) {
-            widget.onDocumentUpdated!();
-          }
-        },
-        child: Scaffold(
-          appBar: _buildAppBar(context),
-          backgroundColor: Colors.white,
-          body: _isLoading
-              ? Center(
-                  child: PlayStoreImageLoading(
-                    size: 80.0,
-                    duration: Duration(milliseconds: 1000),
-                  ),
-                )
-              : currentDocument == null
+        providers: [
+          BlocProvider<IncomingDocumentHistoryBloc>(
+            create: (context) => IncomingDocumentHistoryBloc(context.read<ApiService>()),
+          ),
+        ],
+        child: BlocListener<IncomingBloc, IncomingState>(
+          listener: (context, state) {
+            if (state is IncomingDeleteSuccess) {
+              Navigator.pop(context); // close screen
+            } if (state is IncomingDeleteError) {
+              final localizations = AppLocalizations.of(context);
+              debugPrint("[ERROR] IncomingDeleteError:::::: ${state.message}, enumType: ${ErrorDialogEnum.goodsIncomingDelete}");
+              if (state.statusCode == 409) {
+                showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message,
+                    errorDialogEnum: ErrorDialogEnum.goodsIncomingUnapprove);
+                return;
+              }
+              showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+            }
+          },
+          child: PopScope(
+            onPopInvoked: (didPop) {
+              if (didPop && _documentUpdated && widget.onDocumentUpdated != null) {
+                widget.onDocumentUpdated!();
+              }
+            },
+            child: Scaffold(
+              appBar: _buildAppBar(context),
+              backgroundColor: Colors.white,
+              body: _isLoading
                   ? Center(
-                      child: Text(
-                        AppLocalizations.of(context)!.translate('document_data_unavailable') ?? 'Данные документа недоступны',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xff99A4BA),
-                        ),
+                      child: PlayStoreImageLoading(
+                        size: 80.0,
+                        duration: Duration(milliseconds: 1000),
                       ),
                     )
-                  : Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                      child: ListView(
-                        children: [
-                          // Кнопка действия (Провести/Отменить/Восстановить)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 16),
-                            child: Center(child: _buildActionButton()),
+                  : currentDocument == null
+                      ? Center(
+                          child: Text(
+                            AppLocalizations.of(context)!.translate('document_data_unavailable') ?? 'Данные документа недоступны',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xff99A4BA),
+                            ),
                           ),
-                          _buildDetailsList(),
-                          const SizedBox(height: 16),
-                          if (currentDocument!.documentGoods != null && currentDocument!.documentGoods!.isNotEmpty) ...[
-                            _buildGoodsList(currentDocument!.documentGoods!),
-                            const SizedBox(height: 16),
-                          ],
-                        ],
-                      ),
-                    ),
-        ),
-      ),
-    );
+                        )
+                      : Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                          child: ListView(
+                            children: [
+                              // Кнопка действия (Провести/Отменить/Восстановить)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 16),
+                                child: Center(child: _buildActionButton()),
+                              ),
+                              _buildDetailsList(),
+                              const SizedBox(height: 16),
+                              if (currentDocument!.documentGoods != null && currentDocument!.documentGoods!.isNotEmpty) ...[
+                                _buildGoodsList(currentDocument!.documentGoods!),
+                                const SizedBox(height: 16),
+                              ],
+                            ],
+                          ),
+                        ),
+            ),
+          ),
+        ));
   }
 
   AppBar _buildAppBar(BuildContext context) {
@@ -472,62 +487,64 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
           ),
         ),
       ),
-      actions: showActions ? [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-              icon: Image.asset(
-                'assets/icons/edit.png',
-                width: 24,
-                height: 24,
-              ),
-              onPressed: () async {
-                final result = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => IncomingDocumentEditScreen(
-                      document: currentDocument!,
+      actions: showActions
+          ? [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    icon: Image.asset(
+                      'assets/icons/edit.png',
+                      width: 24,
+                      height: 24,
                     ),
+                    onPressed: () async {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => IncomingDocumentEditScreen(
+                            document: currentDocument!,
+                          ),
+                        ),
+                      );
+
+                      if (result == true) {
+                        _fetchDocumentDetails();
+                        if (widget.onDocumentUpdated != null) {
+                          widget.onDocumentUpdated!();
+                        }
+                      }
+                    },
                   ),
-                );
-                
-                if (result == true) {
-                  _fetchDocumentDetails();
-                  if (widget.onDocumentUpdated != null) {
-                    widget.onDocumentUpdated!();
-                  }
-                }
-              },
-            ),
-            IconButton(
-              padding: const EdgeInsets.only(right: 8),
-              constraints: const BoxConstraints(),
-              icon: Image.asset(
-                'assets/icons/delete.png',
-                width: 24,
-                height: 24,
+                  IconButton(
+                    padding: const EdgeInsets.only(right: 8),
+                    constraints: const BoxConstraints(),
+                    icon: Image.asset(
+                      'assets/icons/delete.png',
+                      width: 24,
+                      height: 24,
+                    ),
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return BlocProvider.value(
+                            value: BlocProvider.of<IncomingBloc>(context),
+                            child: DeleteDocumentDialog(documentId: widget.documentId),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ],
               ),
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (BuildContext context) {
-                    return BlocProvider.value(
-                      value: BlocProvider.of<IncomingBloc>(context),
-                      child: DeleteDocumentDialog(documentId: widget.documentId),
-                    );
-                  },
-                );
-              },
-            ),
-          ],
-        ),
-      ] : [],
+            ]
+          : [],
     );
   }
-  
+
   Widget _buildDetailsList() {
     return ListView.builder(
       shrinkWrap: true,
@@ -590,46 +607,47 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
     );
   }
 
-Widget _buildGoodsList(List<DocumentGood> goods) {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      _buildTitleRow(AppLocalizations.of(context)!.translate('goods') ?? 'Товары'),
-      const SizedBox(height: 8),
-      if (goods.isEmpty)
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Container(
-            decoration: TaskCardStyles.taskCardDecoration,
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  AppLocalizations.of(context)!.translate('empty') ?? 'Нет товаров',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xff1E2E52),
+  Widget _buildGoodsList(List<DocumentGood> goods) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildTitleRow(AppLocalizations.of(context)!.translate('goods') ?? 'Товары'),
+        const SizedBox(height: 8),
+        if (goods.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Container(
+              decoration: TaskCardStyles.taskCardDecoration,
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    AppLocalizations.of(context)!.translate('empty') ?? 'Нет товаров',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xff1E2E52),
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.center,
                 ),
               ),
             ),
+          )
+        else
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: goods.length,
+            itemBuilder: (context, index) {
+              return _buildGoodsItem(goods[index]);
+            },
           ),
-        )
-      else
-        ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: goods.length,
-          itemBuilder: (context, index) {
-            return _buildGoodsItem(goods[index]);
-          },
-        ),
-    ],
-  );
-}
+      ],
+    );
+  }
+
   Widget _buildGoodsItem(DocumentGood good) {
     return GestureDetector(
       onTap: () {
@@ -788,8 +806,7 @@ Widget _buildGoodsList(List<DocumentGood> goods) {
         builder: (context) => GoodsDetailsScreen(
           id: goodId,
           isFromOrder: false,
-                  showEditButton: false, // Скрываем кнопку редактирования
-
+          showEditButton: false, // Скрываем кнопку редактирования
         ),
       ),
     );

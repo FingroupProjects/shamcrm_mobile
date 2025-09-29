@@ -9,8 +9,10 @@ class IncomingBloc extends Bloc<IncomingEvent, IncomingState> {
   final ApiService apiService;
   int _currentPage = 1;
   final int _perPage = 20;
-  Map<String, dynamic> _filters = {};
+  Map<String, dynamic>? _filters;
+  String? _search = '';
   List<IncomingDocument> _allData = [];
+  List<IncomingDocument> _selectedDocuments = [];
 
   IncomingBloc(this.apiService) : super(IncomingInitial()) {
     on<FetchIncoming>(_onFetchIncoming);
@@ -18,7 +20,132 @@ class IncomingBloc extends Bloc<IncomingEvent, IncomingState> {
     on<UpdateIncoming>(_onUpdateIncoming);
     on<DeleteIncoming>(_onDeleteIncoming);  // Добавьте эту строку
     on<RestoreIncoming>(_onRestoreIncoming); // Добавить эту строку
+
+    on<MassApproveIncomingDocuments>(_onMassApproveIncomingDocuments);
+    on<MassDisapproveIncomingDocuments>(_onMassDisapproveIncomingDocuments);
+    on<MassDeleteIncomingDocuments>(_onMassDeleteIncomingDocuments);
+    on<MassRestoreIncomingDocuments>(_onMassRestoreIncomingDocuments);
+
+    on<SelectDocument>(_onSelectDocument);
+    on<UnselectAllDocuments>(_onUnselectAllDocuments);
   }
+
+
+  Future<void> _onMassApproveIncomingDocuments(MassApproveIncomingDocuments event, Emitter<IncomingState> emit) async {
+    final ls = _selectedDocuments.where((e) => e.approved == 0 && e.deletedAt == null).map((e) => e.id!).toList();
+    add(UnselectAllDocuments());
+
+    try {
+      await apiService.massApproveIncomingDocuments(ls);
+      emit(IncomingApproveMassSuccess("mass_approve_success_message"));
+    } catch (e) {
+      if (e is ApiException && e.statusCode == 409) {
+        emit(IncomingApproveMassError(e.toString(), statusCode: e.statusCode));
+      } else {
+        emit(IncomingApproveMassError(e.toString()));
+      }
+      add(FetchIncoming(forceRefresh: true));
+    }
+
+    emit(IncomingLoaded(data: _allData));
+  }
+
+  Future<void> _onMassDisapproveIncomingDocuments(MassDisapproveIncomingDocuments event, Emitter<IncomingState> emit) async {
+    final ls = _selectedDocuments.where((e) => e.approved == 1 && e.deletedAt == null).map((e) => e.id!).toList();
+    add(UnselectAllDocuments());
+
+    try {
+      await apiService.massDisapproveIncomingDocuments(ls);
+      emit(IncomingDisapproveMassSuccess("mass_disapprove_success_message"));
+    } catch (e) {
+      if (e is ApiException && e.statusCode == 409) {
+        emit(IncomingDisapproveMassError(e.toString(), statusCode: e.statusCode));
+      } else {
+        emit(IncomingDisapproveMassError(e.toString()));
+      }
+      add(FetchIncoming(forceRefresh: true));
+    }
+
+    emit(IncomingLoaded(data: _allData));
+  }
+
+  Future<void> _onMassDeleteIncomingDocuments(MassDeleteIncomingDocuments event, Emitter<IncomingState> emit) async {
+    final ls = _selectedDocuments.where((e) => e.deletedAt == null).map((e) => e.id!).toList();
+    add(UnselectAllDocuments());
+
+    try {
+      await apiService.massDeleteIncomingDocuments(ls);
+      emit(IncomingDeleteMassSuccess("mass_delete_success_message"));
+    } catch (e) {
+      if (e is ApiException && e.statusCode == 409) {
+        emit(IncomingDeleteMassError(e.toString(), statusCode: e.statusCode));
+      } else {
+        emit(IncomingDeleteMassError(e.toString()));
+      }
+      add(FetchIncoming(forceRefresh: true));
+    }
+
+    emit(IncomingLoaded(data: _allData));
+  }
+
+  Future<void> _onMassRestoreIncomingDocuments(MassRestoreIncomingDocuments event, Emitter<IncomingState> emit) async {
+    final ls = _selectedDocuments.where((e) => e.deletedAt != null).map((e) => e.id!).toList();
+    add(UnselectAllDocuments());
+
+    try {
+      await apiService.massRestoreIncomingDocuments(ls);
+      emit(IncomingRestoreMassSuccess("mass_restore_success_message"));
+    } catch (e) {
+      if (e is ApiException && e.statusCode == 409) {
+        emit(IncomingRestoreMassError(e.toString(), statusCode: e.statusCode));
+      } else {
+        emit(IncomingRestoreMassError(e.toString()));
+      }
+      add(FetchIncoming(forceRefresh: true));
+    }
+
+    emit(IncomingLoaded(data: _allData));
+  }
+
+
+  Future<void> _onSelectDocument(SelectDocument event, Emitter<IncomingState> emit) async {
+    if (state is IncomingLoaded) {
+      final currentState = state as IncomingLoaded;
+
+      if (_selectedDocuments.contains(event.document)) {
+        _selectedDocuments.remove(event.document);
+      } else {
+        _selectedDocuments.add(event.document);
+      }
+
+      final selectedDocuments = currentState.data
+          .where((doc) => _selectedDocuments.contains(doc))
+          .toList();
+
+      emit(IncomingLoaded(
+        data: currentState.data,
+        pagination: currentState.pagination,
+        hasReachedMax: currentState.hasReachedMax,
+        selectedData: selectedDocuments,
+      ));
+    }
+  }
+
+  Future<void> _onUnselectAllDocuments(UnselectAllDocuments event, Emitter<IncomingState> emit) async {
+    _selectedDocuments = [];
+
+    if (state is IncomingLoaded) {
+      final currentState = state as IncomingLoaded;
+      emit(IncomingLoaded(
+        data: currentState.data,
+        pagination: currentState.pagination,
+        hasReachedMax: currentState.hasReachedMax,
+        selectedData: [],
+      ));
+    }
+  }
+
+  /////////////
 
   Future<void> _onRestoreIncoming(RestoreIncoming event, Emitter<IncomingState> emit) async {
     emit(IncomingRestoreLoading());
@@ -40,11 +167,15 @@ class IncomingBloc extends Bloc<IncomingEvent, IncomingState> {
   }
 
   Future<void> _onFetchIncoming(FetchIncoming event, Emitter<IncomingState> emit) async {
+    if (event.forceRefresh || _allData.isEmpty) {
+      emit(IncomingLoading());
+    }
+
     if (event.forceRefresh) {
       _currentPage = 1;
-      _allData = [];
-      _filters = event.filters ?? {};
-      emit(IncomingLoading());
+      _allData.clear();
+      _filters = event.filters;
+      _search = event.search;
     } else if (state is IncomingLoaded && (state as IncomingLoaded).hasReachedMax) {
       return;
     }
@@ -53,13 +184,17 @@ class IncomingBloc extends Bloc<IncomingEvent, IncomingState> {
       final response = await apiService.getIncomingDocuments(
         page: _currentPage,
         perPage: _perPage,
-        query: _filters['query'],
-        fromDate: _filters['fromDate'],
-        toDate: _filters['toDate'],
+        filters: _filters,
+        search: _search,
       );
 
       final newData = response.data ?? [];
-      _allData = event.forceRefresh ? newData : [..._allData, ...newData];
+
+      if (event.forceRefresh) {
+        _allData = List.from(newData);
+      } else {
+        _allData.addAll(newData);
+      }
 
       final hasReachedMax = (response.pagination?.currentPage ?? 1) >= (response.pagination?.totalPages ?? 1);
 
@@ -67,13 +202,18 @@ class IncomingBloc extends Bloc<IncomingEvent, IncomingState> {
         _currentPage++;
       }
 
+      final selectedDocuments = _allData
+          .where((doc) => _selectedDocuments.contains(doc))
+          .toList();
+
       emit(IncomingLoaded(
-        data: _allData,
+        data: List.from(_allData),
         pagination: response.pagination,
         hasReachedMax: hasReachedMax,
+        selectedData: selectedDocuments,
       ));
     } catch (e) {
-      if (e is ApiException) {
+      if (e is ApiException && e.statusCode == 409) {
         emit(IncomingError(e.toString(), statusCode: e.statusCode));
       } else {
         emit(IncomingError(e.toString()));
@@ -92,7 +232,7 @@ class IncomingBloc extends Bloc<IncomingEvent, IncomingState> {
         documentGoods: event.documentGoods,
         organizationId: event.organizationId,
         salesFunnelId: event.salesFunnelId,
-        approve: event.approve, // Передаем новый параметр
+        approve: event.approve,
       );
       await Future.delayed(const Duration(milliseconds: 100));
       emit(IncomingCreateSuccess(
@@ -135,12 +275,12 @@ class IncomingBloc extends Bloc<IncomingEvent, IncomingState> {
   }
 
   Future<void> _onDeleteIncoming(DeleteIncoming event, Emitter<IncomingState> emit) async {
-    emit(IncomingDeleteLoading()); // Эта строка должна быть!
+    if(event.shouldReload) emit(IncomingDeleteLoading()); // Эта строка должна быть!
     try {
       final result = await apiService.deleteIncomingDocument(event.documentId);
       if (result['result'] == 'Success') {
         await Future.delayed(const Duration(milliseconds: 100));
-        emit(IncomingDeleteSuccess('Документ успешно удален'));
+        emit(IncomingDeleteSuccess('Документ успешно удален', shouldReload: event.shouldReload || _allData.isEmpty));
       } else {
         emit(IncomingDeleteError('Не удалось удалить документ'));
       }
@@ -151,5 +291,6 @@ class IncomingBloc extends Bloc<IncomingEvent, IncomingState> {
         emit(IncomingDeleteError('Ошибка при удалении документа: ${e.toString()}'));
       }
     }
+    emit(IncomingLoaded(data: _allData, selectedData: _selectedDocuments));
   }
 }

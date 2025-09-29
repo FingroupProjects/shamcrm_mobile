@@ -10327,28 +10327,43 @@ Future<String> _appendQueryParams(String path) async {
   Future<IncomingResponse> getIncomingDocuments({
     int page = 1,
     int perPage = 20,
-    String? query,
-    DateTime? fromDate,
-    DateTime? toDate,
-    int? approved, // Для будущего фильтра по статусу
+    String? search,
+    Map<String, dynamic>? filters,
   }) async {
-    String url =
-        '/income-documents'; // Предполагаемый endpoint; подкорректируй если нужно
-    url += '?page=$page&per_page=$perPage';
-    if (query != null && query.isNotEmpty) {
-      url += '&search=$query';
-    }
-    if (fromDate != null) {
-      url += '&from=${fromDate.toIso8601String()}';
-    }
-    if (toDate != null) {
-      url += '&to=${toDate.toIso8601String()}';
-    }
-    if (approved != null) {
-      url += '&approved=$approved';
+    String path = '/income-documents?page=$page&per_page=$perPage';
+
+    if (search != null && search.isNotEmpty) {
+      path += '&search=$search';
     }
 
-    final path = await _appendQueryParams(url);
+    debugPrint("Фильтры для прихода товаров: $filters");
+
+    if (filters != null) {
+      if (filters.containsKey('date_from') && filters['date_from'] != null) {
+        final dateFrom = filters['date_from'] as DateTime;
+        path += '&date_from=${dateFrom.toIso8601String()}';
+      }
+
+      if (filters.containsKey('date_to') && filters['date_to'] != null) {
+        final dateTo = filters['date_to'] as DateTime;
+        path += '&date_to=${dateTo.toIso8601String()}';
+      }
+
+      if (filters.containsKey('deleted') && filters['deleted'] != null) {
+        path += '&deleted=${filters['deleted']}';
+      }
+
+      if (filters.containsKey('author_id') && filters['author_id'] != null) {
+        path += '&author_id=${filters['author_id']}';
+      }
+
+      if (filters.containsKey('approved') && filters['approved'] != null) {
+        path += '&approved=${filters['approved']}';
+      }
+    }
+
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    path = await _appendQueryParams(path);
     if (kDebugMode) {
       print('ApiService: getIncomingDocuments - Generated path: $path');
     }
@@ -10356,11 +10371,15 @@ Future<String> _appendQueryParams(String path) async {
     try {
       final response = await _getRequest(path);
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final rawData = json.decode(response.body)['result']; // Как в JSON
+        final rawData = json.decode(response.body)['result'];
+        debugPrint("Полученные данные по приходу товаров: $rawData");
         return IncomingResponse.fromJson(rawData);
       } else {
         final message = _extractErrorMessageFromResponse(response);
-        throw ApiException(message ?? 'Ошибка сервера', response.statusCode);
+        throw ApiException(
+          message ?? 'Ошибка при получении данных прихода товаров!',
+          response.statusCode,
+        );
       }
     } catch (e) {
       rethrow;
@@ -10684,6 +10703,93 @@ Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
   }
 }
 
+  Future<void> massApproveIncomingDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/income-documents/approve');
+
+    try {
+      final response = await _postRequest(path, {
+        'ids': ids,
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при массовом проведении документов прихода!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> massDisapproveIncomingDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/income-documents/unApprove');
+
+    try {
+      final response = await _postRequest(path, {
+        'ids': ids,
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при массовом снятии проведения документов прихода!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> massDeleteIncomingDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/income-documents/');
+
+    try {
+      final response = await _deleteRequestWithBody(path, {
+        'ids': ids,
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при массовом удалении документов прихода!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> massRestoreIncomingDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/income-documents/restore');
+
+    try {
+      final response = await _postRequest(path, {
+        'ids': ids,
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при массовом восстановлении документов прихода!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
 
 //______________________________end incoming documents____________________________//
 
@@ -13080,36 +13186,52 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
   Future<IncomingResponse> getWriteOffDocuments({
     int page = 1,
     int perPage = 20,
-    String? query,
-    DateTime? fromDate,
-    DateTime? toDate,
-    int? approved, // Для будущего фильтра по статусу
+    String? search,
+    Map<String, dynamic>? filters,
   }) async {
-    String url =
-        '/write-off-documents'; // Изменено с expense-documents на write-off-documents
-    url += '?page=$page&per_page=$perPage';
-    if (query != null && query.isNotEmpty) {
-      url += '&search=$query';
-    }
-    if (fromDate != null) {
-      url += '&from=${fromDate.toIso8601String()}';
-    }
-    if (toDate != null) {
-      url += '&to=${toDate.toIso8601String()}';
-    }
-    if (approved != null) {
-      url += '&approved=$approved';
+    String path = '/write-off-documents?page=$page&per_page=$perPage';
+
+    if (search != null && search.isNotEmpty) {
+      path += '&search=$search';
     }
 
-    final path = await _appendQueryParams(url);
+    debugPrint("Фильтры для списания товаров: $filters");
+
+    if (filters != null) {
+      if (filters.containsKey('date_from') && filters['date_from'] != null) {
+        final dateFrom = filters['date_from'] as DateTime;
+        path += '&date_from=${dateFrom.toIso8601String()}';
+      }
+
+      if (filters.containsKey('date_to') && filters['date_to'] != null) {
+        final dateTo = filters['date_to'] as DateTime;
+        path += '&date_to=${dateTo.toIso8601String()}';
+      }
+
+      if (filters.containsKey('deleted') && filters['deleted'] != null) {
+        path += '&deleted=${filters['deleted']}';
+      }
+
+      if (filters.containsKey('author_id') && filters['author_id'] != null) {
+        path += '&author_id=${filters['author_id']}';
+      }
+
+      if (filters.containsKey('approved') && filters['approved'] != null) {
+        path += '&approved=${filters['approved']}';
+      }
+    }
+
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    path = await _appendQueryParams(path);
     if (kDebugMode) {
       print('ApiService: getWriteOffDocuments - Generated path: $path');
     }
 
     try {
       final response = await _getRequest(path);
-      if (response.statusCode == 200) {
-        final rawData = json.decode(response.body)['result']; // Как в JSON
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final rawData = json.decode(response.body)['result'];
+        debugPrint("Полученные данные по списанию товаров: $rawData");
         return IncomingResponse.fromJson(rawData);
       } else {
         final message = _extractErrorMessageFromResponse(response);
@@ -13183,21 +13305,48 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
   }
 
   //deleteWriteOffDocument
-  Future<void> deleteWriteOffDocument(int documentId) async {
+  Future<Map<String, dynamic>> deleteWriteOffDocument(int documentId) async {
     try {
       final token = await getToken();
-      if (token == null) throw Exception('Токен не найден');
-      final body = {
-        'ids': [documentId]
-      };
-      final path = await _appendQueryParams('/write-off-documents');
-      print('Удаление документа по пути: $path');
-      final response = await _deleteRequestWithBody(path, body);
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return;
+      if (token == null) throw 'Токен не найден';
+
+      // Используем _appendQueryParams для получения параметров, но извлекаем их для тела запроса
+      final pathWithParams = await _appendQueryParams('/write-off-documents');
+      final uri = Uri.parse('$baseUrl$pathWithParams');
+
+      // Извлекаем organization_id и sales_funnel_id из query параметров
+      final organizationId = uri.queryParameters['organization_id'];
+      final salesFunnelId = uri.queryParameters['sales_funnel_id'];
+
+      // Создаем чистый URI без параметров для DELETE запроса
+      final cleanUri = Uri.parse('$baseUrl/write-off-documents');
+
+      final body = jsonEncode({
+        'ids': [documentId],
+        'organization_id': organizationId ?? '1',
+        'sales_funnel_id': salesFunnelId ?? '1',
+      });
+
+      if (kDebugMode) {
+        print('ApiService: deleteWriteOffDocument - Request body: $body');
+      }
+
+      final response = await http.delete(
+        cleanUri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Device': 'mobile',
+        },
+        body: body,
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return {'result': 'Success'};
       } else {
         final message = _extractErrorMessageFromResponse(response);
-        throw ApiException(message ?? 'Ошибка при удалении документа списания!', response.statusCode);
+        throw ApiException(message ?? 'Ошибка при удалении документа списания', response.statusCode);
       }
     } catch (e) {
       rethrow;
@@ -13352,6 +13501,94 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         throw ApiException(
             message ?? 'Ошибка при восстановлении документа',
             response.statusCode);
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> massApproveWriteOffDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/write-off-documents/approve');
+
+    try {
+      final response = await _postRequest(path, {
+        'ids': ids,
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при массовом проведении документов списания!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> massDisapproveWriteOffDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/write-off-documents/unApprove');
+
+    try {
+      final response = await _postRequest(path, {
+        'ids': ids,
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при массовом снятии проведения документов списания!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> massDeleteWriteOffDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/write-off-documents/');
+
+    try {
+      final response = await _deleteRequestWithBody(path, {
+        'ids': ids,
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при массовом удалении документов списания!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> massRestoreWriteOffDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/write-off-documents/restore');
+
+    try {
+      final response = await _postRequest(path, {
+        'ids': ids,
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при массовом восстановлении документов списания!',
+          response.statusCode,
+        );
       }
     } catch (e) {
       rethrow;
