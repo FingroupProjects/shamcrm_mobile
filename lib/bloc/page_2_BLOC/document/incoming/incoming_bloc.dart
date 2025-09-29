@@ -9,7 +9,8 @@ class IncomingBloc extends Bloc<IncomingEvent, IncomingState> {
   final ApiService apiService;
   int _currentPage = 1;
   final int _perPage = 20;
-  Map<String, dynamic> _filters = {};
+  Map<String, dynamic>? _filters;
+  String? _search = '';
   List<IncomingDocument> _allData = [];
   List<IncomingDocument> _selectedDocuments = [];
 
@@ -166,11 +167,15 @@ class IncomingBloc extends Bloc<IncomingEvent, IncomingState> {
   }
 
   Future<void> _onFetchIncoming(FetchIncoming event, Emitter<IncomingState> emit) async {
+    if (event.forceRefresh || _allData.isEmpty) {
+      emit(IncomingLoading());
+    }
+
     if (event.forceRefresh) {
       _currentPage = 1;
-      _allData = [];
-      _filters = event.filters ?? {};
-      emit(IncomingLoading());
+      _allData.clear();
+      _filters = event.filters;
+      _search = event.search;
     } else if (state is IncomingLoaded && (state as IncomingLoaded).hasReachedMax) {
       return;
     }
@@ -179,13 +184,17 @@ class IncomingBloc extends Bloc<IncomingEvent, IncomingState> {
       final response = await apiService.getIncomingDocuments(
         page: _currentPage,
         perPage: _perPage,
-        query: _filters['query'],
-        fromDate: _filters['fromDate'],
-        toDate: _filters['toDate'],
+        filters: _filters,
+        search: _search,
       );
 
       final newData = response.data ?? [];
-      _allData = event.forceRefresh ? newData : [..._allData, ...newData];
+
+      if (event.forceRefresh) {
+        _allData = List.from(newData);
+      } else {
+        _allData.addAll(newData);
+      }
 
       final hasReachedMax = (response.pagination?.currentPage ?? 1) >= (response.pagination?.totalPages ?? 1);
 
@@ -193,13 +202,18 @@ class IncomingBloc extends Bloc<IncomingEvent, IncomingState> {
         _currentPage++;
       }
 
+      final selectedDocuments = _allData
+          .where((doc) => _selectedDocuments.contains(doc))
+          .toList();
+
       emit(IncomingLoaded(
-        data: _allData,
+        data: List.from(_allData),
         pagination: response.pagination,
         hasReachedMax: hasReachedMax,
+        selectedData: selectedDocuments,
       ));
     } catch (e) {
-      if (e is ApiException) {
+      if (e is ApiException && e.statusCode == 409) {
         emit(IncomingError(e.toString(), statusCode: e.statusCode));
       } else {
         emit(IncomingError(e.toString()));
@@ -218,7 +232,7 @@ class IncomingBloc extends Bloc<IncomingEvent, IncomingState> {
         documentGoods: event.documentGoods,
         organizationId: event.organizationId,
         salesFunnelId: event.salesFunnelId,
-        approve: event.approve, // Передаем новый параметр
+        approve: event.approve,
       );
       await Future.delayed(const Duration(milliseconds: 100));
       emit(IncomingCreateSuccess(

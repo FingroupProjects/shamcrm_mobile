@@ -10327,28 +10327,43 @@ Future<String> _appendQueryParams(String path) async {
   Future<IncomingResponse> getIncomingDocuments({
     int page = 1,
     int perPage = 20,
-    String? query,
-    DateTime? fromDate,
-    DateTime? toDate,
-    int? approved, // Для будущего фильтра по статусу
+    String? search,
+    Map<String, dynamic>? filters,
   }) async {
-    String url =
-        '/income-documents'; // Предполагаемый endpoint; подкорректируй если нужно
-    url += '?page=$page&per_page=$perPage';
-    if (query != null && query.isNotEmpty) {
-      url += '&search=$query';
-    }
-    if (fromDate != null) {
-      url += '&from=${fromDate.toIso8601String()}';
-    }
-    if (toDate != null) {
-      url += '&to=${toDate.toIso8601String()}';
-    }
-    if (approved != null) {
-      url += '&approved=$approved';
+    String path = '/income-documents?page=$page&per_page=$perPage';
+
+    if (search != null && search.isNotEmpty) {
+      path += '&search=$search';
     }
 
-    final path = await _appendQueryParams(url);
+    debugPrint("Фильтры для прихода товаров: $filters");
+
+    if (filters != null) {
+      if (filters.containsKey('date_from') && filters['date_from'] != null) {
+        final dateFrom = filters['date_from'] as DateTime;
+        path += '&date_from=${dateFrom.toIso8601String()}';
+      }
+
+      if (filters.containsKey('date_to') && filters['date_to'] != null) {
+        final dateTo = filters['date_to'] as DateTime;
+        path += '&date_to=${dateTo.toIso8601String()}';
+      }
+
+      if (filters.containsKey('deleted') && filters['deleted'] != null) {
+        path += '&deleted=${filters['deleted']}';
+      }
+
+      if (filters.containsKey('author_id') && filters['author_id'] != null) {
+        path += '&author_id=${filters['author_id']}';
+      }
+
+      if (filters.containsKey('approved') && filters['approved'] != null) {
+        path += '&approved=${filters['approved']}';
+      }
+    }
+
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    path = await _appendQueryParams(path);
     if (kDebugMode) {
       print('ApiService: getIncomingDocuments - Generated path: $path');
     }
@@ -10356,11 +10371,15 @@ Future<String> _appendQueryParams(String path) async {
     try {
       final response = await _getRequest(path);
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final rawData = json.decode(response.body)['result']; // Как в JSON
+        final rawData = json.decode(response.body)['result'];
+        debugPrint("Полученные данные по приходу товаров: $rawData");
         return IncomingResponse.fromJson(rawData);
       } else {
         final message = _extractErrorMessageFromResponse(response);
-        throw ApiException(message ?? 'Ошибка сервера', response.statusCode);
+        throw ApiException(
+          message ?? 'Ошибка при получении данных прихода товаров!',
+          response.statusCode,
+        );
       }
     } catch (e) {
       rethrow;

@@ -95,6 +95,7 @@ class _IncomingScreenState extends State<IncomingScreen> {
       _incomingBloc.add(FetchIncoming(
         forceRefresh: false,
         filters: _currentFilters,
+        search: _search,
       ));
     }
   }
@@ -107,6 +108,7 @@ class _IncomingScreenState extends State<IncomingScreen> {
     _incomingBloc.add(FetchIncoming(
       forceRefresh: true,
       search: _search,
+      filters: _currentFilters,
     ));
   }
 
@@ -114,7 +116,11 @@ class _IncomingScreenState extends State<IncomingScreen> {
     setState(() {
       _hasReachedMax = false;
     });
-    _incomingBloc.add(const FetchIncoming(forceRefresh: true));
+    _incomingBloc.add(FetchIncoming(
+      forceRefresh: true,
+      filters: _currentFilters,
+      search: _search,
+    ));
     await Future.delayed(const Duration(milliseconds: 500));
   }
 
@@ -232,6 +238,7 @@ class _IncomingScreenState extends State<IncomingScreen> {
                 _incomingBloc.add(FetchIncoming(
                   forceRefresh: true,
                   filters: _currentFilters,
+                  search: null,
                 ));
               }
             },
@@ -274,7 +281,7 @@ class _IncomingScreenState extends State<IncomingScreen> {
               _showSnackBar(state.message, false);
             } else if (state is IncomingApproveMassSuccess) {
               showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-              _incomingBloc.add(const FetchIncoming(forceRefresh: true));
+              _incomingBloc.add(FetchIncoming(forceRefresh: true, filters: _currentFilters, search: _search));
             } else if (state is IncomingApproveMassError) {
               if (state.statusCode == 409) {
                 showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message);
@@ -283,7 +290,7 @@ class _IncomingScreenState extends State<IncomingScreen> {
               showCustomSnackBar(context: context, message: state.message, isSuccess: false);
             } else if (state is IncomingDisapproveMassSuccess) {
               showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-              _incomingBloc.add(const FetchIncoming(forceRefresh: true));
+              _incomingBloc.add(FetchIncoming(forceRefresh: true, filters: _currentFilters, search: _search));
             } else if (state is IncomingDisapproveMassError) {
               debugPrint("[ERROR] IncomingDisapproveMassError: ${state.message}, enumType: ${ErrorDialogEnum.goodsIncomingUnapprove}");
               if (state.statusCode == 409) {
@@ -292,34 +299,30 @@ class _IncomingScreenState extends State<IncomingScreen> {
               }
               showCustomSnackBar(context: context, message: state.message, isSuccess: false);
             } else if (state is IncomingDeleteSuccess) {
-              // Показываем SnackBar только если мы находимся на IncomingScreen
-              // (т.е. если диалог уже закрыт и мы вернулись сюда)
               _showSnackBar(state.message, true);
-
-              // Обновляем список после успешного удаления
-              if (state.shouldReload) _incomingBloc.add(const FetchIncoming(forceRefresh: true));
+              if (state.shouldReload) _incomingBloc.add(FetchIncoming(forceRefresh: true, filters: _currentFilters, search: _search));
             } else if (state is IncomingDeleteError) {
               if (state.statusCode == 409) {
                 debugPrint("[ERROR] IncomingDeleteError: ${state.message} enumType: ${ErrorDialogEnum.goodsIncomingDelete}");
                 showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message, errorDialogEnum: ErrorDialogEnum.goodsIncomingDelete);
-                _incomingBloc.add(const FetchIncoming(forceRefresh: true));
+                _incomingBloc.add(FetchIncoming(forceRefresh: true, filters: _currentFilters, search: _search));
                 return;
               }
               showCustomSnackBar(context: context, message: state.message, isSuccess: false);
             } else if (state is IncomingDeleteMassSuccess) {
               showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-              _incomingBloc.add(const FetchIncoming(forceRefresh: true));
+              _incomingBloc.add(FetchIncoming(forceRefresh: true, filters: _currentFilters, search: _search));
             } else if (state is IncomingDeleteMassError) {
               if (state.statusCode == 409) {
                 debugPrint("[ERROR] IncomingMassDeleteError: ${state.message} enumType: ${ErrorDialogEnum.goodsIncomingDelete}");
                 showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message, errorDialogEnum: ErrorDialogEnum.goodsIncomingDelete);
-                _incomingBloc.add(const FetchIncoming(forceRefresh: true));
+                _incomingBloc.add(FetchIncoming(forceRefresh: true, filters: _currentFilters, search: _search));
                 return;
               }
               showCustomSnackBar(context: context, message: state.message, isSuccess: false);
             } else if (state is IncomingRestoreMassSuccess) {
               showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-              _incomingBloc.add(const FetchIncoming(forceRefresh: true));
+              _incomingBloc.add(FetchIncoming(forceRefresh: true, filters: _currentFilters, search: _search));
             } else if (state is IncomingRestoreMassError) {
               if (state.statusCode == 409) {
                 showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message);
@@ -371,14 +374,14 @@ class _IncomingScreenState extends State<IncomingScreen> {
                     if (index >= currentData.length) {
                       return _isLoadingMore
                           ? Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Center(
-                                child: PlayStoreImageLoading(
-                                  size: 80.0,
-                                  duration: const Duration(milliseconds: 1000),
-                                ),
-                              ),
-                            )
+                        padding: const EdgeInsets.all(16.0),
+                        child: Center(
+                          child: PlayStoreImageLoading(
+                            size: 80.0,
+                            duration: const Duration(milliseconds: 1000),
+                          ),
+                        ),
+                      )
                           : const SizedBox.shrink();
                     }
                     return Dismissible(
@@ -443,7 +446,11 @@ class _IncomingScreenState extends State<IncomingScreen> {
                                       documentId: currentData[index].id!,
                                       docNumber: currentData[index].docNumber ?? 'N/A',
                                       onDocumentUpdated: () {
-                                        _incomingBloc.add(const FetchIncoming(forceRefresh: true));
+                                        _incomingBloc.add(FetchIncoming(
+                                          forceRefresh: true,
+                                          filters: _currentFilters,
+                                          search: _search,
+                                        ));
                                       },
                                     ),
                                   ),
@@ -480,7 +487,11 @@ class _IncomingScreenState extends State<IncomingScreen> {
               );
 
               if (result == true && mounted) {
-                _incomingBloc.add(const FetchIncoming(forceRefresh: true));
+                _incomingBloc.add(FetchIncoming(
+                  forceRefresh: true,
+                  filters: _currentFilters,
+                  search: _search,
+                ));
               }
             }
           },
