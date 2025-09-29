@@ -31,43 +31,12 @@ class _DeleteDocumentDialogState extends State<DeleteDocumentDialog> {
           setState(() {
             _isDeleting = false;
           });
-          
-          // Дополнительная проверка перед показом SnackBar
-          if (mounted && context.mounted) {
-            final localizations = AppLocalizations.of(context)!;
-            if (state.statusCode == 409) {
-              showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
-              return;
-            }
-
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  AppLocalizations.of(context)!.translate(state.message),
-                  style: TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
-                  ),
-                ),
-                behavior: SnackBarBehavior.floating,
-                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                backgroundColor: Colors.red,
-                elevation: 3,
-                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                duration: Duration(seconds: 3),
-              ),
-            );
-          }
+          Navigator.pop(context); // close dialog, snackbar will be shown in IncomingScreen
         } else if (state is IncomingDeleteSuccess) {
           // Просто закрываем диалог без показа SnackBar здесь
           // SnackBar будет показан в IncomingScreen
           if (mounted && Navigator.of(context).canPop()) {
-            Navigator.of(context).popUntil((route) => route.isFirst);
+            Navigator.pop(context); // close dialog, snackbar will be shown in IncomingScreen
           }
         } else if (state is IncomingDeleteLoading) {
           setState(() {

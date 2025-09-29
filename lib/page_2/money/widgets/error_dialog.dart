@@ -40,6 +40,16 @@ class ErrorDialog extends StatelessWidget {
       return _buildGoodsIncomingUnapproveError(message);
     }
 
+    if (errorDialogEnum == ErrorDialogEnum.goodsIncomingApprove) {
+      debugPrint("[ERROR] ErrorDialog.Approve: $message");
+      return _buildGoodsIncomingApproveError(message);
+    }
+
+    if (errorDialogEnum == ErrorDialogEnum.goodsIncomingRestore) {
+      debugPrint("[ERROR] ErrorDialog.Restore: $message");
+      return _buildGoodsIncomingRestoreError(message);
+    }
+
     // Проверяем, есть ли в сообщении информация о товарах
     if (message.contains('товар') || message.contains('Товар')) {
       return _buildInventoryError(message);
@@ -408,6 +418,407 @@ class ErrorDialog extends StatelessWidget {
                             ),
                           ),
                         ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGoodsIncomingApproveError(String message) {
+    // Парсим название товара и недостающее количество
+    // Expected message format: "Невозможно провести документ. Остаток товара '...' недостаточен: требуется X, доступно Y"
+    RegExp approveRegex = RegExp(r"товара '([^']+)'.*требуется (\d+), доступно (\d+)");
+    Match? match = approveRegex.firstMatch(message);
+
+    String productName = match?.group(1) ?? 'Неизвестный товар';
+    String required = match?.group(2) ?? '0';
+    String available = match?.group(3) ?? '0';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Заголовок ошибки
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Color(0xffFFF5F5),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Color(0xffFECDD3),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Невозможно провести документ',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xffDC2626),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        SizedBox(height: 16),
+
+        // Информация о товаре
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Color(0xffE2E8F0),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Color(0xff1E2E52).withOpacity(0.08),
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Заголовок товара
+              Container(
+                width: double.infinity,
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Color(0xffF8FAFC),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    topRight: Radius.circular(12),
+                  ),
+                  border: Border(
+                    left: BorderSide(
+                      width: 4,
+                      color: Color(0xffDC2626),
+                    ),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Color(0xffDC2626).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Icon(
+                        Icons.inventory_2_outlined,
+                        size: 16,
+                        color: Color(0xffDC2626),
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        productName,
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xff1E2E52),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Информация о количествах
+              Padding(
+                padding: EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Недостаточно товара на складе:',
+                      style: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff64748B),
+                      ),
+                    ),
+                    SizedBox(height: 12),
+                    Row(
+                      children: [
+                        // Требуется
+                        Expanded(
+                          child: Container(
+                            padding: EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Color(0xffFEF2F2),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: Color(0xffFECDD3),
+                                width: 1,
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Требуется:',
+                                  style: TextStyle(
+                                    fontFamily: 'Gilroy',
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                    color: Color(0xff991B1B),
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  _formatNumber(required),
+                                  style: TextStyle(
+                                    fontFamily: 'Gilroy',
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xffDC2626),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        SizedBox(width: 12),
+
+                        // Доступно
+                        Expanded(
+                          child: Container(
+                            padding: EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Color(0xffF0F9FF),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: Color(0xffBAE6FD),
+                                width: 1,
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Доступно:',
+                                  style: TextStyle(
+                                    fontFamily: 'Gilroy',
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                    color: Color(0xff0369A1),
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  _formatNumber(available),
+                                  style: TextStyle(
+                                    fontFamily: 'Gilroy',
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xff0284C7),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGoodsIncomingRestoreError(String message) {
+    // Парсим название товара и причину невозможности восстановления
+    // Expected message format: "Невозможно восстановить документ. Товар '...' был изменен или удален"
+    RegExp restoreRegex = RegExp(r"[Тт]овар '([^']+)'");
+    Match? match = restoreRegex.firstMatch(message);
+
+    String productName = match?.group(1) ?? 'Неизвестный товар';
+
+    // Определяем причину
+    bool isDeleted = message.contains('удален') || message.contains('удалён');
+    bool isChanged = message.contains('изменен') || message.contains('изменён');
+
+    String reasonText = isDeleted
+        ? 'Товар был удален из системы'
+        : isChanged
+        ? 'Товар был изменен после удаления документа'
+        : 'Товар недоступен в системе';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Заголовок ошибки
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Color(0xffFFFBEB),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Color(0xffFED7AA),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Невозможно восстановить документ',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xffEA580C),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        SizedBox(height: 16),
+
+        // Информация о товаре
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Color(0xffE2E8F0),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Color(0xff1E2E52).withOpacity(0.08),
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Заголовок товара
+              Container(
+                width: double.infinity,
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Color(0xffFFFBEB),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    topRight: Radius.circular(12),
+                  ),
+                  border: Border(
+                    left: BorderSide(
+                      width: 4,
+                      color: Color(0xffEA580C),
+                    ),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Color(0xffEA580C).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Icon(
+                        Icons.restore_from_trash_outlined,
+                        size: 16,
+                        color: Color(0xffEA580C),
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        productName,
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xff1E2E52),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Причина ошибки
+              Padding(
+                padding: EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Color(0xffFEF3C7),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: Color(0xffFDE68A),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.warning_amber_rounded,
+                            color: Color(0xffD97706),
+                            size: 20,
+                          ),
+                          SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              reasonText,
+                              style: TextStyle(
+                                fontFamily: 'Gilroy',
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xff92400E),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: 12),
+                    Text(
+                      'Для восстановления документа необходимо, чтобы все товары были доступны в системе в неизменном виде.',
+                      style: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff64748B),
+                        height: 1.5,
                       ),
                     ),
                   ],
