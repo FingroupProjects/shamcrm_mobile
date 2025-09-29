@@ -254,6 +254,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     // Функция скролла закомментирована
   }
   */
+
 // Новый метод для принудительного выхода при ошибках
   Future<void> _forceLogout() async {
     try {
@@ -351,35 +352,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           .add(LoadProcessSpeedDataManager());
     }
   }
- // Виджет кнопки выхода для случаев ошибок
-  Widget _buildErrorLogoutButton() {
-    final localizations = AppLocalizations.of(context)!;
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-      child: ElevatedButton.icon(
-        onPressed: _forceLogout,
-        icon: const Icon(Icons.logout, color: Colors.white),
-        label: Text(
-          localizations.translate('logout'),
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            fontFamily: 'Gilroy',
-            color: Colors.white,
-          ),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.red.shade600,
-          padding: const EdgeInsets.symmetric(vertical: 15),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          elevation: 2,
-        ),
-      ),
-    );
-  }
+
   void _openSupportChat() async {
     const tgUrl = 'https://t.me/shamcrm_support_bot';
     const webUrl = 'https://t.me/shamcrm_support_bot:';
@@ -455,7 +428,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             );
                           }
                           
-                          // Для других ошибок показываем сообщение и кнопку выхода
+                          // Для других ошибок показываем сообщение и стандартную кнопку выхода
                           return Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -479,7 +452,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 ),
                               ),
                               const SizedBox(height: 30),
-                              _buildErrorLogoutButton(),
+                              // Используем стандартную кнопку выхода вместо кастомной
+                              LogoutButtonWidget(),
                             ],
                           );
                         }

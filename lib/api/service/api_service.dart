@@ -6491,7 +6491,7 @@ Future<List<Message>> getMessages(
 // Метод для получения Организации
   Future<List<Organization>> getOrganization() async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/organization');
+    final path = await _appendQueryParams('/organizations');
     if (kDebugMode) {
       //print('ApiService: getOrganization - Generated path: $path');
     }
