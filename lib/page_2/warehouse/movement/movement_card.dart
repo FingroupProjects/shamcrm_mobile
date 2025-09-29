@@ -8,11 +8,19 @@ import 'package:intl/intl.dart';
 class MovementCard extends StatelessWidget {
   final IncomingDocument document;
   final VoidCallback? onUpdate;
+  final Function() onLongPress;
+  final bool isSelectionMode;
+  final bool isSelected;
+  final VoidCallback onTap;
 
   const MovementCard({
     super.key,
     required this.document,
     this.onUpdate,
+    required this.onLongPress,
+    required this.isSelectionMode,
+    required this.isSelected,
+    required this.onTap,
   });
 
   @override
@@ -24,92 +32,78 @@ class MovementCard extends StatelessWidget {
     }
 
     return GestureDetector(
-      onTap: () async {
-        // Проверяем валидность данных документа
-        if (document.id == null) return;
-        
-        try {
-          final result = await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => MovementDocumentDetailsScreen(
-                documentId: document.id!,
-                docNumber: document.docNumber ?? '',
-                onDocumentUpdated: onUpdate,
-              ),
-            ),
-          );
-          
-          // Проверяем, что виджет все ещё смонтирован после возвращения
-          if (context.mounted && result == true && onUpdate != null) {
-            onUpdate!();
-          }
-        } catch (e) {
-          // Обрабатываем возможные ошибки навигации
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Ошибка при открытии документа: $e'),
-                backgroundColor: Colors.red,
-                behavior: SnackBarBehavior.floating,
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            );
-          }
-        }
-      },
+      onTap: onTap,
+      onLongPress: onLongPress,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Container(
-          decoration: TaskCardStyles.taskCardDecoration,
+          decoration: TaskCardStyles.taskCardDecoration.copyWith(
+            color: isSelected
+                ? const Color(0xFFDDE8F5)
+                : TaskCardStyles.taskCardDecoration.color,
+          ),
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        '${localizations.translate('empty_0') ?? 'Документ'}№${document.docNumber ?? ''}',
-                        style: TaskCardStyles.titleStyle,
-                        overflow: TextOverflow.ellipsis,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              '${localizations.translate('empty_0') ?? 'Документ'}№${document.docNumber ?? ''}',
+                              style: TaskCardStyles.titleStyle,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: document.statusColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              _getLocalizedStatus(context, document),
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                fontFamily: 'Gilroy',
+                                color: document.statusColor,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: document.statusColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        _getLocalizedStatus(context, document),
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          fontFamily: 'Gilroy',
-                          color: document.statusColor,
-                        ),
-                      ),
-                    ),
-                  ],
+                      const SizedBox(height: 8),
+                      _buildDateRow(localizations),
+                      const SizedBox(height: 4),
+                      _buildSenderStorageRow(localizations),
+                      const SizedBox(height: 4),
+                      _buildRecipientStorageRow(localizations),
+                      const SizedBox(height: 8),
+                      _buildQuantityRow(localizations),
+                      // if (document.comment != null && document.comment!.isNotEmpty) ...[
+                      //   const SizedBox(height: 8),
+                      //   _buildCommentRow(localizations),
+                      // ],
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 8),
-                _buildDateRow(localizations),
-                const SizedBox(height: 4),
-                _buildSenderStorageRow(localizations),
-                const SizedBox(height: 4),
-                _buildRecipientStorageRow(localizations),
-                const SizedBox(height: 8),
-                _buildQuantityRow(localizations),
-                // if (document.comment != null && document.comment!.isNotEmpty) ...[
-                //   const SizedBox(height: 8),
-                //   _buildCommentRow(localizations),
-                // ],
+                if (isSelectionMode) ...[
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8),
+                    child: Icon(
+                      isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
+                      color: Color(0xff1E2E52),
+                      size: 24,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -245,7 +239,7 @@ class MovementCard extends StatelessWidget {
   String _getRecipientStorageName(IncomingDocument document, AppLocalizations localizations) {
     // В реальном проекте здесь должно быть получение склада получателя из модели
     // Пока используем заглушку, так как в текущей модели нет поля для склада получателя
-    
+
     // Сначала пытаемся получить данные из JSON документа (если есть поле recipient_storage)
     // или используем заглушку
     return localizations.translate('recipient_storage_name') ?? 'Склад получатель';
