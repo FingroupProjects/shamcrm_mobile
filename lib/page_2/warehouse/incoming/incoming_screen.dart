@@ -205,6 +205,8 @@ class _IncomingScreenState extends State<IncomingScreen> {
         ),
         body: BlocListener<IncomingBloc, IncomingState>(
           listener: (context, state) {
+            debugPrint("IncomingScreen.Bloc.State: ${_incomingBloc.state}");
+
             if (!mounted) return;
 
             if (state is IncomingLoaded) {
@@ -235,13 +237,6 @@ class _IncomingScreenState extends State<IncomingScreen> {
                 return;
               }
               _showSnackBar(state.message, false);
-            } else if (state is IncomingDeleteSuccess) {
-              // Показываем SnackBar только если мы находимся на IncomingScreen
-              // (т.е. если диалог уже закрыт и мы вернулись сюда)
-              _showSnackBar(state.message, true);
-
-              // Обновляем список после успешного удаления
-              _incomingBloc.add(const FetchIncoming(forceRefresh: true));
             } else if (state is IncomingApproveMassSuccess) {
               showCustomSnackBar(context: context, message: state.message, isSuccess: true);
               _incomingBloc.add(const FetchIncoming(forceRefresh: true));
@@ -255,8 +250,24 @@ class _IncomingScreenState extends State<IncomingScreen> {
               showCustomSnackBar(context: context, message: state.message, isSuccess: true);
               _incomingBloc.add(const FetchIncoming(forceRefresh: true));
             } else if (state is IncomingDisapproveMassError) {
+              debugPrint("[ERROR] IncomingDisapproveMassError: ${state.message}, enumType: ${ErrorDialogEnum.goodsIncomingUnapprove}");
               if (state.statusCode == 409) {
-                showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message);
+                showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message, errorDialogEnum: ErrorDialogEnum.goodsIncomingUnapprove);
+                return;
+              }
+              showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+            } else if (state is IncomingDeleteSuccess) {
+              // Показываем SnackBar только если мы находимся на IncomingScreen
+              // (т.е. если диалог уже закрыт и мы вернулись сюда)
+              _showSnackBar(state.message, true);
+
+              // Обновляем список после успешного удаления
+              if (state.shouldReload) _incomingBloc.add(const FetchIncoming(forceRefresh: true));
+            } else if (state is IncomingDeleteError) {
+              if (state.statusCode == 409) {
+                debugPrint("[ERROR] IncomingDeleteError: ${state.message} enumType: ${ErrorDialogEnum.goodsIncomingDelete}");
+                showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message, errorDialogEnum: ErrorDialogEnum.goodsIncomingDelete);
+                _incomingBloc.add(const FetchIncoming(forceRefresh: true));
                 return;
               }
               showCustomSnackBar(context: context, message: state.message, isSuccess: false);
@@ -265,7 +276,9 @@ class _IncomingScreenState extends State<IncomingScreen> {
               _incomingBloc.add(const FetchIncoming(forceRefresh: true));
             } else if (state is IncomingDeleteMassError) {
               if (state.statusCode == 409) {
-                showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message);
+                debugPrint("[ERROR] IncomingMassDeleteError: ${state.message} enumType: ${ErrorDialogEnum.goodsIncomingDelete}");
+                showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message, errorDialogEnum: ErrorDialogEnum.goodsIncomingDelete);
+                _incomingBloc.add(const FetchIncoming(forceRefresh: true));
                 return;
               }
               showCustomSnackBar(context: context, message: state.message, isSuccess: false);

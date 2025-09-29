@@ -11,7 +11,7 @@ class IncomingBloc extends Bloc<IncomingEvent, IncomingState> {
   final int _perPage = 20;
   Map<String, dynamic> _filters = {};
   List<IncomingDocument> _allData = [];
-  Set<IncomingDocument> _selectedDocuments = {};
+  List<IncomingDocument> _selectedDocuments = [];
 
   IncomingBloc(this.apiService) : super(IncomingInitial()) {
     on<FetchIncoming>(_onFetchIncoming);
@@ -131,7 +131,7 @@ class IncomingBloc extends Bloc<IncomingEvent, IncomingState> {
   }
 
   Future<void> _onUnselectAllDocuments(UnselectAllDocuments event, Emitter<IncomingState> emit) async {
-    _selectedDocuments = {};
+    _selectedDocuments = [];
 
     if (state is IncomingLoaded) {
       final currentState = state as IncomingLoaded;
@@ -261,12 +261,12 @@ class IncomingBloc extends Bloc<IncomingEvent, IncomingState> {
   }
 
   Future<void> _onDeleteIncoming(DeleteIncoming event, Emitter<IncomingState> emit) async {
-    emit(IncomingDeleteLoading()); // Эта строка должна быть!
+    if(event.shouldReload) emit(IncomingDeleteLoading()); // Эта строка должна быть!
     try {
       final result = await apiService.deleteIncomingDocument(event.documentId);
       if (result['result'] == 'Success') {
         await Future.delayed(const Duration(milliseconds: 100));
-        emit(IncomingDeleteSuccess('Документ успешно удален'));
+        emit(IncomingDeleteSuccess('Документ успешно удален', shouldReload: event.shouldReload || _allData.isEmpty));
       } else {
         emit(IncomingDeleteError('Не удалось удалить документ'));
       }
@@ -277,5 +277,6 @@ class IncomingBloc extends Bloc<IncomingEvent, IncomingState> {
         emit(IncomingDeleteError('Ошибка при удалении документа: ${e.toString()}'));
       }
     }
+    emit(IncomingLoaded(data: _allData, selectedData: _selectedDocuments));
   }
 }

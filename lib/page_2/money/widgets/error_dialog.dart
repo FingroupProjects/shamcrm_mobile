@@ -1,31 +1,50 @@
 import 'package:flutter/material.dart';
 
-void showSimpleErrorDialog(BuildContext context, String title, String errorMessage) {
+enum ErrorDialogEnum {
+  goodsIncomingDelete,
+  goodsIncomingUnapprove,
+  goodsIncomingApprove,
+  goodsIncomingRestore,
+  nothing;
+}
+
+void showSimpleErrorDialog(BuildContext context, String title, String errorMessage, {ErrorDialogEnum errorDialogEnum = ErrorDialogEnum.nothing}) {
   showDialog(
       context: context,
       barrierColor: Colors.black.withOpacity(0.5),
       builder: (BuildContext context) {
-        return ErrorDialog(title: title, errorMessage: errorMessage);
+        return ErrorDialog(title: title, errorMessage: errorMessage, errorDialogEnum: errorDialogEnum);
       });
 }
 
 class ErrorDialog extends StatelessWidget {
   final String title;
   final String errorMessage;
+  final ErrorDialogEnum errorDialogEnum;
 
   const ErrorDialog({
     super.key,
     required this.title,
     required this.errorMessage,
+    this.errorDialogEnum = ErrorDialogEnum.nothing
   });
 
   // Простой и эффективный метод для красивого отображения ошибки
   Widget _buildFormattedError(String message) {
+
+    if (errorDialogEnum == ErrorDialogEnum.goodsIncomingDelete) {
+      return _buildGoodsIncomingDeleteError(message);
+    }
+    if (errorDialogEnum == ErrorDialogEnum.goodsIncomingUnapprove) {
+      debugPrint("[ERROR] ErrorDialog.Unapprove: $message");
+      return _buildGoodsIncomingUnapproveError(message);
+    }
+
     // Проверяем, есть ли в сообщении информация о товарах
     if (message.contains('товар') || message.contains('Товар')) {
       return _buildInventoryError(message);
     }
-    
+
     // Для обычных ошибок просто красиво форматируем текст
     return _buildSimpleError(message);
   }
@@ -68,24 +87,348 @@ class ErrorDialog extends StatelessWidget {
             ],
           ),
         ),
-        
+
         SizedBox(height: 16),
-        
+
         // Парсим информацию о товаре
         ...(_parseInventoryDetails(message)),
       ],
     );
   }
 
+  Widget _buildGoodsIncomingDeleteError(String message) {
+    // Парсим название товара и отрицательный остаток
+    RegExp deletionRegex = RegExp(r"товара '([^']+)' станет отрицательным: (-?\d+)");
+    Match? match = deletionRegex.firstMatch(message);
+
+    String productName = match?.group(1) ?? 'Неизвестный товар';
+    String negativeAmount = match?.group(2) ?? '0';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Заголовок ошибки
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Color(0xffFFF5F5),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Color(0xffFECDD3),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Невозможно удалить документ',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xffDC2626),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        SizedBox(height: 16),
+
+        // Информация о товаре
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Color(0xffE2E8F0),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Color(0xff1E2E52).withOpacity(0.08),
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Заголовок товара
+              Container(
+                width: double.infinity,
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Color(0xffF8FAFC),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    topRight: Radius.circular(12),
+                  ),
+                  border: Border(
+                    left: BorderSide(
+                      width: 4,
+                      color: Color(0xffDC2626),
+                    ),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Color(0xffDC2626).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Icon(
+                        Icons.inventory_2_outlined,
+                        size: 16,
+                        color: Color(0xffDC2626),
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        productName,
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xff1E2E52),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Предупреждение об отрицательном остатке
+              Padding(
+                padding: EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'После удаления документа остаток станет:',
+                      style: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff64748B),
+                      ),
+                    ),
+                    SizedBox(height: 12),
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Color(0xffFEF2F2),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: Color(0xffFECDD3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            negativeAmount,
+                            style: TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 24,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xffDC2626),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGoodsIncomingUnapproveError(String message) {
+    // Парсим название товара и отрицательный остаток
+    RegExp unapproveRegex = RegExp(r"товара '([^']+)' станет отрицательным: (-?\d+)");
+    Match? match = unapproveRegex.firstMatch(message);
+
+    String productName = match?.group(1) ?? 'Неизвестный товар';
+    String negativeAmount = match?.group(2) ?? '0';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Заголовок ошибки
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Color(0xffFFF5F5),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Color(0xffFECDD3),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Нельзя отменить проведение',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xffDC2626),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        SizedBox(height: 16),
+
+        // Информация о товаре
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Color(0xffE2E8F0),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Color(0xff1E2E52).withOpacity(0.08),
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Заголовок товара
+              Container(
+                width: double.infinity,
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Color(0xffF8FAFC),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    topRight: Radius.circular(12),
+                  ),
+                  border: Border(
+                    left: BorderSide(
+                      width: 4,
+                      color: Color(0xffDC2626),
+                    ),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Color(0xffDC2626).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Icon(
+                        Icons.inventory_2_outlined,
+                        size: 16,
+                        color: Color(0xffDC2626),
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        productName,
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xff1E2E52),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Предупреждение об отрицательном остатке
+              Padding(
+                padding: EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'После отмены проведения остаток станет:',
+                      style: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff64748B),
+                      ),
+                    ),
+                    SizedBox(height: 12),
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Color(0xffFEF2F2),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: Color(0xffFECDD3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            negativeAmount,
+                            style: TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 24,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xffDC2626),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   List<Widget> _parseInventoryDetails(String message) {
     List<Widget> widgets = [];
-    
+
     // Парсим все товары с помощью регулярного выражения
     RegExp productRegex = RegExp(r'- Товар ([^:]+): требуется (\d+), доступно (\d+)');
     Iterable<Match> matches = productRegex.allMatches(message);
-    
+
     if (matches.isEmpty) return widgets;
-    
+
     // Добавляем заголовок с общим количеством товаров
     widgets.add(
       Container(
@@ -112,14 +455,14 @@ class ErrorDialog extends StatelessWidget {
         ),
       ),
     );
-    
+
     // Добавляем каждый товар
     for (int index = 0; index < matches.length; index++) {
       Match match = matches.elementAt(index);
       String productName = match.group(1)?.trim() ?? '';
       String required = match.group(2) ?? '0';
       String available = match.group(3) ?? '0';
-      
+
       // Контейнер для товара
       widgets.add(
         Container(
@@ -193,7 +536,7 @@ class ErrorDialog extends StatelessWidget {
                   ],
                 ),
               ),
-              
+
               // Количества
               Padding(
                 padding: EdgeInsets.all(16),
@@ -237,9 +580,9 @@ class ErrorDialog extends StatelessWidget {
                         ),
                       ),
                     ),
-                    
+
                     SizedBox(width: 12),
-                    
+
                     // Доступно
                     Expanded(
                       child: Container(
@@ -286,7 +629,7 @@ class ErrorDialog extends StatelessWidget {
         ),
       );
     }
-    
+
     return widgets;
   }
 

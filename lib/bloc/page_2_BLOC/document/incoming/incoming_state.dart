@@ -85,8 +85,9 @@ class IncomingDeleteLoading extends IncomingState {}
 
 class IncomingDeleteSuccess extends IncomingState {
   final String message;
+  final bool shouldReload;
 
-  const IncomingDeleteSuccess(this.message);
+  const IncomingDeleteSuccess(this.message,  {this.shouldReload = true});
 
   @override
   List<Object> get props => [message];
