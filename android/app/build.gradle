@@ -43,8 +43,8 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.softtech.crm_task_manager"
-        minSdkVersion flutter.minSdkVersion
+        applicationId "com.softtech.crm_task_manager_fingroup"
+        minSdkVersion 23
         targetSdkVersion 35  // Было: flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
