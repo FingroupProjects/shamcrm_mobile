@@ -457,13 +457,7 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
       );
     }
 
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider<MovementBloc>(
-          create: (context) => MovementBloc(context.read<ApiService>()),
-        ),
-      ],
-      child: PopScope(
+    return PopScope(
         onPopInvoked: (didPop) {
           if (didPop && _documentUpdated && widget.onDocumentUpdated != null) {
             widget.onDocumentUpdated!();
@@ -510,8 +504,7 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
                       ),
                     ),
         ),
-      ),
-    );
+      );
   }
 
   AppBar _buildAppBar(BuildContext context, AppLocalizations localizations) {

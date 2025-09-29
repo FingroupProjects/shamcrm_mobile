@@ -13702,21 +13702,48 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
   }
 
   //deleteMovementDocument
-  Future<void> deleteMovementDocument(int documentId) async {
+  Future<Map<String, dynamic>> deleteMovementDocument(int documentId) async {
     try {
       final token = await getToken();
-      if (token == null) throw Exception('Токен не найден');
-      final body = {
-        'ids': [documentId]
-      };
-      final path = await _appendQueryParams('/movement-documents');
-      print('Удаление документа по пути: $path');
-      final response = await _deleteRequestWithBody(path, body);
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return;
+      if (token == null) throw 'Токен не найден';
+
+      // Используем _appendQueryParams для получения параметров, но извлекаем их для тела запроса
+      final pathWithParams = await _appendQueryParams('/movement-documents');
+      final uri = Uri.parse('$baseUrl$pathWithParams');
+
+      // Извлекаем organization_id и sales_funnel_id из query параметров
+      final organizationId = uri.queryParameters['organization_id'];
+      final salesFunnelId = uri.queryParameters['sales_funnel_id'];
+
+      // Создаем чистый URI без параметров для DELETE запроса
+      final cleanUri = Uri.parse('$baseUrl/movement-documents');
+
+      final body = jsonEncode({
+        'ids': [documentId],
+        'organization_id': organizationId ?? '1',
+        'sales_funnel_id': salesFunnelId ?? '1',
+      });
+
+      if (kDebugMode) {
+        print('ApiService: deleteMovementDocument - Request body: $body');
+      }
+
+      final response = await http.delete(
+        cleanUri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Device': 'mobile',
+        },
+        body: body,
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return {'result': 'Success'};
       } else {
         final message = _extractErrorMessageFromResponse(response);
-        throw ApiException(message ?? 'Ошибка удаления документа', response.statusCode);
+        throw ApiException(message ?? 'Ошибка при удалении документа', response.statusCode);
       }
     } catch (e) {
       rethrow;
@@ -13731,6 +13758,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     required String comment,
     required List<Map<String, dynamic>> documentGoods,
     required int organizationId,
+    required bool approve,
   }) async {
     try {
       final token = await getToken();
@@ -13746,6 +13774,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         'comment': comment,
         'document_goods': documentGoods,
         'organization_id': organizationId,
+        'approve': approve,
       });
 
       final response = await http.put(
@@ -13872,6 +13901,95 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       rethrow;
     }
   }
+
+  Future<void> massApproveMovementDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/movement-documents/approve');
+
+    try {
+      final response = await _postRequest(path, {
+        'ids': ids,
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при массовом проведении документов перемещения!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> massDisapproveMovementDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/movement-documents/unApprove');
+
+    try {
+      final response = await _postRequest(path, {
+        'ids': ids,
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при массовом снятии проведения документов перемещения!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> massDeleteMovementDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/movement-documents/');
+
+    try {
+      final response = await _deleteRequestWithBody(path, {
+        'ids': ids,
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при массовом удалении документов перемещения!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> massRestoreMovementDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/movement-documents/restore');
+
+    try {
+      final response = await _postRequest(path, {
+        'ids': ids,
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при массовом восстановлении документов перемещения!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
 
 //______________________________end movement____________________________//
 

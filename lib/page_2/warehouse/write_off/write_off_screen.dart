@@ -302,6 +302,7 @@ class _WriteOffScreenState extends State<WriteOffScreen> {
               }
               showCustomSnackBar(context: context, message: state.message, isSuccess: false);
             } else if (state is WriteOffDeleteSuccess) {
+              debugPrint("WriteOffScreen.Bloc.State.WriteOffDeleteSuccess: ${_writeOffBloc.state}");
               _showSnackBar(state.message, true);
               if (state.shouldReload) {
                 _writeOffBloc.add(FetchWriteOffs(forceRefresh: true, filters: _currentFilters, search: _search));
@@ -426,7 +427,7 @@ class _WriteOffScreenState extends State<WriteOffScreen> {
                         borderRadius: BorderRadius.circular(12),
                         child: WriteOffCard(
                           document: currentData[index],
-                          onTap: () {
+                          onTap: () async {
                             if (_selectionMode) {
                               _writeOffBloc.add(SelectDocument(currentData[index]));
 
@@ -443,24 +444,34 @@ class _WriteOffScreenState extends State<WriteOffScreen> {
                               return;
                             }
 
-                            if (currentData[index].deletedAt != null) return;
-
-                            Navigator.push(
+                            final result = await Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => WriteOffDocumentDetailsScreen(
-                                  documentId: currentData[index].id!,
-                                  docNumber: currentData[index].docNumber ?? 'N/A',
-                                  onDocumentUpdated: () {
-                                    _writeOffBloc.add(FetchWriteOffs(
-                                      forceRefresh: true,
-                                      filters: _currentFilters,
-                                      search: _search,
-                                    ));
-                                  },
+                                builder: (ctx) => BlocProvider(
+                                  create: (context) => WriteOffBloc(context.read<ApiService>()),
+                                  child: WriteOffDocumentDetailsScreen(
+                                    documentId: currentData[index].id!,
+                                    docNumber: currentData[index].docNumber ?? 'N/A',
+                                    onDocumentUpdated: () {
+                                      _writeOffBloc.add(FetchWriteOffs(
+                                        forceRefresh: true,
+                                        filters: _currentFilters,
+                                        search: _search,
+                                      ));
+                                    },
+                                  ),
                                 ),
                               ),
                             );
+                            
+                            // If document was deleted from details screen, refresh the list
+                            if (result == true) {
+                              _writeOffBloc.add(FetchWriteOffs(
+                                forceRefresh: true,
+                                filters: _currentFilters,
+                                search: _search,
+                              ));
+                            }
                           },
                           isSelectionMode: _selectionMode,
                           isSelected: (state as WriteOffLoaded).selectedData?.contains(currentData[index]) ?? false,

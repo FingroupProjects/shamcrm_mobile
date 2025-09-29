@@ -1,6 +1,6 @@
-// movement_event.dart
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:equatable/equatable.dart';
+import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 
 abstract class MovementEvent extends Equatable {
   const MovementEvent();
@@ -13,15 +13,17 @@ class FetchMovements extends MovementEvent {
   final bool forceRefresh;
   final Map<String, dynamic>? filters;
   final int? status;
+  final String? search;
 
   const FetchMovements({
     this.forceRefresh = false,
     this.filters,
     this.status,
+    this.search,
   });
 
   @override
-  List<Object> get props => [forceRefresh, filters ?? {}, status ?? 0];
+  List<Object> get props => [forceRefresh, filters ?? {}, status ?? 0, search ?? ''];
 }
 
 class CreateMovementDocument extends MovementEvent {
@@ -31,7 +33,7 @@ class CreateMovementDocument extends MovementEvent {
   final String comment;
   final List<Map<String, dynamic>> documentGoods;
   final int organizationId;
-  final bool approve; // Новый параметр
+  final bool approve;
 
   const CreateMovementDocument({
     required this.date,
@@ -40,7 +42,7 @@ class CreateMovementDocument extends MovementEvent {
     required this.comment,
     required this.documentGoods,
     required this.organizationId,
-    this.approve = false, // По умолчанию false
+    this.approve = false,
   });
 
   @override
@@ -51,7 +53,7 @@ class CreateMovementDocument extends MovementEvent {
     comment,
     documentGoods,
     organizationId,
-    approve, // Добавляем в props
+    approve,
   ];
 }
 
@@ -63,6 +65,7 @@ class UpdateMovementDocument extends MovementEvent {
   final String comment;
   final List<Map<String, dynamic>> documentGoods;
   final int organizationId;
+  final bool approve;
 
   const UpdateMovementDocument({
     required this.documentId,
@@ -72,6 +75,7 @@ class UpdateMovementDocument extends MovementEvent {
     required this.comment,
     required this.documentGoods,
     required this.organizationId,
+    this.approve = false,
   });
 
   @override
@@ -83,17 +87,19 @@ class UpdateMovementDocument extends MovementEvent {
     comment,
     documentGoods,
     organizationId,
+    approve,
   ];
 }
 
 class DeleteMovementDocument extends MovementEvent {
   final int documentId;
   final AppLocalizations localizations;
+  final bool shouldReload;
 
-  const DeleteMovementDocument(this.documentId, this.localizations);
+  const DeleteMovementDocument(this.documentId, this.localizations, {this.shouldReload = true});
 
   @override
-  List<Object> get props => [documentId, localizations];
+  List<Object> get props => [documentId, localizations, shouldReload];
 }
 
 class RestoreMovementDocument extends MovementEvent {
@@ -104,4 +110,40 @@ class RestoreMovementDocument extends MovementEvent {
 
   @override
   List<Object> get props => [documentId, localizations];
+}
+
+// Mass Operations Events
+class MassApproveMovementDocuments extends MovementEvent {
+  @override
+  List<Object> get props => [];
+}
+
+class MassDisapproveMovementDocuments extends MovementEvent {
+  @override
+  List<Object> get props => [];
+}
+
+class MassDeleteMovementDocuments extends MovementEvent {
+  @override
+  List<Object> get props => [];
+}
+
+class MassRestoreMovementDocuments extends MovementEvent {
+  @override
+  List<Object> get props => [];
+}
+
+// Selection Events
+class SelectDocument extends MovementEvent {
+  final IncomingDocument document;
+
+  const SelectDocument(this.document);
+
+  @override
+  List<Object> get props => [document];
+}
+
+class UnselectAllDocuments extends MovementEvent {
+  @override
+  List<Object> get props => [];
 }

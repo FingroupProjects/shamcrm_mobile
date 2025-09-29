@@ -1,5 +1,4 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_state.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/movement/movement_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/movement/movement_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/movement/movement_state.dart';
@@ -10,11 +9,15 @@ import 'package:crm_task_manager/page_2/warehouse/movement/movement_create.dart'
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
+import '../../../custom_widget/app_bar_selection_mode.dart';
+import '../../../models/page_2/incoming_document_model.dart';
+import '../../../widgets/snackbar_widget.dart';
 import '../../money/widgets/error_dialog.dart';
+import 'movement_details.dart';
 
 class MovementScreen extends StatefulWidget {
   const MovementScreen({super.key, this.organizationId});
+
   final int? organizationId;
 
   @override
@@ -27,91 +30,122 @@ class _MovementScreenState extends State<MovementScreen> {
   final FocusNode _focusNode = FocusNode();
   bool _isSearching = false;
   Map<String, dynamic> _currentFilters = {};
+  String? _search;
   late MovementBloc _movementBloc;
   bool _isInitialLoad = true;
   bool _isLoadingMore = false;
   bool _hasReachedMax = false;
+  bool _selectionMode = false;
 
   @override
   void initState() {
     super.initState();
-    _movementBloc = MovementBloc(ApiService());
-    
-    // Добавляем слушатель скролла только если виджет смонтирован
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _scrollController.addListener(_onScroll);
-        _movementBloc.add(const FetchMovements(forceRefresh: true));
-      }
-    });
+    _movementBloc = MovementBloc(ApiService())..add(const FetchMovements(forceRefresh: true));
+    _scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
-    // Сначала удаляем слушатели
     _scrollController.removeListener(_onScroll);
-    
-    // Затем освобождаем ресурсы
     _scrollController.dispose();
     _searchController.dispose();
     _focusNode.dispose();
-    
-    // В конце закрываем BLoC
     _movementBloc.close();
-    
     super.dispose();
+  }
+
+  void _onFilterSelected(Map<String, dynamic> filters) {
+    if (!mounted) return;
+
+    setState(() {
+      _currentFilters = Map.from(filters);
+      _hasReachedMax = false;
+      _isLoadingMore = false;
+      _isSearching = false;
+      _searchController.clear();
+      _search = null;
+    });
+
+    _movementBloc.add(FetchMovements(
+      forceRefresh: true,
+      filters: _currentFilters,
+      search: null,
+    ));
+  }
+
+  void _onResetFilters() {
+    if (!mounted) return;
+
+    setState(() {
+      _currentFilters.clear();
+      _hasReachedMax = false;
+      _isLoadingMore = false;
+      _isSearching = false;
+      _searchController.clear();
+      _search = null;
+    });
+
+    _movementBloc.add(const FetchMovements(
+      forceRefresh: true,
+      filters: {},
+      search: null,
+    ));
   }
 
   void _onScroll() {
     if (!mounted) return;
-    
-    if (_scrollController.position.pixels >=
-            _scrollController.position.maxScrollExtent - 200 &&
+
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200 &&
         !_isLoadingMore &&
         !_hasReachedMax) {
       setState(() {
         _isLoadingMore = true;
       });
-      
+
       _movementBloc.add(FetchMovements(
         forceRefresh: false,
         filters: _currentFilters,
+        search: _search,
       ));
     }
   }
 
   void _onSearch(String query) {
     if (!mounted) return;
-    
+
     setState(() {
-      _isSearching = query.isNotEmpty;
+      _isSearching = query.trim().isNotEmpty;
+      _search = query;
     });
-    
-    _currentFilters['query'] = query;
+
     _movementBloc.add(FetchMovements(
       forceRefresh: true,
       filters: _currentFilters,
+      search: _search,
     ));
   }
 
   Future<void> _onRefresh() async {
     if (!mounted) return;
-    
+
     setState(() {
+      _hasReachedMax = false;
       _isSearching = false;
       _searchController.clear();
-      _currentFilters = {};
-      _isInitialLoad = true;
-      _hasReachedMax = false;
+      _search = null;
     });
-    
-    _movementBloc.add(const FetchMovements(forceRefresh: true));
+
+    _movementBloc.add(FetchMovements(
+      forceRefresh: true,
+      filters: _currentFilters,
+      search: null,
+    ));
     await Future.delayed(const Duration(milliseconds: 500));
   }
 
   void _showSnackBar(String message, bool isSuccess) {
     if (!mounted || !context.mounted) return;
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -144,16 +178,14 @@ class _MovementScreenState extends State<MovementScreen> {
         floatingActionButton: FloatingActionButton(
           onPressed: () async {
             if (!mounted) return;
-            
+
             final result = await Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => CreateMovementDocumentScreen(
-                    organizationId: widget.organizationId),
+                builder: (context) => CreateMovementDocumentScreen(organizationId: widget.organizationId),
               ),
             );
-            
-            // Проверяем, что виджет всё ещё смонтирован после возвращения
+
             if (mounted && result == true) {
               _movementBloc.add(const FetchMovements(forceRefresh: true));
             }
@@ -163,38 +195,106 @@ class _MovementScreenState extends State<MovementScreen> {
         ),
         backgroundColor: Colors.white,
         appBar: AppBar(
+          automaticallyImplyLeading: !_selectionMode,
           forceMaterialTransparency: true,
-          title: CustomAppBarPage2(
-            title: localizations?.translate('appbar_movement') ?? 'Перемещение',
-            showSearchIcon: true,
-            showFilterIcon: false,
-            showFilterOrderIcon: false,
-            onChangedSearchInput: _onSearch,
-            textEditingController: _searchController,
-            focusNode: _focusNode,
-            clearButtonClick: (value) {
-              if (!mounted) return;
-              
-              if (!value) {
-                setState(() {
-                  _isSearching = false;
-                  _searchController.clear();
-                });
-                _movementBloc.add(const FetchMovements(forceRefresh: true));
-              }
-            },
-            onClickProfileAvatar: () {},
-            clearButtonClickFiltr: (bool p1) {},
-            currentFilters: {},
-          ),
+          title: _selectionMode
+              ? BlocBuilder<MovementBloc, MovementState>(
+                  builder: (context, state) {
+                    if (state is MovementLoaded) {
+                      bool showApprove = state.selectedData!.any((doc) => doc.approved == 0 && doc.deletedAt == null);
+                      bool showDisapprove = state.selectedData!.any((doc) => doc.approved == 1 && doc.deletedAt == null);
+                      bool showDelete = state.selectedData!.any((doc) => doc.deletedAt == null);
+                      bool showRestore = state.selectedData!.any((doc) => doc.deletedAt != null);
+
+                      return AppBarSelectionMode(
+                        title: localizations?.translate('appbar_movement') ?? 'Перемещение',
+                        onDismiss: () {
+                          setState(() {
+                            _selectionMode = false;
+                          });
+                          _movementBloc.add(UnselectAllDocuments());
+                        },
+                        onApprove: () {
+                          setState(() {
+                            _selectionMode = false;
+                          });
+                          _movementBloc.add(MassApproveMovementDocuments());
+                        },
+                        onDisapprove: () {
+                          setState(() {
+                            _selectionMode = false;
+                          });
+                          _movementBloc.add(MassDisapproveMovementDocuments());
+                        },
+                        onDelete: () {
+                          setState(() {
+                            _selectionMode = false;
+                          });
+                          _movementBloc.add(MassDeleteMovementDocuments());
+                        },
+                        onRestore: () {
+                          setState(() {
+                            _selectionMode = false;
+                          });
+                          _movementBloc.add(MassRestoreMovementDocuments());
+                        },
+                        showApprove: showApprove,
+                        showDelete: showDelete,
+                        showDisapprove: showDisapprove,
+                        showRestore: showRestore,
+                      );
+                    }
+
+                    return AppBarSelectionMode(
+                      title: localizations?.translate('appbar_movement') ?? 'Перемещение',
+                      onDismiss: () {
+                        setState(() {
+                          _selectionMode = false;
+                        });
+                        _movementBloc.add(UnselectAllDocuments());
+                      },
+                    );
+                  },
+                )
+              : CustomAppBarPage2(
+                  title: localizations?.translate('appbar_movement') ?? 'Перемещение',
+                  showSearchIcon: true,
+                  showFilterIcon: false,
+                  showFilterOrderIcon: false,
+                  showFilterIncomeIcon: false,
+                  showFilterIncomingIcon: true,
+                  onFilterIncomingSelected: _onFilterSelected,
+                  onIncomingResetFilters: _onResetFilters,
+                  onChangedSearchInput: _onSearch,
+                  textEditingController: _searchController,
+                  focusNode: _focusNode,
+                  clearButtonClick: (value) {
+                    if (!mounted) return;
+
+                    if (!value) {
+                      setState(() {
+                        _isSearching = false;
+                        _searchController.clear();
+                        _search = null;
+                      });
+                      _movementBloc.add(FetchMovements(
+                        forceRefresh: true,
+                        filters: _currentFilters,
+                        search: null,
+                      ));
+                    }
+                  },
+                  onClickProfileAvatar: () {},
+                  clearButtonClickFiltr: (bool p1) {},
+                  currentFilters: _currentFilters,
+                ),
         ),
         body: MultiBlocListener(
           listeners: [
             BlocListener<MovementBloc, MovementState>(
               listener: (context, state) {
-                // Критическая проверка mounted
                 if (!mounted) return;
-                
+
                 if (state is MovementLoaded) {
                   if (mounted) {
                     setState(() {
@@ -209,8 +309,7 @@ class _MovementScreenState extends State<MovementScreen> {
                       _isInitialLoad = false;
                       _isLoadingMore = false;
                     });
-                    
-                    // Безопасный показ SnackBar через addPostFrameCallback
+
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       if (mounted && context.mounted) {
                         if (state.statusCode == 409) {
@@ -236,7 +335,7 @@ class _MovementScreenState extends State<MovementScreen> {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       if (mounted && context.mounted) {
                         _showSnackBar(state.message, true);
-                        _movementBloc.add(const FetchMovements(forceRefresh: true));
+                        if (state.shouldReload) _movementBloc.add(const FetchMovements(forceRefresh: true));
                       }
                     });
                   }
@@ -246,6 +345,90 @@ class _MovementScreenState extends State<MovementScreen> {
                       if (mounted && context.mounted) {
                         _showSnackBar(state.message, true);
                         _movementBloc.add(const FetchMovements(forceRefresh: true));
+                      }
+                    });
+                  }
+                } else if (state is MovementApproveMassSuccess) {
+                  if (mounted) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted && context.mounted) {
+                        showCustomSnackBar(context: context, message: state.message, isSuccess: true);
+                        _movementBloc.add(FetchMovements(forceRefresh: true, filters: _currentFilters, search: _search));
+                      }
+                    });
+                  }
+                } else if (state is MovementApproveMassError) {
+                  if (mounted) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted && context.mounted) {
+                        if (state.statusCode == 409) {
+                          showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message);
+                          return;
+                        }
+                        showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+                      }
+                    });
+                  }
+                } else if (state is MovementDisapproveMassSuccess) {
+                  if (mounted) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted && context.mounted) {
+                        showCustomSnackBar(context: context, message: state.message, isSuccess: true);
+                        _movementBloc.add(FetchMovements(forceRefresh: true, filters: _currentFilters, search: _search));
+                      }
+                    });
+                  }
+                } else if (state is MovementDisapproveMassError) {
+                  if (mounted) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted && context.mounted) {
+                        if (state.statusCode == 409) {
+                          showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message);
+                          return;
+                        }
+                        showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+                      }
+                    });
+                  }
+                } else if (state is MovementDeleteMassSuccess) {
+                  if (mounted) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted && context.mounted) {
+                        showCustomSnackBar(context: context, message: state.message, isSuccess: true);
+                        _movementBloc.add(FetchMovements(forceRefresh: true, filters: _currentFilters, search: _search));
+                      }
+                    });
+                  }
+                } else if (state is MovementDeleteMassError) {
+                  if (mounted) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted && context.mounted) {
+                        if (state.statusCode == 409) {
+                          showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message);
+                          return;
+                        }
+                        showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+                      }
+                    });
+                  }
+                } else if (state is MovementRestoreMassSuccess) {
+                  if (mounted) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted && context.mounted) {
+                        showCustomSnackBar(context: context, message: state.message, isSuccess: true);
+                        _movementBloc.add(FetchMovements(forceRefresh: true, filters: _currentFilters, search: _search));
+                      }
+                    });
+                  }
+                } else if (state is MovementRestoreMassError) {
+                  if (mounted) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted && context.mounted) {
+                        if (state.statusCode == 409) {
+                          showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message);
+                          return;
+                        }
+                        showCustomSnackBar(context: context, message: state.message, isSuccess: false);
                       }
                     });
                   }
@@ -264,7 +447,7 @@ class _MovementScreenState extends State<MovementScreen> {
                 );
               }
 
-              final currentData = state is MovementLoaded ? state.data : <dynamic>[];
+              final List<IncomingDocument> currentData = state is MovementLoaded ? state.data : <IncomingDocument>[];
 
               if (currentData.isEmpty && state is MovementLoaded) {
                 return Center(
@@ -304,14 +487,94 @@ class _MovementScreenState extends State<MovementScreen> {
                             )
                           : const SizedBox.shrink();
                     }
-                    
-                    return MovementCard(
-                      document: currentData[index],
-                      onUpdate: () {
-                        if (mounted) {
-                          _movementBloc.add(const FetchMovements(forceRefresh: true));
-                        }
+
+                    return Dismissible(
+                      key: Key(currentData[index].id.toString()),
+                      direction: DismissDirection.endToStart,
+                      background: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        alignment: Alignment.centerRight,
+                        child: const Icon(Icons.delete, color: Colors.white, size: 24),
+                      ),
+                      confirmDismiss: (direction) async {
+                        return currentData[index].deletedAt == null;
                       },
+                      onDismissed: (direction) {
+                        print("🗑️ [UI] Удаление dokumenta ID: ${currentData[index].id}");
+                        setState(() {
+                          currentData.removeAt(index);
+                        });
+                        _movementBloc.add(DeleteMovementDocument(
+                          currentData[index].id!,
+                          localizations!,
+                          shouldReload: false,
+                        ));
+                      },
+                      child: MovementCard(
+                        document: currentData[index],
+                        onTap: () {
+                          if (_selectionMode) {
+                            _movementBloc.add(SelectDocument(currentData[index]));
+
+                            final currentState = context.read<MovementBloc>().state;
+
+                            if (currentState is MovementLoaded) {
+                              final selectedCount = currentState.selectedData?.length ?? 0;
+                              if (selectedCount <= 1 && currentState.selectedData?.contains(currentData[index]) == true) {
+                                setState(() {
+                                  _selectionMode = false;
+                                });
+                              }
+                            }
+                            return;
+                          }
+
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (ctx) => BlocProvider(
+                                create: (context) => MovementBloc(context.read<ApiService>()),
+                                child: MovementDocumentDetailsScreen(
+                                  documentId: currentData[index].id!,
+                                  docNumber: currentData[index].docNumber ?? '',
+                                  onDocumentUpdated: () {
+                                    if (mounted) {
+                                      _movementBloc
+                                          .add(FetchMovements(forceRefresh: true, filters: _currentFilters, search: _search));
+                                    }
+                                  },
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                        onLongPress: () {
+                          if (_selectionMode) return;
+                          setState(() {
+                            _selectionMode = true;
+                          });
+                          _movementBloc.add(SelectDocument(currentData[index]));
+                        },
+                        isSelectionMode: _selectionMode,
+                        isSelected: (state as MovementLoaded).selectedData?.contains(currentData[index]) ?? false,
+                        onUpdate: () {
+                          if (mounted) {
+                            _movementBloc.add(FetchMovements(forceRefresh: true, filters: _currentFilters, search: _search));
+                          }
+                        },
+                      ),
                     );
                   },
                 ),

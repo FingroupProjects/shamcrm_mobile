@@ -357,74 +357,53 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider<WriteOffBloc>(
-          create: (context) => WriteOffBloc(context.read<ApiService>()),
-        ),
-      ],
-      child: BlocListener<WriteOffBloc, WriteOffState>(
-        listener: (context, state) {
-          if (state is WriteOffDeleteSuccess) {
-            debugPrint("Details screen: Delete Success");
-            Navigator.pop(context, true);
-          } else if (state is WriteOffError) {
-            if (state.statusCode == 409) {
-              final localizations = AppLocalizations.of(context)!;
-              showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
-              return;
-            }
+    return PopScope(
+        onPopInvoked: (didPop) {
+          if (didPop && _documentUpdated && widget.onDocumentUpdated != null) {
+            widget.onDocumentUpdated!();
           }
         },
-        child: PopScope(
-          onPopInvoked: (didPop) {
-            if (didPop && _documentUpdated && widget.onDocumentUpdated != null) {
-              widget.onDocumentUpdated!();
-            }
-          },
-          child: Scaffold(
-            appBar: _buildAppBar(context),
-            backgroundColor: Colors.white,
-            body: _isLoading
-                ? Center(
-                    child: PlayStoreImageLoading(
-                      size: 80.0,
-                      duration: Duration(milliseconds: 1000),
-                    ),
-                  )
-                : currentDocument == null
-                    ? Center(
-                        child: Text(
-                          AppLocalizations.of(context)!.translate('document_data_unavailable') ?? 'Данные документа недоступны',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xff99A4BA),
-                          ),
-                        ),
-                      )
-                    : Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                        child: ListView(
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 16),
-                              child: Center(child: _buildActionButton()),
-                            ),
-                            _buildDetailsList(),
-                            const SizedBox(height: 16),
-                            if (currentDocument!.documentGoods != null && currentDocument!.documentGoods!.isNotEmpty) ...[
-                              _buildGoodsList(currentDocument!.documentGoods!),
-                              const SizedBox(height: 16),
-                            ],
-                          ],
+        child: Scaffold(
+          appBar: _buildAppBar(context),
+          backgroundColor: Colors.white,
+          body: _isLoading
+              ? Center(
+                  child: PlayStoreImageLoading(
+                    size: 80.0,
+                    duration: Duration(milliseconds: 1000),
+                  ),
+                )
+              : currentDocument == null
+                  ? Center(
+                      child: Text(
+                        AppLocalizations.of(context)!.translate('document_data_unavailable') ?? 'Данные документа недоступны',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xff99A4BA),
                         ),
                       ),
-          ),
+                    )
+                  : Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                      child: ListView(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            child: Center(child: _buildActionButton()),
+                          ),
+                          _buildDetailsList(),
+                          const SizedBox(height: 16),
+                          if (currentDocument!.documentGoods != null && currentDocument!.documentGoods!.isNotEmpty) ...[
+                            _buildGoodsList(currentDocument!.documentGoods!),
+                            const SizedBox(height: 16),
+                          ],
+                        ],
+                      ),
+                    ),
         ),
-      ),
-    );
+      );
   }
 
   AppBar _buildAppBar(BuildContext context) {
@@ -500,8 +479,8 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
                       width: 24,
                       height: 24,
                     ),
-                    onPressed: () {
-                      showDialog(
+                    onPressed: () async {
+                      final result = await showDialog<bool>(
                         context: context,
                         builder: (BuildContext context) {
                           return BlocProvider.value(
@@ -510,6 +489,14 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
                           );
                         },
                       );
+                      
+                      if (result == true) {
+                        // Document was deleted successfully
+                        if (widget.onDocumentUpdated != null) {
+                          widget.onDocumentUpdated!();
+                        }
+                        Navigator.of(context).pop(true); // Close details screen
+                      }
                     },
                   ),
                 ],
