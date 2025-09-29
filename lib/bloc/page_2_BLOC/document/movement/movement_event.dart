@@ -1,4 +1,3 @@
-// movement_event.dart
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:equatable/equatable.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
@@ -14,15 +13,17 @@ class FetchMovements extends MovementEvent {
   final bool forceRefresh;
   final Map<String, dynamic>? filters;
   final int? status;
+  final String? search;
 
   const FetchMovements({
     this.forceRefresh = false,
     this.filters,
     this.status,
+    this.search,
   });
 
   @override
-  List<Object> get props => [forceRefresh, filters ?? {}, status ?? 0];
+  List<Object> get props => [forceRefresh, filters ?? {}, status ?? 0, search ?? ''];
 }
 
 class CreateMovementDocument extends MovementEvent {
@@ -64,6 +65,7 @@ class UpdateMovementDocument extends MovementEvent {
   final String comment;
   final List<Map<String, dynamic>> documentGoods;
   final int organizationId;
+  final bool approve;
 
   const UpdateMovementDocument({
     required this.documentId,
@@ -73,6 +75,7 @@ class UpdateMovementDocument extends MovementEvent {
     required this.comment,
     required this.documentGoods,
     required this.organizationId,
+    this.approve = false,
   });
 
   @override
@@ -84,6 +87,7 @@ class UpdateMovementDocument extends MovementEvent {
     comment,
     documentGoods,
     organizationId,
+    approve,
   ];
 }
 

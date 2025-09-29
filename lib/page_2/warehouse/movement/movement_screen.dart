@@ -1,5 +1,4 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_state.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/movement/movement_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/movement/movement_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/movement/movement_state.dart';
@@ -10,7 +9,6 @@ import 'package:crm_task_manager/page_2/warehouse/movement/movement_create.dart'
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import '../../../custom_widget/app_bar_selection_mode.dart';
 import '../../../models/page_2/incoming_document_model.dart';
 import '../../../widgets/snackbar_widget.dart';
@@ -32,6 +30,7 @@ class _MovementScreenState extends State<MovementScreen> {
   final FocusNode _focusNode = FocusNode();
   bool _isSearching = false;
   Map<String, dynamic> _currentFilters = {};
+  String? _search;
   late MovementBloc _movementBloc;
   bool _isInitialLoad = true;
   bool _isLoadingMore = false;
@@ -41,31 +40,56 @@ class _MovementScreenState extends State<MovementScreen> {
   @override
   void initState() {
     super.initState();
-    _movementBloc = MovementBloc(ApiService());
-
-    // Добавляем слушатель скролла только если виджет смонтирован
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _scrollController.addListener(_onScroll);
-        _movementBloc.add(const FetchMovements(forceRefresh: true));
-      }
-    });
+    _movementBloc = MovementBloc(ApiService())..add(const FetchMovements(forceRefresh: true));
+    _scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
-    // Сначала удаляем слушатели
     _scrollController.removeListener(_onScroll);
-
-    // Затем освобождаем ресурсы
     _scrollController.dispose();
     _searchController.dispose();
     _focusNode.dispose();
-
-    // В конце закрываем BLoC
     _movementBloc.close();
-
     super.dispose();
+  }
+
+  void _onFilterSelected(Map<String, dynamic> filters) {
+    if (!mounted) return;
+
+    setState(() {
+      _currentFilters = Map.from(filters);
+      _hasReachedMax = false;
+      _isLoadingMore = false;
+      _isSearching = false;
+      _searchController.clear();
+      _search = null;
+    });
+
+    _movementBloc.add(FetchMovements(
+      forceRefresh: true,
+      filters: _currentFilters,
+      search: null,
+    ));
+  }
+
+  void _onResetFilters() {
+    if (!mounted) return;
+
+    setState(() {
+      _currentFilters.clear();
+      _hasReachedMax = false;
+      _isLoadingMore = false;
+      _isSearching = false;
+      _searchController.clear();
+      _search = null;
+    });
+
+    _movementBloc.add(const FetchMovements(
+      forceRefresh: true,
+      filters: {},
+      search: null,
+    ));
   }
 
   void _onScroll() {
@@ -81,6 +105,7 @@ class _MovementScreenState extends State<MovementScreen> {
       _movementBloc.add(FetchMovements(
         forceRefresh: false,
         filters: _currentFilters,
+        search: _search,
       ));
     }
   }
@@ -89,13 +114,14 @@ class _MovementScreenState extends State<MovementScreen> {
     if (!mounted) return;
 
     setState(() {
-      _isSearching = query.isNotEmpty;
+      _isSearching = query.trim().isNotEmpty;
+      _search = query;
     });
 
-    _currentFilters['query'] = query;
     _movementBloc.add(FetchMovements(
       forceRefresh: true,
       filters: _currentFilters,
+      search: _search,
     ));
   }
 
@@ -103,14 +129,17 @@ class _MovementScreenState extends State<MovementScreen> {
     if (!mounted) return;
 
     setState(() {
+      _hasReachedMax = false;
       _isSearching = false;
       _searchController.clear();
-      _currentFilters = {};
-      _isInitialLoad = true;
-      _hasReachedMax = false;
+      _search = null;
     });
 
-    _movementBloc.add(const FetchMovements(forceRefresh: true));
+    _movementBloc.add(FetchMovements(
+      forceRefresh: true,
+      filters: _currentFilters,
+      search: null,
+    ));
     await Future.delayed(const Duration(milliseconds: 500));
   }
 
@@ -157,7 +186,6 @@ class _MovementScreenState extends State<MovementScreen> {
               ),
             );
 
-            // Проверяем, что виджет всё ещё смонтирован после возвращения
             if (mounted && result == true) {
               _movementBloc.add(const FetchMovements(forceRefresh: true));
             }
@@ -233,6 +261,10 @@ class _MovementScreenState extends State<MovementScreen> {
                   showSearchIcon: true,
                   showFilterIcon: false,
                   showFilterOrderIcon: false,
+                  showFilterIncomeIcon: false,
+                  showFilterIncomingIcon: true,
+                  onFilterIncomingSelected: _onFilterSelected,
+                  onIncomingResetFilters: _onResetFilters,
                   onChangedSearchInput: _onSearch,
                   textEditingController: _searchController,
                   focusNode: _focusNode,
@@ -243,20 +275,24 @@ class _MovementScreenState extends State<MovementScreen> {
                       setState(() {
                         _isSearching = false;
                         _searchController.clear();
+                        _search = null;
                       });
-                      _movementBloc.add(const FetchMovements(forceRefresh: true));
+                      _movementBloc.add(FetchMovements(
+                        forceRefresh: true,
+                        filters: _currentFilters,
+                        search: null,
+                      ));
                     }
                   },
                   onClickProfileAvatar: () {},
                   clearButtonClickFiltr: (bool p1) {},
-                  currentFilters: {},
+                  currentFilters: _currentFilters,
                 ),
         ),
         body: MultiBlocListener(
           listeners: [
             BlocListener<MovementBloc, MovementState>(
               listener: (context, state) {
-                // Критическая проверка mounted
                 if (!mounted) return;
 
                 if (state is MovementLoaded) {
@@ -274,7 +310,6 @@ class _MovementScreenState extends State<MovementScreen> {
                       _isLoadingMore = false;
                     });
 
-                    // Безопасный показ SnackBar через addPostFrameCallback
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       if (mounted && context.mounted) {
                         if (state.statusCode == 409) {
@@ -318,7 +353,7 @@ class _MovementScreenState extends State<MovementScreen> {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       if (mounted && context.mounted) {
                         showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-                        _movementBloc.add(FetchMovements(forceRefresh: true, filters: _currentFilters));
+                        _movementBloc.add(FetchMovements(forceRefresh: true, filters: _currentFilters, search: _search));
                       }
                     });
                   }
@@ -339,7 +374,7 @@ class _MovementScreenState extends State<MovementScreen> {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       if (mounted && context.mounted) {
                         showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-                        _movementBloc.add(FetchMovements(forceRefresh: true, filters: _currentFilters));
+                        _movementBloc.add(FetchMovements(forceRefresh: true, filters: _currentFilters, search: _search));
                       }
                     });
                   }
@@ -360,7 +395,7 @@ class _MovementScreenState extends State<MovementScreen> {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       if (mounted && context.mounted) {
                         showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-                        _movementBloc.add(FetchMovements(forceRefresh: true, filters: _currentFilters));
+                        _movementBloc.add(FetchMovements(forceRefresh: true, filters: _currentFilters, search: _search));
                       }
                     });
                   }
@@ -381,7 +416,7 @@ class _MovementScreenState extends State<MovementScreen> {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       if (mounted && context.mounted) {
                         showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-                        _movementBloc.add(FetchMovements(forceRefresh: true, filters: _currentFilters));
+                        _movementBloc.add(FetchMovements(forceRefresh: true, filters: _currentFilters, search: _search));
                       }
                     });
                   }
@@ -516,7 +551,8 @@ class _MovementScreenState extends State<MovementScreen> {
                                   docNumber: currentData[index].docNumber ?? '',
                                   onDocumentUpdated: () {
                                     if (mounted) {
-                                      _movementBloc.add(const FetchMovements(forceRefresh: true));
+                                      _movementBloc
+                                          .add(FetchMovements(forceRefresh: true, filters: _currentFilters, search: _search));
                                     }
                                   },
                                 ),
@@ -535,7 +571,7 @@ class _MovementScreenState extends State<MovementScreen> {
                         isSelected: (state as MovementLoaded).selectedData?.contains(currentData[index]) ?? false,
                         onUpdate: () {
                           if (mounted) {
-                            _movementBloc.add(const FetchMovements(forceRefresh: true));
+                            _movementBloc.add(FetchMovements(forceRefresh: true, filters: _currentFilters, search: _search));
                           }
                         },
                       ),
