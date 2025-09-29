@@ -10,25 +10,39 @@ sealed class WriteOffEvent extends Equatable {
 class FetchWriteOffs extends WriteOffEvent {
   final bool forceRefresh;
   final Map<String, dynamic>? filters;
-  final int? status; // 0 или 1 для таба
+  final int? status;
+  final String? search;
 
   const FetchWriteOffs({
     this.forceRefresh = false,
     this.filters,
     this.status,
+    this.search,
   });
 
   @override
-  List<Object> get props => [forceRefresh, filters ?? {}, status ?? 0];
+  List<Object> get props => [forceRefresh, filters ?? {}, status ?? 0, search ?? ''];
 }
 
 class DeleteWriteOffDocument extends WriteOffEvent {
   final int documentId;
+  final AppLocalizations localizations;
+  final bool shouldReload;
 
-  const DeleteWriteOffDocument(this.documentId);
+  const DeleteWriteOffDocument(this.documentId, this.localizations, {this.shouldReload = true});
 
   @override
-  List<Object> get props => [documentId];
+  List<Object> get props => [documentId, localizations];
+}
+
+class RestoreWriteOff extends WriteOffEvent {
+  final int documentId;
+  final AppLocalizations localizations;
+
+  const RestoreWriteOff(this.documentId, this.localizations);
+
+  @override
+  List<Object> get props => [documentId, localizations];
 }
 
 class CreateWriteOffDocument extends WriteOffEvent {
@@ -73,4 +87,42 @@ class UpdateWriteOffDocument extends WriteOffEvent {
   List<Object> get props => [
     documentId, date, storageId, comment, documentGoods, organizationId
   ];
+}
+
+class MassApproveWriteOffDocuments extends WriteOffEvent {
+
+  @override
+  List<Object> get props => [];
+}
+
+class MassDisapproveWriteOffDocuments extends WriteOffEvent {
+
+  @override
+  List<Object> get props => [];
+}
+
+class MassDeleteWriteOffDocuments extends WriteOffEvent {
+
+  @override
+  List<Object> get props => [];
+}
+
+class MassRestoreWriteOffDocuments extends WriteOffEvent {
+
+  @override
+  List<Object> get props => [];
+}
+
+class SelectDocument extends WriteOffEvent {
+  final IncomingDocument document;
+
+  const SelectDocument(this.document);
+
+  @override
+  List<Object> get props => [document];
+}
+
+class UnselectAllDocuments extends WriteOffEvent {
+  @override
+  List<Object> get props => [];
 }

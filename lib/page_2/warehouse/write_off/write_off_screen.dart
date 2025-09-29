@@ -2,15 +2,20 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/write_off/write_off_bloc.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
+import 'package:crm_task_manager/custom_widget/app_bar_selection_mode.dart';
 import 'package:crm_task_manager/page_2/money/widgets/error_dialog.dart';
 import 'package:crm_task_manager/page_2/warehouse/write_off/write_off_card.dart';
 import 'package:crm_task_manager/page_2/warehouse/write_off/write_off_create.dart';
+import 'package:crm_task_manager/page_2/warehouse/write_off/write_off_details.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../models/page_2/incoming_document_model.dart';
 
 class WriteOffScreen extends StatefulWidget {
   const WriteOffScreen({super.key, this.organizationId});
+
   final int? organizationId;
 
   @override
@@ -23,10 +28,18 @@ class _WriteOffScreenState extends State<WriteOffScreen> {
   final FocusNode _focusNode = FocusNode();
   bool _isSearching = false;
   Map<String, dynamic> _currentFilters = {};
+  String? _search;
   late WriteOffBloc _writeOffBloc;
-  bool _isInitialLoad = true;
   bool _isLoadingMore = false;
   bool _hasReachedMax = false;
+  bool _selectionMode = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _writeOffBloc = WriteOffBloc(ApiService())..add(const FetchWriteOffs(forceRefresh: true));
+    _scrollController.addListener(_onScroll);
+  }
 
   @override
   void dispose() {
@@ -37,9 +50,41 @@ class _WriteOffScreenState extends State<WriteOffScreen> {
     super.dispose();
   }
 
+  void _onFilterSelected(Map<String, dynamic> filters) {
+    setState(() {
+      _currentFilters = Map.from(filters);
+      _hasReachedMax = false;
+      _isLoadingMore = false;
+    });
+
+    _searchController.clear();
+    _search = null;
+
+    _writeOffBloc.add(FetchWriteOffs(
+      filters: filters,
+      forceRefresh: true,
+      search: null,
+    ));
+  }
+
+  void _onResetFilters() {
+    setState(() {
+      _currentFilters.clear();
+      _hasReachedMax = false;
+      _isLoadingMore = false;
+      _searchController.clear();
+      _search = null;
+    });
+
+    _writeOffBloc.add(const FetchWriteOffs(
+      filters: {},
+      forceRefresh: true,
+      search: null,
+    ));
+  }
+
   void _onScroll() {
-    if (_scrollController.position.pixels >=
-            _scrollController.position.maxScrollExtent - 200 &&
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200 &&
         !_isLoadingMore &&
         !_hasReachedMax) {
       setState(() {
@@ -48,39 +93,56 @@ class _WriteOffScreenState extends State<WriteOffScreen> {
       _writeOffBloc.add(FetchWriteOffs(
         forceRefresh: false,
         filters: _currentFilters,
+        search: _search,
       ));
     }
   }
 
   void _onSearch(String query) {
     setState(() {
-      _isSearching = query.isNotEmpty;
+      _isSearching = query.trim().isNotEmpty;
     });
-    _currentFilters['query'] = query;
+    _search = query;
     _writeOffBloc.add(FetchWriteOffs(
       forceRefresh: true,
+      search: _search,
       filters: _currentFilters,
     ));
   }
 
   Future<void> _onRefresh() async {
     setState(() {
-      _isSearching = false;
-      _searchController.clear();
-      _currentFilters = {};
-      _isInitialLoad = true;
       _hasReachedMax = false;
     });
-    _writeOffBloc.add(const FetchWriteOffs(forceRefresh: true));
+    _writeOffBloc.add(FetchWriteOffs(
+      forceRefresh: true,
+      filters: _currentFilters,
+      search: _search,
+    ));
     await Future.delayed(const Duration(milliseconds: 500));
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _writeOffBloc = WriteOffBloc(ApiService())
-      ..add(const FetchWriteOffs(forceRefresh: true));
-    _scrollController.addListener(_onScroll);
+  void _showSnackBar(String message, bool isSuccess) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: const TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: isSuccess ? Colors.green : Colors.red,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
 
   @override
@@ -90,87 +152,188 @@ class _WriteOffScreenState extends State<WriteOffScreen> {
     return BlocProvider.value(
       value: _writeOffBloc,
       child: Scaffold(
-        floatingActionButton: FloatingActionButton(
-          onPressed: () {
-            if (mounted) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => CreateWriteOffDocumentScreen(
-                      organizationId: widget.organizationId),
-                ),
-              ).then((_) {
-                _writeOffBloc.add(const FetchWriteOffs(forceRefresh: true));
-              });
-            }
-          },
-          backgroundColor: const Color(0xff1E2E52),
-          child: const Icon(Icons.add, color: Colors.white),
-        ),
         backgroundColor: Colors.white,
         appBar: AppBar(
+          automaticallyImplyLeading: !_selectionMode,
           forceMaterialTransparency: true,
-          title: CustomAppBarPage2(
-            title: localizations!.translate('appbar_write_off') ??
-                'Списание',
-            showSearchIcon: true,
-            showFilterIcon: false,
-            showFilterOrderIcon: false,
-            onChangedSearchInput: _onSearch,
-            textEditingController: _searchController,
-            focusNode: _focusNode,
-            clearButtonClick: (value) {
-              if (!value) {
-                setState(() {
-                  _isSearching = false;
-                  _searchController.clear();
-                });
-                _writeOffBloc.add(const FetchWriteOffs(forceRefresh: true));
-              }
-            },
-            onClickProfileAvatar: () {},
-            clearButtonClickFiltr: (bool p1) {},
-            currentFilters: {},
-          ),
+          title: _selectionMode
+              ? BlocBuilder<WriteOffBloc, WriteOffState>(
+                  builder: (context, state) {
+                    if (state is WriteOffLoaded) {
+                      bool showApprove = state.selectedData!.any((doc) => doc.approved == 0 && doc.deletedAt == null);
+                      bool showDisapprove = state.selectedData!.any((doc) => doc.approved == 1 && doc.deletedAt == null);
+                      bool showDelete = state.selectedData!.any((doc) => doc.deletedAt == null);
+                      bool showRestore = state.selectedData!.any((doc) => doc.deletedAt != null);
+
+                      return AppBarSelectionMode(
+                        title: localizations?.translate('appbar_write_off') ?? 'Списание',
+                        onDismiss: () {
+                          setState(() {
+                            _selectionMode = false;
+                          });
+                          _writeOffBloc.add(UnselectAllDocuments());
+                        },
+                        onApprove: () {
+                          setState(() {
+                            _selectionMode = false;
+                          });
+                          _writeOffBloc.add(MassApproveWriteOffDocuments());
+                        },
+                        onDisapprove: () {
+                          setState(() {
+                            _selectionMode = false;
+                          });
+                          _writeOffBloc.add(MassDisapproveWriteOffDocuments());
+                        },
+                        onDelete: () {
+                          setState(() {
+                            _selectionMode = false;
+                          });
+                          _writeOffBloc.add(MassDeleteWriteOffDocuments());
+                        },
+                        onRestore: () {
+                          setState(() {
+                            _selectionMode = false;
+                          });
+                          _writeOffBloc.add(MassRestoreWriteOffDocuments());
+                        },
+                        showApprove: showApprove,
+                        showDelete: showDelete,
+                        showDisapprove: showDisapprove,
+                        showRestore: showRestore,
+                      );
+                    }
+
+                    return AppBarSelectionMode(
+                      title: localizations?.translate('appbar_write_off') ?? 'Списание',
+                      onDismiss: () {
+                        setState(() {
+                          _selectionMode = false;
+                        });
+                        _writeOffBloc.add(UnselectAllDocuments());
+                      },
+                    );
+                  },
+                )
+              : CustomAppBarPage2(
+                  title: localizations!.translate('appbar_write_off') ?? 'Списание',
+                  showSearchIcon: true,
+                  showFilterIcon: false,
+                  showFilterOrderIcon: false,
+                  showFilterIncomeIcon: false,
+                  showFilterIncomingIcon: true,
+                  onChangedSearchInput: _onSearch,
+                  onFilterIncomingSelected: _onFilterSelected,
+                  onIncomingResetFilters: _onResetFilters,
+                  textEditingController: _searchController,
+                  focusNode: _focusNode,
+                  clearButtonClick: (value) {
+                    if (!value) {
+                      setState(() {
+                        _isSearching = false;
+                        _searchController.clear();
+                        _search = null;
+                      });
+                      _writeOffBloc.add(FetchWriteOffs(
+                        forceRefresh: true,
+                        filters: _currentFilters,
+                        search: null,
+                      ));
+                    }
+                  },
+                  onClickProfileAvatar: () {},
+                  clearButtonClickFiltr: (bool p1) {},
+                  currentFilters: _currentFilters,
+                ),
         ),
         body: BlocListener<WriteOffBloc, WriteOffState>(
           listener: (context, state) {
+            debugPrint("WriteOffScreen.Bloc.State: ${_writeOffBloc.state}");
+
+            if (!mounted) return;
+
             if (state is WriteOffLoaded) {
               setState(() {
                 _hasReachedMax = state.hasReachedMax;
-                _isInitialLoad = false;
                 _isLoadingMore = false;
               });
             } else if (state is WriteOffError) {
               setState(() {
-                _isInitialLoad = false;
                 _isLoadingMore = false;
               });
-              if (state.statusCode  == 409) {
-                final localizations = AppLocalizations.of(context)!;
-                showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+              if (state.statusCode == 409) {
+                showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message);
                 return;
               }
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    state.message,
-                    style: const TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  backgroundColor: Colors.red,
-                  behavior: SnackBarBehavior.floating,
-                  margin:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                  duration: const Duration(seconds: 3),
-                ),
-              );
+              _showSnackBar(state.message, false);
+            } else if (state is WriteOffCreateSuccess) {
+              _showSnackBar(state.message, true);
+            } else if (state is WriteOffCreateError) {
+              if (state.statusCode == 409) {
+                showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message);
+                return;
+              }
+              _showSnackBar(state.message, false);
+            } else if (state is WriteOffUpdateSuccess) {
+              _showSnackBar(state.message, true);
+            } else if (state is WriteOffUpdateError) {
+              if (state.statusCode == 409) {
+                showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message);
+                return;
+              }
+              _showSnackBar(state.message, false);
+            } else if (state is WriteOffApproveMassSuccess) {
+              showCustomSnackBar(context: context, message: state.message, isSuccess: true);
+              _writeOffBloc.add(FetchWriteOffs(forceRefresh: true, filters: _currentFilters, search: _search));
+            } else if (state is WriteOffApproveMassError) {
+              if (state.statusCode == 409) {
+                showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message);
+                return;
+              }
+              showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+            } else if (state is WriteOffDisapproveMassSuccess) {
+              showCustomSnackBar(context: context, message: state.message, isSuccess: true);
+              _writeOffBloc.add(FetchWriteOffs(forceRefresh: true, filters: _currentFilters, search: _search));
+            } else if (state is WriteOffDisapproveMassError) {
+              if (state.statusCode == 409) {
+                showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message,
+                    errorDialogEnum: ErrorDialogEnum.goodsIncomingUnapprove);
+                return;
+              }
+              showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+            } else if (state is WriteOffDeleteSuccess) {
+              _showSnackBar(state.message, true);
+              if (state.shouldReload) {
+                _writeOffBloc.add(FetchWriteOffs(forceRefresh: true, filters: _currentFilters, search: _search));
+              }
+            } else if (state is WriteOffDeleteError) {
+              if (state.statusCode == 409) {
+                showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message,
+                    errorDialogEnum: ErrorDialogEnum.goodsIncomingDelete);
+                _writeOffBloc.add(FetchWriteOffs(forceRefresh: true, filters: _currentFilters, search: _search));
+                return;
+              }
+              showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+            } else if (state is WriteOffDeleteMassSuccess) {
+              showCustomSnackBar(context: context, message: state.message, isSuccess: true);
+              _writeOffBloc.add(FetchWriteOffs(forceRefresh: true, filters: _currentFilters, search: _search));
+            } else if (state is WriteOffDeleteMassError) {
+              if (state.statusCode == 409) {
+                showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message,
+                    errorDialogEnum: ErrorDialogEnum.goodsIncomingDelete);
+                _writeOffBloc.add(FetchWriteOffs(forceRefresh: true, filters: _currentFilters, search: _search));
+                return;
+              }
+              showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+            } else if (state is WriteOffRestoreMassSuccess) {
+              showCustomSnackBar(context: context, message: state.message, isSuccess: true);
+              _writeOffBloc.add(FetchWriteOffs(forceRefresh: true, filters: _currentFilters, search: _search));
+            } else if (state is WriteOffRestoreMassError) {
+              if (state.statusCode == 409) {
+                showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message);
+                return;
+              }
+              showCustomSnackBar(context: context, message: state.message, isSuccess: false);
             }
           },
           child: BlocBuilder<WriteOffBloc, WriteOffState>(
@@ -184,16 +347,14 @@ class _WriteOffScreenState extends State<WriteOffScreen> {
                 );
               }
 
-              final currentData = state is WriteOffLoaded ? state.data : [];
+              final List<IncomingDocument> currentData = state is WriteOffLoaded ? state.data : [];
 
               if (currentData.isEmpty && state is WriteOffLoaded) {
                 return Center(
                   child: Text(
                     _isSearching
-                        ? localizations.translate('nothing_found') ??
-                            'Ничего не найдено'
-                        : localizations.translate('no_write_offs') ??
-                            'Нет документов списания',
+                        ? localizations!.translate('nothing_found') ?? 'Ничего не найдено'
+                        : localizations!.translate('no_write_offs') ?? 'Нет документов списания',
                     style: const TextStyle(
                       fontSize: 18,
                       fontFamily: 'Gilroy',
@@ -208,7 +369,9 @@ class _WriteOffScreenState extends State<WriteOffScreen> {
                 color: const Color(0xff1E2E52),
                 backgroundColor: Colors.white,
                 onRefresh: _onRefresh,
-                child: ListView.builder(
+                child: ListView.separated(
+                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                  separatorBuilder: (context, index) => const SizedBox(height: 10),
                   controller: _scrollController,
                   physics: const AlwaysScrollableScrollPhysics(),
                   itemCount: currentData.length + (_hasReachedMax ? 0 : 1),
@@ -226,18 +389,121 @@ class _WriteOffScreenState extends State<WriteOffScreen> {
                             )
                           : const SizedBox.shrink();
                     }
-                    return WriteOffCard(
-                      document: currentData[index],
-                      onUpdate: () {
-                        _writeOffBloc
-                            .add(const FetchWriteOffs(forceRefresh: true));
+                    return Dismissible(
+                      key: Key(currentData[index].id.toString()),
+                      direction: DismissDirection.endToStart,
+                      background: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        alignment: Alignment.centerRight,
+                        child: const Icon(Icons.delete, color: Colors.white, size: 24),
+                      ),
+                      confirmDismiss: (direction) async {
+                        return currentData[index].deletedAt == null;
                       },
+                      onDismissed: (direction) {
+                        print("🗑️ [UI] Удаление dokumenta ID: ${currentData[index].id}");
+                        setState(() {
+                          currentData.removeAt(index);
+                        });
+                        _writeOffBloc.add(DeleteWriteOffDocument(
+                          currentData[index].id!,
+                          localizations!,
+                          shouldReload: false,
+                        ));
+                      },
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: WriteOffCard(
+                          document: currentData[index],
+                          onTap: () {
+                            if (_selectionMode) {
+                              _writeOffBloc.add(SelectDocument(currentData[index]));
+
+                              final currentState = context.read<WriteOffBloc>().state;
+
+                              if (currentState is WriteOffLoaded) {
+                                final selectedCount = currentState.selectedData?.length ?? 0;
+                                if (selectedCount <= 1 && currentState.selectedData?.contains(currentData[index]) == true) {
+                                  setState(() {
+                                    _selectionMode = false;
+                                  });
+                                }
+                              }
+                              return;
+                            }
+
+                            if (currentData[index].deletedAt != null) return;
+
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => WriteOffDocumentDetailsScreen(
+                                  documentId: currentData[index].id!,
+                                  docNumber: currentData[index].docNumber ?? 'N/A',
+                                  onDocumentUpdated: () {
+                                    _writeOffBloc.add(FetchWriteOffs(
+                                      forceRefresh: true,
+                                      filters: _currentFilters,
+                                      search: _search,
+                                    ));
+                                  },
+                                ),
+                              ),
+                            );
+                          },
+                          isSelectionMode: _selectionMode,
+                          isSelected: (state as WriteOffLoaded).selectedData?.contains(currentData[index]) ?? false,
+                          onLongPress: () {
+                            if (_selectionMode) return;
+                            setState(() {
+                              _selectionMode = true;
+                            });
+                            _writeOffBloc.add(SelectDocument(currentData[index]));
+                          },
+                        ),
+                      ),
                     );
                   },
                 ),
               );
             },
           ),
+        ),
+        floatingActionButton: FloatingActionButton(
+          key: const Key('create_write_off_button'),
+          onPressed: () async {
+            if (mounted) {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CreateWriteOffDocumentScreen(
+                    organizationId: widget.organizationId,
+                  ),
+                ),
+              );
+
+              if (result == true && mounted) {
+                _writeOffBloc.add(FetchWriteOffs(
+                  forceRefresh: true,
+                  filters: _currentFilters,
+                  search: _search,
+                ));
+              }
+            }
+          },
+          backgroundColor: const Color(0xff1E2E52),
+          child: const Icon(Icons.add, color: Colors.white),
         ),
       ),
     );
