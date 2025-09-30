@@ -62,6 +62,7 @@ class CreateClientReturnDocumentScreenState
               'quantity': newItem['quantity'],
               'price': newItem['price'],
               'total': newItem['total'],
+              'unit_id': newItem['unit_id'],
             });
             
             // Анимируем добавление нового элемента
@@ -100,6 +101,13 @@ class CreateClientReturnDocumentScreenState
     );
 
     if (result != null && result.isNotEmpty) {
+      // Печатаем результат перед обработкой
+      debugPrint('=== RESULT FROM BOTTOM SHEET ===');
+      for (var item in result) {
+        debugPrint('ID: ${item['id']}, Name: ${item['name']}, Unit ID: ${item['unit_id']}');
+      }
+      debugPrint('================================');
+
       _handleGoodsSelection(result);
     }
   }
@@ -687,6 +695,7 @@ class CreateClientReturnDocumentScreenState
           'good_id': item['id'],
           'quantity': item['quantity'].toString(),
           'price': item['price'].toString(),
+          "unit_id": item["unit_id"].toString()
         }).toList(),
         organizationId: widget.organizationId ?? 1,
         salesFunnelId: 1,

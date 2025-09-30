@@ -1,10 +1,26 @@
 import 'dart:io';
 
+import 'package:crm_task_manager/models/page_2/goods_model.dart';
+
 abstract class GoodsEvent {}
 
 class FetchGoods extends GoodsEvent {
   final int page;
   FetchGoods({this.page = 1});
+}
+
+class FetchBash extends GoodsEvent {
+  final int goodVariantId;
+  final int storageId;
+  final int supplierId;
+  final Goods good;
+
+  FetchBash({
+    required this.goodVariantId,
+    required this.storageId,
+    required this.supplierId,
+    required this.good,
+  });
 }
 
 class FetchMoreGoods extends GoodsEvent {
@@ -113,3 +129,5 @@ class SearchGoodsByBarcode extends GoodsEvent {
   @override
   List<Object> get props => [barcode];
 }
+
+class CloseBatchRemainders extends GoodsEvent {}

@@ -11,6 +11,7 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
   final ApiService apiService;
   List<Goods> allGoods = [];
   List<SubCategoryAttributesData> subCategories = [];
+  Pagination pagination = Pagination(total: 0, count: 0, perPage: 20, currentPage: 1, totalPages: 1);
   List<String> selectedLabels = []; // Added to store selected labels
   List<SubCategoryAttributesData> selectedSubCategories = []; // Храним выбранные подкатегории
   bool allGoodsFetched = false;
@@ -21,6 +22,8 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
   GoodsBloc(this.apiService) : super(GoodsInitial()) {
     on<FetchGoods>(_fetchGoods);
     on<FetchMoreGoods>(_fetchMoreGoods);
+    on<FetchBash>(_fetchBash);
+    on<CloseBatchRemainders>(_closeBatchRemainders);
     on<CreateGoods>(_createGoods);
     on<UpdateGoods>(_updateGoods);
     on<SearchGoods>(_searchGoods);
@@ -31,6 +34,24 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
     if (kDebugMode) {
       //print('GoodsBloc: Инициализация блока');
     }
+  }
+
+  Future<void> _closeBatchRemainders(CloseBatchRemainders event, Emitter<GoodsState> emit) async {
+    debugPrint("GoodsBloc: CloseBatchRemainders event received");
+    emit(GoodsDataLoaded(allGoods, pagination, subCategories));
+  }
+
+  Future<void> _fetchBash(FetchBash event, Emitter<GoodsState> emit) async {
+
+    debugPrint("GoodsBloc: FetchBash event received");
+
+    final result = await apiService.getBatchRemainders(
+      goodVariantId: event.goodVariantId,
+      storageId: event.storageId,
+      supplierId: event.supplierId,
+    );
+
+    emit(BatchLoaded(result, event.good));
   }
 
  Future<void> _fetchGoods(FetchGoods event, Emitter<GoodsState> emit) async {
@@ -51,7 +72,7 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
         allGoods = goods;
         allGoodsFetched = goods.length < _perPage;
 
-        final pagination = Pagination(
+        pagination = Pagination(
           total: goods.length,
           count: goods.length,
           perPage: _perPage,
@@ -119,7 +140,7 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
         allGoods = goods;
         allGoodsFetched = goods.length < _perPage;
 
-        final pagination = Pagination(
+        pagination = Pagination(
           total: goods.length,
           count: goods.length,
           perPage: _perPage,
@@ -193,6 +214,7 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
         if (kDebugMode) {
           print('GoodsBloc: Загружено ${uniqueNewGoods.length} новых товаров');
         }
+        pagination = newPagination;
         emit(currentState.merge(
           uniqueNewGoods,
           newPagination,
@@ -235,7 +257,7 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
         allGoods = goods;
         allGoodsFetched = goods.length < _perPage;
 
-        final pagination = Pagination(
+        pagination = Pagination(
           total: goods.length,
           count: goods.length,
           perPage: _perPage,

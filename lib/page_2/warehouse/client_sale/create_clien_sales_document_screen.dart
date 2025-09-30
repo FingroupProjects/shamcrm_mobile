@@ -62,6 +62,7 @@ class CreateClienSalesDocumentScreenState
               'quantity': newItem['quantity'],
               'price': newItem['price'],
               'total': newItem['total'],
+              'unit_id': newItem['unit_id'],
             });
             
             // Анимируем добавление нового элемента

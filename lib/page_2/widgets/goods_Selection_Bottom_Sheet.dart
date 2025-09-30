@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/models/batch_model.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
@@ -9,9 +11,17 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 class GoodsSelectionBottomSheet extends StatefulWidget {
   final List<Map<String, dynamic>> existingItems;
 
+  // this 3 fields are for batches
+  final bool showBatchRemainders;
+  final int? supplierId;
+  final int? storageId;
+
   const GoodsSelectionBottomSheet({
     Key? key,
     required this.existingItems,
+    this.showBatchRemainders = false,
+    this.supplierId,
+    this.storageId,
   }) : super(key: key);
 
   @override
@@ -39,12 +49,12 @@ class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
   bool _validateGoodsFields(int goodsId) {
     final details = goodsDetails[goodsId];
     final isAlreadyAdded = _isGoodsAlreadyAdded(goodsId);
-    
+
     if (details == null) return false;
-    
+
     bool isQuantityValid = details['quantity'] != null && details['quantity'] > 0;
     bool isPriceValid = isAlreadyAdded || (details['price'] != null && details['price'] >= 0);
-    
+
     // Обновляем состояние ошибок
     setState(() {
       fieldErrors[goodsId] = {
@@ -52,20 +62,20 @@ class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
         'price': !isPriceValid,
       };
     });
-    
+
     return isQuantityValid && isPriceValid;
   }
 
   // Валидация всех выбранных товаров
   bool _validateAllSelectedGoods() {
     bool allValid = true;
-    
+
     for (final goods in selectedGoods) {
       if (!_validateGoodsFields(goods.id)) {
         allValid = false;
       }
     }
-    
+
     return allValid;
   }
 
@@ -75,8 +85,8 @@ class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            AppLocalizations.of(context)!.translate('please_fill_all_required_fields') ?? 
-            'Пожалуйста, заполните все обязательные поля (количество и цена)',
+            AppLocalizations.of(context)!.translate('please_fill_all_required_fields') ??
+                'Пожалуйста, заполните все обязательные поля (количество и цена)',
             style: const TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 16,
@@ -98,19 +108,19 @@ class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
 
     // Фильтруем только товары с заполненными данными
     final selectedProducts = selectedGoods
-        .where((goods) => 
-            goodsDetails.containsKey(goods.id) && 
+        .where((goods) =>
+            goodsDetails.containsKey(goods.id) &&
             goodsDetails[goods.id]!['quantity'] != null &&
             goodsDetails[goods.id]!['quantity'] > 0 &&
-            (_isGoodsAlreadyAdded(goods.id) || 
-             (goodsDetails[goods.id]!['price'] != null && 
-              goodsDetails[goods.id]!['price'] >= 0)))
+            (_isGoodsAlreadyAdded(goods.id) ||
+                (goodsDetails[goods.id]!['price'] != null && goodsDetails[goods.id]!['price'] >= 0)))
         .map((goods) => {
               'id': goods.id,
               'name': goods.name,
               'quantity': goodsDetails[goods.id]!['quantity'],
               'price': goodsDetails[goods.id]!['price'] ?? 0.0,
               'total': goodsDetails[goods.id]!['total'] ?? 0.0,
+              // 'unit_id': goods.unitId,
             })
         .toList();
 
@@ -142,6 +152,15 @@ class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
   }
 
   void _toggleGoodsSelection(Goods goods) {
+    if (widget.showBatchRemainders) {
+      context.read<GoodsBloc>().add(FetchBash(
+            goodVariantId: goods.id,
+            storageId: widget.storageId!,
+            supplierId: widget.supplierId!,
+            good:goods,
+          ));
+      return;
+    }
     setState(() {
       if (selectedGoods.contains(goods)) {
         selectedGoods.remove(goods);
@@ -154,7 +173,6 @@ class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
           'price': _isGoodsAlreadyAdded(goods.id) ? null : null,
           'total': 0.0,
         };
-        // Инициализируем ошибки
         fieldErrors[goods.id] = {
           'quantity': false,
           'price': false,
@@ -167,7 +185,7 @@ class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
     if (goodsDetails.containsKey(goodsId)) {
       setState(() {
         goodsDetails[goodsId]![field] = value;
-        
+
         // Очищаем ошибку для конкретного поля при вводе корректного значения
         if (fieldErrors.containsKey(goodsId)) {
           if (field == 'quantity' && value != null && value > 0) {
@@ -176,11 +194,11 @@ class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
             fieldErrors[goodsId]!['price'] = false;
           }
         }
-        
+
         // Пересчитываем общую сумму
         final quantity = goodsDetails[goodsId]!['quantity'];
         final price = goodsDetails[goodsId]!['price'];
-        
+
         if (quantity != null && price != null && quantity > 0 && price >= 0) {
           goodsDetails[goodsId]!['total'] = quantity * price;
         } else if (_isGoodsAlreadyAdded(goodsId) && quantity != null && quantity > 0) {
@@ -198,81 +216,209 @@ class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
 
   List<Goods> _getFilteredGoods(List<Goods> allGoods) {
     final activeGoods = allGoods.where((g) => g.isActive == true).toList();
-    
+
     if (_searchController.text.isEmpty) {
       return activeGoods;
     }
-    
-    return activeGoods.where((goods) =>
-        goods.name.toLowerCase().contains(_searchController.text.toLowerCase())
-    ).toList();
+
+    return activeGoods.where((goods) => goods.name.toLowerCase().contains(_searchController.text.toLowerCase())).toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.85,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
+    return BlocBuilder<GoodsBloc, GoodsState>(
+      builder: (context, state) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.85,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+          ),
+          child: Column(
+            children: [
+              _buildHeader(state, context),
+              if (state is! BatchLoaded) _buildSearchField(),
+              const SizedBox(height: 12),
+              Expanded(
+                child: Builder(
+                  builder: (context) {
+                    if (state is BatchLoaded) {
+                      return _buildBatchDetails(state.batches, state.good); // Show batch details inline
+                    } else if (state is GoodsLoading) {
+                      return const Center(child: CircularProgressIndicator());
+                    } else if (state is GoodsDataLoaded) {
+                      final filteredGoods = _getFilteredGoods(state.goods);
+                      if (filteredGoods.isEmpty) {
+                        return Center(
+                          child: Text(
+                            AppLocalizations.of(context)!.translate('no_products_found') ?? 'Товары не найдены',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Color(0xff99A4BA),
+                              fontFamily: 'Gilroy',
+                            ),
+                          ),
+                        );
+                      }
+                      return _buildGoodsList(filteredGoods);
+                    } else if (state is GoodsError) {
+                      return Center(
+                        child: Text(
+                          state.message,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Colors.red,
+                            fontFamily: 'Gilroy',
+                          ),
+                        ),
+                      );
+                    }
+                    return const Center(child: CircularProgressIndicator());
+                  },
+                ),
+              ),
+              if (state is! BatchLoaded) _buildAddButton(),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildBatchDetails(List<BatchData> batches, Goods good) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildHeader(),
-          _buildSearchField(),
-          const SizedBox(height: 12),
-          Expanded(
-            child: BlocBuilder<GoodsBloc, GoodsState>(
-              builder: (context, state) {
-                if (state is GoodsLoading) {
-                  return const Center(child: CircularProgressIndicator());
-                } else if (state is GoodsDataLoaded) {
-                  final filteredGoods = _getFilteredGoods(state.goods);
-                  
-                  if (filteredGoods.isEmpty) {
-                    return Center(
-                      child: Text(
-                        AppLocalizations.of(context)!.translate('no_products_found') ?? 'Товары не найдены',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Color(0xff99A4BA),
-                          fontFamily: 'Gilroy',
+          SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: batches.map((batch) {
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF4F7FD),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        final selectedBatch = {
+                          'id': good.id, // или нужный ID товара
+                          'name': good.name,
+                          'quantity': batch.quantity ?? 0,
+                          'price': double.tryParse(batch.price ?? '0') ?? 0.0,
+                          'total': (batch.quantity ?? 0) * (double.tryParse(batch.price ?? '0') ?? 0.0),
+                          'unit_id': good.unitId,
+                        };
+
+                        Navigator.pop(context, [selectedBatch]);
+                      },
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+                        child: Row(
+                          children: [
+                            // Иконка партии
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(
+                                Icons.inventory_2_outlined,
+                                color: Color(0xff4759FF),
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            // Данные партии
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    batch.batch,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                      fontFamily: 'Gilroy',
+                                      color: Color(0xff1E2E52),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    children: [
+                                      Text(
+                                        'Кол-во: ',
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Color(0xff99A4BA),
+                                          fontWeight: FontWeight.w400,
+                                          fontFamily: 'Gilroy',
+                                        ),
+                                      ),
+                                      Text(
+                                        batch.quantity?.toString() ?? '0',
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Color(0xff1E2E52),
+                                          fontWeight: FontWeight.w500,
+                                          fontFamily: 'Gilroy',
+                                        ),
+                                      ),
+                                      const SizedBox(width: 16),
+                                      Text(
+                                        'Цена: ',
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Color(0xff99A4BA),
+                                          fontWeight: FontWeight.w400,
+                                          fontFamily: 'Gilroy',
+                                        ),
+                                      ),
+                                      Text(
+                                        batch.price,
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Color(0xff1E2E52),
+                                          fontWeight: FontWeight.w500,
+                                          fontFamily: 'Gilroy',
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    );
-                  }
-                  
-                  return _buildGoodsList(filteredGoods);
-                } else if (state is GoodsError) {
-                  return Center(
-                    child: Text(
-                      state.message,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Colors.red,
-                        fontFamily: 'Gilroy',
-                      ),
                     ),
-                  );
-                }
-                return const Center(child: CircularProgressIndicator());
-              },
+                  ),
+                );
+              }).toList(),
             ),
           ),
-          _buildAddButton(),
         ],
       ),
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(GoodsState state, BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            AppLocalizations.of(context)!.translate('select_goods') ?? 'Выбрать товары',
+            state is BatchLoaded
+                ? 'Пакетные остатки'
+                : AppLocalizations.of(context)!.translate('select_goods') ?? 'Выбрать товары',
             style: const TextStyle(
               fontSize: 20,
               fontFamily: 'Gilroy',
@@ -282,7 +428,8 @@ class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
           ),
           IconButton(
             icon: const Icon(Icons.close, color: Color(0xff1E2E52), size: 24),
-            onPressed: () => Navigator.pop(context),
+            onPressed: () =>
+                state is BatchLoaded ? context.read<GoodsBloc>().add(CloseBatchRemainders()) : Navigator.pop(context),
           ),
         ],
       ),
@@ -329,13 +476,12 @@ class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
         final goodsItem = goods[index];
         final isSelected = selectedGoods.contains(goodsItem);
         final isAlreadyAdded = _isGoodsAlreadyAdded(goodsItem.id);
-        
+
         return Column(
           children: [
             _buildGoodsListItem(goodsItem, isSelected, isAlreadyAdded),
             if (isSelected) _buildGoodsDetailsForm(goodsItem, isAlreadyAdded),
-            if (index < goods.length - 1)
-              const Divider(height: 20, color: Color(0xFFE5E7EB)),
+            if (index < goods.length - 1) const Divider(height: 20, color: Color(0xFFE5E7EB)),
           ],
         );
       },
@@ -436,7 +582,7 @@ class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
   Widget _buildGoodsDetailsForm(Goods goods, bool isAlreadyAdded) {
     final hasQuantityError = fieldErrors[goods.id]?['quantity'] ?? false;
     final hasPriceError = fieldErrors[goods.id]?['price'] ?? false;
-    
+
     return Padding(
       padding: const EdgeInsets.only(top: 8, left: 30),
       child: Container(

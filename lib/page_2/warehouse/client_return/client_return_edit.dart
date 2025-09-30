@@ -71,6 +71,7 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
           'quantity': good.quantity ?? 0,
           'price': double.tryParse(good.price ?? '0') ?? 0.0,
           'total': (good.quantity ?? 0) * (double.tryParse(good.price ?? '0') ?? 0.0),
+          'unit_id': good.good?.unitId ?? 1,
         };
       }).toList();
     }
@@ -102,6 +103,7 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
             'quantity': existingQuantity + newQuantity,
             'price': price,
             'total': (existingQuantity + newQuantity) * price,
+            'unit_id': _items[existingIndex]['unit_id'],
           };
         } else {
           // Если товара нет, добавляем новый
@@ -111,6 +113,7 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
             'quantity': newItem['quantity'],
             'price': newItem['price'],
             'total': newItem['total'],
+            'unit_id': newItem['unit_id'],
           });
         }
       }
@@ -175,6 +178,7 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
               'good_id': item['id'],
               'quantity': item['quantity'].toString(),
               'price': item['price'].toString(),
+               "unit_id": item["unit_id"].toString()
             }).toList(),
         organizationId: widget.document.organizationId ?? 1,
         salesFunnelId: 1,

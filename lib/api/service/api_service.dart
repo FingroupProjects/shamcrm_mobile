@@ -119,6 +119,7 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../models/batch_model.dart';
 import '../../models/cash_register_list_model.dart';
 import '../../models/domain_check.dart';
 import '../../models/income_categories_data_response.dart';
@@ -10899,21 +10900,48 @@ Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
   }
 
   //deleteClientSaleDocument
-  Future<void> deleteClientSaleDocument(int documentId) async {
+  Future<Map<String, dynamic>> deleteClientSaleDocument(int documentId) async {
     try {
       final token = await getToken();
-      if (token == null) throw Exception('Токен не найден');
-      final body = {
-        'ids': [documentId]
-      };
-      final path = await _appendQueryParams('/expense-documents');
-      print('Удаление документа по пути: $path');
-      final response = await _deleteRequestWithBody(path, body);
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return;
+      if (token == null) throw 'Токен не найден';
+
+      // Используем _appendQueryParams для получения параметров, но извлекаем их для тела запроса
+      final pathWithParams = await _appendQueryParams('/expense-documents');
+      final uri = Uri.parse('$baseUrl$pathWithParams');
+
+      // Извлекаем organization_id и sales_funnel_id из query параметров
+      final organizationId = uri.queryParameters['organization_id'];
+      final salesFunnelId = uri.queryParameters['sales_funnel_id'];
+
+      // Создаем чистый URI без параметров для DELETE запроса
+      final cleanUri = Uri.parse('$baseUrl/expense-documents');
+
+      final body = jsonEncode({
+        'ids': [documentId],
+        'organization_id': organizationId ?? '1',
+        'sales_funnel_id': salesFunnelId ?? '1',
+      });
+
+      if (kDebugMode) {
+        print('ApiService: deleteClientSaleDocument - Request body: $body');
+      }
+
+      final response = await http.delete(
+        cleanUri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Device': 'mobile',
+        },
+        body: body,
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return {'result': 'Success'};
       } else {
         final message = _extractErrorMessageFromResponse(response);
-        throw ApiException(message ?? 'Неизвестная ошибка при удалении документа', response.statusCode);
+        throw ApiException(message ?? 'Ошибка при удалении документа', response.statusCode);
       }
     } catch (e) {
       rethrow;
@@ -11073,6 +11101,94 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     } catch (e) {
     rethrow;
   }
+  }
+
+  Future<void> massApproveClientSaleDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/expense-documents/approve');
+
+    try {
+      final response = await _postRequest(path, {
+        'ids': ids,
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при массовом проведении документов реализации!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> massDisapproveClientSaleDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/expense-documents/unApprove');
+
+    try {
+      final response = await _postRequest(path, {
+        'ids': ids,
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при массовом снятии проведения документов реализации!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> massDeleteClientSaleDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/expense-documents/');
+
+    try {
+      final response = await _deleteRequestWithBody(path, {
+        'ids': ids,
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при массовом удалении документов реализации!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> massRestoreClientSaleDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/expense-documents/restore');
+
+    try {
+      final response = await _postRequest(path, {
+        'ids': ids,
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при массовом восстановлении документов реализации!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
   }
 
 
@@ -14019,6 +14135,43 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         final message = _extractErrorMessageFromResponse(response);
         throw ApiException(
           message ?? 'Ошибка при получении данных отчёта товаров!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<List<BatchData>> getBatchRemainders({
+    required int goodVariantId,
+    required int storageId,
+    required int supplierId,
+  }) async {
+    String path = '/supplier-return-documents/get/good-variant-batch-remainders'
+        '?good_variant_id=$goodVariantId'
+        '&storage_id=$storageId'
+        '&supplier_id=$supplierId';
+
+    path = await _appendQueryParams(path);
+    if (kDebugMode) {
+      print('ApiService: getBatchRemainders - Generated path: $path');
+    }
+
+    try {
+      final response = await _getRequest(path);
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final rawData = json.decode(response.body);
+        debugPrint("Полученные данные по остаткам партий: $rawData");
+
+        final resultData = rawData['result'] as List<dynamic>;
+        return resultData
+            .map((item) => BatchData.fromJson(item as Map<String, dynamic>))
+            .toList();
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при получении данных остатков партий!',
           response.statusCode,
         );
       }
