@@ -693,6 +693,7 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
+                                  // change this
                                   AppLocalizations.of(context)!.translate('unit') ?? 'Ед.',
                                   style: const TextStyle(
                                     fontSize: 10,
