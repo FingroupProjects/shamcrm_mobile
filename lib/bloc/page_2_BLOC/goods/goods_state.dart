@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/models/batch_model.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart';
 
@@ -6,6 +7,13 @@ abstract class GoodsState {}
 class GoodsInitial extends GoodsState {}
 
 class GoodsLoading extends GoodsState {}
+
+class BatchLoaded extends GoodsState {
+  final List<BatchData> batches;
+  final Goods good;
+
+  BatchLoaded(this.batches, this.good);
+}
 
 class GoodsDataLoaded extends GoodsState {
   final List<Goods> goods;

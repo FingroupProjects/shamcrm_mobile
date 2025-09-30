@@ -119,6 +119,7 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../models/batch_model.dart';
 import '../../models/cash_register_list_model.dart';
 import '../../models/domain_check.dart';
 import '../../models/income_categories_data_response.dart';
@@ -14134,6 +14135,43 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         final message = _extractErrorMessageFromResponse(response);
         throw ApiException(
           message ?? 'Ошибка при получении данных отчёта товаров!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<List<BatchData>> getBatchRemainders({
+    required int goodVariantId,
+    required int storageId,
+    required int supplierId,
+  }) async {
+    String path = '/supplier-return-documents/get/good-variant-batch-remainders'
+        '?good_variant_id=$goodVariantId'
+        '&storage_id=$storageId'
+        '&supplier_id=$supplierId';
+
+    path = await _appendQueryParams(path);
+    if (kDebugMode) {
+      print('ApiService: getBatchRemainders - Generated path: $path');
+    }
+
+    try {
+      final response = await _getRequest(path);
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final rawData = json.decode(response.body);
+        debugPrint("Полученные данные по остаткам партий: $rawData");
+
+        final resultData = rawData['result'] as List<dynamic>;
+        return resultData
+            .map((item) => BatchData.fromJson(item as Map<String, dynamic>))
+            .toList();
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при получении данных остатков партий!',
           response.statusCode,
         );
       }

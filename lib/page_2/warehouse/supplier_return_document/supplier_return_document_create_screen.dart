@@ -50,11 +50,17 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
         for (var newItem in newItems) {
           // Ищем, есть ли уже такой товар в списке
           int existingIndex = _items.indexWhere((item) => item['id'] == newItem['id']);
-          
+
           if (existingIndex != -1) {
-            // Если товар уже есть, суммируем количество
-            _items[existingIndex]['quantity'] += newItem['quantity'];
-            _items[existingIndex]['total'] = _items[existingIndex]['quantity'] * _items[existingIndex]['price'];
+            // Если товар уже есть - ЗАМЕНЯЕМ данными из батча, не суммируем
+            _items[existingIndex] = {
+              'id': newItem['id'],
+              'name': newItem['name'],
+              'quantity': newItem['quantity'],
+              'price': newItem['price'],
+              'total': newItem['total'],
+              'unit_id': newItem['unit_id'],
+            };
           } else {
             // Если товара нет, добавляем новый
             _items.add({
@@ -63,19 +69,19 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
               'quantity': newItem['quantity'],
               'price': newItem['price'],
               'total': newItem['total'],
+              'unit_id': newItem['unit_id'],
             });
-            
+
             // Анимируем добавление нового элемента
             _listKey.currentState?.insertItem(
-              _items.length - 1, 
-              duration: const Duration(milliseconds: 300)
+                _items.length - 1,
+                duration: const Duration(milliseconds: 300)
             );
           }
         }
       });
     }
   }
-
   void _removeItem(int index) {
     if (mounted) {
       final removedItem = _items[index];
@@ -91,12 +97,29 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
   }
 
   void _openGoodsSelection() async {
+
+    if (_selectedStorage == null && _selectedSupplier == null) {
+      _showSnackBar('Выберите склад и поставщика', false);
+      return;
+    }
+    if (_selectedSupplier == null) {
+      _showSnackBar('Выберите поставщика', false);
+      return;
+    }
+    if (_selectedStorage == null) {
+      _showSnackBar('Выберите склад', false);
+      return;
+    }
+
     final result = await showModalBottomSheet<List<Map<String, dynamic>>>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => GoodsSelectionBottomSheet(
         existingItems: _items,
+        showBatchRemainders: true,
+        supplierId: int.tryParse(_selectedSupplier!),
+        storageId: int.tryParse(_selectedStorage!),
       ),
     );
 
@@ -139,6 +162,7 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
               'good_id': item['id'],
               'quantity': item['quantity'].toString(),
               'price': item['price'].toString(),
+              'unit_id': item['unit_id'].toString(),
             }).toList(),
         organizationId: widget.organizationId ?? 1,
         salesFunnelId: 1,

@@ -245,7 +245,9 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
                   showFilterIcon: false,
                   showFilterOrderIcon: false,
                   showFilterIncomeIcon: false,
-                  showFilterIncomingIcon: false,
+                  showFilterIncomingIcon: true,
+                  onIncomingResetFilters: _onResetFilters,
+                  onFilterIncomingSelected: _onFilterSelected,
                   onChangedSearchInput: _onSearch,
                   textEditingController: _searchController,
                   focusNode: _focusNode,
@@ -463,8 +465,6 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
                                   }
                                   return;
                                 }
-
-                                if (currentData[index].deletedAt != null) return;
 
                                 Navigator.push(
                                   context,
