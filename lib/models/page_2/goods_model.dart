@@ -41,11 +41,13 @@ class Unit {
   final int id;
   final String name;
   final String? shortName;
+  final int? amount; // Добавлено поле amount
 
   Unit({
     required this.id,
     required this.name,
     this.shortName,
+    this.amount,
   });
 
   factory Unit.fromJson(Map<String, dynamic> json) {
@@ -53,6 +55,7 @@ class Unit {
       id: json['id'] as int? ?? 0,
       name: json['name'] as String? ?? '',
       shortName: json['short_name'] as String?,
+      amount: json['amount'] as int?,
     );
   }
 }

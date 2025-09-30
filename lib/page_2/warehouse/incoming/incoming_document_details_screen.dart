@@ -43,13 +43,20 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
   bool _isLoading = false;
   String? baseUrl;
   bool _documentUpdated = false;
-  bool _isButtonLoading = false; // Для загрузки только кнопок
+  bool _isButtonLoading = false;
+
+  // Map to store unit details (id -> shortName)
+  final Map<int, String> _unitMap = {
+    23: 'шт', // Based on JSON unit_id: 23
+    // Add more mappings or fetch dynamically
+  };
 
   @override
   void initState() {
     super.initState();
     _initializeBaseUrl();
     _fetchDocumentDetails();
+    // _fetchUnits(); // Uncomment if units are fetched via API
   }
 
   Future<void> _initializeBaseUrl() async {
@@ -64,6 +71,20 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
       });
     }
   }
+
+  // Optional: Fetch units if available via API
+  /*
+  Future<void> _fetchUnits() async {
+    try {
+      final units = await _apiService.getUnits();
+      setState(() {
+        _unitMap.addAll({for (var unit in units) unit.id!: unit.shortName ?? unit.name ?? 'шт'});
+      });
+    } catch (e) {
+      print('Error fetching units: $e');
+    }
+  }
+  */
 
   Future<void> _fetchDocumentDetails() async {
     setState(() {
@@ -180,7 +201,6 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
     );
   }
 
-  // Обновляем только статус без полной перезагрузки
   void _updateStatusOnly() {
     if (currentDocument != null) {
       setState(() {
@@ -195,7 +215,6 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
     });
     try {
       await _apiService.approveIncomingDocument(widget.documentId);
-      // Обновляем статус в объекте
       setState(() {
         currentDocument = currentDocument!.copyWith(approved: 1);
         _documentUpdated = true;
@@ -282,7 +301,7 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
             width: 24,
             height: 24,
             child: CircularProgressIndicator(
-              color: const Color(0xff1E2E52),
+              color: Color(0xff1E2E52),
               strokeWidth: 2,
             ),
           ),
@@ -292,7 +311,6 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
 
     if (currentDocument == null) return const SizedBox.shrink();
 
-    // Если документ удален - показываем кнопку восстановления
     if (currentDocument!.deletedAt != null) {
       return StyledActionButton(
         text: AppLocalizations.of(context)!.translate('restore_document') ?? 'Восстановить',
@@ -302,7 +320,6 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
       );
     }
 
-    // Если не проведен - показываем кнопку проведения
     if (currentDocument!.approved == 0) {
       return StyledActionButton(
         text: AppLocalizations.of(context)!.translate('approve_document') ?? 'Провести',
@@ -312,7 +329,6 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
       );
     }
 
-    // Если проведен - показываем кнопку отмены проведения
     return StyledActionButton(
       text: AppLocalizations.of(context)!.translate('unapprove_document') ?? 'Отменить проведение',
       icon: Icons.cancel_outlined,
@@ -380,79 +396,79 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
-        providers: [
-          BlocProvider<IncomingDocumentHistoryBloc>(
-            create: (context) => IncomingDocumentHistoryBloc(context.read<ApiService>()),
-          ),
-        ],
-        child: BlocListener<IncomingBloc, IncomingState>(
-          listener: (context, state) {
-            if (state is IncomingDeleteSuccess) {
-              Navigator.pop(context); // close screen
-            } if (state is IncomingDeleteError) {
-              final localizations = AppLocalizations.of(context);
-              debugPrint("[ERROR] IncomingDeleteError:::::: ${state.message}, enumType: ${ErrorDialogEnum.goodsIncomingDelete}");
-              if (state.statusCode == 409) {
-                showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message,
-                    errorDialogEnum: ErrorDialogEnum.goodsIncomingUnapprove);
-                return;
-              }
-              showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+      providers: [
+        BlocProvider<IncomingDocumentHistoryBloc>(
+          create: (context) => IncomingDocumentHistoryBloc(context.read<ApiService>()),
+        ),
+      ],
+      child: BlocListener<IncomingBloc, IncomingState>(
+        listener: (context, state) {
+          if (state is IncomingDeleteSuccess) {
+            Navigator.pop(context);
+          }
+          if (state is IncomingDeleteError) {
+            final localizations = AppLocalizations.of(context);
+            debugPrint("[ERROR] IncomingDeleteError:::::: ${state.message}, enumType: ${ErrorDialogEnum.goodsIncomingDelete}");
+            if (state.statusCode == 409) {
+              showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message,
+                  errorDialogEnum: ErrorDialogEnum.goodsIncomingUnapprove);
+              return;
+            }
+            showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+          }
+        },
+        child: PopScope(
+          onPopInvoked: (didPop) {
+            if (didPop && _documentUpdated && widget.onDocumentUpdated != null) {
+              widget.onDocumentUpdated!();
             }
           },
-          child: PopScope(
-            onPopInvoked: (didPop) {
-              if (didPop && _documentUpdated && widget.onDocumentUpdated != null) {
-                widget.onDocumentUpdated!();
-              }
-            },
-            child: Scaffold(
-              appBar: _buildAppBar(context),
-              backgroundColor: Colors.white,
-              body: _isLoading
-                  ? Center(
-                      child: PlayStoreImageLoading(
-                        size: 80.0,
-                        duration: Duration(milliseconds: 1000),
-                      ),
-                    )
-                  : currentDocument == null
-                      ? Center(
-                          child: Text(
-                            AppLocalizations.of(context)!.translate('document_data_unavailable') ?? 'Данные документа недоступны',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xff99A4BA),
-                            ),
-                          ),
-                        )
-                      : Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                          child: ListView(
-                            children: [
-                              // Кнопка действия (Провести/Отменить/Восстановить)
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 16),
-                                child: Center(child: _buildActionButton()),
-                              ),
-                              _buildDetailsList(),
-                              const SizedBox(height: 16),
-                              if (currentDocument!.documentGoods != null && currentDocument!.documentGoods!.isNotEmpty) ...[
-                                _buildGoodsList(currentDocument!.documentGoods!),
-                                const SizedBox(height: 16),
-                              ],
-                            ],
+          child: Scaffold(
+            appBar: _buildAppBar(context),
+            backgroundColor: Colors.white,
+            body: _isLoading
+                ? Center(
+                    child: PlayStoreImageLoading(
+                      size: 80.0,
+                      duration: Duration(milliseconds: 1000),
+                    ),
+                  )
+                : currentDocument == null
+                    ? Center(
+                        child: Text(
+                          AppLocalizations.of(context)!.translate('document_data_unavailable') ?? 'Данные документа недоступны',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xff99A4BA),
                           ),
                         ),
-            ),
+                      )
+                    : Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                        child: ListView(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 16),
+                              child: Center(child: _buildActionButton()),
+                            ),
+                            _buildDetailsList(),
+                            const SizedBox(height: 16),
+                            if (currentDocument!.documentGoods != null && currentDocument!.documentGoods!.isNotEmpty) ...[
+                              _buildGoodsList(currentDocument!.documentGoods!),
+                              const SizedBox(height: 16),
+                            ],
+                          ],
+                        ),
+                      ),
           ),
-        ));
+        ),
+      ),
+    );
   }
 
   AppBar _buildAppBar(BuildContext context) {
-    // Скрываем иконки редактирования и удаления для удаленных документов
     final showActions = currentDocument?.deletedAt == null;
 
     return AppBar(
@@ -648,106 +664,162 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
     );
   }
 
-  Widget _buildGoodsItem(DocumentGood good) {
+ Widget _buildGoodsItem(DocumentGood good) {
+    final unitShortName = good.good?.unitId != null
+        ? _unitMap[good.good!.unitId] ?? 'шт'
+        : 'шт';
+
     return GestureDetector(
       onTap: () {
         _navigateToGoodsDetails(good);
       },
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.symmetric(vertical: 6),
         child: Container(
           decoration: TaskCardStyles.taskCardDecoration,
           child: Padding(
-            padding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
+            padding: const EdgeInsets.all(12),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                _buildImageWidget(good),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        good.good?.name ?? 'N/A',
-                        style: TaskCardStyles.titleStyle,
+                        good.fullName ?? good.good?.name ?? 'N/A',
+                        style: TaskCardStyles.titleStyle.copyWith(fontSize: 14),
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 8),
                       Row(
                         children: [
-                          Text(
-                            AppLocalizations.of(context)!.translate('quantity') ?? 'Количество',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xff1E2E52),
+                          // Ед. изм.
+                          Expanded(
+                            flex: 2,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  AppLocalizations.of(context)!.translate('unit') ?? 'Ед.',
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    fontFamily: 'Gilroy',
+                                    fontWeight: FontWeight.w400,
+                                    color: Color(0xff99A4BA),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  unitShortName,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontFamily: 'Gilroy',
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xff1E2E52),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          Text(
-                            '${good.quantity ?? 0}',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xff1E2E52),
+                          // Количество
+                          Expanded(
+                            flex: 2,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  AppLocalizations.of(context)!.translate('quantity') ?? 'Кол-во',
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    fontFamily: 'Gilroy',
+                                    fontWeight: FontWeight.w400,
+                                    color: Color(0xff99A4BA),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '${good.quantity ?? 0}',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontFamily: 'Gilroy',
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xff1E2E52),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          // Цена
+                          Expanded(
+                            flex: 3,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  AppLocalizations.of(context)!.translate('price') ?? 'Цена',
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    fontFamily: 'Gilroy',
+                                    fontWeight: FontWeight.w400,
+                                    color: Color(0xff99A4BA),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '${(double.tryParse(good.price ?? '0.00') ?? 0.00).toStringAsFixed(2)}',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontFamily: 'Gilroy',
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xff1E2E52),
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Text(
-                            AppLocalizations.of(context)!.translate('price') ?? 'Цена',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xff1E2E52),
+                      const SizedBox(height: 8),
+                      // Итого на отдельной строке
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF4F7FD),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                            Text(
+                              AppLocalizations.of(context)!.translate('total') ?? 'Итого',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xff1E2E52),
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            '${good.price ?? '0.00'} ${currentDocument!.currency?.symbolCode ?? ''}',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xff1E2E52),
+                            const SizedBox(width: 8),
+                            Text(
+                              '${((good.quantity ?? 0) * (double.tryParse(good.price ?? '0') ?? 0)).toStringAsFixed(2)} ${currentDocument!.currency?.symbolCode ?? ''}',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xff4CAF50),
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Text(
-                            AppLocalizations.of(context)!.translate('total') ?? 'Сумма',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xff1E2E52),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            '${((good.quantity ?? 0) * double.parse(good.price?.toString() ?? '0')).toStringAsFixed(2)} ${currentDocument!.currency?.symbolCode ?? ''}',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xff4CAF50),
-                            ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 16),
-                _buildImageWidget(good),
               ],
             ),
           ),
@@ -755,7 +827,6 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
       ),
     );
   }
-
   Widget _buildImageWidget(DocumentGood good) {
     if (baseUrl == null || good.good == null || good.good!.files == null || good.good!.files!.isEmpty) {
       return _buildPlaceholderImage();
@@ -806,7 +877,7 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
         builder: (context) => GoodsDetailsScreen(
           id: goodId,
           isFromOrder: false,
-          showEditButton: false, // Скрываем кнопку редактирования
+          showEditButton: false,
         ),
       ),
     );
