@@ -1422,6 +1422,7 @@
 
     "deleting": "Deleting...",
     "edit_incoming_document": "Edit incoming",
+    "edit_client_sale": "Edit document",
     "edit_pricetype": "Edit price type",
     "edit_warehouse": "Edit warehouse",
     "save_and_approve": "Save and approve",
