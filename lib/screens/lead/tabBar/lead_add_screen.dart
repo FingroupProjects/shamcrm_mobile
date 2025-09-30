@@ -504,21 +504,16 @@ Widget build(BuildContext context) {
                         ),
                         const SizedBox(height: 15),
                         // Поле: Телефон
-                        CustomPhoneNumberInput(
-                          controller: phoneController,
-                          onInputChanged: (String number) {
-                            setState(() {
-                              selectedDialCode = number;
-                            });
-                          },
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return AppLocalizations.of(context)!.translate('field_required');
-                            }
-                            return null;
-                          },
-                          label: AppLocalizations.of(context)!.translate('phone'),
-                        ),
+CustomPhoneNumberInput(
+  controller: phoneController,
+  onInputChanged: (String number) {
+    setState(() {
+      selectedDialCode = number;
+    });
+  },
+  // validator удалён - телефон теперь необязательное поле
+  label: AppLocalizations.of(context)!.translate('phone'),
+),
                         const SizedBox(height: 15),
                         // Поле: Менеджер
                         ManagerRadioGroupWidget(

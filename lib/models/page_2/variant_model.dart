@@ -1,4 +1,3 @@
-
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:flutter/foundation.dart';
 
@@ -26,7 +25,7 @@ class Variant {
     this.isSelected = false,
     this.quantitySelected = 1,
     this.selectedUnit,
-    this.availableUnits = const [],
+    required this.availableUnits, // Added required modifier
   });
 
   factory Variant.fromJson(Map<String, dynamic> json) {
@@ -53,13 +52,21 @@ class Variant {
 
     final good = json['good'] != null ? Goods.fromJson(json['good'] as Map<String, dynamic>) : null;
 
-    // Парсим единицы измерения
+    // Парсим единицы измерения из good
     final units = <Unit>[];
+    
+    // Добавляем единицы из good.units
     if (good?.units != null && good!.units!.isNotEmpty) {
       units.addAll(good.units!);
     }
+    
+    // Добавляем единицы из good.measurements
     if (good?.measurements != null && good!.measurements!.isNotEmpty) {
-      units.addAll(good.measurements!.map((m) => m.unit));
+      for (var measurement in good.measurements!) {
+        if (measurement.unit != null) { // Проверяем, что unit не null
+          units.add(measurement.unit!);
+        }
+      }
     }
 
     return Variant(
@@ -73,7 +80,7 @@ class Variant {
       isSelected: false,
       quantitySelected: 1,
       selectedUnit: units.isNotEmpty ? units.first.shortName ?? units.first.name : null,
-      availableUnits: units,
+      availableUnits: units, // Always non-null
     );
   }
 }

@@ -53,6 +53,8 @@ class _InputFieldState extends State<InputField> with SingleTickerProviderStateM
   String _htmlContent = '';
   String _displayText = '';
   bool _wasKeyboardVisible = false;
+  DateTime _pointerDownTime = DateTime.now(); // Добавьте в класс _InputFieldState
+
 
   @override
   void initState() {
@@ -137,21 +139,31 @@ class _InputFieldState extends State<InputField> with SingleTickerProviderStateM
     });
   }
 
-  void _handleSelectionChange() {
-    final selection = widget.messageController.selection;
 
-    if (selection.isValid && selection.start != selection.end && widget.focusNode.hasFocus) {
-      SystemChannels.textInput.invokeMethod('TextInput.hideToolbar');
-      setState(() {
-        _showFormattingPanel = true;
-        _updateFormattingOverlay();
-        _animationController.forward();
-      });
-    } else {
-      _closeFormattingPanel();
-    }
+void _handleSelectionChange() {
+  final selection = widget.messageController.selection;
+
+  if (selection.isValid && selection.start != selection.end && widget.focusNode.hasFocus) {
+    SystemChannels.textInput.invokeMethod('TextInput.hideToolbar');
+    setState(() {
+      _showFormattingPanel = true;
+      _updateFormattingOverlay();
+      _animationController.forward();
+    });
+  } else {
+    _closeFormattingPanel();
   }
+}
 
+// ← ДОБАВЬТЕ ЭТОТ МЕТОД СЮДА
+void _showFormattingPanelOnLongPress() {
+  SystemChannels.textInput.invokeMethod('TextInput.hideToolbar');
+  setState(() {
+    _showFormattingPanel = true;
+    _updateFormattingOverlay();
+    _animationController.forward();
+  });
+}
   void _updateOverlay() {
     _removeOverlay();
     if (_showTemplates) {
@@ -233,100 +245,117 @@ class _InputFieldState extends State<InputField> with SingleTickerProviderStateM
   }
 
   OverlayEntry _createFormattingOverlayEntry() {
-    final RenderBox renderBox = context.findRenderObject() as RenderBox;
-    final Offset offset = renderBox.localToGlobal(Offset.zero);
-    final Size size = renderBox.size;
+  final RenderBox renderBox = context.findRenderObject() as RenderBox;
+  final Offset offset = renderBox.localToGlobal(Offset.zero);
+  final Size size = renderBox.size;
 
-    final capabilities = _checkDeviceCapabilities();
+  final selection = widget.messageController.selection;
+  final hasSelection = selection.isValid && 
+                       selection.start != selection.end;
 
-    final buttons = [
-      _buildFormattingButton(
-        icon: Icons.copy,
-        label: 'Копировать',
-        onTap: _copy,
-      ),
-      _buildFormattingButton(
-        icon: Icons.cut,
-        label: 'Вырезать',
-        onTap: _cut,
-      ),
-      _buildFormattingButton(
-        icon: Icons.paste,
-        label: 'Вставить',
-        onTap: _paste,
-      ),
-      _buildFormattingButton(
-        icon: Icons.select_all,
-        label: 'Выбрать все',
-        onTap: _selectAll,
-      ),
-      _buildFormattingButton(
-        icon: Icons.format_bold,
-        label: 'Жирный',
-        onTap: () => _applyFormatting('bold'),
-      ),
-      _buildFormattingButton(
-        icon: Icons.format_italic,
-        label: 'Курсив',
-        onTap: () => _applyFormatting('italic'),
-      ),
-      _buildFormattingButton(
-        icon: Icons.link,
-        label: 'Ссылка',
-        onTap: () => _applyLinkFormatting(context),
-      ),
-      _buildFormattingButton(
-        icon: Icons.format_strikethrough,
-        label: 'Зачеркнутый',
-        onTap: () => _applyFormatting('strikethrough'),
-      ),
-    ];
+  final buttons = [
+    _buildFormattingButton(
+      icon: Icons.copy,
+      label: 'Копировать',
+      onTap: _copy,
+      isEnabled: hasSelection,
+    ),
+    _buildFormattingButton(
+      icon: Icons.cut,
+      label: 'Вырезать',
+      onTap: _cut,
+      isEnabled: hasSelection,
+    ),
+    _buildFormattingButton(
+      icon: Icons.paste,
+      label: 'Вставить',
+      onTap: _paste,
+      isEnabled: true, // Вставка всегда доступна
+    ),
+    _buildFormattingButton(
+      icon: Icons.select_all,
+      label: 'Выбрать все',
+      onTap: _selectAll,
+      isEnabled: widget.messageController.text.isNotEmpty,
+    ),
+    _buildFormattingButton(
+      icon: Icons.format_bold,
+      label: 'Жирный',
+      onTap: () => _applyFormatting('bold'),
+      isEnabled: hasSelection,
+    ),
+    _buildFormattingButton(
+      icon: Icons.format_italic,
+      label: 'Курсив',
+      onTap: () => _applyFormatting('italic'),
+      isEnabled: hasSelection,
+    ),
+    _buildFormattingButton(
+      icon: Icons.link,
+      label: 'Ссылка',
+      onTap: () => _applyLinkFormatting(context),
+      isEnabled: hasSelection,
+    ),
+    _buildFormattingButton(
+      icon: Icons.format_strikethrough,
+      label: 'Зачеркнутый',
+      onTap: () => _applyFormatting('strikethrough'),
+      isEnabled: hasSelection,
+    ),
+  ];
 
-    return OverlayEntry(
-      builder: (context) => Positioned(
-        left: offset.dx,
-        right: MediaQuery.of(context).size.width - (offset.dx + size.width),
-        top: offset.dy - 60,
-        child: FadeTransition(
-          opacity: _fadeAnimation,
-          child: Material(
-            elevation: 8,
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade200),
-              ),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: buttons,
-                ),
+  return OverlayEntry(
+    builder: (context) => Positioned(
+      left: offset.dx,
+      right: MediaQuery.of(context).size.width - (offset.dx + size.width),
+      top: offset.dy - 60,
+      child: FadeTransition(
+        opacity: _fadeAnimation,
+        child: Material(
+          elevation: 8,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: buttons,
               ),
             ),
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildFormattingButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
+  required IconData icon,
+  required String label,
+  required VoidCallback onTap,
+  bool isEnabled = true,
+}) {
+  return InkWell(
+    onTap: isEnabled ? onTap : null,
+    borderRadius: BorderRadius.circular(8),
+    child: Opacity(
+      opacity: isEnabled ? 1.0 : 0.4,
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 18, color: Color(0xff1E2E52)),
+            Icon(
+              icon, 
+              size: 18, 
+              color: isEnabled ? Color(0xff1E2E52) : Colors.grey,
+            ),
             SizedBox(height: 2),
             Text(
               label,
@@ -334,14 +363,15 @@ class _InputFieldState extends State<InputField> with SingleTickerProviderStateM
                 fontSize: 10,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w500,
-                color: Color(0xff1E2E52),
+                color: isEnabled ? Color(0xff1E2E52) : Colors.grey,
               ),
             ),
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   void _applyFormatting(String type) {
     final selection = widget.messageController.selection;
@@ -593,25 +623,31 @@ class _InputFieldState extends State<InputField> with SingleTickerProviderStateM
     _closeFormattingPanel();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final messagingCubit = context.read<MessagingCubit>();
-    final editingMessage = context.watch<MessagingCubit>().state is EditingMessageState
-        ? (context.read<MessagingCubit>().state as EditingMessageState).editingMessage
-        : null;
+@override
+Widget build(BuildContext context) {
+  final messagingCubit = context.read<MessagingCubit>();
+  final editingMessage = context.watch<MessagingCubit>().state is EditingMessageState
+      ? (context.read<MessagingCubit>().state as EditingMessageState).editingMessage
+      : null;
 
-    final replyingToMessage = context.watch<MessagingCubit>().state is ReplyingToMessageState
-        ? (context.read<MessagingCubit>().state as ReplyingToMessageState).replyingMessage
-        : null;
+  final replyingToMessage = context.watch<MessagingCubit>().state is ReplyingToMessageState
+      ? (context.read<MessagingCubit>().state as ReplyingToMessageState).replyingMessage
+      : null;
 
-    final String? replyMsgId = replyingToMessage?.id.toString();
+  final String? replyMsgId = replyingToMessage?.id.toString();
 
-    if (editingMessage != null && widget.messageController.text.isEmpty) {
-      widget.messageController.text = editingMessage.text;
-      _htmlContent = editingMessage.text;
-    }
+  if (editingMessage != null && widget.messageController.text.isEmpty) {
+    widget.messageController.text = editingMessage.text;
+    _htmlContent = editingMessage.text;
+  }
 
-    return Container(
+  return GestureDetector(
+    onTap: () {
+      if (_showFormattingPanel) {
+        _closeFormattingPanel();
+      }
+    },
+    child: Container(
       color: Colors.white,
       padding: const EdgeInsets.only(left: 0, right: 0, top: 6, bottom: 20),
       child: Column(
@@ -756,52 +792,63 @@ class _InputFieldState extends State<InputField> with SingleTickerProviderStateM
                             padding: const EdgeInsets.all(8.0),
                             child: CircularProgressIndicator(color: Color(0xff1E2E52)),
                           )
-                        : Container(
-                            height: 50,
-                            child: Container(
-                              padding: const EdgeInsets.only(left: 16),
-                              child: TextField(
-                                controller: widget.messageController,
-                                focusNode: widget.focusNode,
-                                onChanged: _handleTextChange,
-                                enableInteractiveSelection: true,
-                                toolbarOptions: ToolbarOptions(
-                                  copy: false,
-                                  cut: false,
-                                  paste: false,
-                                  selectAll: false,
-                                ),
-                                contextMenuBuilder: (context, editableTextState) {
-                                  return AdaptiveTextSelectionToolbar(
-                                    anchors: editableTextState.contextMenuAnchors,
-                                    children: [],
-                                  );
-                                },
-                                decoration: InputDecoration(
-                                  hintText: AppLocalizations.of(context)!.translate('enter_your_sms'),
-                                  hintStyle: TextStyle(
-                                    fontSize: 14,
-                                    color: ChatSmsStyles.hintTextColor,
-                                    fontWeight: FontWeight.w500,
-                                    fontFamily: 'Gilroy',
-                                  ),
-                                  fillColor: ChatSmsStyles.inputBackgroundColor,
-                                  filled: true,
-                                  contentPadding: widget.isLeadChat
-                                      ? EdgeInsets.only(left: 10, right: 65)
-                                      : EdgeInsets.only(left: 10, right: 40),
-                                  border: OutlineInputBorder(
-                                    borderRadius: ChatSmsStyles.inputBorderRadius,
-                                    borderSide: BorderSide.none,
-                                  ),
-                                ),
-                                keyboardType: TextInputType.multiline,
-                                minLines: 1,
-                                maxLines: 5,
-                                style: ChatSmsStyles.messageTextStyle,
-                              ),
-                            ),
-                          ),
+                    : Listener(
+    onPointerDown: (event) {
+      _pointerDownTime = DateTime.now();
+    },
+    onPointerUp: (event) {
+      final duration = DateTime.now().difference(_pointerDownTime).inMilliseconds;
+      if (duration > 500) { // 500ms = долгое нажатие
+        _showFormattingPanelOnLongPress();
+      }
+    },
+    child: Container(
+      height: 50,
+      child: Container(
+        padding: const EdgeInsets.only(left: 16),
+        child: TextField(
+          controller: widget.messageController,
+          focusNode: widget.focusNode,
+          onChanged: _handleTextChange,
+          enableInteractiveSelection: true,
+          toolbarOptions: ToolbarOptions(
+            copy: false,
+            cut: false,
+            paste: false,
+            selectAll: false,
+          ),
+          contextMenuBuilder: (context, editableTextState) {
+            return AdaptiveTextSelectionToolbar(
+              anchors: editableTextState.contextMenuAnchors,
+              children: [],
+            );
+          },
+          decoration: InputDecoration(
+            hintText: AppLocalizations.of(context)!.translate('enter_your_sms'),
+            hintStyle: TextStyle(
+              fontSize: 14,
+              color: ChatSmsStyles.hintTextColor,
+              fontWeight: FontWeight.w500,
+              fontFamily: 'Gilroy',
+            ),
+            fillColor: ChatSmsStyles.inputBackgroundColor,
+            filled: true,
+            contentPadding: widget.isLeadChat
+                ? EdgeInsets.only(left: 10, right: 65)
+                : EdgeInsets.only(left: 10, right: 40),
+            border: OutlineInputBorder(
+              borderRadius: ChatSmsStyles.inputBorderRadius,
+              borderSide: BorderSide.none,
+            ),
+          ),
+          keyboardType: TextInputType.multiline,
+          minLines: 1,
+          maxLines: 5,
+          style: ChatSmsStyles.messageTextStyle,
+        ),
+      ),
+    ),
+  ),
                     if (widget.isLeadChat)
                       Positioned(
                         right: 35,
@@ -919,8 +966,9 @@ class _InputFieldState extends State<InputField> with SingleTickerProviderStateM
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   void _showTemplatesPanel(BuildContext context) {
     print('InputField: Opening TemplatesPanel');

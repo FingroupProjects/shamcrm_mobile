@@ -2,27 +2,24 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_state.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/variant_bloc/variant_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/variant_bloc/variant_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
+import 'package:crm_task_manager/models/page_2/variant_model.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
-import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
-import 'package:crm_task_manager/page_2/widgets/goods_Selection_Bottom_Sheet.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/storage_widget.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/supplier_widget.dart';
+import 'package:crm_task_manager/page_2/warehouse/incoming/variant_selection_bottom_sheet.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-
 import '../../money/widgets/error_dialog.dart';
 
 class IncomingDocumentCreateScreen extends StatefulWidget {
   final int? organizationId;
-
   const IncomingDocumentCreateScreen({this.organizationId, super.key});
-
   @override
   _IncomingDocumentCreateScreenState createState() => _IncomingDocumentCreateScreenState();
 }
@@ -41,34 +38,33 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
   void initState() {
     super.initState();
     _dateController.text = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
-    context.read<GoodsBloc>().add(FetchGoods());
+    context.read<VariantBloc>().add(FetchVariants());
   }
 
-  void _handleGoodsSelection(List<Map<String, dynamic>> newItems) {
+  void _handleVariantSelection(List<Map<String, dynamic>> newItems) {
     if (mounted) {
       setState(() {
         for (var newItem in newItems) {
-          // Ищем, есть ли уже такой товар в списке
-          int existingIndex = _items.indexWhere((item) => item['id'] == newItem['id']);
-          
+          int existingIndex = _items.indexWhere(
+              (item) => item['variantId'] == newItem['variantId'] && item['unit_id'] == newItem['unit_id']);
           if (existingIndex != -1) {
-            // Если товар уже есть, суммируем количество
             _items[existingIndex]['quantity'] += newItem['quantity'];
             _items[existingIndex]['total'] = _items[existingIndex]['quantity'] * _items[existingIndex]['price'];
           } else {
-            // Если товара нет, добавляем новый
             _items.add({
               'id': newItem['id'],
+              'variantId': newItem['variantId'],
               'name': newItem['name'],
               'quantity': newItem['quantity'],
               'price': newItem['price'],
               'total': newItem['total'],
+              'selectedUnit': newItem['selectedUnit'],
+              'unit_id': newItem['unit_id'],
+              'availableUnits': newItem['availableUnits'],
             });
-            
-            // Анимируем добавление нового элемента
             _listKey.currentState?.insertItem(
-              _items.length - 1, 
-              duration: const Duration(milliseconds: 300)
+              _items.length - 1,
+              duration: const Duration(milliseconds: 300),
             );
           }
         }
@@ -90,46 +86,38 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
     }
   }
 
-  void _openGoodsSelection() async {
+  void _openVariantSelection() async {
     final result = await showModalBottomSheet<List<Map<String, dynamic>>>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => GoodsSelectionBottomSheet(
+      builder: (context) => VariantSelectionBottomSheet(
         existingItems: _items,
       ),
     );
-
     if (result != null && result.isNotEmpty) {
-      _handleGoodsSelection(result);
+      _handleVariantSelection(result);
     }
   }
 
-  // Модифицированная функция создания документа (с параметром approve)
   void _createDocument({bool approve = false}) async {
     if (!_formKey.currentState!.validate()) return;
-
     if (_items.isEmpty) {
       _showSnackBar('Добавьте хотя бы один товар', false);
       return;
     }
-
     if (_selectedStorage == null) {
       _showSnackBar('Выберите склад', false);
       return;
     }
-
     if (_selectedSupplier == null) {
       _showSnackBar('Выберите поставщика', false);
       return;
     }
-
     setState(() => _isLoading = true);
-
     try {
       DateTime? parsedDate = DateFormat('dd/MM/yyyy HH:mm').parse(_dateController.text);
       String isoDate = DateFormat("yyyy-MM-ddTHH:mm:ss.SSS'Z'").format(parsedDate);
-
       final bloc = context.read<IncomingBloc>();
       bloc.add(CreateIncoming(
         date: isoDate,
@@ -140,10 +128,11 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
               'good_id': item['id'],
               'quantity': item['quantity'].toString(),
               'price': item['price'].toString(),
+              'unit_id': item['unit_id'],
             }).toList(),
         organizationId: widget.organizationId ?? 1,
         salesFunnelId: 1,
-        approve: approve, // Передаем параметр approve
+        approve: approve,
       ));
     } catch (e) {
       setState(() => _isLoading = false);
@@ -156,7 +145,6 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
 
   void _showSnackBar(String message, bool isSuccess) {
     if (!mounted) return;
-
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -182,14 +170,12 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: _buildAppBar(localizations),
       body: BlocListener<IncomingBloc, IncomingState>(
         listener: (context, state) {
           setState(() => _isLoading = false);
-
           if (state is IncomingCreateSuccess && mounted) {
             Navigator.pop(context, true);
           } else if (state is IncomingCreateError && mounted) {
@@ -301,7 +287,7 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
         ),
         const SizedBox(height: 8),
         GestureDetector(
-          onTap: _openGoodsSelection,
+          onTap: _openVariantSelection,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
@@ -350,7 +336,6 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
 
   Widget _buildSelectedItemsList() {
     final total = _items.fold<double>(0, (sum, item) => sum + (item['total'] ?? 0.0));
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -380,6 +365,7 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
   }
 
   Widget _buildSelectedItemCard(int index, Map<String, dynamic> item, Animation<double> animation) {
+    final availableUnits = item['availableUnits'] as List<Unit>? ?? [];
     return FadeTransition(
       opacity: animation,
       child: SizeTransition(
@@ -441,6 +427,34 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
               const SizedBox(height: 12),
               Row(
                 children: [
+                  if (availableUnits.isNotEmpty) ...[
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            AppLocalizations.of(context)!.translate('unit') ?? 'Ед. изм.',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w400,
+                              color: Color(0xff99A4BA),
+                            ),
+                          ),
+                          Text(
+                            item['selectedUnit'] ?? '-',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xff1E2E52),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -574,7 +588,6 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
     );
   }
 
-  // Обновленный виджет кнопок действий ( + "Сохранить и провести")
   Widget _buildActionButtons(AppLocalizations localizations) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -668,22 +681,22 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
                   ),
                   child: _isLoading
                       ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
                       : Text(
-                    localizations.translate('save') ?? 'Сохранить',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
+                          localizations.translate('save') ?? 'Сохранить',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white,
+                          ),
+                        ),
                 ),
               ),
             ],
@@ -693,12 +706,10 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
     );
   }
 
-  // Новый метод для сохранения и проведения
   void _createAndApproveDocument() {
     _createDocument(approve: true);
   }
 
-  // Обновленный метод для обычного сохранения
   void _saveDocument() {
     _createDocument(approve: false);
   }
