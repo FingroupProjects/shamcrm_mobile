@@ -158,8 +158,8 @@ class _HomeScreenState extends State<HomeScreen> {
       widgetsGroup2.add(WarehouseAccountingScreen());
       titleKeysGroup2.add('appbar_warehouse');
       navBarTitleKeysGroup2.add('appbar_warehouse');
-      activeIconsGroup2.add('assets/icons/MyNavBar/goods_ON.png');
-      inactiveIconsGroup2.add('assets/icons/MyNavBar/goods_OFF.png');
+         activeIconsGroup2.add('assets/icons/MyNavBar/money_ON.png');
+    inactiveIconsGroup2.add('assets/icons/MyNavBar/money_OFF.png');
       hasAvailableScreens = true;
     }
 
@@ -167,8 +167,8 @@ class _HomeScreenState extends State<HomeScreen> {
     widgetsGroup2.add(MoneyScreen());
     titleKeysGroup2.add('money');
     navBarTitleKeysGroup2.add('money');
-    activeIconsGroup2.add('assets/icons/MyNavBar/money_ON.png');
-    inactiveIconsGroup2.add('assets/icons/MyNavBar/money_OFF.png');
+    activeIconsGroup2.add('assets/icons/MyNavBar/coins_ON.png');
+    inactiveIconsGroup2.add('assets/icons/MyNavBar/coins_OFF.png');
 
     if (mounted) {
       setState(() {
@@ -192,6 +192,7 @@ class _HomeScreenState extends State<HomeScreen> {
       });
     }
   }
+  
 
   @override
   void didChangeDependencies() {

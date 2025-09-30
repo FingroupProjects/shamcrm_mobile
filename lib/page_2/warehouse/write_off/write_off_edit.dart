@@ -1,13 +1,15 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/write_off/write_off_bloc.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/variant_bloc/variant_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/variant_bloc/variant_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
+import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/storage_widget.dart';
-import 'package:crm_task_manager/page_2/widgets/simple_goods_Selection_Bottom_Sheet.dart';
+import 'package:crm_task_manager/page_2/warehouse/incoming/variant_selection_bottom_sheet.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
@@ -29,19 +31,22 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _dateController = TextEditingController();
   final TextEditingController _commentController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   String? _selectedStorage;
   List<Map<String, dynamic>> _items = [];
   bool _isLoading = false;
+  final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
+  final Map<int, TextEditingController> _quantityControllers = {};
+  final Map<int, bool> _quantityErrors = {};
 
   @override
   void initState() {
     super.initState();
     _initializeFormData();
-    context.read<GoodsBloc>().add(FetchGoods());
+    context.read<VariantBloc>().add(FetchVariants());
   }
 
   void _initializeFormData() {
-    // Заполняем поля данными из документа
     _dateController.text = widget.document.date != null 
         ? DateFormat('dd/MM/yyyy HH:mm').format(widget.document.date!)
         : DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
@@ -49,107 +54,192 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
     _commentController.text = widget.document.comment ?? '';
     _selectedStorage = widget.document.storage?.id?.toString();
     
-    // Преобразуем существующие товары в формат для редактирования (только количество)
     if (widget.document.documentGoods != null) {
-      _items = widget.document.documentGoods!.map<Map<String, dynamic>>((good) {
-        return <String, dynamic>{
+      for (var good in widget.document.documentGoods!) {
+        final variantId = good.variantId ?? good.good?.id ?? 0;
+        final quantity = good.quantity ?? 0;
+        final availableUnits = good.good?.units ?? [];
+        final selectedUnitId = good.unitId;
+        final selectedUnitObj = availableUnits.firstWhere(
+          (unit) => unit.id == selectedUnitId,
+          orElse: () => availableUnits.isNotEmpty ? availableUnits.first : Unit(id: 23, name: 'шт', shortName: 'шт'),
+        );
+        
+        _items.add({
           'id': good.good?.id ?? 0,
-          'name': good.good?.name ?? '',
-          'quantity': good.quantity ?? 0,
-        };
-      }).toList();
+          'variantId': variantId,
+          'name': good.fullName ?? good.good?.name ?? '',
+          'quantity': quantity,
+          'selectedUnit': selectedUnitObj.shortName ?? selectedUnitObj.name,
+          'unit_id': selectedUnitObj.id,
+          'availableUnits': availableUnits,
+        });
+        
+        _quantityControllers[variantId] = TextEditingController(text: quantity.toString());
+        _quantityErrors[variantId] = false;
+      }
     }
   }
 
-  void _handleGoodsSelection(List<Map<String, dynamic>> newItems) {
-    if (!mounted) return;
-    
-    setState(() {
-      for (var newItem in newItems) {
-        // Ищем, есть ли уже такой товар в списке
-        int existingIndex = -1;
-        for (int i = 0; i < _items.length; i++) {
-          if (_items[i]['id'] == newItem['id']) {
-            existingIndex = i;
-            break;
-          }
-        }
+  void _handleVariantSelection(Map<String, dynamic>? newItem) {
+    if (mounted && newItem != null) {
+      setState(() {
+        final existingIndex = _items.indexWhere((item) => item['variantId'] == newItem['variantId']);
         
-        if (existingIndex != -1) {
-          // Если товар уже есть, "обновляем" количество
-          //int existingQuantity = _items[existingIndex]['quantity'] as int;
-          int newQuantity = newItem['quantity'] as int;
+        if (existingIndex == -1) {
+          _items.add(newItem);
           
-          _items[existingIndex] = <String, dynamic>{
-            'id': _items[existingIndex]['id'],
-            'name': _items[existingIndex]['name'],
-            'quantity': newQuantity,
-          };
-        } else {
-          // Если товара нет, добавляем новый
-          _items.add(<String, dynamic>{
-            'id': newItem['id'],
-            'name': newItem['name'],
-            'quantity': newItem['quantity'],
+          final variantId = newItem['variantId'] as int;
+          _quantityControllers[variantId] = TextEditingController();
+          _quantityErrors[variantId] = false;
+          
+          _listKey.currentState?.insertItem(
+            _items.length - 1,
+            duration: const Duration(milliseconds: 300),
+          );
+          
+          Future.delayed(const Duration(milliseconds: 350), () {
+            if (mounted && _scrollController.hasClients) {
+              _scrollController.animateTo(
+                _scrollController.position.maxScrollExtent,
+                duration: const Duration(milliseconds: 400),
+                curve: Curves.easeOut,
+              );
+            }
           });
         }
+      });
+    }
+  }
+
+  void _removeItem(int index) {
+    if (mounted) {
+      final removedItem = _items[index];
+      final variantId = removedItem['variantId'] as int;
+      
+      setState(() {
+        _items.removeAt(index);
+        
+        _quantityControllers[variantId]?.dispose();
+        _quantityControllers.remove(variantId);
+        _quantityErrors.remove(variantId);
+        
+        _listKey.currentState?.removeItem(
+          index,
+          (context, animation) => _buildSelectedItemCard(index, removedItem, animation),
+          duration: const Duration(milliseconds: 300),
+        );
+      });
+    }
+  }
+
+  void _openVariantSelection() async {
+    final result = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => VariantSelectionBottomSheet(
+        existingItems: _items,
+      ),
+    );
+    
+    if (result != null) {
+      _handleVariantSelection(result);
+    }
+  }
+
+  void _updateItemQuantity(int variantId, String value) {
+    final quantity = int.tryParse(value);
+    if (quantity != null && quantity > 0) {
+      setState(() {
+        final index = _items.indexWhere((item) => item['variantId'] == variantId);
+        if (index != -1) {
+          _items[index]['quantity'] = quantity;
+        }
+        _quantityErrors[variantId] = false;
+      });
+    } else if (value.isEmpty) {
+      setState(() {
+        final index = _items.indexWhere((item) => item['variantId'] == variantId);
+        if (index != -1) {
+          _items[index]['quantity'] = 0;
+        }
+      });
+    }
+  }
+
+  void _updateItemUnit(int variantId, String newUnit, int? newUnitId) {
+    setState(() {
+      final index = _items.indexWhere((item) => item['variantId'] == variantId);
+      if (index != -1) {
+        _items[index]['selectedUnit'] = newUnit;
+        _items[index]['unit_id'] = newUnitId;
       }
     });
   }
 
-  void _removeItem(int index) {
-    if (!mounted) return;
-    
-    setState(() {
-      _items.removeAt(index);
-    });
-  }
-
-  void _openGoodsSelection() async {
-    final result = await showModalBottomSheet<List<Map<String, dynamic>>>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => SimpleGoodsSelectionBottomSheet(
-        existingItems: _items,
-        buttonText: AppLocalizations.of(context)!.translate('replace') ?? 'Заменить',
-      ),
-    );
-
-    if (result != null && result.isNotEmpty) {
-      _handleGoodsSelection(result);
-    }
-  }
-
   void _updateDocument() async {
     if (!_formKey.currentState!.validate()) return;
-
+    
     if (_items.isEmpty) {
-      _showSnackBar('Добавьте хотя бы один товар', false);
+      _showSnackBar(
+        AppLocalizations.of(context)!.translate('add_at_least_one_item') ?? 'Добавьте хотя бы один товар',
+        false,
+      );
       return;
     }
 
     if (_selectedStorage == null) {
-      _showSnackBar('Выберите склад', false);
+      _showSnackBar(
+        AppLocalizations.of(context)!.translate('select_storage') ?? 'Выберите склад',
+        false,
+      );
+      return;
+    }
+
+    bool hasErrors = false;
+    setState(() {
+      _quantityErrors.clear();
+      
+      for (var item in _items) {
+        final variantId = item['variantId'] as int;
+        final quantityController = _quantityControllers[variantId];
+        
+        if (quantityController == null || 
+            quantityController.text.trim().isEmpty || 
+            (int.tryParse(quantityController.text) ?? 0) <= 0) {
+          _quantityErrors[variantId] = true;
+          hasErrors = true;
+        }
+      }
+    });
+
+    if (hasErrors) {
+      _showSnackBar(
+        AppLocalizations.of(context)!.translate('fill_all_required_fields') ?? 'Заполните все обязательные поля',
+        false,
+      );
       return;
     }
 
     setState(() => _isLoading = true);
 
     try {
-      DateTime? parsedDate = DateFormat('dd/MM/yyyy HH:mm').parse(_dateController.text);
+      DateTime parsedDate = DateFormat('dd/MM/yyyy HH:mm').parse(_dateController.text);
       String isoDate = DateFormat("yyyy-MM-ddTHH:mm:ss.SSS'Z'").format(parsedDate);
 
-      final bloc = context.read<WriteOffBloc>();
-      bloc.add(UpdateWriteOffDocument(
+      context.read<WriteOffBloc>().add(UpdateWriteOffDocument(
         documentId: widget.document.id!,
         date: isoDate,
         storageId: int.parse(_selectedStorage!),
         comment: _commentController.text.trim(),
-        documentGoods: _items.map((item) => {
-              'good_id': item['id'],
-              'quantity': item['quantity'].toString(),
-            }).toList(),
+        documentGoods: _items.map((item) {
+          return {
+            'good_id': item['id'],
+            'quantity': item['quantity'].toString(),
+            'unit_id': item['unit_id'] ?? 23,
+          };
+        }).toList(),
         organizationId: widget.document.organizationId ?? 1,
       ));
     } catch (e) {
@@ -200,8 +290,7 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
           if (state is WriteOffUpdateSuccess && mounted) {
             Navigator.pop(context, true);
           } else if (state is WriteOffUpdateError && mounted) {
-            if (state.statusCode  == 409) {
-              final localizations = AppLocalizations.of(context)!;
+            if (state.statusCode == 409) {
               showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
               return;
             }
@@ -214,14 +303,13 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
             children: [
               Expanded(
                 child: SingleChildScrollView(
+                  controller: _scrollController,
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 8),
                       _buildDateField(localizations),
-                      const SizedBox(height: 16),
-                      _buildGoodsSection(localizations),
                       const SizedBox(height: 16),
                       StorageWidget(
                         selectedStorage: _selectedStorage,
@@ -230,6 +318,7 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
                       const SizedBox(height: 16),
                       _buildCommentField(localizations),
                       const SizedBox(height: 16),
+                      _buildGoodsSection(localizations),
                     ],
                   ),
                 ),
@@ -303,50 +392,38 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
           ),
         ),
         const SizedBox(height: 8),
-        GestureDetector(
-          onTap: _openGoodsSelection,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF4F7FD),
+        if (_items.isNotEmpty) ...[
+          _buildSelectedItemsList(),
+          const SizedBox(height: 12),
+        ],
+        ElevatedButton(
+          onPressed: _openVariantSelection,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xff4759FF),
+            shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: const Color(0xFFE5E7EB),
-                width: 1,
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            elevation: 0,
+            minimumSize: const Size(double.infinity, 48),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.add, color: Colors.white, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                localizations.translate('add_good') ?? 'Добавить товар',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
               ),
-            ),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.shopping_cart_outlined,
-                  color: Color(0xff4759FF),
-                  size: 24,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    _items.isEmpty
-                        ? (localizations.translate('add_goods') ?? 'Добавить товары')
-                        : '${localizations.translate('selected_goods') ?? 'Выбрано товаров'}: ${_items.length}',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xff1E2E52),
-                    ),
-                  ),
-                ),
-                const Icon(
-                  Icons.arrow_forward_ios,
-                  color: Color(0xff99A4BA),
-                  size: 16,
-                ),
-              ],
-            ),
+            ],
           ),
         ),
-        const SizedBox(height: 16),
-        if (_items.isNotEmpty) _buildSelectedItemsList(),
       ],
     );
   }
@@ -355,114 +432,243 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          AppLocalizations.of(context)!.translate('selected_goods') ?? 'Выбранные товары',
-          style: const TextStyle(
-            fontSize: 16,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
-          ),
-        ),
-        const SizedBox(height: 8),
-        ListView.builder(
+        AnimatedList(
+          key: _listKey,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          itemCount: _items.length,
-          itemBuilder: (context, index) {
-            return _buildSelectedItemCard(index, _items[index]);
+          initialItemCount: _items.length,
+          itemBuilder: (context, index, animation) {
+            return _buildSelectedItemCard(index, _items[index], animation);
           },
         ),
       ],
     );
   }
 
-  Widget _buildSelectedItemCard(int index, Map<String, dynamic> item) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xffF4F7FD)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: const Color(0xffF4F7FD),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(
-                  Icons.shopping_cart_outlined,
-                  color: Color(0xff4759FF),
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  item['name']?.toString() ?? '',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xff1E2E52),
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.close, color: Color(0xff99A4BA), size: 20),
-                onPressed: () => _removeItem(index),
+  Widget _buildSelectedItemCard(int index, Map<String, dynamic> item, Animation<double> animation) {
+    final availableUnits = item['availableUnits'] as List<Unit>? ?? [];
+    final variantId = item['variantId'] as int;
+    final quantityController = _quantityControllers[variantId];
+
+    return FadeTransition(
+      opacity: animation,
+      child: SizeTransition(
+        sizeFactor: animation,
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xffF4F7FD)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                spreadRadius: 1,
+                blurRadius: 5,
+                offset: const Offset(0, 2),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      AppLocalizations.of(context)!.translate('quantity') ?? 'Количество',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w400,
-                        color: Color(0xff99A4BA),
-                      ),
+              Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: const Color(0xffF4F7FD),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    Text(
-                      item['quantity']?.toString() ?? '0',
+                    child: const Icon(
+                      Icons.delete_outline,
+                      color: Color(0xff4759FF),
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      item['name'] ?? '',
                       style: const TextStyle(
-                        fontSize: 14,
+                        fontSize: 13,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w600,
                         color: Color(0xff1E2E52),
                       ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ],
-                ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Color(0xff99A4BA), size: 18),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    onPressed: () => _removeItem(index),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              const Divider(height: 1, color: Color(0xFFE5E7EB)),
+              const SizedBox(height: 10),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (availableUnits.isNotEmpty)
+                    Expanded(
+                      flex: 2,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            AppLocalizations.of(context)!.translate('unit') ?? 'Ед.',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w400,
+                              color: Color(0xff99A4BA),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          if (availableUnits.length > 1)
+                            Container(
+                              height: 36,
+                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF4F7FD),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: const Color(0xFFE5E7EB)),
+                              ),
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  value: item['selectedUnit'],
+                                  isDense: true,
+                                  isExpanded: true,
+                                  dropdownColor: Colors.white,
+                                  icon: const Icon(Icons.arrow_drop_down, size: 16, color: Color(0xff4759FF)),
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontFamily: 'Gilroy',
+                                    fontWeight: FontWeight.w500,
+                                    color: Color(0xff1E2E52),
+                                  ),
+                                  items: availableUnits.map((unit) {
+                                    return DropdownMenuItem<String>(
+                                      value: unit.shortName ?? unit.name,
+                                      child: Text(unit.shortName ?? unit.name),
+                                    );
+                                  }).toList(),
+                                  onChanged: (String? newValue) {
+                                    if (newValue != null) {
+                                      final selectedUnit = availableUnits.firstWhere(
+                                        (unit) => (unit.shortName ?? unit.name) == newValue,
+                                      );
+                                      _updateItemUnit(variantId, newValue, selectedUnit.id);
+                                    }
+                                  },
+                                ),
+                              ),
+                            )
+                          else
+                            Container(
+                              height: 36,
+                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF4F7FD),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: const Color(0xFFE5E7EB)),
+                              ),
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                item['selectedUnit'] ?? 'шт',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontFamily: 'Gilroy',
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xff1E2E52),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  if (availableUnits.isNotEmpty) const SizedBox(width: 8),
+                  Expanded(
+                    flex: 3,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          AppLocalizations.of(context)!.translate('quantity') ?? 'Кол-во',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w400,
+                            color: Color(0xff99A4BA),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        SizedBox(
+                          height: 36,
+                          child: TextField(
+                            controller: quantityController,
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                            ],
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xff1E2E52),
+                            ),
+                            decoration: InputDecoration(
+                              hintText: AppLocalizations.of(context)!.translate('quantity') ?? 'Количество',
+                              hintStyle: const TextStyle(
+                                fontSize: 12,
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w400,
+                                color: Color(0xff99A4BA),
+                              ),
+                              filled: true,
+                              fillColor: const Color(0xFFF4F7FD),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(
+                                  color: _quantityErrors[variantId] == true ? Colors.red : const Color(0xFFE5E7EB),
+                                  width: _quantityErrors[variantId] == true ? 2 : 1,
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(
+                                  color: _quantityErrors[variantId] == true ? Colors.red : const Color(0xFFE5E7EB),
+                                  width: _quantityErrors[variantId] == true ? 2 : 1,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(
+                                  color: _quantityErrors[variantId] == true ? Colors.red : const Color(0xff4759FF),
+                                  width: _quantityErrors[variantId] == true ? 2 : 1.5,
+                                ),
+                              ),
+                            ),
+                            onChanged: (value) => _updateItemQuantity(variantId, value),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -546,6 +752,10 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
   void dispose() {
     _dateController.dispose();
     _commentController.dispose();
+    _scrollController.dispose();
+    for (var controller in _quantityControllers.values) {
+      controller.dispose();
+    }
     super.dispose();
   }
 }

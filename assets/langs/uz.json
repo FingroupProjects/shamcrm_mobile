@@ -1441,7 +1441,23 @@
   "document_updated_and_approve_toggled_successfully": "Hujjat muvaffaqiyatli yangilandi va status o‘zgartirildi",
   "replace": "Almashtirish",
   "more_details": "Batafsil",
-  "top_selling_products": "Eng ko‘p sotilgan mahsulotlar"
+  "current_month": "Joriy oy",
+  "quarter": "Chorak",
+  "pending": "Kutilmoqda",
+  "cancelled": "Bekor qilingan",
+  "top_selling_products": "Eng ko‘p sotilgan mahsulotlar",
+  "appbar_sales_dashboard": "Dashboard",
+  "session_expired_title": "Sessiya tugadi",
+  "session_expired_description": "Siz tizimdan chiqdingiz.\nDavom etish uchun qayta kiring.",
+  "understand_and_exit": "Chiqish",
+  "select_variants": "Variantlarni tanlash",
+  "search_variants": "Mahsulotlarni qidirish",
+  "no_variants_found": "Variantlar topilmadi",
+  "unit": "O‘lchov birligi",
+  "add_good": "Mahsulot qo‘shish",
+  "select_variant": "Mahsulotni tanlang",
+  "pieces": "dona",
+  "storages_must_be_different": "Yuboruvchi va qabul qiluvchi omborlar turlicha bo‘lishi kerak"
 
 
 

@@ -17,7 +17,7 @@ class FetchWriteOffs extends WriteOffEvent {
     this.forceRefresh = false,
     this.filters,
     this.status,
-    this.search,
+    this.search, 
   });
 
   @override

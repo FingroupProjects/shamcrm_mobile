@@ -37,6 +37,9 @@ class IncomingDocument {
   final int? counterpartyAgreementId;
   final int? organizationId;
   final WareHouse? storage;
+    final WareHouse? sender_storage_id;
+  final WareHouse? recipient_storage_id;
+
   final String? comment;
   final Currency? currency;
   final List<DocumentGood>? documentGoods;
@@ -55,6 +58,8 @@ class IncomingDocument {
     this.counterpartyAgreementId,
     this.organizationId,
     this.storage,
+    this.sender_storage_id,
+    this.recipient_storage_id,
     this.comment,
     this.currency,
     this.documentGoods,
@@ -92,6 +97,8 @@ class IncomingDocument {
       organizationId: _parseInt(json['organization_id']), // Теперь безопасно обрабатывает и строки и числа
       storage:
           json['storage'] != null ? WareHouse.fromJson(json['storage']) : null,
+      sender_storage_id: json['sender_storage_id'] != null ? WareHouse.fromJson(json['sender_storage_id']) : null,
+      recipient_storage_id: json['recipient_storage_id'] != null ? WareHouse.fromJson(json['recipient_storage_id']) : null,
       comment: json['comment'],
       currency:
           json['currency'] != null ? Currency.fromJson(json['currency']) : null,
