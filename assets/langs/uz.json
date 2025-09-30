@@ -1356,6 +1356,7 @@
   "selected_lead_data_debug": "Tanlangan lid ma'lumotlari: {data}",
   "error_selecting_lead_debug": "Lidni tanlashda xatolik: {error}",
   "edit_incoming_document": "Tushum tahrirlash",
+  "edit_client_sale": "Tahrirlash",
   "add_incoming_document": "Tushum qo'shish",
   "status_deleted": "o'chirilgan",
   "status_not_deleted": "o'chirilmagan",
