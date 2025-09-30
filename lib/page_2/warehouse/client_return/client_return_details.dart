@@ -42,6 +42,12 @@ class _ClientReturnDocumentDetailsScreenState
   String? baseUrl;
   bool _documentUpdated = false;
 
+  // Map to store unit details (id -> shortName)
+  final Map<int, String> _unitMap = {
+    23: 'шт', // Based on JSON unit_id: 23
+    // Add more mappings or fetch dynamically
+  };
+
   @override
   void initState() {
     super.initState();
@@ -646,105 +652,162 @@ class _ClientReturnDocumentDetailsScreenState
   }
 
   Widget _buildGoodsItem(DocumentGood good) {
+    final unitShortName = good.good?.unitId != null
+        ? _unitMap[good.good!.unitId] ?? 'шт'
+        : 'шт';
+
     return GestureDetector(
       onTap: () {
         _navigateToGoodsDetails(good);
       },
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.symmetric(vertical: 6),
         child: Container(
           decoration: TaskCardStyles.taskCardDecoration,
           child: Padding(
-            padding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
+            padding: const EdgeInsets.all(12),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                _buildImageWidget(good),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        good.good?.name ?? 'N/A',
-                        style: TaskCardStyles.titleStyle,
+                        good.fullName ?? good.good?.name ?? 'N/A',
+                        style: TaskCardStyles.titleStyle.copyWith(fontSize: 14),
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 8),
                       Row(
                         children: [
-                          Text(
-                            AppLocalizations.of(context)!.translate('quantity') ?? 'Количество',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xff1E2E52),
+                          // Ед. изм.
+                          Expanded(
+                            flex: 2,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  // change this
+                                  AppLocalizations.of(context)!.translate('unit') ?? 'Ед.',
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    fontFamily: 'Gilroy',
+                                    fontWeight: FontWeight.w400,
+                                    color: Color(0xff99A4BA),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  unitShortName,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontFamily: 'Gilroy',
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xff1E2E52),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          Text(
-                            '${good.quantity ?? 0}',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xff1E2E52),
+                          // Количество
+                          Expanded(
+                            flex: 2,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  AppLocalizations.of(context)!.translate('quantity') ?? 'Кол-во',
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    fontFamily: 'Gilroy',
+                                    fontWeight: FontWeight.w400,
+                                    color: Color(0xff99A4BA),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '${good.quantity ?? 0}',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontFamily: 'Gilroy',
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xff1E2E52),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          // Цена
+                          Expanded(
+                            flex: 3,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  AppLocalizations.of(context)!.translate('price') ?? 'Цена',
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    fontFamily: 'Gilroy',
+                                    fontWeight: FontWeight.w400,
+                                    color: Color(0xff99A4BA),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '${(double.tryParse(good.price ?? '0.00') ?? 0.00).toStringAsFixed(2)}',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontFamily: 'Gilroy',
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xff1E2E52),
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Text(
-                            AppLocalizations.of(context)!.translate('price') ?? 'Цена',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xff1E2E52),
+                      const SizedBox(height: 8),
+                      // Итого на отдельной строке
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF4F7FD),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                            Text(
+                              AppLocalizations.of(context)!.translate('total') ?? 'Итого',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xff1E2E52),
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            '${good.price ?? '0.00'} ${currentDocument!.currency?.symbolCode ?? ''}',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xff1E2E52),
+                            const SizedBox(width: 8),
+                            Text(
+                              '${((good.quantity ?? 0) * (double.tryParse(good.price ?? '0') ?? 0)).toStringAsFixed(2)} ${currentDocument!.currency?.symbolCode ?? ''}',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xff4CAF50),
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Text(
-                            AppLocalizations.of(context)!.translate('total') ?? 'Сумма',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xff1E2E52),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            '${((good.quantity ?? 0) * double.parse(good.price?.toString() ?? '0')).toStringAsFixed(2)} ${currentDocument!.currency?.symbolCode ?? ''}',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xff4CAF50),
-                            ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 16),
-                _buildImageWidget(good),
               ],
             ),
           ),

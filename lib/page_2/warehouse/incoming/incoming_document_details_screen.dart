@@ -72,20 +72,6 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
     }
   }
 
-  // Optional: Fetch units if available via API
-  /*
-  Future<void> _fetchUnits() async {
-    try {
-      final units = await _apiService.getUnits();
-      setState(() {
-        _unitMap.addAll({for (var unit in units) unit.id!: unit.shortName ?? unit.name ?? 'шт'});
-      });
-    } catch (e) {
-      print('Error fetching units: $e');
-    }
-  }
-  */
-
   Future<void> _fetchDocumentDetails() async {
     setState(() {
       _isLoading = true;
@@ -106,7 +92,10 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
         showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
         return;
       }
-      _showSnackBar('Ошибка загрузки документа: $e', false);
+      _showSnackBar(
+          AppLocalizations.of(context)!.translate('error_loading_document') ??
+              'Ошибка загрузки документа: $e',
+          false);
     }
   }
 
@@ -704,6 +693,7 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
+                                  // change this
                                   AppLocalizations.of(context)!.translate('unit') ?? 'Ед.',
                                   style: const TextStyle(
                                     fontSize: 10,
@@ -827,6 +817,7 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
       ),
     );
   }
+
   Widget _buildImageWidget(DocumentGood good) {
     if (baseUrl == null || good.good == null || good.good!.files == null || good.good!.files!.isEmpty) {
       return _buildPlaceholderImage();
