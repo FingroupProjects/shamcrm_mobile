@@ -27,7 +27,6 @@ class MovementCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
     if (localizations == null) {
-      // Fallback если локализация недоступна
       return const SizedBox.shrink();
     }
 
@@ -56,7 +55,7 @@ class MovementCard extends StatelessWidget {
                         children: [
                           Expanded(
                             child: Text(
-                              '${localizations.translate('empty_0') ?? 'Документ'}№${document.docNumber ?? ''}',
+                              '№${document.docNumber ?? ''}',
                               style: TaskCardStyles.titleStyle,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -87,10 +86,6 @@ class MovementCard extends StatelessWidget {
                       _buildRecipientStorageRow(localizations),
                       const SizedBox(height: 8),
                       _buildQuantityRow(localizations),
-                      // if (document.comment != null && document.comment!.isNotEmpty) ...[
-                      //   const SizedBox(height: 8),
-                      //   _buildCommentRow(localizations),
-                      // ],
                     ],
                   ),
                 ),
@@ -99,7 +94,7 @@ class MovementCard extends StatelessWidget {
                     padding: const EdgeInsets.only(left: 8),
                     child: Icon(
                       isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
-                      color: Color(0xff1E2E52),
+                      color: const Color(0xff1E2E52),
                       size: 24,
                     ),
                   ),
@@ -124,7 +119,7 @@ class MovementCard extends StatelessWidget {
         Text(
           document.date != null
               ? DateFormat('dd.MM.yyyy').format(document.date!)
-              : (localizations.translate('empty_0') ?? 'Дата не указана'),
+              : (localizations.translate('date_not_specified') ?? 'Дата не указана'),
           style: const TextStyle(
             fontSize: 14,
             fontFamily: 'Gilroy',
@@ -140,14 +135,14 @@ class MovementCard extends StatelessWidget {
     return Row(
       children: [
         const Icon(
-          Icons.warehouse,
+          Icons.outbox,
           size: 16,
           color: Color(0xff99A4BA),
         ),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
-            '${localizations.translate('empty_0') ?? 'От'}${document.storage?.name ?? (localizations.translate('no_storage') ?? 'Склад не указан')}',
+            '${localizations.translate('sender_storage') ?? 'От'}: ${document.sender_storage_id?.name ?? document.storage?.name ?? (localizations.translate('no_storage') ?? 'Не указан')}',
             style: const TextStyle(
               fontSize: 14,
               fontFamily: 'Gilroy',
@@ -165,14 +160,14 @@ class MovementCard extends StatelessWidget {
     return Row(
       children: [
         const Icon(
-          Icons.warehouse_outlined,
+          Icons.inbox,
           size: 16,
           color: Color(0xff99A4BA),
         ),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
-            '${localizations.translate('empty_0') ?? 'К'}${_getRecipientStorageName(document, localizations)}',
+            '${localizations.translate('recipient_storage') ?? 'К'}: ${document.recipient_storage_id?.name ?? (localizations.translate('no_storage') ?? 'Не указан')}',
             style: const TextStyle(
               fontSize: 14,
               fontFamily: 'Gilroy',
@@ -203,24 +198,9 @@ class MovementCard extends StatelessWidget {
     );
   }
 
-  Widget _buildCommentRow(AppLocalizations localizations) {
-    return Text(
-      '${localizations.translate('comment') ?? 'Комментарий'}: ${document.comment}',
-      style: const TextStyle(
-        fontSize: 12,
-        fontFamily: 'Gilroy',
-        fontWeight: FontWeight.w400,
-        color: Color(0xff99A4BA),
-      ),
-      maxLines: 2,
-      overflow: TextOverflow.ellipsis,
-    );
-  }
-
   String _getLocalizedStatus(BuildContext context, IncomingDocument document) {
     final localizations = AppLocalizations.of(context);
     if (localizations == null) {
-      // Fallback на английский/русский если локализация недоступна
       if (document.deletedAt != null) return 'Удален';
       return document.approved == 1 ? 'Проведен' : 'Не проведен';
     }
@@ -234,14 +214,5 @@ class MovementCard extends StatelessWidget {
     } else {
       return localizations.translate('not_approved') ?? 'Не проведен';
     }
-  }
-
-  String _getRecipientStorageName(IncomingDocument document, AppLocalizations localizations) {
-    // В реальном проекте здесь должно быть получение склада получателя из модели
-    // Пока используем заглушку, так как в текущей модели нет поля для склада получателя
-
-    // Сначала пытаемся получить данные из JSON документа (если есть поле recipient_storage)
-    // или используем заглушку
-    return localizations.translate('recipient_storage_name') ?? 'Склад получатель';
   }
 }

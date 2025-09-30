@@ -167,20 +167,20 @@ class WriteOffCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  if (document.comment != null && document.comment!.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      '${localizations.translate('comment') ?? 'Комментарий'}: ${document.comment}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w400,
-                        color: Color(0xff99A4BA),
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
+                  // if (document.comment != null && document.comment!.isNotEmpty) ...[
+                  //   const SizedBox(height: 8),
+                  //   Text(
+                  //     '${localizations.translate('comment') ?? 'Комментарий'}: ${document.comment}',
+                  //     style: const TextStyle(
+                  //       fontSize: 12,
+                  //       fontFamily: 'Gilroy',
+                  //       fontWeight: FontWeight.w400,
+                  //       color: Color(0xff99A4BA),
+                  //     ),
+                  //     maxLines: 2,
+                  //     overflow: TextOverflow.ellipsis,
+                  //   ),
+                  // ],
                 ],
               ),
             ),

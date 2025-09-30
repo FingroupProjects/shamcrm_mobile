@@ -75,7 +75,7 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
       'selectedUnit': variant.availableUnits.isNotEmpty
           ? (variant.availableUnits.first.shortName ?? variant.availableUnits.first.name)
           : null,
-      'unit_id': variant.availableUnits.isNotEmpty ? variant.availableUnits.first.id : 23,
+      'unit_id': variant.availableUnits.isNotEmpty ? variant.availableUnits.first.id : 2,
       'amount': firstUnitAmount, // Добавляем amount
       'availableUnits': variant.availableUnits,
     };

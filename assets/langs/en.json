@@ -1437,7 +1437,19 @@
     "replace": "Replace",
     "more_details":"More details",
     "top_selling_products":"Top selling products",
-    "appbar_sales_dashboard": "Dashboard"
+    "appbar_sales_dashboard": "Dashboard",
+    "cancelled": "Cancelled",
+  "session_expired_title": "Session Expired",
+  "session_expired_description": "You have been logged out.\nPlease log in again to continue working.",
+  "understand_and_exit": "Exit",
+  "select_variants": "Select Variants",
+  "search_variants": "Search Products",
+  "no_variants_found": "No Variants Found",
+  "unit": "Unit",
+  "add_good": "Add Product",
+  "select_variant": "Select Product",
+  "pieces": "pcs",
+  "storages_must_be_different": "The source and destination warehouses must be different"
 
 
 

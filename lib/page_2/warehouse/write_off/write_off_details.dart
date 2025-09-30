@@ -4,8 +4,8 @@ import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/models/api_exception_model.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
+import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/goods_details_screen.dart';
-
 import 'package:crm_task_manager/page_2/warehouse/incoming/styled_action_button.dart';
 import 'package:crm_task_manager/page_2/warehouse/write_off/write_off_delete.dart';
 import 'package:crm_task_manager/page_2/warehouse/write_off/write_off_edit.dart';
@@ -40,6 +40,9 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
   bool _isButtonLoading = false;
   String? baseUrl;
   bool _documentUpdated = false;
+  final Map<int, String> _unitMap = {
+    23: 'шт',
+  };
 
   @override
   void initState() {
@@ -229,10 +232,10 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
     });
     try {
       await _apiService.restoreWriteOffDocument(widget.documentId);
-      await _fetchDocumentDetails(); // Полное обновление данных после восстановления
+      await _fetchDocumentDetails();
       _documentUpdated = true;
       _showSnackBar(AppLocalizations.of(context)!.translate('document_restored') ?? 'Документ восстановлен', true);
-      context.read<WriteOffBloc>().add(FetchWriteOffs(forceRefresh: true));
+      context.read<WriteOffBloc>().add(FetchWriteOffs());
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
@@ -489,13 +492,11 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
                           );
                         },
                       );
-                      
                       if (result == true) {
-                        // Document was deleted successfully
                         if (widget.onDocumentUpdated != null) {
                           widget.onDocumentUpdated!();
                         }
-                        Navigator.of(context).pop(true); // Close details screen
+                        Navigator.of(context).pop(true);
                       }
                     },
                   ),
@@ -609,48 +610,93 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
   }
 
   Widget _buildGoodsItem(DocumentGood good) {
+    final availableUnits = good.good?.units ?? [];
+    final selectedUnit = availableUnits.firstWhere(
+      (unit) => unit.id == good.unitId,
+      orElse: () => Unit(id: 23, name: 'шт', shortName: 'шт'),
+    );
+    final unitShortName = selectedUnit.shortName ?? selectedUnit.name ?? 'шт';
+
     return GestureDetector(
       onTap: () {
         _navigateToGoodsDetails(good);
       },
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.symmetric(vertical: 6),
         child: Container(
           decoration: TaskCardStyles.taskCardDecoration,
           child: Padding(
-            padding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
+            padding: const EdgeInsets.all(12),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                _buildImageWidget(good),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        good.good?.name ?? 'N/A',
-                        style: TaskCardStyles.titleStyle,
+                        good.fullName ?? good.good?.name ?? 'N/A',
+                        style: TaskCardStyles.titleStyle.copyWith(fontSize: 14),
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 8),
                       Row(
                         children: [
-                          Text(
-                            AppLocalizations.of(context)!.translate('quantity') ?? 'Количество',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xff1E2E52),
+                          Expanded(
+                            flex: 2,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  AppLocalizations.of(context)!.translate('unit') ?? 'Ед.',
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    fontFamily: 'Gilroy',
+                                    fontWeight: FontWeight.w400,
+                                    color: Color(0xff99A4BA),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  unitShortName,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontFamily: 'Gilroy',
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xff1E2E52),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          Text(
-                            '${good.quantity ?? 0}',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xff1E2E52),
+                          Expanded(
+                            flex: 3,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  AppLocalizations.of(context)!.translate('quantity') ?? 'Кол-во',
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    fontFamily: 'Gilroy',
+                                    fontWeight: FontWeight.w400,
+                                    color: Color(0xff99A4BA),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '${good.quantity ?? 0}',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontFamily: 'Gilroy',
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xff1E2E52),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
@@ -658,8 +704,6 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
                     ],
                   ),
                 ),
-                const SizedBox(width: 16),
-                _buildImageWidget(good),
               ],
             ),
           ),
