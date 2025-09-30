@@ -95,7 +95,7 @@ class ClientSaleDeleteDocumentDialog extends StatelessWidget {
                     onPressed: () {
                       context
                           .read<ClientSaleBloc>()
-                          .add(DeleteClientSalesDocument(documentId));
+                          .add(DeleteClientSale(documentId, AppLocalizations.of(context)!, shouldReload: true));
 
                       Navigator.of(context).pop();
                       Navigator.pop(context, true);
