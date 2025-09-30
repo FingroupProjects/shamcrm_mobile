@@ -795,12 +795,6 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                               _isPhoneEdited = true;
                             });
                           },
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return AppLocalizations.of(context)!.translate('field_required');
-                            }
-                            return null;
-                          },
                           label: AppLocalizations.of(context)!.translate('phone'),
                         ),
                         const SizedBox(height: 8),

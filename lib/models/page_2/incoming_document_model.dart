@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/storage_model.dart';
 import 'package:flutter/material.dart';
 
@@ -290,7 +291,7 @@ class Currency {
   }
 }
 
-class DocumentGood {
+ class DocumentGood {
   final int? id;
   final int? documentId;
   final int? variantId;
@@ -300,6 +301,8 @@ class DocumentGood {
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final List<Attribute>? attributes;
+  final String? fullName;
+  final int? unitId; // ИЗМЕНЕНО: int? вместо Unit?
 
   DocumentGood({
     this.id,
@@ -311,6 +314,8 @@ class DocumentGood {
     this.createdAt,
     this.updatedAt,
     this.attributes,
+    this.fullName,
+    this.unitId,
   });
 
   factory DocumentGood.fromJson(Map<String, dynamic> json) {
@@ -328,6 +333,8 @@ class DocumentGood {
               .map((i) => Attribute.fromJson(i))
               .toList()
           : null,
+      fullName: json['full_name'] as String?,
+      unitId: IncomingDocument._parseInt(json['unit_id']), // Правильно
     );
   }
 
@@ -342,10 +349,11 @@ class DocumentGood {
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
       'attributes': attributes?.map((e) => e.toJson()).toList(),
+      'full_name': fullName,
+      'unit_id': unitId,
     };
   }
 }
-
 class Good {
   final int? id;
   final String? oneCId;
@@ -353,7 +361,7 @@ class Good {
   final int? categoryId;
   final String? description;
   final String? price;
-  final int? unitId;
+  final int? unitId; // ИЗМЕНЕНО: int? вместо Unit?
   final int? quantity;
   final DateTime? deletedAt;
   final DateTime? createdAt;
@@ -365,6 +373,7 @@ class Good {
   final String? cip;
   final String? packageCode;
   final List<GoodFile>? files;
+  final List<Unit>? units; // ДОБАВЬТЕ это поле для списка единиц измерения
 
   Good({
     this.id,
@@ -385,6 +394,7 @@ class Good {
     this.cip,
     this.packageCode,
     this.files,
+    this.units, // ДОБАВЬТЕ
   });
 
   factory Good.fromJson(Map<String, dynamic> json) {
@@ -395,7 +405,7 @@ class Good {
       categoryId: IncomingDocument._parseInt(json['category_id']),
       description: json['description'],
       price: json['price'],
-      unitId: IncomingDocument._parseInt(json['unit_id']),
+      unitId: IncomingDocument._parseInt(json['unit_id']), // Правильно
       quantity: IncomingDocument._parseInt(json['quantity']),
       deletedAt: json['deleted_at'] != null
           ? DateTime.parse(json['deleted_at'])
@@ -414,6 +424,9 @@ class Good {
       packageCode: json['package_code'],
       files: json['files'] != null
           ? (json['files'] as List).map((i) => GoodFile.fromJson(i)).toList()
+          : null,
+      units: json['units'] != null // ДОБАВЬТЕ
+          ? (json['units'] as List).map((i) => Unit.fromJson(i)).toList()
           : null,
     );
   }
@@ -438,10 +451,10 @@ class Good {
       'cip': cip,
       'package_code': packageCode,
       'files': files?.map((e) => e.toJson()).toList(),
+      'units': units?.map,
     };
   }
 }
-
 class GoodFile {
   final int? id;
   final String? path;

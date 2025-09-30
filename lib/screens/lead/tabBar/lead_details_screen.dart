@@ -1390,14 +1390,14 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       return;
     }
 
-    if (currentLead?.phone == null || currentLead!.phone!.isEmpty) {
-      showCustomSnackBar(
-        context: context,
-        message: AppLocalizations.of(context)!.translate('phone_required'),
-        isSuccess: false,
-      );
-      return;
-    }
+    // if (currentLead?.phone == null || currentLead!.phone!.isEmpty) {
+    //   showCustomSnackBar(
+    //     context: context,
+    //     message: AppLocalizations.of(context)!.translate('phone_required'),
+    //     isSuccess: false,
+    //   );
+    //   return;
+    // }
 
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();

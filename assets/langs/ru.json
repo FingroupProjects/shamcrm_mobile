@@ -1447,5 +1447,13 @@
   "appbar_sales_dashboard": "Дашборд",
   "session_expired_title": "Сессия истекла",
   "session_expired_description": "Вы вышли из аккаунта.\nВойдите заново, чтобы продолжить работу.",
-  "understand_and_exit": "Dыйти"
+  "understand_and_exit": "Dыйти",
+  "select_variants": "Выбор вариантов",
+  "search_variants": "Поиск товаров",
+  "no_variants_found": "Варианты не найдены",
+  "unit": "Ед. изм.",
+  "add_good": "Добавить товар",
+  "select_variant": "Выберите товар",
+  "pieces": "шт"
+
 }
