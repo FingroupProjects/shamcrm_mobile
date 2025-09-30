@@ -1,3 +1,4 @@
+
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:flutter/foundation.dart';
 
@@ -11,6 +12,8 @@ class Variant {
   final Goods? good;
   bool isSelected;
   int quantitySelected;
+  String? selectedUnit;
+  final List<Unit> availableUnits;
 
   Variant({
     required this.id,
@@ -22,16 +25,17 @@ class Variant {
     this.good,
     this.isSelected = false,
     this.quantitySelected = 1,
+    this.selectedUnit,
+    this.availableUnits = const [],
   });
 
   factory Variant.fromJson(Map<String, dynamic> json) {
     if (kDebugMode) {
-      //print('VariantModel: Парсинг варианта - id: ${json['id']}');
+      print('VariantModel: Парсинг варианта - id: ${json['id']}');
     }
-
     final attributeValues = (json['attribute_values'] as List<dynamic>?)?.map((v) {
       if (kDebugMode) {
-        //print('VariantModel: Парсинг атрибута - value: ${v['value']}');
+        print('VariantModel: Парсинг атрибута - value: ${v['value']}');
       }
       return AttributeValue.fromJson(v as Map<String, dynamic>);
     }).toList() ?? [];
@@ -49,6 +53,15 @@ class Variant {
 
     final good = json['good'] != null ? Goods.fromJson(json['good'] as Map<String, dynamic>) : null;
 
+    // Парсим единицы измерения
+    final units = <Unit>[];
+    if (good?.units != null && good!.units!.isNotEmpty) {
+      units.addAll(good.units!);
+    }
+    if (good?.measurements != null && good!.measurements!.isNotEmpty) {
+      units.addAll(good.measurements!.map((m) => m.unit));
+    }
+
     return Variant(
       id: json['id'] as int? ?? 0,
       goodId: json['good_id'] as int? ?? 0,
@@ -59,6 +72,79 @@ class Variant {
       good: good,
       isSelected: false,
       quantitySelected: 1,
+      selectedUnit: units.isNotEmpty ? units.first.shortName ?? units.first.name : null,
+      availableUnits: units,
+    );
+  }
+}
+
+class AttributeValue {
+  final int id;
+  final int categoryAttributeId;
+  final String value;
+  final int? unitId;
+  final List<String>? files;
+  final CategoryAttribute? categoryAttribute;
+
+  AttributeValue({
+    required this.id,
+    required this.categoryAttributeId,
+    required this.value,
+    this.unitId,
+    this.files,
+    this.categoryAttribute,
+  });
+
+  factory AttributeValue.fromJson(Map<String, dynamic> json) {
+    return AttributeValue(
+      id: json['id'] as int? ?? 0,
+      categoryAttributeId: json['category_attribute_id'] as int? ?? 0,
+      value: json['value'] as String? ?? '',
+      unitId: json['unit_id'] as int?,
+      files: (json['files'] as List<dynamic>?)?.cast<String>(),
+      categoryAttribute: json['category_attribute'] != null
+          ? CategoryAttribute.fromJson(
+              json['category_attribute'] as Map<String, dynamic>)
+          : null,
+    );
+  }
+}
+
+class CategoryAttribute {
+  final int id;
+  final Attribute? attribute;
+  final bool isIndividual;
+
+  CategoryAttribute({
+    required this.id,
+    this.attribute,
+    required this.isIndividual,
+  });
+
+  factory CategoryAttribute.fromJson(Map<String, dynamic> json) {
+    return CategoryAttribute(
+      id: json['id'] as int? ?? 0,
+      attribute: json['attribute'] != null
+          ? Attribute.fromJson(json['attribute'] as Map<String, dynamic>)
+          : null,
+      isIndividual: json['is_individual'] as bool? ?? false,
+    );
+  }
+}
+
+class Attribute {
+  final int id;
+  final String name;
+
+  Attribute({
+    required this.id,
+    required this.name,
+  });
+
+  factory Attribute.fromJson(Map<String, dynamic> json) {
+    return Attribute(
+      id: json['id'] as int? ?? 0,
+      name: json['name'] as String? ?? 'Неизвестная характеристика',
     );
   }
 }

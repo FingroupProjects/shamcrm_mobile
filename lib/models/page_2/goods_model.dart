@@ -36,6 +36,51 @@ class Discount {
     );
   }
 }
+class Unit {
+  final int id;
+  final String name;
+  final String? shortName;
+
+  Unit({
+    required this.id,
+    required this.name,
+    this.shortName,
+  });
+
+  factory Unit.fromJson(Map<String, dynamic> json) {
+    return Unit(
+      id: json['id'] as int? ?? 0,
+      name: json['name'] as String? ?? '',
+      shortName: json['short_name'] as String?,
+    );
+  }
+}
+
+class Measurement {
+  final int id;
+  final int goodId;
+  final int unitId;
+  final double amount;
+  final Unit unit;
+
+  Measurement({
+    required this.id,
+    required this.goodId,
+    required this.unitId,
+    required this.amount,
+    required this.unit,
+  });
+
+  factory Measurement.fromJson(Map<String, dynamic> json) {
+    return Measurement(
+      id: json['id'] as int? ?? 0,
+      goodId: json['good_id'] as int? ?? 0,
+      unitId: json['unit_id'] as int? ?? 0,
+      amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
+      unit: Unit.fromJson(json['unit'] as Map<String, dynamic>),
+    );
+  }
+}
 
 class Goods {
   final int id;
@@ -60,6 +105,8 @@ class Goods {
   final Label? label;
   final List<Discount>? discount; // Добавляем поле discount
   final String? article;
+   final List<Unit>? units; // Добавлено поле units
+  final List<Measurement>? measurements; // Добавлено поле measurements
 
   Goods({
     required this.id,
@@ -84,6 +131,8 @@ class Goods {
     this.label,
     this.discount,
     this.article,
+    this.units,
+    this.measurements,
   });
 
   factory Goods.fromJson(Map<String, dynamic> json) {
@@ -153,6 +202,15 @@ class Goods {
         }
       }
 
+      List<Unit>? units;
+      if (data['units'] != null && data['units'] is List) {
+        units = (data['units'] as List).map((u) => Unit.fromJson(u as Map<String, dynamic>)).toList();
+      }
+
+      List<Measurement>? measurements;
+      if (data['measurements'] != null && data['measurements'] is List) {
+        measurements = (data['measurements'] as List).map((m) => Measurement.fromJson(m as Map<String, dynamic>)).toList();
+      }
       return Goods(
         id: json['id'] as int? ?? data['id'] as int? ?? 0,
         name: data['name'] as String? ?? '',
@@ -188,6 +246,8 @@ class Goods {
         label: data['label'] != null ? Label.fromJson(data['label']) : null,
         discount: discounts,
         article: data['article'] as String?,
+          units: units,
+        measurements: measurements,
       );
     } catch (e, stackTrace) {
       print('GoodsModel: Ошибка парсинга товара: $e');

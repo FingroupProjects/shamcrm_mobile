@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_state.dart';
-import 'package:crm_task_manager/models/page_2/goods_model.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/variant_bloc/variant_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/variant_bloc/variant_event.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/variant_bloc/variant_state.dart';
+import 'package:crm_task_manager/models/page_2/variant_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
 class GoodsListWidget extends StatefulWidget {
@@ -25,21 +25,22 @@ class GoodsListWidget extends StatefulWidget {
 
 class _GoodsListWidgetState extends State<GoodsListWidget> {
   final TextEditingController _searchController = TextEditingController();
-  List<Goods> selectedGoods = [];
-  Map<int, Map<String, dynamic>> goodsDetails = {};
+  List<Variant> selectedVariants = [];
+  Map<int, Map<String, dynamic>> variantDetails = {};
   OverlayEntry? _overlayEntry;
   final LayerLink _layerLink = LayerLink();
   bool _isDropdownOpen = false;
   final ScrollController _scrollController = ScrollController();
   final FocusNode _searchFocusNode = FocusNode();
 
-  // Добавляем FocusNode для полей количества и цены
+  // Контроллеры и FocusNode для полей
   final Map<int, FocusNode> _quantityFocusNodes = {};
   final Map<int, FocusNode> _priceFocusNodes = {};
   final Map<int, TextEditingController> _quantityControllers = {};
   final Map<int, TextEditingController> _priceControllers = {};
+  final Map<int, String> _selectedUnits = {}; // Храним выбранные единицы измерения
 
-  final TextStyle goodsTextStyle = const TextStyle(
+  final TextStyle variantTextStyle = const TextStyle(
     fontSize: 16,
     fontWeight: FontWeight.w500,
     fontFamily: 'Gilroy',
@@ -49,11 +50,12 @@ class _GoodsListWidgetState extends State<GoodsListWidget> {
   @override
   void initState() {
     super.initState();
-    context.read<GoodsBloc>().add(FetchGoods());
+    context.read<VariantBloc>().add(FetchVariants(page: 1));
     _searchController.addListener(_onSearchChanged);
   }
 
   void _onSearchChanged() {
+    context.read<VariantBloc>().add(SearchVariants(_searchController.text));
     if (_isDropdownOpen) {
       final currentFocusNode = FocusScope.of(context).focusedChild;
       _updateOverlay();
@@ -92,7 +94,6 @@ class _GoodsListWidgetState extends State<GoodsListWidget> {
     }
   }
 
-  // Новый метод для создания InputDecoration с поддержкой iOS клавиатуры
   InputDecoration _inputDecorationWithDone(String label, FocusNode focusNode) {
     return InputDecoration(
       labelText: label,
@@ -131,19 +132,17 @@ class _GoodsListWidgetState extends State<GoodsListWidget> {
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       filled: true,
       fillColor: Colors.white,
-      // Добавляем суффиксную иконку для закрытия клавиатуры
-      suffixIcon: focusNode.hasFocus 
-        ? IconButton(
-            icon: const Icon(Icons.keyboard_hide, size: 20),
-            onPressed: () {
-              focusNode.unfocus();
-            },
-          )
-        : null,
+      suffixIcon: focusNode.hasFocus
+          ? IconButton(
+              icon: const Icon(Icons.keyboard_hide, size: 20),
+              onPressed: () {
+                focusNode.unfocus();
+              },
+            )
+          : null,
     );
   }
 
-  // Метод для создания Toolbar над клавиатурой
   Widget _buildInputToolbar(FocusNode focusNode) {
     return Container(
       height: 44,
@@ -188,32 +187,29 @@ class _GoodsListWidgetState extends State<GoodsListWidget> {
     );
   }
 
-  // Инициализация контроллеров и FocusNode для товара
-  void _initializeGoodsControllers(int goodsId) {
-    if (!_quantityControllers.containsKey(goodsId)) {
-      _quantityControllers[goodsId] = TextEditingController();
-      _priceControllers[goodsId] = TextEditingController();
-      _quantityFocusNodes[goodsId] = FocusNode();
-      _priceFocusNodes[goodsId] = FocusNode();
-      
-      // Добавляем слушатели для автоматического скролла при фокусе
-      _quantityFocusNodes[goodsId]!.addListener(() {
-        if (_quantityFocusNodes[goodsId]!.hasFocus) {
+  void _initializeVariantControllers(int variantId) {
+    if (!_quantityControllers.containsKey(variantId)) {
+      _quantityControllers[variantId] = TextEditingController();
+      _priceControllers[variantId] = TextEditingController();
+      _quantityFocusNodes[variantId] = FocusNode();
+      _priceFocusNodes[variantId] = FocusNode();
+
+      _quantityFocusNodes[variantId]!.addListener(() {
+        if (_quantityFocusNodes[variantId]!.hasFocus) {
           _scrollToFocusedField();
         }
-        setState(() {}); // Для обновления суффиксной иконки
+        setState(() {});
       });
-      
-      _priceFocusNodes[goodsId]!.addListener(() {
-        if (_priceFocusNodes[goodsId]!.hasFocus) {
+
+      _priceFocusNodes[variantId]!.addListener(() {
+        if (_priceFocusNodes[variantId]!.hasFocus) {
           _scrollToFocusedField();
         }
-        setState(() {}); // Для обновления суффиксной иконки
+        setState(() {});
       });
     }
   }
 
-  // Метод для скролла к полю в фокусе
   void _scrollToFocusedField() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
@@ -226,17 +222,16 @@ class _GoodsListWidgetState extends State<GoodsListWidget> {
     });
   }
 
-  // Очистка ресурсов для товара
-  void _disposeGoodsControllers(int goodsId) {
-    _quantityControllers[goodsId]?.dispose();
-    _priceControllers[goodsId]?.dispose();
-    _quantityFocusNodes[goodsId]?.dispose();
-    _priceFocusNodes[goodsId]?.dispose();
-    
-    _quantityControllers.remove(goodsId);
-    _priceControllers.remove(goodsId);
-    _quantityFocusNodes.remove(goodsId);
-    _priceFocusNodes.remove(goodsId);
+  void _disposeVariantControllers(int variantId) {
+    _quantityControllers[variantId]?.dispose();
+    _priceControllers[variantId]?.dispose();
+    _quantityFocusNodes[variantId]?.dispose();
+    _priceFocusNodes[variantId]?.dispose();
+
+    _quantityControllers.remove(variantId);
+    _priceControllers.remove(variantId);
+    _quantityFocusNodes.remove(variantId);
+    _priceFocusNodes.remove(variantId);
   }
 
   OverlayEntry _createOverlayEntry() {
@@ -270,7 +265,7 @@ class _GoodsListWidgetState extends State<GoodsListWidget> {
                       decoration: InputDecoration(
                         hintText: widget.searchHint ??
                             AppLocalizations.of(context)!.translate('search_goods') ??
-                            'Поиск товаров',
+                            'Поиск вариантов',
                         hintStyle: const TextStyle(
                           fontFamily: 'Gilroy',
                           fontSize: 14,
@@ -309,16 +304,16 @@ class _GoodsListWidgetState extends State<GoodsListWidget> {
                     ),
                   ),
                   Expanded(
-                    child: BlocBuilder<GoodsBloc, GoodsState>(
+                    child: BlocBuilder<VariantBloc, VariantState>(
                       builder: (context, state) {
-                        List<Goods> goodsList = state is GoodsDataLoaded
-                            ? state.goods.where((g) => g.isActive == true).toList()
+                        List<Variant> variantList = state is VariantDataLoaded
+                            ? state.variants.where((v) => v.isActive).toList()
                             : [];
 
-                        if (goodsList.isEmpty) {
+                        if (variantList.isEmpty) {
                           return const Center(
                             child: Text(
-                              'Товары не найдены',
+                              'Варианты не найдены',
                               style: TextStyle(
                                 fontSize: 14,
                                 color: Color(0xff99A4BA),
@@ -330,21 +325,14 @@ class _GoodsListWidgetState extends State<GoodsListWidget> {
 
                         return ListView.builder(
                           controller: _scrollController,
-                          itemCount: goodsList.length,
+                          itemCount: variantList.length,
                           itemBuilder: (context, index) {
-                            final goods = goodsList[index];
-
-                            if (_searchController.text.isNotEmpty &&
-                                !goods.name.toLowerCase().contains(
-                                    _searchController.text.toLowerCase())) {
-                              return const SizedBox.shrink();
-                            }
-
-                            final isSelected = selectedGoods.contains(goods);
+                            final variant = variantList[index];
+                            final isSelected = selectedVariants.contains(variant);
 
                             return Column(
                               children: [
-                                _buildListItem(goods, isSelected, () => _toggleGoodsSelection(goods)),
+                                _buildListItem(variant, isSelected, () => _toggleVariantSelection(variant)),
                                 if (isSelected) ...[
                                   const SizedBox(height: 8),
                                   Padding(
@@ -363,14 +351,45 @@ class _GoodsListWidgetState extends State<GoodsListWidget> {
                                         children: [
                                           Row(
                                             children: [
+                                              if (variant.availableUnits.isNotEmpty) ...[
+                                                Expanded(
+                                                  child: DropdownButtonFormField<String>(
+                                                    value: _selectedUnits[variant.id] ?? variant.selectedUnit,
+                                                    decoration: _inputDecorationWithDone(
+                                                      AppLocalizations.of(context)!.translate('unit') ?? 'Ед. изм.',
+                                                      FocusNode(),
+                                                    ),
+                                                    items: variant.availableUnits
+                                                        .map((unit) => DropdownMenuItem<String>(
+                                                              value: unit.shortName ?? unit.name,
+                                                              child: Text(
+                                                                unit.shortName ?? unit.name,
+                                                                style: const TextStyle(
+                                                                  fontFamily: 'Gilroy',
+                                                                  fontSize: 12,
+                                                                ),
+                                                              ),
+                                                            ))
+                                                        .toList(),
+                                                    onChanged: (value) {
+                                                      setState(() {
+                                                        _selectedUnits[variant.id] = value!;
+                                                        variantDetails[variant.id]!['unit'] = value;
+                                                        _updateVariantSelection();
+                                                      });
+                                                    },
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 12),
+                                              ],
                                               Expanded(
                                                 child: TextFormField(
-                                                  controller: _quantityControllers[goods.id],
-                                                  focusNode: _quantityFocusNodes[goods.id],
+                                                  controller: _quantityControllers[variant.id],
+                                                  focusNode: _quantityFocusNodes[variant.id],
                                                   decoration: _inputDecorationWithDone(
                                                     AppLocalizations.of(context)!.translate('quantity') ??
                                                         'Количество',
-                                                    _quantityFocusNodes[goods.id]!,
+                                                    _quantityFocusNodes[variant.id]!,
                                                   ),
                                                   keyboardType: TextInputType.number,
                                                   inputFormatters: [
@@ -380,10 +399,10 @@ class _GoodsListWidgetState extends State<GoodsListWidget> {
                                                     final newQuantity = int.tryParse(value) ?? 0;
                                                     if (newQuantity > 0) {
                                                       setState(() {
-                                                        goodsDetails[goods.id]!['quantity'] = newQuantity;
-                                                        goodsDetails[goods.id]!['total'] =
-                                                            newQuantity * (goodsDetails[goods.id]!['price'] ?? 0.0);
-                                                        _updateGoodsSelection();
+                                                        variantDetails[variant.id]!['quantity'] = newQuantity;
+                                                        variantDetails[variant.id]!['total'] =
+                                                            newQuantity * (variantDetails[variant.id]!['price'] ?? 0.0);
+                                                        _updateVariantSelection();
                                                       });
                                                     }
                                                   },
@@ -395,11 +414,11 @@ class _GoodsListWidgetState extends State<GoodsListWidget> {
                                               const SizedBox(width: 12),
                                               Expanded(
                                                 child: TextFormField(
-                                                  controller: _priceControllers[goods.id],
-                                                  focusNode: _priceFocusNodes[goods.id],
+                                                  controller: _priceControllers[variant.id],
+                                                  focusNode: _priceFocusNodes[variant.id],
                                                   decoration: _inputDecorationWithDone(
                                                     AppLocalizations.of(context)!.translate('price') ?? 'Цена',
-                                                    _priceFocusNodes[goods.id]!,
+                                                    _priceFocusNodes[variant.id]!,
                                                   ),
                                                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                                                   inputFormatters: [
@@ -409,10 +428,10 @@ class _GoodsListWidgetState extends State<GoodsListWidget> {
                                                     final newPrice = double.tryParse(value) ?? 0.0;
                                                     if (newPrice >= 0) {
                                                       setState(() {
-                                                        goodsDetails[goods.id]!['price'] = newPrice;
-                                                        goodsDetails[goods.id]!['total'] =
-                                                            (goodsDetails[goods.id]!['quantity'] ?? 0) * newPrice;
-                                                        _updateGoodsSelection();
+                                                        variantDetails[variant.id]!['price'] = newPrice;
+                                                        variantDetails[variant.id]!['total'] =
+                                                            (variantDetails[variant.id]!['quantity'] ?? 0) * newPrice;
+                                                        _updateVariantSelection();
                                                       });
                                                     }
                                                   },
@@ -427,7 +446,7 @@ class _GoodsListWidgetState extends State<GoodsListWidget> {
                                           Align(
                                             alignment: Alignment.centerRight,
                                             child: Text(
-                                              '${AppLocalizations.of(context)!.translate('total') ?? 'Сумма'} ${(goodsDetails[goods.id]?['total'] ?? 0.0).toStringAsFixed(2)}',
+                                              '${AppLocalizations.of(context)!.translate('total') ?? 'Сумма'} ${(variantDetails[variant.id]?['total'] ?? 0.0).toStringAsFixed(2)}',
                                               style: const TextStyle(
                                                 fontSize: 14,
                                                 fontWeight: FontWeight.w600,
@@ -442,7 +461,7 @@ class _GoodsListWidgetState extends State<GoodsListWidget> {
                                   ),
                                   const SizedBox(height: 8),
                                 ],
-                                if (index < goodsList.length - 1)
+                                if (index < variantList.length - 1)
                                   const Divider(height: 20, color: Color(0xFFE5E7EB)),
                               ],
                             );
@@ -460,7 +479,13 @@ class _GoodsListWidgetState extends State<GoodsListWidget> {
     );
   }
 
-  Widget _buildListItem(Goods goods, bool isSelected, VoidCallback onItemSelect) {
+  Widget _buildListItem(Variant variant, bool isSelected, VoidCallback onItemSelect) {
+    String displayName = variant.fullName?.isNotEmpty == true
+        ? variant.fullName!
+        : variant.attributeValues.isNotEmpty
+            ? variant.attributeValues.map((attr) => attr.value).join(', ')
+            : variant.good?.name ?? 'Без названия';
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: GestureDetector(
@@ -492,12 +517,12 @@ class _GoodsListWidgetState extends State<GoodsListWidget> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    goods.name,
-                    style: goodsTextStyle,
+                    displayName,
+                    style: variantTextStyle,
                   ),
                   Text(
-                    goods.category.name,
-                    style: goodsTextStyle.copyWith(
+                    variant.good?.category.name ?? '',
+                    style: variantTextStyle.copyWith(
                       fontSize: 12,
                       color: const Color(0xff99A4BA),
                       fontWeight: FontWeight.w400,
@@ -512,212 +537,43 @@ class _GoodsListWidgetState extends State<GoodsListWidget> {
     );
   }
 
-  InputDecoration _inputDecoration(String label) {
-    return InputDecoration(
-      labelText: label,
-      hintText: label,
-      labelStyle: const TextStyle(
-        fontFamily: 'Gilroy',
-        fontSize: 12,
-        color: Color(0xff99A4BA),
-      ),
-      hintStyle: const TextStyle(
-        fontFamily: 'Gilroy',
-        fontSize: 12,
-        color: Color(0xff99A4BA),
-      ),
-      border: const OutlineInputBorder(
-        borderRadius: BorderRadius.all(Radius.circular(8)),
-        borderSide: BorderSide(
-          color: Color(0xFFE5E7EB),
-          width: 1,
-        ),
-      ),
-      enabledBorder: const OutlineInputBorder(
-        borderRadius: BorderRadius.all(Radius.circular(8)),
-        borderSide: BorderSide(
-          color: Color(0xFFE5E7EB),
-          width: 1,
-        ),
-      ),
-      focusedBorder: const OutlineInputBorder(
-        borderRadius: BorderRadius.all(Radius.circular(8)),
-        borderSide: BorderSide(
-          color: Color(0xff4759FF),
-          width: 1,
-        ),
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      filled: true,
-      fillColor: Colors.white,
-    );
-  }
-
-  void _toggleGoodsSelection(Goods goods) {
+  void _toggleVariantSelection(Variant variant) {
     setState(() {
-      if (selectedGoods.contains(goods)) {
-        selectedGoods.remove(goods);
-        goodsDetails.remove(goods.id);
-        // Очищаем ресурсы для этого товара
-        _disposeGoodsControllers(goods.id);
+      if (selectedVariants.contains(variant)) {
+        selectedVariants.remove(variant);
+        variantDetails.remove(variant.id);
+        _disposeVariantControllers(variant.id);
       } else {
-        selectedGoods.add(goods);
-        goodsDetails[goods.id] = {
-          'quantity': null,
-          'price': null,
-          'total': 0.0,
+        selectedVariants.add(variant);
+        variantDetails[variant.id] = {
+          'quantity': 1,
+          'price': variant.price ?? 0.0,
+          'total': variant.price ?? 0.0,
+          'unit': variant.selectedUnit,
         };
-        // Инициализируем контроллеры для нового товара
-        _initializeGoodsControllers(goods.id);
+        _selectedUnits[variant.id] = variant.selectedUnit ?? '';
+        _initializeVariantControllers(variant.id);
+        _priceControllers[variant.id]!.text = (variant.price ?? 0.0).toString();
+        _quantityControllers[variant.id]!.text = '1';
       }
-      _updateGoodsSelection();
+      _updateVariantSelection();
       _updateOverlay();
     });
   }
 
-  void _updateGoodsSelection() {
-    widget.onGoodsSelected(selectedGoods.map((g) => {
-          'id': g.id,
-          'name': g.name,
-          'quantity': goodsDetails[g.id]!['quantity'] ?? 0,
-          'price': goodsDetails[g.id]!['price'] ?? 0.0,
-          'total': goodsDetails[g.id]!['total'] ?? 0.0,
+  void _updateVariantSelection() {
+    widget.onGoodsSelected(selectedVariants.map((v) => {
+          'id': v.id,
+          'name': v.fullName?.isNotEmpty == true
+              ? v.fullName!
+              : v.attributeValues.isNotEmpty
+                  ? v.attributeValues.map((attr) => attr.value).join(', ')
+                  : v.good?.name ?? 'Без названия',
+          'quantity': variantDetails[v.id]!['quantity'] ?? 0,
+          'price': variantDetails[v.id]!['price'] ?? 0.0,
+          'total': variantDetails[v.id]!['total'] ?? 0.0,
+          'unit': variantDetails[v.id]!['unit'] ?? '',
         }).toList());
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocListener<GoodsBloc, GoodsState>(
-      listener: (context, state) {
-        if (state is GoodsError && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                AppLocalizations.of(context)!.translate(state.message) ?? '',
-                style: const TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-              behavior: SnackBarBehavior.floating,
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              backgroundColor: Colors.red,
-              elevation: 3,
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              duration: const Duration(seconds: 3),
-            ),
-          );
-        }
-      },
-      child: Padding(
-        padding: widget.padding ?? EdgeInsets.zero,
-        child: FormField<List<Goods>>(
-          validator: (value) {
-            if (selectedGoods.isEmpty) {
-              return AppLocalizations.of(context)!.translate('field_required_goods') ??
-                  'Выберите хотя бы один товар';
-            }
-            for (var goods in selectedGoods) {
-              if (goodsDetails[goods.id]!['quantity'] == null ||
-                  goodsDetails[goods.id]!['quantity'] <= 0) {
-                return AppLocalizations.of(context)!.translate('invalid_quantity') ??
-                    'Укажите корректное количество';
-              }
-              if (goodsDetails[goods.id]!['price'] == null ||
-                  goodsDetails[goods.id]!['price'] < 0) {
-                return AppLocalizations.of(context)!.translate('invalid_price') ??
-                    'Укажите корректную цену';
-              }
-            }
-            return null;
-          },
-          builder: (FormFieldState<List<Goods>> field) {
-            return GestureDetector(
-              // Добавляем возможность закрытия клавиатуры при тапе на пустое место
-              onTap: () {
-                FocusScope.of(context).unfocus();
-              },
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    AppLocalizations.of(context)!.translate('goods') ?? 'Товары',
-                    style: goodsTextStyle.copyWith(
-                      fontWeight: FontWeight.w400,
-                      fontSize: 16,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF4F7FD),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        width: 1,
-                        color: field.hasError ? Colors.red : const Color(0xFFE5E7EB),
-                      ),
-                    ),
-                    child: CompositedTransformTarget(
-                      link: _layerLink,
-                      child: GestureDetector(
-                        onTap: () {
-                          if (!_isDropdownOpen) {
-                            _showOverlay();
-                          } else {
-                            _hideOverlay();
-                          }
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  selectedGoods.isEmpty
-                                      ? AppLocalizations.of(context)!.translate('select_goods') ??
-                                          'Выберите товары'
-                                      : selectedGoods.map((e) => e.name).join(', '),
-                                  style: goodsTextStyle.copyWith(
-                                    fontSize: 14,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              Icon(
-                                _isDropdownOpen ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-                                color: const Color(0xff1E2E52),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  if (field.hasError)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4, left: 0),
-                      child: Text(
-                        field.errorText!,
-                        style: const TextStyle(
-                          color: Colors.red,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            );
-          },
-        ),
-      ),
-    );
   }
 
   @override
@@ -726,8 +582,7 @@ class _GoodsListWidgetState extends State<GoodsListWidget> {
     _scrollController.dispose();
     _searchFocusNode.dispose();
     _hideOverlay();
-    
-    // Очищаем все контроллеры и FocusNode
+
     for (var controller in _quantityControllers.values) {
       controller.dispose();
     }
@@ -740,7 +595,13 @@ class _GoodsListWidgetState extends State<GoodsListWidget> {
     for (var focusNode in _priceFocusNodes.values) {
       focusNode.dispose();
     }
-    
+
     super.dispose();
+  }
+  
+  @override
+  Widget build(BuildContext context) {
+    // TODO: implement build
+    throw UnimplementedError();
   }
 }
