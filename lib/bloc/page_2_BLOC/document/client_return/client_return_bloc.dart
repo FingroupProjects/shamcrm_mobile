@@ -2,6 +2,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../models/api_exception_model.dart';
@@ -167,6 +168,7 @@ class ClientReturnBloc extends Bloc<ClientReturnEvent, ClientReturnState> {
   }
 
   _onFetchData(FetchClientReturns event, Emitter<ClientReturnState> emit) async {
+    print("_onFetchData. ClientReturnBloc");
     if (event.forceRefresh || _allData.isEmpty) {
       emit(ClientReturnLoading());
     }
@@ -192,10 +194,13 @@ class ClientReturnBloc extends Bloc<ClientReturnEvent, ClientReturnState> {
       final newData = response.data ?? [];
 
       if (event.forceRefresh) {
+        _allData.clear();
         _allData = List.from(newData);
       } else {
         _allData.addAll(newData);
       }
+
+      debugPrint("_onFetchData. ClientReturnBloc: ${_allData}");
 
       final hasReachedMax = (response.pagination?.currentPage ?? 1) >= (response.pagination?.totalPages ?? 1);
 

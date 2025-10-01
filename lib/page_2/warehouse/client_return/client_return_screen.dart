@@ -6,10 +6,13 @@ import 'package:crm_task_manager/custom_widget/app_bar_selection_mode.dart';
 import 'package:crm_task_manager/page_2/money/widgets/error_dialog.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_return/client_return_card.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_return/client_return_create.dart';
+import 'package:crm_task_manager/page_2/warehouse/client_return/client_return_details.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+import 'client_return_edit.dart';
 
 class ClientReturnScreen extends StatefulWidget {
   const ClientReturnScreen({super.key, this.organizationId});
@@ -408,22 +411,18 @@ class _ClientReturnScreenState extends State<ClientReturnScreen> {
                               return;
                             }
 
-                            if (currentData[index].deletedAt != null) return;
+                            final doc = currentData[index];
 
-                            Navigator.pushNamed(
+                            Navigator.push(
                               context,
-                              '/client_return_details',
-                              arguments: {
-                                'documentId': currentData[index].id!,
-                                'docNumber': currentData[index].docNumber ?? 'N/A',
-                              },
-                            ).then((_) {
-                              _clientReturnBloc.add(FetchClientReturns(
-                                forceRefresh: true,
-                                filters: _currentFilters,
-                                search: _search,
-                              ));
-                            });
+                              MaterialPageRoute(
+                                builder: (context) => ClientReturnDocumentDetailsScreen(
+                                  documentId: doc.id!,
+                                  docNumber: doc.docNumber ?? 'N/A',
+                                  // onDocumentUpdated: widget.onUpdate,
+                                ),
+                              ),
+                            );
                           },
                           isSelectionMode: _selectionMode,
                           isSelected: (state as ClientReturnLoaded).selectedData?.contains(currentData[index]) ?? false,

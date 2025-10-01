@@ -7,7 +7,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ClientReturnCard extends StatefulWidget {
   final IncomingDocument document;
-  final VoidCallback? onUpdate;
   final Function()? onLongPress;
   final bool isSelectionMode;
   final bool isSelected;
@@ -16,7 +15,6 @@ class ClientReturnCard extends StatefulWidget {
   const ClientReturnCard({
     Key? key,
     required this.document,
-    this.onUpdate,
     this.onLongPress,
     this.isSelectionMode = false,
     this.isSelected = false,
@@ -86,21 +84,6 @@ class _ClientReturnCardState extends State<ClientReturnCard> {
       onTap: () {
         if (widget.onTap != null) {
           widget.onTap!();
-        } else {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ClientReturnDocumentDetailsScreen(
-                documentId: doc.id!,
-                docNumber: doc.docNumber ?? 'N/A',
-                onDocumentUpdated: widget.onUpdate,
-              ),
-            ),
-          ).then((_) {
-            if (widget.onUpdate != null) {
-              widget.onUpdate!();
-            }
-          });
         }
       },
       onLongPress: widget.onLongPress,
