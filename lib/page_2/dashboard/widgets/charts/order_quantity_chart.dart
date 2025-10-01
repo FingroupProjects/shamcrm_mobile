@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 
+import '../../../../screens/profile/languages/app_localizations.dart';
 import 'download_popup_menu.dart';
 
 // Translations
@@ -308,10 +309,7 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
     double horizontalInterval = maxY / 5;
     if (horizontalInterval == 0) horizontalInterval = 10;
 
-    final months = [
-      'Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн',
-      'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'
-    ];
+    final months = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
 
     return LineChartData(
       gridData: FlGridData(
@@ -471,7 +469,7 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
 
   @override
   Widget build(BuildContext context) {
-
+    final localizations = AppLocalizations.of(context)!;
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
@@ -501,7 +499,9 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
                   color: Colors.black,
                 ),
               ),
-              DownloadPopupMenu(
+              Transform.translate(
+                offset: const Offset(16, 0),
+                child:DownloadPopupMenu(
                 onDownload: _handleDownload,
                 loading: isDownloading,
                 formats: const [
@@ -509,7 +509,7 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
                   DownloadFormat.svg,
                   DownloadFormat.csv,
                 ],
-              ),
+              ),),
             ],
           ),
 
@@ -543,66 +543,63 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
             height: 300,
             child: isLoading
                 ? const Center(
-              child: CircularProgressIndicator(
-                color: Color(0xFF3935E7),
-              ),
-            )
+                    child: CircularProgressIndicator(
+                      color: Color(0xFF3935E7),
+                    ),
+                  )
                 : orderData.isEmpty
-                ? Stack(
-              children: [
-                LineChart(_buildEmptyChartData()),
-                Center(
-                  child: Text(
-                    _OrderQuantityStrings.noDataToDisplay,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontFamily: "Gilroy",
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black54,
-                    ),
-                  ),
-                ),
-              ],
-            )
-                : _isAllZeros(orderData)
-                ? Stack(
-              children: [
-                LineChart(_buildEmptyChartData()),
-                Center(
-                  child: Text(
-                    _OrderQuantityStrings.noDataToDisplay,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontFamily: "Gilroy",
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black54,
-                    ),
-                  ),
-                ),
-              ],
-            )
-                : Padding(
-              padding: const EdgeInsets.only(right: 16, top: 16),
-              child: LineChart(_buildChartData(orderData)),
-            ),
+                    ? Stack(
+                        children: [
+                          LineChart(_buildEmptyChartData()),
+                          Center(
+                            child: Text(
+                              _OrderQuantityStrings.noDataToDisplay,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontFamily: "Gilroy",
+                                fontWeight: FontWeight.w500,
+                                color: Colors.black54,
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    : _isAllZeros(orderData)
+                        ? Stack(
+                            children: [
+                              LineChart(_buildEmptyChartData()),
+                              Center(
+                                child: Text(
+                                  _OrderQuantityStrings.noDataToDisplay,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontFamily: "Gilroy",
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.black54,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          )
+                        : Padding(
+                            padding: const EdgeInsets.only(right: 16, top: 16),
+                            child: LineChart(_buildChartData(orderData)),
+                          ),
           ),
 
           const SizedBox(height: 16),
 
-          // "More details" link
           Align(
             alignment: Alignment.centerRight,
-              child: GestureDetector(
-                onTap: () {
-                  // Handle navigation to detailed view
-                },
-                child: Text(
-                _OrderQuantityStrings.moreDetails,
+            child: GestureDetector(
+              onTap: () {},
+              child: Text(
+                localizations.translate('more_details'),
                 style: const TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: Color(0xFF3935E7),
+                  color: Color(0xff1E2E52),
                 ),
               ),
             ),

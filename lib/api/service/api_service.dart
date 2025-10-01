@@ -13107,28 +13107,49 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
   }
 
   //deleteClientReturnDocument
-  Future<void> deleteClientReturnDocument(int documentId) async {
+  Future<Map<String, dynamic>> deleteClientReturnDocument(int documentId) async {
     try {
       final token = await getToken();
       if (token == null) throw 'Токен не найден';
-      final body = {
-        'ids': [documentId]
-      };
 
-      final path = await _appendQueryParams('/client-return-documents');
-      print('Удаление документа по пути: $path');
-      final response = await _deleteRequestWithBody(path, body);
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return;
+      // Используем _appendQueryParams для получения параметров, но извлекаем их для тела запроса
+      final pathWithParams = await _appendQueryParams('/client-return-documents');
+      final uri = Uri.parse('$baseUrl$pathWithParams');
+
+      // Извлекаем organization_id и sales_funnel_id из query параметров
+      final organizationId = uri.queryParameters['organization_id'];
+      final salesFunnelId = uri.queryParameters['sales_funnel_id'];
+
+      final body = jsonEncode({
+        'ids': [documentId],
+        'organization_id': organizationId ?? '1',
+        'sales_funnel_id': salesFunnelId ?? '1',
+      });
+
+      if (kDebugMode) {
+        print('ApiService: deleteClientReturnDocument - Request body: $body');
+        print('ApiService: deleteClientReturnDocument - Request params: $pathWithParams');
+      }
+
+      final response = await http.delete(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Device': 'mobile',
+        },
+        body: body,
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return {'result': 'Success'};
       } else {
         final message = _extractErrorMessageFromResponse(response);
-        throw ApiException(
-          message ?? 'Ошибка при удалении документа возврата!',
-          response.statusCode,
-        );
+        throw ApiException(message ?? 'Ошибка при удалении документа возврата от клиента', response.statusCode);
       }
     } catch (e) {
-      rethrow; // Exception('Ошибка удаления документа: $e');
+      rethrow;
     }
   }
 
@@ -13250,6 +13271,93 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         final message = _extractErrorMessageFromResponse(response);
         throw ApiException(
           message ?? 'Ошибка при отмене проведения документа',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+  Future<void> massApproveClientReturnDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/client-return-documents/approve');
+
+    try {
+      final response = await _postRequest(path, {
+        'ids': ids,
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при массовом проведении документов возврата от клиента!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> massDisapproveClientReturnDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/client-return-documents/unApprove');
+
+    try {
+      final response = await _postRequest(path, {
+        'ids': ids,
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при массовом снятии проведения документов возврата от клиента!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> massDeleteClientReturnDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/client-return-documents/');
+
+    try {
+      final response = await _deleteRequestWithBody(path, {
+        'ids': ids,
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при массовом удалении документов возврата от клиента!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> massRestoreClientReturnDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/client-return-documents/restore');
+
+    try {
+      final response = await _postRequest(path, {
+        'ids': ids,
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при массовом восстановлении документов возврата от клиента!',
           response.statusCode,
         );
       }

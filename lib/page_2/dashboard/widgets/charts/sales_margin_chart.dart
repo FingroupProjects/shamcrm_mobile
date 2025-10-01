@@ -1,27 +1,29 @@
+import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
 import 'download_popup_menu.dart';
 
-enum TimePeriod { day, week, month, year }
+enum TimeRange { sixMonths, year }
 
 class SalesData {
   final String period;
   final double value;
+  final DateTime? date;
 
-  SalesData({required this.period, required this.value});
+  SalesData({required this.period, required this.value, this.date});
 }
 
-class SalesDynamicsLineChart extends StatefulWidget {
-  const SalesDynamicsLineChart({Key? key}) : super(key: key);
+class SalesMarginChart extends StatefulWidget {
+  const SalesMarginChart({Key? key}) : super(key: key);
 
   @override
-  State<SalesDynamicsLineChart> createState() => _SalesDynamicsLineChartState();
+  State<SalesMarginChart> createState() => _SalesMarginChartState();
 }
 
-class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
-  TimePeriod selectedPeriod = TimePeriod.year;
+class _SalesMarginChartState extends State<SalesMarginChart> {
+  TimeRange selectedTimeRange = TimeRange.sixMonths;
   bool isLoading = false;
   bool isDownloading = false;
   List<SalesData> salesData = [];
@@ -38,98 +40,60 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
       isLoading = true;
     });
 
-    // Simulate API call delay
     await Future.delayed(const Duration(milliseconds: 500));
 
     setState(() {
-      salesData = _getDataForPeriod(selectedPeriod);
+      salesData = _getDataForConfiguration();
       isLoading = false;
     });
   }
 
-  List<SalesData> _getDataForPeriod(TimePeriod period) {
-    // Mock data for different time periods
-    switch (period) {
-      case TimePeriod.day:
-        return [
-          SalesData(period: '09:00', value: 25),
-          SalesData(period: '12:00', value: 45),
-          SalesData(period: '15:00', value: 35),
-          SalesData(period: '18:00', value: 60),
-          SalesData(period: '21:00', value: 50),
-        ];
-      case TimePeriod.week:
-        return [
-          SalesData(period: 'Пн', value: 30),
-          SalesData(period: 'Вт', value: 45),
-          SalesData(period: 'Ср', value: 25),
-          SalesData(period: 'Чт', value: 55),
-          SalesData(period: 'Пт', value: 70),
-          SalesData(period: 'Сб', value: 80),
-          SalesData(period: 'Вс', value: 40),
-        ];
-      case TimePeriod.month:
-        return [
-          SalesData(period: 'Неделя 1', value: 40),
-          SalesData(period: 'Неделя 2', value: 35),
-          SalesData(period: 'Неделя 3', value: 50),
-          SalesData(period: 'Неделя 4', value: 45),
-        ];
-      case TimePeriod.year:
-        return [
-          SalesData(period: 'Июль', value: 30),
-          SalesData(period: 'Август', value: 40),
-          SalesData(period: 'Сентябрь', value: 25),
-          SalesData(period: 'Октябрь', value: 50),
-          SalesData(period: 'Ноябрь', value: 45),
-          SalesData(period: 'Декабрь', value: 100),
-        ];
+  List<SalesData> _getDataForConfiguration() {
+    // Enhanced mock data based on profitability type and time range
+    switch (selectedTimeRange) {
+      case TimeRange.sixMonths:
+        return _getSixMonthsData();
+      case TimeRange.year:
+        return _getYearlyData();
     }
   }
 
-  void onPeriodChanged(TimePeriod period) {
-    if (selectedPeriod != period) {
+  List<SalesData> _getSixMonthsData() {
+    return [
+      SalesData(period: 'Июль', value: 30.0),
+      SalesData(period: 'Август', value: 40.0),
+      SalesData(period: 'Сентябрь', value: 25.0),
+      SalesData(period: 'Октябрь', value: 50.0),
+      SalesData(period: 'Ноябрь', value: 45.0),
+      SalesData(period: 'Декабрь', value: 60.0),
+    ];
+  }
+
+  List<SalesData> _getYearlyData() {
+    return [
+      SalesData(period: 'Q1 2024', value: 100.0),
+      SalesData(period: 'Q2 2024', value: 115.0),
+      SalesData(period: 'Q3 2024', value: 95.0),
+      SalesData(period: 'Q4 2024', value: 135.0),
+    ];
+  }
+
+  void onTimeRangeChanged(TimeRange range) {
+    if (selectedTimeRange != range) {
       setState(() {
-        selectedPeriod = period;
+        selectedTimeRange = range;
       });
       loadSalesData();
     }
   }
 
-  String getPeriodText(BuildContext context, TimePeriod period) {
-    switch (period) {
-      case TimePeriod.day:
-        return 'День';
-      case TimePeriod.week:
-        return 'Неделя';
-      case TimePeriod.month:
-        return 'Месяц';
-      case TimePeriod.year:
+  String getTimeRangeText(TimeRange range) {
+    switch (range) {
+      case TimeRange.sixMonths:
+        return '6 месяцев';
+      case TimeRange.year:
         return 'Год';
     }
-  }
-
-  Widget buildPeriodButton(TimePeriod period) {
-    final isSelected = selectedPeriod == period;
-    return GestureDetector(
-      onTap: () => onPeriodChanged(period),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF3935E7) : Colors.grey[200],
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          getPeriodText(context, period),
-          style: TextStyle(
-            fontFamily: 'Gilroy',
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: isSelected ? Colors.white : Colors.black54,
-          ),
-        ),
-      ),
-    );
   }
 
   void _handleDownload(DownloadFormat format) async {
@@ -138,7 +102,6 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
     });
 
     try {
-      // Simulate download process
       await Future.delayed(const Duration(seconds: 2));
     } catch (e) {
       // Handle error silently
@@ -171,11 +134,12 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header with title and download menu
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                localizations.translate('sales_dynamics'),
+                localizations.translate('profitability_sales'),
                 style: const TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 18,
@@ -199,21 +163,31 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
 
           const SizedBox(height: 16),
 
-          // Period selector buttons
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                buildPeriodButton(TimePeriod.day),
-                const SizedBox(width: 8),
-                buildPeriodButton(TimePeriod.week),
-                const SizedBox(width: 8),
-                buildPeriodButton(TimePeriod.month),
-                const SizedBox(width: 8),
-                buildPeriodButton(TimePeriod.year),
-              ],
-            ),
+          // Period dropdown and Compare button
+          Row(
+            children: [
+             Flexible(child: _buildPeriodDropdown()),
+              const SizedBox(width: 12),
+              Flexible(child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  localizations.translate('compare'),
+                  style: const TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black54,
+                  ),
+                ),
+              )),
+            ],
           ),
+
+          const SizedBox(height: 16),
 
           const SizedBox(height: 24),
 
@@ -309,13 +283,12 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
                                 sideTitles: SideTitles(showTitles: false),
                               ),
                             ),
-                            borderData: FlBorderData(
-                              show: false,
-                            ),
+                            borderData: FlBorderData(show: false),
                             minX: 0,
                             maxX: (salesData.length - 1).toDouble(),
                             minY: 0,
-                            maxY: salesData.map((e) => e.value).reduce((a, b) => a > b ? a : b) * 1.2,
+                            maxY:
+                                salesData.isNotEmpty ? salesData.map((e) => e.value).reduce((a, b) => a > b ? a : b) * 1.2 : 100,
                             lineBarsData: [
                               LineChartBarData(
                                 spots: List.generate(
@@ -327,7 +300,7 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
                                 ),
                                 isCurved: true,
                                 curveSmoothness: 0.3,
-                                color: const Color(0xFF00E676),
+                                color: const Color(0xFF5D5FEF),
                                 barWidth: 3,
                                 isStrokeCapRound: true,
                                 dotData: FlDotData(
@@ -335,7 +308,7 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
                                   getDotPainter: (spot, percent, barData, index) {
                                     return FlDotCirclePainter(
                                       radius: 4,
-                                      color: const Color(0xFF00E676),
+                                      color: const Color(0xFF5D5FEF),
                                       strokeWidth: 2,
                                       strokeColor: Colors.white,
                                     );
@@ -347,8 +320,8 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
                                     begin: Alignment.topCenter,
                                     end: Alignment.bottomCenter,
                                     colors: [
-                                      const Color(0xFF00E676).withOpacity(0.3),
-                                      const Color(0xFF00E676).withOpacity(0.0),
+                                      const Color(0xFF5D5FEF).withOpacity(0.3),
+                                      const Color(0xFF5D5FEF).withOpacity(0.0),
                                     ],
                                   ),
                                 ),
@@ -379,7 +352,7 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
                                         ),
                                         children: [
                                           TextSpan(
-                                            text: '${touchedSpot.y.toInt()}',
+                                            text: '${touchedSpot.y.toInt()}%',
                                             style: const TextStyle(
                                               fontFamily: 'Gilroy',
                                               fontSize: 14,
@@ -421,4 +394,47 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
       ),
     );
   }
+
+  Widget _buildPeriodDropdown() {
+    return CustomDropdown<TimeRange>(
+      decoration: CustomDropdownDecoration(
+        closedBorder: Border.all(color: Colors.grey[300]!),
+        expandedBorder: Border.all(color: Colors.grey[300]!),
+        closedBorderRadius: BorderRadius.circular(8),
+        expandedBorderRadius: BorderRadius.circular(8),
+        closedFillColor: Colors.white,
+        expandedFillColor: Colors.white,
+      ),
+      items: TimeRange.values,
+      initialItem: selectedTimeRange,
+      onChanged: (TimeRange? value) {
+        if (value != null) {
+          onTimeRangeChanged(value);
+        }
+      },
+      headerBuilder: (context, selectedItem, enabled) {
+        return Text(
+          getTimeRangeText(selectedItem),
+          style: const TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: Colors.black87,
+          ),
+        );
+      },
+      listItemBuilder: (context, item, isSelected, onItemSelect) {
+        return Text(
+          getTimeRangeText(item),
+          style: const TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: Colors.black87,
+          ),
+        );
+      },
+    );
+  }
 }
+
