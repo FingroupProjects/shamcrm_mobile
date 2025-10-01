@@ -81,6 +81,7 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
               child: SingleChildScrollView(
                 child: Column(
                   children: [
+                    SizedBox(height: 16),
                     TopPart(),
                     TopSellingProductsChart(),
                     SalesDynamicsLineChart(),
@@ -88,6 +89,7 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
                     ExpenseStructureChart(),
                     SalesMarginChart(),
                     OrderQuantityChart(),
+                    SizedBox(height: 16),
                   ],
                 ),
               ),
