@@ -519,7 +519,7 @@ class _MovementScreenState extends State<MovementScreen> {
                         _movementBloc.add(DeleteMovementDocument(
                           currentData[index].id!,
                           localizations!,
-                          shouldReload: true,
+                          shouldReload: false,
                         ));
                       },
                       child: MovementCard(
