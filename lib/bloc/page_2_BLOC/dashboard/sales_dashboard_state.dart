@@ -13,16 +13,18 @@ class SalesDashboardLoading extends SalesDashboardState {}
 
 class SalesDashboardLoaded extends SalesDashboardState {
   final DashboardTopPart? salesDashboardTopPart;
+  final ExpenseDashboard? expenseStructure;
 
   const SalesDashboardLoaded({
     this.salesDashboardTopPart,
-
+    this.expenseStructure,
   });
 
   @override
   List<Object?> get props => [
-    salesDashboardTopPart,
-  ];
+        salesDashboardTopPart,
+        expenseStructure,
+      ];
 }
 
 class SalesDashboardError extends SalesDashboardState {

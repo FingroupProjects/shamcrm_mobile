@@ -17,6 +17,7 @@ import '../../custom_widget/animation.dart';
 import '../../custom_widget/custom_app_bar_page_2.dart';
 import '../../models/page_2/dashboard/dashboard_top.dart';
 import '../../models/page_2/dashboard/debtors_model.dart';
+import '../../models/page_2/dashboard/expense_structure.dart';
 import '../../screens/profile/languages/app_localizations.dart';
 import '../../screens/profile/profile_screen.dart';
 
@@ -38,6 +39,7 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+
 
     return MultiBlocProvider(
       providers: [
@@ -125,8 +127,9 @@ class TopPart extends StatelessWidget {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
-    // Extract data from state (only if SalesDashboardLoaded)
     final DashboardTopPart? salesDashboardTopPart = state is SalesDashboardLoaded ? (state as SalesDashboardLoaded).salesDashboardTopPart : null;
+    final ExpenseDashboard? expenseDashboard = state is SalesDashboardLoaded ? (state as SalesDashboardLoaded).expenseStructure : null;
+
 
     return Column(
       children: [
@@ -142,11 +145,10 @@ class TopPart extends StatelessWidget {
                   accentColor: Colors.orange,
                   title: localizations.translate('illiquid_goods') ?? 'ТОВАРЫ/НЕЛИКВИДНЫМИ ТОВАРЫ',
                   leading: const Icon(Icons.inventory_2, color: Colors.orange),
-                  amount: salesDashboardTopPart?.result?.cashBalance?.totalBalance ?? 0,
-                  //amountText: '${salesDashboardTopPart?.result?.cashBalance.totalBalance}',
+                  amount: expenseDashboard?.totalExpenses ?? 0,
                   showCurrencySymbol: false,
-                  isUp: salesDashboardTopPart?.result?.cashBalance?.isPositiveChange ?? true,
-                  trendText: salesDashboardTopPart?.result?.cashBalance?.percentageChange.toString() ?? '0.0%',
+                  isUp: expenseDashboard?.expensesChangePositive ?? true,
+                  trendText: expenseDashboard?.expensesChange.toString() ?? '0.0%',
                 ),
               ),
               const SizedBox(width: 16),
