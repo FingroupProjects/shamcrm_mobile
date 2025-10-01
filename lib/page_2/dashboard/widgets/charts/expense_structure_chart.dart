@@ -322,14 +322,17 @@ class _ExpenseStructureChartState extends State<ExpenseStructureChart> with Sing
                   color: Colors.black,
                 ),
               ),
-              DownloadPopupMenu(
-                onDownload: _handleDownload,
-                loading: isDownloading,
-                formats: const [
-                  DownloadFormat.png,
-                  DownloadFormat.svg,
-                  DownloadFormat.csv,
-                ],
+              Transform.translate(
+                offset: const Offset(18, -12),
+                child: DownloadPopupMenu(
+                  onDownload: _handleDownload,
+                  loading: isDownloading,
+                  formats: const [
+                    DownloadFormat.png,
+                    DownloadFormat.svg,
+                    DownloadFormat.csv,
+                  ],
+                ),
               ),
             ],
           ),

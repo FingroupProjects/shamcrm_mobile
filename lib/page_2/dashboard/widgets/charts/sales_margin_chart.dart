@@ -147,7 +147,9 @@ class _SalesMarginChartState extends State<SalesMarginChart> {
                   color: Colors.black,
                 ),
               ),
-              DownloadPopupMenu(
+              Transform.translate(
+                offset: const Offset(18, -12),
+                child:DownloadPopupMenu(
                 onDownload: _handleDownload,
                 loading: isDownloading,
                 formats: const [
@@ -155,7 +157,7 @@ class _SalesMarginChartState extends State<SalesMarginChart> {
                   DownloadFormat.svg,
                   DownloadFormat.csv,
                 ],
-              ),
+              ),),
             ],
           ),
 

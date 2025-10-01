@@ -183,7 +183,9 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
                   color: Colors.black,
                 ),
               ),
-              DownloadPopupMenu(
+              Transform.translate(
+                offset: const Offset(18, -12),
+                child:DownloadPopupMenu(
                 onDownload: _handleDownload,
                 loading: isDownloading,
                 formats: const [
@@ -191,7 +193,7 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
                   DownloadFormat.svg,
                   DownloadFormat.csv,
                 ],
-              ),
+              ),),
             ],
           ),
 

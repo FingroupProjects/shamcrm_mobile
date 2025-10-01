@@ -499,7 +499,9 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
                   color: Colors.black,
                 ),
               ),
-              DownloadPopupMenu(
+              Transform.translate(
+                offset: const Offset(18, -12),
+                child:DownloadPopupMenu(
                 onDownload: _handleDownload,
                 loading: isDownloading,
                 formats: const [
@@ -507,7 +509,7 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
                   DownloadFormat.svg,
                   DownloadFormat.csv,
                 ],
-              ),
+              ),),
             ],
           ),
 

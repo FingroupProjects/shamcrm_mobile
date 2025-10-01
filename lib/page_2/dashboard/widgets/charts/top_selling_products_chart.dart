@@ -161,7 +161,10 @@ class _TopSellingProductsChartState extends State<TopSellingProductsChart> {
                   color: Colors.black,
                 ),
               ),
-              DownloadPopupMenu(onDownload: (DownloadFormat type) {}),
+              Transform.translate(
+                offset: const Offset(18, -12),
+                child: DownloadPopupMenu(onDownload: (DownloadFormat type) {}),
+              ),
             ],
           ),
 
