@@ -141,8 +141,8 @@ class _NetProfitChartState extends State<NetProfitChart> {
                 ),
               ),
               Transform.translate(
-                offset: const Offset(18, -12),
-                child: DownloadPopupMenu(onDownload: (DownloadFormat type) {})),
+                  offset: const Offset(16, 0),
+                  child: DownloadPopupMenu(onDownload: (DownloadFormat type) {})),
             ],
           ),
 

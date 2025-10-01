@@ -162,7 +162,7 @@ class _TopSellingProductsChartState extends State<TopSellingProductsChart> {
                 ),
               ),
               Transform.translate(
-                offset: const Offset(18, -12),
+                offset: const Offset(16, 0),
                 child: DownloadPopupMenu(onDownload: (DownloadFormat type) {}),
               ),
             ],

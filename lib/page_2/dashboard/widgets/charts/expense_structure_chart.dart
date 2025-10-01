@@ -323,7 +323,7 @@ class _ExpenseStructureChartState extends State<ExpenseStructureChart> with Sing
                 ),
               ),
               Transform.translate(
-                offset: const Offset(18, -12),
+                offset: const Offset(16, 0),
                 child: DownloadPopupMenu(
                   onDownload: _handleDownload,
                   loading: isDownloading,
