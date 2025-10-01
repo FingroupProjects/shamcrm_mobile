@@ -3,7 +3,7 @@ import 'package:crm_task_manager/page_2/dashboard/widgets/dialogs/dialog_product
 import 'package:crm_task_manager/page_2/dashboard/widgets/charts/expense_structure_chart.dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/charts/net_profit_chart.dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/charts/order_quantity_chart.dart';
-import 'package:crm_task_manager/page_2/dashboard/widgets/charts/profit_margin_chart.dart';
+import 'package:crm_task_manager/page_2/dashboard/widgets/charts/sales_margin_chart.dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/charts/sales_dynamics_line_chart.dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/stat_card.dart';
 import 'package:flutter/material.dart';
@@ -11,6 +11,10 @@ import 'package:crm_task_manager/page_2/dashboard/widgets/charts/top_selling_pro
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../bloc/page_2_BLOC/dashboard/sales_dashboard_bloc.dart';
+import '../../custom_widget/animation.dart';
+import '../../custom_widget/custom_app_bar_page_2.dart';
+import '../../screens/profile/languages/app_localizations.dart';
+import '../../screens/profile/profile_screen.dart';
 
 class SalesDashboardScreen extends StatefulWidget {
   const SalesDashboardScreen({super.key});
@@ -20,8 +24,14 @@ class SalesDashboardScreen extends StatefulWidget {
 }
 
 class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
+
+  bool isClickAvatarIcon = false;
+  bool _isLoading = false;
+
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+
     return MultiBlocProvider(
       providers: [
         BlocProvider(
@@ -36,7 +46,38 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
         builder: (context, state) {
           return Scaffold(
             backgroundColor: Colors.grey[50],
-            body: SafeArea(
+            appBar: AppBar(
+              forceMaterialTransparency: true,
+              title: CustomAppBarPage2(
+                title: isClickAvatarIcon
+                    ? localizations.translate('appbar_settings') ?? 'Настройки'
+                    : localizations.translate('appbar_sales_dashboard') ??
+                    'Дашборд',
+                onClickProfileAvatar: () {
+                  setState(() {
+                    isClickAvatarIcon = !isClickAvatarIcon;
+                  });
+                },
+                clearButtonClickFiltr: (isSearching) {},
+                showSearchIcon: false,
+                showFilterIcon: false,
+                showFilterOrderIcon: false,
+                onChangedSearchInput: (input) {},
+                textEditingController: TextEditingController(),
+                focusNode: FocusNode(),
+                clearButtonClick: (isSearching) {},
+                currentFilters: {},
+              ),
+            ),
+            body: isClickAvatarIcon
+                ? ProfileScreen()
+                : _isLoading
+                ? const Center(
+              child: PlayStoreImageLoading(
+                size: 80.0,
+                duration: Duration(milliseconds: 1000),
+              ),
+            ) : SafeArea(
               child: SingleChildScrollView(
                 child: Column(
                   children: [
@@ -45,7 +86,7 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
                     SalesDynamicsLineChart(),
                     NetProfitChart(),
                     ExpenseStructureChart(),
-                    ProfitMarginChart(),
+                    SalesMarginChart(),
                     OrderQuantityChart(),
                   ],
                 ),

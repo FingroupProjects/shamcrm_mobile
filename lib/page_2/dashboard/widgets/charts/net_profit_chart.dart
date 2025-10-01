@@ -1,3 +1,4 @@
+import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -148,40 +149,10 @@ class _NetProfitChartState extends State<NetProfitChart> {
           // Period dropdown and Compare button
           Row(
             children: [
-              SizedBox(
-                width: 120, // Set your desired width
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8), // Reduced padding
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey[300]!),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<ProfitPeriod>(
-                      isExpanded: true,
-                      value: selectedPeriod,
-                      icon: const Icon(Icons.keyboard_arrow_down, size: 20),
-                      onChanged: onPeriodChanged,
-                      items: ProfitPeriod.values.map((ProfitPeriod period) {
-                        return DropdownMenuItem<ProfitPeriod>(
-                          value: period,
-                          child: Text( // Remove Container wrapper from items
-                            getPeriodText(period),
-                            style: const TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black87,
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                ),
-              ),
+              Flexible(child: _buildPeriodDropdown()),
               const SizedBox(width: 12),
-              Container(
+              Flexible(
+                  child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 decoration: BoxDecoration(
                   color: Colors.grey[100],
@@ -196,7 +167,7 @@ class _NetProfitChartState extends State<NetProfitChart> {
                     color: Colors.black54,
                   ),
                 ),
-              ),
+              )),
             ],
           ),
 
@@ -207,153 +178,152 @@ class _NetProfitChartState extends State<NetProfitChart> {
             height: 300,
             child: isLoading
                 ? const Center(
-              child: CircularProgressIndicator(
-                color: Color(0xFF4CAF50),
-              ),
-            )
+                    child: CircularProgressIndicator(
+                      color: Color(0xFF4CAF50),
+                    ),
+                  )
                 : profitData.isEmpty
-                ? Center(
-              child: Text(
-                localizations.translate('no_data_to_display'),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontFamily: "Gilroy",
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black54,
-                ),
-              ),
-            )
-                : Padding(
-              padding: const EdgeInsets.only(right: 16, top: 16),
-              child: BarChart(
-                BarChartData(
-                  alignment: BarChartAlignment.spaceAround,
-                  maxY: profitData.map((e) => e.value).reduce((a, b) => a > b ? a : b) * 1.2,
-                  minY: 0,
-                  groupsSpace: selectedPeriod == ProfitPeriod.year ? 8 : 16,
-                  backgroundColor: Colors.transparent,
-                  barTouchData: BarTouchData(
-                    enabled: true,
-                    touchTooltipData: BarTouchTooltipData(
-                      tooltipRoundedRadius: 8,
-                      tooltipPadding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                      tooltipMargin: 8,
-                      fitInsideVertically: true,
-                      fitInsideHorizontally: true,
-                      getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                        return BarTooltipItem(
-                          '${profitData[groupIndex].month}\n',
-                          const TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontSize: 12,
+                    ? Center(
+                        child: Text(
+                          localizations.translate('no_data_to_display'),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontFamily: "Gilroy",
                             fontWeight: FontWeight.w500,
-                            color: Colors.white,
-                          ),
-                          children: [
-                            TextSpan(
-                              text: '${rod.toY.toInt()}k',
-                              style: const TextStyle(
-                                fontFamily: 'Gilroy',
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
-                  titlesData: FlTitlesData(
-                    show: true,
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (value, meta) {
-                          if (value < 0 || value >= profitData.length) {
-                            return const SizedBox.shrink();
-                          }
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: Transform.rotate(
-                              angle: -0.5,
-                              child: Text(
-                                profitData[value.toInt()].month,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  fontFamily: 'Gilroy',
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.black54,
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                        reservedSize: selectedPeriod == ProfitPeriod.year ? 50 : 30,
-                      ),
-                    ),
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (value, meta) {
-                          return Text(
-                            value.toInt().toString(),
-                            style: const TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black54,
-                            ),
-                          );
-                        },
-                        reservedSize: 40,
-                        interval: selectedPeriod == ProfitPeriod.twoYears ? 200 : 100,
-                      ),
-                    ),
-                    rightTitles: AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                    topTitles: AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                  ),
-                  gridData: FlGridData(
-                    show: true,
-                    drawHorizontalLine: true,
-                    drawVerticalLine: false,
-                    horizontalInterval: selectedPeriod == ProfitPeriod.twoYears ? 200 : 100,
-                    getDrawingHorizontalLine: (value) {
-                      return FlLine(
-                        color: Colors.grey.withOpacity(0.2),
-                        strokeWidth: 1,
-                      );
-                    },
-                  ),
-                  borderData: FlBorderData(
-                    show: false,
-                  ),
-                  barGroups: List.generate(
-                    profitData.length,
-                        (index) => BarChartGroupData(
-                      x: index,
-                      barRods: [
-                        BarChartRodData(
-                          toY: profitData[index].value,
-                          color: const Color(0xFF4CAF50),
-                          width: selectedPeriod == ProfitPeriod.year ? 16 : 24,
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(8),
-                            topRight: Radius.circular(8),
+                            color: Colors.black54,
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
+                      )
+                    : Padding(
+                        padding: const EdgeInsets.only(right: 16, top: 16),
+                        child: BarChart(
+                          BarChartData(
+                            alignment: BarChartAlignment.spaceAround,
+                            maxY: profitData.map((e) => e.value).reduce((a, b) => a > b ? a : b) * 1.2,
+                            minY: 0,
+                            groupsSpace: selectedPeriod == ProfitPeriod.year ? 8 : 16,
+                            backgroundColor: Colors.transparent,
+                            barTouchData: BarTouchData(
+                              enabled: true,
+                              touchTooltipData: BarTouchTooltipData(
+                                tooltipRoundedRadius: 8,
+                                tooltipPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                tooltipMargin: 8,
+                                fitInsideVertically: true,
+                                fitInsideHorizontally: true,
+                                getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                                  return BarTooltipItem(
+                                    '${profitData[groupIndex].month}\n',
+                                    const TextStyle(
+                                      fontFamily: 'Gilroy',
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.white,
+                                    ),
+                                    children: [
+                                      TextSpan(
+                                        text: '${rod.toY.toInt()}k',
+                                        style: const TextStyle(
+                                          fontFamily: 'Gilroy',
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
+                            ),
+                            titlesData: FlTitlesData(
+                              show: true,
+                              bottomTitles: AxisTitles(
+                                sideTitles: SideTitles(
+                                  showTitles: true,
+                                  getTitlesWidget: (value, meta) {
+                                    if (value < 0 || value >= profitData.length) {
+                                      return const SizedBox.shrink();
+                                    }
+                                    return Padding(
+                                      padding: const EdgeInsets.only(top: 8),
+                                      child: Transform.rotate(
+                                        angle: -0.5,
+                                        child: Text(
+                                          profitData[value.toInt()].month,
+                                          textAlign: TextAlign.center,
+                                          style: const TextStyle(
+                                            fontFamily: 'Gilroy',
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w500,
+                                            color: Colors.black54,
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  reservedSize: selectedPeriod == ProfitPeriod.year ? 50 : 30,
+                                ),
+                              ),
+                              leftTitles: AxisTitles(
+                                sideTitles: SideTitles(
+                                  showTitles: true,
+                                  getTitlesWidget: (value, meta) {
+                                    return Text(
+                                      value.toInt().toString(),
+                                      style: const TextStyle(
+                                        fontFamily: 'Gilroy',
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.black54,
+                                      ),
+                                    );
+                                  },
+                                  reservedSize: 40,
+                                  interval: selectedPeriod == ProfitPeriod.twoYears ? 200 : 100,
+                                ),
+                              ),
+                              rightTitles: AxisTitles(
+                                sideTitles: SideTitles(showTitles: false),
+                              ),
+                              topTitles: AxisTitles(
+                                sideTitles: SideTitles(showTitles: false),
+                              ),
+                            ),
+                            gridData: FlGridData(
+                              show: true,
+                              drawHorizontalLine: true,
+                              drawVerticalLine: false,
+                              horizontalInterval: selectedPeriod == ProfitPeriod.twoYears ? 200 : 100,
+                              getDrawingHorizontalLine: (value) {
+                                return FlLine(
+                                  color: Colors.grey.withOpacity(0.2),
+                                  strokeWidth: 1,
+                                );
+                              },
+                            ),
+                            borderData: FlBorderData(
+                              show: false,
+                            ),
+                            barGroups: List.generate(
+                              profitData.length,
+                              (index) => BarChartGroupData(
+                                x: index,
+                                barRods: [
+                                  BarChartRodData(
+                                    toY: profitData[index].value,
+                                    color: const Color(0xFF4CAF50),
+                                    width: selectedPeriod == ProfitPeriod.year ? 16 : 24,
+                                    borderRadius: const BorderRadius.only(
+                                      topLeft: Radius.circular(8),
+                                      topRight: Radius.circular(8),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
           ),
 
           const SizedBox(height: 16),
@@ -361,22 +331,62 @@ class _NetProfitChartState extends State<NetProfitChart> {
           Align(
             alignment: Alignment.centerRight,
             child: GestureDetector(
-              onTap: () {
-
-              },
+              onTap: () {},
               child: Text(
                 localizations.translate('more_details'),
                 style: const TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: Color(0xFF4CAF50),
+                  color: Color(0xff1E2E52),
                 ),
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildPeriodDropdown() {
+    return CustomDropdown<ProfitPeriod>(
+      decoration: CustomDropdownDecoration(
+        closedBorder: Border.all(color: Colors.grey[300]!),
+        expandedBorder: Border.all(color: Colors.grey[300]!),
+        closedBorderRadius: BorderRadius.circular(8),
+        expandedBorderRadius: BorderRadius.circular(8),
+        closedFillColor: Colors.white,
+        expandedFillColor: Colors.white,
+      ),
+      items: ProfitPeriod.values,
+      initialItem: selectedPeriod,
+      onChanged: (ProfitPeriod? value) {
+        if (value != null) {
+          onPeriodChanged(value);
+        }
+      },
+      headerBuilder: (context, selectedItem, enabled) {
+        return Text(
+          getPeriodText(selectedItem),
+          style: const TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: Colors.black87,
+          ),
+        );
+      },
+      listItemBuilder: (context, item, isSelected, onItemSelect) {
+        return Text(
+          getPeriodText(item),
+          style: const TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: Colors.black87,
+          ),
+        );
+      },
     );
   }
 }
