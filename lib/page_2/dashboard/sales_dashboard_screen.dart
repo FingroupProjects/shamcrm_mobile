@@ -142,6 +142,7 @@ class TopPart extends StatelessWidget {
                   onTap: () {
                     showSimpleInfoDialog(context);
                   },
+
                   accentColor: Colors.orange,
                   title: localizations.translate('illiquid_goods') ?? 'ТОВАРЫ/НЕЛИКВИДНЫМИ ТОВАРЫ',
                   leading: const Icon(Icons.inventory_2, color: Colors.orange),
