@@ -1458,7 +1458,11 @@
   "add_good": "Mahsulot qo‘shish",
   "select_variant": "Mahsulotni tanlang",
   "pieces": "dona",
-  "storages_must_be_different": "Yuboruvchi va qabul qiluvchi omborlar turlicha bo‘lishi kerak"
+  "storages_must_be_different": "Yuboruvchi va qabul qiluvchi omborlar turlicha bo‘lishi kerak",
+  "owed_to_us": "Bizdan qarzdor",
+  "illiquid_goods": "Likvidligi past tovarlar",
+  "cash_balance": "Kassa qoldig'i",
+  "our_debts": "Bizning qarzlarimiz",
 
 
 

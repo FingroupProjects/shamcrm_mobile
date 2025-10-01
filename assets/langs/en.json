@@ -1450,7 +1450,11 @@
   "add_good": "Add Product",
   "select_variant": "Select Product",
   "pieces": "pcs",
-  "storages_must_be_different": "The source and destination warehouses must be different"
+  "storages_must_be_different": "The source and destination warehouses must be different",
+    "owed_to_us": "Owed to us",
+    "illiquid_goods": "Illiquid goods",
+    "cash_balance": "Cash balance",
+    "our_debts": "Our debts"
 
 
 
