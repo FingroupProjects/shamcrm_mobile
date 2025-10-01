@@ -55,51 +55,51 @@ class CreateClientReturnDocumentScreenState
     _dateController.text = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
     context.read<VariantBloc>().add(FetchVariants());
   }
-  void _handleVariantSelection(Map<String, dynamic>? newItem) {
-    if (mounted && newItem != null) {
-      setState(() {
-        // Проверяем, не добавлен ли уже этот товар
-        final existingIndex = _items.indexWhere((item) => item['variantId'] == newItem['variantId']);
+ void _handleVariantSelection(Map<String, dynamic>? newItem) {
+  if (mounted && newItem != null) {
+    setState(() {
+      // Проверяем, не добавлен ли уже этот товар
+      final existingIndex = _items.indexWhere((item) => item['variantId'] == newItem['variantId']);
 
-        if (existingIndex == -1) {
-          // Добавляем новый товар
-          _items.add(newItem);
+      if (existingIndex == -1) {
+        // Добавляем новый товар
+        _items.add(newItem);
 
-          // Создаем контроллеры для нового товара БЕЗ начальных значений
-          final variantId = newItem['variantId'] as int;
-          _priceControllers[variantId] = TextEditingController();
-          _quantityControllers[variantId] = TextEditingController();
+        // Создаем контроллеры для нового товара БЕЗ начальных значений
+        final variantId = newItem['variantId'] as int;
+        _priceControllers[variantId] = TextEditingController();
+        _quantityControllers[variantId] = TextEditingController();
 
-          // Инициализируем состояние ошибок
-          _priceErrors[variantId] = false;
-          _quantityErrors[variantId] = false;
+        // Инициализируем состояние ошибок
+        _priceErrors[variantId] = false;
+        _quantityErrors[variantId] = false;
 
-          // Убеждаемся что amount существует
-          if (!newItem.containsKey('amount')) {
-            _items.last['amount'] = 1;
-          }
-
-          // Анимация добавления
-          _listKey.currentState?.insertItem(
-            _items.length - 1,
-            duration: const Duration(milliseconds: 300),
-          );
-
-          // Автоматическая прокрутка вниз после добавления товара
-          Future.delayed(const Duration(milliseconds: 350), () {
-            if (mounted && _scrollController.hasClients) {
-              _scrollController.animateTo(
-                _scrollController.position.maxScrollExtent,
-                duration: const Duration(milliseconds: 400),
-                curve: Curves.easeOut,
-              );
-            }
-          });
+        // Убеждаемся что amount существует
+        if (!newItem.containsKey('amount')) {
+          _items.last['amount'] = 1;
         }
-      });
-    }
-  }
 
+        // Анимация добавления
+        _listKey.currentState?.insertItem(
+          _items.length - 1,
+          duration: const Duration(milliseconds: 300),
+        );
+
+        // Автоматическая прокрутка вниз после добавления товара
+        Future.delayed(const Duration(milliseconds: 350), () {
+          if (mounted && _scrollController.hasClients) {
+            _scrollController.animateTo(
+              _scrollController.position.maxScrollExtent,
+              duration: const Duration(milliseconds: 400),
+              curve: Curves.easeOut,
+            );
+          }
+        });
+      }
+    });
+  }
+}
+  
   void _removeItem(int index) {
     if (mounted) {
       final removedItem = _items[index];
@@ -353,14 +353,13 @@ class CreateClientReturnDocumentScreenState
             children: [
               Expanded(
                 child: SingleChildScrollView(
+                  controller: _scrollController,  
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 8),
                       _buildDateField(localizations),
-                      const SizedBox(height: 16),
-                      _buildGoodsSection(localizations),
                       const SizedBox(height: 16),
                       LeadRadioGroupWidget(
                         selectedLead: _selectedLead?.id?.toString(),
@@ -373,6 +372,8 @@ class CreateClientReturnDocumentScreenState
                       ),
                       const SizedBox(height: 16),
                       _buildCommentField(localizations),
+                      const SizedBox(height: 16),
+                      _buildGoodsSection(localizations),
                       const SizedBox(height: 16),
                     ],
                   ),

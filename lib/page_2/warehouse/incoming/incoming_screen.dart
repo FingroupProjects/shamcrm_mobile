@@ -299,9 +299,19 @@ class _IncomingScreenState extends State<IncomingScreen> {
               }
               showCustomSnackBar(context: context, message: state.message, isSuccess: false);
             } else if (state is IncomingDeleteSuccess) {
-              _showSnackBar(state.message, true);
-              if (state.shouldReload) _incomingBloc.add(FetchIncoming(forceRefresh: true, filters: _currentFilters, search: _search));
-            } else if (state is IncomingDeleteError) {
+  _showSnackBar(state.message, true);
+  if (state.shouldReload) {
+    // ✅ Перед перезагрузкой временно показываем загрузку
+    setState(() {
+      _hasReachedMax = false;
+    });
+    _incomingBloc.add(FetchIncoming(
+      forceRefresh: true, 
+      filters: _currentFilters, 
+      search: _search
+    ));
+  }
+}  else if (state is IncomingDeleteError) {
               if (state.statusCode == 409) {
                 debugPrint("[ERROR] IncomingDeleteError: ${state.message} enumType: ${ErrorDialogEnum.goodsIncomingDelete}");
                 showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message, errorDialogEnum: ErrorDialogEnum.goodsIncomingDelete);
@@ -331,34 +341,36 @@ class _IncomingScreenState extends State<IncomingScreen> {
               showCustomSnackBar(context: context, message: state.message, isSuccess: false);
             }
           },
-          child: BlocBuilder<IncomingBloc, IncomingState>(
-            builder: (context, state) {
-              if (state is IncomingLoading) {
-                return Center(
-                  child: PlayStoreImageLoading(
-                    size: 80.0,
-                    duration: const Duration(milliseconds: 1000),
-                  ),
-                );
-              }
+         child: BlocBuilder<IncomingBloc, IncomingState>(
+  builder: (context, state) {
+    // ✅ Показываем загрузку при удалении последнего элемента
+    if (state is IncomingLoading || state is IncomingDeleteLoading) {
+      return Center(
+        child: PlayStoreImageLoading(
+          size: 80.0,
+          duration: const Duration(milliseconds: 1000),
+        ),
+      );
+    }
 
-              final List<IncomingDocument> currentData = state is IncomingLoaded ? state.data : [];
+    final List<IncomingDocument> currentData = state is IncomingLoaded ? state.data : [];
 
-              if (currentData.isEmpty && state is IncomingLoaded) {
-                return Center(
-                  child: Text(
-                    _isSearching
-                        ? localizations!.translate('nothing_found') ?? 'Ничего не найдено'
-                        : localizations!.translate('no_incoming') ?? 'Нет приходов',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xff99A4BA),
-                    ),
-                  ),
-                );
-              }
+    if (currentData.isEmpty && state is IncomingLoaded) {
+      return Center(
+        child: Text(
+          _isSearching
+              ? localizations!.translate('nothing_found') ?? 'Ничего не найдено'
+              : localizations!.translate('no_incoming') ?? 'Нет приходов',
+          style: const TextStyle(
+            fontSize: 18,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            color: Color(0xff99A4BA),
+          ),
+        ),
+      );
+    }
+    
 
               return RefreshIndicator(
                 color: const Color(0xff1E2E52),
@@ -406,17 +418,15 @@ class _IncomingScreenState extends State<IncomingScreen> {
                         confirmDismiss: (direction) async {
                           return currentData[index].deletedAt == null;
                         },
-                        onDismissed: (direction) {
-                          print("🗑️ [UI] Удаление dokumenta ID: ${currentData[index].id}");
-                          setState(() {
-                            currentData.removeAt(index);
-                          });
-                          _incomingBloc.add(DeleteIncoming(
-                            currentData[index].id!,
-                            localizations!,
-                            shouldReload: false,
-                          ));
-                        },
+                 onDismissed: (direction) {
+  print("🗑️ [UI] Удаление документа ID: ${currentData[index].id}");
+  // ❌ Убираем setState с removeAt
+  _incomingBloc.add(DeleteIncoming(
+    currentData[index].id!,
+    localizations!,
+    shouldReload: true, // ✅ Всегда перезагружаем
+  ));
+} ,
                         child: ClipRRect(
                             borderRadius: BorderRadius.circular(12),
                             child: IncomingCard(

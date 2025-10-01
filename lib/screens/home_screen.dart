@@ -158,7 +158,7 @@ class _HomeScreenState extends State<HomeScreen> {
       widgetsGroup2.add(WarehouseAccountingScreen());
       titleKeysGroup2.add('appbar_warehouse');
       navBarTitleKeysGroup2.add('appbar_warehouse');
-         activeIconsGroup2.add('assets/icons/MyNavBar/money_ON.png');
+         activeIconsGroup2.add('assets/icons/MyNavBar/money_on.png');
     inactiveIconsGroup2.add('assets/icons/MyNavBar/money_OFF.png');
       hasAvailableScreens = true;
     }

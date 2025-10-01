@@ -369,7 +369,6 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
                       const SizedBox(height: 8),
                       _buildDateField(localizations),
                       const SizedBox(height: 16),
-                      const SizedBox(height: 16),
                       SupplierWidget(
                         selectedSupplier: _selectedSupplier,
                         onChanged: (value) => setState(() => _selectedSupplier = value),
