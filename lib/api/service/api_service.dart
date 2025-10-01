@@ -63,6 +63,11 @@ import 'package:crm_task_manager/models/page_2/call_summary_stats_model.dart';
 import 'package:crm_task_manager/models/page_2/category_model.dart';
 import 'package:crm_task_manager/models/page_2/character_list_model.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/dashboard_goods_report.dart';
+import 'package:crm_task_manager/models/page_2/dashboard/cash_balance_model.dart';
+import 'package:crm_task_manager/models/page_2/dashboard/dashboard_top.dart';
+import 'package:crm_task_manager/models/page_2/dashboard/debtors_model.dart';
+import 'package:crm_task_manager/models/page_2/dashboard/creditors_model.dart';
+import 'package:crm_task_manager/models/page_2/dashboard/illiquids_model.dart';
 import 'package:crm_task_manager/models/page_2/delivery_address_model.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_history_model.dart';
@@ -127,6 +132,7 @@ import '../../models/login_model.dart';
 import '../../models/money/money_income_document_model.dart';
 import '../../models/money/money_outcome_document_model.dart';
 import '../../models/outcome_categories_data_response.dart';
+import '../../models/page_2/dashboard/expense_structure.dart';
 
 // final String baseUrl = 'https://fingroup-back.shamcrm.com/api';
 // final String baseUrl = 'https://ede8-95-142-94-22.ngrok-free.app';
@@ -14287,4 +14293,230 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       rethrow;
     }
   }
+
+  /// Получение списка должников
+  Future<DebtorsResponse> getDebtorsList({
+    String? from,
+    String? to,
+    int? cashRegisterId,
+    int? supplierId,
+    int? clientId,
+    int? leadId,
+    String? operationType,
+    String? search,
+  }) async {
+    try {
+      // Формируем параметры запроса
+      Map<String, String> queryParams = {};
+      
+      if (from != null) queryParams['from'] = from;
+      if (to != null) queryParams['to'] = to;
+      if (cashRegisterId != null) queryParams['cash_register_id'] = cashRegisterId.toString();
+      if (supplierId != null) queryParams['supplier_id'] = supplierId.toString();
+      if (clientId != null) queryParams['client_id'] = clientId.toString();
+      if (leadId != null) queryParams['lead_id'] = leadId.toString();
+      if (operationType != null) queryParams['operation_type'] = operationType;
+      if (search != null) queryParams['search'] = search;
+
+      var path = await _appendQueryParams('/fin/dashboard/debtors-list');
+
+      if (queryParams.isNotEmpty) {
+        path += '?${Uri.encodeQueryComponent(queryParams.entries.map((e) => '${e.key}=${e.value}').join('&'))}';
+      }
+
+      if (kDebugMode) {
+        print('ApiService: getDebtorsList - Generated path: $path');
+      }
+
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return DebtorsResponse.fromJson(data);
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при получении списка должников!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  /// Получение списка кредиторов
+  Future<CreditorsResponse> getCreditorsList({
+    String? from,
+    String? to,
+    int? cashRegisterId,
+    int? supplierId,
+    int? clientId,
+    int? leadId,
+    String? operationType,
+    String? search,
+  }) async {
+    try {
+      // Формируем параметры запроса
+      Map<String, String> queryParams = {};
+      
+      if (from != null) queryParams['from'] = from;
+      if (to != null) queryParams['to'] = to;
+      if (cashRegisterId != null) queryParams['cash_register_id'] = cashRegisterId.toString();
+      if (supplierId != null) queryParams['supplier_id'] = supplierId.toString();
+      if (clientId != null) queryParams['client_id'] = clientId.toString();
+      if (leadId != null) queryParams['lead_id'] = leadId.toString();
+      if (operationType != null) queryParams['operation_type'] = operationType;
+      if (search != null) queryParams['search'] = search;
+
+      var path = await _appendQueryParams('/fin/dashboard/creditors-list');
+
+       if (queryParams.isNotEmpty) {
+        path += '?${Uri.encodeQueryComponent(queryParams.entries.map((e) => '${e.key}=${e.value}').join('&'))}';
+      }
+      if (kDebugMode) {
+        print('ApiService: getCreditorsList - Generated path: $path');
+      }
+
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return CreditorsResponse.fromJson(data);
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при получении списка кредиторов!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  /// Получение данных о неликвидных товарах
+  Future<IlliquidGoodsResponse> getIlliquidGoods({
+    String? from,
+    String? to,
+  }) async {
+    try {
+      // Формируем параметры запроса
+      Map<String, String> queryParams = {};
+      
+      if (from != null) queryParams['from'] = from;
+      if (to != null) queryParams['to'] = to;
+
+      var path = await _appendQueryParams('/dashboard/illiquid-goods');
+
+      if (queryParams.isNotEmpty) {
+        path += '?${Uri.encodeQueryComponent(queryParams.entries.map((e) => '${e.key}=${e.value}').join('&'))}';
+      }
+      
+      if (kDebugMode) {
+        print('ApiService: getIlliquidGoods - Generated path: $path');
+      }
+
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return IlliquidGoodsResponse.fromJson(data);
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при получении данных о неликвидных товарах!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  /// Получение баланса денежных средств
+  Future<CashBalanceResponse> getCashBalance({
+    String? from,
+    String? to,
+    int? page,
+    int? perPage,
+  }) async {
+    try {
+      // Формируем параметры запроса
+      Map<String, String> queryParams = {};
+      
+      if (from != null) queryParams['from'] = from;
+      if (to != null) queryParams['to'] = to;
+      if (page != null) queryParams['page'] = page.toString();
+      if (perPage != null) queryParams['per_page'] = perPage.toString();
+
+      var path = await _appendQueryParams('/fin/dashboard/cash-balance');
+
+      if (queryParams.isNotEmpty) {
+        path += '?${Uri.encodeQueryComponent(queryParams.entries.map((e) => '${e.key}=${e.value}').join('&'))}';
+      }
+
+      
+      if (kDebugMode) {
+        print('ApiService: getCashBalance - Generated path: $path');
+      }
+
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return CashBalanceResponse.fromJson(data);
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при получении баланса денежных средств!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  /// Получение баланса денежных средств
+  Future<DashboardTopPart> getSalesDashboardTopPart() async {
+      // Формируем параметры запроса
+      var path = await _appendQueryParams('/fin/dashboard');
+
+      debugPrint("ApiService: getSalesDashboardTopPart path: $path");
+
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return DashboardTopPart.fromJson(data);
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка',
+          response.statusCode,
+        );
+      }
+  }
+
+  Future<ExpenseDashboard> getExpenseStructure() async {
+    // Формируем параметры запроса
+    var path = await _appendQueryParams('/fin/dashboard/expense-structure');
+
+    debugPrint("ApiService: getExpenseStructure path: $path");
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return ExpenseDashboard.fromJson(data['result']);
+    } else {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка',
+        response.statusCode,
+      );
+    }
+  }
+
 }

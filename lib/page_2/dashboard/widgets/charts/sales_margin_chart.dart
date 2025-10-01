@@ -1,4 +1,5 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/models/page_2/dashboard/expense_structure.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -16,7 +17,7 @@ class SalesData {
 }
 
 class SalesMarginChart extends StatefulWidget {
-  const SalesMarginChart({Key? key}) : super(key: key);
+  const SalesMarginChart({super.key});
 
   @override
   State<SalesMarginChart> createState() => _SalesMarginChartState();
@@ -149,15 +150,16 @@ class _SalesMarginChartState extends State<SalesMarginChart> {
               ),
               Transform.translate(
                 offset: const Offset(16, 0),
-                child:DownloadPopupMenu(
-                onDownload: _handleDownload,
-                loading: isDownloading,
-                formats: const [
-                  DownloadFormat.png,
-                  DownloadFormat.svg,
-                  DownloadFormat.csv,
-                ],
-              ),),
+                child: DownloadPopupMenu(
+                  onDownload: _handleDownload,
+                  loading: isDownloading,
+                  formats: const [
+                    DownloadFormat.png,
+                    DownloadFormat.svg,
+                    DownloadFormat.csv,
+                  ],
+                ),
+              ),
             ],
           ),
 
@@ -166,9 +168,10 @@ class _SalesMarginChartState extends State<SalesMarginChart> {
           // Period dropdown and Compare button
           Row(
             children: [
-             Flexible(child: _buildPeriodDropdown()),
+              Flexible(child: _buildPeriodDropdown()),
               const SizedBox(width: 12),
-              Flexible(child: Container(
+              Flexible(
+                  child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 decoration: BoxDecoration(
                   color: Colors.grey[100],
@@ -437,4 +440,3 @@ class _SalesMarginChartState extends State<SalesMarginChart> {
     );
   }
 }
-
