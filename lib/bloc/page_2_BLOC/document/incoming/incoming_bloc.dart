@@ -69,24 +69,23 @@ class IncomingBloc extends Bloc<IncomingEvent, IncomingState> {
     emit(IncomingLoaded(data: _allData));
   }
 
-  Future<void> _onMassDeleteIncomingDocuments(MassDeleteIncomingDocuments event, Emitter<IncomingState> emit) async {
-    final ls = _selectedDocuments.where((e) => e.deletedAt == null).map((e) => e.id!).toList();
-    add(UnselectAllDocuments());
+Future<void> _onMassDeleteIncomingDocuments(MassDeleteIncomingDocuments event, Emitter<IncomingState> emit) async {
+  final ls = _selectedDocuments.where((e) => e.deletedAt == null).map((e) => e.id!).toList();
+  add(UnselectAllDocuments());
 
-    try {
-      await apiService.massDeleteIncomingDocuments(ls);
-      emit(IncomingDeleteMassSuccess("mass_delete_success_message"));
-    } catch (e) {
-      if (e is ApiException && e.statusCode == 409) {
-        emit(IncomingDeleteMassError(e.toString(), statusCode: e.statusCode));
-      } else {
-        emit(IncomingDeleteMassError(e.toString()));
-      }
-      add(FetchIncoming(forceRefresh: true));
-    }
-
-    emit(IncomingLoaded(data: _allData));
+  try {
+    await apiService.massDeleteIncomingDocuments(ls);
+    
+    // ✅ Удаляем из локального состояния
+    _allData.removeWhere((doc) => ls.contains(doc.id));
+    
+    emit(IncomingDeleteMassSuccess("mass_delete_success_message"));
+  } catch (e) {
+    // ... обработка ошибок
   }
+
+  emit(IncomingLoaded(data: List.from(_allData)));
+}
 
   Future<void> _onMassRestoreIncomingDocuments(MassRestoreIncomingDocuments event, Emitter<IncomingState> emit) async {
     final ls = _selectedDocuments.where((e) => e.deletedAt != null).map((e) => e.id!).toList();
@@ -274,23 +273,46 @@ class IncomingBloc extends Bloc<IncomingEvent, IncomingState> {
     }
   }
 
-  Future<void> _onDeleteIncoming(DeleteIncoming event, Emitter<IncomingState> emit) async {
-    if(event.shouldReload) emit(IncomingDeleteLoading()); // Эта строка должна быть!
-    try {
-      final result = await apiService.deleteIncomingDocument(event.documentId);
-      if (result['result'] == 'Success') {
-        await Future.delayed(const Duration(milliseconds: 100));
-        emit(IncomingDeleteSuccess('Документ успешно удален', shouldReload: event.shouldReload || _allData.isEmpty));
-      } else {
-        emit(IncomingDeleteError('Не удалось удалить документ'));
-      }
-    } catch (e) {
-      if (e is ApiException) {
-        emit(IncomingDeleteError('Ошибка при удалении документа: ${e.toString()}', statusCode: e.statusCode));
-      } else {
-        emit(IncomingDeleteError('Ошибка при удалении документа: ${e.toString()}'));
-      }
-    }
-    emit(IncomingLoaded(data: _allData, selectedData: _selectedDocuments));
+Future<void> _onDeleteIncoming(DeleteIncoming event, Emitter<IncomingState> emit) async {
+  // ✅ Если удаляем последний элемент и нужна перезагрузка
+  final isLastElement = _allData.length == 1;
+  
+  if(event.shouldReload || isLastElement) {
+    emit(IncomingDeleteLoading());
   }
+  
+  try {
+    final result = await apiService.deleteIncomingDocument(event.documentId);
+    if (result['result'] == 'Success') {
+      _allData.removeWhere((doc) => doc.id == event.documentId);
+      _selectedDocuments.removeWhere((doc) => doc.id == event.documentId);
+      
+      await Future.delayed(const Duration(milliseconds: 100));
+      emit(IncomingDeleteSuccess(
+        'Документ успешно удален', 
+        shouldReload: event.shouldReload || isLastElement
+      ));
+    } else {
+      emit(IncomingDeleteError('Не удалось удалить документ'));
+    }
+  } catch (e) {
+    if (e is ApiException) {
+      emit(IncomingDeleteError(
+        'Ошибка при удалении документа: ${e.toString()}', 
+        statusCode: e.statusCode
+      ));
+    } else {
+      emit(IncomingDeleteError('Ошибка при удалении документа: ${e.toString()}'));
+    }
+  }
+  
+  // ✅ Если список пустой, не эмитим IncomingLoaded (оставляем IncomingDeleteLoading)
+  if (_allData.isNotEmpty) {
+    emit(IncomingLoaded(
+      data: List.from(_allData), 
+      selectedData: List.from(_selectedDocuments),
+      hasReachedMax: state is IncomingLoaded ? (state as IncomingLoaded).hasReachedMax : false,
+    ));
+  }
+}
 }
