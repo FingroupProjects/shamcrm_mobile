@@ -420,7 +420,7 @@ class _WriteOffScreenState extends State<WriteOffScreen> {
                         _writeOffBloc.add(DeleteWriteOffDocument(
                           currentData[index].id!,
                           localizations!,
-                          shouldReload: false,
+                          shouldReload: true,
                         ));
                       },
                       child: ClipRRect(

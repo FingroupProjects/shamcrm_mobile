@@ -387,7 +387,7 @@ class _ClientReturnScreenState extends State<ClientReturnScreen> {
                         _clientReturnBloc.add(DeleteClientReturn(
                           documentToDelete.id!,
                           localizations!,
-                          shouldReload: false,
+                          shouldReload: true,
                         ));
                       },
                       child: ClipRRect(
