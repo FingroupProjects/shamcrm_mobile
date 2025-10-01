@@ -1455,7 +1455,7 @@
     "owed_to_us": "Owed to us",
     "illiquid_goods": "Illiquid goods",
     "cash_balance": "Cash balance",
-    "our_debts": "Our debts"
+    "our_debts": "Our debts",
 
   "error_toggling_approval": "Error changing approval status",
   "error_loading_outcome_categories": "Error loading expense categories",

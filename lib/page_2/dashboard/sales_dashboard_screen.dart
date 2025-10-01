@@ -18,6 +18,7 @@ import '../../custom_widget/custom_app_bar_page_2.dart';
 import '../../models/page_2/dashboard/dashboard_top.dart';
 import '../../models/page_2/dashboard/debtors_model.dart';
 import '../../models/page_2/dashboard/expense_structure.dart';
+import '../../models/page_2/dashboard/sales_model.dart';
 import '../../screens/profile/languages/app_localizations.dart';
 import '../../screens/profile/profile_screen.dart';
 
@@ -81,36 +82,44 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
                 currentFilters: {},
               ),
             ),
-            body: isClickAvatarIcon
-                ? const ProfileScreen()
-                : state is SalesDashboardLoading
-                    ? const Center(
-                        child: PlayStoreImageLoading(
-                          size: 80.0,
-                          duration: Duration(milliseconds: 1000),
-                        ),
-                      )
-                    : state is SalesDashboardLoaded
-                        ? SafeArea(
-                            child: SingleChildScrollView(
-                              child: Column(
-                                children: [
-                                  const SizedBox(height: 16),
-                                  TopPart(state: state),
-                                  const TopSellingProductsChart(),
-                                  const SalesDynamicsLineChart(),
-                                  const NetProfitChart(),
-                                  const ExpenseStructureChart(),
-                                  const SalesMarginChart(),
-                                  const OrderQuantityChart(),
-                                  const SizedBox(height: 16),
-                                ],
-                              ),
-                            ),
-                          )
-                        : Center(
-                            child: Text(localizations.translate('error_loading') ?? 'Ошибка загрузки'),
-                          ),
+            body: Builder(
+              builder: (context) {
+                if (isClickAvatarIcon) {
+                  return const ProfileScreen();
+                } else if (state is SalesDashboardLoading) {
+                  return const Center(
+                    child: PlayStoreImageLoading(
+                      size: 80.0,
+                      duration: Duration(milliseconds: 1000),
+                    ),
+                  );
+                } else if (state is SalesDashboardLoaded) {
+                  final SalesResponse? salesData = state.salesData;
+
+                  return SafeArea(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 16),
+                          TopPart(state: state),
+                          const TopSellingProductsChart(),
+                          SalesDynamicsLineChart(salesData),
+                          const NetProfitChart(),
+                          const ExpenseStructureChart(),
+                          const SalesMarginChart(),
+                          const OrderQuantityChart(),
+                          const SizedBox(height: 16),
+                        ],
+                      ),
+                    ),
+                  );
+                } else {
+                  return Center(
+                    child: Text(localizations.translate('error_loading') ?? 'Ошибка загрузки'),
+                  );
+                }
+              },
+            ),
           );
         },
       ),
@@ -128,7 +137,7 @@ class TopPart extends StatelessWidget {
     final localizations = AppLocalizations.of(context)!;
 
     final DashboardTopPart? salesDashboardTopPart = state is SalesDashboardLoaded ? (state as SalesDashboardLoaded).salesDashboardTopPart : null;
-    final ExpenseDashboard? expenseDashboard = state is SalesDashboardLoaded ? (state as SalesDashboardLoaded).expenseStructure : null;
+    // final ExpenseDashboard? expenseDashboard = state is SalesDashboardLoaded ? (state as SalesDashboardLoaded).expenseStructure : null;
 
 
     return Column(
@@ -137,21 +146,22 @@ class TopPart extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Row(
             children: [
-              Expanded(
-                child: StatCard(
-                  onTap: () {
-                    showSimpleInfoDialog(context);
-                  },
-
-                  accentColor: Colors.orange,
-                  title: localizations.translate('illiquid_goods') ?? 'ТОВАРЫ/НЕЛИКВИДНЫМИ ТОВАРЫ',
-                  leading: const Icon(Icons.inventory_2, color: Colors.orange),
-                  amount: expenseDashboard?.totalExpenses ?? 0,
-                  showCurrencySymbol: false,
-                  isUp: expenseDashboard?.expensesChangePositive ?? true,
-                  trendText: expenseDashboard?.expensesChange.toString() ?? '0.0%',
-                ),
-              ),
+              Expanded(child: Container()),
+              // Expanded(
+              //   child: StatCard(
+              //     onTap: () {
+              //       showSimpleInfoDialog(context);
+              //     },
+              //
+              //     accentColor: Colors.orange,
+              //     title: localizations.translate('illiquid_goods') ?? 'ТОВАРЫ/НЕЛИКВИДНЫМИ ТОВАРЫ',
+              //     leading: const Icon(Icons.inventory_2, color: Colors.orange),
+              //     amount: expenseDashboard?.totalExpenses ?? 0,
+              //     showCurrencySymbol: false,
+              //     isUp: expenseDashboard?.expensesChangePositive ?? true,
+              //     trendText: expenseDashboard?.expensesChange.toString() ?? '0.0%',
+              //   ),
+              // ),
               const SizedBox(width: 16),
               Expanded(
                 child: StatCard(

@@ -5,6 +5,7 @@ import 'package:equatable/equatable.dart';
 import '../../../api/service/api_service.dart';
 import '../../../models/page_2/dashboard/dashboard_top.dart';
 import '../../../models/page_2/dashboard/expense_structure.dart';
+import '../../../models/page_2/dashboard/sales_model.dart';
 
 part 'sales_dashboard_event.dart';
 part 'sales_dashboard_state.dart';
@@ -20,15 +21,18 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
 
         final results = await Future.wait([
           apiService.getSalesDashboardTopPart(),
-          apiService.getExpenseStructure(),
+          // apiService.getExpenseStructure(),
+          apiService.getSalesDynamics(),
         ]);
 
         final salesDashboardTopResponse = results[0] as DashboardTopPart;
-        final expenseStructure = results[1] as ExpenseDashboard;
+        // final expenseStructure = results[1] as ExpenseDashboard;
+        final salesData = results[1] as SalesResponse;
 
         emit(SalesDashboardLoaded(
           salesDashboardTopPart: salesDashboardTopResponse,
-          expenseStructure: expenseStructure,
+          // expenseStructure: expenseStructure,
+          salesData: salesData,
         ));
     });
 
