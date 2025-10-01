@@ -131,22 +131,43 @@ class SupplierReturnBloc extends Bloc<SupplierReturnEvent, SupplierReturnState> 
     }
   }
 
-  Future<void> _onDeleteSupplierReturn(DeleteSupplierReturn event, Emitter<SupplierReturnState> emit) async {
+ Future<void> _onDeleteSupplierReturn(DeleteSupplierReturn event, Emitter<SupplierReturnState> emit) async {
+  final isLastElement = _allData.length == 1;
+  
+  if (event.shouldReload || isLastElement) {
     emit(SupplierReturnDeleteLoading());
-    try {
-      final result = await apiService.deleteSupplierReturnDocument(event.documentId);
-      if (result['result'] == 'Success') {
-        await Future.delayed(const Duration(milliseconds: 100));
-        emit(SupplierReturnDeleteSuccess('Документ успешно удален'));
-      } else {
-        emit(SupplierReturnDeleteError('Не удалось удалить документ'));
-      }
-    } catch (e) {
-      if (e is ApiException) {
-        emit(SupplierReturnDeleteError('Ошибка при удалении документа: ${e.toString()}', statusCode: e.statusCode));
-      } else {
-        emit(SupplierReturnDeleteError('Ошибка при удалении документа: ${e.toString()}'));
-      }
+  }
+
+  try {
+    final result = await apiService.deleteSupplierReturnDocument(event.documentId);
+    
+    if (result['result'] == 'Success') {
+      _allData.removeWhere((doc) => doc.id == event.documentId);
+      
+      await Future.delayed(const Duration(milliseconds: 100));
+      emit(SupplierReturnDeleteSuccess(
+        'Документ успешно удален',
+        shouldReload: event.shouldReload || isLastElement
+      ));
+    } else {
+      emit(SupplierReturnDeleteError('Не удалось удалить документ'));
+    }
+  } catch (e) {
+    if (e is ApiException) {
+      emit(SupplierReturnDeleteError(
+        'Ошибка при удалении документа: ${e.toString()}',
+        statusCode: e.statusCode
+      ));
+    } else {
+      emit(SupplierReturnDeleteError('Ошибка при удалении документа: ${e.toString()}'));
     }
   }
+  
+  if (_allData.isNotEmpty) {
+    emit(SupplierReturnLoaded(
+      data: List.from(_allData),
+      hasReachedMax: state is SupplierReturnLoaded ? (state as SupplierReturnLoaded).hasReachedMax : false,
+    ));
+  }
+}
 }

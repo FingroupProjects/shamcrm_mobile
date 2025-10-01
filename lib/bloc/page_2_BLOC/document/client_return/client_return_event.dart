@@ -11,38 +11,25 @@ class FetchClientReturns extends ClientReturnEvent {
   final bool forceRefresh;
   final Map<String, dynamic>? filters;
   final int? status;
-  final String? search;
 
   const FetchClientReturns({
     this.forceRefresh = false,
     this.filters,
     this.status,
-    this.search,
   });
 
   @override
-  List<Object> get props => [forceRefresh, filters ?? {}, status ?? 0, search ?? ''];
+  List<Object> get props => [forceRefresh, filters ?? {}, status ?? 0];
 }
 
-class DeleteClientReturn extends ClientReturnEvent {
+class DeleteClientReturnDocument extends ClientReturnEvent {
   final int documentId;
-  final AppLocalizations localizations;
   final bool shouldReload;
 
-  const DeleteClientReturn(this.documentId, this.localizations, {this.shouldReload = true});
+  const DeleteClientReturnDocument(this.documentId, {this.shouldReload = true});
 
   @override
-  List<Object> get props => [documentId, localizations, shouldReload];
-}
-
-class RestoreClientReturn extends ClientReturnEvent {
-  final int documentId;
-  final AppLocalizations localizations;
-
-  const RestoreClientReturn(this.documentId, this.localizations);
-
-  @override
-  List<Object> get props => [documentId, localizations];
+  List<Object> get props => [documentId, shouldReload];
 }
 
 class CreateClientReturnDocument extends ClientReturnEvent {
@@ -68,15 +55,15 @@ class CreateClientReturnDocument extends ClientReturnEvent {
 
   @override
   List<Object> get props => [
-    date,
-    storageId,
-    comment,
-    counterpartyId,
-    documentGoods,
-    organizationId,
-    salesFunnelId,
-    approve,
-  ];
+        date,
+        storageId,
+        comment,
+        counterpartyId,
+        documentGoods,
+        organizationId,
+        salesFunnelId,
+        approve,
+      ];
 }
 
 class UpdateClientReturnDocument extends ClientReturnEvent {
@@ -102,47 +89,13 @@ class UpdateClientReturnDocument extends ClientReturnEvent {
 
   @override
   List<Object> get props => [
-    documentId,
-    date,
-    storageId,
-    comment,
-    counterpartyId,
-    documentGoods,
-    organizationId,
-    salesFunnelId
-  ];
-}
-
-class MassApproveClientReturnDocuments extends ClientReturnEvent {
-  @override
-  List<Object> get props => [];
-}
-
-class MassDisapproveClientReturnDocuments extends ClientReturnEvent {
-  @override
-  List<Object> get props => [];
-}
-
-class MassDeleteClientReturnDocuments extends ClientReturnEvent {
-  @override
-  List<Object> get props => [];
-}
-
-class MassRestoreClientReturnDocuments extends ClientReturnEvent {
-  @override
-  List<Object> get props => [];
-}
-
-class SelectDocument extends ClientReturnEvent {
-  final IncomingDocument document;
-
-  const SelectDocument(this.document);
-
-  @override
-  List<Object> get props => [document];
-}
-
-class UnselectAllDocuments extends ClientReturnEvent {
-  @override
-  List<Object> get props => [];
+        documentId,
+        date,
+        storageId,
+        comment,
+        counterpartyId,
+        documentGoods,
+        organizationId,
+        salesFunnelId
+      ];
 }

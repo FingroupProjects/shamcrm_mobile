@@ -5,6 +5,7 @@ import 'package:crm_task_manager/models/page_2/variant_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class VariantSelectionBottomSheet extends StatefulWidget {
   final List<Map<String, dynamic>> existingItems;
@@ -21,6 +22,8 @@ class VariantSelectionBottomSheet extends StatefulWidget {
 class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomSheet> {
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+    bool _goodMeasurementEnabled = true; // добавляем флаг
+
 
   @override
   void initState() {
@@ -33,8 +36,16 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
     _searchController.dispose();
     _scrollController.dispose();
     super.dispose();
-  }
+        _loadGoodMeasurementSetting(); // загружаем настройку
 
+  }
+ // Добавляем метод загрузки настройки
+  Future<void> _loadGoodMeasurementSetting() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _goodMeasurementEnabled = prefs.getBool('good_measurement') ?? true;
+    });
+  }
   void _onScroll() {
     if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent * 0.9) {
       final state = context.read<VariantBloc>().state;
@@ -49,7 +60,6 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
   }
 
   void _onVariantTap(Variant variant) {
-    // Проверяем, не добавлен ли уже этот товар
     final isAlreadyAdded = widget.existingItems.any((item) => item['variantId'] == variant.id);
     
     if (isAlreadyAdded) {
@@ -59,26 +69,31 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
       return;
     }
 
-    // Получаем amount из первой единицы измерения
     final firstUnitAmount = variant.availableUnits.isNotEmpty 
         ? (variant.availableUnits.first.amount ?? 1) 
         : 1;
 
-    // Возвращаем выбранный товар
+    // Формируем результат с учётом настройки good_measurement
     final result = {
       'id': variant.goodId,
       'variantId': variant.id,
       'name': variant.fullName ?? variant.good?.name ?? 'Неизвестный товар',
-      'quantity': 1, // Значение по умолчанию
-      'price': 0.0, // Значение по умолчанию
+      'quantity': 1,
+      'price': 0.0,
       'total': 0.0,
-      'selectedUnit': variant.availableUnits.isNotEmpty
-          ? (variant.availableUnits.first.shortName ?? variant.availableUnits.first.name)
-          : null,
-      'unit_id': variant.availableUnits.isNotEmpty ? variant.availableUnits.first.id : 2,
-      'amount': firstUnitAmount, // Добавляем amount
+      'amount': firstUnitAmount,
       'availableUnits': variant.availableUnits,
     };
+
+    // Добавляем unit-поля только если good_measurement включен
+    if (_goodMeasurementEnabled) {
+      result['selectedUnit'] = (variant.availableUnits.isNotEmpty
+          ? (variant.availableUnits.first.shortName ?? variant.availableUnits.first.name)
+          : null)!;
+      result['unit_id'] = variant.availableUnits.isNotEmpty 
+          ? variant.availableUnits.first.id 
+          : 2;
+    }
 
     Navigator.pop(context, result);
   }

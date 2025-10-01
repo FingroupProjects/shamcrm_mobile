@@ -72,24 +72,28 @@ class WriteOffBloc extends Bloc<WriteOffEvent, WriteOffState> {
     emit(WriteOffLoaded(data: _allData));
   }
 
-  Future<void> _onMassDeleteWriteOffDocuments(MassDeleteWriteOffDocuments event, Emitter<WriteOffState> emit) async {
-    final ls = _selectedDocuments.where((e) => e.deletedAt == null).map((e) => e.id!).toList();
-    add(UnselectAllDocuments());
+ Future<void> _onMassDeleteWriteOffDocuments(MassDeleteWriteOffDocuments event, Emitter<WriteOffState> emit) async {
+  final ls = _selectedDocuments.where((e) => e.deletedAt == null).map((e) => e.id!).toList();
+  add(UnselectAllDocuments());
 
-    try {
-      await apiService.massDeleteWriteOffDocuments(ls);
-      emit(WriteOffDeleteMassSuccess("mass_delete_success_message"));
-    } catch (e) {
-      if (e is ApiException && e.statusCode == 409) {
-        emit(WriteOffDeleteMassError(e.toString(), statusCode: e.statusCode));
-      } else {
-        emit(WriteOffDeleteMassError(e.toString()));
-      }
-      add(FetchWriteOffs(forceRefresh: true));
+  try {
+    await apiService.massDeleteWriteOffDocuments(ls);
+    
+    // ✅ Удаляем из локального состояния
+    _allData.removeWhere((doc) => ls.contains(doc.id));
+    
+    emit(WriteOffDeleteMassSuccess("mass_delete_success_message"));
+  } catch (e) {
+    if (e is ApiException && e.statusCode == 409) {
+      emit(WriteOffDeleteMassError(e.toString(), statusCode: e.statusCode));
+    } else {
+      emit(WriteOffDeleteMassError(e.toString()));
     }
-
-    emit(WriteOffLoaded(data: _allData));
+    add(FetchWriteOffs(forceRefresh: true));
   }
+
+  emit(WriteOffLoaded(data: List.from(_allData), selectedData: List.from(_selectedDocuments)));
+}
 
   Future<void> _onMassRestoreWriteOffDocuments(MassRestoreWriteOffDocuments event, Emitter<WriteOffState> emit) async {
     final ls = _selectedDocuments.where((e) => e.deletedAt != null).map((e) => e.id!).toList();
@@ -247,25 +251,50 @@ class WriteOffBloc extends Bloc<WriteOffEvent, WriteOffState> {
     }
   }
 
-  Future<void> _onDeleteWriteOff(DeleteWriteOffDocument event, Emitter<WriteOffState> emit) async {
-    if(event.shouldReload) emit(WriteOffDeleteLoading());
-    try {
-      final result = await apiService.deleteWriteOffDocument(event.documentId);
-      if (result['result'] == 'Success') {
-        await Future.delayed(const Duration(milliseconds: 100));
-        emit(WriteOffDeleteSuccess('Документ успешно удален', shouldReload: event.shouldReload || _allData.isEmpty));
-      } else {
-        emit(WriteOffDeleteError('Не удалось удалить документ'));
-      }
-    } catch (e) {
-      if (e is ApiException) {
-        emit(WriteOffDeleteError('Ошибка при удалении документа: ${e.toString()}', statusCode: e.statusCode));
-      } else {
-        emit(WriteOffDeleteError('Ошибка при удалении документа: ${e.toString()}'));
-      }
-    }
-    emit(WriteOffLoaded(data: _allData, selectedData: _selectedDocuments));
+ Future<void> _onDeleteWriteOff(DeleteWriteOffDocument event, Emitter<WriteOffState> emit) async {
+  // ✅ Проверяем, последний ли это элемент
+  final isLastElement = _allData.length == 1;
+  
+  if (event.shouldReload || isLastElement) {
+    emit(WriteOffDeleteLoading());
   }
+
+  try {
+    final result = await apiService.deleteWriteOffDocument(event.documentId);
+    
+    if (result['result'] == 'Success') {
+      // ✅ Удаляем из локального состояния
+      _allData.removeWhere((doc) => doc.id == event.documentId);
+      _selectedDocuments.removeWhere((doc) => doc.id == event.documentId);
+      
+      await Future.delayed(const Duration(milliseconds: 100));
+      emit(WriteOffDeleteSuccess(
+        'Документ успешно удален', 
+        shouldReload: event.shouldReload || isLastElement
+      ));
+    } else {
+      emit(WriteOffDeleteError('Не удалось удалить документ'));
+    }
+  } catch (e) {
+    if (e is ApiException) {
+      emit(WriteOffDeleteError(
+        'Ошибка при удалении документа: ${e.toString()}', 
+        statusCode: e.statusCode
+      ));
+    } else {
+      emit(WriteOffDeleteError('Ошибка при удалении документа: ${e.toString()}'));
+    }
+  }
+  
+  // ✅ Если список не пустой, эмитим обновлённый список
+  if (_allData.isNotEmpty) {
+    emit(WriteOffLoaded(
+      data: List.from(_allData), 
+      selectedData: List.from(_selectedDocuments),
+      hasReachedMax: state is WriteOffLoaded ? (state as WriteOffLoaded).hasReachedMax : false,
+    ));
+  }
+}
 
   Future<void> _onUpdateWriteOffDocument(UpdateWriteOffDocument event, Emitter<WriteOffState> emit) async {
     emit(WriteOffUpdateLoading());

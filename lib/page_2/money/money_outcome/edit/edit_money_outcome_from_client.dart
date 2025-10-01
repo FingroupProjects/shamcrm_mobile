@@ -37,7 +37,9 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
 
   LeadData? _selectedLead;
   CashRegisterData? selectedCashRegister;
+  
   bool _isLoading = false;
+  bool _isApproveLoading = false; // НОВОЕ
   late bool _isApproved;
 
   @override
@@ -45,7 +47,6 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
     super.initState();
     _initializeFields();
 
-    // Предзагружаем данные если их еще нет
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _preloadDataIfNeeded();
     });
@@ -54,8 +55,6 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
   void _preloadDataIfNeeded() {
     final leadBloc = context.read<GetAllLeadBloc>();
     final leadState = leadBloc.state;
-
-    // Проверяем кэш в блоке
     final cachedLeads = leadBloc.getCachedLeads();
 
     if (cachedLeads == null && leadState is! GetAllLeadLoading) {
@@ -68,7 +67,6 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
   void _initializeFields() {
     _isApproved = widget.document.approved ?? false;
 
-    // Initialize date
     if (widget.document.date != null) {
       try {
         final date = DateTime.parse(widget.document.date!);
@@ -80,17 +78,14 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
       _dateController.text = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
     }
 
-    // Initialize amount
     if (widget.document.amount != null) {
       _amountController.text = widget.document.amount.toString();
     }
 
-    // Initialize comment
     if (widget.document.comment != null) {
       _commentController.text = widget.document.comment!;
     }
 
-    // Initialize selected lead with proper object structure
     if (widget.document.model?.id != null) {
       _selectedLead = LeadData(
         id: widget.document.model!.id!,
@@ -99,7 +94,6 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
       );
     }
 
-    // Initialize selected cash register
     if (widget.document.cashRegister != null) {
       selectedCashRegister = CashRegisterData(
         id: widget.document.cashRegister!.id!,
@@ -108,12 +102,27 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
     }
   }
 
+  // НОВЫЙ МЕТОД
+  void _toggleApproval() async {
+    setState(() => _isApproveLoading = true);
+
+    final bloc = context.read<MoneyOutcomeBloc>();
+    final newApprovalState = !_isApproved;
+
+    bloc.add(ToggleApproveOneMoneyOutcomeDocument(
+      widget.document.id!,
+      newApprovalState,
+    ));
+  }
+
+  // ИЗМЕНЕННЫЙ МЕТОД
   void _createDocument() async {
     if (!_formKey.currentState!.validate()) return;
 
     if (_selectedLead == null) {
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('select_lead') ?? 'Пожалуйста, выберите сделку',
+        AppLocalizations.of(context)!.translate('select_lead') ?? 
+        'Пожалуйста, выберите сделку',
         false,
       );
       return;
@@ -131,7 +140,8 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
         setState(() => _isLoading = false);
       }
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('enter_valid_datetime') ?? 'Введите корректную дату и время',
+        AppLocalizations.of(context)!.translate('enter_valid_datetime') ?? 
+        'Введите корректную дату и время',
         false,
       );
       return;
@@ -142,7 +152,8 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
         setState(() => _isLoading = false);
       }
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('select_cash_register') ?? 'Пожалуйста, выберите кассу',
+        AppLocalizations.of(context)!.translate('select_cash_register') ?? 
+        'Пожалуйста, выберите кассу',
         false,
       );
       return;
@@ -150,16 +161,14 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
 
     final bloc = context.read<MoneyOutcomeBloc>();
 
+    // ИЗМЕНЕНО: только проверка данных
     final dataChanged = !areDatesEqual(widget.document.date ?? '', isoDate) ||
         widget.document.amount != _amountController.text.trim() ||
         (widget.document.comment ?? '') != _commentController.text.trim() ||
         widget.document.model?.id.toString() != _selectedLead!.id.toString() ||
         widget.document.cashRegister?.id != selectedCashRegister?.id;
 
-    final approvalChanged = widget.document.approved != _isApproved;
-
-    if (dataChanged && !approvalChanged) {
-      final bloc = context.read<MoneyOutcomeBloc>();
+    if (dataChanged) {
       bloc.add(UpdateMoneyOutcome(
         id: widget.document.id,
         date: isoDate,
@@ -169,27 +178,7 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
         comment: _commentController.text.trim(),
         cashRegisterId: selectedCashRegister?.id,
       ));
-    }
-
-    if (!dataChanged && approvalChanged) {
-      bloc.add(ToggleApproveOneMoneyOutcomeDocument(widget.document.id!, _isApproved));
-    }
-
-    if (dataChanged && approvalChanged) {
-      debugPrint("Data and approval changed, using combined event");
-      bloc.add(UpdateThenToggleOneMoneyOutcomeDocument(
-        id: widget.document.id!,
-        date: isoDate,
-        amount: double.parse(_amountController.text.trim()),
-        operationType: MoneyOutcomeOperationType.client_return.name,
-        leadId: _selectedLead!.id,
-        comment: _commentController.text.trim(),
-        cashRegisterId: selectedCashRegister!.id,
-        approve: _isApproved,
-      ));
-    }
-
-    if (!dataChanged && !approvalChanged) {
+    } else {
       if (mounted) {
         setState(() => _isLoading = false);
       }
@@ -238,6 +227,7 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
       appBar: _buildAppBar(localizations),
       body: MultiBlocListener(
         listeners: [
+          // ИЗМЕНЕННЫЙ LISTENER
           BlocListener<MoneyOutcomeBloc, MoneyOutcomeState>(
             listener: (context, state) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -248,17 +238,36 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
                   Navigator.pop(context, true);
                 } else if (state is MoneyOutcomeUpdateError) {
                   setState(() => _isLoading = false);
+                  _showSnackBar(
+                    AppLocalizations.of(context)!.translate('error_updating_document') ?? 
+                    'Ошибка обновления документа',
+                    false,
+                  );
                 }
+                
+                // НОВАЯ ОБРАБОТКА
                 if (state is MoneyOutcomeToggleOneApproveSuccess) {
-                  setState(() => _isLoading = false);
-                  Navigator.pop(context, true);
+                  final newApprovalState = !_isApproved;
+                  setState(() {
+                    _isApproveLoading = false;
+                    _isApproved = newApprovalState;
+                  });
+                  
+                  _showSnackBar(
+                    newApprovalState 
+                      ? (AppLocalizations.of(context)!.translate('document_approved') ?? 
+                         'Документ проведен')
+                      : (AppLocalizations.of(context)!.translate('document_unapproved') ?? 
+                         'Проведение отменено'),
+                    true,
+                  );
                 } else if (state is MoneyOutcomeToggleOneApproveError) {
-                  setState(() => _isLoading = false);
-                }
-
-                if (state is MoneyOutcomeUpdateThenToggleOneApproveSuccess) {
-                  setState(() => _isLoading = false);
-                  Navigator.pop(context, true);
+                  setState(() => _isApproveLoading = false);
+                  _showSnackBar(
+                    AppLocalizations.of(context)!.translate('error_toggling_approval') ?? 
+                    'Ошибка изменения статуса проведения',
+                    false,
+                  );
                 }
               });
             },
@@ -268,7 +277,8 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
               if (state is GetAllLeadError && mounted) {
                 debugPrint('Lead loading error: ${state.toString()}');
                 _showSnackBar(
-                    AppLocalizations.of(context)!.translate('error_loading_leads') ?? 'Ошибка загрузки лидов',
+                    AppLocalizations.of(context)!.translate('error_loading_leads') ?? 
+                    'Ошибка загрузки лидов',
                     false
                 );
               }
@@ -288,7 +298,6 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
                       const SizedBox(height: 8),
                       _buildApproveButton(localizations),
                       const SizedBox(height: 16),
-                      // Используем переиспользуемый виджет LeadRadioGroupWidget
                       LeadRadioGroupWidget(
                         selectedLead: _selectedLead?.id.toString(),
                         onSelectLead: (LeadData selectedLeadData) {
@@ -312,7 +321,8 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
                           } catch (e) {
                             debugPrint('Error selecting cash register: $e');
                             _showSnackBar(
-                                AppLocalizations.of(context)!.translate('error_selecting_cash_register') ?? 'Ошибка выбора кассы',
+                                AppLocalizations.of(context)!.translate('error_selecting_cash_register') ?? 
+                                'Ошибка выбора кассы',
                                 false
                             );
                           }
@@ -345,7 +355,8 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
-        AppLocalizations.of(context)!.translate('edit_outcoming_document') ?? 'Редактировать доход',
+        AppLocalizations.of(context)!.translate('edit_outcoming_document') ?? 
+        'Редактировать расход',
         style: const TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
@@ -376,7 +387,8 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
     return CustomTextField(
       controller: _commentController,
       label: AppLocalizations.of(context)!.translate('comment') ?? 'Комментарий',
-      hintText: AppLocalizations.of(context)!.translate('enter_comment') ?? 'Введите комментарий',
+      hintText: AppLocalizations.of(context)!.translate('enter_comment') ?? 
+      'Введите комментарий',
       maxLines: 3,
       keyboardType: TextInputType.multiline,
     );
@@ -389,21 +401,25 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
         ],
         controller: _amountController,
         label: AppLocalizations.of(context)!.translate('amount') ?? 'Сумма',
-        hintText: AppLocalizations.of(context)!.translate('enter_amount') ?? 'Введите сумму',
+        hintText: AppLocalizations.of(context)!.translate('enter_amount') ?? 
+        'Введите сумму',
         maxLines: 1,
         keyboardType: TextInputType.number,
         validator: (value) {
           if (value == null || value.isEmpty) {
-            return AppLocalizations.of(context)!.translate('enter_amount') ?? 'Введите сумму';
+            return AppLocalizations.of(context)!.translate('enter_amount') ?? 
+            'Введите сумму';
           }
 
           final doubleValue = double.tryParse(value.trim());
           if (doubleValue == null) {
-            return AppLocalizations.of(context)!.translate('enter_valid_amount') ?? 'Введите корректную сумму';
+            return AppLocalizations.of(context)!.translate('enter_valid_amount') ?? 
+            'Введите корректную сумму';
           }
 
           if (doubleValue <= 0) {
-            return AppLocalizations.of(context)!.translate('amount_must_be_greater_than_zero') ?? 'Сумма должна быть больше нуля';
+            return AppLocalizations.of(context)!.translate('amount_must_be_greater_than_zero') ?? 
+            'Сумма должна быть больше нуля';
           }
 
           return null;
@@ -411,18 +427,43 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
     );
   }
 
+  // ИЗМЕНЕННЫЙ МЕТОД
   Widget _buildApproveButton(AppLocalizations localizations) {
-    return StyledActionButton(
-      text: !_isApproved
-          ? AppLocalizations.of(context)!.translate('approve_document') ?? 'Провести'
-          : AppLocalizations.of(context)!.translate('unapprove_document') ?? 'Отменить проведение',
-      icon: !_isApproved ? Icons.check_circle_outline : Icons.close_outlined,
-      color: !_isApproved ? const Color(0xFF4CAF50) : const Color(0xFFFFA500),
-      onPressed: () {
-        setState(() {
-          _isApproved = !_isApproved;
-        });
-      },
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Opacity(
+          opacity: _isApproveLoading ? 0.6 : 1.0,
+          child: StyledActionButton(
+            text: !_isApproved
+                ? AppLocalizations.of(context)!.translate('approve_document') ?? 'Провести'
+                : AppLocalizations.of(context)!.translate('unapprove_document') ?? 
+                  'Отменить проведение',
+            icon: !_isApproved ? Icons.check_circle_outline : Icons.close_outlined,
+            color: !_isApproved ? const Color(0xFF4CAF50) : const Color(0xFFFFA500),
+            onPressed: _isApproveLoading ? () {} : _toggleApproval,
+          ),
+        ),
+        if (_isApproveLoading)
+          Positioned(
+            right: 16,
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              // child: const SizedBox(
+              //   width: 20,
+              //   height: 20,
+              //   child: CircularProgressIndicator(
+              //     strokeWidth: 2.5,
+              //     valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              //   ),
+              // ),
+            ),
+          ),
+      ],
     );
   }
 

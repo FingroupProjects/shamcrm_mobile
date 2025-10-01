@@ -235,12 +235,16 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
       if (response['result'] != null) {
         await prefs.setBool('department_enabled', response['result']['department'] ?? false);
         await prefs.setBool('integration_with_1C', response['result']['integration_with_1C'] ?? false);
+              await prefs.setBool('good_measurement', response['result']['good_measurement'] == 1);
+
         print('PinScreen: Settings saved: integration_with_1C = ${response['result']['integration_with_1C']}');
       }
     } catch (e) {
       print('PinScreen: Error fetching settings: $e');
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('integration_with_1C', false);
+          await prefs.setBool('good_measurement', false); // по умолчанию включено
+
     }
   }
 
