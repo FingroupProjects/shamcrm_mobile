@@ -207,10 +207,8 @@ class _ClientReturnDocumentDetailsScreenState
         _documentUpdated = true;
       });
       _updateStatusOnly();
-      _showSnackBar(
-          AppLocalizations.of(context)!.translate('document_approved') ??
-              'Документ проведен',
-          true);
+      context.read<ClientReturnBloc>().add(FetchClientReturns(forceRefresh: true));
+      _showSnackBar(AppLocalizations.of(context)!.translate('document_approved') ?? 'Документ проведен', true);
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
@@ -239,6 +237,7 @@ class _ClientReturnDocumentDetailsScreenState
         _documentUpdated = true;
       });
       _updateStatusOnly();
+      context.read<ClientReturnBloc>().add(FetchClientReturns(forceRefresh: true));
       _showSnackBar(
           AppLocalizations.of(context)!.translate('document_unapproved') ??
               'Проведение документа отменено',

@@ -1,3 +1,4 @@
+import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -25,8 +26,7 @@ class ExpenseStructureChart extends StatefulWidget {
   State<ExpenseStructureChart> createState() => _ExpenseStructureChartState();
 }
 
-class _ExpenseStructureChartState extends State<ExpenseStructureChart>
-    with SingleTickerProviderStateMixin {
+class _ExpenseStructureChartState extends State<ExpenseStructureChart> with SingleTickerProviderStateMixin {
   TimePeriod selectedPeriod = TimePeriod.month;
   bool isLoading = false;
   bool isDownloading = false;
@@ -127,41 +127,44 @@ class _ExpenseStructureChartState extends State<ExpenseStructureChart>
   }
 
   Widget _buildPeriodDropdown() {
-    return SizedBox(
-      width: 120,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey[300]!),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: DropdownButtonHideUnderline(
-          child: DropdownButton<TimePeriod>(
-            isExpanded: true,
-            value: selectedPeriod,
-            icon: const Icon(Icons.keyboard_arrow_down, size: 20),
-            items: TimePeriod.values.map((period) {
-              return DropdownMenuItem<TimePeriod>(
-                value: period,
-                child: Text(
-                  getPeriodText(context, period),
-                  style: const TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black87,
-                  ),
-                ),
-              );
-            }).toList(),
-            onChanged: (TimePeriod? value) {
-              if (value != null) {
-                onPeriodChanged(value);
-              }
-            },
-          ),
-        ),
+    return CustomDropdown<TimePeriod>(
+      decoration: CustomDropdownDecoration(
+        closedBorder: Border.all(color: Colors.grey[300]!),
+        expandedBorder: Border.all(color: Colors.grey[300]!),
+        closedBorderRadius: BorderRadius.circular(8),
+        expandedBorderRadius: BorderRadius.circular(8),
+        closedFillColor: Colors.white,
+        expandedFillColor: Colors.white,
       ),
+      items: TimePeriod.values,
+      initialItem: selectedPeriod,
+      onChanged: (TimePeriod? value) {
+        if (value != null) {
+          onPeriodChanged(value);
+        }
+      },
+      headerBuilder: (context, selectedItem, enabled) {
+        return Text(
+          getPeriodText(context, selectedItem),
+          style: const TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: Colors.black87,
+          ),
+        );
+      },
+      listItemBuilder: (context, item, isSelected, onItemSelect) {
+        return Text(
+          getPeriodText(context, item),
+          style: const TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: Colors.black87,
+          ),
+        );
+      },
     );
   }
 
@@ -215,9 +218,7 @@ class _ExpenseStructureChartState extends State<ExpenseStructureChart>
           pieTouchData: PieTouchData(
             touchCallback: (FlTouchEvent event, pieTouchResponse) {
               setState(() {
-                if (!event.isInterestedForInteractions ||
-                    pieTouchResponse == null ||
-                    pieTouchResponse.touchedSection == null) {
+                if (!event.isInterestedForInteractions || pieTouchResponse == null || pieTouchResponse.touchedSection == null) {
                   touchedIndex = -1;
                   return;
                 }
@@ -321,14 +322,17 @@ class _ExpenseStructureChartState extends State<ExpenseStructureChart>
                   color: Colors.black,
                 ),
               ),
-              DownloadPopupMenu(
-                onDownload: _handleDownload,
-                loading: isDownloading,
-                formats: const [
-                  DownloadFormat.png,
-                  DownloadFormat.svg,
-                  DownloadFormat.csv,
-                ],
+              Transform.translate(
+                offset: const Offset(16, 0),
+                child: DownloadPopupMenu(
+                  onDownload: _handleDownload,
+                  loading: isDownloading,
+                  formats: const [
+                    DownloadFormat.png,
+                    DownloadFormat.svg,
+                    DownloadFormat.csv,
+                  ],
+                ),
               ),
             ],
           ),
@@ -338,21 +342,23 @@ class _ExpenseStructureChartState extends State<ExpenseStructureChart>
           // Period dropdown and Compare button
           Row(
             children: [
-              _buildPeriodDropdown(),
+              Flexible(child: _buildPeriodDropdown()),
               const SizedBox(width: 12),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  localizations.translate('compare'),
-                  style: const TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black54,
+              Flexible(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    localizations.translate('compare'),
+                    style: const TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black54,
+                    ),
                   ),
                 ),
               ),
@@ -391,20 +397,17 @@ class _ExpenseStructureChartState extends State<ExpenseStructureChart>
 
           const SizedBox(height: 16),
 
-          // "More details" link
           Align(
             alignment: Alignment.centerRight,
-              child: GestureDetector(
-                onTap: () {
-                  // Handle navigation to detailed view
-                },
-                child: Text(// Chart and Legend
+            child: GestureDetector(
+              onTap: () {},
+              child: Text(
                 localizations.translate('more_details'),
                 style: const TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: Color(0xFF3935E7),
+                  color: Color(0xff1E2E52),
                 ),
               ),
             ),
