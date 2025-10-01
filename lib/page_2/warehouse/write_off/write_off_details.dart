@@ -13,6 +13,7 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../money/widgets/error_dialog.dart';
 
@@ -40,6 +41,7 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
   bool _isButtonLoading = false;
   String? baseUrl;
   bool _documentUpdated = false;
+  bool _goodMeasurementEnabled = true; // добавляем флаг
   final Map<int, String> _unitMap = {
     23: 'шт',
   };
@@ -49,8 +51,15 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
     super.initState();
     _initializeBaseUrl();
     _fetchDocumentDetails();
+        _loadGoodMeasurementSetting(); // загружаем настройку
   }
-
+  // Добавляем метод загрузки настройки
+  Future<void> _loadGoodMeasurementSetting() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _goodMeasurementEnabled = prefs.getBool('good_measurement') ?? true;
+    });
+  }
   Future<void> _initializeBaseUrl() async {
     try {
       final staticBaseUrl = await _apiService.getStaticBaseUrl();
@@ -645,6 +654,7 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
                       const SizedBox(height: 8),
                       Row(
                         children: [
+                          if (_goodMeasurementEnabled)
                           Expanded(
                             flex: 2,
                             child: Column(

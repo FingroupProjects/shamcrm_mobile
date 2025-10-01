@@ -324,10 +324,14 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
               }
               showCustomSnackBar(context: context, message: state.message, isSuccess: false);
             } else if (state is ClientSaleDeleteSuccess) {
-              _showSnackBar(state.message, true);
-              if (state.shouldReload)
-                _clientSaleBloc.add(FetchClientSales(forceRefresh: true, filters: _currentFilters, search: _search));
-            } else if (state is ClientSaleDeleteError) {
+  _showSnackBar(state.message, true);
+  // ✅ Всегда перезагружаем после удаления
+  _clientSaleBloc.add(FetchClientSales(
+    forceRefresh: true, 
+    filters: _currentFilters, 
+    search: _search
+  ));
+}else if (state is ClientSaleDeleteError) {
               if (state.statusCode == 409) {
                 debugPrint("[ERROR] ClientSaleDeleteError: ${state.message} enumType: ${ErrorDialogEnum.goodsIncomingDelete}");
                 showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message,
@@ -360,34 +364,35 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
               showCustomSnackBar(context: context, message: state.message, isSuccess: false);
             }
           },
-          child: BlocBuilder<ClientSaleBloc, ClientSaleState>(
-            builder: (context, state) {
-              if (state is ClientSaleLoading) {
-                return Center(
-                  child: PlayStoreImageLoading(
-                    size: 80.0,
-                    duration: Duration(milliseconds: 1000),
-                  ),
-                );
-              }
+        child: BlocBuilder<ClientSaleBloc, ClientSaleState>(
+  builder: (context, state) {
+    // ✅ Показываем загрузку при Loading или DeleteLoading
+    if (state is ClientSaleLoading || state is ClientSaleDeleteLoading) {
+      return Center(
+        child: PlayStoreImageLoading(
+          size: 80.0,
+          duration: const Duration(milliseconds: 1000),
+        ),
+      );
+    }
 
-              final List<IncomingDocument> currentData = state is ClientSaleLoaded ? state.data : [];
+    final List<IncomingDocument> currentData = state is ClientSaleLoaded ? state.data : [];
 
-              if (currentData.isEmpty && state is ClientSaleLoaded) {
-                return Center(
-                  child: Text(
-                    _isSearching
-                        ? localizations!.translate('nothing_found') ?? 'Ничего не найдено'
-                        : localizations!.translate('no_incoming') ?? 'Нет приходов',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xff99A4BA),
-                    ),
-                  ),
-                );
-              }
+    if (currentData.isEmpty && state is ClientSaleLoaded) {
+      return Center(
+        child: Text(
+          _isSearching
+              ? localizations!.translate('nothing_found') ?? 'Ничего не найдено'
+              : localizations!.translate('no_incoming') ?? 'Нет приходов',
+          style: const TextStyle(
+            fontSize: 18,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            color: Color(0xff99A4BA),
+          ),
+        ),
+      );
+    }
 
               return RefreshIndicator(
                 color: const Color(0xff1E2E52),
@@ -435,17 +440,19 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
                         confirmDismiss: (direction) async {
                           return currentData[index].deletedAt == null;
                         },
-                        onDismissed: (direction) {
-                          print("🗑️ [UI] Удаление dokumenta ID: ${currentData[index].id}");
-                          setState(() {
-                            currentData.removeAt(index);
-                          });
-                          _clientSaleBloc.add(DeleteClientSale(
-                            currentData[index].id!,
-                            localizations!,
-                            shouldReload: false,
-                          ));
-                        },
+                       onDismissed: (direction) {
+  print("🗑️ [UI] Удаление документа ID: ${currentData[index].id}");
+  // ❌ Убираем setState с removeAt
+  // setState(() {
+  //   currentData.removeAt(index);
+  // });
+  
+  _clientSaleBloc.add(DeleteClientSale(
+    currentData[index].id!,
+    localizations!,
+    shouldReload: true, // ✅ Всегда true для свайпа
+  ));
+},
                         child: ClipRRect(
                             borderRadius: BorderRadius.circular(12),
                             child: ClientSalesCard(

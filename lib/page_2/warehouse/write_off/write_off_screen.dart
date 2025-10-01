@@ -302,12 +302,15 @@ class _WriteOffScreenState extends State<WriteOffScreen> {
               }
               showCustomSnackBar(context: context, message: state.message, isSuccess: false);
             } else if (state is WriteOffDeleteSuccess) {
-              debugPrint("WriteOffScreen.Bloc.State.WriteOffDeleteSuccess: ${_writeOffBloc.state}");
-              _showSnackBar(state.message, true);
-              if (state.shouldReload) {
-                _writeOffBloc.add(FetchWriteOffs(forceRefresh: true, filters: _currentFilters, search: _search));
-              }
-            } else if (state is WriteOffDeleteError) {
+  debugPrint("WriteOffScreen.Bloc.State.WriteOffDeleteSuccess: ${_writeOffBloc.state}");
+  _showSnackBar(state.message, true);
+  // ✅ Всегда перезагружаем после удаления
+  _writeOffBloc.add(FetchWriteOffs(
+    forceRefresh: true, 
+    filters: _currentFilters, 
+    search: _search
+  ));
+}else if (state is WriteOffDeleteError) {
               if (state.statusCode == 409) {
                 showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message,
                     errorDialogEnum: ErrorDialogEnum.goodsIncomingDelete);
@@ -337,34 +340,36 @@ class _WriteOffScreenState extends State<WriteOffScreen> {
               showCustomSnackBar(context: context, message: state.message, isSuccess: false);
             }
           },
-          child: BlocBuilder<WriteOffBloc, WriteOffState>(
-            builder: (context, state) {
-              if (state is WriteOffLoading) {
-                return Center(
-                  child: PlayStoreImageLoading(
-                    size: 80.0,
-                    duration: Duration(milliseconds: 1000),
-                  ),
-                );
-              }
+       child: BlocBuilder<WriteOffBloc, WriteOffState>(
+  builder: (context, state) {
+    // ✅ Показываем загрузку при Loading или DeleteLoading
+    if (state is WriteOffLoading || state is WriteOffDeleteLoading) {
+      return Center(
+        child: PlayStoreImageLoading(
+          size: 80.0,
+          duration: const Duration(milliseconds: 1000),
+        ),
+      );
+    }
 
-              final List<IncomingDocument> currentData = state is WriteOffLoaded ? state.data : [];
+    final List<IncomingDocument> currentData = state is WriteOffLoaded ? state.data : [];
 
-              if (currentData.isEmpty && state is WriteOffLoaded) {
-                return Center(
-                  child: Text(
-                    _isSearching
-                        ? localizations!.translate('nothing_found') ?? 'Ничего не найдено'
-                        : localizations!.translate('no_write_offs') ?? 'Нет документов списания',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xff99A4BA),
-                    ),
-                  ),
-                );
-              }
+    if (currentData.isEmpty && state is WriteOffLoaded) {
+      return Center(
+        child: Text(
+          _isSearching
+              ? localizations!.translate('nothing_found') ?? 'Ничего не найдено'
+              : localizations!.translate('no_write_offs') ?? 'Нет документов списания',
+          style: const TextStyle(
+            fontSize: 18,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            color: Color(0xff99A4BA),
+          ),
+        ),
+      );
+    }
+
 
               return RefreshIndicator(
                 color: const Color(0xff1E2E52),
@@ -412,17 +417,19 @@ class _WriteOffScreenState extends State<WriteOffScreen> {
                       confirmDismiss: (direction) async {
                         return currentData[index].deletedAt == null;
                       },
-                      onDismissed: (direction) {
-                        print("🗑️ [UI] Удаление dokumenta ID: ${currentData[index].id}");
-                        setState(() {
-                          currentData.removeAt(index);
-                        });
-                        _writeOffBloc.add(DeleteWriteOffDocument(
-                          currentData[index].id!,
-                          localizations!,
-                          shouldReload: false,
-                        ));
-                      },
+                    onDismissed: (direction) {
+  print("🗑️ [UI] Удаление документа ID: ${currentData[index].id}");
+  // ❌ Убираем setState с removeAt
+  // setState(() {
+  //   currentData.removeAt(index);
+  // });
+  
+  _writeOffBloc.add(DeleteWriteOffDocument(
+    currentData[index].id!,
+    localizations!,
+    shouldReload: true, // ✅ Всегда true для свайпа
+  ));
+},
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(12),
                         child: WriteOffCard(

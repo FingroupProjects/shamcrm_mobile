@@ -31,7 +31,9 @@ class _EditMoneyIncomeAnotherCashRegisterState extends State<EditMoneyIncomeAnot
   final TextEditingController _amountController = TextEditingController();
   CashRegisterData? selectedCashRegister;
   CashRegisterData? selectedSenderCashRegister;
+  
   bool _isLoading = false;
+  bool _isApproveLoading = false; // НОВОЕ: отдельный индикатор для кнопки проведения
   late bool _isApproved;
 
   @override
@@ -39,7 +41,6 @@ class _EditMoneyIncomeAnotherCashRegisterState extends State<EditMoneyIncomeAnot
     super.initState();
     _initializeFields();
 
-    // Предзагружаем данные если их еще нет
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _preloadDataIfNeeded();
     });
@@ -78,7 +79,6 @@ class _EditMoneyIncomeAnotherCashRegisterState extends State<EditMoneyIncomeAnot
       );
     }
 
-    // Initialize sender cash register
     if (widget.document.senderCashregister != null) {
       selectedSenderCashRegister = CashRegisterData(
         id: widget.document.senderCashregister!.id!,
@@ -87,12 +87,28 @@ class _EditMoneyIncomeAnotherCashRegisterState extends State<EditMoneyIncomeAnot
     }
   }
 
+  // НОВЫЙ МЕТОД: Отдельная обработка проведения/отмены проведения
+  void _toggleApproval() async {
+    setState(() => _isApproveLoading = true);
+
+    final bloc = context.read<MoneyIncomeBloc>();
+    final newApprovalState = !_isApproved;
+
+    // Отправляем запрос на сервер
+    bloc.add(ToggleApproveOneMoneyIncomeDocument(
+      widget.document.id!,
+      newApprovalState,
+    ));
+  }
+
+  // ИЗМЕНЕННЫЙ МЕТОД: Теперь только для сохранения данных документа
   void _createDocument() async {
     if (!_formKey.currentState!.validate()) return;
 
     if (selectedCashRegister == null) {
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('select_cash_register') ?? 'Пожалуйста, выберите кассу',
+        AppLocalizations.of(context)!.translate('select_cash_register') ?? 
+        'Пожалуйста, выберите кассу',
         false,
       );
       return;
@@ -100,7 +116,8 @@ class _EditMoneyIncomeAnotherCashRegisterState extends State<EditMoneyIncomeAnot
 
     if (selectedSenderCashRegister == null) {
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('select_sender_cash_register') ?? 'Пожалуйста, выберите кассу-отправителя',
+        AppLocalizations.of(context)!.translate('select_sender_cash_register') ?? 
+        'Пожалуйста, выберите кассу-отправителя',
         false,
       );
       return;
@@ -118,7 +135,8 @@ class _EditMoneyIncomeAnotherCashRegisterState extends State<EditMoneyIncomeAnot
         setState(() => _isLoading = false);
       }
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('enter_valid_datetime') ?? 'Введите корректную дату и время',
+        AppLocalizations.of(context)!.translate('enter_valid_datetime') ?? 
+        'Введите корректную дату и время',
         false,
       );
       return;
@@ -126,15 +144,15 @@ class _EditMoneyIncomeAnotherCashRegisterState extends State<EditMoneyIncomeAnot
 
     final bloc = context.read<MoneyIncomeBloc>();
 
+    // ИЗМЕНЕНО: Проверяем только изменения данных, БЕЗ проверки approved
     final dataChanged = !areDatesEqual(widget.document.date ?? '', isoDate) ||
         widget.document.amount != _amountController.text.trim() ||
         (widget.document.comment ?? '') != _commentController.text.trim() ||
         widget.document.cashRegister?.id.toString() != selectedCashRegister?.id.toString() ||
         widget.document.senderCashregister?.id.toString() != selectedSenderCashRegister?.id.toString();
 
-    final approvalChanged = widget.document.approved != _isApproved;
-
-    if (dataChanged && !approvalChanged) {
+    if (dataChanged) {
+      // Отправляем только изменения данных
       bloc.add(UpdateMoneyIncome(
         id: widget.document.id,
         date: isoDate,
@@ -144,27 +162,8 @@ class _EditMoneyIncomeAnotherCashRegisterState extends State<EditMoneyIncomeAnot
         cashRegisterId: selectedCashRegister?.id,
         senderCashRegisterId: selectedSenderCashRegister?.id,
       ));
-    }
-
-    if (!dataChanged && approvalChanged) {
-      bloc.add(ToggleApproveOneMoneyIncomeDocument(widget.document.id!, _isApproved));
-    }
-
-    if (dataChanged && approvalChanged) {
-      debugPrint("Data and approval changed, using combined event");
-      bloc.add(UpdateThenToggleOneMoneyIncomeDocument(
-        id: widget.document.id!,
-        date: isoDate,
-        amount: double.parse(_amountController.text.trim()),
-        operationType: MoneyIncomeOperationType.send_another_cash_register.name,
-        comment: _commentController.text.trim(),
-        cashRegisterId: selectedCashRegister!.id,
-        senderCashRegisterId: selectedSenderCashRegister!.id,
-        approve: _isApproved,
-      ));
-    }
-
-    if (!dataChanged && !approvalChanged) {
+    } else {
+      // Если данные не изменились, просто закрываем
       if (mounted) {
         setState(() => _isLoading = false);
       }
@@ -213,26 +212,50 @@ class _EditMoneyIncomeAnotherCashRegisterState extends State<EditMoneyIncomeAnot
       appBar: _buildAppBar(localizations),
       body: MultiBlocListener(
         listeners: [
+          // ИЗМЕНЕННЫЙ LISTENER: Для обновления данных документа
           BlocListener<MoneyIncomeBloc, MoneyIncomeState>(
             listener: (context, state) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (!mounted) return;
 
+                // Обработка успешного обновления данных - ЗАКРЫВАЕМ экран
                 if (state is MoneyIncomeUpdateSuccess) {
                   setState(() => _isLoading = false);
                   Navigator.pop(context, true);
                 } else if (state is MoneyIncomeUpdateError) {
                   setState(() => _isLoading = false);
+                  _showSnackBar(
+                    AppLocalizations.of(context)!.translate('error_updating_document') ?? 
+                    'Ошибка обновления документа',
+                    false,
+                  );
                 }
+                
+                // НОВАЯ ОБРАБОТКА: Для проведения/отмены - НЕ ЗАКРЫВАЕМ экран
                 if (state is MoneyIncomeToggleOneApproveSuccess) {
-                  setState(() => _isLoading = false);
-                  Navigator.pop(context, true);
+                  // Обновляем состояние
+                  final newApprovalState = !_isApproved;
+                  setState(() {
+                    _isApproveLoading = false;
+                    _isApproved = newApprovalState;
+                  });
+                  
+                  // Показываем ТОЛЬКО один SnackBar с информацией о проведении
+                  _showSnackBar(
+                    newApprovalState 
+                      ? (AppLocalizations.of(context)!.translate('document_approved') ?? 
+                         'Документ проведен')
+                      : (AppLocalizations.of(context)!.translate('document_unapproved') ?? 
+                         'Проведение отменено'),
+                    true,
+                  );
                 } else if (state is MoneyIncomeToggleOneApproveError) {
-                  setState(() => _isLoading = false);
-                }
-                if (state is MoneyIncomeUpdateThenToggleOneApproveSuccess) {
-                  setState(() => _isLoading = false);
-                  Navigator.pop(context, true);
+                  setState(() => _isApproveLoading = false);
+                  _showSnackBar(
+                    AppLocalizations.of(context)!.translate('error_toggling_approval') ?? 
+                    'Ошибка изменения статуса проведения',
+                    false,
+                  );
                 }
               });
             },
@@ -350,16 +373,44 @@ class _EditMoneyIncomeAnotherCashRegisterState extends State<EditMoneyIncomeAnot
     );
   }
 
+  // ИЗМЕНЕННЫЙ МЕТОД: Теперь вызывает _toggleApproval()
   Widget _buildApproveButton(AppLocalizations localizations) {
-    return StyledActionButton(
-      text: !_isApproved ? AppLocalizations.of(context)!.translate('approve_document') ?? 'Провести' :  AppLocalizations.of(context)!.translate('unapprove_document') ?? 'Отменить проведение',
-      icon: !_isApproved ? Icons.check_circle_outline :  Icons.close_outlined,
-      color: !_isApproved ? const Color(0xFF4CAF50) : const Color(0xFFFFA500),
-      onPressed: () {
-        setState(() {
-          _isApproved = !_isApproved;
-        });
-      }
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        // Основная кнопка
+        Opacity(
+          opacity: _isApproveLoading ? 0.6 : 1.0,
+          child: StyledActionButton(
+            text: !_isApproved 
+              ? AppLocalizations.of(context)!.translate('approve_document') ?? 'Провести' 
+              : AppLocalizations.of(context)!.translate('unapprove_document') ?? 'Отменить проведение',
+            icon: !_isApproved ? Icons.check_circle_outline : Icons.close_outlined,
+            color: !_isApproved ? const Color(0xFF4CAF50) : const Color(0xFFFFA500),
+            onPressed: _isApproveLoading ? () {} : _toggleApproval,
+          ),
+        ),
+        // Индикатор загрузки поверх кнопки
+        if (_isApproveLoading)
+          Positioned(
+            right: 16,
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              // child: const SizedBox(
+              //   width: 20,
+              //   height: 20,
+              //   child: CircularProgressIndicator(
+              //     strokeWidth: 2.5,
+              //     valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              //   ),
+              // ),
+            ),
+          ),
+      ],
     );
   }
 

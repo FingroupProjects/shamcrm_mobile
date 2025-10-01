@@ -15,6 +15,7 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../models/api_exception_model.dart';
 import '../../../widgets/snackbar_widget.dart';
@@ -44,6 +45,8 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
   String? baseUrl;
   bool _documentUpdated = false;
   bool _isButtonLoading = false;
+    bool _goodMeasurementEnabled = true; // добавляем флаг
+
 
   // Map to store unit details (id -> shortName)
   final Map<int, String> _unitMap = {
@@ -56,7 +59,14 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
     super.initState();
     _initializeBaseUrl();
     _fetchDocumentDetails();
-    // _fetchUnits(); // Uncomment if units are fetched via API
+        _loadGoodMeasurementSetting(); // загружаем настройку
+  }
+ // Добавляем метод загрузки настройки
+  Future<void> _loadGoodMeasurementSetting() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _goodMeasurementEnabled = prefs.getBool('good_measurement') ?? true;
+    });
   }
 
   Future<void> _initializeBaseUrl() async {
@@ -687,6 +697,8 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
                       Row(
                         children: [
                           // Ед. изм.
+                                                    if (_goodMeasurementEnabled)
+
                           Expanded(
                             flex: 2,
                             child: Column(

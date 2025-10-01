@@ -73,26 +73,27 @@ class ClientSaleBloc extends Bloc<ClientSaleEvent, ClientSaleState> {
 
     emit(ClientSaleLoaded(data: _allData));
   }
+Future<void> _onMassDeleteClientSaleDocuments(MassDeleteClientSaleDocuments event, Emitter<ClientSaleState> emit) async {
+  final ls = _selectedDocuments.where((e) => e.deletedAt == null).map((e) => e.id!).toList();
+  add(UnselectAllDocuments());
 
-  Future<void> _onMassDeleteClientSaleDocuments(MassDeleteClientSaleDocuments event, Emitter<ClientSaleState> emit) async {
-    final ls = _selectedDocuments.where((e) => e.deletedAt == null).map((e) => e.id!).toList();
-    add(UnselectAllDocuments());
-
-    try {
-      await apiService.massDeleteClientSaleDocuments(ls);
-      emit(ClientSaleDeleteMassSuccess("mass_delete_success_message"));
-    } catch (e) {
-      if (e is ApiException && e.statusCode == 409) {
-        emit(ClientSaleDeleteMassError(e.toString(), statusCode: e.statusCode));
-      } else {
-        emit(ClientSaleDeleteMassError(e.toString()));
-      }
-      add(FetchClientSales(forceRefresh: true));
+  try {
+    await apiService.massDeleteClientSaleDocuments(ls);
+    
+    _allData.removeWhere((doc) => ls.contains(doc.id));
+    
+    emit(ClientSaleDeleteMassSuccess("mass_delete_success_message"));
+  } catch (e) {
+    if (e is ApiException && e.statusCode == 409) {
+      emit(ClientSaleDeleteMassError(e.toString(), statusCode: e.statusCode));
+    } else {
+      emit(ClientSaleDeleteMassError(e.toString()));
     }
-
-    emit(ClientSaleLoaded(data: _allData));
+    add(FetchClientSales(forceRefresh: true));
   }
 
+  emit(ClientSaleLoaded(data: List.from(_allData), selectedData: List.from(_selectedDocuments)));
+}
   Future<void> _onMassRestoreClientSaleDocuments(MassRestoreClientSaleDocuments event, Emitter<ClientSaleState> emit) async {
     final ls = _selectedDocuments.where((e) => e.deletedAt != null).map((e) => e.id!).toList();
     add(UnselectAllDocuments());
@@ -245,25 +246,47 @@ class ClientSaleBloc extends Bloc<ClientSaleEvent, ClientSaleState> {
     }
   }
 
-  _onDeleteClientSale(DeleteClientSale event, Emitter<ClientSaleState> emit) async {
-    if (event.shouldReload) emit(ClientSaleDeleteLoading());
-    try {
-      final result = await apiService.deleteClientSaleDocument(event.documentId);
-      if (result['result'] == 'Success') {
-        await Future.delayed(const Duration(milliseconds: 100));
-        emit(ClientSaleDeleteSuccess('Документ успешно удален', shouldReload: event.shouldReload || _allData.isEmpty));
-      } else {
-        emit(ClientSaleDeleteError('Не удалось удалить документ'));
-      }
-    } catch (e) {
-      if (e is ApiException) {
-        emit(ClientSaleDeleteError('Ошибка при удалении документа: ${e.toString()}', statusCode: e.statusCode));
-      } else {
-        emit(ClientSaleDeleteError('Ошибка при удалении документа: ${e.toString()}'));
-      }
-    }
-    emit(ClientSaleLoaded(data: _allData, selectedData: _selectedDocuments));
+_onDeleteClientSale(DeleteClientSale event, Emitter<ClientSaleState> emit) async {
+  final isLastElement = _allData.length == 1;
+  
+  if (event.shouldReload || isLastElement) {
+    emit(ClientSaleDeleteLoading());
   }
+
+  try {
+    final result = await apiService.deleteClientSaleDocument(event.documentId);
+    
+    if (result['result'] == 'Success') {
+      _allData.removeWhere((doc) => doc.id == event.documentId);
+      _selectedDocuments.removeWhere((doc) => doc.id == event.documentId);
+      
+      await Future.delayed(const Duration(milliseconds: 100));
+      emit(ClientSaleDeleteSuccess(
+        'Документ успешно удален', 
+        shouldReload: event.shouldReload || isLastElement
+      ));
+    } else {
+      emit(ClientSaleDeleteError('Не удалось удалить документ'));
+    }
+  } catch (e) {
+    if (e is ApiException) {
+      emit(ClientSaleDeleteError(
+        'Ошибка при удалении документа: ${e.toString()}', 
+        statusCode: e.statusCode
+      ));
+    } else {
+      emit(ClientSaleDeleteError('Ошибка при удалении документа: ${e.toString()}'));
+    }
+  }
+  
+  if (_allData.isNotEmpty) {
+    emit(ClientSaleLoaded(
+      data: List.from(_allData), 
+      selectedData: List.from(_selectedDocuments),
+      hasReachedMax: state is ClientSaleLoaded ? (state as ClientSaleLoaded).hasReachedMax : false,
+    ));
+  }
+}
 
   _onUpdateClientSalesDocument(UpdateClientSalesDocument event, Emitter<ClientSaleState> emit) async {
     emit(ClientSaleCreateLoading());

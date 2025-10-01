@@ -31,7 +31,7 @@ class CreateSupplierReturn extends SupplierReturnEvent {
   final List<Map<String, dynamic>> documentGoods;
   final int organizationId;
   final int salesFunnelId;
-  final bool approve; // Новый параметр
+  final bool approve;
 
   CreateSupplierReturn({
     required this.date,
@@ -41,7 +41,7 @@ class CreateSupplierReturn extends SupplierReturnEvent {
     required this.documentGoods,
     required this.organizationId,
     required this.salesFunnelId,
-    this.approve = false, // По умолчанию false
+    this.approve = false,
   });
 
   @override
@@ -53,7 +53,7 @@ class CreateSupplierReturn extends SupplierReturnEvent {
         documentGoods,
         organizationId,
         salesFunnelId,
-        approve, // Добавляем в props
+        approve,
       ];
 }
 
@@ -93,12 +93,12 @@ class UpdateSupplierReturn extends SupplierReturnEvent {
 
 class DeleteSupplierReturn extends SupplierReturnEvent {
   final int documentId;
-  final AppLocalizations localizations;
+  final bool shouldReload;
 
-  const DeleteSupplierReturn(this.documentId, this.localizations);
+  const DeleteSupplierReturn(this.documentId, {this.shouldReload = true});
 
   @override
-  List<Object> get props => [documentId, localizations];
+  List<Object> get props => [documentId, shouldReload];
 }
 
 class RestoreSupplierReturn extends SupplierReturnEvent {

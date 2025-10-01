@@ -1459,10 +1459,17 @@
   "select_variant": "Mahsulotni tanlang",
   "pieces": "dona",
   "storages_must_be_different": "Yuboruvchi va qabul qiluvchi omborlar turlicha bo‘lishi kerak",
+
   "owed_to_us": "Bizdan qarzdor",
   "illiquid_goods": "Likvidligi past tovarlar",
   "cash_balance": "Kassa qoldig'i",
   "our_debts": "Bizning qarzlarimiz",
+
+  "error_toggling_approval": "O'tkazish holatini o'zgartirishda xatolik",
+
+  "error_loading_outcome_categories": "Xarajat toifalarini yuklashda xatolik",
+  "error_loading_suppliers": "Ta'minotchilarni yuklashda xatolik",
+  "error_selecting_outcome_category": "Xarajat toifasini tanlashda xatolik"
 
 
 

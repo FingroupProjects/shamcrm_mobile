@@ -39,7 +39,9 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
   SupplierData? _selectedSupplier;
   CashRegisterData? selectedCashRegister;
   List<SupplierData> suppliersList = [];
+  
   bool _isLoading = false;
+  bool _isApproveLoading = false; // НОВОЕ: отдельный индикатор для кнопки проведения
   late bool _isApproved;
 
   @override
@@ -47,14 +49,12 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
     super.initState();
     _initializeFields();
 
-    // Предзагружаем данные если их еще нет
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _preloadDataIfNeeded();
     });
   }
 
   void _preloadDataIfNeeded() {
-    // Проверяем и загружаем поставщиков
     final supplierState = context.read<GetAllSupplierBloc>().state;
     if (supplierState is! GetAllSupplierSuccess) {
       context.read<GetAllSupplierBloc>().add(GetAllSupplierEv());
@@ -64,7 +64,6 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
   void _initializeFields() {
     _isApproved = widget.document.approved ?? false;
 
-    // Initialize date
     if (widget.document.date != null) {
       try {
         final date = DateTime.parse(widget.document.date!);
@@ -76,17 +75,14 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
       _dateController.text = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
     }
 
-    // Initialize amount
     if (widget.document.amount != null) {
       _amountController.text = widget.document.amount.toString();
     }
 
-    // Initialize comment
     if (widget.document.comment != null) {
       _commentController.text = widget.document.comment!;
     }
 
-    // Initialize selected supplier with proper object structure
     if (widget.document.model?.id != null) {
       _selectedSupplier = SupplierData(
         id: widget.document.model!.id!,
@@ -94,7 +90,6 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
       );
     }
 
-    // Initialize selected cash register
     if (widget.document.cashRegister != null) {
       selectedCashRegister = CashRegisterData(
         id: widget.document.cashRegister!.id!,
@@ -103,12 +98,27 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
     }
   }
 
+  // НОВЫЙ МЕТОД: Отдельная обработка проведения/отмены проведения
+  void _toggleApproval() async {
+    setState(() => _isApproveLoading = true);
+
+    final bloc = context.read<MoneyIncomeBloc>();
+    final newApprovalState = !_isApproved;
+
+    bloc.add(ToggleApproveOneMoneyIncomeDocument(
+      widget.document.id!,
+      newApprovalState,
+    ));
+  }
+
+  // ИЗМЕНЕННЫЙ МЕТОД: Теперь только для сохранения данных документа
   void _createDocument() async {
     if (!_formKey.currentState!.validate()) return;
 
     if (_selectedSupplier == null) {
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('select_supplier') ?? 'Пожалуйста, выберите поставщика',
+        AppLocalizations.of(context)!.translate('select_supplier') ?? 
+        'Пожалуйста, выберите поставщика',
         false,
       );
       return;
@@ -126,7 +136,8 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
         setState(() => _isLoading = false);
       }
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('enter_valid_datetime') ?? 'Введите корректную дату и время',
+        AppLocalizations.of(context)!.translate('enter_valid_datetime') ?? 
+        'Введите корректную дату и время',
         false,
       );
       return;
@@ -137,7 +148,8 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
         setState(() => _isLoading = false);
       }
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('select_cash_register') ?? 'Пожалуйста, выберите кассу',
+        AppLocalizations.of(context)!.translate('select_cash_register') ?? 
+        'Пожалуйста, выберите кассу',
         false,
       );
       return;
@@ -145,15 +157,14 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
 
     final bloc = context.read<MoneyIncomeBloc>();
 
+    // ИЗМЕНЕНО: Проверяем только изменения данных, БЕЗ проверки approved
     final dataChanged = !areDatesEqual(widget.document.date ?? '', isoDate) ||
         widget.document.amount != _amountController.text.trim() ||
         (widget.document.comment ?? '') != _commentController.text.trim() ||
         widget.document.model?.id.toString() != _selectedSupplier!.id.toString() ||
         widget.document.cashRegister?.id != selectedCashRegister?.id;
 
-    final approvalChanged = widget.document.approved != _isApproved;
-
-    if (dataChanged && !approvalChanged) {
+    if (dataChanged) {
       bloc.add(UpdateMoneyIncome(
         id: widget.document.id,
         date: isoDate,
@@ -163,27 +174,7 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
         comment: _commentController.text.trim(),
         cashRegisterId: selectedCashRegister?.id,
       ));
-    }
-
-    if (!dataChanged && approvalChanged) {
-      bloc.add(ToggleApproveOneMoneyIncomeDocument(widget.document.id!, _isApproved));
-    }
-
-    if (dataChanged && approvalChanged) {
-      debugPrint("Data and approval changed, using combined event");
-      bloc.add(UpdateThenToggleOneMoneyIncomeDocument(
-        id: widget.document.id!,
-        date: isoDate,
-        amount: double.parse(_amountController.text.trim()),
-        operationType: MoneyIncomeOperationType.return_supplier.name,
-        supplierId: _selectedSupplier!.id,
-        comment: _commentController.text.trim(),
-        cashRegisterId: selectedCashRegister!.id,
-        approve: _isApproved,
-      ));
-    }
-
-    if (!dataChanged && !approvalChanged) {
+    } else {
       if (mounted) {
         setState(() => _isLoading = false);
       }
@@ -280,7 +271,6 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
               );
             }
 
-            // Если список пуст даже после успешной загрузки, показываем placeholder
             if (state is GetAllSupplierSuccess && suppliersList.isEmpty) {
               return Container(
                 height: 50,
@@ -374,6 +364,7 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
       appBar: _buildAppBar(localizations),
       body: MultiBlocListener(
         listeners: [
+          // ИЗМЕНЕННЫЙ LISTENER
           BlocListener<MoneyIncomeBloc, MoneyIncomeState>(
             listener: (context, state) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -384,16 +375,36 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
                   Navigator.pop(context, true);
                 } else if (state is MoneyIncomeUpdateError) {
                   setState(() => _isLoading = false);
+                  _showSnackBar(
+                    AppLocalizations.of(context)!.translate('error_updating_document') ?? 
+                    'Ошибка обновления документа',
+                    false,
+                  );
                 }
+                
+                // НОВАЯ ОБРАБОТКА: Для проведения/отмены - НЕ ЗАКРЫВАЕМ экран
                 if (state is MoneyIncomeToggleOneApproveSuccess) {
-                  setState(() => _isLoading = false);
-                  Navigator.pop(context, true);
+                  final newApprovalState = !_isApproved;
+                  setState(() {
+                    _isApproveLoading = false;
+                    _isApproved = newApprovalState;
+                  });
+                  
+                  _showSnackBar(
+                    newApprovalState 
+                      ? (AppLocalizations.of(context)!.translate('document_approved') ?? 
+                         'Документ проведен')
+                      : (AppLocalizations.of(context)!.translate('document_unapproved') ?? 
+                         'Проведение отменено'),
+                    true,
+                  );
                 } else if (state is MoneyIncomeToggleOneApproveError) {
-                  setState(() => _isLoading = false);
-                }
-                if (state is MoneyIncomeUpdateThenToggleOneApproveSuccess) {
-                  setState(() => _isLoading = false);
-                  Navigator.pop(context, true);
+                  setState(() => _isApproveLoading = false);
+                  _showSnackBar(
+                    AppLocalizations.of(context)!.translate('error_toggling_approval') ?? 
+                    'Ошибка изменения статуса проведения',
+                    false,
+                  );
                 }
               });
             },
@@ -403,7 +414,8 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
               if (state is GetAllSupplierError && mounted) {
                 debugPrint('Supplier loading error: ${state.toString()}');
                 _showSnackBar(
-                    AppLocalizations.of(context)!.translate('error_loading_suppliers') ?? 'Ошибка загрузки поставщиков',
+                    AppLocalizations.of(context)!.translate('error_loading_suppliers') ?? 
+                    'Ошибка загрузки поставщиков',
                     false
                 );
               }
@@ -437,7 +449,8 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
                           } catch (e) {
                             debugPrint('Error selecting cash register: $e');
                             _showSnackBar(
-                                AppLocalizations.of(context)!.translate('error_selecting_cash_register') ?? 'Ошибка выбора кассы',
+                                AppLocalizations.of(context)!.translate('error_selecting_cash_register') ?? 
+                                'Ошибка выбора кассы',
                                 false
                             );
                           }
@@ -470,7 +483,8 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
-        AppLocalizations.of(context)!.translate('edit_incoming_document') ?? 'Редактировать доход',
+        AppLocalizations.of(context)!.translate('edit_incoming_document') ?? 
+        'Редактировать доход',
         style: const TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
@@ -483,7 +497,7 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
   }
 
   Widget _buildDateField(AppLocalizations localizations) {
-    return  CustomTextFieldDate(
+    return CustomTextFieldDate(
       controller: _dateController,
       label: AppLocalizations.of(context)!.translate('date') ?? 'Дата',
       withTime: true,
@@ -498,10 +512,11 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
   }
 
   Widget _buildCommentField(AppLocalizations localizations) {
-    return  CustomTextField(
+    return CustomTextField(
       controller: _commentController,
       label: AppLocalizations.of(context)!.translate('comment') ?? 'Комментарий',
-      hintText: AppLocalizations.of(context)!.translate('enter_comment') ?? 'Введите комментарий',
+      hintText: AppLocalizations.of(context)!.translate('enter_comment') ?? 
+      'Введите комментарий',
       maxLines: 3,
       keyboardType: TextInputType.multiline,
     );
@@ -514,21 +529,25 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
         ],
         controller: _amountController,
         label: AppLocalizations.of(context)!.translate('amount') ?? 'Сумма',
-        hintText: AppLocalizations.of(context)!.translate('enter_amount') ?? 'Введите сумму',
+        hintText: AppLocalizations.of(context)!.translate('enter_amount') ?? 
+        'Введите сумму',
         maxLines: 1,
         keyboardType: TextInputType.number,
         validator: (value) {
           if (value == null || value.isEmpty) {
-            return AppLocalizations.of(context)!.translate('enter_amount') ?? 'Введите сумму';
+            return AppLocalizations.of(context)!.translate('enter_amount') ?? 
+            'Введите сумму';
           }
 
           final doubleValue = double.tryParse(value.trim());
           if (doubleValue == null) {
-            return AppLocalizations.of(context)!.translate('enter_valid_amount') ?? 'Введите корректную сумму';
+            return AppLocalizations.of(context)!.translate('enter_valid_amount') ?? 
+            'Введите корректную сумму';
           }
 
           if (doubleValue <= 0) {
-            return AppLocalizations.of(context)!.translate('amount_must_be_greater_than_zero') ?? 'Сумма должна быть больше нуля';
+            return AppLocalizations.of(context)!.translate('amount_must_be_greater_than_zero') ?? 
+            'Сумма должна быть больше нуля';
           }
 
           return null;
@@ -536,16 +555,43 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
     );
   }
 
+  // ИЗМЕНЕННЫЙ МЕТОД
   Widget _buildApproveButton(AppLocalizations localizations) {
-    return StyledActionButton(
-      text: !_isApproved ? AppLocalizations.of(context)!.translate('approve_document') ?? 'Провести' :  AppLocalizations.of(context)!.translate('unapprove_document') ?? 'Отменить проведение',
-      icon: !_isApproved ? Icons.check_circle_outline :  Icons.close_outlined,
-      color: !_isApproved ? const Color(0xFF4CAF50) : const Color(0xFFFFA500),
-      onPressed: () {
-        setState(() {
-          _isApproved = !_isApproved;
-        });
-      },
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Opacity(
+          opacity: _isApproveLoading ? 0.6 : 1.0,
+          child: StyledActionButton(
+            text: !_isApproved 
+              ? AppLocalizations.of(context)!.translate('approve_document') ?? 'Провести' 
+              : AppLocalizations.of(context)!.translate('unapprove_document') ?? 
+                'Отменить проведение',
+            icon: !_isApproved ? Icons.check_circle_outline : Icons.close_outlined,
+            color: !_isApproved ? const Color(0xFF4CAF50) : const Color(0xFFFFA500),
+            onPressed: _isApproveLoading ? () {} : _toggleApproval,
+          ),
+        ),
+        if (_isApproveLoading)
+          Positioned(
+            right: 16,
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              // child: const SizedBox(
+              //   width: 20,
+              //   height: 20,
+              //   child: CircularProgressIndicator(
+              //     strokeWidth: 2.5,
+              //     valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              //   ),
+              // ),
+            ),
+          ),
+      ],
     );
   }
 

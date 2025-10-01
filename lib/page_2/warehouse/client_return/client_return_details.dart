@@ -11,6 +11,7 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../models/api_exception_model.dart';
 import '../../money/widgets/error_dialog.dart';
@@ -41,7 +42,7 @@ class _ClientReturnDocumentDetailsScreenState
   bool _isButtonLoading = false;
   String? baseUrl;
   bool _documentUpdated = false;
-
+  bool _goodMeasurementEnabled = true; // добавляем флаг
   // Map to store unit details (id -> shortName)
   final Map<int, String> _unitMap = {
     23: 'шт', // Based on JSON unit_id: 23
@@ -53,8 +54,15 @@ class _ClientReturnDocumentDetailsScreenState
     super.initState();
     _initializeBaseUrl();
     _fetchDocumentDetails();
+        _loadGoodMeasurementSetting(); // загружаем настройку
   }
-
+  // Добавляем метод загрузки настройки
+  Future<void> _loadGoodMeasurementSetting() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _goodMeasurementEnabled = prefs.getBool('good_measurement') ?? true;
+    });
+  }
   Future<void> _initializeBaseUrl() async {
     try {
       final staticBaseUrl = await _apiService.getStaticBaseUrl();
@@ -684,6 +692,7 @@ class _ClientReturnDocumentDetailsScreenState
                       Row(
                         children: [
                           // Ед. изм.
+                          if (_goodMeasurementEnabled)
                           Expanded(
                             flex: 2,
                             child: Column(

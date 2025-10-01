@@ -1457,10 +1457,17 @@
   "select_variant": "Выберите товар",
   "pieces": "шт",
   "storages_must_be_different": "Склад-отправитель и склад-получатель должны быть разными",
+
   "owed_to_us": "Нам должны",
   "illiquid_goods": "Неликвидные товары",
   "cash_balance": "Остаток кассы",
   "our_debts": "Наши долги"
+
+  "error_toggling_approval": "Ошибка изменения статуса проведения",
+  "error_loading_outcome_categories": "Ошибка загрузки категорий расхода",
+  "error_loading_suppliers": "Ошибка загрузки поставщиков",
+  "error_selecting_outcome_category": "Ошибка выбора категории расхода"
+
 
 
 }
