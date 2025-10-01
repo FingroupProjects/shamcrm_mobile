@@ -64,6 +64,7 @@ import 'package:crm_task_manager/models/page_2/category_model.dart';
 import 'package:crm_task_manager/models/page_2/character_list_model.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/dashboard_goods_report.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/cash_balance_model.dart';
+import 'package:crm_task_manager/models/page_2/dashboard/dashboard_top.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/debtors_model.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/creditors_model.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/illiquids_model.dart';
@@ -14474,5 +14475,26 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     } catch (e) {
       throw e;
     }
+  }
+
+  /// Получение баланса денежных средств
+  Future<DashboardTopPart> getSalesDashboardTopPart() async {
+      // Формируем параметры запроса
+      var path = await _appendQueryParams('/fin/dashboard');
+
+      debugPrint("ApiService: getSalesDashboardTopPart path: $path");
+
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return DashboardTopPart.fromJson(data);
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка',
+          response.statusCode,
+        );
+      }
   }
 }

@@ -15,6 +15,7 @@ import 'package:intl/intl.dart';
 import '../../bloc/page_2_BLOC/dashboard/goods/sales_dashboard_goods_bloc.dart';
 import '../../custom_widget/animation.dart';
 import '../../custom_widget/custom_app_bar_page_2.dart';
+import '../../models/page_2/dashboard/dashboard_top.dart';
 import '../../models/page_2/dashboard/debtors_model.dart';
 import '../../screens/profile/languages/app_localizations.dart';
 import '../../screens/profile/profile_screen.dart';
@@ -28,6 +29,11 @@ class SalesDashboardScreen extends StatefulWidget {
 
 class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
   bool isClickAvatarIcon = false;
+
+  @override
+  void initState() {
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -120,10 +126,7 @@ class TopPart extends StatelessWidget {
     final localizations = AppLocalizations.of(context)!;
 
     // Extract data from state (only if SalesDashboardLoaded)
-    final DebtorsResponse? debtorsResponse = state is SalesDashboardLoaded ? (state as SalesDashboardLoaded).debtorsResponse : null;
-    final creditorsResponse = state is SalesDashboardLoaded ? (state as SalesDashboardLoaded).creditorsResponse : null;
-    final cashBalanceResponse = state is SalesDashboardLoaded ? (state as SalesDashboardLoaded).cashBalanceResponse : null;
-    final illiquidGoodsResponse = state is SalesDashboardLoaded ? (state as SalesDashboardLoaded).illiquidGoodsResponse : null;
+    final DashboardTopPart? salesDashboardTopPart = state is SalesDashboardLoaded ? (state as SalesDashboardLoaded).salesDashboardTopPart : null;
 
     return Column(
       children: [
@@ -139,11 +142,11 @@ class TopPart extends StatelessWidget {
                   accentColor: Colors.orange,
                   title: localizations.translate('illiquid_goods') ?? 'ТОВАРЫ/НЕЛИКВИДНЫМИ ТОВАРЫ',
                   leading: const Icon(Icons.inventory_2, color: Colors.orange),
-                  amount: illiquidGoodsResponse?.result?.liquidGoods ?? 0,
-                  amountText: '${illiquidGoodsResponse?.result?.liquidGoods ?? 0}',
+                  amount: salesDashboardTopPart?.result?.cashBalance?.totalBalance ?? 0,
+                  //amountText: '${salesDashboardTopPart?.result?.cashBalance.totalBalance}',
                   showCurrencySymbol: false,
-                  isUp: illiquidGoodsResponse?.result?.liquidChangeFormatted.startsWith('+') ?? true,
-                  trendText: illiquidGoodsResponse?.result?.liquidChangeFormatted ?? '0.0%',
+                  isUp: salesDashboardTopPart?.result?.cashBalance?.isPositiveChange ?? true,
+                  trendText: salesDashboardTopPart?.result?.cashBalance?.percentageChange.toString() ?? '0.0%',
                 ),
               ),
               const SizedBox(width: 16),
@@ -153,11 +156,11 @@ class TopPart extends StatelessWidget {
                   accentColor: Colors.blue,
                   title: localizations.translate('cash_balance') ?? 'ОСТАТОК КАССЫ',
                   leading: const Icon(Icons.account_balance_wallet, color: Colors.blue),
-                  amount: cashBalanceResponse?.result?.cashBalanceSummary?.totalBalance ?? 0,
-                  showCurrencySymbol: true,
-                  currencySymbol: '₽',
-                  isUp: cashBalanceResponse?.result?.cashBalanceSummary?.isPositiveChange ?? true,
-                  trendText: '${cashBalanceResponse?.result?.cashBalanceSummary?.percentageChange ?? 0}% за месяц',
+                  amount: salesDashboardTopPart?.result?.cashBalance?.totalBalance ?? 0,
+                  showCurrencySymbol: salesDashboardTopPart?.result?.cashBalance?.currency != null,
+                  currencySymbol: salesDashboardTopPart?.result?.cashBalance?.currency ?? '₽',
+                  isUp: salesDashboardTopPart?.result?.cashBalance?.isPositiveChange ?? true,
+                  trendText: salesDashboardTopPart?.result?.cashBalance?.percentageChange.toString() ?? '0.0%',
                 ),
               ),
             ],
@@ -174,11 +177,11 @@ class TopPart extends StatelessWidget {
                   accentColor: Colors.red,
                   title: localizations.translate('our_debts') ?? 'НАШИ ДОЛГИ',
                   leading: const Icon(Icons.trending_down, color: Colors.red),
-                  amount: creditorsResponse?.result?.totalDebt ?? 0,
+                  amount: salesDashboardTopPart?.result?.ourDebts?.currentDebts ?? 0,
                   showCurrencySymbol: true,
                   currencySymbol: '₽',
-                  isUp: creditorsResponse?.result?.isPositiveChange ?? false,
-                  trendText: '${creditorsResponse?.result?.percentageChange.abs() ?? 0}% за месяц',
+                  isUp: salesDashboardTopPart?.result?.ourDebts?.isPositiveChange ?? false,
+                  trendText: salesDashboardTopPart?.result?.ourDebts?.percentageChange.toString() ?? '',
                 ),
               ),
               const SizedBox(width: 16),
@@ -188,11 +191,11 @@ class TopPart extends StatelessWidget {
                   accentColor: Colors.green,
                   title: localizations.translate('owed_to_us') ?? 'НАМ ДОЛЖНЫ',
                   leading: const Icon(Icons.trending_up, color: Colors.green),
-                  amount: debtorsResponse?.result?.totalDebt ?? 0,
-                  amountText: '${debtorsResponse?.result?.totalDebt ?? 0}',
+                  amount: salesDashboardTopPart?.result?.debtsToUs?.totalDebtsToUs ?? 0,
+                  // amountText: salesDashboardTopPart?.result?.debtsToUs?.totalDebtsToUs.toString() ?? '',
                   showCurrencySymbol: false,
-                  isUp: debtorsResponse?.result?.isPositiveChange ?? true,
-                  trendText: '${debtorsResponse?.result?.percentageChange?.abs() ?? 0}% за месяц',
+                  isUp: salesDashboardTopPart?.result?.debtsToUs?.isPositiveChange ?? false,
+                  trendText: '${salesDashboardTopPart?.result?.debtsToUs?.percentageChange ?? 'n/a'}',
                 ),
               ),
             ],

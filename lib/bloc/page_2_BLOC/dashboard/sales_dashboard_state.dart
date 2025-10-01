@@ -12,24 +12,16 @@ class SalesDashboardInitial extends SalesDashboardState {}
 class SalesDashboardLoading extends SalesDashboardState {}
 
 class SalesDashboardLoaded extends SalesDashboardState {
-  final DebtorsResponse? debtorsResponse;
-  final IlliquidGoodsResponse? illiquidGoodsResponse;
-  final CashBalanceResponse? cashBalanceResponse;
-  final CreditorsResponse? creditorsResponse;
+  final DashboardTopPart? salesDashboardTopPart;
 
   const SalesDashboardLoaded({
-    this.debtorsResponse,
-    this.illiquidGoodsResponse,
-    this.cashBalanceResponse,
-    this.creditorsResponse,
+    this.salesDashboardTopPart,
+
   });
 
   @override
   List<Object?> get props => [
-    debtorsResponse,
-    illiquidGoodsResponse,
-    cashBalanceResponse,
-    creditorsResponse,
+    salesDashboardTopPart,
   ];
 }
 
