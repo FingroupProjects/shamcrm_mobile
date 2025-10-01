@@ -10,7 +10,7 @@ sealed class ClientReturnEvent extends Equatable {
 class FetchClientReturns extends ClientReturnEvent {
   final bool forceRefresh;
   final Map<String, dynamic>? filters;
-  final int? status; // 0 или 1 для таба
+  final int? status;
 
   const FetchClientReturns({
     this.forceRefresh = false,
@@ -24,11 +24,12 @@ class FetchClientReturns extends ClientReturnEvent {
 
 class DeleteClientReturnDocument extends ClientReturnEvent {
   final int documentId;
+  final bool shouldReload;
 
-  const DeleteClientReturnDocument(this.documentId);
+  const DeleteClientReturnDocument(this.documentId, {this.shouldReload = true});
 
   @override
-  List<Object> get props => [documentId];
+  List<Object> get props => [documentId, shouldReload];
 }
 
 class CreateClientReturnDocument extends ClientReturnEvent {
@@ -39,7 +40,7 @@ class CreateClientReturnDocument extends ClientReturnEvent {
   final List<Map<String, dynamic>> documentGoods;
   final int organizationId;
   final int salesFunnelId;
-  final bool approve; // Новый параметр
+  final bool approve;
 
   const CreateClientReturnDocument({
     required this.date,
@@ -49,20 +50,20 @@ class CreateClientReturnDocument extends ClientReturnEvent {
     required this.documentGoods,
     required this.organizationId,
     required this.salesFunnelId,
-    this.approve = false, // По умолчанию false
+    this.approve = false,
   });
 
   @override
   List<Object> get props => [
-    date,
-    storageId,
-    comment,
-    counterpartyId,
-    documentGoods,
-    organizationId,
-    salesFunnelId,
-    approve, // Добавляем в props
-  ];
+        date,
+        storageId,
+        comment,
+        counterpartyId,
+        documentGoods,
+        organizationId,
+        salesFunnelId,
+        approve,
+      ];
 }
 
 class UpdateClientReturnDocument extends ClientReturnEvent {
@@ -88,7 +89,13 @@ class UpdateClientReturnDocument extends ClientReturnEvent {
 
   @override
   List<Object> get props => [
-    documentId, date, storageId, comment, counterpartyId,
-    documentGoods, organizationId, salesFunnelId
-  ];
+        documentId,
+        date,
+        storageId,
+        comment,
+        counterpartyId,
+        documentGoods,
+        organizationId,
+        salesFunnelId
+      ];
 }

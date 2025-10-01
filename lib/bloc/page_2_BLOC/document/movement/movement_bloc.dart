@@ -165,41 +165,50 @@ class MovementBloc extends Bloc<MovementEvent, MovementState> {
     }
   }
 
-  Future<void> _onDeleteMovementDocument(DeleteMovementDocument event, Emitter<MovementState> emit) async {
+Future<void> _onDeleteMovementDocument(DeleteMovementDocument event, Emitter<MovementState> emit) async {
+  if (isClosed) return;
+
+  final isLastElement = _allData.length == 1;
+  
+  if (event.shouldReload || isLastElement) {
+    emit(MovementDeleteLoading());
+  }
+
+  try {
+    final result = await apiService.deleteMovementDocument(event.documentId);
+
     if (isClosed) return;
 
-    if (event.shouldReload) emit(MovementDeleteLoading());
+    if (result['result'] == 'Success') {
+      // ✅ Удаляем из локального состояния
+      _allData.removeWhere((doc) => doc.id == event.documentId);
+      _selectedDocuments.removeWhere((doc) => doc.id == event.documentId);
+      
 
-    try {
-      final result = await apiService.deleteMovementDocument(event.documentId);
-
-      if (isClosed) return;
-
-      if (result['result'] == 'Success') {
-        await Future.delayed(const Duration(milliseconds: 100));
-
-        if (!isClosed) {
-          emit(MovementDeleteSuccess('Документ успешно удален', shouldReload: event.shouldReload || _allData.isEmpty));
-        }
-      } else {
-        if (!isClosed) {
-          emit(MovementDeleteError('Не удалось удалить документ'));
-        }
-      }
-    } catch (e) {
       if (!isClosed) {
-        if (e is ApiException) {
-          emit(MovementDeleteError('Ошибка при удалении документа: ${e.toString()}', statusCode: e.statusCode));
-        } else {
-          emit(MovementDeleteError('Ошибка при удалении документа: ${e.toString()}'));
-        }
+        emit(MovementDeleteSuccess(
+          'Документ успешно удален', 
+          shouldReload: event.shouldReload || isLastElement
+        ));
+      }
+    } else {
+      if (!isClosed) {
+        emit(MovementDeleteError('Не удалось удалить документ'));
       }
     }
-
+  } catch (e) {
     if (!isClosed) {
-      emit(MovementLoaded(data: _allData, selectedData: _selectedDocuments));
+      if (e is ApiException) {
+        emit(MovementDeleteError(
+          'Ошибка при удалении документа: ${e.toString()}', 
+          statusCode: e.statusCode
+        ));
+      } else {
+        emit(MovementDeleteError('Ошибка при удалении документа: ${e.toString()}'));
+      }
     }
   }
+}
 
   Future<void> _onRestoreMovementDocument(RestoreMovementDocument event, Emitter<MovementState> emit) async {
     if (isClosed) return;
@@ -287,32 +296,35 @@ class MovementBloc extends Bloc<MovementEvent, MovementState> {
   }
 
   Future<void> _onMassDeleteMovementDocuments(MassDeleteMovementDocuments event, Emitter<MovementState> emit) async {
-    if (isClosed) return;
+  if (isClosed) return;
 
-    final ls = _selectedDocuments.where((e) => e.deletedAt == null).map((e) => e.id!).toList();
-    add(UnselectAllDocuments());
+  final ls = _selectedDocuments.where((e) => e.deletedAt == null).map((e) => e.id!).toList();
+  add(UnselectAllDocuments());
 
-    try {
-      await apiService.massDeleteMovementDocuments(ls);
-      if (!isClosed) {
-        emit(MovementDeleteMassSuccess("Документы успешно удалены"));
-      }
-    } catch (e) {
-      if (!isClosed) {
-        if (e is ApiException && e.statusCode == 409) {
-          emit(MovementDeleteMassError(e.toString(), statusCode: e.statusCode));
-        } else {
-          emit(MovementDeleteMassError(e.toString()));
-        }
-        add(FetchMovements(forceRefresh: true, filters: _filters, search: _search));
-      }
-    }
-
+  try {
+    await apiService.massDeleteMovementDocuments(ls);
+    
+    // ✅ Удаляем из локального состояния
+    _allData.removeWhere((doc) => ls.contains(doc.id));
+    
     if (!isClosed) {
-      emit(MovementLoaded(data: _allData, selectedData: _selectedDocuments));
+      emit(MovementDeleteMassSuccess("Документы успешно удалены"));
+    }
+  } catch (e) {
+    if (!isClosed) {
+      if (e is ApiException && e.statusCode == 409) {
+        emit(MovementDeleteMassError(e.toString(), statusCode: e.statusCode));
+      } else {
+        emit(MovementDeleteMassError(e.toString()));
+      }
+      add(FetchMovements(forceRefresh: true, filters: _filters, search: _search));
     }
   }
 
+  if (!isClosed) {
+    emit(MovementLoaded(data: List.from(_allData), selectedData: List.from(_selectedDocuments)));
+  }
+}
   Future<void> _onMassRestoreMovementDocuments(MassRestoreMovementDocuments event, Emitter<MovementState> emit) async {
     if (isClosed) return;
 

@@ -39,7 +39,8 @@ class _IncomingScreenState extends State<IncomingScreen> {
   @override
   void initState() {
     super.initState();
-    _incomingBloc = IncomingBloc(ApiService())..add(const FetchIncoming(forceRefresh: true));
+    _incomingBloc = IncomingBloc(ApiService())
+      ..add(const FetchIncoming(forceRefresh: true));
     _scrollController.addListener(_onScroll);
   }
 
@@ -86,7 +87,8 @@ class _IncomingScreenState extends State<IncomingScreen> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200 &&
+    if (_scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 200 &&
         !_isLoadingMore &&
         !_hasReachedMax) {
       setState(() {
@@ -159,93 +161,100 @@ class _IncomingScreenState extends State<IncomingScreen> {
           forceMaterialTransparency: true,
           title: _selectionMode
               ? BlocBuilder<IncomingBloc, IncomingState>(
-            builder: (context, state) {
-              if (state is IncomingLoaded) {
-                bool showApprove = state.selectedData!.any((doc) => doc.approved == 0 && doc.deletedAt == null);
-                bool showDisapprove = state.selectedData!.any((doc) => doc.approved == 1 && doc.deletedAt == null);
-                bool showDelete = state.selectedData!.any((doc) => doc.deletedAt == null);
-                bool showRestore = state.selectedData!.any((doc) => doc.deletedAt != null);
+                  builder: (context, state) {
+                    if (state is IncomingLoaded) {
+                      bool showApprove = state.selectedData!.any(
+                          (doc) => doc.approved == 0 && doc.deletedAt == null);
+                      bool showDisapprove = state.selectedData!.any(
+                          (doc) => doc.approved == 1 && doc.deletedAt == null);
+                      bool showDelete = state.selectedData!
+                          .any((doc) => doc.deletedAt == null);
+                      bool showRestore = state.selectedData!
+                          .any((doc) => doc.deletedAt != null);
 
-                return AppBarSelectionMode(
-                  title: localizations?.translate('appbar_incoming') ?? 'Приходы',
-                  onDismiss: () {
-                    setState(() {
-                      _selectionMode = false;
-                    });
-                    _incomingBloc.add(UnselectAllDocuments());
-                  },
-                  onApprove: () {
-                    setState(() {
-                      _selectionMode = false;
-                    });
-                    _incomingBloc.add(MassApproveIncomingDocuments());
-                  },
-                  onDisapprove: () {
-                    setState(() {
-                      _selectionMode = false;
-                    });
-                    _incomingBloc.add(MassDisapproveIncomingDocuments());
-                  },
-                  onDelete: () {
-                    setState(() {
-                      _selectionMode = false;
-                    });
-                    _incomingBloc.add(MassDeleteIncomingDocuments());
-                  },
-                  onRestore: () {
-                    setState(() {
-                      _selectionMode = false;
-                    });
-                    _incomingBloc.add(MassRestoreIncomingDocuments());
-                  },
-                  showApprove: showApprove,
-                  showDelete: showDelete,
-                  showDisapprove: showDisapprove,
-                  showRestore: showRestore,
-                );
-              }
+                      return AppBarSelectionMode(
+                        title: localizations?.translate('appbar_incoming') ??
+                            'Приходы',
+                        onDismiss: () {
+                          setState(() {
+                            _selectionMode = false;
+                          });
+                          _incomingBloc.add(UnselectAllDocuments());
+                        },
+                        onApprove: () {
+                          setState(() {
+                            _selectionMode = false;
+                          });
+                          _incomingBloc.add(MassApproveIncomingDocuments());
+                        },
+                        onDisapprove: () {
+                          setState(() {
+                            _selectionMode = false;
+                          });
+                          _incomingBloc.add(MassDisapproveIncomingDocuments());
+                        },
+                        onDelete: () {
+                          setState(() {
+                            _selectionMode = false;
+                          });
+                          _incomingBloc.add(MassDeleteIncomingDocuments());
+                        },
+                        onRestore: () {
+                          setState(() {
+                            _selectionMode = false;
+                          });
+                          _incomingBloc.add(MassRestoreIncomingDocuments());
+                        },
+                        showApprove: showApprove,
+                        showDelete: showDelete,
+                        showDisapprove: showDisapprove,
+                        showRestore: showRestore,
+                      );
+                    }
 
-              return AppBarSelectionMode(
-                title: localizations?.translate('appbar_incoming') ?? 'Приходы',
-                onDismiss: () {
-                  setState(() {
-                    _selectionMode = false;
-                  });
-                  _incomingBloc.add(UnselectAllDocuments());
-                },
-              );
-            },
-          )
+                    return AppBarSelectionMode(
+                      title: localizations?.translate('appbar_incoming') ??
+                          'Приходы',
+                      onDismiss: () {
+                        setState(() {
+                          _selectionMode = false;
+                        });
+                        _incomingBloc.add(UnselectAllDocuments());
+                      },
+                    );
+                  },
+                )
               : CustomAppBarPage2(
-            title: localizations!.translate('appbar_incoming') ?? 'Приходы',
-            showSearchIcon: true,
-            showFilterIcon: false,
-            showFilterOrderIcon: false,
-            showFilterIncomeIcon: false,
-            showFilterIncomingIcon: true,
-            onFilterIncomingSelected: _onFilterSelected,
-            onIncomingResetFilters: _onResetFilters,
-            onChangedSearchInput: _onSearch,
-            textEditingController: _searchController,
-            focusNode: _focusNode,
-            clearButtonClick: (value) {
-              if (!value) {
-                setState(() {
-                  _isSearching = false;
-                  _searchController.clear();
-                  _search = null;
-                });
-                _incomingBloc.add(FetchIncoming(
-                  forceRefresh: true,
-                  filters: _currentFilters,
-                  search: null,
-                ));
-              }
-            },
-            onClickProfileAvatar: () {},
-            clearButtonClickFiltr: (bool p1) {},
-            currentFilters: _currentFilters,
-          ),
+                  title:
+                      localizations!.translate('appbar_incoming') ?? 'Приходы',
+                  showSearchIcon: true,
+                  showFilterIcon: false,
+                  showFilterOrderIcon: false,
+                  showFilterIncomeIcon: false,
+                  showFilterIncomingIcon: true,
+                  onFilterIncomingSelected: _onFilterSelected,
+                  onIncomingResetFilters: _onResetFilters,
+                  onChangedSearchInput: _onSearch,
+                  textEditingController: _searchController,
+                  focusNode: _focusNode,
+                  clearButtonClick: (value) {
+                    if (!value) {
+                      setState(() {
+                        _isSearching = false;
+                        _searchController.clear();
+                        _search = null;
+                      });
+                      _incomingBloc.add(FetchIncoming(
+                        forceRefresh: true,
+                        filters: _currentFilters,
+                        search: null,
+                      ));
+                    }
+                  },
+                  onClickProfileAvatar: () {},
+                  clearButtonClickFiltr: (bool p1) {},
+                  currentFilters: _currentFilters,
+                ),
         ),
         body: BlocListener<IncomingBloc, IncomingState>(
           listener: (context, state) {
@@ -267,7 +276,10 @@ class _IncomingScreenState extends State<IncomingScreen> {
               _showSnackBar(state.message, true);
             } else if (state is IncomingCreateError) {
               if (state.statusCode == 409) {
-                showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message);
+                showSimpleErrorDialog(
+                    context,
+                    localizations?.translate('error') ?? 'Ошибка',
+                    state.message);
                 return;
               }
               _showSnackBar(state.message, false);
@@ -275,110 +287,164 @@ class _IncomingScreenState extends State<IncomingScreen> {
               _showSnackBar(state.message, true);
             } else if (state is IncomingUpdateError) {
               if (state.statusCode == 409) {
-                showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message);
+                showSimpleErrorDialog(
+                    context,
+                    localizations?.translate('error') ?? 'Ошибка',
+                    state.message);
                 return;
               }
               _showSnackBar(state.message, false);
             } else if (state is IncomingApproveMassSuccess) {
-              showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-              _incomingBloc.add(FetchIncoming(forceRefresh: true, filters: _currentFilters, search: _search));
+              showCustomSnackBar(
+                  context: context, message: state.message, isSuccess: true);
+              _incomingBloc.add(FetchIncoming(
+                  forceRefresh: true,
+                  filters: _currentFilters,
+                  search: _search));
             } else if (state is IncomingApproveMassError) {
               if (state.statusCode == 409) {
-                showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message);
+                showSimpleErrorDialog(
+                    context,
+                    localizations?.translate('error') ?? 'Ошибка',
+                    state.message);
                 return;
               }
-              showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+              showCustomSnackBar(
+                  context: context, message: state.message, isSuccess: false);
             } else if (state is IncomingDisapproveMassSuccess) {
-              showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-              _incomingBloc.add(FetchIncoming(forceRefresh: true, filters: _currentFilters, search: _search));
+              showCustomSnackBar(
+                  context: context, message: state.message, isSuccess: true);
+              _incomingBloc.add(FetchIncoming(
+                  forceRefresh: true,
+                  filters: _currentFilters,
+                  search: _search));
             } else if (state is IncomingDisapproveMassError) {
-              debugPrint("[ERROR] IncomingDisapproveMassError: ${state.message}, enumType: ${ErrorDialogEnum.goodsIncomingUnapprove}");
+              debugPrint(
+                  "[ERROR] IncomingDisapproveMassError: ${state.message}, enumType: ${ErrorDialogEnum.goodsIncomingUnapprove}");
               if (state.statusCode == 409) {
-                showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message, errorDialogEnum: ErrorDialogEnum.goodsIncomingUnapprove);
+                showSimpleErrorDialog(
+                    context,
+                    localizations?.translate('error') ?? 'Ошибка',
+                    state.message,
+                    errorDialogEnum: ErrorDialogEnum.goodsIncomingUnapprove);
                 return;
               }
-              showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+              showCustomSnackBar(
+                  context: context, message: state.message, isSuccess: false);
             } else if (state is IncomingDeleteSuccess) {
-  _showSnackBar(state.message, true);
-  if (state.shouldReload) {
-    // ✅ Перед перезагрузкой временно показываем загрузку
-    setState(() {
-      _hasReachedMax = false;
-    });
-    _incomingBloc.add(FetchIncoming(
-      forceRefresh: true, 
-      filters: _currentFilters, 
-      search: _search
-    ));
-  }
-}  else if (state is IncomingDeleteError) {
+              _showSnackBar(state.message, true);
+              if (state.shouldReload) {
+                // ✅ Перед перезагрузкой временно показываем загрузку
+                setState(() {
+                  _hasReachedMax = false;
+                });
+                _incomingBloc.add(FetchIncoming(
+                    forceRefresh: true,
+                    filters: _currentFilters,
+                    search: _search));
+              }
+            } else if (state is IncomingDeleteError) {
               if (state.statusCode == 409) {
-                debugPrint("[ERROR] IncomingDeleteError: ${state.message} enumType: ${ErrorDialogEnum.goodsIncomingDelete}");
-                showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message, errorDialogEnum: ErrorDialogEnum.goodsIncomingDelete);
-                _incomingBloc.add(FetchIncoming(forceRefresh: true, filters: _currentFilters, search: _search));
+                debugPrint(
+                    "[ERROR] IncomingDeleteError: ${state.message} enumType: ${ErrorDialogEnum.goodsIncomingDelete}");
+                showSimpleErrorDialog(
+                    context,
+                    localizations?.translate('error') ?? 'Ошибка',
+                    state.message,
+                    errorDialogEnum: ErrorDialogEnum.goodsIncomingDelete);
+                _incomingBloc.add(FetchIncoming(
+                    forceRefresh: true,
+                    filters: _currentFilters,
+                    search: _search));
                 return;
               }
-              showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+              showCustomSnackBar(
+                  context: context, message: state.message, isSuccess: false);
             } else if (state is IncomingDeleteMassSuccess) {
-              showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-              _incomingBloc.add(FetchIncoming(forceRefresh: true, filters: _currentFilters, search: _search));
+              showCustomSnackBar(
+                  context: context, message: state.message, isSuccess: true);
+              _incomingBloc.add(FetchIncoming(
+                  forceRefresh: true,
+                  filters: _currentFilters,
+                  search: _search));
             } else if (state is IncomingDeleteMassError) {
               if (state.statusCode == 409) {
-                debugPrint("[ERROR] IncomingMassDeleteError: ${state.message} enumType: ${ErrorDialogEnum.goodsIncomingDelete}");
-                showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message, errorDialogEnum: ErrorDialogEnum.goodsIncomingDelete);
-                _incomingBloc.add(FetchIncoming(forceRefresh: true, filters: _currentFilters, search: _search));
+                debugPrint(
+                    "[ERROR] IncomingMassDeleteError: ${state.message} enumType: ${ErrorDialogEnum.goodsIncomingDelete}");
+                showSimpleErrorDialog(
+                    context,
+                    localizations?.translate('error') ?? 'Ошибка',
+                    state.message,
+                    errorDialogEnum: ErrorDialogEnum.goodsIncomingDelete);
+                _incomingBloc.add(FetchIncoming(
+                    forceRefresh: true,
+                    filters: _currentFilters,
+                    search: _search));
                 return;
               }
-              showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+              showCustomSnackBar(
+                  context: context, message: state.message, isSuccess: false);
             } else if (state is IncomingRestoreMassSuccess) {
-              showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-              _incomingBloc.add(FetchIncoming(forceRefresh: true, filters: _currentFilters, search: _search));
+              showCustomSnackBar(
+                  context: context, message: state.message, isSuccess: true);
+              _incomingBloc.add(FetchIncoming(
+                  forceRefresh: true,
+                  filters: _currentFilters,
+                  search: _search));
             } else if (state is IncomingRestoreMassError) {
               if (state.statusCode == 409) {
-                showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message);
+                showSimpleErrorDialog(
+                    context,
+                    localizations?.translate('error') ?? 'Ошибка',
+                    state.message);
                 return;
               }
-              showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+              showCustomSnackBar(
+                  context: context, message: state.message, isSuccess: false);
             }
           },
-         child: BlocBuilder<IncomingBloc, IncomingState>(
-  builder: (context, state) {
-    // ✅ Показываем загрузку при удалении последнего элемента
-    if (state is IncomingLoading || state is IncomingDeleteLoading) {
-      return Center(
-        child: PlayStoreImageLoading(
-          size: 80.0,
-          duration: const Duration(milliseconds: 1000),
-        ),
-      );
-    }
+          child: BlocBuilder<IncomingBloc, IncomingState>(
+            builder: (context, state) {
+              // ✅ Показываем загрузку при удалении последнего элемента
+              if (state is IncomingLoading || state is IncomingDeleteLoading) {
+                return Center(
+                  child: PlayStoreImageLoading(
+                    size: 80.0,
+                    duration: const Duration(milliseconds: 1000),
+                  ),
+                );
+              }
 
-    final List<IncomingDocument> currentData = state is IncomingLoaded ? state.data : [];
+              final List<IncomingDocument> currentData =
+                  state is IncomingLoaded ? state.data : [];
 
-    if (currentData.isEmpty && state is IncomingLoaded) {
-      return Center(
-        child: Text(
-          _isSearching
-              ? localizations!.translate('nothing_found') ?? 'Ничего не найдено'
-              : localizations!.translate('no_incoming') ?? 'Нет приходов',
-          style: const TextStyle(
-            fontSize: 18,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w500,
-            color: Color(0xff99A4BA),
-          ),
-        ),
-      );
-    }
-    
+              if (currentData.isEmpty && state is IncomingLoaded) {
+                return Center(
+                  child: Text(
+                    _isSearching
+                        ? localizations!.translate('nothing_found') ??
+                            'Ничего не найдено'
+                        : localizations!.translate('no_incoming') ??
+                            'Нет приходов',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xff99A4BA),
+                    ),
+                  ),
+                );
+              }
 
               return RefreshIndicator(
                 color: const Color(0xff1E2E52),
                 backgroundColor: Colors.white,
                 onRefresh: _onRefresh,
                 child: ListView.separated(
-                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-                  separatorBuilder: (context, index) => const SizedBox(height: 10),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 10),
                   controller: _scrollController,
                   physics: const AlwaysScrollableScrollPhysics(),
                   itemCount: currentData.length + (_hasReachedMax ? 0 : 1),
@@ -386,14 +452,14 @@ class _IncomingScreenState extends State<IncomingScreen> {
                     if (index >= currentData.length) {
                       return _isLoadingMore
                           ? Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Center(
-                          child: PlayStoreImageLoading(
-                            size: 80.0,
-                            duration: const Duration(milliseconds: 1000),
-                          ),
-                        ),
-                      )
+                              padding: const EdgeInsets.all(16.0),
+                              child: Center(
+                                child: PlayStoreImageLoading(
+                                  size: 80.0,
+                                  duration: const Duration(milliseconds: 1000),
+                                ),
+                              ),
+                            )
                           : const SizedBox.shrink();
                     }
                     return Dismissible(
@@ -413,32 +479,40 @@ class _IncomingScreenState extends State<IncomingScreen> {
                             ],
                           ),
                           alignment: Alignment.centerRight,
-                          child: const Icon(Icons.delete, color: Colors.white, size: 24),
+                          child: const Icon(Icons.delete,
+                              color: Colors.white, size: 24),
                         ),
                         confirmDismiss: (direction) async {
                           return currentData[index].deletedAt == null;
                         },
-                 onDismissed: (direction) {
-  print("🗑️ [UI] Удаление документа ID: ${currentData[index].id}");
-  // ❌ Убираем setState с removeAt
-  _incomingBloc.add(DeleteIncoming(
-    currentData[index].id!,
-    localizations!,
-    shouldReload: true, // ✅ Всегда перезагружаем
-  ));
-} ,
+                        onDismissed: (direction) {
+                          print(
+                              "🗑️ [UI] Удаление документа ID: ${currentData[index].id}");
+                          // ❌ Убираем setState с removeAt
+                          _incomingBloc.add(DeleteIncoming(
+                            currentData[index].id!,
+                            localizations!,
+                            shouldReload: true, // ✅ Всегда перезагружаем
+                          ));
+                        },
                         child: ClipRRect(
                             borderRadius: BorderRadius.circular(12),
                             child: IncomingCard(
                               onTap: () {
                                 if (_selectionMode) {
-                                  _incomingBloc.add(SelectDocument(currentData[index]));
+                                  _incomingBloc
+                                      .add(SelectDocument(currentData[index]));
 
-                                  final currentState = context.read<IncomingBloc>().state;
+                                  final currentState =
+                                      context.read<IncomingBloc>().state;
 
                                   if (currentState is IncomingLoaded) {
-                                    final selectedCount = currentState.selectedData?.length ?? 0;
-                                    if (selectedCount <= 1 && currentState.selectedData?.contains(currentData[index]) == true) {
+                                    final selectedCount =
+                                        currentState.selectedData?.length ?? 0;
+                                    if (selectedCount <= 1 &&
+                                        currentState.selectedData?.contains(
+                                                currentData[index]) ==
+                                            true) {
                                       setState(() {
                                         _selectionMode = false;
                                       });
@@ -447,14 +521,17 @@ class _IncomingScreenState extends State<IncomingScreen> {
                                   return;
                                 }
 
-                                if (currentData[index].deletedAt != null) return;
+                                if (currentData[index].deletedAt != null)
+                                  return;
 
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => IncomingDocumentDetailsScreen(
+                                    builder: (context) =>
+                                        IncomingDocumentDetailsScreen(
                                       documentId: currentData[index].id!,
-                                      docNumber: currentData[index].docNumber ?? 'N/A',
+                                      docNumber:
+                                          currentData[index].docNumber ?? 'N/A',
                                       onDocumentUpdated: () {
                                         _incomingBloc.add(FetchIncoming(
                                           forceRefresh: true,
@@ -467,13 +544,17 @@ class _IncomingScreenState extends State<IncomingScreen> {
                                 );
                               },
                               isSelectionMode: _selectionMode,
-                              isSelected: (state as IncomingLoaded).selectedData?.contains(currentData[index]) ?? false,
+                              isSelected: (state as IncomingLoaded)
+                                      .selectedData
+                                      ?.contains(currentData[index]) ??
+                                  false,
                               onLongPress: () {
                                 if (_selectionMode) return;
                                 setState(() {
                                   _selectionMode = true;
                                 });
-                                _incomingBloc.add(SelectDocument(currentData[index]));
+                                _incomingBloc
+                                    .add(SelectDocument(currentData[index]));
                               },
                               document: currentData[index],
                             )));

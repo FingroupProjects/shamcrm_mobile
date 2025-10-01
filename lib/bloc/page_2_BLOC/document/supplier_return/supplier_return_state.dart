@@ -83,11 +83,12 @@ class SupplierReturnDeleteLoading extends SupplierReturnState {}
 
 class SupplierReturnDeleteSuccess extends SupplierReturnState {
   final String message;
+  final bool shouldReload;
 
-  const SupplierReturnDeleteSuccess(this.message);
+  const SupplierReturnDeleteSuccess(this.message, {this.shouldReload = true});
 
   @override
-  List<Object> get props => [message];
+  List<Object> get props => [message, shouldReload];
 }
 
 class SupplierReturnDeleteError extends SupplierReturnState {

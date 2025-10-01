@@ -179,73 +179,113 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
                 return;
               }
               _showSnackBar(state.message, false);
-            } else if (state is SupplierReturnDeleteSuccess) {
-              _showSnackBar(state.message, true);
-              _supplierReturnBloc.add(const FetchSupplierReturn(forceRefresh: true));
-            }
+            }else if (state is SupplierReturnDeleteSuccess) {
+  _showSnackBar(state.message, true);
+  _supplierReturnBloc.add(FetchSupplierReturn(forceRefresh: true, filters: _currentFilters));
+} else if (state is SupplierReturnDeleteError) {
+  if (state.statusCode == 409) {
+    final localizations = AppLocalizations.of(context)!;
+    showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+    _supplierReturnBloc.add(FetchSupplierReturn(forceRefresh: true, filters: _currentFilters));
+    return;
+  }
+  _showSnackBar(state.message, false);
+}
           },
-          child: BlocBuilder<SupplierReturnBloc, SupplierReturnState>(
-            builder: (context, state) {
-              if (state is SupplierReturnLoading) {
-                return Center(
-                  child: PlayStoreImageLoading(
-                    size: 80.0,
-                    duration: const Duration(milliseconds: 1000),
-                  ),
-                );
-              }
+         child: BlocBuilder<SupplierReturnBloc, SupplierReturnState>(
+  builder: (context, state) {
+    if (state is SupplierReturnLoading || state is SupplierReturnDeleteLoading) {
+      return Center(
+        child: PlayStoreImageLoading(
+          size: 80.0,
+          duration: const Duration(milliseconds: 1000),
+        ),
+      );
+    }
 
-              final currentData = state is SupplierReturnLoaded ? state.data : [];
+    final currentData = state is SupplierReturnLoaded ? state.data : [];
 
-              if (currentData.isEmpty && state is SupplierReturnLoaded) {
-                return Center(
-                  child: Text(
-                    _isSearching
-                        ? localizations!.translate('nothing_found') ?? 'Ничего не найдено'
-                        : localizations!.translate('no_supplier_return') ?? 'Нет возвратов поставщику',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xff99A4BA),
-                    ),
-                  ),
-                );
-              }
-
-              return RefreshIndicator(
-                color: const Color(0xff1E2E52),
-                backgroundColor: Colors.white,
-                onRefresh: _onRefresh,
-                child: ListView.builder(
-                  controller: _scrollController,
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  itemCount: currentData.length + (_hasReachedMax ? 0 : 1),
-                  itemBuilder: (context, index) {
-                    if (index >= currentData.length) {
-                      return _isLoadingMore
-                          ? Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Center(
-                                child: PlayStoreImageLoading(
-                                  size: 80.0,
-                                  duration: const Duration(milliseconds: 1000),
-                                ),
-                              ),
-                            )
-                          : const SizedBox.shrink();
-                    }
-                    return SupplierReturnCard(
-                      document: currentData[index],
-                      onUpdate: () {
-                        _supplierReturnBloc.add(const FetchSupplierReturn(forceRefresh: true));
-                      },
-                    );
-                  },
-                ),
-              );
-            },
+    if (currentData.isEmpty && state is SupplierReturnLoaded) {
+      return Center(
+        child: Text(
+          _isSearching
+              ? localizations!.translate('nothing_found') ?? 'Ничего не найдено'
+              : localizations!.translate('no_supplier_return') ?? 'Нет возвратов поставщику',
+          style: const TextStyle(
+            fontSize: 18,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            color: Color(0xff99A4BA),
           ),
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      color: const Color(0xff1E2E52),
+      backgroundColor: Colors.white,
+      onRefresh: _onRefresh,
+      child: ListView.builder(
+        controller: _scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
+        itemCount: currentData.length + (_hasReachedMax ? 0 : 1),
+        itemBuilder: (context, index) {
+          if (index >= currentData.length) {
+            return _isLoadingMore
+                ? Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Center(
+                      child: PlayStoreImageLoading(
+                        size: 80.0,
+                        duration: const Duration(milliseconds: 1000),
+                      ),
+                    ),
+                  )
+                : const SizedBox.shrink();
+          }
+          
+          return Dismissible(
+            key: Key(currentData[index].id.toString()),
+            direction: DismissDirection.endToStart,
+            background: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.red,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              alignment: Alignment.centerRight,
+              child: const Icon(Icons.delete, color: Colors.white, size: 24),
+            ),
+            confirmDismiss: (direction) async {
+              return currentData[index].deletedAt == null;
+            },
+           onDismissed: (direction) {
+  print("🗑️ [UI] Удаление документа ID: ${currentData[index].id}");
+  _supplierReturnBloc.add(DeleteSupplierReturn(
+    currentData[index].id!,
+    shouldReload: true,
+  ));
+},
+            child: SupplierReturnCard(
+              document: currentData[index],
+              onUpdate: () {
+                _supplierReturnBloc.add(const FetchSupplierReturn(forceRefresh: true));
+              },
+            ),
+          );
+        },
+      ),
+    );
+  },
+),
         ),
         floatingActionButton: FloatingActionButton(
           key: const Key('create_supplier_return_button'),

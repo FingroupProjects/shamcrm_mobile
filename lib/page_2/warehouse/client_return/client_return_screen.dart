@@ -102,7 +102,8 @@ class _ClientReturnScreenState extends State<ClientReturnScreen> {
                       organizationId: widget.organizationId),
                 ),
               ).then((_) {
-                _clientReturnBloc.add(const FetchClientReturns(forceRefresh: true));
+                _clientReturnBloc
+                    .add(const FetchClientReturns(forceRefresh: true));
               });
             }
           },
@@ -127,7 +128,8 @@ class _ClientReturnScreenState extends State<ClientReturnScreen> {
                   _isSearching = false;
                   _searchController.clear();
                 });
-                _clientReturnBloc.add(const FetchClientReturns(forceRefresh: true));
+                _clientReturnBloc
+                    .add(const FetchClientReturns(forceRefresh: true));
               }
             },
             onClickProfileAvatar: () {},
@@ -136,37 +138,57 @@ class _ClientReturnScreenState extends State<ClientReturnScreen> {
           ),
         ),
         body: BlocListener<ClientReturnBloc, ClientReturnState>(
-          listener: (context, state) {
-            if (state is ClientReturnLoaded) {
-              setState(() {
-                _hasReachedMax = state.hasReachedMax;
-                _isInitialLoad = false;
-                _isLoadingMore = false;
-              });
-            } else if (state is ClientReturnError) {
-              setState(() {
-                _isInitialLoad = false;
-                _isLoadingMore = false;
-              });
-              if (state.statusCode == 409) {
-                showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
-                return;
-              }
-              showCustomSnackBar(context: context, message: state.message, isSuccess: false);
-            }
-          },
+        listener: (context, state) {
+  if (state is ClientReturnLoaded) {
+    setState(() {
+      _hasReachedMax = state.hasReachedMax;
+      _isInitialLoad = false;
+      _isLoadingMore = false;
+    });
+  } else if (state is ClientReturnError) {
+    setState(() {
+      _isInitialLoad = false;
+      _isLoadingMore = false;
+    });
+    if (state.statusCode == 409) {
+      showSimpleErrorDialog(
+          context,
+          localizations.translate('error') ?? 'Ошибка',
+          state.message);
+      return;
+    }
+    showCustomSnackBar(
+        context: context, message: state.message, isSuccess: false);
+  } else if (state is ClientReturnDeleteSuccess) {
+    showCustomSnackBar(
+        context: context, message: state.message, isSuccess: true);
+    _clientReturnBloc.add(FetchClientReturns(forceRefresh: true, filters: _currentFilters));
+  } else if (state is ClientReturnDeleteError) {
+    if (state.statusCode == 409) {
+      showSimpleErrorDialog(
+          context, localizations.translate('error') ?? 'Ошибка', state.message);
+      _clientReturnBloc.add(FetchClientReturns(forceRefresh: true, filters: _currentFilters));
+      return;
+    }
+    showCustomSnackBar(
+        context: context, message: state.message, isSuccess: false);
+  }
+},
           child: BlocBuilder<ClientReturnBloc, ClientReturnState>(
             builder: (context, state) {
-              if (state is ClientReturnLoading) {
+              // ✅ Показываем загрузку при Loading или DeleteLoading
+              if (state is ClientReturnLoading ||
+                  state is ClientReturnDeleteLoading) {
                 return Center(
                   child: PlayStoreImageLoading(
                     size: 80.0,
-                    duration: Duration(milliseconds: 1000),
+                    duration: const Duration(milliseconds: 1000),
                   ),
                 );
               }
 
               final currentData = state is ClientReturnLoaded ? state.data : [];
+
 
               if (currentData.isEmpty && state is ClientReturnLoaded) {
                 return Center(
@@ -186,38 +208,69 @@ class _ClientReturnScreenState extends State<ClientReturnScreen> {
                 );
               }
 
-              return RefreshIndicator(
-                color: const Color(0xff1E2E52),
-                backgroundColor: Colors.white,
-                onRefresh: _onRefresh,
-                child: ListView.builder(
-                  controller: _scrollController,
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  itemCount: currentData.length + (_hasReachedMax ? 0 : 1),
-                  itemBuilder: (context, index) {
-                    if (index >= currentData.length) {
-                      return _isLoadingMore
-                          ? Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Center(
-                                child: PlayStoreImageLoading(
-                                  size: 80.0,
-                                  duration: Duration(milliseconds: 1000),
-                                ),
-                              ),
-                            )
-                          : const SizedBox.shrink();
-                    }
-                    return ClientReturnCard(
-                      document: currentData[index],
-                      onUpdate: () {
-                        _clientReturnBloc
-                            .add(const FetchClientReturns(forceRefresh: true));
-                      },
-                    );
-                  },
+            return RefreshIndicator(
+  color: const Color(0xff1E2E52),
+  backgroundColor: Colors.white,
+  onRefresh: _onRefresh,
+  child: ListView.builder(
+    controller: _scrollController,
+    physics: const AlwaysScrollableScrollPhysics(),
+    itemCount: currentData.length + (_hasReachedMax ? 0 : 1),
+    itemBuilder: (context, index) {
+      if (index >= currentData.length) {
+        return _isLoadingMore
+            ? Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Center(
+                  child: PlayStoreImageLoading(
+                    size: 80.0,
+                    duration: const Duration(milliseconds: 1000),
+                  ),
                 ),
-              );
+              )
+            : const SizedBox.shrink();
+      }
+      
+      return Dismissible(
+        key: Key(currentData[index].id.toString()),
+        direction: DismissDirection.endToStart,
+        background: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.red,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          alignment: Alignment.centerRight,
+          child: const Icon(Icons.delete, color: Colors.white, size: 24),
+        ),
+        confirmDismiss: (direction) async {
+          return currentData[index].deletedAt == null;
+        },
+        onDismissed: (direction) {
+          print("🗑️ [UI] Удаление документа ID: ${currentData[index].id}");
+          _clientReturnBloc.add(DeleteClientReturnDocument(
+            currentData[index].id!,
+            shouldReload: true,
+          ));
+        },
+        child: ClientReturnCard(
+          document: currentData[index],
+          onUpdate: () {
+            _clientReturnBloc.add(const FetchClientReturns(forceRefresh: true));
+          },
+        ),
+      );
+    },
+  ),
+);
             },
           ),
         ),

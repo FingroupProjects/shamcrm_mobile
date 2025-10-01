@@ -20,6 +20,7 @@ class ClientReturnBloc extends Bloc<ClientReturnEvent, ClientReturnState> {
     on<CreateClientReturnDocument>(_onCreateClientReturnDocument);
     on<DeleteClientReturnDocument>(_delete);
     on<UpdateClientReturnDocument>(_onUpdateClientReturnDocument);
+
   }
 
   _onFetchData(FetchClientReturns event, Emitter<ClientReturnState> emit) async {
@@ -89,19 +90,41 @@ class ClientReturnBloc extends Bloc<ClientReturnEvent, ClientReturnState> {
     }
   }
 
-  _delete(
-      DeleteClientReturnDocument event, Emitter<ClientReturnState> emit) async {
-    try {
-      await apiService.deleteClientReturnDocument(event.documentId);
-      add(FetchClientReturns(forceRefresh: true, filters: _filters));
-    } catch (e) {
-      if (e is ApiException) {
-        emit(ClientReturnError(e.toString(), statusCode: e.statusCode));
-      } else {
-        emit(ClientReturnError(e.toString()));
-      }
+_delete(DeleteClientReturnDocument event, Emitter<ClientReturnState> emit) async {
+  final isLastElement = _allData.length == 1;
+  
+  if (event.shouldReload || isLastElement) {
+    emit(ClientReturnDeleteLoading());
+  }
+
+  try {
+    await apiService.deleteClientReturnDocument(event.documentId);
+    
+    _allData.removeWhere((doc) => doc.id == event.documentId);
+    
+    await Future.delayed(const Duration(milliseconds: 100));
+    emit(ClientReturnDeleteSuccess(
+      'Документ успешно удален',
+      shouldReload: event.shouldReload || isLastElement
+    ));
+  } catch (e) {
+    if (e is ApiException) {
+      emit(ClientReturnDeleteError(
+        'Ошибка при удалении документа: ${e.toString()}',
+        statusCode: e.statusCode
+      ));
+    } else {
+      emit(ClientReturnDeleteError('Ошибка при удалении документа: ${e.toString()}'));
     }
   }
+  
+  if (_allData.isNotEmpty) {
+    emit(ClientReturnLoaded(
+      data: List.from(_allData),
+      hasReachedMax: state is ClientReturnLoaded ? (state as ClientReturnLoaded).hasReachedMax : false,
+    ));
+  }
+}
 
   _onUpdateClientReturnDocument(
       UpdateClientReturnDocument event, Emitter<ClientReturnState> emit) async {

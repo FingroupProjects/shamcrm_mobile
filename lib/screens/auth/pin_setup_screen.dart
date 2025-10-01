@@ -102,30 +102,35 @@ Future<void> _fetchMiniAppSettings() async {
         }
       }
     } catch (e) {
-      //print('Error fetching tutorial progress: $e');
-    }
+ }
   }
 
-  Future<void> _fetchSettings() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final organizationId = await _apiService.getSelectedOrganization();
+ Future<void> _fetchSettings() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final organizationId = await _apiService.getSelectedOrganization();
 
-      final response = await _apiService.getSettings(organizationId);
+    final response = await _apiService.getSettings(organizationId);
 
-      if (response['result'] != null) {
-        await prefs.setBool('department_enabled', response['result']['department'] ?? false);
-        await prefs.setBool('integration_with_1C', response['result']['integration_with_1C'] ?? false);
-        if (kDebugMode) {
-          //print('PinScreen: Настройки сохранены: integration_with_1C = ${response['result']['integration_with_1C']}');
-        }
+    if (response['result'] != null) {
+      await prefs.setBool('department_enabled', response['result']['department'] ?? false);
+      await prefs.setBool('integration_with_1C', response['result']['integration_with_1C'] ?? false);
+      
+      // Добавляем сохранение good_measurement
+      await prefs.setBool('good_measurement', response['result']['good_measurement'] == 1);
+      
+      if (kDebugMode) {
+        print('PinScreen: Настройки сохранены: good_measurement = ${response['result']['good_measurement']}');
       }
-    } catch (e) {
-      //print('Error fetching settings: $e');
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('integration_with_1C', false);
     }
+  } catch (e) {
+    print('Error fetching settings: $e');
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('integration_with_1C', false);
+    // Добавляем значение по умолчанию для good_measurement
+    await prefs.setBool('good_measurement', false); // по умолчанию включено
   }
+}
 
   @override
   void dispose() {

@@ -36,6 +36,8 @@ class _MovementScreenState extends State<MovementScreen> {
   bool _isLoadingMore = false;
   bool _hasReachedMax = false;
   bool _selectionMode = false;
+    bool _isRefreshing = false; // ✅ Новый флаг
+
 
   @override
   void initState() {
@@ -205,6 +207,7 @@ class _MovementScreenState extends State<MovementScreen> {
                       bool showDisapprove = state.selectedData!.any((doc) => doc.approved == 1 && doc.deletedAt == null);
                       bool showDelete = state.selectedData!.any((doc) => doc.deletedAt == null);
                       bool showRestore = state.selectedData!.any((doc) => doc.deletedAt != null);
+                              _isRefreshing = false; // ✅ Сбрасываем флаг
 
                       return AppBarSelectionMode(
                         title: localizations?.translate('appbar_movement') ?? 'Перемещение',
@@ -295,33 +298,35 @@ class _MovementScreenState extends State<MovementScreen> {
               listener: (context, state) {
                 if (!mounted) return;
 
-                if (state is MovementLoaded) {
-                  if (mounted) {
-                    setState(() {
-                      _hasReachedMax = state.hasReachedMax;
-                      _isInitialLoad = false;
-                      _isLoadingMore = false;
-                    });
-                  }
-                } else if (state is MovementError) {
-                  if (mounted) {
-                    setState(() {
-                      _isInitialLoad = false;
-                      _isLoadingMore = false;
-                    });
+               if (state is MovementLoaded) {
+  if (mounted) {
+    setState(() {
+      _hasReachedMax = state.hasReachedMax;
+      _isInitialLoad = false;
+      _isLoadingMore = false;
+      _isRefreshing = false; // ✅ Сбрасываем флаг
+    });
+  }
+} else if (state is MovementError) {
+  if (mounted) {
+    setState(() {
+      _isInitialLoad = false;
+      _isLoadingMore = false;
+      _isRefreshing = false; // ✅ Сбрасываем и при ошибке
+    });
 
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted && context.mounted) {
-                        if (state.statusCode == 409) {
-                          final localizations = AppLocalizations.of(context)!;
-                          showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
-                          return;
-                        }
-                        _showSnackBar(state.message, false);
-                      }
-                    });
-                  }
-                } else if (state is MovementCreateSuccess) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && context.mounted) {
+        if (state.statusCode == 409) {
+          final localizations = AppLocalizations.of(context)!;
+          showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+          return;
+        }
+        _showSnackBar(state.message, false);
+      }
+    });
+  }
+} else if (state is MovementCreateSuccess) {
                   if (mounted) {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       if (mounted && context.mounted) {
@@ -331,15 +336,23 @@ class _MovementScreenState extends State<MovementScreen> {
                     });
                   }
                 } else if (state is MovementDeleteSuccess) {
-                  if (mounted) {
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted && context.mounted) {
-                        _showSnackBar(state.message, true);
-                        if (state.shouldReload) _movementBloc.add(const FetchMovements(forceRefresh: true));
-                      }
-                    });
-                  }
-                } else if (state is MovementRestoreSuccess) {
+  if (mounted) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && context.mounted) {
+        _showSnackBar(state.message, true);
+        // ✅ Устанавливаем флаг перед перезагрузкой
+        setState(() {
+          _isRefreshing = true;
+        });
+        _movementBloc.add(FetchMovements(
+          forceRefresh: true, 
+          filters: _currentFilters, 
+          search: _search
+        ));
+      }
+    });
+  }
+}else if (state is MovementRestoreSuccess) {
                   if (mounted) {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       if (mounted && context.mounted) {
@@ -436,34 +449,35 @@ class _MovementScreenState extends State<MovementScreen> {
               },
             ),
           ],
-          child: BlocBuilder<MovementBloc, MovementState>(
-            builder: (context, state) {
-              if (state is MovementLoading && _isInitialLoad) {
-                return Center(
-                  child: PlayStoreImageLoading(
-                    size: 80.0,
-                    duration: const Duration(milliseconds: 1000),
-                  ),
-                );
-              }
+child: BlocBuilder<MovementBloc, MovementState>(
+  builder: (context, state) {
+    // ✅ Показываем загрузку при Loading или DeleteLoading
+    if (state is MovementLoading || state is MovementDeleteLoading) {
+      return Center(
+        child: PlayStoreImageLoading(
+          size: 80.0,
+          duration: const Duration(milliseconds: 1000),
+        ),
+      );
+    }
 
-              final List<IncomingDocument> currentData = state is MovementLoaded ? state.data : <IncomingDocument>[];
+    final List<IncomingDocument> currentData = state is MovementLoaded ? state.data : [];
 
-              if (currentData.isEmpty && state is MovementLoaded) {
-                return Center(
-                  child: Text(
-                    _isSearching
-                        ? (localizations?.translate('nothing_found') ?? 'Ничего не найдено')
-                        : (localizations?.translate('no_movements') ?? 'Нет документов перемещения'),
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xff99A4BA),
-                    ),
-                  ),
-                );
-              }
+    if (currentData.isEmpty && state is MovementLoaded) {
+      return Center(
+        child: Text(
+          _isSearching
+              ? (localizations?.translate('nothing_found') ?? 'Ничего не найдено')
+              : (localizations?.translate('no_movements') ?? 'Нет документов перемещения'),
+          style: const TextStyle(
+            fontSize: 18,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            color: Color(0xff99A4BA),
+          ),
+        ),
+      );
+    }
 
               return RefreshIndicator(
                 color: const Color(0xff1E2E52),
@@ -511,17 +525,19 @@ class _MovementScreenState extends State<MovementScreen> {
                       confirmDismiss: (direction) async {
                         return currentData[index].deletedAt == null;
                       },
-                      onDismissed: (direction) {
-                        print("🗑️ [UI] Удаление dokumenta ID: ${currentData[index].id}");
-                        setState(() {
-                          currentData.removeAt(index);
-                        });
-                        _movementBloc.add(DeleteMovementDocument(
-                          currentData[index].id!,
-                          localizations!,
-                          shouldReload: false,
-                        ));
-                      },
+                    onDismissed: (direction) {
+  print("🗑️ [UI] Удаление документа ID: ${currentData[index].id}");
+  // ❌ Не удаляем из currentData здесь - это вызовет дубликаты
+  // setState(() {
+  //   currentData.removeAt(index);
+  // });
+  
+  _movementBloc.add(DeleteMovementDocument(
+    currentData[index].id!,
+    localizations!,
+    shouldReload: true, // ✅ Всегда true для свайпа
+  ));
+},  
                       child: MovementCard(
                         document: currentData[index],
                         onTap: () {

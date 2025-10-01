@@ -12,7 +12,7 @@ final class ClientReturnInitial extends ClientReturnState {}
 final class ClientReturnLoading extends ClientReturnState {}
 
 final class ClientReturnLoaded extends ClientReturnState {
-  final List<IncomingDocument> data; // Единый список документов
+  final List<IncomingDocument> data;
   final Pagination? pagination;
   final bool hasReachedMax;
 
@@ -71,6 +71,28 @@ final class ClientReturnUpdateError extends ClientReturnState {
   final int? statusCode;
 
   const ClientReturnUpdateError(this.message, {this.statusCode});
+
+  @override
+  List<Object> get props => [message, statusCode ?? -1];
+}
+
+class ClientReturnDeleteLoading extends ClientReturnState {}
+
+class ClientReturnDeleteSuccess extends ClientReturnState {
+  final String message;
+  final bool shouldReload;
+
+  const ClientReturnDeleteSuccess(this.message, {this.shouldReload = true});
+
+  @override
+  List<Object> get props => [message, shouldReload];
+}
+
+class ClientReturnDeleteError extends ClientReturnState {
+  final String message;
+  final int? statusCode;
+
+  const ClientReturnDeleteError(this.message, {this.statusCode});
 
   @override
   List<Object> get props => [message, statusCode ?? -1];

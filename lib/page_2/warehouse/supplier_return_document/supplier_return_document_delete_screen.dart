@@ -137,7 +137,7 @@ class _SupplierReturnDeleteDocumentDialogState extends State<SupplierReturnDelet
                       buttonText: AppLocalizations.of(context)!.translate('delete') ?? 'Удалить',
                       onPressed: () {
                         final localizations = AppLocalizations.of(context)!;
-                        context.read<SupplierReturnBloc>().add(DeleteSupplierReturn(widget.documentId, localizations));
+                        context.read<SupplierReturnBloc>().add(DeleteSupplierReturn(widget.documentId));
                       },
                       buttonColor: Color(0xff1E2E52),
                       textColor: Colors.white,
