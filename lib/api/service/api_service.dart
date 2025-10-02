@@ -133,6 +133,7 @@ import '../../models/money/money_income_document_model.dart';
 import '../../models/money/money_outcome_document_model.dart';
 import '../../models/outcome_categories_data_response.dart';
 import '../../models/page_2/dashboard/expense_structure.dart';
+import '../../models/page_2/dashboard/net_profit_model.dart';
 import '../../models/page_2/dashboard/sales_model.dart';
 
 // final String baseUrl = 'https://fingroup-back.shamcrm.com/api';
@@ -14531,6 +14532,26 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       return SalesResponse.fromJson(data);
+    } else {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка',
+        response.statusCode,
+      );
+    }
+  }
+
+  Future<NetProfitResponse> getNetProfit() async {
+    // Формируем параметры запроса
+    var path = await _appendQueryParams('/dashboard/net-profit');
+
+    debugPrint("ApiService: getNetProfit path: $path");
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return NetProfitResponse.fromJson(data);
     } else {
       final message = _extractErrorMessageFromResponse(response);
       throw ApiException(

@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/sales_dashboard_bloc.dart';
+import 'package:crm_task_manager/models/page_2/dashboard/net_profit_model.dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/dialogs/dialog_products_info.dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/charts/expense_structure_chart.dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/charts/net_profit_chart.dart';
@@ -83,7 +84,7 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
               ),
             ),
             body: Builder(
-              builder: (context) {
+            builder: (context) {
                 if (isClickAvatarIcon) {
                   return const ProfileScreen();
                 } else if (state is SalesDashboardLoading) {
@@ -95,6 +96,7 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
                   );
                 } else if (state is SalesDashboardLoaded) {
                   final SalesResponse? salesData = state.salesData;
+                  final NetProfitResponse netProfitData = state.netProfitData;
 
                   return SafeArea(
                     child: SingleChildScrollView(
@@ -104,7 +106,7 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
                           TopPart(state: state),
                           const TopSellingProductsChart(),
                           SalesDynamicsLineChart(salesData),
-                          const NetProfitChart(),
+                          NetProfitChart(netProfitData),
                           const ExpenseStructureChart(),
                           const SalesMarginChart(),
                           const OrderQuantityChart(),
@@ -138,7 +140,6 @@ class TopPart extends StatelessWidget {
 
     final DashboardTopPart? salesDashboardTopPart = state is SalesDashboardLoaded ? (state as SalesDashboardLoaded).salesDashboardTopPart : null;
     // final ExpenseDashboard? expenseDashboard = state is SalesDashboardLoaded ? (state as SalesDashboardLoaded).expenseStructure : null;
-
 
     return Column(
       children: [
