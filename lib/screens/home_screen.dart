@@ -100,6 +100,7 @@ class _HomeScreenState extends State<HomeScreen> {
       inactiveIconsGroup1.add('assets/icons/MyNavBar/deal_OFF.png');
       hasAvailableScreens = true;
     }
+  
 
     // Чаты
     widgetsGroup1.add(ChatsScreen());
@@ -110,16 +111,16 @@ class _HomeScreenState extends State<HomeScreen> {
     hasAvailableScreens = true;
 
 
-    /// PAGE 2 ЭКРАНЫ (вторая группа)
-    bool hasDashboard2Access = true;
-    if (hasDashboard2Access) {
-      widgetsGroup2.add(SalesDashboardScreen());
-      titleKeysGroup2.add('appbar_sales_dashboard');
-      navBarTitleKeysGroup2.add('appbar_sales_dashboard');
-      activeIconsGroup2.add('assets/icons/MyNavBar/dashboard_ON.png');
-      inactiveIconsGroup2.add('assets/icons/MyNavBar/dashboard_OFF.png');
-      hasAvailableScreens = true;
-    }
+    // // /// PAGE 2 ЭКРАНЫ (вторая группа)
+    // bool hasDashboard2Access = true;
+    // if (hasDashboard2Access) {
+    //   widgetsGroup2.add(SalesDashboardScreen());
+    //   titleKeysGroup2.add('appbar_sales_dashboard');
+    //   navBarTitleKeysGroup2.add('appbar_sales_dashboard');
+    //   activeIconsGroup2.add('assets/icons/MyNavBar/dashboard_ON.png');
+    //   inactiveIconsGroup2.add('assets/icons/MyNavBar/dashboard_OFF.png');
+    //   hasAvailableScreens = true;
+    // }
 
     // ИЗМЕНЕНО: Онлайн магазин (вместо отдельных Category, Goods, Orders)
     // Проверяем, есть ли доступ к любой части онлайн магазина
@@ -137,17 +138,22 @@ class _HomeScreenState extends State<HomeScreen> {
     print('HomeScreen: hasMiniApp value: $hasMiniApp'); // Для отладки
 
 
-    if (hasMiniApp) {
-      widgetsGroup2.add(OnlineStoreScreen());
-      titleKeysGroup2.add('appbar_online_store');
-      navBarTitleKeysGroup2.add('appbar_online_store');
-      activeIconsGroup2.add('assets/icons/MyNavBar/category_ON.png');
-      inactiveIconsGroup2.add('assets/icons/MyNavBar/category_OFF.png');
-      hasAvailableScreens = true;
-    }
+    //   bool hasOnlineStoreAccess = false;
+    // if (await _apiService.hasPermission('product.read') || 
+    //     await _apiService.hasPermission('order.read')) {
+    //   hasOnlineStoreAccess = true;
+    // }
+    //  {
+    //       widgetsGroup2.add(OnlineStoreScreen());
+    //       titleKeysGroup2.add('appbar_online_store');
+    //       navBarTitleKeysGroup2.add('appbar_online_store');
+    //       activeIconsGroup2.add('assets/icons/MyNavBar/category_ON.png');
+    //       inactiveIconsGroup2.add('assets/icons/MyNavBar/category_OFF.png');
+    //       hasAvailableScreens = true;
+    //     }
 
-    // НОВЫЙ: Учет склада - тоже можем привязать к hasMiniApp или оставить на permissions
-    // Пока оставляю на permissions, но можно изменить логику по необходимости
+    // // НОВЫЙ: Учет склада - тоже можем привязать к hasMiniApp или оставить на permissions
+    // // Пока оставляю на permissions, но можно изменить логику по необходимости
     bool hasWarehouseAccess = false;
     if (await _apiService.hasPermission('product.read') || 
         await _apiService.hasPermission('order.read')) {
@@ -163,12 +169,12 @@ class _HomeScreenState extends State<HomeScreen> {
       hasAvailableScreens = true;
     }
 
-    // // "Деньги"
-    widgetsGroup2.add(MoneyScreen());
-    titleKeysGroup2.add('money');
-    navBarTitleKeysGroup2.add('money');
-    activeIconsGroup2.add('assets/icons/MyNavBar/coins_ON.png');
-    inactiveIconsGroup2.add('assets/icons/MyNavBar/coins_OFF.png');
+    // // // // "Деньги"
+    // widgetsGroup2.add(MoneyScreen());
+    // titleKeysGroup2.add('money');
+    // navBarTitleKeysGroup2.add('money');
+    // activeIconsGroup2.add('assets/icons/MyNavBar/coins_ON.png');
+    // inactiveIconsGroup2.add('assets/icons/MyNavBar/coins_OFF.png');
 
     if (mounted) {
       setState(() {
@@ -220,43 +226,48 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: _selectedIndexGroup1 == -1 && _selectedIndexGroup2 == -1
-          ? EmptyScreen() 
-          : (_selectedIndexGroup1 != -1
-              ? _widgetOptionsGroup1[_selectedIndexGroup1]
-              : _widgetOptionsGroup2[_selectedIndexGroup2]),
-      backgroundColor: Colors.white,
-      bottomNavigationBar: MyNavBar(
-        currentIndexGroup1: _selectedIndexGroup1,
-        currentIndexGroup2: _selectedIndexGroup2,
-        onItemSelectedGroup1: (index) {
-          setState(() {
-            _selectedIndexGroup1 = index;
-            _selectedIndexGroup2 = -1;
-            _isSearching = false;
-          });
-        },
-        onItemSelectedGroup2: (index) {
-          setState(() {
-            _selectedIndexGroup2 = index;
-            _selectedIndexGroup1 = -1;
-            _isSearching = false;
-          });
-        },
-        navBarTitlesGroup1: _navBarTitleKeysGroup1
-            .map((key) => AppLocalizations.of(context)!.translate(key))
-            .toList(),
-        navBarTitlesGroup2: _navBarTitleKeysGroup2
-            .map((key) => AppLocalizations.of(context)!.translate(key))
-            .toList(),
-        activeIconsGroup1: _activeIconsGroup1,
-        activeIconsGroup2: _activeIconsGroup2,
-        inactiveIconsGroup1: _inactiveIconsGroup1,
-        inactiveIconsGroup2: _inactiveIconsGroup2,
-      ),
-    );
+ @override
+Widget build(BuildContext context) {
+  Widget currentWidget;
+  
+  // Определяем, какой экран показывать
+  if (_selectedIndexGroup1 != -1 && _selectedIndexGroup1 < _widgetOptionsGroup1.length) {
+    currentWidget = _widgetOptionsGroup1[_selectedIndexGroup1];
+  } else if (_selectedIndexGroup2 != -1 && _selectedIndexGroup2 < _widgetOptionsGroup2.length) {
+    currentWidget = _widgetOptionsGroup2[_selectedIndexGroup2];
+  } else {
+    currentWidget = EmptyScreen();
   }
+  
+  return Scaffold(
+    body: currentWidget,
+    backgroundColor: Colors.white,
+    bottomNavigationBar: MyNavBar(
+      currentIndexGroup1: _selectedIndexGroup1,
+      currentIndexGroup2: _selectedIndexGroup2,
+      onItemSelected: (groupIndex, itemIndex) {
+        setState(() {
+          if (groupIndex == 1) {
+            _selectedIndexGroup1 = itemIndex;
+            _selectedIndexGroup2 = -1;
+          } else if (groupIndex == 2) {
+            _selectedIndexGroup2 = itemIndex;
+            _selectedIndexGroup1 = -1;
+          }
+          _isSearching = false;
+        });
+      },
+      navBarTitlesGroup1: _navBarTitleKeysGroup1
+          .map((key) => AppLocalizations.of(context)!.translate(key))
+          .toList(),
+      navBarTitlesGroup2: _navBarTitleKeysGroup2
+          .map((key) => AppLocalizations.of(context)!.translate(key))
+          .toList(),
+      activeIconsGroup1: _activeIconsGroup1,
+      activeIconsGroup2: _activeIconsGroup2,
+      inactiveIconsGroup1: _inactiveIconsGroup1,
+      inactiveIconsGroup2: _inactiveIconsGroup2,
+    ),
+  );
+}
 } 
