@@ -1,6 +1,8 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
+import 'package:crm_task_manager/page_2/money/money_income/money_income_screen.dart';
+import 'package:crm_task_manager/page_2/money/money_outcome/money_outcome_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_return/client_return_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_sale/client_sales_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/incoming_screen.dart';
@@ -8,6 +10,7 @@ import 'package:crm_task_manager/page_2/warehouse/movement/movement_screen.dart'
 import 'package:crm_task_manager/page_2/warehouse/references_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/supplier_return_document/supplier_return_document_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/write_off/write_off_screen.dart';
+// NEW: Добавлены импорты для новых экранов
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
@@ -45,7 +48,7 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
 
     _documents = [
       WarehouseDocument(
-        title: AppLocalizations.of(context)!.translate('incoming_document') ??
+        title: AppLocalizations.of(context)!.translate('income_goods') ??
             'Приход',
         icon: Icons.add_box_outlined,
         color: docColor,
@@ -80,6 +83,17 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
         icon: Icons.undo,
         color: docColor,
       ),
+      // NEW: Добавлены новые документы для финансов
+      WarehouseDocument(
+        title: AppLocalizations.of(context)!.translate('money_income') ?? 'Приход денег',
+        icon: Icons.add_circle_outline,
+        color: docColor,
+      ),
+      WarehouseDocument(
+        title: AppLocalizations.of(context)!.translate('money_outcome') ?? 'Расход денег',
+        icon: Icons.remove_circle_outline,
+        color: docColor,
+      ),
     ];
 
     setState(() {
@@ -89,7 +103,7 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
 
   void _navigateToDocument(WarehouseDocument document) {
     if (document.title ==
-            AppLocalizations.of(context)!.translate('incoming_document') ||
+            AppLocalizations.of(context)!.translate('income_goods') ||
         document.title == 'Приход') {
       Navigator.push(
         context,
@@ -134,8 +148,19 @@ else if (document.title ==
     context,
     MaterialPageRoute(builder: (context) => MovementScreen(organizationId: 1)), // или получите реальный ID
   );
-}
-else {
+  // NEW: Добавлена навигация для новых кнопок
+  } else if (document.title == AppLocalizations.of(context)!.translate('money_income') || document.title == 'Приход денег') {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => MoneyIncomeScreen()),
+    );
+  } else if (document.title == AppLocalizations.of(context)!.translate('money_outcome') || document.title == 'Расход денег') {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => MoneyOutcomeScreen()),
+    );
+  }
+  else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(

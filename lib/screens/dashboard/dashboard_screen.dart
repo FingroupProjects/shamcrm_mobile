@@ -24,6 +24,8 @@ import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/task_chart/ta
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/task_chart/task_chart_event.dart';
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/user_task/user_task_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/user_task/user_task_event.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/goods/sales_dashboard_goods_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/sales_dashboard_bloc.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
@@ -39,6 +41,13 @@ import 'package:crm_task_manager/screens/dashboard_for_manager/lead_conversion.d
 import 'package:crm_task_manager/screens/dashboard_for_manager/process_speed.dart';
 import 'package:crm_task_manager/screens/dashboard_for_manager/task_chart.dart';
 import 'package:crm_task_manager/screens/dashboard_for_manager/users_chart.dart';
+import 'package:crm_task_manager/page_2/dashboard/widgets/charts/top_selling_products_chart.dart';
+import 'package:crm_task_manager/page_2/dashboard/widgets/charts/sales_dynamics_line_chart.dart';
+import 'package:crm_task_manager/page_2/dashboard/widgets/charts/net_profit_chart.dart';
+import 'package:crm_task_manager/page_2/dashboard/widgets/charts/expense_structure_chart.dart';
+// import 'package:crm_task_manager/page_2/dashboard/widgets/charts/profit_margin_chart.dart';
+import 'package:crm_task_manager/page_2/dashboard/widgets/charts/order_quantity_chart.dart';
+import 'package:crm_task_manager/page_2/dashboard/sales_dashboard_screen.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
@@ -46,6 +55,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
+
+// Enum для типов дашборда
+enum DashboardType {
+  crm,
+  accounting
+}
 
 class DashboardScreen extends StatefulWidget {
   @override
@@ -57,6 +72,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<String> userRoles = [];
   bool isLoading = true;
   bool isRefreshing = false;
+  
+  // НОВОЕ: переменная для отслеживания активного дашборда
+  DashboardType _activeDashboard = DashboardType.crm;
 
   final GlobalKey keyNotificationIcon = GlobalKey();
   final GlobalKey keyMyTaskIcon = GlobalKey();
@@ -267,10 +285,8 @@ void _initAdminTutorialTargets() {
             .translate('tutorial_dashboard_task_completion_description'),
         align: ContentAlign.bottom,
         context: context,
-        contentPosition: ContentPosition.above, // Изменено на above для всех экранов
-        contentPadding: EdgeInsets.only(
-          top: 5, // Оставляем 5, как у "Задачи"
-        ),
+        contentPosition: ContentPosition.above,
+        contentPadding: EdgeInsets.only(top: 5),
       ),
       createTarget(
         identify: "dashboardAdminTaskChart",
@@ -293,9 +309,7 @@ void _initAdminTutorialTargets() {
         align: ContentAlign.bottom,
         context: context,
         contentPosition: ContentPosition.above,
-        contentPadding: EdgeInsets.only(
-          top: 5, // Уже установлено 5, как нужно
-        ),
+        contentPadding: EdgeInsets.only(top: 5),
       ),
       createTarget(
         identify: "dashboardAdminProcessSpeed",
@@ -322,6 +336,7 @@ void _initAdminTutorialTargets() {
       ),
     ]);
 }
+
   void _initTutorialTargetsManagers() {
     targets.addAll([
       createTarget(
@@ -569,26 +584,32 @@ void _initAdminTutorialTargets() {
           isRefreshing = false;
         });
 
-        context.read<TaskCompletionBloc>().add(LoadTaskCompletionData());
-        context.read<DashboardChartBloc>().add(LoadLeadChartData());
-        context
-            .read<DashboardChartBlocManager>()
-            .add(LoadLeadChartDataManager());
-        context.read<ProcessSpeedBloc>().add(LoadProcessSpeedData());
-        context.read<DashboardConversionBloc>().add(LoadLeadConversionData());
-        context
-            .read<DashboardConversionBlocManager>()
-            .add(LoadLeadConversionDataManager());
-        context.read<DealStatsBloc>().add(LoadDealStatsData());
-        context.read<DealStatsManagerBloc>().add(LoadDealStatsManagerData());
-        context.read<UserBlocManager>().add(LoadUserData());
-        context.read<DashboardTaskChartBloc>().add(LoadTaskChartData());
-        context
-            .read<DashboardTaskChartBlocManager>()
-            .add(LoadTaskChartDataManager());
-        context
-            .read<ProcessSpeedBlocManager>()
-            .add(LoadProcessSpeedDataManager());
+        // Обновляем только блоки активного дашборда
+        if (_activeDashboard == DashboardType.crm) {
+          context.read<TaskCompletionBloc>().add(LoadTaskCompletionData());
+          context.read<DashboardChartBloc>().add(LoadLeadChartData());
+          context
+              .read<DashboardChartBlocManager>()
+              .add(LoadLeadChartDataManager());
+          context.read<ProcessSpeedBloc>().add(LoadProcessSpeedData());
+          context.read<DashboardConversionBloc>().add(LoadLeadConversionData());
+          context
+              .read<DashboardConversionBlocManager>()
+              .add(LoadLeadConversionDataManager());
+          context.read<DealStatsBloc>().add(LoadDealStatsData());
+          context.read<DealStatsManagerBloc>().add(LoadDealStatsManagerData());
+          context.read<UserBlocManager>().add(LoadUserData());
+          context.read<DashboardTaskChartBloc>().add(LoadTaskChartData());
+          context
+              .read<DashboardTaskChartBlocManager>()
+              .add(LoadTaskChartDataManager());
+          context
+              .read<ProcessSpeedBlocManager>()
+              .add(LoadProcessSpeedDataManager());
+        } else {
+          // Обновляем блоки для дашборда учёта если необходимо
+          // context.read<SalesDashboardBloc>().add(...);
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -602,66 +623,96 @@ void _initAdminTutorialTargets() {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        forceMaterialTransparency: true,
-        title: CustomAppBar(
-          title: isClickAvatarIcon
-              ? localizations!.translate('appbar_settings')
-              : localizations!.translate('appbar_dashboard'),
-          onClickProfileAvatar: () {
-            setState(() {
-              isClickAvatarIcon = !isClickAvatarIcon;
-            });
-          },
-          onChangedSearchInput: (input) {},
-          textEditingController: TextEditingController(),
-          focusNode: FocusNode(),
-          clearButtonClick: (isSearching) {},
-          showSearchIcon: false,
-          showFilterTaskIcon: false,
-          showFilterIcon: false,
-          showMyTaskIcon: true,
-          showCallCenter: true,
-          showEvent: false,
-          showSeparateMyTasks: true,
-          showMenuIcon: false,
-          showCalendarDashboard: true,
-          clearButtonClickFiltr: (bool) {},
-          NotificationIconKey: keyNotificationIcon,
-          MyTaskIconKey: keyMyTaskIcon,
+    
+    return MultiBlocProvider(
+      providers: [
+        // Блоки для дашборда учёта
+        BlocProvider(
+          create: (context) => SalesDashboardBloc(),
         ),
-      ),
-      body: isClickAvatarIcon
-          ? ProfileScreen()
-          : Stack(
-              children: [
-                RefreshIndicator(
-                  color: Color(0xff1E2E52),
-                  backgroundColor: Colors.white,
-                  onRefresh: _onRefresh,
-                  child: SingleChildScrollView(
-                    controller: _scrollController,
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: EdgeInsets.all(16),
-                    child: Column(
-                      children: _buildDashboardContent(),
-                    ),
+        BlocProvider(
+          create: (context) => SalesDashboardGoodsBloc(),
+        ),
+      ],
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          forceMaterialTransparency: true,
+          title: CustomAppBar(
+            title: isClickAvatarIcon
+                ? localizations!.translate('appbar_settings')
+                : localizations!.translate('appbar_dashboard'),
+            onClickProfileAvatar: () {
+              setState(() {
+                isClickAvatarIcon = !isClickAvatarIcon;
+              });
+            },
+            onChangedSearchInput: (input) {},
+            textEditingController: TextEditingController(),
+            focusNode: FocusNode(),
+            clearButtonClick: (isSearching) {},
+            showSearchIcon: false,
+            showFilterTaskIcon: false,
+            showFilterIcon: false,
+            showMyTaskIcon: true,
+            showCallCenter: true,
+            showEvent: false,
+            showSeparateMyTasks: true,
+            showMenuIcon: false,
+            showCalendarDashboard: true,
+            clearButtonClickFiltr: (bool) {},
+            NotificationIconKey: keyNotificationIcon,
+            MyTaskIconKey: keyMyTaskIcon,
+          ),
+        ),
+        body: isClickAvatarIcon
+            ? ProfileScreen()
+            : Stack(
+                children: [
+                  Column(
+                    children: [
+                      // НОВОЕ: Переключатель дашбордов
+                      DashboardSwitcher(
+                        activeDashboard: _activeDashboard,
+                        onDashboardChanged: (type) {
+                          setState(() {
+                            _activeDashboard = type;
+                          });
+                        },
+                      ),
+                      // НОВОЕ: Контент в Expanded
+                      Expanded(
+                        child: RefreshIndicator(
+                          color: const Color(0xff1E2E52),
+                          backgroundColor: Colors.white,
+                          onRefresh: _onRefresh,
+                          child: SingleChildScrollView(
+                            controller: _scrollController,
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              children: _activeDashboard == DashboardType.crm
+                                  ? _buildDashboardContent()
+                                  : _buildAccountingDashboard(),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                if (isLoading || isRefreshing)
-                  Container(
-                    color: Colors.white,
-                    child: const Center(
-                      child: PlayStoreImageLoading(
-                        size: 80.0,
-                        duration: Duration(milliseconds: 1000),
+                  if (isLoading || isRefreshing)
+                    Container(
+                      color: Colors.white,
+                      child: const Center(
+                        child: PlayStoreImageLoading(
+                          size: 80.0,
+                          duration: Duration(milliseconds: 1000),
+                        ),
                       ),
                     ),
-                  ),
-              ],
-            ),
+                ],
+              ),
+      ),
     );
   }
 
@@ -701,5 +752,128 @@ void _initAdminTutorialTargets() {
         TaskChartWidgetManager(key: keyAdminTaskChart),
       ];
     }
+  }
+
+  // НОВОЕ: Метод для контента дашборда учёта
+  List<Widget> _buildAccountingDashboard() {
+    return [
+      // const TopPart(),
+      const SizedBox(height: 16),
+      // const TopSellingProductsChart(),
+      const SizedBox(height: 16),
+      // const SalesDynamicsLineChart(),
+      const SizedBox(height: 16),
+      // const NetProfitChart(),
+      const SizedBox(height: 16),
+      // const ExpenseStructureChart(),
+      const SizedBox(height: 16),
+      // const ProfitMarginChart(),
+      const SizedBox(height: 16),
+      // const OrderQuantityChart(),
+    ];
+  }
+}
+
+// НОВОЕ: Виджет переключателя дашбордов
+class DashboardSwitcher extends StatelessWidget {
+  final DashboardType activeDashboard;
+  final Function(DashboardType) onDashboardChanged;
+
+  const DashboardSwitcher({
+    Key? key,
+    required this.activeDashboard,
+    required this.onDashboardChanged,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: Colors.grey[200],
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildTab(
+              context: context,
+              label: 'CRM',
+              icon: Icons.dashboard_rounded,
+              isActive: activeDashboard == DashboardType.crm,
+              onTap: () => onDashboardChanged(DashboardType.crm),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _buildTab(
+              context: context,
+              label: 'Учёт',
+              icon: Icons.analytics_rounded,
+              isActive: activeDashboard == DashboardType.accounting,
+              onTap: () => onDashboardChanged(DashboardType.accounting),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTab({
+    required BuildContext context,
+    required String label,
+    required IconData icon,
+    required bool isActive,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+        decoration: BoxDecoration(
+          color: isActive ? const Color(0xff1E2E52) : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: isActive
+              ? [
+                  BoxShadow(
+                    color: const Color(0xff1E2E52).withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : [],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              color: isActive ? Colors.white : Colors.grey[600],
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: isActive ? Colors.white : Colors.grey[600],
+                fontSize: 16,
+                fontWeight: isActive ? FontWeight.w500 : FontWeight.w500,
+                fontFamily: 'Gilroy',
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

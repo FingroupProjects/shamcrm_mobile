@@ -24,9 +24,8 @@ if (flutterVersionName == null) {
 
 android {
     namespace "com.softtech.crm_task_manager"
-    compileSdkVersion flutter.compileSdkVersion
     compileSdk 35
-    ndkVersion flutter.ndkVersion
+    ndkVersion "26.1.10909125"
 
     compileOptions {
         coreLibraryDesugaringEnabled true
@@ -44,33 +43,33 @@ android {
 
     defaultConfig {
         applicationId "com.softtech.crm_task_manager"
-        minSdkVersion flutter.minSdkVersion
-        targetSdkVersion 35  // Было: flutter.targetSdkVersion
+        minSdkVersion 23
+        targetSdkVersion 35
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
+        ndk {
+            abiFilters "armeabi-v7a", "arm64-v8a", "x86_64"
+        }
     }
 
     signingConfigs {
         release {
-            // Укажите путь к вашему .keystore файлу
             storeFile file("key.keystore")
-            storePassword "123456"  // Пароль для хранилища
-            keyAlias "keyalias"                  // Alias ключа
-            keyPassword "123456"       // Пароль для ключа
+            storePassword "123456"
+            keyAlias "keyalias"
+            keyPassword "123456"
         }
     }
 
     buildTypes {
         release {
-            // Используем конфигурацию подписи для релиза
             signingConfig signingConfigs.release
         }
     }
 
-     buildFeatures {
+    buildFeatures {
         buildConfig true
     }
-
 }
 
 flutter {

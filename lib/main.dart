@@ -10,6 +10,7 @@ import 'package:crm_task_manager/bloc/author/get_all_author_bloc.dart';
 import 'package:crm_task_manager/bloc/calendar/calendar_bloc.dart';
 import 'package:crm_task_manager/bloc/call_bloc/call_center_bloc.dart';
 import 'package:crm_task_manager/bloc/call_bloc/operator_bloc/operator_bloc.dart';
+import 'package:crm_task_manager/bloc/cash_desk/cash_desk_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_task_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/delete_message/delete_message_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/groupe_chat/group_chat_bloc.dart';
@@ -29,8 +30,10 @@ import 'package:crm_task_manager/bloc/deal_task/deal_task_bloc.dart';
 import 'package:crm_task_manager/bloc/directory_bloc/directory_bloc.dart';
 import 'package:crm_task_manager/bloc/event/event_bloc.dart';
 import 'package:crm_task_manager/bloc/eventByID/event_byId_bloc.dart';
+import 'package:crm_task_manager/bloc/expense/expense_bloc.dart';
 import 'package:crm_task_manager/bloc/history_lead_notice_deal/history_lead_notice_deal_bloc.dart';
 import 'package:crm_task_manager/bloc/history_my-task/task_history_bloc.dart';
+import 'package:crm_task_manager/bloc/income/income_bloc.dart';
 import 'package:crm_task_manager/bloc/income_category_list/income_category_list_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_multi_list/lead_multi_bloc.dart';
@@ -107,6 +110,8 @@ import 'package:crm_task_manager/bloc/user/user_bloc.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/firebase_options.dart';
 import 'package:crm_task_manager/models/page_2/order_history_model.dart';
+import 'package:crm_task_manager/page_2/money/money_references/expense/expense_screen.dart';
+import 'package:crm_task_manager/page_2/money/money_references/income/income_screen.dart';
 import 'package:crm_task_manager/screens/auth/pin_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_screen.dart';
 import 'package:crm_task_manager/screens/auth/pin_setup_screen.dart';
@@ -130,33 +135,33 @@ import 'screens/home_screen.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
-
+final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
+    GlobalKey<ScaffoldMessengerState>();
 
 void main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
-    
+
     // Инициализация Firebase с проверкой
     await _initializeFirebase();
-    
+
     // Инициализация сервисов
     final apiService = ApiService();
     final authService = AuthService();
-    
+
     // Глобальная проверка валидности данных
     final sessionValidation = await _validateApplicationSession(apiService);
-    
+
     // Получение токена и PIN только если сессия валидна
     String? token;
     String? pin;
     bool isDomainChecked = false;
-    
+
     if (sessionValidation.isValid) {
       token = await apiService.getToken();
       pin = await authService.getPin();
       isDomainChecked = await apiService.isDomainChecked();
-      
+
       if (isDomainChecked) {
         await apiService.initialize();
       }
@@ -173,7 +178,7 @@ void main() async {
     await _initializeFirebaseMessaging(apiService);
 
     // UI настройки
-    SystemChrome.setSystemUIOverlayStyle( 
+    SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: Brightness.dark,
@@ -200,17 +205,18 @@ void main() async {
   } catch (e, stackTrace) {
     print('Критическая ошибка при запуске приложения: $e');
     print('StackTrace: $stackTrace');
-    
+
     // Показываем экран ошибки вместо краша
     runApp(ErrorApp(error: e.toString()));
   }
 }
+
 // Экран ошибки для критических сбоев
 class ErrorApp extends StatelessWidget {
   final String error;
-  
+
   const ErrorApp({Key? key, required this.error}) : super(key: key);
-  
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -264,15 +270,16 @@ class ErrorApp extends StatelessWidget {
 class SessionValidationResult {
   final bool isValid;
   final String? errorMessage;
-  
+
   SessionValidationResult({required this.isValid, this.errorMessage});
 }
 
 // Новая функция для валидации сессии приложения
-Future<SessionValidationResult> _validateApplicationSession(ApiService apiService) async {
+Future<SessionValidationResult> _validateApplicationSession(
+    ApiService apiService) async {
   try {
     print('main: Validating application session');
-    
+
     // Проверяем токен
     final token = await apiService.getToken();
     if (token == null || token.isEmpty) {
@@ -287,18 +294,23 @@ Future<SessionValidationResult> _validateApplicationSession(ApiService apiServic
       Map<String, String?> qrData = await apiService.getQrData();
       String? qrDomain = qrData['domain'];
       String? qrMainDomain = qrData['mainDomain'];
-      
-      if (qrDomain == null || qrDomain.isEmpty || 
-          qrMainDomain == null || qrMainDomain.isEmpty) {
+
+      if (qrDomain == null ||
+          qrDomain.isEmpty ||
+          qrMainDomain == null ||
+          qrMainDomain.isEmpty) {
         // Пробуем старую логику
         Map<String, String?> domains = await apiService.getEnteredDomain();
         String? enteredDomain = domains['enteredDomain'];
         String? enteredMainDomain = domains['enteredMainDomain'];
-        
-        if (enteredDomain == null || enteredDomain.isEmpty ||
-            enteredMainDomain == null || enteredMainDomain.isEmpty) {
+
+        if (enteredDomain == null ||
+            enteredDomain.isEmpty ||
+            enteredMainDomain == null ||
+            enteredMainDomain.isEmpty) {
           print('main: No valid domain configuration found');
-          return SessionValidationResult(isValid: false, errorMessage: 'No domain');
+          return SessionValidationResult(
+              isValid: false, errorMessage: 'No domain');
         }
       }
     }
@@ -312,7 +324,6 @@ Future<SessionValidationResult> _validateApplicationSession(ApiService apiServic
 
     print('main: Session validation successful');
     return SessionValidationResult(isValid: true);
-    
   } catch (e) {
     print('main: Error validating session: $e');
     return SessionValidationResult(isValid: false, errorMessage: e.toString());
@@ -320,21 +331,22 @@ Future<SessionValidationResult> _validateApplicationSession(ApiService apiServic
 }
 
 // Функция для полной очистки данных приложения
-Future<void> _clearAllApplicationData(ApiService apiService, AuthService authService) async {
+Future<void> _clearAllApplicationData(
+    ApiService apiService, AuthService authService) async {
   try {
     print('main: Clearing all application data');
-    
+
     // Очищаем данные API сервиса
     await apiService.logout();
     await apiService.reset();
-    
+
     // Очищаем PIN данные
     await authService.clearPin();
-    
+
     // Очищаем SharedPreferences полностью
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
-    
+
     print('main: All application data cleared');
   } catch (e) {
     print('main: Error clearing application data: $e');
@@ -432,7 +444,7 @@ class _MyAppState extends State<MyApp> {
         FirebaseApi firebaseApi = FirebaseApi();
         _initialMessage = firebaseApi.getInitialMessage();
       }
-      
+
       setState(() {
         _isInitialized = true;
       });
@@ -613,13 +625,17 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => SupplierBloc(widget.apiService)),
         BlocProvider(create: (context) => MeasureUnitsBloc(widget.apiService)),
         BlocProvider(create: (context) => WareHouseBloc(widget.apiService)),
-        BlocProvider(create: (context) => PriceTypeScreenBloc(widget.apiService)),
-        BlocProvider(create: (context) => SupplierReturnBloc(widget.apiService)),
-        BlocProvider(create: (context) => ClientReturnBloc(widget.apiService)), 
-        BlocProvider(create: (context) => WriteOffBloc(widget.apiService)), 
-        BlocProvider(create: (context) => MovementBloc(widget.apiService)), 
-
- ],
+        BlocProvider(
+            create: (context) => PriceTypeScreenBloc(widget.apiService)),
+        BlocProvider(
+            create: (context) => SupplierReturnBloc(widget.apiService)),
+        BlocProvider(create: (context) => ClientReturnBloc(widget.apiService)),
+        BlocProvider(create: (context) => WriteOffBloc(widget.apiService)),
+        BlocProvider(create: (context) => MovementBloc(widget.apiService)),
+        BlocProvider(create: (context) => CashDeskBloc()),
+        BlocProvider(create: (context) => ExpenseBloc()),
+        BlocProvider(create: (context) => IncomeBloc()),
+      ],
       child: MaterialApp(
         locale: _locale ?? const Locale('ru'),
         color: Colors.white,
@@ -656,7 +672,7 @@ class _MyAppState extends State<MyApp> {
             if (!widget.sessionValid) {
               return AuthScreen();
             }
-            
+
             // Стандартная логика роутинга при валидной сессии
             if (widget.token == null) {
               return AuthScreen();

@@ -1467,7 +1467,15 @@
   "error_loading_outcome_categories": "Ошибка загрузки категорий расхода",
   "error_loading_suppliers": "Ошибка загрузки поставщиков",
   "error_selecting_outcome_category": "Ошибка выбора категории расхода",
+
+  "money_income":"Приход денег",
+  "money_outcome":"Расход денег",
+  "expense_articles":"Статья расхода",
+  "income_articles":"Статья дохода",
+  "income_goods":"Приход товаров",
+
   "last_year": "Прошлый год"
+
 
 
 
