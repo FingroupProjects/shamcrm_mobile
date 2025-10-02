@@ -18,6 +18,7 @@ class SalesDashboardLoaded extends SalesDashboardState {
   final List<AllOrdersData> orderDashboardData;
   final List<AllExpensesData> expenseStructureData;
   final List<AllProfitabilityData> profitabilityData;
+  final List<AllTopSellingData> topSellingData;
 
   const SalesDashboardLoaded({
     this.salesDashboardTopPart,
@@ -26,6 +27,7 @@ class SalesDashboardLoaded extends SalesDashboardState {
     required this.orderDashboardData,
     required this.expenseStructureData,
     required this.profitabilityData,
+    required this.topSellingData,
   });
 
   @override
@@ -36,6 +38,7 @@ class SalesDashboardLoaded extends SalesDashboardState {
         orderDashboardData,
         expenseStructureData,
         profitabilityData,
+        topSellingData,
       ];
 }
 

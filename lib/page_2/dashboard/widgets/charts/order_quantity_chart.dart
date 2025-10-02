@@ -136,120 +136,6 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
     }
   }
 
-  bool _isAllZeros(List<OrderChartData> chartData) {
-    return chartData.every((lineData) =>
-        lineData.data.every((point) => point.amount == 0)
-    );
-  }
-
-  LineChartData _buildEmptyChartData(AppLocalizations localizations) {
-    final List<String> monthLabels = [
-      localizations.translate('january'),
-      localizations.translate('february'),
-      localizations.translate('march'),
-      localizations.translate('april'),
-      localizations.translate('may'),
-      localizations.translate('june'),
-      localizations.translate('july'),
-      localizations.translate('august'),
-      localizations.translate('september'),
-      localizations.translate('october'),
-      localizations.translate('november'),
-      localizations.translate('december'),
-    ];
-
-    return LineChartData(
-      gridData: FlGridData(
-        show: true,
-        drawVerticalLine: false,
-        drawHorizontalLine: false,
-        horizontalInterval: 20,
-        verticalInterval: 1,
-        getDrawingHorizontalLine: (value) {
-          return FlLine(
-            color: Colors.grey.withOpacity(0.2),
-            strokeWidth: 1,
-          );
-        },
-        getDrawingVerticalLine: (value) {
-          return FlLine(
-            color: Colors.grey.withOpacity(0.2),
-            strokeWidth: 1,
-          );
-        },
-      ),
-      titlesData: FlTitlesData(
-        show: true,
-        topTitles: const AxisTitles(
-          sideTitles: SideTitles(showTitles: false),
-        ),
-        rightTitles: const AxisTitles(
-          sideTitles: SideTitles(showTitles: false),
-        ),
-        leftTitles: AxisTitles(
-          sideTitles: SideTitles(
-            showTitles: true,
-            interval: 20,
-            reservedSize: 40,
-            getTitlesWidget: (value, meta) {
-              return Text(
-                value.toInt().toString(),
-                style: const TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black54,
-                ),
-              );
-            },
-          ),
-        ),
-        bottomTitles: AxisTitles(
-          sideTitles: SideTitles(
-            showTitles: true,
-            interval: 1,
-            reservedSize: 50,
-            getTitlesWidget: (value, meta) {
-              int index = value.toInt();
-              if (index >= 0 && index < monthLabels.length) {
-                return Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Transform.rotate(
-                    angle: -0.5,
-                    child: Text(
-                      monthLabels[index],
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.black54,
-                      ),
-                    ),
-                  ),
-                );
-              }
-              return const SizedBox.shrink();
-            },
-          ),
-        ),
-      ),
-      borderData: FlBorderData(show: false),
-      minX: 0,
-      maxX: 11,
-      minY: 0,
-      maxY: 100,
-      lineBarsData: [
-        LineChartBarData(
-          spots: List.generate(12, (i) => FlSpot(i.toDouble(), 0)),
-          color: Colors.transparent,
-          barWidth: 0,
-          dotData: const FlDotData(show: false),
-        ),
-      ],
-    );
-  }
-
   LineChartData _buildChartData(List<OrderChartData> chartData) {
     // Determine maxX based on data points
     double maxX = 0;
@@ -564,7 +450,7 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
             child: chartData.isEmpty
                 ? Stack(
               children: [
-                LineChart(_buildEmptyChartData(localizations)),
+                // _buildEmptyChartData(localizations),
                 Center(
                   child: Text(
                     _OrderQuantityStrings.noDataToDisplay,
@@ -577,25 +463,7 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
                   ),
                 ),
               ],
-            )
-                : _isAllZeros(chartData)
-                ? Stack(
-              children: [
-                LineChart(_buildEmptyChartData(localizations)),
-                Center(
-                  child: Text(
-                    _OrderQuantityStrings.noDataToDisplay,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontFamily: "Gilroy",
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black54,
-                    ),
-                  ),
-                ),
-              ],
-            )
-                : Padding(
+            ) : Padding(
               padding: const EdgeInsets.only(right: 16, top: 16),
               child: LineChart(_buildChartData(chartData)),
             ),
@@ -623,3 +491,117 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
     );
   }
 }
+//
+// bool _isAllZeros(List<OrderChartData> chartData) {
+//   return chartData.every((lineData) =>
+//       lineData.data.every((point) => point.amount == 0)
+//   );
+// }
+//
+// LineChartData _buildEmptyChartData(AppLocalizations localizations) {
+//   final List<String> monthLabels = [
+//     localizations.translate('january'),
+//     localizations.translate('february'),
+//     localizations.translate('march'),
+//     localizations.translate('april'),
+//     localizations.translate('may'),
+//     localizations.translate('june'),
+//     localizations.translate('july'),
+//     localizations.translate('august'),
+//     localizations.translate('september'),
+//     localizations.translate('october'),
+//     localizations.translate('november'),
+//     localizations.translate('december'),
+//   ];
+//
+//   return LineChartData(
+//     gridData: FlGridData(
+//       show: true,
+//       drawVerticalLine: false,
+//       drawHorizontalLine: false,
+//       horizontalInterval: 20,
+//       verticalInterval: 1,
+//       getDrawingHorizontalLine: (value) {
+//         return FlLine(
+//           color: Colors.grey.withOpacity(0.2),
+//           strokeWidth: 1,
+//         );
+//       },
+//       getDrawingVerticalLine: (value) {
+//         return FlLine(
+//           color: Colors.grey.withOpacity(0.2),
+//           strokeWidth: 1,
+//         );
+//       },
+//     ),
+//     titlesData: FlTitlesData(
+//       show: true,
+//       topTitles: const AxisTitles(
+//         sideTitles: SideTitles(showTitles: false),
+//       ),
+//       rightTitles: const AxisTitles(
+//         sideTitles: SideTitles(showTitles: false),
+//       ),
+//       leftTitles: AxisTitles(
+//         sideTitles: SideTitles(
+//           showTitles: true,
+//           interval: 20,
+//           reservedSize: 40,
+//           getTitlesWidget: (value, meta) {
+//             return Text(
+//               value.toInt().toString(),
+//               style: const TextStyle(
+//                 fontFamily: 'Gilroy',
+//                 fontSize: 12,
+//                 fontWeight: FontWeight.w500,
+//                 color: Colors.black54,
+//               ),
+//             );
+//           },
+//         ),
+//       ),
+//       bottomTitles: AxisTitles(
+//         sideTitles: SideTitles(
+//           showTitles: true,
+//           interval: 1,
+//           reservedSize: 50,
+//           getTitlesWidget: (value, meta) {
+//             int index = value.toInt();
+//             if (index >= 0 && index < monthLabels.length) {
+//               return Padding(
+//                 padding: const EdgeInsets.only(top: 8),
+//                 child: Transform.rotate(
+//                   angle: -0.5,
+//                   child: Text(
+//                     monthLabels[index],
+//                     textAlign: TextAlign.center,
+//                     style: const TextStyle(
+//                       fontFamily: 'Gilroy',
+//                       fontSize: 12,
+//                       fontWeight: FontWeight.w500,
+//                       color: Colors.black54,
+//                     ),
+//                   ),
+//                 ),
+//               );
+//             }
+//             return const SizedBox.shrink();
+//           },
+//         ),
+//       ),
+//     ),
+//     borderData: FlBorderData(show: false),
+//     minX: 0,
+//     maxX: 11,
+//     minY: 0,
+//     maxY: 100,
+//     lineBarsData: [
+//       LineChartBarData(
+//         spots: List.generate(12, (i) => FlSpot(i.toDouble(), 0)),
+//         color: Colors.transparent,
+//         barWidth: 0,
+//         dotData: const FlDotData(show: false),
+//       ),
+//     ],
+//   );
+// }

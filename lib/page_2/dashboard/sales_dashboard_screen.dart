@@ -20,6 +20,7 @@ import '../../custom_widget/animation.dart';
 import '../../custom_widget/custom_app_bar_page_2.dart';
 import '../../models/page_2/dashboard/dashboard_top.dart';
 import '../../models/page_2/dashboard/sales_model.dart';
+import '../../models/page_2/dashboard/top_selling_model.dart';
 import '../../screens/profile/languages/app_localizations.dart';
 import '../../screens/profile/profile_screen.dart';
 
@@ -100,6 +101,7 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
                   final List<AllOrdersData> orderDashboardData = state.orderDashboardData;
                   final List<AllExpensesData> expenseStructureData = state.expenseStructureData;
                   final List<AllProfitabilityData> profitabilityData = state.profitabilityData;
+                  final List<AllTopSellingData> topSellingData = state.topSellingData;
 
                   return SafeArea(
                     child: SingleChildScrollView(
@@ -107,7 +109,7 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
                         children: [
                           const SizedBox(height: 16),
                           TopPart(state: state),
-                          TopSellingProductsChart(), // new
+                          TopSellingProductsChart(topSellingData), // new
                           SalesDynamicsLineChart(salesData), // done
                           NetProfitChart(netProfitData), // done
                           ProfitabilityChart(profitabilityData: profitabilityData), // in progress

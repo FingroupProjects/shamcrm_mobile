@@ -1,4 +1,3 @@
-import 'package:crm_task_manager/models/money/expense_model.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/net_profit_model.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/order_dashboard_model.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -9,6 +8,7 @@ import '../../../models/page_2/dashboard/dashboard_top.dart';
 import '../../../models/page_2/dashboard/expense_structure.dart';
 import '../../../models/page_2/dashboard/profitability_dashboard_model.dart';
 import '../../../models/page_2/dashboard/sales_model.dart';
+import '../../../models/page_2/dashboard/top_selling_model.dart';
 
 part 'sales_dashboard_event.dart';
 
@@ -23,11 +23,13 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
 
       final results = await Future.wait([
         apiService.getSalesDashboardTopPart(),
+
         apiService.getSalesDynamics(),
         apiService.getNetProfitData(),
         apiService.getOrderDashboard(),
         apiService.getExpenseStructure(),
         apiService.getProfitability(),
+        apiService.getTopSellingGoodsDashboard(),
       ]);
 
       final salesDashboardTopResponse = results[0] as DashboardTopPart;
@@ -36,6 +38,7 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
       final orderDashboardData = results[3] as List<AllOrdersData>;
       final expenseStructureData = results[4] as List<AllExpensesData>;
       final profitabilityData = results[5] as List<AllProfitabilityData>;
+      final topSellingData = results[6] as List<AllTopSellingData>;
 
       emit(SalesDashboardLoaded(
         salesDashboardTopPart: salesDashboardTopResponse,
@@ -44,6 +47,7 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
         orderDashboardData: orderDashboardData,
         expenseStructureData: expenseStructureData,
         profitabilityData: profitabilityData,
+        topSellingData: topSellingData,
       ));
     });
 
