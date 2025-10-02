@@ -402,7 +402,7 @@ class _NetProfitChartState extends State<NetProfitChart> {
           getPeriodText(item),
           style: const TextStyle(
             fontFamily: 'Gilroy',
-            fontSize: 14,
+            fontSize: 12,
             fontWeight: FontWeight.w500,
             color: Colors.black87,
           ),
