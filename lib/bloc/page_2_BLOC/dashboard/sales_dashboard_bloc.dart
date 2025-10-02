@@ -7,6 +7,7 @@ import 'package:equatable/equatable.dart';
 import '../../../api/service/api_service.dart';
 import '../../../models/page_2/dashboard/dashboard_top.dart';
 import '../../../models/page_2/dashboard/expense_structure.dart';
+import '../../../models/page_2/dashboard/profitability_dashboard_model.dart';
 import '../../../models/page_2/dashboard/sales_model.dart';
 
 part 'sales_dashboard_event.dart';
@@ -26,6 +27,7 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
         apiService.getNetProfitData(),
         apiService.getOrderDashboard(),
         apiService.getExpenseStructure(),
+        apiService.getProfitability(),
       ]);
 
       final salesDashboardTopResponse = results[0] as DashboardTopPart;
@@ -33,6 +35,7 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
       final netProfitData = results[2] as List<AllNetProfitData>;
       final orderDashboardData = results[3] as List<AllOrdersData>;
       final expenseStructureData = results[4] as List<AllExpensesData>;
+      final profitabilityData = results[5] as List<AllProfitabilityData>;
 
       emit(SalesDashboardLoaded(
         salesDashboardTopPart: salesDashboardTopResponse,
@@ -40,6 +43,7 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
         netProfitData: netProfitData,
         orderDashboardData: orderDashboardData,
         expenseStructureData: expenseStructureData,
+        profitabilityData: profitabilityData,
       ));
     });
 

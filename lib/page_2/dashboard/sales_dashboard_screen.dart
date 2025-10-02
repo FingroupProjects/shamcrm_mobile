@@ -2,7 +2,8 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/sales_dashboard_bloc
 import 'package:crm_task_manager/models/page_2/dashboard/expense_structure.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/net_profit_model.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/order_dashboard_model.dart';
-import 'package:crm_task_manager/page_2/dashboard/widgets/charts/sales_margin_chart.dart';
+import 'package:crm_task_manager/models/page_2/dashboard/profitability_dashboard_model.dart';
+import 'package:crm_task_manager/page_2/dashboard/widgets/charts/profitability_chart.dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/charts/expense_structure_chart.dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/charts/net_profit_chart.dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/charts/order_quantity_chart.dart';
@@ -98,6 +99,7 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
                   final List<AllNetProfitData> netProfitData = state.netProfitData;
                   final List<AllOrdersData> orderDashboardData = state.orderDashboardData;
                   final List<AllExpensesData> expenseStructureData = state.expenseStructureData;
+                  final List<AllProfitabilityData> profitabilityData = state.profitabilityData;
 
                   return SafeArea(
                     child: SingleChildScrollView(
@@ -105,10 +107,10 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
                         children: [
                           const SizedBox(height: 16),
                           TopPart(state: state),
-                          const TopSellingProductsChart(),
+                          TopSellingProductsChart(), // new
                           SalesDynamicsLineChart(salesData), // done
-                          NetProfitChart(netProfitData),
-                          const SalesMarginChart(),
+                          NetProfitChart(netProfitData), // done
+                          ProfitabilityChart(profitabilityData: profitabilityData), // in progress
                           ExpenseStructureChart(expenseStructureData), // done
                           OrderQuantityChart(orderDashboardData: orderDashboardData), // done
                           const SizedBox(height: 16),

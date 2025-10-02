@@ -135,6 +135,7 @@ import '../../models/outcome_categories_data_response.dart';
 import '../../models/page_2/dashboard/expense_structure.dart';
 import '../../models/page_2/dashboard/net_profit_model.dart';
 import '../../models/page_2/dashboard/order_dashboard_model.dart';
+import '../../models/page_2/dashboard/profitability_dashboard_model.dart';
 import '../../models/page_2/dashboard/sales_model.dart';
 
 // final String baseUrl = 'https://fingroup-back.shamcrm.com/api';
@@ -14566,7 +14567,6 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     }
   }
 
-
 // API request function
   Future<List<AllNetProfitData>> getNetProfitData() async {
     // Define all periods to fetch
@@ -14606,6 +14606,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
     return allNetProfitData;
   }
+
   Future<List<AllOrdersData>> getOrderDashboard() async {
     // Define all periods to fetch
     final periods = [OrderTimePeriod.week, OrderTimePeriod.month, OrderTimePeriod.year];
@@ -14647,6 +14648,50 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     }
 
     return allOrdersData;
+  }
+
+
+// API request function
+  Future<List<AllProfitabilityData>> getProfitability() async {
+    // Define all periods to fetch
+    final periods = [ProfitabilityTimePeriod.last_year, ProfitabilityTimePeriod.year];
+
+    // List to store results
+    final List<AllProfitabilityData> allProfitabilityData = [];
+
+    // Iterate through each period
+    for (final period in periods) {
+      // Form the query path for the current period
+      final path = await _appendQueryParams('/dashboard/profitability?period=${period.name}');
+      debugPrint("ApiService: getProfitability path: $path");
+
+      try {
+        // Make the API request
+        final response = await _getRequest(path);
+
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          final profitabilityResponse = ProfitabilityDashboard.fromJson(data);
+          // Create AllProfitabilityData for this period
+          allProfitabilityData.add(AllProfitabilityData(
+            period: period,
+            data: profitabilityResponse,
+          ));
+        } else {
+          final message = _extractErrorMessageFromResponse(response);
+          throw ApiException(
+            message ?? 'Ошибка для периода $period',
+            response.statusCode,
+          );
+        }
+      } catch (e) {
+        // Log errors for individual periods
+        debugPrint("Error fetching data for period $period: $e");
+        rethrow; // Rethrow to allow caller to handle
+      }
+    }
+
+    return allProfitabilityData;
   }
 
 }
