@@ -142,12 +142,28 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
     );
   }
 
-  LineChartData _buildEmptyChartData() {
+  LineChartData _buildEmptyChartData(AppLocalizations localizations) {
+    final List<String> monthLabels = [
+      localizations.translate('january'),
+      localizations.translate('february'),
+      localizations.translate('march'),
+      localizations.translate('april'),
+      localizations.translate('may'),
+      localizations.translate('june'),
+      localizations.translate('july'),
+      localizations.translate('august'),
+      localizations.translate('september'),
+      localizations.translate('october'),
+      localizations.translate('november'),
+      localizations.translate('december'),
+    ];
+
     return LineChartData(
       gridData: FlGridData(
         show: true,
-        drawVerticalLine: true,
-        horizontalInterval: 10,
+        drawVerticalLine: false,
+        drawHorizontalLine: false,
+        horizontalInterval: 20,
         verticalInterval: 1,
         getDrawingHorizontalLine: (value) {
           return FlLine(
@@ -163,25 +179,71 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
         },
       ),
       titlesData: FlTitlesData(
-        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-        leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-        bottomTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-      ),
-      borderData: FlBorderData(
         show: true,
-        border: Border.all(color: Colors.grey.withOpacity(0.2)),
+        topTitles: const AxisTitles(
+          sideTitles: SideTitles(showTitles: false),
+        ),
+        rightTitles: const AxisTitles(
+          sideTitles: SideTitles(showTitles: false),
+        ),
+        leftTitles: AxisTitles(
+          sideTitles: SideTitles(
+            showTitles: true,
+            interval: 20,
+            reservedSize: 40,
+            getTitlesWidget: (value, meta) {
+              return Text(
+                value.toInt().toString(),
+                style: const TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black54,
+                ),
+              );
+            },
+          ),
+        ),
+        bottomTitles: AxisTitles(
+          sideTitles: SideTitles(
+            showTitles: true,
+            interval: 1,
+            reservedSize: 50,
+            getTitlesWidget: (value, meta) {
+              int index = value.toInt();
+              if (index >= 0 && index < monthLabels.length) {
+                return Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Transform.rotate(
+                    angle: -0.5,
+                    child: Text(
+                      monthLabels[index],
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black54,
+                      ),
+                    ),
+                  ),
+                );
+              }
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
       ),
+      borderData: FlBorderData(show: false),
       minX: 0,
       maxX: 11,
       minY: 0,
-      maxY: 50,
+      maxY: 100,
       lineBarsData: [
         LineChartBarData(
-          spots: [const FlSpot(0, 0), const FlSpot(11, 0)],
-          color: Colors.grey.withOpacity(0.1),
-          barWidth: 3,
-          isCurved: false,
+          spots: List.generate(12, (i) => FlSpot(i.toDouble(), 0)),
+          color: Colors.transparent,
+          barWidth: 0,
           dotData: const FlDotData(show: false),
         ),
       ],
@@ -261,7 +323,7 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
       gridData: FlGridData(
         show: true,
         drawVerticalLine: false,
-        drawHorizontalLine: true,
+        drawHorizontalLine: false,
         horizontalInterval: horizontalInterval,
         getDrawingHorizontalLine: (value) {
           return FlLine(
@@ -502,7 +564,7 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
             child: chartData.isEmpty
                 ? Stack(
               children: [
-                LineChart(_buildEmptyChartData()),
+                LineChart(_buildEmptyChartData(localizations)),
                 Center(
                   child: Text(
                     _OrderQuantityStrings.noDataToDisplay,
@@ -519,7 +581,7 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
                 : _isAllZeros(chartData)
                 ? Stack(
               children: [
-                LineChart(_buildEmptyChartData()),
+                LineChart(_buildEmptyChartData(localizations)),
                 Center(
                   child: Text(
                     _OrderQuantityStrings.noDataToDisplay,
