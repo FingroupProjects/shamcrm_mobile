@@ -1466,7 +1466,8 @@
   "error_toggling_approval": "Ошибка изменения статуса проведения",
   "error_loading_outcome_categories": "Ошибка загрузки категорий расхода",
   "error_loading_suppliers": "Ошибка загрузки поставщиков",
-  "error_selecting_outcome_category": "Ошибка выбора категории расхода"
+  "error_selecting_outcome_category": "Ошибка выбора категории расхода",
+  "last_year": "Прошлый год"
 
 
 

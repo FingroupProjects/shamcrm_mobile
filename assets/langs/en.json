@@ -1460,7 +1460,8 @@
   "error_toggling_approval": "Error changing approval status",
   "error_loading_outcome_categories": "Error loading expense categories",
   "error_loading_suppliers": "Error loading suppliers",
-  "error_selecting_outcome_category": "Error selecting expense category"
+  "error_selecting_outcome_category": "Error selecting expense category",
+  "last_year": "Last year"
 
 
 

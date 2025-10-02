@@ -1,110 +1,87 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
-import 'package:crm_task_manager/models/page_2/dashboard/sales_model.dart';
+import 'package:crm_task_manager/models/page_2/dashboard/expense_structure.dart';
+import 'package:crm_task_manager/models/page_2/dashboard/profitability_dashboard_model.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
 import 'download_popup_menu.dart';
 
-enum TimePeriod { year, previousYear }
+class ProfitabilityChart extends StatefulWidget {
+  const ProfitabilityChart({super.key, required this.profitabilityData});
 
-class SalesData {
-  final String period;
-  final double value;
+  final List<AllProfitabilityData> profitabilityData;
 
-  SalesData({required this.period, required this.value});
+  @override
+  State<ProfitabilityChart> createState() => _ProfitabilityChartState();
 }
 
-class SalesDynamicsLineChart extends StatefulWidget {
-  const SalesDynamicsLineChart(this.salesData, {super.key});
+class _ProfitabilityChartState extends State<ProfitabilityChart> {
+  ProfitabilityTimePeriod selectedPeriod = ProfitabilityTimePeriod.year;
+  bool isLoading = false;
+  bool isDownloading = false;
 
-  final SalesResponse? salesData;
-
-  @override
-  State<SalesDynamicsLineChart> createState() => _SalesDynamicsLineChartState();
-}
-
-class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
-  TimePeriod selectedPeriod = TimePeriod.year;
-  List<SalesData> salesData = [];
-
-  @override
-  void initState() {
-    super.initState();
-    salesData = _getDataForPeriod(selectedPeriod);
-  }
-
-  @override
-  void didUpdateWidget(SalesDynamicsLineChart oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.salesData != widget.salesData) {
-      setState(() {
-        salesData = _getDataForPeriod(selectedPeriod);
-      });
-    }
-  }
-
-  List<SalesData> _getDataForPeriod(TimePeriod period) {
-    if (widget.salesData == null) {
-      return [];
-    }
-
+  String getPeriodText(ProfitabilityTimePeriod period, AppLocalizations localizations) {
     switch (period) {
-      case TimePeriod.year:
-        return widget.salesData!.result.months.map((monthData) {
-          return SalesData(
-            period: _getShortMonthName(monthData.monthName),
-            value: double.tryParse(monthData.totalAmount) ?? 0.0,
-          );
-        }).toList();
-
-      case TimePeriod.previousYear:
-      // For previous year, you would need to fetch data from backend
-      // For now, returning empty list
-        return [];
+      case ProfitabilityTimePeriod.last_year:
+        return localizations.translate('last_year');
+      case ProfitabilityTimePeriod.year:
+        return localizations.translate('year');
     }
   }
 
-  String _getShortMonthName(String fullName) {
-    final monthMap = {
-      'Январь': 'Янв',
-      'Февраль': 'Фев',
-      'Март': 'Мар',
-      'Апрель': 'Апр',
-      'Май': 'Май',
-      'Июнь': 'Июн',
-      'Июль': 'Июл',
-      'Август': 'Авг',
-      'Сентябрь': 'Сен',
-      'Октябрь': 'Окт',
-      'Ноябрь': 'Ноя',
-      'Декабрь': 'Дек',
-    };
-    return monthMap[fullName] ?? fullName.substring(0, 3);
+  AllProfitabilityData? _getSelectedPeriodData() {
+    try {
+      return widget.profitabilityData.firstWhere(
+            (data) => data.period == selectedPeriod,
+      );
+    } catch (e) {
+      return null;
+    }
   }
 
-  void onPeriodChanged(TimePeriod? period) {
-    if (period != null && selectedPeriod != period) {
+  double _parseProfitabilityValue(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is num) return value.toDouble();
+    if (value is String) {
+      // Remove any non-numeric characters except decimal point and minus
+      final cleaned = value.replaceAll(RegExp(r'[^\d.-]'), '');
+      return double.tryParse(cleaned) ?? 0.0;
+    }
+    return 0.0;
+  }
+
+  void onPeriodChanged(ProfitabilityTimePeriod period) {
+    if (selectedPeriod != period) {
       setState(() {
         selectedPeriod = period;
-        salesData = _getDataForPeriod(period);
       });
     }
   }
 
-  String getPeriodText(TimePeriod period) {
-    switch (period) {
-      case TimePeriod.year:
-        return 'текущий год';
-      case TimePeriod.previousYear:
-        return 'прошлый год';
+  void _handleDownload(DownloadFormat format) async {
+    setState(() {
+      isDownloading = true;
+    });
+
+    try {
+      await Future.delayed(const Duration(seconds: 2));
+    } catch (e) {
+      // Handle error silently
+    } finally {
+      if (mounted) {
+        setState(() {
+          isDownloading = false;
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    final isLoading = widget.salesData == null;
+    final periodData = _getSelectedPeriodData();
+    final months = periodData?.data.result.months ?? [];
 
     return Container(
       margin: const EdgeInsets.all(16),
@@ -123,11 +100,12 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header with title and download menu
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                localizations.translate('sales_dynamics'),
+                localizations.translate('profitability_sales'),
                 style: const TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 18,
@@ -137,16 +115,25 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
               ),
               Transform.translate(
                 offset: const Offset(16, 0),
-                child: DownloadPopupMenu(onDownload: (DownloadFormat type) {}),
+                child: DownloadPopupMenu(
+                  onDownload: _handleDownload,
+                  loading: isDownloading,
+                  formats: const [
+                    DownloadFormat.png,
+                    DownloadFormat.svg,
+                    DownloadFormat.csv,
+                  ],
+                ),
               ),
             ],
           ),
+
           const SizedBox(height: 16),
 
           // Period dropdown and Compare button
           Row(
             children: [
-              Flexible(child: _buildPeriodDropdown()),
+              Flexible(child: _buildPeriodDropdown(localizations)),
               const SizedBox(width: 12),
               Flexible(
                 child: Container(
@@ -169,6 +156,8 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
             ],
           ),
 
+          const SizedBox(height: 16),
+
           const SizedBox(height: 24),
 
           // Chart content
@@ -180,7 +169,7 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
                 color: Color(0xFF3935E7),
               ),
             )
-                : salesData.isEmpty
+                : months.isEmpty
                 ? Center(
               child: Text(
                 localizations.translate('no_data_to_display'),
@@ -201,8 +190,15 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
                     show: true,
                     drawHorizontalLine: true,
                     drawVerticalLine: false,
-                    horizontalInterval: _calculateInterval(),
+                    horizontalInterval: 20,
+                    verticalInterval: 1,
                     getDrawingHorizontalLine: (value) {
+                      return FlLine(
+                        color: Colors.grey.withOpacity(0.2),
+                        strokeWidth: 1,
+                      );
+                    },
+                    getDrawingVerticalLine: (value) {
                       return FlLine(
                         color: Colors.grey.withOpacity(0.2),
                         strokeWidth: 1,
@@ -214,16 +210,18 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
                     bottomTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
+                        interval: 1,
                         getTitlesWidget: (value, meta) {
-                          if (value < 0 || value >= salesData.length) {
+                          if (value < 0 || value >= months.length) {
                             return const SizedBox.shrink();
                           }
+                          final monthName = months[value.toInt()].monthName;
                           return Padding(
                             padding: const EdgeInsets.only(top: 8),
                             child: Transform.rotate(
                               angle: -0.5,
                               child: Text(
-                                salesData[value.toInt()].period,
+                                localizations.translate(monthName.toLowerCase()),
                                 textAlign: TextAlign.center,
                                 style: const TextStyle(
                                   fontFamily: 'Gilroy',
@@ -243,7 +241,7 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
                         showTitles: true,
                         getTitlesWidget: (value, meta) {
                           return Text(
-                            _formatAxisValue(value),
+                            value.toInt().toString(),
                             style: const TextStyle(
                               fontFamily: 'Gilroy',
                               fontSize: 12,
@@ -253,7 +251,7 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
                           );
                         },
                         reservedSize: 40,
-                        interval: _calculateInterval(),
+                        interval: 20,
                       ),
                     ),
                     rightTitles: AxisTitles(
@@ -263,25 +261,23 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
                       sideTitles: SideTitles(showTitles: false),
                     ),
                   ),
-                  borderData: FlBorderData(
-                    show: false,
-                  ),
+                  borderData: FlBorderData(show: false),
                   minX: 0,
-                  maxX: (salesData.length - 1).toDouble(),
+                  maxX: (months.length - 1).toDouble(),
                   minY: 0,
-                  maxY: _calculateMaxY(),
+                  maxY: _calculateMaxY(months),
                   lineBarsData: [
                     LineChartBarData(
                       spots: List.generate(
-                        salesData.length,
+                        months.length,
                             (index) => FlSpot(
                           index.toDouble(),
-                          salesData[index].value,
+                          _parseProfitabilityValue(months[index].profitabilityPercentage),
                         ),
                       ),
                       isCurved: true,
                       curveSmoothness: 0.3,
-                      color: const Color(0xFF00E676),
+                      color: const Color(0xFF5D5FEF),
                       barWidth: 3,
                       isStrokeCapRound: true,
                       dotData: FlDotData(
@@ -289,7 +285,7 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
                         getDotPainter: (spot, percent, barData, index) {
                           return FlDotCirclePainter(
                             radius: 4,
-                            color: const Color(0xFF00E676),
+                            color: const Color(0xFF5D5FEF),
                             strokeWidth: 2,
                             strokeColor: Colors.white,
                           );
@@ -301,8 +297,8 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                           colors: [
-                            const Color(0xFF00E676).withOpacity(0.3),
-                            const Color(0xFF00E676).withOpacity(0.0),
+                            const Color(0xFF5D5FEF).withOpacity(0.3),
+                            const Color(0xFF5D5FEF).withOpacity(0.0),
                           ],
                         ),
                       ),
@@ -322,9 +318,10 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
                       getTooltipItems: (touchedSpots) {
                         return touchedSpots.map((touchedSpot) {
                           final index = touchedSpot.x.toInt();
-                          if (index >= 0 && index < salesData.length) {
+                          if (index >= 0 && index < months.length) {
+                            final monthName = months[index].monthName;
                             return LineTooltipItem(
-                              '${salesData[index].period}\n',
+                              '${localizations.translate(monthName.toLowerCase())}\n',
                               const TextStyle(
                                 fontFamily: 'Gilroy',
                                 fontSize: 12,
@@ -333,7 +330,7 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
                               ),
                               children: [
                                 TextSpan(
-                                  text: _formatValue(touchedSpot.y),
+                                  text: '${touchedSpot.y.toStringAsFixed(1)}%',
                                   style: const TextStyle(
                                     fontFamily: 'Gilroy',
                                     fontSize: 14,
@@ -353,6 +350,7 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
               ),
             ),
           ),
+
           const SizedBox(height: 16),
 
           Align(
@@ -375,37 +373,22 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
     );
   }
 
-  double _calculateMaxY() {
-    if (salesData.isEmpty) return 100;
-    final maxValue = salesData.map((e) => e.value).reduce((a, b) => a > b ? a : b);
-    if (maxValue == 0) return 100;
-    return maxValue * 1.2;
+  double _calculateMaxY(List<ProfitabilityMonth> months) {
+    if (months.isEmpty) return 100;
+
+    final values = months
+        .map((m) => _parseProfitabilityValue(m.profitabilityPercentage))
+        .toList();
+
+    final maxValue = values.reduce((a, b) => a > b ? a : b);
+    final calculatedMax = maxValue * 1.2;
+
+    // Ensure minimum range of 100 for proper visualization
+    return calculatedMax < 100 ? 100 : calculatedMax;
   }
 
-  double _calculateInterval() {
-    final maxY = _calculateMaxY();
-    if (maxY <= 100) return 20;
-    if (maxY <= 500) return 100;
-    if (maxY <= 1000) return 200;
-    return 500;
-  }
-
-  String _formatValue(double value) {
-    if (value >= 1000) {
-      return '${(value / 1000).toStringAsFixed(1)}k';
-    }
-    return value.toStringAsFixed(0);
-  }
-
-  String _formatAxisValue(double value) {
-    if (value >= 1000) {
-      return '${(value / 1000).toInt()}k';
-    }
-    return value.toInt().toString();
-  }
-
-  Widget _buildPeriodDropdown() {
-    return CustomDropdown<TimePeriod>(
+  Widget _buildPeriodDropdown(AppLocalizations localizations) {
+    return CustomDropdown<ProfitabilityTimePeriod>(
       decoration: CustomDropdownDecoration(
         closedBorder: Border.all(color: Colors.grey[300]!),
         expandedBorder: Border.all(color: Colors.grey[300]!),
@@ -414,16 +397,16 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
         closedFillColor: Colors.white,
         expandedFillColor: Colors.white,
       ),
-      items: TimePeriod.values,
+      items: ProfitabilityTimePeriod.values,
       initialItem: selectedPeriod,
-      onChanged: (TimePeriod? value) {
+      onChanged: (ProfitabilityTimePeriod? value) {
         if (value != null) {
           onPeriodChanged(value);
         }
       },
       headerBuilder: (context, selectedItem, enabled) {
         return Text(
-          getPeriodText(selectedItem),
+          getPeriodText(selectedItem, localizations),
           style: const TextStyle(
             fontFamily: 'Gilroy',
             fontSize: 12,
@@ -434,10 +417,10 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
       },
       listItemBuilder: (context, item, isSelected, onItemSelect) {
         return Text(
-          getPeriodText(item),
+          getPeriodText(item, localizations),
           style: const TextStyle(
             fontFamily: 'Gilroy',
-            fontSize: 12,
+            fontSize: 14,
             fontWeight: FontWeight.w500,
             color: Colors.black87,
           ),
