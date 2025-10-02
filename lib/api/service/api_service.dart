@@ -134,6 +134,7 @@ import '../../models/money/money_outcome_document_model.dart';
 import '../../models/outcome_categories_data_response.dart';
 import '../../models/page_2/dashboard/expense_structure.dart';
 import '../../models/page_2/dashboard/net_profit_model.dart';
+import '../../models/page_2/dashboard/order_dashboard_model.dart';
 import '../../models/page_2/dashboard/sales_model.dart';
 
 // final String baseUrl = 'https://fingroup-back.shamcrm.com/api';
@@ -14559,6 +14560,49 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         response.statusCode,
       );
     }
+  }
+
+  Future<List<AllOrdersData>> getOrderDashboard() async {
+    // Define all periods to fetch
+    final periods = [OrderTimePeriod.week, OrderTimePeriod.month, OrderTimePeriod.year];
+
+    // List to store results
+    final List<AllOrdersData> allOrdersData = [];
+
+    // Iterate through each period
+    for (final period in periods) {
+      // Form the query path for the current period
+      final path = await _appendQueryParams('/order/dashboard?period=${period.name}');
+      debugPrint("ApiService: getOrderDashboard path: $path");
+
+      try {
+        // Make the API request
+        final response = await _getRequest(path);
+
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          final orderDashboardResponse = OrderDashboardResponse.fromJson(data);
+          // Create AllOrdersData for this period
+          allOrdersData.add(AllOrdersData(
+            period: period,
+            data: orderDashboardResponse.result,
+          ));
+        } else {
+          final message = _extractErrorMessageFromResponse(response);
+          throw ApiException(
+            message ?? 'Ошибка для периода $period',
+            response.statusCode,
+          );
+        }
+      } catch (e) {
+        // Optionally handle or log errors for individual periods
+        debugPrint("Error fetching data for period $period: $e");
+        // You can choose to continue with other periods or rethrow
+        rethrow; // Or handle differently based on your requirements
+      }
+    }
+
+    return allOrdersData;
   }
 
 }

@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/models/money/expense_model.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/net_profit_model.dart';
+import 'package:crm_task_manager/models/page_2/dashboard/order_dashboard_model.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 
@@ -25,18 +26,21 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
           // apiService.getExpenseStructure(),
           apiService.getSalesDynamics(),
           apiService.getNetProfit(),
+          apiService.getOrderDashboard(),
         ]);
 
         final salesDashboardTopResponse = results[0] as DashboardTopPart;
         // final expenseStructure = results[1] as ExpenseDashboard;
         final salesData = results[1] as SalesResponse;
         final netProfitData = results[2] as NetProfitResponse;
+        final orderDashboardData = results[3] as List<AllOrdersData>;
 
         emit(SalesDashboardLoaded(
           salesDashboardTopPart: salesDashboardTopResponse,
           // expenseStructure: expenseStructure,
           salesData: salesData,
           netProfitData: netProfitData,
+          orderDashboardData: orderDashboardData,
         ));
     });
 

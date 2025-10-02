@@ -1,10 +1,11 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/sales_dashboard_bloc.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/net_profit_model.dart';
+import 'package:crm_task_manager/models/page_2/dashboard/order_dashboard_model.dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/dialogs/dialog_products_info.dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/charts/expense_structure_chart.dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/charts/net_profit_chart.dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/charts/order_quantity_chart.dart';
-import 'package:crm_task_manager/page_2/dashboard/widgets/charts/sales_margin_chart.dart';
+import 'package:crm_task_manager/page_2/dashboard/widgets/charts/order_types_chart.dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/charts/sales_dynamics_line_chart.dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/stat_card.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
@@ -97,6 +98,7 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
                 } else if (state is SalesDashboardLoaded) {
                   final SalesResponse? salesData = state.salesData;
                   final NetProfitResponse netProfitData = state.netProfitData;
+                  final List<AllOrdersData> orderDashboardData = state.orderDashboardData;
 
                   return SafeArea(
                     child: SingleChildScrollView(
@@ -108,8 +110,8 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
                           SalesDynamicsLineChart(salesData),
                           NetProfitChart(netProfitData),
                           const ExpenseStructureChart(),
-                          const SalesMarginChart(),
-                          const OrderQuantityChart(),
+                          SalesMarginChart(),
+                          OrderQuantityChart(orderDashboardData: orderDashboardData),
                           const SizedBox(height: 16),
                         ],
                       ),
