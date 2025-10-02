@@ -1,113 +1,90 @@
+import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/models/page_2/dashboard/net_profit_model.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
 import 'download_popup_menu.dart';
 
-enum ProfitPeriod { sixMonths, year, twoYears }
-
-class ProfitData {
-  final String month;
-  final double value;
-
-  ProfitData({required this.month, required this.value});
-}
-
 class NetProfitChart extends StatefulWidget {
-  const NetProfitChart({Key? key}) : super(key: key);
+  const NetProfitChart(this.netProfitData, {super.key});
+
+  final List<AllNetProfitData> netProfitData;
 
   @override
   State<NetProfitChart> createState() => _NetProfitChartState();
 }
 
 class _NetProfitChartState extends State<NetProfitChart> {
-  ProfitPeriod selectedPeriod = ProfitPeriod.sixMonths;
-  bool isLoading = false;
-  List<ProfitData> profitData = [];
+  NetProfitPeriod selectedPeriod = NetProfitPeriod.year;
+  bool isDownloading = false;
 
   @override
   void initState() {
     super.initState();
-    loadProfitData();
   }
 
-  Future<void> loadProfitData() async {
-    setState(() {
-      isLoading = true;
-    });
-
-    // Simulate API call delay
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    setState(() {
-      profitData = _getDataForPeriod(selectedPeriod);
-      isLoading = false;
-    });
-  }
-
-  List<ProfitData> _getDataForPeriod(ProfitPeriod period) {
-    switch (period) {
-      case ProfitPeriod.sixMonths:
-        return [
-          ProfitData(month: 'Июль', value: 80),
-          ProfitData(month: 'Август', value: 380),
-          ProfitData(month: 'Сентябрь', value: 280),
-          ProfitData(month: 'Октябрь', value: 180),
-          ProfitData(month: 'Ноябрь', value: 290),
-          ProfitData(month: 'Декабрь', value: 480),
-        ];
-      case ProfitPeriod.year:
-        return [
-          ProfitData(month: 'Янв', value: 120),
-          ProfitData(month: 'Фев', value: 180),
-          ProfitData(month: 'Мар', value: 250),
-          ProfitData(month: 'Апр', value: 320),
-          ProfitData(month: 'Май', value: 280),
-          ProfitData(month: 'Июн', value: 350),
-          ProfitData(month: 'Июл', value: 80),
-          ProfitData(month: 'Авг', value: 380),
-          ProfitData(month: 'Сен', value: 280),
-          ProfitData(month: 'Окт', value: 180),
-          ProfitData(month: 'Ноя', value: 290),
-          ProfitData(month: 'Дек', value: 480),
-        ];
-      case ProfitPeriod.twoYears:
-        return [
-          ProfitData(month: '2023 Q1', value: 450),
-          ProfitData(month: '2023 Q2', value: 520),
-          ProfitData(month: '2023 Q3', value: 380),
-          ProfitData(month: '2023 Q4', value: 680),
-          ProfitData(month: '2024 Q1', value: 720),
-          ProfitData(month: '2024 Q2', value: 580),
-          ProfitData(month: '2024 Q3', value: 450),
-          ProfitData(month: '2024 Q4', value: 820),
-        ];
+  AllNetProfitData? _getCurrentPeriodData() {
+    try {
+      return widget.netProfitData.firstWhere(
+            (data) => data.period == selectedPeriod,
+      );
+    } catch (e) {
+      return null;
     }
   }
 
-  void onPeriodChanged(ProfitPeriod? period) {
+
+
+  void onPeriodChanged(NetProfitPeriod? period) {
     if (period != null && selectedPeriod != period) {
       setState(() {
         selectedPeriod = period;
       });
-      loadProfitData();
     }
   }
 
-  String getPeriodText(ProfitPeriod period) {
+  String getPeriodText(NetProfitPeriod period) {
     switch (period) {
-      case ProfitPeriod.sixMonths:
-        return '6 месяцев';
-      case ProfitPeriod.year:
-        return 'Год';
-      case ProfitPeriod.twoYears:
-        return '2 года';
+      case NetProfitPeriod.year:
+        return 'Текущий год';
+      case NetProfitPeriod.last_year:
+        return 'Прошлый год';
+    }
+  }
+
+  void _handleDownload(DownloadFormat format) async {
+    setState(() {
+      isDownloading = true;
+    });
+
+    try {
+      await Future.delayed(const Duration(seconds: 2));
+    } catch (e) {
+      // Handle error silently
+    } finally {
+      if (mounted) {
+        setState(() {
+          isDownloading = false;
+        });
+      }
+    }
+  }
+
+  double _parseNetProfit(String netProfit) {
+    try {
+      // Remove any whitespace and convert to double
+      return double.parse(netProfit.trim());
+    } catch (e) {
+      return 0.0;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final currentData = _getCurrentPeriodData();
+    final months = currentData?.data.result.months ?? [];
 
     return Container(
       margin: const EdgeInsets.all(16),
@@ -126,7 +103,6 @@ class _NetProfitChartState extends State<NetProfitChart> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header with title and menu icon
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -139,61 +115,42 @@ class _NetProfitChartState extends State<NetProfitChart> {
                   color: Colors.black,
                 ),
               ),
-              DownloadPopupMenu(onDownload: (DownloadFormat type) {}),
+              Transform.translate(
+                offset: const Offset(16, 0),
+                child: DownloadPopupMenu(
+                  onDownload: _handleDownload,
+                  loading: isDownloading,
+                  formats: const [
+                    DownloadFormat.png,
+                    DownloadFormat.svg,
+                    DownloadFormat.csv,
+                  ],
+                ),
+              ),
             ],
           ),
 
           const SizedBox(height: 16),
 
-          // Period dropdown and Compare button
           Row(
             children: [
-              SizedBox(
-                width: 120, // Set your desired width
+              Flexible(child: _buildPeriodDropdown()),
+              const SizedBox(width: 12),
+              Flexible(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8), // Reduced padding
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey[300]!),
+                    color: Colors.grey[100],
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<ProfitPeriod>(
-                      isExpanded: true,
-                      value: selectedPeriod,
-                      icon: const Icon(Icons.keyboard_arrow_down, size: 20),
-                      onChanged: onPeriodChanged,
-                      items: ProfitPeriod.values.map((ProfitPeriod period) {
-                        return DropdownMenuItem<ProfitPeriod>(
-                          value: period,
-                          child: Text( // Remove Container wrapper from items
-                            getPeriodText(period),
-                            style: const TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black87,
-                            ),
-                          ),
-                        );
-                      }).toList(),
+                  child: Text(
+                    localizations.translate('compare'),
+                    style: const TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black54,
                     ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  localizations.translate('compare'),
-                  style: const TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black54,
                   ),
                 ),
               ),
@@ -202,16 +159,9 @@ class _NetProfitChartState extends State<NetProfitChart> {
 
           const SizedBox(height: 24),
 
-          // Chart content
           SizedBox(
             height: 300,
-            child: isLoading
-                ? const Center(
-              child: CircularProgressIndicator(
-                color: Color(0xFF4CAF50),
-              ),
-            )
-                : profitData.isEmpty
+            child: months.isEmpty
                 ? Center(
               child: Text(
                 localizations.translate('no_data_to_display'),
@@ -228,22 +178,21 @@ class _NetProfitChartState extends State<NetProfitChart> {
               child: BarChart(
                 BarChartData(
                   alignment: BarChartAlignment.spaceAround,
-                  maxY: profitData.map((e) => e.value).reduce((a, b) => a > b ? a : b) * 1.2,
+                  maxY: _calculateMaxY(months),
                   minY: 0,
-                  groupsSpace: selectedPeriod == ProfitPeriod.year ? 8 : 16,
+                  groupsSpace: 8,
                   backgroundColor: Colors.transparent,
                   barTouchData: BarTouchData(
                     enabled: true,
                     touchTooltipData: BarTouchTooltipData(
                       tooltipRoundedRadius: 8,
-                      tooltipPadding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
+                      tooltipPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       tooltipMargin: 8,
                       fitInsideVertically: true,
                       fitInsideHorizontally: true,
                       getTooltipItem: (group, groupIndex, rod, rodIndex) {
                         return BarTooltipItem(
-                          '${profitData[groupIndex].month}\n',
+                          '${months[groupIndex].monthName}\n',
                           const TextStyle(
                             fontFamily: 'Gilroy',
                             fontSize: 12,
@@ -252,7 +201,7 @@ class _NetProfitChartState extends State<NetProfitChart> {
                           ),
                           children: [
                             TextSpan(
-                              text: '${rod.toY.toInt()}k',
+                              text: _formatValue(rod.toY),
                               style: const TextStyle(
                                 fontFamily: 'Gilroy',
                                 fontSize: 14,
@@ -271,7 +220,7 @@ class _NetProfitChartState extends State<NetProfitChart> {
                       sideTitles: SideTitles(
                         showTitles: true,
                         getTitlesWidget: (value, meta) {
-                          if (value < 0 || value >= profitData.length) {
+                          if (value < 0 || value >= months.length) {
                             return const SizedBox.shrink();
                           }
                           return Padding(
@@ -279,7 +228,7 @@ class _NetProfitChartState extends State<NetProfitChart> {
                             child: Transform.rotate(
                               angle: -0.5,
                               child: Text(
-                                profitData[value.toInt()].month,
+                               months[value.toInt()].monthName,
                                 textAlign: TextAlign.center,
                                 style: const TextStyle(
                                   fontFamily: 'Gilroy',
@@ -291,7 +240,7 @@ class _NetProfitChartState extends State<NetProfitChart> {
                             ),
                           );
                         },
-                        reservedSize: selectedPeriod == ProfitPeriod.year ? 50 : 30,
+                        reservedSize: 50,
                       ),
                     ),
                     leftTitles: AxisTitles(
@@ -299,7 +248,7 @@ class _NetProfitChartState extends State<NetProfitChart> {
                         showTitles: true,
                         getTitlesWidget: (value, meta) {
                           return Text(
-                            value.toInt().toString(),
+                            _formatAxisValue(value),
                             style: const TextStyle(
                               fontFamily: 'Gilroy',
                               fontSize: 12,
@@ -309,13 +258,13 @@ class _NetProfitChartState extends State<NetProfitChart> {
                           );
                         },
                         reservedSize: 40,
-                        interval: selectedPeriod == ProfitPeriod.twoYears ? 200 : 100,
+                        interval: _calculateInterval(months),
                       ),
                     ),
-                    rightTitles: AxisTitles(
+                    rightTitles: const AxisTitles(
                       sideTitles: SideTitles(showTitles: false),
                     ),
-                    topTitles: AxisTitles(
+                    topTitles: const AxisTitles(
                       sideTitles: SideTitles(showTitles: false),
                     ),
                   ),
@@ -323,7 +272,7 @@ class _NetProfitChartState extends State<NetProfitChart> {
                     show: true,
                     drawHorizontalLine: true,
                     drawVerticalLine: false,
-                    horizontalInterval: selectedPeriod == ProfitPeriod.twoYears ? 200 : 100,
+                    horizontalInterval: _calculateInterval(months),
                     getDrawingHorizontalLine: (value) {
                       return FlLine(
                         color: Colors.grey.withOpacity(0.2),
@@ -331,18 +280,16 @@ class _NetProfitChartState extends State<NetProfitChart> {
                       );
                     },
                   ),
-                  borderData: FlBorderData(
-                    show: false,
-                  ),
+                  borderData: FlBorderData(show: false),
                   barGroups: List.generate(
-                    profitData.length,
+                    months.length,
                         (index) => BarChartGroupData(
                       x: index,
                       barRods: [
                         BarChartRodData(
-                          toY: profitData[index].value,
+                          toY: _parseNetProfit(months[index].netProfit),
                           color: const Color(0xFF4CAF50),
-                          width: selectedPeriod == ProfitPeriod.year ? 16 : 24,
+                          width: 16,
                           borderRadius: const BorderRadius.only(
                             topLeft: Radius.circular(8),
                             topRight: Radius.circular(8),
@@ -361,22 +308,102 @@ class _NetProfitChartState extends State<NetProfitChart> {
           Align(
             alignment: Alignment.centerRight,
             child: GestureDetector(
-              onTap: () {
-
-              },
+              onTap: () {},
               child: Text(
                 localizations.translate('more_details'),
                 style: const TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: Color(0xFF4CAF50),
+                  color: Color(0xff1E2E52),
                 ),
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  double _calculateMaxY(List<NetProfitMonth> months) {
+    if (months.isEmpty) return 100;
+
+    final maxValue = months
+        .map((m) => _parseNetProfit(m.netProfit))
+        .reduce((a, b) => a > b ? a : b);
+
+    if (maxValue == 0) return 100;
+    return maxValue * 1.2;
+  }
+
+  double _calculateInterval(List<NetProfitMonth> months) {
+    final maxY = _calculateMaxY(months);
+    if (maxY <= 100) return 20;
+    if (maxY <= 500) return 100;
+    if (maxY <= 1000) return 200;
+    if (maxY <= 5000) return 1000;
+    return 2000;
+  }
+
+  String _formatValue(double value) {
+    if (value >= 1000000) {
+      return '${(value / 1000000).toStringAsFixed(1)}M';
+    }
+    if (value >= 1000) {
+      return '${(value / 1000).toStringAsFixed(1)}k';
+    }
+    return value.toStringAsFixed(0);
+  }
+
+  String _formatAxisValue(double value) {
+    if (value >= 1000000) {
+      return '${(value / 1000000).toInt()}M';
+    }
+    if (value >= 1000) {
+      return '${(value / 1000).toInt()}k';
+    }
+    return value.toInt().toString();
+  }
+
+  Widget _buildPeriodDropdown() {
+    return CustomDropdown<NetProfitPeriod>(
+      decoration: CustomDropdownDecoration(
+        closedBorder: Border.all(color: Colors.grey[300]!),
+        expandedBorder: Border.all(color: Colors.grey[300]!),
+        closedBorderRadius: BorderRadius.circular(8),
+        expandedBorderRadius: BorderRadius.circular(8),
+        closedFillColor: Colors.white,
+        expandedFillColor: Colors.white,
+      ),
+      items: NetProfitPeriod.values,
+      initialItem: selectedPeriod,
+      onChanged: (NetProfitPeriod? value) {
+        if (value != null) {
+          onPeriodChanged(value);
+        }
+      },
+      headerBuilder: (context, selectedItem, enabled) {
+        return Text(
+          getPeriodText(selectedItem),
+          style: const TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: Colors.black87,
+          ),
+        );
+      },
+      listItemBuilder: (context, item, isSelected, onItemSelect) {
+        return Text(
+          getPeriodText(item),
+          style: const TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: Colors.black87,
+          ),
+        );
+      },
     );
   }
 }

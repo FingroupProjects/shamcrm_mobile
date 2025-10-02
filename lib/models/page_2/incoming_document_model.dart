@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/storage_model.dart';
+import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 
 class IncomingResponse {
@@ -29,7 +30,7 @@ class IncomingResponse {
   }
 }
 
-class IncomingDocument {
+class IncomingDocument extends Equatable {
   final int? id;
   final DateTime? date;
   final String? modelType;
@@ -50,7 +51,7 @@ class IncomingDocument {
   final String? docNumber;
   final int? approved;
 
-  IncomingDocument({
+  const IncomingDocument({
     this.id,
     this.date,
     this.modelType,
@@ -70,6 +71,14 @@ class IncomingDocument {
     this.docNumber,
     this.approved,
   });
+
+  @override
+  List<Object?> get props => [
+    id,
+    deletedAt,
+    approved,
+    updatedAt
+  ];
 
   // Безопасная функция для парсинга int из динамического значения
   static int? _parseInt(dynamic value) {
@@ -151,27 +160,20 @@ class IncomingDocument {
     return documentGoods!.fold(0, (sum, good) => sum + (good.quantity ?? 0));
   }
 
-  // Обновленная логика определения статуса
   String get statusText {
-    // Приоритет: сначала проверяем deleted_at
     if (deletedAt != null) {
       return 'Удален';
     }
-    // Затем проверяем approved
     return approved == 1 ? 'Проведен' : 'Не проведен';
   }
 
-  // Обновленная логика определения цвета статуса
   Color get statusColor {
-    // Приоритет: сначала проверяем deleted_at
     if (deletedAt != null) {
       return Colors.red; // Красный цвет для удаленных документов
     }
-    // Затем проверяем approved
     return approved == 1 ? Colors.green : Colors.orange;
   }
 
-  // Метод copyWith для создания копии с измененными полями
   IncomingDocument copyWith({
     int? id,
     DateTime? date,

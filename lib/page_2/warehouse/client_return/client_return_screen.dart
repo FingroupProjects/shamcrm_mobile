@@ -263,9 +263,6 @@ class _ClientReturnScreenState extends State<ClientReturnScreen> {
         },
         child: ClientReturnCard(
           document: currentData[index],
-          onUpdate: () {
-            _clientReturnBloc.add(const FetchClientReturns(forceRefresh: true));
-          },
         ),
       );
     },

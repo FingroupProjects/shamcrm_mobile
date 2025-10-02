@@ -1,105 +1,63 @@
+import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/models/page_2/dashboard/expense_structure.dart';
+import 'package:crm_task_manager/models/page_2/dashboard/profitability_dashboard_model.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
 import 'download_popup_menu.dart';
 
-enum TimeRange { sixMonths, year }
+class ProfitabilityChart extends StatefulWidget {
+  const ProfitabilityChart({super.key, required this.profitabilityData});
 
-class SalesData {
-  final String period;
-  final double value;
-  final DateTime? date;
-
-  SalesData({required this.period, required this.value, this.date});
-}
-
-class ProfitMarginChart extends StatefulWidget {
-  const ProfitMarginChart({Key? key}) : super(key: key);
+  final List<AllProfitabilityData> profitabilityData;
 
   @override
-  State<ProfitMarginChart> createState() => _ProfitMarginChartState();
+  State<ProfitabilityChart> createState() => _ProfitabilityChartState();
 }
 
-class _ProfitMarginChartState extends State<ProfitMarginChart> {
-  TimeRange selectedTimeRange = TimeRange.sixMonths;
+class _ProfitabilityChartState extends State<ProfitabilityChart> {
+  ProfitabilityTimePeriod selectedPeriod = ProfitabilityTimePeriod.year;
   bool isLoading = false;
   bool isDownloading = false;
-  List<SalesData> salesData = [];
 
-  @override
-  void initState() {
-    super.initState();
-    loadSalesData();
-  }
-
-  // Simulate data loading
-  Future<void> loadSalesData() async {
-    setState(() {
-      isLoading = true;
-    });
-
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    setState(() {
-      salesData = _getDataForConfiguration();
-      isLoading = false;
-    });
-  }
-
-  List<SalesData> _getDataForConfiguration() {
-    // Enhanced mock data based on profitability type and time range
-    switch (selectedTimeRange) {
-      case TimeRange.sixMonths:
-        return _getSixMonthsData();
-      case TimeRange.year:
-        return _getYearlyData();
+  String getPeriodText(ProfitabilityTimePeriod period, AppLocalizations localizations) {
+    switch (period) {
+      case ProfitabilityTimePeriod.last_year:
+        return localizations.translate('last_year');
+      case ProfitabilityTimePeriod.year:
+        return localizations.translate('year');
     }
   }
 
-  List<SalesData> _getSixMonthsData() {
-    return [
-      SalesData(period: 'Июль', value: 30.0),
-      SalesData(period: 'Август', value: 40.0),
-      SalesData(period: 'Сентябрь', value: 25.0),
-      SalesData(period: 'Октябрь', value: 50.0),
-      SalesData(period: 'Ноябрь', value: 45.0),
-      SalesData(period: 'Декабрь', value: 60.0),
-    ];
+  AllProfitabilityData? _getSelectedPeriodData() {
+    try {
+      return widget.profitabilityData.firstWhere(
+            (data) => data.period == selectedPeriod,
+      );
+    } catch (e) {
+      return null;
+    }
   }
 
-  List<SalesData> _getYearlyData() {
-    return [
-      SalesData(period: 'Q1 2024', value: 100.0),
-      SalesData(period: 'Q2 2024', value: 115.0),
-      SalesData(period: 'Q3 2024', value: 95.0),
-      SalesData(period: 'Q4 2024', value: 135.0),
-    ];
+  double _parseProfitabilityValue(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is num) return value.toDouble();
+    if (value is String) {
+      // Remove any non-numeric characters except decimal point and minus
+      final cleaned = value.replaceAll(RegExp(r'[^\d.-]'), '');
+      return double.tryParse(cleaned) ?? 0.0;
+    }
+    return 0.0;
   }
 
-
-
-  void onTimeRangeChanged(TimeRange range) {
-    if (selectedTimeRange != range) {
+  void onPeriodChanged(ProfitabilityTimePeriod period) {
+    if (selectedPeriod != period) {
       setState(() {
-        selectedTimeRange = range;
+        selectedPeriod = period;
       });
-      loadSalesData();
     }
   }
-
-
-  String getTimeRangeText(TimeRange range) {
-    switch (range) {
-      case TimeRange.sixMonths:
-        return '6 месяцев';
-      case TimeRange.year:
-        return 'Год';
-    }
-  }
-
-
-
 
   void _handleDownload(DownloadFormat format) async {
     setState(() {
@@ -122,6 +80,9 @@ class _ProfitMarginChartState extends State<ProfitMarginChart> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final periodData = _getSelectedPeriodData();
+    final months = periodData?.data.result.months ?? [];
+
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
@@ -152,14 +113,17 @@ class _ProfitMarginChartState extends State<ProfitMarginChart> {
                   color: Colors.black,
                 ),
               ),
-              DownloadPopupMenu(
-                onDownload: _handleDownload,
-                loading: isDownloading,
-                formats: const [
-                  DownloadFormat.png,
-                  DownloadFormat.svg,
-                  DownloadFormat.csv,
-                ],
+              Transform.translate(
+                offset: const Offset(16, 0),
+                child: DownloadPopupMenu(
+                  onDownload: _handleDownload,
+                  loading: isDownloading,
+                  formats: const [
+                    DownloadFormat.png,
+                    DownloadFormat.svg,
+                    DownloadFormat.csv,
+                  ],
+                ),
               ),
             ],
           ),
@@ -169,56 +133,23 @@ class _ProfitMarginChartState extends State<ProfitMarginChart> {
           // Period dropdown and Compare button
           Row(
             children: [
-              SizedBox(
-                width: 120,
+              Flexible(child: _buildPeriodDropdown(localizations)),
+              const SizedBox(width: 12),
+              Flexible(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey[300]!),
+                    color: Colors.grey[100],
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<TimeRange>(
-                      isExpanded: true,
-                      value: selectedTimeRange,
-                      icon: const Icon(Icons.keyboard_arrow_down, size: 20),
-                      onChanged: (TimeRange? value) {
-                        if (value != null) {
-                          onTimeRangeChanged(value);
-                        }
-                      },
-                      items: TimeRange.values.map((TimeRange range) {
-                        return DropdownMenuItem<TimeRange>(
-                          value: range,
-                          child: Text(
-                            getTimeRangeText(range),
-                            style: const TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black87,
-                            ),
-                          ),
-                        );
-                      }).toList(),
+                  child: Text(
+                    localizations.translate('compare'),
+                    style: const TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black54,
                     ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  localizations.translate('compare'),
-                  style: const TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black54,
                   ),
                 ),
               ),
@@ -238,7 +169,7 @@ class _ProfitMarginChartState extends State<ProfitMarginChart> {
                 color: Color(0xFF3935E7),
               ),
             )
-                : salesData.isEmpty
+                : months.isEmpty
                 ? Center(
               child: Text(
                 localizations.translate('no_data_to_display'),
@@ -260,7 +191,14 @@ class _ProfitMarginChartState extends State<ProfitMarginChart> {
                     drawHorizontalLine: true,
                     drawVerticalLine: false,
                     horizontalInterval: 20,
+                    verticalInterval: 1,
                     getDrawingHorizontalLine: (value) {
+                      return FlLine(
+                        color: Colors.grey.withOpacity(0.2),
+                        strokeWidth: 1,
+                      );
+                    },
+                    getDrawingVerticalLine: (value) {
                       return FlLine(
                         color: Colors.grey.withOpacity(0.2),
                         strokeWidth: 1,
@@ -272,16 +210,18 @@ class _ProfitMarginChartState extends State<ProfitMarginChart> {
                     bottomTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
+                        interval: 1,
                         getTitlesWidget: (value, meta) {
-                          if (value < 0 || value >= salesData.length) {
+                          if (value < 0 || value >= months.length) {
                             return const SizedBox.shrink();
                           }
+                          final monthName = months[value.toInt()].monthName;
                           return Padding(
                             padding: const EdgeInsets.only(top: 8),
                             child: Transform.rotate(
-                              angle: -0.3,
+                              angle: -0.5,
                               child: Text(
-                                salesData[value.toInt()].period,
+                                localizations.translate(monthName.toLowerCase()),
                                 textAlign: TextAlign.center,
                                 style: const TextStyle(
                                   fontFamily: 'Gilroy',
@@ -323,18 +263,16 @@ class _ProfitMarginChartState extends State<ProfitMarginChart> {
                   ),
                   borderData: FlBorderData(show: false),
                   minX: 0,
-                  maxX: (salesData.length - 1).toDouble(),
+                  maxX: (months.length - 1).toDouble(),
                   minY: 0,
-                  maxY: salesData.isNotEmpty
-                      ? salesData.map((e) => e.value).reduce((a, b) => a > b ? a : b) * 1.2
-                      : 100,
+                  maxY: _calculateMaxY(months),
                   lineBarsData: [
                     LineChartBarData(
                       spots: List.generate(
-                        salesData.length,
+                        months.length,
                             (index) => FlSpot(
                           index.toDouble(),
-                          salesData[index].value,
+                          _parseProfitabilityValue(months[index].profitabilityPercentage),
                         ),
                       ),
                       isCurved: true,
@@ -380,9 +318,10 @@ class _ProfitMarginChartState extends State<ProfitMarginChart> {
                       getTooltipItems: (touchedSpots) {
                         return touchedSpots.map((touchedSpot) {
                           final index = touchedSpot.x.toInt();
-                          if (index >= 0 && index < salesData.length) {
+                          if (index >= 0 && index < months.length) {
+                            final monthName = months[index].monthName;
                             return LineTooltipItem(
-                              '${salesData[index].period}\n',
+                              '${localizations.translate(monthName.toLowerCase())}\n',
                               const TextStyle(
                                 fontFamily: 'Gilroy',
                                 fontSize: 12,
@@ -391,7 +330,7 @@ class _ProfitMarginChartState extends State<ProfitMarginChart> {
                               ),
                               children: [
                                 TextSpan(
-                                  text: '${touchedSpot.y.toInt()}%',
+                                  text: '${touchedSpot.y.toStringAsFixed(1)}%',
                                   style: const TextStyle(
                                     fontFamily: 'Gilroy',
                                     fontSize: 14,
@@ -414,26 +353,79 @@ class _ProfitMarginChartState extends State<ProfitMarginChart> {
 
           const SizedBox(height: 16),
 
-          // "More details" link
           Align(
             alignment: Alignment.centerRight,
-              child: GestureDetector(
-                onTap: () {
-                  // Handle navigation to detailed view
-                },
-                child: Text(
+            child: GestureDetector(
+              onTap: () {},
+              child: Text(
                 localizations.translate('more_details'),
-                style: TextStyle(
+                style: const TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: Color(0xFF3935E7),
+                  color: Color(0xff1E2E52),
                 ),
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  double _calculateMaxY(List<ProfitabilityMonth> months) {
+    if (months.isEmpty) return 100;
+
+    final values = months
+        .map((m) => _parseProfitabilityValue(m.profitabilityPercentage))
+        .toList();
+
+    final maxValue = values.reduce((a, b) => a > b ? a : b);
+    final calculatedMax = maxValue * 1.2;
+
+    // Ensure minimum range of 100 for proper visualization
+    return calculatedMax < 100 ? 100 : calculatedMax;
+  }
+
+  Widget _buildPeriodDropdown(AppLocalizations localizations) {
+    return CustomDropdown<ProfitabilityTimePeriod>(
+      decoration: CustomDropdownDecoration(
+        closedBorder: Border.all(color: Colors.grey[300]!),
+        expandedBorder: Border.all(color: Colors.grey[300]!),
+        closedBorderRadius: BorderRadius.circular(8),
+        expandedBorderRadius: BorderRadius.circular(8),
+        closedFillColor: Colors.white,
+        expandedFillColor: Colors.white,
+      ),
+      items: ProfitabilityTimePeriod.values,
+      initialItem: selectedPeriod,
+      onChanged: (ProfitabilityTimePeriod? value) {
+        if (value != null) {
+          onPeriodChanged(value);
+        }
+      },
+      headerBuilder: (context, selectedItem, enabled) {
+        return Text(
+          getPeriodText(selectedItem, localizations),
+          style: const TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: Colors.black87,
+          ),
+        );
+      },
+      listItemBuilder: (context, item, isSelected, onItemSelect) {
+        return Text(
+          getPeriodText(item, localizations),
+          style: const TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: Colors.black87,
+          ),
+        );
+      },
     );
   }
 }

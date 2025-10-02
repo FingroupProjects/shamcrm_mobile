@@ -63,6 +63,11 @@ import 'package:crm_task_manager/models/page_2/call_summary_stats_model.dart';
 import 'package:crm_task_manager/models/page_2/category_model.dart';
 import 'package:crm_task_manager/models/page_2/character_list_model.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/dashboard_goods_report.dart';
+import 'package:crm_task_manager/models/page_2/dashboard/cash_balance_model.dart';
+import 'package:crm_task_manager/models/page_2/dashboard/dashboard_top.dart';
+import 'package:crm_task_manager/models/page_2/dashboard/debtors_model.dart';
+import 'package:crm_task_manager/models/page_2/dashboard/creditors_model.dart';
+import 'package:crm_task_manager/models/page_2/dashboard/illiquids_model.dart';
 import 'package:crm_task_manager/models/page_2/delivery_address_model.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_history_model.dart';
@@ -127,6 +132,12 @@ import '../../models/login_model.dart';
 import '../../models/money/money_income_document_model.dart';
 import '../../models/money/money_outcome_document_model.dart';
 import '../../models/outcome_categories_data_response.dart';
+import '../../models/page_2/dashboard/expense_structure.dart';
+import '../../models/page_2/dashboard/net_profit_model.dart';
+import '../../models/page_2/dashboard/order_dashboard_model.dart';
+import '../../models/page_2/dashboard/profitability_dashboard_model.dart';
+import '../../models/page_2/dashboard/sales_model.dart';
+import '../../models/page_2/dashboard/top_selling_model.dart';
 
 // final String baseUrl = 'https://fingroup-back.shamcrm.com/api';
 // final String baseUrl = 'https://ede8-95-142-94-22.ngrok-free.app';
@@ -202,21 +213,21 @@ String? _extractErrorMessageFromResponse(http.Response response) {
  Future<void> initialize() async {
   try {
     debugPrint('ApiService: Starting initialization');
-    
+
     // Получаем базовый URL
     String dynamicBaseUrl = await getDynamicBaseUrl();
-    
+
     // Проверяем что URL валидный
     if (dynamicBaseUrl.isEmpty || dynamicBaseUrl.contains('null')) {
       throw Exception('Получен недействительный базовый URL: $dynamicBaseUrl');
     }
-    
+
     baseUrl = dynamicBaseUrl;
     debugPrint('ApiService: Initialized with baseUrl: $baseUrl');
-    
+
   } catch (e) {
     debugPrint('ApiService: initialize error: $e');
-    
+
     // Пытаемся установить fallback значения
     try {
       await _setFallbackDomain();
@@ -231,19 +242,19 @@ String? _extractErrorMessageFromResponse(http.Response response) {
 // Вспомогательный метод для установки резервного домена
 Future<void> _setFallbackDomain() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
-  
+
   // Проверяем, есть ли сохраненные данные пользователя
   String? userId = prefs.getString('userID');
   String? token = prefs.getString('token');
-  
+
   if (userId != null && token != null) {
     // Используем базовые значения для восстановления подключения
     String fallbackMainDomain = 'shamcrm.com';
     String fallbackDomain = 'default'; // Замените на реальный домен организации
-    
+
     await prefs.setString('enteredMainDomain', fallbackMainDomain);
     await prefs.setString('enteredDomain', fallbackDomain);
-    
+
     debugPrint('ApiService: Set fallback domain: $fallbackDomain-back.$fallbackMainDomain');
   } else {
     throw Exception('Нет данных для восстановления подключения');
@@ -280,7 +291,7 @@ Future<String> getDynamicBaseUrl() async {
     String? mainDomain = domains['enteredMainDomain'];
     String? domain = domains['enteredDomain'];
 
-    if (domain != null && domain.isNotEmpty && domain != 'null' && 
+    if (domain != null && domain.isNotEmpty && domain != 'null' &&
         mainDomain != null && mainDomain.isNotEmpty && mainDomain != 'null') {
       return 'https://$domain-back.$mainDomain/api';
     } else {
@@ -318,13 +329,13 @@ Future<String> getDynamicBaseUrl() async {
       await _forceLogoutAndRedirect();
       throw Exception('Неавторизованный доступ!');
     }
-    
+
     // Дополнительная проверка на другие критические ошибки
     if (response.statusCode >= 500) {
       print('ApiService: Server error ${response.statusCode}');
       // Можно добавить дополнительную логику для серверных ошибок
     }
-    
+
     return response;
   }
 
@@ -681,14 +692,14 @@ Future<http.Response> _patchRequest(
       Map<String, String?> qrData = await getQrData();
       String? qrDomain = qrData['domain'];
       String? qrMainDomain = qrData['mainDomain'];
-      
-      if (qrDomain == null || qrDomain.isEmpty || 
+
+      if (qrDomain == null || qrDomain.isEmpty ||
           qrMainDomain == null || qrMainDomain.isEmpty) {
         // Пробуем старую логику
         Map<String, String?> domains = await getEnteredDomain();
         String? enteredDomain = domains['enteredDomain'];
         String? enteredMainDomain = domains['enteredMainDomain'];
-        
+
         if (enteredDomain == null || enteredDomain.isEmpty ||
             enteredMainDomain == null || enteredMainDomain.isEmpty) {
           print('ApiService: No valid domain found');
@@ -715,15 +726,15 @@ Future<http.Response> _patchRequest(
   Future<void> _forceLogoutAndRedirect() async {
     try {
       print('ApiService: Force logout and redirect to auth');
-      
+
       // Полная очистка данных
       await logout();
       await reset();
-      
+
       // Очищаем дополнительные данные
       SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.clear();
-      
+
       // Перенаправляем на экран авторизации
       final context = navigatorKey.currentContext;
       if (context != null) {
@@ -984,10 +995,10 @@ Future<http.Response> _patchRequest(
  Future<LoginResponse> login(LoginModel loginModel) async {
   print('ApiService: Starting login process');
   print('ApiService: Login model: ${json.encode(loginModel.toJson())}');
-  
+
   final organizationId = await getSelectedOrganization();
   print('ApiService: Using organization_id: $organizationId');
-  
+
   // Проверяем baseUrl перед запросом
   if (baseUrl == null) {
     print('ApiService: baseUrl is null, trying to initialize');
@@ -997,7 +1008,7 @@ Future<http.Response> _patchRequest(
     }
   }
   print('ApiService: Current baseUrl: $baseUrl');
-  
+
   final response = await _postRequest(
     '/login${organizationId != null ? '?organization_id=$organizationId' : ''}',
     loginModel.toJson(),
@@ -1076,7 +1087,7 @@ Future<http.Response> _patchRequest(
     if (kDebugMode) {
       print('ApiService: login - Error: Status ${response.statusCode}, Body: ${response.body}');
     }
-    
+
     // Извлекаем сообщение об ошибке из ответа сервера
     String errorMessage = 'Неправильный Логин или Пароль!';
     try {
@@ -1087,7 +1098,7 @@ Future<http.Response> _patchRequest(
     } catch (e) {
       print('ApiService: login - Error parsing error response: $e');
     }
-    
+
     throw Exception('$errorMessage Status: ${response.statusCode}');
   }
 }
@@ -2291,27 +2302,27 @@ Future<LeadsDataResponse> getAllLeadWithAllPages() async {
   List<LeadData> allLeads = [];
   int currentPage = 1;
   bool hasMorePages = true;
-  
+
   while (hasMorePages) {
     try {
       // Добавляем параметр page к запросу
       final path = await _appendQueryParams('/lead?page=$currentPage');
-      
+
       if (kDebugMode) {
         print('ApiService: getAllLeadWithAllPages - Loading page $currentPage, path: $path');
       }
-      
+
       final response = await _getRequest(path);
-      
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        
+
         if (data['result'] != null) {
           final pageResponse = LeadsDataResponse.fromJson(data);
-          
+
           if (pageResponse.result != null && pageResponse.result!.isNotEmpty) {
             allLeads.addAll(pageResponse.result!);
-            
+
             // Проверяем, есть ли еще страницы
             // Предполагаем, что если количество элементов меньше размера страницы, то это последняя страница
             if (pageResponse.result!.length < 20) {
@@ -2319,7 +2330,7 @@ Future<LeadsDataResponse> getAllLeadWithAllPages() async {
             } else {
               currentPage++;
             }
-            
+
             if (kDebugMode) {
               print('ApiService: Loaded page $currentPage, items: ${pageResponse.result!.length}, total collected: ${allLeads.length}');
             }
@@ -2332,12 +2343,12 @@ Future<LeadsDataResponse> getAllLeadWithAllPages() async {
       } else {
         throw Exception('Ошибка при получении данных со страницы $currentPage!');
       }
-      
+
       // Небольшая задержка между запросами, чтобы не перегружать сервер
       if (hasMorePages) {
         await Future.delayed(const Duration(milliseconds: 100));
       }
-      
+
     } catch (e) {
       if (kDebugMode) {
         print('ApiService: Error loading page $currentPage: $e');
@@ -2350,11 +2361,11 @@ Future<LeadsDataResponse> getAllLeadWithAllPages() async {
       hasMorePages = false;
     }
   }
-  
+
   if (kDebugMode) {
     print('ApiService: Total leads loaded: ${allLeads.length}');
   }
-  
+
   return LeadsDataResponse(
     result: allLeads,
     errors: null,
@@ -5428,7 +5439,7 @@ Future<String> getDynamicBaseUrlFixed() async {
   // Сначала проверяем кешированное значение
   SharedPreferences prefs = await SharedPreferences.getInstance();
   String? cachedBaseUrl = prefs.getString('cached_base_url');
-  
+
   if (cachedBaseUrl != null && cachedBaseUrl.isNotEmpty && cachedBaseUrl != 'null') {
     if (kDebugMode) {
       print('ApiService: Using cached baseUrl: $cachedBaseUrl');
@@ -5512,7 +5523,7 @@ Future<List<Message>> getMessages(
 }) async {
   try {
     final token = await getToken();
-    
+
     // Проверяем инициализацию baseUrl
     if (baseUrl == null || baseUrl!.isEmpty || baseUrl == 'null') {
       await initialize();
@@ -5520,10 +5531,10 @@ Future<List<Message>> getMessages(
         throw Exception('Base URL не может быть инициализирован');
       }
     }
-    
+
     String path = '/v2/chat/getMessages/$chatId';
     path = await _appendQueryParams(path);
-    
+
     if (search != null && search.isNotEmpty) {
       path += '&search=${Uri.encodeComponent(search)}';
     }
@@ -6403,11 +6414,11 @@ Future<List<Message>> getMessages(
  Future<ChatsGetId> getChatByIdWithIntegration(int chatId) async {
   try {
     final token = await getToken();
-    
+
     if (baseUrl == null || baseUrl!.isEmpty || baseUrl == 'null') {
       await initialize();
     }
-    
+
     String path = '/v2/chat/$chatId';
     path = await _appendQueryParams(path);
 
@@ -6522,15 +6533,15 @@ Future<String?> getSelectedOrganization() async {
   try {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? organizationId = prefs.getString('selectedOrganization');
-    
+
     debugPrint('ApiService: getSelectedOrganization - orgId: $organizationId');
-    
+
     // Возвращаем null если организация не найдена или содержит 'null'
     if (organizationId == null || organizationId.isEmpty || organizationId == 'null') {
       debugPrint('ApiService: No valid organization found, using fallback');
       return '1'; // Дефолтная организация
     }
-    
+
     return organizationId;
   } catch (e) {
     debugPrint('getSelectedOrganization error: $e');
@@ -6729,21 +6740,21 @@ Future<String> _appendQueryParams(String path) async {
   try {
     final organizationId = await getSelectedOrganization();
     final salesFunnelId = await getSelectedSalesFunnel();
-    
+
     // Проверяем, есть ли уже параметры в path
     bool hasParams = path.contains('?');
     String separator = hasParams ? '&' : '?';
     String result = path;
-    
+
     if (organizationId != null && organizationId.isNotEmpty && organizationId != 'null') {
       result += '${separator}organization_id=$organizationId';
       separator = '&';
     }
-    
+
     if (salesFunnelId != null && salesFunnelId.isNotEmpty && salesFunnelId != 'null') {
       result += '${separator}sales_funnel_id=$salesFunnelId';
     }
-    
+
     return result;
   } catch (e) {
     debugPrint('_appendQueryParams error: $e');
@@ -13107,28 +13118,49 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
   }
 
   //deleteClientReturnDocument
-  Future<void> deleteClientReturnDocument(int documentId) async {
+  Future<Map<String, dynamic>> deleteClientReturnDocument(int documentId) async {
     try {
       final token = await getToken();
       if (token == null) throw 'Токен не найден';
-      final body = {
-        'ids': [documentId]
-      };
 
-      final path = await _appendQueryParams('/client-return-documents');
-      print('Удаление документа по пути: $path');
-      final response = await _deleteRequestWithBody(path, body);
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return;
+      // Используем _appendQueryParams для получения параметров, но извлекаем их для тела запроса
+      final pathWithParams = await _appendQueryParams('/client-return-documents');
+      final uri = Uri.parse('$baseUrl$pathWithParams');
+
+      // Извлекаем organization_id и sales_funnel_id из query параметров
+      final organizationId = uri.queryParameters['organization_id'];
+      final salesFunnelId = uri.queryParameters['sales_funnel_id'];
+
+      final body = jsonEncode({
+        'ids': [documentId],
+        'organization_id': organizationId ?? '1',
+        'sales_funnel_id': salesFunnelId ?? '1',
+      });
+
+      if (kDebugMode) {
+        print('ApiService: deleteClientReturnDocument - Request body: $body');
+        print('ApiService: deleteClientReturnDocument - Request params: $pathWithParams');
+      }
+
+      final response = await http.delete(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Device': 'mobile',
+        },
+        body: body,
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return {'result': 'Success'};
       } else {
         final message = _extractErrorMessageFromResponse(response);
-        throw ApiException(
-          message ?? 'Ошибка при удалении документа возврата!',
-          response.statusCode,
-        );
+        throw ApiException(message ?? 'Ошибка при удалении документа возврата от клиента', response.statusCode);
       }
     } catch (e) {
-      rethrow; // Exception('Ошибка удаления документа: $e');
+      rethrow;
     }
   }
 
@@ -13250,6 +13282,93 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         final message = _extractErrorMessageFromResponse(response);
         throw ApiException(
           message ?? 'Ошибка при отмене проведения документа',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+  Future<void> massApproveClientReturnDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/client-return-documents/approve');
+
+    try {
+      final response = await _postRequest(path, {
+        'ids': ids,
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при массовом проведении документов возврата от клиента!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> massDisapproveClientReturnDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/client-return-documents/unApprove');
+
+    try {
+      final response = await _postRequest(path, {
+        'ids': ids,
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при массовом снятии проведения документов возврата от клиента!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> massDeleteClientReturnDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/client-return-documents/');
+
+    try {
+      final response = await _deleteRequestWithBody(path, {
+        'ids': ids,
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при массовом удалении документов возврата от клиента!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> massRestoreClientReturnDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/client-return-documents/restore');
+
+    try {
+      final response = await _postRequest(path, {
+        'ids': ids,
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при массовом восстановлении документов возврата от клиента!',
           response.statusCode,
         );
       }
@@ -14179,4 +14298,448 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       rethrow;
     }
   }
+
+  /// Получение списка должников
+  Future<DebtorsResponse> getDebtorsList({
+    String? from,
+    String? to,
+    int? cashRegisterId,
+    int? supplierId,
+    int? clientId,
+    int? leadId,
+    String? operationType,
+    String? search,
+  }) async {
+    try {
+      // Формируем параметры запроса
+      Map<String, String> queryParams = {};
+
+      if (from != null) queryParams['from'] = from;
+      if (to != null) queryParams['to'] = to;
+      if (cashRegisterId != null) queryParams['cash_register_id'] = cashRegisterId.toString();
+      if (supplierId != null) queryParams['supplier_id'] = supplierId.toString();
+      if (clientId != null) queryParams['client_id'] = clientId.toString();
+      if (leadId != null) queryParams['lead_id'] = leadId.toString();
+      if (operationType != null) queryParams['operation_type'] = operationType;
+      if (search != null) queryParams['search'] = search;
+
+      var path = await _appendQueryParams('/fin/dashboard/debtors-list');
+
+      if (queryParams.isNotEmpty) {
+        path += '?${Uri.encodeQueryComponent(queryParams.entries.map((e) => '${e.key}=${e.value}').join('&'))}';
+      }
+
+      if (kDebugMode) {
+        print('ApiService: getDebtorsList - Generated path: $path');
+      }
+
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return DebtorsResponse.fromJson(data);
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при получении списка должников!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  /// Получение списка кредиторов
+  Future<CreditorsResponse> getCreditorsList({
+    String? from,
+    String? to,
+    int? cashRegisterId,
+    int? supplierId,
+    int? clientId,
+    int? leadId,
+    String? operationType,
+    String? search,
+  }) async {
+    try {
+      // Формируем параметры запроса
+      Map<String, String> queryParams = {};
+
+      if (from != null) queryParams['from'] = from;
+      if (to != null) queryParams['to'] = to;
+      if (cashRegisterId != null) queryParams['cash_register_id'] = cashRegisterId.toString();
+      if (supplierId != null) queryParams['supplier_id'] = supplierId.toString();
+      if (clientId != null) queryParams['client_id'] = clientId.toString();
+      if (leadId != null) queryParams['lead_id'] = leadId.toString();
+      if (operationType != null) queryParams['operation_type'] = operationType;
+      if (search != null) queryParams['search'] = search;
+
+      var path = await _appendQueryParams('/fin/dashboard/creditors-list');
+
+       if (queryParams.isNotEmpty) {
+        path += '?${Uri.encodeQueryComponent(queryParams.entries.map((e) => '${e.key}=${e.value}').join('&'))}';
+      }
+      if (kDebugMode) {
+        print('ApiService: getCreditorsList - Generated path: $path');
+      }
+
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return CreditorsResponse.fromJson(data);
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при получении списка кредиторов!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  /// Получение данных о неликвидных товарах
+  Future<IlliquidGoodsResponse> getIlliquidGoods({
+    String? from,
+    String? to,
+  }) async {
+    try {
+      // Формируем параметры запроса
+      Map<String, String> queryParams = {};
+
+      if (from != null) queryParams['from'] = from;
+      if (to != null) queryParams['to'] = to;
+
+      var path = await _appendQueryParams('/dashboard/illiquid-goods');
+
+      if (queryParams.isNotEmpty) {
+        path += '?${Uri.encodeQueryComponent(queryParams.entries.map((e) => '${e.key}=${e.value}').join('&'))}';
+      }
+
+      if (kDebugMode) {
+        print('ApiService: getIlliquidGoods - Generated path: $path');
+      }
+
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return IlliquidGoodsResponse.fromJson(data);
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при получении данных о неликвидных товарах!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  /// Получение баланса денежных средств
+  Future<CashBalanceResponse> getCashBalance({
+    String? from,
+    String? to,
+    int? page,
+    int? perPage,
+  }) async {
+    try {
+      // Формируем параметры запроса
+      Map<String, String> queryParams = {};
+
+      if (from != null) queryParams['from'] = from;
+      if (to != null) queryParams['to'] = to;
+      if (page != null) queryParams['page'] = page.toString();
+      if (perPage != null) queryParams['per_page'] = perPage.toString();
+
+      var path = await _appendQueryParams('/fin/dashboard/cash-balance');
+
+      if (queryParams.isNotEmpty) {
+        path += '?${Uri.encodeQueryComponent(queryParams.entries.map((e) => '${e.key}=${e.value}').join('&'))}';
+      }
+
+
+      if (kDebugMode) {
+        print('ApiService: getCashBalance - Generated path: $path');
+      }
+
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return CashBalanceResponse.fromJson(data);
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при получении баланса денежных средств!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  /// Получение баланса денежных средств
+  Future<DashboardTopPart> getSalesDashboardTopPart() async {
+      // Формируем параметры запроса
+      var path = await _appendQueryParams('/fin/dashboard');
+
+      debugPrint("ApiService: getSalesDashboardTopPart path: $path");
+
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return DashboardTopPart.fromJson(data);
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка',
+          response.statusCode,
+        );
+      }
+  }
+
+
+// API request function
+  Future<List<AllExpensesData>> getExpenseStructure() async {
+    // Define all periods to fetch
+    final periods = [ExpensePeriodEnum.today, ExpensePeriodEnum.week, ExpensePeriodEnum.month, ExpensePeriodEnum.quarter, ExpensePeriodEnum.year];
+
+    // List to store results
+    final List<AllExpensesData> allExpensesData = [];
+
+    // Iterate through each period
+    for (final period in periods) {
+      // Form the query path for the current period
+      final path = await _appendQueryParams('/fin/dashboard/expense-structure?period=${period.name}');
+      debugPrint("ApiService: getExpenseStructure path: $path");
+
+      try {
+        // Make the API request
+        final response = await _getRequest(path);
+
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          final expenseDashboard = ExpenseDashboard.fromJson(data);
+          // Create AllExpensesData for this period
+          allExpensesData.add(AllExpensesData(
+            period: period,
+            data: expenseDashboard,
+          ));
+        } else {
+          final message = _extractErrorMessageFromResponse(response);
+          throw ApiException(
+            message ?? 'Ошибка для периода $period',
+            response.statusCode,
+          );
+        }
+      } catch (e) {
+        // Log errors for individual periods
+        debugPrint("Error fetching data for period $period: $e");
+        rethrow; // Rethrow to allow caller to handle
+      }
+    }
+
+    return allExpensesData;
+  }
+
+  Future<SalesResponse> getSalesDynamics() async {
+    // Формируем параметры запроса
+    var path = await _appendQueryParams('/dashboard/sales-dynamics');
+
+    debugPrint("ApiService: getSalesDynamics path: $path");
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return SalesResponse.fromJson(data);
+    } else {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка',
+        response.statusCode,
+      );
+    }
+  }
+
+// API request function
+  Future<List<AllNetProfitData>> getNetProfitData() async {
+    // Define all periods to fetch
+    final periods = [NetProfitPeriod.last_year, NetProfitPeriod.year];
+
+    // List to store results
+    final List<AllNetProfitData> allNetProfitData = [];
+
+    // Iterate through each period
+    for (final period in periods) {
+      // Form the query path for the current period
+      final path = await _appendQueryParams('/dashboard/net-profit?period=${period.name}');
+      debugPrint("ApiService: getNetProfitDashboard path: $path");
+
+      try {
+        final response = await _getRequest(path);
+
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          final netProfitDashboard = NetProfitDashboard.fromJson(data);
+          allNetProfitData.add(AllNetProfitData(
+            period: period,
+            data: netProfitDashboard,
+          ));
+        } else {
+          final message = _extractErrorMessageFromResponse(response);
+          throw ApiException(
+            message ?? 'Ошибка для периода $period',
+            response.statusCode,
+          );
+        }
+      } catch (e) {
+        debugPrint("Error fetching data for period $period: $e");
+        rethrow;
+      }
+    }
+
+    return allNetProfitData;
+  }
+
+  Future<List<AllOrdersData>> getOrderDashboard() async {
+    // Define all periods to fetch
+    final periods = [OrderTimePeriod.week, OrderTimePeriod.month, OrderTimePeriod.year];
+
+    // List to store results
+    final List<AllOrdersData> allOrdersData = [];
+
+    // Iterate through each period
+    for (final period in periods) {
+      // Form the query path for the current period
+      final path = await _appendQueryParams('/order/dashboard?period=${period.name}');
+      debugPrint("ApiService: getOrderDashboard path: $path");
+
+      try {
+        // Make the API request
+        final response = await _getRequest(path);
+
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          final orderDashboardResponse = OrderDashboardResponse.fromJson(data);
+          // Create AllOrdersData for this period
+          allOrdersData.add(AllOrdersData(
+            period: period,
+            data: orderDashboardResponse.result,
+          ));
+        } else {
+          final message = _extractErrorMessageFromResponse(response);
+          throw ApiException(
+            message ?? 'Ошибка для периода $period',
+            response.statusCode,
+          );
+        }
+      } catch (e) {
+        // Optionally handle or log errors for individual periods
+        debugPrint("Error fetching data for period $period: $e");
+        // You can choose to continue with other periods or rethrow
+        rethrow; // Or handle differently based on your requirements
+      }
+    }
+
+    return allOrdersData;
+  }
+
+
+// API request function
+  Future<List<AllProfitabilityData>> getProfitability() async {
+    // Define all periods to fetch
+    final periods = [ProfitabilityTimePeriod.last_year, ProfitabilityTimePeriod.year];
+
+    // List to store results
+    final List<AllProfitabilityData> allProfitabilityData = [];
+
+    // Iterate through each period
+    for (final period in periods) {
+      // Form the query path for the current period
+      final path = await _appendQueryParams('/dashboard/profitability?period=${period.name}');
+      debugPrint("ApiService: getProfitability path: $path");
+
+      try {
+        // Make the API request
+        final response = await _getRequest(path);
+
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          final profitabilityResponse = ProfitabilityDashboard.fromJson(data);
+          // Create AllProfitabilityData for this period
+          allProfitabilityData.add(AllProfitabilityData(
+            period: period,
+            data: profitabilityResponse,
+          ));
+        } else {
+          final message = _extractErrorMessageFromResponse(response);
+          throw ApiException(
+            message ?? 'Ошибка для периода $period',
+            response.statusCode,
+          );
+        }
+      } catch (e) {
+        // Log errors for individual periods
+        debugPrint("Error fetching data for period $period: $e");
+        rethrow; // Rethrow to allow caller to handle
+      }
+    }
+
+    return allProfitabilityData;
+  }
+
+  Future<List<AllTopSellingData>> getTopSellingGoodsDashboard({int perPage = 7}) async {
+    // Define all periods to fetch
+    final periods = [
+      TopSellingTimePeriod.week,
+      TopSellingTimePeriod.month,
+      TopSellingTimePeriod.year,
+    ];
+
+    // List to store results
+    final List<AllTopSellingData> allTopSellingData = [];
+
+    // Iterate through each period
+    for (final period in periods) {
+      final query = ['per_page=$perPage', 'period=${period.name}'].join('&');
+
+      final path = await _appendQueryParams('/dashboard/top-selling-goods?$query');
+      debugPrint("ApiService: getTopSellingGoodsDashboard path: $path");
+
+      try {
+        final response = await _getRequest(path);
+
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          final topSellingResponse = TopSellingGoodsResponse.fromJson(data);
+
+          // Create AllTopSellingData for this period
+          allTopSellingData.add(AllTopSellingData(
+            period: period,
+            data: topSellingResponse.result,
+          ));
+        } else {
+          final message = _extractErrorMessageFromResponse(response);
+          throw ApiException(
+            message ?? 'Ошибка для периода $period',
+            response.statusCode,
+          );
+        }
+      } catch (e) {
+        // Log errors for individual periods
+        debugPrint("Error fetching data for period $period: $e");
+         throw e;
+      }
+    }
+
+    return allTopSellingData;
+  }
+
 }

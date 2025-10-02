@@ -63,6 +63,7 @@ class DownloadPopupMenu extends StatelessWidget {
     return PopupMenuButton<DownloadFormat>(
       enabled: enabled,
       tooltip: tooltip,
+      padding: EdgeInsets.zero, // Remove default padding
       icon: icon ??
           Icon(
             Icons.more_vert,
@@ -78,23 +79,23 @@ class DownloadPopupMenu extends StatelessWidget {
       itemBuilder: (BuildContext context) => formats
           .map(
             (format) => PopupMenuItem<DownloadFormat>(
-              value: format,
-              child: Row(
-                children: [
-                  Icon(
-                    format.icon,
-                    size: 18,
-                    color: Colors.grey[600],
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    format.label,
-                    style: textStyle ?? _defaultTextStyle,
-                  ),
-                ],
+          value: format,
+          child: Row(
+            children: [
+              Icon(
+                format.icon,
+                size: 18,
+                color: Colors.grey[600],
               ),
-            ),
-          )
+              const SizedBox(width: 12),
+              Text(
+                format.label,
+                style: textStyle ?? _defaultTextStyle,
+              ),
+            ],
+          ),
+        ),
+      )
           .toList(),
       onSelected: onDownload,
     );
@@ -147,5 +148,4 @@ class DownloadHandler {
     await Future.delayed(const Duration(seconds: 1)); // Simulate download
     print('Downloading CSV: $filename');
   }
-
 }

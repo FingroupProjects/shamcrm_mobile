@@ -89,9 +89,10 @@ class ClientReturnDeleteDocumentDialog extends StatelessWidget {
                   buttonText:
                       AppLocalizations.of(context)!.translate('delete') ?? 'Удалить',
                   onPressed: () {
+                    final localizations = AppLocalizations.of(context)!;
                     context
                         .read<ClientReturnBloc>()
-                        .add(DeleteClientReturnDocument(documentId));
+                        .add(DeleteClientReturnDocument(documentId, shouldReload: true));
                     Navigator.of(context).pop();
                     Navigator.pop(context, true);
                   },
