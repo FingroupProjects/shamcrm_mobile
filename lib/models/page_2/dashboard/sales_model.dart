@@ -71,12 +71,20 @@ class MonthData {
   });
 
   factory MonthData.fromJson(Map<String, dynamic> json) {
+    String totalAmount = "0.00";
+
+    if (json['total_amount'] is String) {
+      totalAmount = json['total_amount'];
+    } else if (json['total_amount'] is num) {
+      totalAmount = (json['total_amount'] as num).toString();
+    }
+
     return MonthData(
       month: json['month'],
       monthName: json['month_name'],
       salesCount: json['sales_count'],
       totalQuantity: json['total_quantity'],
-      totalAmount: json['total_amount'],
+      totalAmount: totalAmount,
     );
   }
 
@@ -104,10 +112,18 @@ class Summary {
   });
 
   factory Summary.fromJson(Map<String, dynamic> json) {
+    String totalAmount = "0.00";
+
+    if (json['total_amount'] is String) {
+      totalAmount = json['total_amount'];
+    } else if (json['total_amount'] is num) {
+      totalAmount = (json['total_amount'] as num).toString();
+    }
+
     return Summary(
       totalSalesCount: json['total_sales_count'],
       totalQuantity: json['total_quantity'],
-      totalAmount: json['total_amount'],
+      totalAmount: totalAmount,
     );
   }
 
