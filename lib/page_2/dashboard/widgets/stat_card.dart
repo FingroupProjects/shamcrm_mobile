@@ -138,7 +138,7 @@ class StatCard extends StatelessWidget {
                               Icon(
                                 isUp ? Icons.arrow_upward : Icons.arrow_downward,
                                 size: 14,
-                                color: accentColor,
+                                color: isUp ? Colors.green : Colors.red,
                               ),
                               const SizedBox(width: 4),
                               Expanded(
@@ -148,7 +148,7 @@ class StatCard extends StatelessWidget {
                                     fontFamily: 'Gilroy',
                                     fontSize: 11,
                                     fontWeight: FontWeight.w500,
-                                    color: accentColor,
+                                    color: isUp ? Colors.green : Colors.red,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,

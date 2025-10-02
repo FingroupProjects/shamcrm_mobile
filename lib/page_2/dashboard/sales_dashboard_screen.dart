@@ -8,6 +8,7 @@ import 'package:crm_task_manager/page_2/dashboard/widgets/charts/expense_structu
 import 'package:crm_task_manager/page_2/dashboard/widgets/charts/net_profit_chart.dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/charts/order_quantity_chart.dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/charts/sales_dynamics_line_chart.dart';
+import 'package:crm_task_manager/page_2/dashboard/widgets/dialogs/dialog_products_info.dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/stat_card.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
@@ -19,6 +20,7 @@ import '../../bloc/page_2_BLOC/dashboard/goods/sales_dashboard_goods_bloc.dart';
 import '../../custom_widget/animation.dart';
 import '../../custom_widget/custom_app_bar_page_2.dart';
 import '../../models/page_2/dashboard/dashboard_top.dart';
+import '../../models/page_2/dashboard/illiquids_model.dart';
 import '../../models/page_2/dashboard/sales_model.dart';
 import '../../models/page_2/dashboard/top_selling_model.dart';
 import '../../screens/profile/languages/app_localizations.dart';
@@ -109,10 +111,10 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
                         children: [
                           const SizedBox(height: 16),
                           TopPart(state: state),
-                          TopSellingProductsChart(topSellingData), // new
+                          TopSellingProductsChart(topSellingData), // done
                           SalesDynamicsLineChart(salesData), // done
                           NetProfitChart(netProfitData), // done
-                          ProfitabilityChart(profitabilityData: profitabilityData), // in progress
+                          ProfitabilityChart(profitabilityData: profitabilityData), // done
                           ExpenseStructureChart(expenseStructureData), // done
                           OrderQuantityChart(orderDashboardData: orderDashboardData), // done
                           const SizedBox(height: 16),
@@ -143,7 +145,8 @@ class TopPart extends StatelessWidget {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
-    final DashboardTopPart? salesDashboardTopPart = state is SalesDashboardLoaded ? (state as SalesDashboardLoaded).salesDashboardTopPart : null;
+    final DashboardTopPart? salesDashboardTopPart = (state as SalesDashboardLoaded).salesDashboardTopPart;
+    final IlliquidGoodsResponse illiquidGoodsData = (state as SalesDashboardLoaded).illiquidGoodsData;
 
     return Column(
       children: [
@@ -151,22 +154,20 @@ class TopPart extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Row(
             children: [
-              Expanded(child: Container()),
-              // Expanded(
-              //   child: StatCard(
-              //     onTap: () {
-              //       showSimpleInfoDialog(context);
-              //     },
-              //
-              //     accentColor: Colors.orange,
-              //     title: localizations.translate('illiquid_goods') ?? 'ТОВАРЫ/НЕЛИКВИДНЫМИ ТОВАРЫ',
-              //     leading: const Icon(Icons.inventory_2, color: Colors.orange),
-              //     amount: expenseDashboard?.totalExpenses ?? 0,
-              //     showCurrencySymbol: false,
-              //     isUp: expenseDashboard?.expensesChangePositive ?? true,
-              //     trendText: expenseDashboard?.expensesChange.toString() ?? '0.0%',
-              //   ),
-              // ),
+              Expanded(
+                child: StatCard(
+                  onTap: () {
+                    showSimpleInfoDialog(context);
+                  },
+                  accentColor: Colors.orange,
+                  title: localizations.translate('illiquid_goods') ?? 'ТОВАРЫ/НЕЛИКВИДНЫМИ ТОВАРЫ',
+                  leading: const Icon(Icons.inventory_2, color: Colors.orange),
+                  amountText: "${illiquidGoodsData.result?.liquidChange ?? 0}/${illiquidGoodsData.result?.nonLiquidGoods ?? 0}",
+                  showCurrencySymbol: false,
+                  isUp: illiquidGoodsData.result?.liquidChangeFormatted.startsWith("+") ?? true,
+                  trendText: "${illiquidGoodsData.result?.liquidChangeFormatted ?? '0.0%'}/${illiquidGoodsData.result?.nonLiquidChangeFormatted ?? '0.0%'}",
+                ),
+              ),
               const SizedBox(width: 16),
               Expanded(
                 child: StatCard(
@@ -196,7 +197,7 @@ class TopPart extends StatelessWidget {
                   title: localizations.translate('our_debts') ?? 'НАШИ ДОЛГИ',
                   leading: const Icon(Icons.trending_down, color: Colors.red),
                   amount: salesDashboardTopPart?.result?.ourDebts?.currentDebts ?? 0,
-                  showCurrencySymbol: true,
+                  showCurrencySymbol: false,
                   currencySymbol: '₽',
                   isUp: salesDashboardTopPart?.result?.ourDebts?.isPositiveChange ?? false,
                   trendText: salesDashboardTopPart?.result?.ourDebts?.percentageChange.toString() ?? '',
@@ -210,7 +211,6 @@ class TopPart extends StatelessWidget {
                   title: localizations.translate('owed_to_us') ?? 'НАМ ДОЛЖНЫ',
                   leading: const Icon(Icons.trending_up, color: Colors.green),
                   amount: salesDashboardTopPart?.result?.debtsToUs?.totalDebtsToUs ?? 0,
-                  // amountText: salesDashboardTopPart?.result?.debtsToUs?.totalDebtsToUs.toString() ?? '',
                   showCurrencySymbol: false,
                   isUp: salesDashboardTopPart?.result?.debtsToUs?.isPositiveChange ?? false,
                   trendText: '${salesDashboardTopPart?.result?.debtsToUs?.percentageChange ?? 'n/a'}',

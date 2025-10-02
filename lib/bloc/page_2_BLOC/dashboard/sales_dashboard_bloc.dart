@@ -6,6 +6,7 @@ import 'package:equatable/equatable.dart';
 import '../../../api/service/api_service.dart';
 import '../../../models/page_2/dashboard/dashboard_top.dart';
 import '../../../models/page_2/dashboard/expense_structure.dart';
+import '../../../models/page_2/dashboard/illiquids_model.dart';
 import '../../../models/page_2/dashboard/profitability_dashboard_model.dart';
 import '../../../models/page_2/dashboard/sales_model.dart';
 import '../../../models/page_2/dashboard/top_selling_model.dart';
@@ -23,13 +24,13 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
 
       final results = await Future.wait([
         apiService.getSalesDashboardTopPart(),
-
         apiService.getSalesDynamics(),
         apiService.getNetProfitData(),
         apiService.getOrderDashboard(),
         apiService.getExpenseStructure(),
         apiService.getProfitability(),
         apiService.getTopSellingGoodsDashboard(),
+        apiService.getIlliquidGoods(),
       ]);
 
       final salesDashboardTopResponse = results[0] as DashboardTopPart;
@@ -39,6 +40,7 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
       final expenseStructureData = results[4] as List<AllExpensesData>;
       final profitabilityData = results[5] as List<AllProfitabilityData>;
       final topSellingData = results[6] as List<AllTopSellingData>;
+      final illiquidGoodsData = results[7] as IlliquidGoodsResponse;
 
       emit(SalesDashboardLoaded(
         salesDashboardTopPart: salesDashboardTopResponse,
@@ -48,6 +50,7 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
         expenseStructureData: expenseStructureData,
         profitabilityData: profitabilityData,
         topSellingData: topSellingData,
+        illiquidGoodsData: illiquidGoodsData,
       ));
     });
 
