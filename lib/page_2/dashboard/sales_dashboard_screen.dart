@@ -1,11 +1,10 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/sales_dashboard_bloc.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/net_profit_model.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/order_dashboard_model.dart';
-import 'package:crm_task_manager/page_2/dashboard/widgets/dialogs/dialog_products_info.dart';
+import 'package:crm_task_manager/page_2/dashboard/widgets/charts/sales_margin_chart.dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/charts/expense_structure_chart.dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/charts/net_profit_chart.dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/charts/order_quantity_chart.dart';
-import 'package:crm_task_manager/page_2/dashboard/widgets/charts/order_types_chart.dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/charts/sales_dynamics_line_chart.dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/stat_card.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
@@ -18,8 +17,6 @@ import '../../bloc/page_2_BLOC/dashboard/goods/sales_dashboard_goods_bloc.dart';
 import '../../custom_widget/animation.dart';
 import '../../custom_widget/custom_app_bar_page_2.dart';
 import '../../models/page_2/dashboard/dashboard_top.dart';
-import '../../models/page_2/dashboard/debtors_model.dart';
-import '../../models/page_2/dashboard/expense_structure.dart';
 import '../../models/page_2/dashboard/sales_model.dart';
 import '../../screens/profile/languages/app_localizations.dart';
 import '../../screens/profile/profile_screen.dart';
@@ -110,7 +107,7 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
                           SalesDynamicsLineChart(salesData),
                           NetProfitChart(netProfitData),
                           const ExpenseStructureChart(),
-                          SalesMarginChart(),
+                          ExpenseOrderChart(),
                           OrderQuantityChart(orderDashboardData: orderDashboardData),
                           const SizedBox(height: 16),
                         ],

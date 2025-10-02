@@ -16,14 +16,14 @@ class SalesData {
   SalesData({required this.period, required this.value, this.date});
 }
 
-class SalesMarginChart extends StatefulWidget {
-  const SalesMarginChart({super.key});
+class ExpenseOrderChart extends StatefulWidget {
+  const ExpenseOrderChart({super.key});
 
   @override
-  State<SalesMarginChart> createState() => _SalesMarginChartState();
+  State<ExpenseOrderChart> createState() => _ExpenseOrderChartState();
 }
 
-class _SalesMarginChartState extends State<SalesMarginChart> {
+class _ExpenseOrderChartState extends State<ExpenseOrderChart> {
   TimeRange selectedTimeRange = TimeRange.sixMonths;
   bool isLoading = false;
   bool isDownloading = false;
