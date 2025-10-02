@@ -14502,24 +14502,48 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       }
   }
 
-  Future<ExpenseDashboard> getExpenseStructure() async {
-    // Формируем параметры запроса
-    var path = await _appendQueryParams('/fin/dashboard/expense-structure');
 
-    debugPrint("ApiService: getExpenseStructure path: $path");
+// API request function
+  Future<List<AllExpensesData>> getExpenseStructure() async {
+    // Define all periods to fetch
+    final periods = [ExpensePeriodEnum.today, ExpensePeriodEnum.week, ExpensePeriodEnum.month, ExpensePeriodEnum.quarter, ExpensePeriodEnum.year];
 
-    final response = await _getRequest(path);
+    // List to store results
+    final List<AllExpensesData> allExpensesData = [];
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      return ExpenseDashboard.fromJson(data['result']);
-    } else {
-      final message = _extractErrorMessageFromResponse(response);
-      throw ApiException(
-        message ?? 'Ошибка',
-        response.statusCode,
-      );
+    // Iterate through each period
+    for (final period in periods) {
+      // Form the query path for the current period
+      final path = await _appendQueryParams('/fin/dashboard/expense-structure?period=${period.name}');
+      debugPrint("ApiService: getExpenseStructure path: $path");
+
+      try {
+        // Make the API request
+        final response = await _getRequest(path);
+
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          final expenseDashboard = ExpenseDashboard.fromJson(data);
+          // Create AllExpensesData for this period
+          allExpensesData.add(AllExpensesData(
+            period: period,
+            data: expenseDashboard,
+          ));
+        } else {
+          final message = _extractErrorMessageFromResponse(response);
+          throw ApiException(
+            message ?? 'Ошибка для периода $period',
+            response.statusCode,
+          );
+        }
+      } catch (e) {
+        // Log errors for individual periods
+        debugPrint("Error fetching data for period $period: $e");
+        rethrow; // Rethrow to allow caller to handle
+      }
     }
+
+    return allExpensesData;
   }
 
   Future<SalesResponse> getSalesDynamics() async {
@@ -14542,26 +14566,46 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     }
   }
 
-  Future<NetProfitResponse> getNetProfit() async {
-    // Формируем параметры запроса
-    var path = await _appendQueryParams('/dashboard/net-profit');
 
-    debugPrint("ApiService: getNetProfit path: $path");
+// API request function
+  Future<List<AllNetProfitData>> getNetProfitData() async {
+    // Define all periods to fetch
+    final periods = [NetProfitPeriod.last_year, NetProfitPeriod.year];
 
-    final response = await _getRequest(path);
+    // List to store results
+    final List<AllNetProfitData> allNetProfitData = [];
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      return NetProfitResponse.fromJson(data);
-    } else {
-      final message = _extractErrorMessageFromResponse(response);
-      throw ApiException(
-        message ?? 'Ошибка',
-        response.statusCode,
-      );
+    // Iterate through each period
+    for (final period in periods) {
+      // Form the query path for the current period
+      final path = await _appendQueryParams('/dashboard/net-profit?period=${period.name}');
+      debugPrint("ApiService: getNetProfitDashboard path: $path");
+
+      try {
+        final response = await _getRequest(path);
+
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          final netProfitDashboard = NetProfitDashboard.fromJson(data);
+          allNetProfitData.add(AllNetProfitData(
+            period: period,
+            data: netProfitDashboard,
+          ));
+        } else {
+          final message = _extractErrorMessageFromResponse(response);
+          throw ApiException(
+            message ?? 'Ошибка для периода $period',
+            response.statusCode,
+          );
+        }
+      } catch (e) {
+        debugPrint("Error fetching data for period $period: $e");
+        rethrow;
+      }
     }
-  }
 
+    return allNetProfitData;
+  }
   Future<List<AllOrdersData>> getOrderDashboard() async {
     // Define all periods to fetch
     final periods = [OrderTimePeriod.week, OrderTimePeriod.month, OrderTimePeriod.year];

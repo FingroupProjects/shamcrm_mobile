@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/sales_dashboard_bloc.dart';
+import 'package:crm_task_manager/models/page_2/dashboard/expense_structure.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/net_profit_model.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/order_dashboard_model.dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/charts/sales_margin_chart.dart';
@@ -94,8 +95,9 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
                   );
                 } else if (state is SalesDashboardLoaded) {
                   final SalesResponse? salesData = state.salesData;
-                  final NetProfitResponse netProfitData = state.netProfitData;
+                  final List<AllNetProfitData> netProfitData = state.netProfitData;
                   final List<AllOrdersData> orderDashboardData = state.orderDashboardData;
+                  final List<AllExpensesData> expenseStructureData = state.expenseStructureData;
 
                   return SafeArea(
                     child: SingleChildScrollView(
@@ -104,11 +106,11 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
                           const SizedBox(height: 16),
                           TopPart(state: state),
                           const TopSellingProductsChart(),
-                          SalesDynamicsLineChart(salesData),
+                          SalesDynamicsLineChart(salesData), // done
                           NetProfitChart(netProfitData),
                           const SalesMarginChart(),
-                          const ExpenseStructureChart(),
-                          OrderQuantityChart(orderDashboardData: orderDashboardData),
+                          ExpenseStructureChart(expenseStructureData), // done
+                          OrderQuantityChart(orderDashboardData: orderDashboardData), // done
                           const SizedBox(height: 16),
                         ],
                       ),
@@ -138,7 +140,6 @@ class TopPart extends StatelessWidget {
     final localizations = AppLocalizations.of(context)!;
 
     final DashboardTopPart? salesDashboardTopPart = state is SalesDashboardLoaded ? (state as SalesDashboardLoaded).salesDashboardTopPart : null;
-    // final ExpenseDashboard? expenseDashboard = state is SalesDashboardLoaded ? (state as SalesDashboardLoaded).expenseStructure : null;
 
     return Column(
       children: [

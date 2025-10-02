@@ -1,108 +1,78 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/models/page_2/dashboard/expense_structure.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
 import 'download_popup_menu.dart';
 
-enum TimePeriod { month, quarter, year }
-
-class ExpenseCategory {
-  final String name;
-  final double value;
-  final Color color;
-
-  ExpenseCategory({
-    required this.name,
-    required this.value,
-    required this.color,
-  });
-}
-
 class ExpenseStructureChart extends StatefulWidget {
-  const ExpenseStructureChart({Key? key}) : super(key: key);
+  const ExpenseStructureChart(this.expenseStructureData, {Key? key}) : super(key: key);
+
+  final List<AllExpensesData> expenseStructureData;
 
   @override
   State<ExpenseStructureChart> createState() => _ExpenseStructureChartState();
 }
 
 class _ExpenseStructureChartState extends State<ExpenseStructureChart> with SingleTickerProviderStateMixin {
-  TimePeriod selectedPeriod = TimePeriod.month;
-  bool isLoading = false;
+  ExpensePeriodEnum selectedPeriod = ExpensePeriodEnum.month;
   bool isDownloading = false;
   int touchedIndex = -1;
-  List<ExpenseCategory> expenseData = [];
+
+  // Generate colors based on index
+  final List<Color> pieColors = [
+    const Color(0xFF3935E7),
+    const Color(0xFF00E676),
+    const Color(0xFFFF9800),
+    const Color(0xFFF44336),
+    const Color(0xFF9C27B0),
+    const Color(0xFF2196F3),
+    const Color(0xFF00BCD4),
+    const Color(0xFFFFEB3B),
+    const Color(0xFF4CAF50),
+    const Color(0xFFE91E63),
+  ];
 
   @override
   void initState() {
     super.initState();
-    loadExpenseData();
   }
 
-  // Simulate data loading
-  Future<void> loadExpenseData() async {
-    setState(() {
-      isLoading = true;
-    });
-
-    // Simulate API call delay
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    setState(() {
-      expenseData = _getDataForPeriod(selectedPeriod);
-      isLoading = false;
-    });
-  }
-
-  List<ExpenseCategory> _getDataForPeriod(TimePeriod period) {
-    // Mock data for different time periods
-    switch (period) {
-      case TimePeriod.month:
-        return [
-          ExpenseCategory(name: 'Закупка товаров', value: 24.8, color: const Color(0xFF3935E7)),
-          ExpenseCategory(name: 'Аренда', value: 19.8, color: const Color(0xFF00E676)),
-          ExpenseCategory(name: 'Зарплаты', value: 14.9, color: const Color(0xFFFF9800)),
-          ExpenseCategory(name: 'Маркетинг', value: 14.6, color: const Color(0xFFF44336)),
-          ExpenseCategory(name: 'Логистика', value: 19.8, color: const Color(0xFF9C27B0)),
-          ExpenseCategory(name: 'Прочее', value: 6.1, color: const Color(0xFF2196F3)),
-        ];
-      case TimePeriod.quarter:
-        return [
-          ExpenseCategory(name: 'Закупка товаров', value: 28.5, color: const Color(0xFF3935E7)),
-          ExpenseCategory(name: 'Аренда', value: 22.3, color: const Color(0xFF00E676)),
-          ExpenseCategory(name: 'Зарплаты', value: 16.8, color: const Color(0xFFFF9800)),
-          ExpenseCategory(name: 'Маркетинг', value: 12.4, color: const Color(0xFFF44336)),
-          ExpenseCategory(name: 'Логистика', value: 15.2, color: const Color(0xFF9C27B0)),
-          ExpenseCategory(name: 'Прочее', value: 4.8, color: const Color(0xFF2196F3)),
-        ];
-      case TimePeriod.year:
-        return [
-          ExpenseCategory(name: 'Закупка товаров', value: 32.1, color: const Color(0xFF3935E7)),
-          ExpenseCategory(name: 'Аренда', value: 25.6, color: const Color(0xFF00E676)),
-          ExpenseCategory(name: 'Зарплаты', value: 18.9, color: const Color(0xFFFF9800)),
-          ExpenseCategory(name: 'Маркетинг', value: 10.2, color: const Color(0xFFF44336)),
-          ExpenseCategory(name: 'Логистика', value: 8.7, color: const Color(0xFF9C27B0)),
-          ExpenseCategory(name: 'Прочее', value: 4.5, color: const Color(0xFF2196F3)),
-        ];
+  AllExpensesData? _getCurrentPeriodData() {
+    try {
+      return widget.expenseStructureData.firstWhere(
+            (data) => data.period == selectedPeriod,
+      );
+    } catch (e) {
+      return null;
     }
   }
 
-  void onPeriodChanged(TimePeriod period) {
+  Color _getColorForIndex(int index) {
+    return pieColors[index % pieColors.length];
+  }
+
+  void onPeriodChanged(ExpensePeriodEnum period) {
     if (selectedPeriod != period) {
       setState(() {
         selectedPeriod = period;
+        touchedIndex = -1;
       });
-      loadExpenseData();
     }
   }
 
-  String getPeriodText(BuildContext context, TimePeriod period) {
+  String getPeriodText(BuildContext context, ExpensePeriodEnum period) {
     switch (period) {
-      case TimePeriod.month:
+      case ExpensePeriodEnum.today:
+        return 'Сегодня';
+      case ExpensePeriodEnum.week:
+        return 'Неделя';
+      case ExpensePeriodEnum.month:
         return 'Текущий месяц';
-      case TimePeriod.quarter:
+      case ExpensePeriodEnum.quarter:
         return 'Квартал';
-      case TimePeriod.year:
+      case ExpensePeriodEnum.year:
         return 'Год';
     }
   }
@@ -113,7 +83,6 @@ class _ExpenseStructureChartState extends State<ExpenseStructureChart> with Sing
     });
 
     try {
-      // Simulate download process
       await Future.delayed(const Duration(seconds: 2));
     } catch (e) {
       // Handle error silently
@@ -127,7 +96,7 @@ class _ExpenseStructureChartState extends State<ExpenseStructureChart> with Sing
   }
 
   Widget _buildPeriodDropdown() {
-    return CustomDropdown<TimePeriod>(
+    return CustomDropdown<ExpensePeriodEnum>(
       decoration: CustomDropdownDecoration(
         closedBorder: Border.all(color: Colors.grey[300]!),
         expandedBorder: Border.all(color: Colors.grey[300]!),
@@ -136,9 +105,9 @@ class _ExpenseStructureChartState extends State<ExpenseStructureChart> with Sing
         closedFillColor: Colors.white,
         expandedFillColor: Colors.white,
       ),
-      items: TimePeriod.values,
+      items: ExpensePeriodEnum.values,
       initialItem: selectedPeriod,
-      onChanged: (TimePeriod? value) {
+      onChanged: (ExpensePeriodEnum? value) {
         if (value != null) {
           onPeriodChanged(value);
         }
@@ -168,12 +137,12 @@ class _ExpenseStructureChartState extends State<ExpenseStructureChart> with Sing
     );
   }
 
-  Widget _buildChart(AppLocalizations localizations) {
-    if (expenseData.isEmpty) {
+  Widget _buildChart(AppLocalizations localizations, List<ExpenseItem> expenseStructure) {
+    if (expenseStructure.isEmpty) {
       return Center(
         child: Text(
           localizations.translate('no_data_to_display'),
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 16,
             fontFamily: "Gilroy",
             fontWeight: FontWeight.w500,
@@ -183,7 +152,7 @@ class _ExpenseStructureChartState extends State<ExpenseStructureChart> with Sing
       );
     }
 
-    bool allZeros = expenseData.every((category) => category.value == 0);
+    bool allZeros = expenseStructure.every((item) => item.percentage == 0);
 
     if (allZeros) {
       return Center(
@@ -197,7 +166,7 @@ class _ExpenseStructureChartState extends State<ExpenseStructureChart> with Sing
           child: Center(
             child: Text(
               localizations.translate('no_data'),
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 14,
                 fontFamily: "Gilroy",
                 fontWeight: FontWeight.w500,
@@ -228,22 +197,22 @@ class _ExpenseStructureChartState extends State<ExpenseStructureChart> with Sing
           ),
           sectionsSpace: 2,
           centerSpaceRadius: 50,
-          sections: _showingSections(),
+          sections: _showingSections(expenseStructure),
         ),
       ),
     );
   }
 
-  List<PieChartSectionData> _showingSections() {
-    return List.generate(expenseData.length, (i) {
+  List<PieChartSectionData> _showingSections(List<ExpenseItem> expenseStructure) {
+    return List.generate(expenseStructure.length, (i) {
       final isTouched = i == touchedIndex;
       final opacity = isTouched ? 0.8 : 1.0;
       final radius = isTouched ? 20.0 : 15.0;
 
       return PieChartSectionData(
-        color: expenseData[i].color.withOpacity(opacity),
-        value: expenseData[i].value,
-        title: isTouched ? '${expenseData[i].value.toStringAsFixed(1)}%' : '',
+        color: _getColorForIndex(i).withOpacity(opacity),
+        value: expenseStructure[i].percentage.toDouble(),
+        title: isTouched ? '${expenseStructure[i].percentage}%' : '',
         radius: radius,
         titleStyle: const TextStyle(
           fontSize: 12,
@@ -256,10 +225,13 @@ class _ExpenseStructureChartState extends State<ExpenseStructureChart> with Sing
     });
   }
 
-  Widget _buildLegend() {
+  Widget _buildLegend(List<ExpenseItem> expenseStructure) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: expenseData.map((category) {
+      children: expenseStructure.asMap().entries.map((entry) {
+        int index = entry.key;
+        ExpenseItem item = entry.value;
+
         return Padding(
           padding: const EdgeInsets.only(bottom: 8),
           child: Row(
@@ -269,18 +241,21 @@ class _ExpenseStructureChartState extends State<ExpenseStructureChart> with Sing
                 width: 12,
                 height: 12,
                 decoration: BoxDecoration(
-                  color: category.color,
+                  color: _getColorForIndex(index),
                   shape: BoxShape.circle,
                 ),
               ),
               const SizedBox(width: 8),
-              Text(
-                category.name,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontFamily: "Gilroy",
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF1A202C),
+              Flexible(
+                child: Text(
+                  item.articleName,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontFamily: "Gilroy",
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF1A202C),
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -293,6 +268,9 @@ class _ExpenseStructureChartState extends State<ExpenseStructureChart> with Sing
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final currentData = _getCurrentPeriodData();
+    final expenseStructure = currentData?.data.result.expenseStructure ?? [];
+
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
@@ -368,32 +346,37 @@ class _ExpenseStructureChartState extends State<ExpenseStructureChart> with Sing
           const SizedBox(height: 24),
 
           // Chart and Legend
-          if (isLoading)
-            const SizedBox(
-              height: 200,
-              child: Center(
-                child: CircularProgressIndicator(
-                  color: Color(0xFF3935E7),
+          expenseStructure.isEmpty
+              ? SizedBox(
+            height: 200,
+            child: Center(
+              child: Text(
+                localizations.translate('no_data_to_display'),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontFamily: "Gilroy",
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black54,
                 ),
               ),
-            )
-          else
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                // Chart
-                Expanded(
-                  flex: 1,
-                  child: _buildChart(localizations),
-                ),
-                const SizedBox(width: 24),
-                // Legend
-                Expanded(
-                  flex: 1,
-                  child: _buildLegend(),
-                ),
-              ],
             ),
+          )
+              : Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Chart
+              Expanded(
+                flex: 1,
+                child: _buildChart(localizations, expenseStructure),
+              ),
+              const SizedBox(width: 24),
+              // Legend
+              Expanded(
+                flex: 1,
+                child: _buildLegend(expenseStructure),
+              ),
+            ],
+          ),
 
           const SizedBox(height: 16),
 

@@ -10,38 +10,37 @@ import '../../../models/page_2/dashboard/expense_structure.dart';
 import '../../../models/page_2/dashboard/sales_model.dart';
 
 part 'sales_dashboard_event.dart';
+
 part 'sales_dashboard_state.dart';
 
 class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> {
-
   final apiService = ApiService();
 
   SalesDashboardBloc() : super(SalesDashboardInitial()) {
     on<LoadInitialData>((event, emit) async {
+      emit(SalesDashboardLoading());
 
-        emit(SalesDashboardLoading());
+      final results = await Future.wait([
+        apiService.getSalesDashboardTopPart(),
+        apiService.getSalesDynamics(),
+        apiService.getNetProfitData(),
+        apiService.getOrderDashboard(),
+        apiService.getExpenseStructure(),
+      ]);
 
-        final results = await Future.wait([
-          apiService.getSalesDashboardTopPart(),
-          // apiService.getExpenseStructure(),
-          apiService.getSalesDynamics(),
-          apiService.getNetProfit(),
-          apiService.getOrderDashboard(),
-        ]);
+      final salesDashboardTopResponse = results[0] as DashboardTopPart;
+      final salesData = results[1] as SalesResponse;
+      final netProfitData = results[2] as List<AllNetProfitData>;
+      final orderDashboardData = results[3] as List<AllOrdersData>;
+      final expenseStructureData = results[4] as List<AllExpensesData>;
 
-        final salesDashboardTopResponse = results[0] as DashboardTopPart;
-        // final expenseStructure = results[1] as ExpenseDashboard;
-        final salesData = results[1] as SalesResponse;
-        final netProfitData = results[2] as NetProfitResponse;
-        final orderDashboardData = results[3] as List<AllOrdersData>;
-
-        emit(SalesDashboardLoaded(
-          salesDashboardTopPart: salesDashboardTopResponse,
-          // expenseStructure: expenseStructure,
-          salesData: salesData,
-          netProfitData: netProfitData,
-          orderDashboardData: orderDashboardData,
-        ));
+      emit(SalesDashboardLoaded(
+        salesDashboardTopPart: salesDashboardTopResponse,
+        salesData: salesData,
+        netProfitData: netProfitData,
+        orderDashboardData: orderDashboardData,
+        expenseStructureData: expenseStructureData,
+      ));
     });
 
     add(LoadInitialData());

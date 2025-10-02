@@ -14,14 +14,16 @@ class SalesDashboardLoading extends SalesDashboardState {}
 class SalesDashboardLoaded extends SalesDashboardState {
   final DashboardTopPart? salesDashboardTopPart;
   final SalesResponse? salesData;
-  final NetProfitResponse netProfitData;
+  final List<AllNetProfitData> netProfitData;
   final List<AllOrdersData> orderDashboardData;
+  final List<AllExpensesData> expenseStructureData;
 
   const SalesDashboardLoaded({
     this.salesDashboardTopPart,
     this.salesData,
     required this.netProfitData,
     required this.orderDashboardData,
+    required this.expenseStructureData,
   });
 
   @override

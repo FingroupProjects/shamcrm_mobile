@@ -1,15 +1,35 @@
-class NetProfitResponse {
-  final Result result;
+import 'dart:convert';
+
+// Enum for net profit period types
+enum NetProfitPeriod {
+  last_year,
+  year,
+}
+
+// Data class to hold period and net profit dashboard data
+class AllNetProfitData {
+  final NetProfitPeriod period;
+  final NetProfitDashboard data;
+
+  AllNetProfitData({
+    required this.period,
+    required this.data,
+  });
+}
+
+// NetProfitDashboard and related classes
+class NetProfitDashboard {
+  final NetProfitResult result;
   final dynamic errors;
 
-  NetProfitResponse({
+  NetProfitDashboard({
     required this.result,
     this.errors,
   });
 
-  factory NetProfitResponse.fromJson(Map<String, dynamic> json) {
-    return NetProfitResponse(
-      result: Result.fromJson(json['result']),
+  factory NetProfitDashboard.fromJson(Map<String, dynamic> json) {
+    return NetProfitDashboard(
+      result: NetProfitResult.fromJson(json['result']),
       errors: json['errors'],
     );
   }
@@ -22,52 +42,61 @@ class NetProfitResponse {
   }
 }
 
-class Result {
+class NetProfitResult {
   final int year;
-  final List<Month> months;
-  final num totalNetProfit;
+  final List<NetProfitMonth> months;
+  final int totalNetProfit;
 
-  Result({
+  NetProfitResult({
     required this.year,
     required this.months,
     required this.totalNetProfit,
   });
 
-  factory Result.fromJson(Map<String, dynamic> json) {
-    return Result(
+  factory NetProfitResult.fromJson(Map<String, dynamic> json) {
+    return NetProfitResult(
       year: json['year'],
       months: (json['months'] as List)
-          .map((month) => Month.fromJson(month))
+          .map((e) => NetProfitMonth.fromJson(e))
           .toList(),
-      totalNetProfit: 80,
+      totalNetProfit: json['total_net_profit'],
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'year': year,
-      'months': months.map((month) => month.toJson()).toList(),
+      'months': months.map((e) => e.toJson()).toList(),
       'total_net_profit': totalNetProfit,
     };
   }
 }
 
-class Month {
+class NetProfitMonth {
   final int month;
   final String monthName;
-  final num netProfit;
+  final String netProfit;
 
-  Month({
+  NetProfitMonth({
     required this.month,
     required this.monthName,
     required this.netProfit,
   });
 
-  factory Month.fromJson(Map<String, dynamic> json) {
-    return Month(
+  factory NetProfitMonth.fromJson(Map<String, dynamic> json) {
+
+    String netProfit = '0';
+
+    if (json['net_profit'] is String) {
+      netProfit = json['net_profit'];
+    } else if (json['net_profit'] is num) {
+      netProfit = (json['net_profit'] as num).toString();
+    }
+
+    return NetProfitMonth(
       month: json['month'],
       monthName: json['month_name'],
-      netProfit: num.parse(json['net_profit'].toString()),
+      netProfit: netProfit,
     );
   }
 
