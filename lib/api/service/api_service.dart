@@ -14258,7 +14258,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         );
       }
     } catch (e) {
-      rethrow;
+      // todo rethrow
+      throw e;
     }
   }
 
@@ -14328,7 +14329,6 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       if (queryParams.isNotEmpty) {
         path += '?${Uri.encodeQueryComponent(queryParams.entries.map((e) => '${e.key}=${e.value}').join('&'))}';
       }
-
       if (kDebugMode) {
         print('ApiService: getDebtorsList - Generated path: $path');
       }
@@ -14440,13 +14440,13 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
   }
 
   /// Получение баланса денежных средств
-  Future<CashBalanceResponse> getCashBalance({
+  Future<CashBalanceResponse> getSalesDashboardCashBalance({
     String? from,
     String? to,
     int? page,
     int? perPage,
   }) async {
-    try {
+    // try{
       // Формируем параметры запроса
       Map<String, String> queryParams = {};
 
@@ -14478,9 +14478,9 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
           response.statusCode,
         );
       }
-    } catch (e) {
-      throw e;
-    }
+    // } catch (e) {
+    //   throw e;
+    // }
   }
 
   /// Получение баланса денежных средств

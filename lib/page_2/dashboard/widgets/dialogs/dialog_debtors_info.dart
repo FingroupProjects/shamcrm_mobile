@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../../models/page_2/dashboard/dashboard_goods_report.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/goods/sales_dashboard_goods_bloc.dart';
+import '../../../../models/page_2/dashboard/debtors_model.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/debtors/sales_dashboard_debtors_bloc.dart';
 import '../../detailed_report/detailed_report_screen.dart';
 
-void showSimpleInfoDialog(BuildContext context) {
+void showDebtorsDialog(BuildContext context) {
   // Get the bloc instance from the current context before showing dialog
-  final goodsBloc = context.read<SalesDashboardGoodsBloc>();
+  final debtorsBloc = context.read<SalesDashboardDebtorsBloc>();
 
   showDialog(
     context: context,
@@ -15,29 +15,29 @@ void showSimpleInfoDialog(BuildContext context) {
     builder: (BuildContext dialogContext) {
       // Pass the BLoC instance to the dialog
       return BlocProvider.value(
-        value: goodsBloc,
-        child: const InfoDialog(),
+        value: debtorsBloc,
+        child: const DebtorsDialog(),
       );
     },
   );
 }
 
-class InfoDialog extends StatefulWidget {
-  const InfoDialog({super.key});
+class DebtorsDialog extends StatefulWidget {
+  const DebtorsDialog({super.key});
 
   @override
-  State<InfoDialog> createState() => _InfoDialogState();
+  State<DebtorsDialog> createState() => _DebtorsDialogState();
 }
 
-class _InfoDialogState extends State<InfoDialog> {
+class _DebtorsDialogState extends State<DebtorsDialog> {
   @override
   void initState() {
     super.initState();
-    // Загружаем данные о неликвидных товарах при открытии диалога
-    context.read<SalesDashboardGoodsBloc>().add(const LoadGoodsReport());
+    // Загружаем данные о должниках при открытии диалога
+    context.read<SalesDashboardDebtorsBloc>().add(const LoadDebtorsReport());
   }
 
-  Widget _buildProductsInfo(List<DashboardGoods> items) {
+  Widget _buildDebtorsInfo(List<Debtor> items) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -56,14 +56,14 @@ class _InfoDialogState extends State<InfoDialog> {
           child: Row(
             children: [
               Icon(
-                Icons.inventory_outlined,
+                Icons.account_balance_wallet_outlined,
                 color: Color(0xff1E2E52),
                 size: 20,
               ),
               SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Неликвидные товары',
+                  'Должники',
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -78,7 +78,7 @@ class _InfoDialogState extends State<InfoDialog> {
 
         SizedBox(height: 16),
 
-        // Отображаем список товаров
+        // Отображаем список должников
         if (items.isEmpty)
           Container(
             width: double.infinity,
@@ -94,13 +94,13 @@ class _InfoDialogState extends State<InfoDialog> {
             child: Column(
               children: [
                 Icon(
-                  Icons.inventory_2_outlined,
+                  Icons.people_outline,
                   size: 48,
                   color: Color(0xff64748B),
                 ),
                 SizedBox(height: 12),
                 Text(
-                  'Нет неликвидных товаров',
+                  'Нет должников',
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -112,12 +112,12 @@ class _InfoDialogState extends State<InfoDialog> {
             ),
           )
         else
-          ...items.map((item) => _buildProductCard(item)).toList(),
+          ...items.map((item) => _buildDebtorCard(item)).toList(),
       ],
     );
   }
 
-  Widget _buildProductCard(DashboardGoods item) {
+  Widget _buildDebtorCard(Debtor item) {
     return Container(
       width: double.infinity,
       margin: EdgeInsets.only(bottom: 16),
@@ -139,7 +139,7 @@ class _InfoDialogState extends State<InfoDialog> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Заголовок товара
+          // Заголовок должника (имя)
           Container(
             width: double.infinity,
             padding: EdgeInsets.all(16),
@@ -158,23 +158,6 @@ class _InfoDialogState extends State<InfoDialog> {
             ),
             child: Row(
               children: [
-                // Container(
-                //   padding: EdgeInsets.all(6),
-                //   decoration: BoxDecoration(
-                //     color: Color(0xff1E2E52).withOpacity(0.1),
-                //     borderRadius: BorderRadius.circular(6),
-                //   ),
-                //   child: Text(
-                //     item.article,
-                //     style: TextStyle(
-                //       fontFamily: 'Gilroy',
-                //       fontSize: 12,
-                //       fontWeight: FontWeight.w700,
-                //       color: Color(0xff1E2E52),
-                //     ),
-                //   ),
-                // ),
-                // SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     item.name,
@@ -190,147 +173,12 @@ class _InfoDialogState extends State<InfoDialog> {
             ),
           ),
 
-          // Детали: первая строка (категория и дни)
+          // Детали: сумма и телефон
           Padding(
-            padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+            padding: EdgeInsets.fromLTRB(16, 16, 16, 16),
             child: Row(
               children: [
-                // Категория
-                Expanded(
-                  child: Container(
-                    padding: EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Color(0xffF1F5F9),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: Color(0xffCBD5E1),
-                        width: 1,
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Категория:',
-                          style: TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xff475569),
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        FittedBox(
-                          child: Text(
-                            item.category,
-                            style: TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xff1E2E52),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                SizedBox(width: 12),
-
-                // Дней без движения
-                Expanded(
-                  child: Container(
-                    padding: EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Color(0xffF1F5F9),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: Color(0xffCBD5E1),
-                        width: 1,
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        FittedBox(
-                          child: Text(
-                            'Дней без движения:',
-                            style: TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xff475569),
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        FittedBox(
-                          child: Text(
-                            item.daysWithoutMovement,
-                            style: TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xff1E2E52),
-                            ),
-                          ),
-                        )
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Детали: вторая строка (количество и сумма)
-          Padding(
-            padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: Row(
-              children: [
-                // Количество
-                Expanded(
-                  child: Container(
-                    padding: EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Color(0xffF1F5F9),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: Color(0xffCBD5E1),
-                        width: 1,
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Количество:',
-                          style: TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xff475569),
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          item.totalQuantity,
-                          style: TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xff1E2E52),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                SizedBox(width: 12),
-
-                // Сумма
+                // Сумма долга
                 Expanded(
                   child: Container(
                     padding: EdgeInsets.all(12),
@@ -356,12 +204,55 @@ class _InfoDialogState extends State<InfoDialog> {
                         ),
                         SizedBox(height: 4),
                         Text(
-                          item.sum,
+                          '${item.debtAmount}',
                           style: TextStyle(
                             fontFamily: 'Gilroy',
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
                             color: Color(0xff1E2E52),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                SizedBox(width: 12),
+
+                // Телефон
+                Expanded(
+                  child: Container(
+                    padding: EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Color(0xffF1F5F9),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Color(0xffCBD5E1),
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Телефон:',
+                          style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xff475569),
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        FittedBox(
+                          child: Text(
+                            item.phone ?? 'Не указан',
+                            style: TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xff1E2E52),
+                            ),
                           ),
                         ),
                       ],
@@ -378,7 +269,7 @@ class _InfoDialogState extends State<InfoDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<SalesDashboardGoodsBloc, SalesDashboardGoodsState>(
+    return BlocBuilder<SalesDashboardDebtorsBloc, SalesDashboardDebtorsState>(
       builder: (context, state) {
         return Dialog(
           backgroundColor: Colors.transparent,
@@ -435,7 +326,7 @@ class _InfoDialogState extends State<InfoDialog> {
                       ),
                       SizedBox(width: 12),
                       Text(
-                        'Отчёт по товарам',
+                        'Нам должны',
                         style: TextStyle(
                           fontFamily: 'Gilroy',
                           fontSize: 18,
@@ -450,89 +341,90 @@ class _InfoDialogState extends State<InfoDialog> {
 
                 // Body
                 Flexible(
-                  child: state is SalesDashboardGoodsLoading
+                  child: state is SalesDashboardDebtorsLoading
                       ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              CircularProgressIndicator(
-                                color: Color(0xff1E2E52),
-                              ),
-                              SizedBox(height: 16),
-                              Text(
-                                'Загрузка данных...',
-                                style: TextStyle(
-                                  fontFamily: 'Gilroy',
-                                  fontSize: 16,
-                                  color: Color(0xff64748B),
-                                ),
-                              ),
-                            ],
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(
+                          color: Color(0xff1E2E52),
+                        ),
+                        SizedBox(height: 16),
+                        Text(
+                          'Загрузка данных...',
+                          style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 16,
+                            color: Color(0xff64748B),
                           ),
-                        )
-                      : state is SalesDashboardGoodsError
-                          ? Center(
-                              child: Padding(
-                                padding: EdgeInsets.all(24),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.error_outline,
-                                      size: 48,
-                                      color: Color(0xffEF4444),
-                                    ),
-                                    SizedBox(height: 16),
-                                    Text(
-                                      'Ошибка загрузки',
-                                      style: TextStyle(
-                                        fontFamily: 'Gilroy',
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w600,
-                                        color: Color(0xff1E2E52),
-                                      ),
-                                    ),
-                                    SizedBox(height: 8),
-                                    Text(
-                                      state.message,
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        fontFamily: 'Gilroy',
-                                        fontSize: 14,
-                                        color: Color(0xff64748B),
-                                      ),
-                                    ),
-                                    SizedBox(height: 16),
-                                    ElevatedButton(
-                                      onPressed: () {
-                                        context.read<SalesDashboardGoodsBloc>().add(const LoadGoodsReport());
-                                      },
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Color(0xff1E2E52),
-                                        foregroundColor: Colors.white,
-                                        elevation: 0,
-                                        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                      ),
-                                      child: Text(
-                                        'Повторить',
-                                        style: TextStyle(
-                                          fontFamily: 'Gilroy',
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            )
-                          : SingleChildScrollView(
-                              padding: EdgeInsets.all(24),
-                              child:
-                                  state is SalesDashboardGoodsLoaded ? _buildProductsInfo(state.goods) : _buildProductsInfo([]),
+                        ),
+                      ],
+                    ),
+                  )
+                      : state is SalesDashboardDebtorsError
+                      ? Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            size: 48,
+                            color: Color(0xffEF4444),
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            'Ошибка загрузки',
+                            style: TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xff1E2E52),
                             ),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            state.message,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 14,
+                              color: Color(0xff64748B),
+                            ),
+                          ),
+                          SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: () {
+                              context.read<SalesDashboardDebtorsBloc>().add(const LoadDebtorsReport());
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Color(0xff1E2E52),
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: Text(
+                              'Повторить',
+                              style: TextStyle(
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                      : SingleChildScrollView(
+                    padding: EdgeInsets.all(24),
+                    child: state is SalesDashboardDebtorsLoaded
+                        ? _buildDebtorsInfo(state.result.result?.debtors ?? [])
+                        : _buildDebtorsInfo([]),
+                  ),
                 ),
 
                 // Footer
@@ -546,7 +438,11 @@ class _InfoDialogState extends State<InfoDialog> {
                           onPressed: () {
                             debugPrint("Подробнее pressed");
                             Navigator.of(context).pop(); // Сначала закрываем диалог
-                            Navigator.of(context).push(MaterialPageRoute(builder: (context) => DetailedReportScreen(currentTabIndex: 0)));
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => DetailedReportScreen(currentTabIndex: 3),
+                              ),
+                            );
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white,

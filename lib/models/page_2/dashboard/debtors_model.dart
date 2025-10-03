@@ -1,182 +1,156 @@
-class DebtorsResponse {
-  Result? result;
-  Null? errors;
+import 'package:equatable/equatable.dart';
 
-  DebtorsResponse({this.result, this.errors});
+class DebtorsResponse extends Equatable {
+  final DebtorsResult? result;
+  final String? errors; // Changed to String?
 
-  DebtorsResponse.fromJson(Map<String, dynamic> json) {
-    result =
-    json['result'] != null ? new Result.fromJson(json['result']) : null;
-    errors = json['errors'];
+  const DebtorsResponse({
+    this.result,
+    this.errors,
+  });
+
+  factory DebtorsResponse.fromJson(Map<String, dynamic> json) {
+    return DebtorsResponse(
+      result: json['result'] != null ? DebtorsResult.fromJson(json['result'] as Map<String, dynamic>) : null,
+      errors: json['errors'] as String?, // Updated to String?
+    );
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    if (this.result != null) {
-      data['result'] = this.result!.toJson();
-    }
-    data['errors'] = this.errors;
-    return data;
+    return {
+      'result': result?.toJson(),
+      'errors': errors,
+    };
   }
+
+  @override
+  List<Object?> get props => [result, errors];
 }
 
-class Result {
-  int? totalDebt;
-  List<Debtors>? debtors;
-  Period? period;
-  double? percentageChange;
-  bool? isPositiveChange;
-  AppliedFilters? appliedFilters;
+class DebtorsResult extends Equatable {
+  final int totalDebt;
+  final List<Debtor> debtors;
+  final Period period;
+  final double percentageChange;
+  final bool isPositiveChange;
 
-  Result(
-      {this.totalDebt,
-        this.debtors,
-        this.period,
-        this.percentageChange,
-        this.isPositiveChange,
-        this.appliedFilters});
+  const DebtorsResult({
+    required this.totalDebt,
+    required this.debtors,
+    required this.period,
+    required this.percentageChange,
+    required this.isPositiveChange,
+  });
 
-  Result.fromJson(Map<String, dynamic> json) {
-    totalDebt = json['total_debt'];
-    if (json['debtors'] != null) {
-      debtors = <Debtors>[];
-      json['debtors'].forEach((v) {
-        debtors!.add(new Debtors.fromJson(v));
-      });
-    }
-    period =
-    json['period'] != null ? new Period.fromJson(json['period']) : null;
-    percentageChange = json['percentage_change'];
-    isPositiveChange = json['is_positive_change'];
-    appliedFilters = json['applied_filters'] != null
-        ? new AppliedFilters.fromJson(json['applied_filters'])
-        : null;
+  factory DebtorsResult.fromJson(Map<String, dynamic> json) {
+    return DebtorsResult(
+      totalDebt: json['total_debt'] as int,
+      debtors: (json['debtors'] as List<dynamic>).map((e) => Debtor.fromJson(e as Map<String, dynamic>)).toList(),
+      period: Period.fromJson(json['period'] as Map<String, dynamic>),
+      percentageChange: (json['percentage_change'] as num).toDouble(), // Handle int or double
+      isPositiveChange: json['is_positive_change'] as bool,
+    );
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['total_debt'] = this.totalDebt;
-    if (this.debtors != null) {
-      data['debtors'] = this.debtors!.map((v) => v.toJson()).toList();
-    }
-    if (this.period != null) {
-      data['period'] = this.period!.toJson();
-    }
-    data['percentage_change'] = this.percentageChange;
-    data['is_positive_change'] = this.isPositiveChange;
-    if (this.appliedFilters != null) {
-      data['applied_filters'] = this.appliedFilters!.toJson();
-    }
-    return data;
+    return {
+      'total_debt': totalDebt,
+      'debtors': debtors.map((e) => e.toJson()).toList(),
+      'period': period.toJson(),
+      'percentage_change': percentageChange,
+      'is_positive_change': isPositiveChange,
+    };
   }
+
+  @override
+  List<Object> get props => [totalDebt, debtors, period, percentageChange, isPositiveChange];
 }
 
-class Debtors {
-  int? id;
-  String? name;
-  String? type;
-  String? phone;
-  int? debtAmount;
+class Debtor extends Equatable {
+  final int id;
+  final String name;
+  final String? phone;
+  final int debtAmount;
 
-  Debtors({this.id, this.name, this.type, this.phone, this.debtAmount});
+  const Debtor({
+    required this.id,
+    required this.name,
+    this.phone,
+    required this.debtAmount,
+  });
 
-  Debtors.fromJson(Map<String, dynamic> json) {
-    id = json['id'];
-    name = json['name'];
-    type = json['type'];
-    phone = json['phone'];
-    debtAmount = json['debt_amount'];
+  factory Debtor.fromJson(Map<String, dynamic> json) {
+    return Debtor(
+      id: json['id'] as int,
+      name: json['name'] as String,
+      phone: json['phone'] as String?,
+      debtAmount: json['debt_amount'] as int,
+    );
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['id'] = this.id;
-    data['name'] = this.name;
-    data['type'] = this.type;
-    data['phone'] = this.phone;
-    data['debt_amount'] = this.debtAmount;
-    return data;
+    return {
+      'id': id,
+      'name': name,
+      'phone': phone,
+      'debt_amount': debtAmount,
+    };
   }
+
+  @override
+  List<Object?> get props => [id, name, phone, debtAmount];
 }
 
-class Period {
-  Current? current;
-  Current? previous;
+class Period extends Equatable {
+  final DateRange current;
+  final DateRange previous;
 
-  Period({this.current, this.previous});
+  const Period({
+    required this.current,
+    required this.previous,
+  });
 
-  Period.fromJson(Map<String, dynamic> json) {
-    current =
-    json['current'] != null ? new Current.fromJson(json['current']) : null;
-    previous = json['previous'] != null
-        ? new Current.fromJson(json['previous'])
-        : null;
+  factory Period.fromJson(Map<String, dynamic> json) {
+    return Period(
+      current: DateRange.fromJson(json['current'] as Map<String, dynamic>),
+      previous: DateRange.fromJson(json['previous'] as Map<String, dynamic>),
+    );
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    if (this.current != null) {
-      data['current'] = this.current!.toJson();
-    }
-    if (this.previous != null) {
-      data['previous'] = this.previous!.toJson();
-    }
-    return data;
+    return {
+      'current': current.toJson(),
+      'previous': previous.toJson(),
+    };
   }
+
+  @override
+  List<Object> get props => [current, previous];
 }
 
-class Current {
-  String? from;
-  String? to;
+class DateRange extends Equatable {
+  final String from;
+  final String to;
 
-  Current({this.from, this.to});
+  const DateRange({
+    required this.from,
+    required this.to,
+  });
 
-  Current.fromJson(Map<String, dynamic> json) {
-    from = json['from'];
-    to = json['to'];
+  factory DateRange.fromJson(Map<String, dynamic> json) {
+    return DateRange(
+      from: json['from'] as String,
+      to: json['to'] as String,
+    );
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['from'] = this.from;
-    data['to'] = this.to;
-    return data;
-  }
-}
-
-class AppliedFilters {
-  Null? cashRegisterId;
-  Null? supplierId;
-  Null? clientId;
-  Null? leadId;
-  Null? operationType;
-  Null? search;
-
-  AppliedFilters(
-      {this.cashRegisterId,
-        this.supplierId,
-        this.clientId,
-        this.leadId,
-        this.operationType,
-        this.search});
-
-  AppliedFilters.fromJson(Map<String, dynamic> json) {
-    cashRegisterId = json['cash_register_id'];
-    supplierId = json['supplier_id'];
-    clientId = json['client_id'];
-    leadId = json['lead_id'];
-    operationType = json['operation_type'];
-    search = json['search'];
+    return {
+      'from': from,
+      'to': to,
+    };
   }
 
-  Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['cash_register_id'] = this.cashRegisterId;
-    data['supplier_id'] = this.supplierId;
-    data['client_id'] = this.clientId;
-    data['lead_id'] = this.leadId;
-    data['operation_type'] = this.operationType;
-    data['search'] = this.search;
-    return data;
-  }
+  @override
+  List<Object> get props => [from, to];
 }

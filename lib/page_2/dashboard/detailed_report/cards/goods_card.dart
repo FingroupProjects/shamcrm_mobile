@@ -27,7 +27,15 @@ class GoodsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
+
+    return Container();
+
+
+  }
+}
+
+/*
+final localizations = AppLocalizations.of(context)!;
 
     return GestureDetector(
       onTap: () => onClick(goods),
@@ -155,5 +163,4 @@ class GoodsCard extends StatelessWidget {
         ),
       ),
     );
-  }
-}
+ */

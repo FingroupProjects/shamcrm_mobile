@@ -107,7 +107,6 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
     final isLoading = widget.salesData == null;
 
     return Container(
-      margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,

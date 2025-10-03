@@ -84,7 +84,6 @@ class _ProfitabilityChartState extends State<ProfitabilityChart> {
     final months = periodData?.data.result.months ?? [];
 
     return Container(
-      margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,

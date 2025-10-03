@@ -1,5 +1,4 @@
 import 'package:crm_task_manager/models/cash_register_list_model.dart';
-import 'package:crm_task_manager/models/page_2/dashboard/debtors_model.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/models/supplier_list_model.dart';
 
@@ -288,5 +287,33 @@ class Filters {
       'date_from': dateFrom,
       'date_to': dateTo,
     };
+  }
+}
+
+class Debtors {
+  int? id;
+  String? name;
+  String? type;
+  String? phone;
+  num? debtAmount;
+
+  Debtors({this.id, this.name, this.type, this.phone, this.debtAmount});
+
+  Debtors.fromJson(Map<String, dynamic> json) {
+    id = json['id'];
+    name = json['name'];
+    type = json['type'];
+    phone = json['phone'];
+    debtAmount = json['debt_amount'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['id'] = this.id;
+    data['name'] = this.name;
+    data['type'] = this.type;
+    data['phone'] = this.phone;
+    data['debt_amount'] = this.debtAmount;
+    return data;
   }
 }

@@ -2,7 +2,7 @@ import 'package:equatable/equatable.dart';
 
 class CreditorsResponse extends Equatable {
   final CreditorsResult? result;
-  final List<String>? errors;
+  final String? errors; // Changed to String?
 
   const CreditorsResponse({
     this.result,
@@ -12,7 +12,7 @@ class CreditorsResponse extends Equatable {
   factory CreditorsResponse.fromJson(Map<String, dynamic> json) {
     return CreditorsResponse(
       result: json['result'] != null ? CreditorsResult.fromJson(json['result'] as Map<String, dynamic>) : null,
-      errors: json['errors'] as List<String>?,
+      errors: json['errors'] as String?, // Updated to String?
     );
   }
 
@@ -33,7 +33,6 @@ class CreditorsResult extends Equatable {
   final Period period;
   final double percentageChange;
   final bool isPositiveChange;
-  final AppliedFilters appliedFilters;
 
   const CreditorsResult({
     required this.totalDebt,
@@ -41,7 +40,6 @@ class CreditorsResult extends Equatable {
     required this.period,
     required this.percentageChange,
     required this.isPositiveChange,
-    required this.appliedFilters,
   });
 
   factory CreditorsResult.fromJson(Map<String, dynamic> json) {
@@ -49,9 +47,8 @@ class CreditorsResult extends Equatable {
       totalDebt: json['total_debt'] as int,
       creditors: (json['creditors'] as List<dynamic>).map((e) => Creditor.fromJson(e as Map<String, dynamic>)).toList(),
       period: Period.fromJson(json['period'] as Map<String, dynamic>),
-      percentageChange: json['percentage_change'] as double,
+      percentageChange: (json['percentage_change'] as num).toDouble(), // Handle int or double
       isPositiveChange: json['is_positive_change'] as bool,
-      appliedFilters: AppliedFilters.fromJson(json['applied_filters'] as Map<String, dynamic>),
     );
   }
 
@@ -62,17 +59,17 @@ class CreditorsResult extends Equatable {
       'period': period.toJson(),
       'percentage_change': percentageChange,
       'is_positive_change': isPositiveChange,
-      'applied_filters': appliedFilters.toJson(),
     };
   }
 
   @override
-  List<Object> get props => [totalDebt, creditors, period, percentageChange, isPositiveChange, appliedFilters];
+  List<Object> get props => [totalDebt, creditors, period, percentageChange, isPositiveChange];
 }
+
 class Creditor extends Equatable {
   final int id;
   final String name;
-  final String? phone; // Changed to nullable
+  final String? phone;
   final int debtAmount;
 
   const Creditor({
@@ -156,47 +153,4 @@ class DateRange extends Equatable {
 
   @override
   List<Object> get props => [from, to];
-}
-
-class AppliedFilters extends Equatable {
-  final int? cashRegisterId;
-  final int? supplierId;
-  final int? clientId;
-  final int? leadId;
-  final String? operationType;
-  final String? search;
-
-  const AppliedFilters({
-    this.cashRegisterId,
-    this.supplierId,
-    this.clientId,
-    this.leadId,
-    this.operationType,
-    this.search,
-  });
-
-  factory AppliedFilters.fromJson(Map<String, dynamic> json) {
-    return AppliedFilters(
-      cashRegisterId: json['cash_register_id'] as int?,
-      supplierId: json['supplier_id'] as int?,
-      clientId: json['client_id'] as int?,
-      leadId: json['lead_id'] as int?,
-      operationType: json['operation_type'] as String?,
-      search: json['search'] as String?,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'cash_register_id': cashRegisterId,
-      'supplier_id': supplierId,
-      'client_id': clientId,
-      'lead_id': leadId,
-      'operation_type': operationType,
-      'search': search,
-    };
-  }
-
-  @override
-  List<Object?> get props => [cashRegisterId, supplierId, clientId, leadId, operationType, search];
 }

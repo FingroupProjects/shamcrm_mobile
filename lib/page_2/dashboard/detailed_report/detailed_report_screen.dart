@@ -32,13 +32,15 @@ class TaskStyles {
         color: isActive ? const Color(0xff1E2E52) : const Color(0xff99A4BA),
         width: 1,
       ),
-      boxShadow: isActive ? [
-        BoxShadow(
-          color: const Color(0xff1E2E52).withOpacity(0.1),
-          blurRadius: 4,
-          offset: const Offset(0, 2),
-        ),
-      ] : null,
+      boxShadow: isActive
+          ? [
+              BoxShadow(
+                color: const Color(0xff1E2E52).withOpacity(0.1),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ]
+          : null,
     );
   }
 }
@@ -46,29 +48,34 @@ class TaskStyles {
 class DetailedReportScreen extends StatefulWidget {
   @override
   _DetailedReportScreenState createState() => _DetailedReportScreenState();
+
+  final int currentTabIndex;
+
+  const DetailedReportScreen({super.key, required this.currentTabIndex});
 }
 
 class _DetailedReportScreenState extends State<DetailedReportScreen> with TickerProviderStateMixin {
   late TabController _tabController;
   late ScrollController _scrollController;
   List<Map<String, dynamic>> _tabTitles = [
-    {'id': 1, 'title': 'Товары / Неликвидный товары', 'count': '15'},
-    {'id': 2, 'title': 'Остаток кассы', 'count': '8'},
-    {'id': 3, 'title': 'Наши долги', 'count': '23'},
-    {'id': 4, 'title': 'Нам должны', 'count': '12'},
-    {'id': 5, 'title': 'Топ продаваемых товаров', 'count': '45'},
-    {'id': 6, 'title': 'Динамика продаж', 'count': '67'},
-    {'id': 7, 'title': 'Чистая прибыль', 'count': '34'},
-    {'id': 8, 'title': 'Рентабельность продаж', 'count': '56'},
-    {'id': 9, 'title': 'Структура затрат', 'count': '78'},
-    {'id': 10, 'title': 'Количество заказов', 'count': '89'},
+    {'id': 0, 'title': 'Товары / Неликвидный товары', 'count': '15'},
+    {'id': 1, 'title': 'Остаток кассы', 'count': '8'},
+    {'id': 2, 'title': 'Наши долги', 'count': '23'},
+    {'id': 3, 'title': 'Нам должны', 'count': '12'},
+    {'id': 4, 'title': 'Топ продаваемых товаров', 'count': '45'},
+    {'id': 5, 'title': 'Динамика продаж', 'count': '67'},
+    {'id': 6, 'title': 'Чистая прибыль', 'count': '34'},
+    {'id': 7, 'title': 'Рентабельность продаж', 'count': '56'},
+    {'id': 8, 'title': 'Структура затрат', 'count': '78'},
+    {'id': 9, 'title': 'Количество заказов', 'count': '89'},
   ];
-  int _currentTabIndex = 0;
   List<GlobalKey> _tabKeys = [];
+  late int _currentTabIndex;
 
   @override
   void initState() {
     super.initState();
+    _currentTabIndex = widget.currentTabIndex;
     _scrollController = ScrollController();
     _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
     _tabController = TabController(length: _tabTitles.length, vsync: this);
@@ -154,9 +161,7 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
             Text(
               _tabTitles[index]['title'],
               style: TaskStyles.tabTextStyle.copyWith(
-                color: isActive
-                    ? Colors.white
-                    : TaskStyles.inactiveColor,
+                color: isActive ? Colors.white : TaskStyles.inactiveColor,
               ),
             ),
             Transform.translate(
@@ -167,9 +172,7 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: isActive
-                        ? const Color(0xff1E2E52)
-                        : const Color(0xff99A4BA),
+                    color: isActive ? const Color(0xff1E2E52) : const Color(0xff99A4BA),
                     width: 1,
                   ),
                 ),
@@ -200,7 +203,6 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
   }
 
   Widget _buildTabContent(String tabTitle) {
-
     if (tabTitle == 'Товары / Неликвидный товары') {
       return BlocProvider(
         create: (context) => SalesDashboardGoodsBloc(),
@@ -213,11 +215,8 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
-          ...List.generate(5, (index) => Container(
-              margin: EdgeInsets.only(bottom: 16),
-              child: _buildSpecializedCard(tabTitle, index))
-          ),
+          ...List.generate(
+              5, (index) => Container(margin: EdgeInsets.only(bottom: 16), child: _buildSpecializedCard(tabTitle, index))),
         ],
       ),
     );
@@ -313,7 +312,21 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
 
   // Goods Card - for displaying goods/illiquid goods
   Widget _buildGoodsCard(int index) {
-    return GoodsCard(goods: DashboardGoods(id: 1, article: 'article', name: 'name', category: 'category', quantity: '1', daysWithoutMovement: '1', sum: '1'), onClick: (e) {}, onLongPress: (e) {}, isSelectionMode: false, isSelected: false);
+    return GoodsCard(
+      goods: DashboardGoods(
+          storages: [],
+          id: 1,
+          article: 'article',
+          name: 'name',
+          category: 'category',
+          totalQuantity: '1',
+          daysWithoutMovement: '1',
+          sum: '1'),
+      onClick: (e) {},
+      onLongPress: (e) {},
+      isSelectionMode: false,
+      isSelected: false,
+    );
   }
 
   // Generic fallback card
@@ -366,17 +379,8 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
       final position = box.localToGlobal(Offset.zero, ancestor: context.findRenderObject());
       final tabWidth = box.size.width;
 
-      if (position.dx < 0 || (position.dx + tabWidth) > MediaQuery
-          .of(context)
-          .size
-          .width) {
-        double targetOffset = _scrollController.offset +
-            position.dx -
-            (MediaQuery
-                .of(context)
-                .size
-                .width / 2) +
-            (tabWidth / 2);
+      if (position.dx < 0 || (position.dx + tabWidth) > MediaQuery.of(context).size.width) {
+        double targetOffset = _scrollController.offset + position.dx - (MediaQuery.of(context).size.width / 2) + (tabWidth / 2);
 
         if (targetOffset != _scrollController.offset) {
           _scrollController.animateTo(
@@ -553,5 +557,4 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
       ),
     );
   }
-
 }

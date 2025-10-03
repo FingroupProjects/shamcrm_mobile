@@ -12,7 +12,7 @@ class SalesDashboardGoodsBloc extends Bloc<SalesDashboardGoodsEvent, SalesDashbo
 
   SalesDashboardGoodsBloc() : super(SalesDashboardProductsInitial()) {
     on<LoadGoodsReport>((event, emit) async {
-      try {
+      // try {
         emit(SalesDashboardGoodsLoading());
         final response = await apiService.getSalesDashboardGoodsReport(
           page: event.page,
@@ -22,11 +22,11 @@ class SalesDashboardGoodsBloc extends Bloc<SalesDashboardGoodsEvent, SalesDashbo
           goods: response.data,
           pagination: response.pagination,
         ));
-      } catch (e) {
-        emit(SalesDashboardGoodsError(
-          message: e.toString().replaceAll('Exception: ', ''),
-        ));
-      }
+      // } catch (e) {
+      //   emit(SalesDashboardGoodsError(
+      //     message: e.toString().replaceAll('Exception: ', ''),
+      //   ));
+      // }
     });
   }
 }
