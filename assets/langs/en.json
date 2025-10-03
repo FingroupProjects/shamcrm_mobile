@@ -1461,7 +1461,11 @@
   "error_loading_outcome_categories": "Error loading expense categories",
   "error_loading_suppliers": "Error loading suppliers",
   "error_selecting_outcome_category": "Error selecting expense category",
-  "last_year": "Last year"
+  "last_year": "Last year",
+  "days_without_movement": "Days without movement",
+  "creditor_name_details": "Name",
+  "debtor_name_details": "Name",
+  "debt_amount": "Amount"
 
 
 

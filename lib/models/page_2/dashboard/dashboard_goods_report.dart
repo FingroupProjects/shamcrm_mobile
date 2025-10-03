@@ -41,7 +41,6 @@ class Pagination {
 class DashboardGoods {
   final int id;
   final int? goodVariantId; // New field
-  final String? article; // Made optional
   final String name;
   final String category;
   final String totalQuantity; // Renamed from quantity
@@ -52,7 +51,6 @@ class DashboardGoods {
   DashboardGoods({
     required this.id,
     this.goodVariantId,
-    this.article,
     required this.name,
     required this.category,
     required this.totalQuantity,
@@ -65,7 +63,6 @@ class DashboardGoods {
     return DashboardGoods(
       id: json['id'] as int,
       goodVariantId: json['good_variant_id'] as int?,
-      article: json['article'] as String?,
       name: json['name'] as String,
       category: json['category'] as String,
       totalQuantity: json['total_quantity'] as String,
