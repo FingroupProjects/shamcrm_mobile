@@ -56,13 +56,19 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
+import '../../bloc/page_2_BLOC/dashboard/cash_balance/sales_dashboard_cash_balance_bloc.dart';
+import '../../models/page_2/dashboard/dashboard_top.dart';
 import '../../models/page_2/dashboard/expense_structure.dart';
+import '../../models/page_2/dashboard/illiquids_model.dart';
 import '../../models/page_2/dashboard/net_profit_model.dart';
 import '../../models/page_2/dashboard/order_dashboard_model.dart';
 import '../../models/page_2/dashboard/profitability_dashboard_model.dart';
 import '../../models/page_2/dashboard/sales_model.dart';
 import '../../models/page_2/dashboard/top_selling_model.dart';
 import '../../page_2/dashboard/widgets/charts/profitability_chart.dart';
+import '../../page_2/dashboard/widgets/dialogs/dialog_cash_balance_info.dart';
+import '../../page_2/dashboard/widgets/dialogs/dialog_products_info.dart';
+import '../../page_2/dashboard/widgets/stat_card.dart';
 import '../../widgets/snackbar_widget.dart';
 
 // Enum для типов дашборда
@@ -642,6 +648,9 @@ void _initAdminTutorialTargets() {
         BlocProvider(
           create: (context) => SalesDashboardGoodsBloc(),
         ),
+        BlocProvider(
+          create: (context) => SalesDashboardCashBalanceBloc(),
+        ),
       ],
       child: Scaffold(
         backgroundColor: Colors.white,
@@ -917,6 +926,90 @@ class DashboardSwitcher extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class TopPart extends StatelessWidget {
+  final SalesDashboardState state;
+
+  const TopPart({super.key, required this.state});
+
+  @override
+  Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+
+    final DashboardTopPart? salesDashboardTopPart = (state as SalesDashboardLoaded).salesDashboardTopPart;
+    final IlliquidGoodsResponse illiquidGoodsData = (state as SalesDashboardLoaded).illiquidGoodsData;
+
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: StatCard(
+                onTap: () {
+                  showSimpleInfoDialog(context);
+                },
+                accentColor: Colors.orange,
+                title: localizations.translate('illiquid_goods') ?? 'ТОВАРЫ/НЕЛИКВИДНЫМИ ТОВАРЫ',
+                leading: const Icon(Icons.inventory_2, color: Colors.orange),
+                amountText: "${illiquidGoodsData.result?.liquidChange ?? 0}/${illiquidGoodsData.result?.nonLiquidGoods ?? 0}",
+                showCurrencySymbol: false,
+                isUp: illiquidGoodsData.result?.liquidChangeFormatted.startsWith("+") ?? true,
+                trendText: "${illiquidGoodsData.result?.liquidChangeFormatted ?? '0.0%'}/${illiquidGoodsData.result?.nonLiquidChangeFormatted ?? '0.0%'}",
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: StatCard(
+                onTap: () {
+                  showCashBalanceDialog(context);
+                },
+                accentColor: Colors.blue,
+                title: localizations.translate('cash_balance') ?? 'ОСТАТОК КАССЫ',
+                leading: const Icon(Icons.account_balance_wallet, color: Colors.blue),
+                amount: salesDashboardTopPart?.result?.cashBalance?.totalBalance ?? 0,
+                showCurrencySymbol: salesDashboardTopPart?.result?.cashBalance?.currency != null,
+                currencySymbol: salesDashboardTopPart?.result?.cashBalance?.currency ?? '₽',
+                isUp: salesDashboardTopPart?.result?.cashBalance?.isPositiveChange ?? true,
+                trendText: salesDashboardTopPart?.result?.cashBalance?.percentageChange.toString() ?? '0.0%',
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: StatCard(
+                onTap: () {},
+                accentColor: Colors.red,
+                title: localizations.translate('our_debts') ?? 'НАШИ ДОЛГИ',
+                leading: const Icon(Icons.trending_down, color: Colors.red),
+                amount: salesDashboardTopPart?.result?.ourDebts?.currentDebts ?? 0,
+                showCurrencySymbol: false,
+                currencySymbol: '₽',
+                isUp: salesDashboardTopPart?.result?.ourDebts?.isPositiveChange ?? false,
+                trendText: salesDashboardTopPart?.result?.ourDebts?.percentageChange.toString() ?? '',
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: StatCard(
+                onTap: () {},
+                accentColor: Colors.green,
+                title: localizations.translate('owed_to_us') ?? 'НАМ ДОЛЖНЫ',
+                leading: const Icon(Icons.trending_up, color: Colors.green),
+                amount: salesDashboardTopPart?.result?.debtsToUs?.totalDebtsToUs ?? 0,
+                showCurrencySymbol: false,
+                isUp: salesDashboardTopPart?.result?.debtsToUs?.isPositiveChange ?? false,
+                trendText: '${salesDashboardTopPart?.result?.debtsToUs?.percentageChange ?? 'n/a'}',
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

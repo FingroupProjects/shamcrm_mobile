@@ -546,7 +546,7 @@ class _InfoDialogState extends State<InfoDialog> {
                           onPressed: () {
                             debugPrint("Подробнее pressed");
                             Navigator.of(context).pop(); // Сначала закрываем диалог
-                            Navigator.of(context).push(MaterialPageRoute(builder: (context) => DetailedReportScreen()));
+                            Navigator.of(context).push(MaterialPageRoute(builder: (context) => DetailedReportScreen(currentTabIndex: 0)));
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white,

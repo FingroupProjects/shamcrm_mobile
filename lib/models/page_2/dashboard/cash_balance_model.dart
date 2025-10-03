@@ -113,8 +113,8 @@ class CashBalanceSummary {
 class CashRegisters {
   int? id;
   String? name;
-  String? balance;
-  Null? updatedAt;
+  int? balance;
+  String? updatedAt;
 
   CashRegisters({this.id, this.name, this.balance, this.updatedAt});
 
