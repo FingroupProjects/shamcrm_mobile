@@ -1,19 +1,18 @@
+import 'package:crm_task_manager/models/page_2/dashboard/top_selling_card_model.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../models/page_2/dashboard/dashboard_goods_report.dart';
-
-class GoodsCard extends StatelessWidget {
-  final DashboardGoods goods;
-  final Function(DashboardGoods) onClick;
-  final Function(DashboardGoods) onLongPress;
+class TopSellingCard extends StatelessWidget {
+  final TopSellingCardModel product;
+  final Function(TopSellingCardModel) onClick;
+  final Function(TopSellingCardModel) onLongPress;
   final bool isSelectionMode;
   final bool isSelected;
 
-  const GoodsCard({
+  const TopSellingCard({
     Key? key,
-    required this.goods,
+    required this.product,
     required this.onClick,
     required this.onLongPress,
     required this.isSelectionMode,
@@ -30,8 +29,8 @@ class GoodsCard extends StatelessWidget {
     final localizations = AppLocalizations.of(context)!;
 
     return GestureDetector(
-      onTap: () => onClick(goods),
-      onLongPress: () => onLongPress(goods),
+      onTap: () => onClick(product),
+      onLongPress: () => onLongPress(product),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -47,7 +46,7 @@ class GoodsCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '${localizations.translate('goods_name_details') ?? 'Название'}: ${goods.name}',
+                    '${localizations.translate('name') ?? 'Название'}: ${product.name}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
@@ -57,7 +56,7 @@ class GoodsCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${localizations.translate('category_details') ?? 'Категория'}: ${goods.category}',
+                    '${localizations.translate('category') ?? 'Категория'}: ${product.category}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
@@ -67,7 +66,7 @@ class GoodsCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${localizations.translate('days_without_movement') ?? 'Дней без движения'}: ${goods.daysWithoutMovement}',
+                    '${localizations.translate('total_quantity') ?? 'Количество'}: ${product.totalQuantity}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
@@ -77,17 +76,7 @@ class GoodsCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${localizations.translate('quantity') ?? 'Количество'}: ${goods.totalQuantity}',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w400,
-                      color: Color(0xff99A4BA),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${localizations.translate('sum') ?? 'Сумма'}: ${_formatAmount(goods.sum)}',
+                    '${localizations.translate('total_amount') ?? 'Общая сумма'}: ${_formatAmount(product.totalAmount)}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
