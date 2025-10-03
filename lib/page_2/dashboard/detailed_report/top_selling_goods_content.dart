@@ -16,21 +16,6 @@ class _TopSellingGoodsContentState extends State<TopSellingGoodsContent> {
   bool isSelectionMode = false;
   Set<int> selectedTopSellingGoods = {};
 
-  @override
-  void initState() {
-    super.initState();
-    context.read<SalesDashboardTopSellingGoodsBloc>().add(const LoadTopSellingGoodsReport());
-  }
-
-  void _toggleSelectionMode() {
-    setState(() {
-      isSelectionMode = !isSelectionMode;
-      if (!isSelectionMode) {
-        selectedTopSellingGoods.clear();
-      }
-    });
-  }
-
   void _onProductTap(TopSellingCardModel product) {
     if (isSelectionMode) {
       setState(() {

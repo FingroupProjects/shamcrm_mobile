@@ -6,8 +6,11 @@ sealed class SalesDashboardTopSellingGoodsEvent extends Equatable {
 
 class LoadTopSellingGoodsReport extends SalesDashboardTopSellingGoodsEvent {
 
-  const LoadTopSellingGoodsReport();
+  final Map<String, dynamic>? filter;
+  final String? search;
+
+  const LoadTopSellingGoodsReport({this. filter, this.search});
 
   @override
-  List<Object> get props => [];
+  List<Object> get props => [filter ?? {}, search ?? ''];
 }

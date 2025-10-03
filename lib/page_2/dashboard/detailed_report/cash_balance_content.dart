@@ -13,12 +13,6 @@ class CashBalanceContent extends StatefulWidget {
 }
 
 class _CashBalanceContentState extends State<CashBalanceContent> {
-  @override
-  void initState() {
-    super.initState();
-    context.read<SalesDashboardCashBalanceBloc>().add(const LoadCashBalanceReport());
-  }
-
   Widget _buildCashBalanceList(CashBalanceResponse data) {
     final cashRegisters = data.result?.cashBalanceSummary?.cashRegisters ?? [];
     

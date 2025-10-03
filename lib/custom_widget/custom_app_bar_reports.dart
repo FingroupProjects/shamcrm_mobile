@@ -19,6 +19,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'filter/page_2/incoming/filter_app_bar_income.dart';
+import 'filter/page_2/reports/cash_balance_filter.dart';
 
 class CustomAppBarReports extends StatefulWidget {
   final String title;
@@ -30,8 +31,8 @@ class CustomAppBarReports extends StatefulWidget {
   Function(bool) clearButtonClickFiltr;
   final bool showSearchIcon;
   final bool showFilterIcon;
-  final Function(Map<String, dynamic>)? onFilterGoodsSelected;
-  final VoidCallback? onGoodsResetFilters;
+  final Function(Map<String, dynamic>)? onFilterSelected;
+  final VoidCallback? onResetFilters;
   final Map<String, dynamic> currentFilters;
   final List<String>? initialLabels;
   final int currentTabIndex;
@@ -47,8 +48,8 @@ class CustomAppBarReports extends StatefulWidget {
     required this.clearButtonClickFiltr,
     this.showSearchIcon = true,
     this.showFilterIcon = true,
-    this.onFilterGoodsSelected,
-    this.onGoodsResetFilters,
+    this.onFilterSelected,
+    this.onResetFilters,
     required this.currentFilters,
     this.initialLabels,
     required this.currentTabIndex,
@@ -446,62 +447,70 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
       print('CustomAppBarReports: Переход к экрану фильтров widget.currentTabIndex=${widget.currentTabIndex}');
       print('CustomAppBarReports: Текущие фильтры: ${widget.currentFilters}');
     }
-    List<int>? initialCategoryIds;
-    double? initialDiscountPercent;
-    List<String>? initialLabels;
-    bool? initialIsActive;
 
-    if (widget.currentFilters.containsKey('category_id') &&
-        widget.currentFilters['category_id'] is List &&
-        widget.currentFilters['category_id'].isNotEmpty) {
-      initialCategoryIds = (widget.currentFilters['category_id'] as List)
-          .map((id) => int.tryParse(id.toString()) ?? 0)
-          .where((id) => id != 0)
-          .toList();
+    DateTime? initialFromDate;
+    DateTime? initialToDate;
+    String? initialAmountFrom;
+    String? initialAmountTo;
+
+    if (widget.currentFilters.containsKey('fromDate')) {
+      final fromDate = widget.currentFilters['fromDate'];
+      if (fromDate is DateTime) {
+        initialFromDate = fromDate;
+      } else if (fromDate is int) {
+        initialFromDate = DateTime.fromMillisecondsSinceEpoch(fromDate);
+      } else if (fromDate is String) {
+        initialFromDate = DateTime.tryParse(fromDate);
+      }
     }
 
-    if (widget.currentFilters.containsKey('discount_percent')) {
-      initialDiscountPercent = widget.currentFilters['discount_percent'] is double
-          ? widget.currentFilters['discount_percent']
-          : double.tryParse(widget.currentFilters['discount_percent'].toString());
+    if (widget.currentFilters.containsKey('toDate')) {
+      final toDate = widget.currentFilters['toDate'];
+      if (toDate is DateTime) {
+        initialToDate = toDate;
+      } else if (toDate is int) {
+        initialToDate = DateTime.fromMillisecondsSinceEpoch(toDate);
+      } else if (toDate is String) {
+        initialToDate = DateTime.tryParse(toDate);
+      }
     }
 
-    if (widget.currentFilters.containsKey('label_id') &&
-        widget.currentFilters['label_id'] is List &&
-        widget.currentFilters['label_id'].isNotEmpty) {
-      initialLabels = List<String>.from(widget.currentFilters['label_id']);
+    if (widget.currentFilters.containsKey('amountFrom')) {
+      final amountFrom = widget.currentFilters['amountFrom'];
+      initialAmountFrom = amountFrom?.toString();
     }
 
-    if (widget.currentFilters.containsKey('is_active')) {
-      initialIsActive = widget.currentFilters['is_active'] as bool?;
+    if (widget.currentFilters.containsKey('amountTo')) {
+      final amountTo = widget.currentFilters['amountTo'];
+      initialAmountTo = amountTo?.toString();
     }
 
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => GoodsFilterScreen(
+        builder: (context) => CashBalanceFilterScreen(
           onSelectedDataFilter: (filters) {
             if (kDebugMode) {
-              print('CustomAppBarReports: Получены фильтры из GoodsFilterScreen: $filters');
+              print('CustomAppBarReports: Получены фильтры из CashBalanceFilterScreen: $filters');
             }
             setState(() {
               _isGoodsFiltering = filters.isNotEmpty;
             });
-            widget.onFilterGoodsSelected?.call(filters);
+            widget.onFilterSelected?.call(filters);
           },
           onResetFilters: () {
             if (kDebugMode) {
-              print('CustomAppBarReports: Сброс фильтров из GoodsFilterScreen');
+              print('CustomAppBarReports: Сброс фильтров из CashBalanceFilterScreen');
             }
             setState(() {
               _isGoodsFiltering = false;
             });
-            widget.onGoodsResetFilters?.call();
+            widget.onResetFilters?.call();
           },
-          initialCategoryIds: initialCategoryIds,
-          initialDiscountPercent: initialDiscountPercent,
-          initialLabels: initialLabels,
-          initialIsActive: initialIsActive,
+          initialFromDate: initialFromDate,
+          initialToDate: initialToDate,
+          initialAmountFrom: initialAmountFrom,
+          initialAmountTo: initialAmountTo,
         ),
       ),
     );

@@ -5,10 +5,12 @@ sealed class SalesDashboardCreditorsEvent extends Equatable {
 }
 
 class LoadCreditorsReport extends SalesDashboardCreditorsEvent {
+  final Map<String, dynamic>? filter;
+  final String? search;
   
 
-  const LoadCreditorsReport();
+  const LoadCreditorsReport({this. filter, this.search});
 
   @override
-  List<Object?> get props => [];
+  List<Object?> get props => [filter, search];
 }

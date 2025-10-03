@@ -34,30 +34,30 @@ class TaskStyles {
       ),
       boxShadow: isActive
           ? [
-              BoxShadow(
-                color: const Color(0xff1E2E52).withOpacity(0.1),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ]
+        BoxShadow(
+          color: const Color(0xff1E2E52).withOpacity(0.1),
+          blurRadius: 4,
+          offset: const Offset(0, 2),
+        ),
+      ]
           : null,
     );
   }
 }
 
 class DetailedReportScreen extends StatefulWidget {
-  @override
-  _DetailedReportScreenState createState() => _DetailedReportScreenState();
-
   final int currentTabIndex;
 
   const DetailedReportScreen({super.key, required this.currentTabIndex});
+
+  @override
+  _DetailedReportScreenState createState() => _DetailedReportScreenState();
 }
 
 class _DetailedReportScreenState extends State<DetailedReportScreen> with TickerProviderStateMixin {
   late TabController _tabController;
   late ScrollController _scrollController;
-  List<Map<String, dynamic>> _tabTitles = [
+  final List<Map<String, dynamic>> _tabTitles = [
     {'id': 0, 'title': 'Товары / Неликвидный товары'},
     {'id': 1, 'title': 'Остаток кассы'},
     {'id': 2, 'title': 'Наши долги'},
@@ -69,42 +69,49 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
     {'id': 8, 'title': 'Структура затрат'},
     {'id': 9, 'title': 'Количество заказов'},
   ];
-  List<GlobalKey> _tabKeys = [];
+  late List<GlobalKey> _tabKeys;
   late int _currentTabIndex;
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
-  bool _isSearching = false;
   bool isClickAvatarIcon = false;
 
-  void _onSearch(String input) {}
+  final Map<int, Map<String, dynamic>> _filters = {};
+  String _currentSearch = '';
 
-  void _resetSearch() {
-    _searchController.clear();
-    _onSearch('');
-    setState(() {
-      _isSearching = false;
-    });
-  }
+  // Store bloc instances
+  late SalesDashboardGoodsBloc _goodsBloc;
+  late SalesDashboardCashBalanceBloc _cashBalanceBloc;
+  late SalesDashboardCreditorsBloc _creditorsBloc;
+  late SalesDashboardDebtorsBloc _debtorsBloc;
+  late SalesDashboardTopSellingGoodsBloc _topSellingGoodsBloc;
 
   @override
   void initState() {
     super.initState();
+
+    // Initialize blocs
+    _goodsBloc = SalesDashboardGoodsBloc()..add(LoadGoodsReport());
+    _cashBalanceBloc = SalesDashboardCashBalanceBloc()..add(LoadCashBalanceReport());
+    _creditorsBloc = SalesDashboardCreditorsBloc()..add(LoadCreditorsReport());
+    _debtorsBloc = SalesDashboardDebtorsBloc()..add(LoadDebtorsReport());
+    _topSellingGoodsBloc = SalesDashboardTopSellingGoodsBloc()..add(LoadTopSellingGoodsReport());
+
     _currentTabIndex = widget.currentTabIndex;
     _scrollController = ScrollController();
     _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
     _tabController = TabController(
       length: _tabTitles.length,
       vsync: this,
-      initialIndex: widget.currentTabIndex, // This is the key fix
+      initialIndex: widget.currentTabIndex,
     );
     _tabController.addListener(() {
+      if (_tabController.indexIsChanging) return;
       setState(() {
         _currentTabIndex = _tabController.index;
       });
       _scrollToActiveTab();
     });
 
-    // Optional: Scroll to the initial tab after the frame is built
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToActiveTab();
     });
@@ -114,56 +121,121 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
   void dispose() {
     _scrollController.dispose();
     _tabController.dispose();
+    _searchController.dispose();
+    _searchFocusNode.dispose();
+
+    // Dispose blocs
+    _goodsBloc.close();
+    _cashBalanceBloc.close();
+    _creditorsBloc.close();
+    _debtorsBloc.close();
+    _topSellingGoodsBloc.close();
+
     super.dispose();
+  }
+
+  void _onSearch(String query) {
+    setState(() {
+      _currentSearch = query;
+    });
+    _reloadCurrentTabData();
+  }
+
+  void _resetSearch() {
+    _searchController.clear();
+    setState(() {
+      _currentSearch = '';
+    });
+    _reloadCurrentTabData();
+  }
+
+  void _reloadCurrentTabData() {
+    final id = _tabTitles[_currentTabIndex]['id'];
+    final filter = _filters[_currentTabIndex] ?? {};
+    final search = _currentSearch;
+
+    if (id == 0) {
+      _goodsBloc.add(LoadGoodsReport(filter: filter, search: search));
+    } else if (id == 1) {
+      _cashBalanceBloc.add(LoadCashBalanceReport(filter: filter, search: search));
+    } else if (id == 2) {
+      _creditorsBloc.add(LoadCreditorsReport(filter: filter, search: search));
+    } else if (id == 3) {
+      _debtorsBloc.add(LoadDebtorsReport(filter: filter, search: search));
+    } else if (id == 4) {
+      _topSellingGoodsBloc.add(LoadTopSellingGoodsReport(filter: filter, search: search));
+    }
+  }
+
+  void _handleFilterSelected(Map<String, dynamic> selectedFilters) {
+    setState(() {
+      _filters[_currentTabIndex] = selectedFilters;
+    });
+    _reloadCurrentTabData();
+  }
+
+  void _handleResetFilters() {
+    setState(() {
+      _filters[_currentTabIndex] = {};
+    });
+    _reloadCurrentTabData();
   }
 
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        forceMaterialTransparency: true,
-        elevation: 0,
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<SalesDashboardGoodsBloc>.value(value: _goodsBloc),
+        BlocProvider<SalesDashboardCashBalanceBloc>.value(value: _cashBalanceBloc),
+        BlocProvider<SalesDashboardCreditorsBloc>.value(value: _creditorsBloc),
+        BlocProvider<SalesDashboardDebtorsBloc>.value(value: _debtorsBloc),
+        BlocProvider<SalesDashboardTopSellingGoodsBloc>.value(value: _topSellingGoodsBloc),
+      ],
+      child: Scaffold(
         backgroundColor: Colors.white,
-        automaticallyImplyLeading: !isClickAvatarIcon,
-        title: CustomAppBarReports(
-          title: isClickAvatarIcon
-              ? localizations!.translate('appbar_settings')
-              : localizations!.translate('appbar_detailed_report'),
-          onClickProfileAvatar: () {
-            setState(() {
-              isClickAvatarIcon = !isClickAvatarIcon;
-              //print('CategoryScreen: Переключение на профиль: $isClickAvatarIcon');
-            });
-          },
-          clearButtonClickFiltr: (isSearching) {},
-          showSearchIcon: !isClickAvatarIcon,
-          showFilterIcon: !isClickAvatarIcon,
-          currentTabIndex: _currentTabIndex,
-          onChangedSearchInput: (input) {
-            _onSearch(input);
-          },
-          textEditingController: _searchController,
-          focusNode: _searchFocusNode,
-          clearButtonClick: (isSearching) {
-            _resetSearch();
-          },
-          currentFilters: {},
+        appBar: AppBar(
+          forceMaterialTransparency: true,
+          elevation: 0,
+          backgroundColor: Colors.white,
+          automaticallyImplyLeading: !isClickAvatarIcon,
+          title: CustomAppBarReports(
+            title: isClickAvatarIcon
+                ? localizations!.translate('appbar_settings')
+                : localizations!.translate('appbar_detailed_report'),
+            onClickProfileAvatar: () {
+              setState(() {
+                isClickAvatarIcon = !isClickAvatarIcon;
+              });
+            },
+            clearButtonClickFiltr: (isSearching) {},
+            showSearchIcon: !isClickAvatarIcon,
+            showFilterIcon: !isClickAvatarIcon,
+            currentTabIndex: _currentTabIndex,
+            onChangedSearchInput: _onSearch,
+            textEditingController: _searchController,
+            focusNode: _searchFocusNode,
+            clearButtonClick: (isSearching) {
+              _resetSearch();
+            },
+            currentFilters: _filters[_currentTabIndex] ?? {},
+            onFilterSelected: _handleFilterSelected,
+            onResetFilters: _handleResetFilters,
+          ),
+        ),
+        body: isClickAvatarIcon
+            ? ProfileScreen()
+            : Column(
+          children: [
+            const SizedBox(height: 15),
+            _buildCustomTabBar(),
+            Expanded(
+              child: _buildTabBarView(),
+            ),
+          ],
         ),
       ),
-      body: isClickAvatarIcon
-          ? ProfileScreen()
-          : Column(
-              children: [
-                const SizedBox(height: 15),
-                _buildCustomTabBar(),
-                Expanded(
-                  child: _buildTabBarView(),
-                ),
-              ],
-            ),
     );
   }
 
@@ -214,32 +286,16 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
 
   Widget _buildTabContent(int id, String tabTitle) {
     if (id == 0) {
-      return BlocProvider(
-        create: (context) => SalesDashboardGoodsBloc(),
-        child: GoodsContent(),
-      );
+      return GoodsContent();
     } else if (id == 1) {
-      return BlocProvider(
-        create: (context) => SalesDashboardCashBalanceBloc(),
-        child: CashBalanceContent(),
-      );
+      return CashBalanceContent();
     } else if (id == 2) {
-      return BlocProvider(
-        create: (context) => SalesDashboardCreditorsBloc(),
-        child: CreditorsContent(),
-      );
+      return CreditorsContent();
     } else if (id == 3) {
-      return BlocProvider(
-        create: (context) => SalesDashboardDebtorsBloc(),
-        child: DebtorsContent(),
-      );
+      return DebtorsContent();
     } else if (id == 4) {
-      return BlocProvider(
-        create: (context) => SalesDashboardTopSellingGoodsBloc(),
-        child: TopSellingGoodsContent(),
-      );
+      return TopSellingGoodsContent();
     }
-    // etc...
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -247,7 +303,12 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ...List.generate(
-              5, (index) => Container(margin: EdgeInsets.only(bottom: 16), child: Container(color: Colors.blue, height: 200))),
+            5,
+                (index) => Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              child: Container(color: Colors.blue, height: 200),
+            ),
+          ),
         ],
       ),
     );
@@ -259,17 +320,17 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
       final box = keyContext.findRenderObject() as RenderBox;
       final position = box.localToGlobal(Offset.zero, ancestor: context.findRenderObject());
       final tabWidth = box.size.width;
+      final screenWidth = MediaQuery.of(context).size.width;
 
-      if (position.dx < 0 || (position.dx + tabWidth) > MediaQuery.of(context).size.width) {
-        double targetOffset = _scrollController.offset + position.dx - (MediaQuery.of(context).size.width / 2) + (tabWidth / 2);
+      if (position.dx < 0 || (position.dx + tabWidth) > screenWidth) {
+        double targetOffset = _scrollController.offset + position.dx - (screenWidth / 2) + (tabWidth / 2);
+        targetOffset = targetOffset.clamp(0.0, _scrollController.position.maxScrollExtent);
 
-        if (targetOffset != _scrollController.offset) {
-          _scrollController.animateTo(
-            targetOffset,
-            duration: Duration(milliseconds: 100),
-            curve: Curves.linear,
-          );
-        }
+        _scrollController.animateTo(
+          targetOffset,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
       }
     }
   }

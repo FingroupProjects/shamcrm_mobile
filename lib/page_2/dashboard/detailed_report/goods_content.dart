@@ -13,12 +13,6 @@ class GoodsContent extends StatefulWidget {
 }
 
 class _GoodsContentState extends State<GoodsContent> {
-  @override
-  void initState() {
-    super.initState();
-    context.read<SalesDashboardGoodsBloc>().add(const LoadGoodsReport());
-  }
-
   Widget _buildGoodsList(List<DashboardGoods> goods) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
