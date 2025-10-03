@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../models/page_2/dashboard/creditors_model.dart';
 import '../../../bloc/page_2_BLOC/dashboard/creditors/sales_dashboard_creditors_bloc.dart';
-import 'cards/our_debts_card.dart';
+import 'cards/creditor_card.dart';
 
 class CreditorsContent extends StatefulWidget {
   const CreditorsContent({super.key});
@@ -13,61 +13,100 @@ class CreditorsContent extends StatefulWidget {
 }
 
 class _CreditorsContentState extends State<CreditorsContent> {
+  bool isSelectionMode = false;
+  Set<int> selectedCreditors = {};
+
   @override
   void initState() {
     super.initState();
     context.read<SalesDashboardCreditorsBloc>().add(const LoadCreditorsReport());
   }
 
+  void _toggleSelectionMode() {
+    setState(() {
+      isSelectionMode = !isSelectionMode;
+      if (!isSelectionMode) {
+        selectedCreditors.clear();
+      }
+    });
+  }
+
+  void _onCreditorTap(Creditor creditor) {
+    if (isSelectionMode) {
+      setState(() {
+        if (selectedCreditors.contains(creditor.id)) {
+          selectedCreditors.remove(creditor.id);
+        } else {
+          selectedCreditors.add(creditor.id);
+        }
+      });
+    }
+  }
+
+  void _onCreditorLongPress(Creditor creditor) {
+    if (!isSelectionMode) {
+      setState(() {
+        isSelectionMode = true;
+        selectedCreditors.add(creditor.id);
+      });
+    }
+  }
+
   Widget _buildCreditorsList(CreditorsResponse data) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          if (data.result != null)
-            Container(
-              margin: EdgeInsets.only(bottom: 16),
-              child: OurDebtsCard(
-                amount: data.result!.totalDebt.toString(),
-                onTap: () {},
-                isSelected: false,
-              ),
-            ),
-        ],
-      ),
+    return Expanded(
+      child: data.result?.creditors.isNotEmpty == true
+          ? ListView.separated(
+        separatorBuilder: (context, index) => SizedBox(height: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        itemCount: data.result!.creditors.length,
+        itemBuilder: (context, index) {
+          final creditor = data.result!.creditors[index];
+          return CreditorCard(
+            creditor: creditor,
+            onClick: _onCreditorTap,
+            onLongPress: _onCreditorLongPress,
+            isSelectionMode: isSelectionMode,
+            isSelected: selectedCreditors.contains(creditor.id),
+          );
+        },
+      )
+          : _buildEmptyState(),
     );
   }
 
   Widget _buildEmptyState() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.credit_card_off_outlined,
-            size: 64,
-            color: Color(0xff99A4BA),
-          ),
-          SizedBox(height: 16),
-          Text(
-            'Нет кредиторской задолженности',
-            style: TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
-            ),
-          ),
-          SizedBox(height: 8),
-          Text(
-            'Все долги перед поставщиками погашены',
-            style: TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 14,
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.credit_card_off_outlined,
+              size: 64,
               color: Color(0xff99A4BA),
             ),
-          ),
-        ],
+            SizedBox(height: 16),
+            Text(
+              'Нет кредиторской задолженности',
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Color(0xff1E2E52),
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Все долги перед поставщиками погашены',
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 14,
+                color: Color(0xff99A4BA),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

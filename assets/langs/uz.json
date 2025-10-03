@@ -1471,7 +1471,10 @@
   "error_loading_suppliers": "Ta'minotchilarni yuklashda xatolik",
   "error_selecting_outcome_category": "Xarajat toifasini tanlashda xatolik",
   "last_year": "O'tgan yil",
-  "days_without_movement": "Harakatsiz kunlar"
+  "days_without_movement": "Harakatsiz kunlar",
+  "creditor_name_details": "Ism",
+  "debtor_name_details": "Ism",
+  "debt_amount": "Summa"
 
 
 

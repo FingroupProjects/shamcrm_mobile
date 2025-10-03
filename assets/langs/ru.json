@@ -1475,7 +1475,10 @@
   "income_goods":"Приход товаров",
 
   "last_year": "Прошлый год",
-  "days_without_movement": "Дней без движения"
+  "days_without_movement": "Дней без движения",
+  "creditor_name_details": "Имя",
+  "debtor_name_details": "Имя",
+  "debt_amount": "Сумма"
 
 
 
