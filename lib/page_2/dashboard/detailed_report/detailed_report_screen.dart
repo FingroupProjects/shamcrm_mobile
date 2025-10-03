@@ -176,26 +176,41 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
     return TabBarView(
       controller: _tabController,
       children: List.generate(_tabTitles.length, (index) {
-        return _buildTabContent(_tabTitles[index]['title']);
+        return _buildTabContent(_tabTitles[index]['id'], _tabTitles[index]['title']);
       }),
     );
   }
 
-  Widget _buildTabContent(String tabTitle) {
-    if (tabTitle == 'Товары / Неликвидный товары') {
+  Widget _buildTabContent(int id, String tabTitle) {
+    if (id == 0) {
       return BlocProvider(
         create: (context) => SalesDashboardGoodsBloc(),
         child: GoodsContent(),
       );
+    } else if (id == 1) {
+      // return BlocProvider(
+      //   create: (context) => SalesDashboardGoodsBloc(),
+      //   child: GoodsContent(),
+      // );
+    }  else if (id == 2) {
+      // return BlocProvider(
+      //   create: (context) => SalesDashboardGoodsBloc(),
+      //   child: GoodsContent(),
+      // );
+    }  else if (id == 3) {
+      // return BlocProvider(
+      //   create: (context) => SalesDashboardGoodsBloc(),
+      //   child: GoodsContent(),
+      // );
     }
+    // etc...
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ...List.generate(
-              5, (index) => Container(margin: EdgeInsets.only(bottom: 16), child: _buildSpecializedCard(tabTitle, index))),
+          ...List.generate(5, (index) => Container(margin: EdgeInsets.only(bottom: 16), child: _buildSpecializedCard(tabTitle, index))),
         ],
       ),
     );
@@ -267,7 +282,6 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
       goods: DashboardGoods(
           storages: [],
           id: 1,
-          article: 'article',
           name: 'name',
           category: 'category',
           totalQuantity: '1',

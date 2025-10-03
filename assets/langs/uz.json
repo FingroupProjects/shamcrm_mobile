@@ -1470,7 +1470,8 @@
   "error_loading_outcome_categories": "Xarajat toifalarini yuklashda xatolik",
   "error_loading_suppliers": "Ta'minotchilarni yuklashda xatolik",
   "error_selecting_outcome_category": "Xarajat toifasini tanlashda xatolik",
-  "last_year": "O'tgan yil"
+  "last_year": "O'tgan yil",
+  "days_without_movement": "Harakatsiz kunlar"
 
 
 

@@ -27,15 +27,7 @@ class GoodsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
-    return Container();
-
-
-  }
-}
-
-/*
-final localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context)!;
 
     return GestureDetector(
       onTap: () => onClick(goods),
@@ -54,51 +46,18 @@ final localizations = AppLocalizations.of(context)!;
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          '${localizations.translate('goods') ?? 'Товар'} №${goods.id}',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xff1E2E52),
-                          ),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          localizations.translate('available') ?? 'Доступен',
-                          style: TextStyle(
-                            color: Colors.green,
-                            fontSize: 12,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
                   Text(
-                    '${localizations.translate('article') ?? 'Артикул'}: ${goods.article}',
+                    '${localizations.translate('goods_name_details') ?? 'Название'}: ${goods.name}',
                     style: const TextStyle(
-                      fontSize: 16,
+                      fontSize: 14,
                       fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w400,
                       color: Color(0xff1E2E52),
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${localizations.translate('name') ?? 'Название'}: ${goods.name}',
+                    '${localizations.translate('category_details') ?? 'Категория'}: ${goods.category}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
@@ -108,7 +67,7 @@ final localizations = AppLocalizations.of(context)!;
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${localizations.translate('category') ?? 'Категория'}: ${goods.category}',
+                    '${localizations.translate('days_without_movement') ?? 'Дней без движения'}: ${goods.daysWithoutMovement}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
@@ -118,17 +77,7 @@ final localizations = AppLocalizations.of(context)!;
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${localizations.translate('quantity') ?? 'Количество'}: ${goods.quantity}',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xff1E2E52),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${localizations.translate('days_without_movement') ?? 'Дни без движения'}: ${goods.daysWithoutMovement}',
+                    '${localizations.translate('quantity') ?? 'Количество'}: ${goods.totalQuantity}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
@@ -140,10 +89,10 @@ final localizations = AppLocalizations.of(context)!;
                   Text(
                     '${localizations.translate('sum') ?? 'Сумма'}: ${_formatAmount(goods.sum)}',
                     style: const TextStyle(
-                      fontSize: 16,
+                      fontSize: 14,
                       fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xff1E2E52),
+                      fontWeight: FontWeight.w400,
+                      color: Color(0xff99A4BA),
                     ),
                   ),
                 ],
@@ -163,4 +112,5 @@ final localizations = AppLocalizations.of(context)!;
         ),
       ),
     );
- */
+  }
+}
