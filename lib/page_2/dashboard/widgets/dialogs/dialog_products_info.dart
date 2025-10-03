@@ -72,22 +72,6 @@ class _InfoDialogState extends State<InfoDialog> {
                   ),
                 ),
               ),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Color(0xff1E2E52),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '${items.length}',
-                  style: TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
             ],
           ),
         ),
@@ -122,15 +106,6 @@ class _InfoDialogState extends State<InfoDialog> {
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                     color: Color(0xff475569),
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Все товары имеют движение',
-                  style: TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 14,
-                    color: Color(0xff64748B),
                   ),
                 ),
               ],
@@ -183,23 +158,23 @@ class _InfoDialogState extends State<InfoDialog> {
             ),
             child: Row(
               children: [
-                Container(
-                  padding: EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: Color(0xff1E2E52).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    item.article,
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xff1E2E52),
-                    ),
-                  ),
-                ),
-                SizedBox(width: 12),
+                // Container(
+                //   padding: EdgeInsets.all(6),
+                //   decoration: BoxDecoration(
+                //     color: Color(0xff1E2E52).withOpacity(0.1),
+                //     borderRadius: BorderRadius.circular(6),
+                //   ),
+                //   child: Text(
+                //     item.article,
+                //     style: TextStyle(
+                //       fontFamily: 'Gilroy',
+                //       fontSize: 12,
+                //       fontWeight: FontWeight.w700,
+                //       color: Color(0xff1E2E52),
+                //     ),
+                //   ),
+                // ),
+                // SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     item.name,
@@ -245,13 +220,15 @@ class _InfoDialogState extends State<InfoDialog> {
                           ),
                         ),
                         SizedBox(height: 4),
-                        Text(
-                          item.category,
-                          style: TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xff1E2E52),
+                        FittedBox(
+                          child: Text(
+                            item.category,
+                            style: TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xff1E2E52),
+                            ),
                           ),
                         ),
                       ],
@@ -276,25 +253,29 @@ class _InfoDialogState extends State<InfoDialog> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Дней без движения:',
-                          style: TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xff475569),
+                        FittedBox(
+                          child: Text(
+                            'Дней без движения:',
+                            style: TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xff475569),
+                            ),
                           ),
                         ),
                         SizedBox(height: 4),
-                        Text(
-                          item.daysWithoutMovement,
-                          style: TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xff1E2E52),
+                        FittedBox(
+                          child: Text(
+                            item.daysWithoutMovement,
+                            style: TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xff1E2E52),
+                            ),
                           ),
-                        ),
+                        )
                       ],
                     ),
                   ),
@@ -334,7 +315,7 @@ class _InfoDialogState extends State<InfoDialog> {
                         ),
                         SizedBox(height: 4),
                         Text(
-                          item.quantity,
+                          item.totalQuantity,
                           style: TextStyle(
                             fontFamily: 'Gilroy',
                             fontSize: 16,
@@ -471,88 +452,87 @@ class _InfoDialogState extends State<InfoDialog> {
                 Flexible(
                   child: state is SalesDashboardGoodsLoading
                       ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        CircularProgressIndicator(
-                          color: Color(0xff1E2E52),
-                        ),
-                        SizedBox(height: 16),
-                        Text(
-                          'Загрузка данных...',
-                          style: TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontSize: 16,
-                            color: Color(0xff64748B),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              CircularProgressIndicator(
+                                color: Color(0xff1E2E52),
+                              ),
+                              SizedBox(height: 16),
+                              Text(
+                                'Загрузка данных...',
+                                style: TextStyle(
+                                  fontFamily: 'Gilroy',
+                                  fontSize: 16,
+                                  color: Color(0xff64748B),
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                      ],
-                    ),
-                  )
+                        )
                       : state is SalesDashboardGoodsError
-                      ? Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.error_outline,
-                            size: 48,
-                            color: Color(0xffEF4444),
-                          ),
-                          SizedBox(height: 16),
-                          Text(
-                            'Ошибка загрузки',
-                            style: TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xff1E2E52),
-                            ),
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            state.message,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 14,
-                              color: Color(0xff64748B),
-                            ),
-                          ),
-                          SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: () {
-                              context.read<SalesDashboardGoodsBloc>().add(const LoadGoodsReport());
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Color(0xff1E2E52),
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
+                          ? Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(24),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.error_outline,
+                                      size: 48,
+                                      color: Color(0xffEF4444),
+                                    ),
+                                    SizedBox(height: 16),
+                                    Text(
+                                      'Ошибка загрузки',
+                                      style: TextStyle(
+                                        fontFamily: 'Gilroy',
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xff1E2E52),
+                                      ),
+                                    ),
+                                    SizedBox(height: 8),
+                                    Text(
+                                      state.message,
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontFamily: 'Gilroy',
+                                        fontSize: 14,
+                                        color: Color(0xff64748B),
+                                      ),
+                                    ),
+                                    SizedBox(height: 16),
+                                    ElevatedButton(
+                                      onPressed: () {
+                                        context.read<SalesDashboardGoodsBloc>().add(const LoadGoodsReport());
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Color(0xff1E2E52),
+                                        foregroundColor: Colors.white,
+                                        elevation: 0,
+                                        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        'Повторить',
+                                        style: TextStyle(
+                                          fontFamily: 'Gilroy',
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
+                            )
+                          : SingleChildScrollView(
+                              padding: EdgeInsets.all(24),
+                              child:
+                                  state is SalesDashboardGoodsLoaded ? _buildProductsInfo(state.goods) : _buildProductsInfo([]),
                             ),
-                            child: Text(
-                              'Повторить',
-                              style: TextStyle(
-                                fontFamily: 'Gilroy',
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
-                      : SingleChildScrollView(
-                    padding: EdgeInsets.all(24),
-                    child: state is SalesDashboardGoodsLoaded
-                        ? _buildProductsInfo(state.goods)
-                        : _buildProductsInfo([]),
-                  ),
                 ),
 
                 // Footer

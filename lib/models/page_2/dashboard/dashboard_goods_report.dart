@@ -40,19 +40,23 @@ class Pagination {
 
 class DashboardGoods {
   final int id;
-  final String article;
+  final int? goodVariantId; // New field
+  final String? article; // Made optional
   final String name;
   final String category;
-  final String quantity;
+  final String totalQuantity; // Renamed from quantity
+  final List<Storage> storages; // New field for storages array
   final String daysWithoutMovement;
   final String sum;
 
   DashboardGoods({
     required this.id,
-    required this.article,
+    this.goodVariantId,
+    this.article,
     required this.name,
     required this.category,
-    required this.quantity,
+    required this.totalQuantity,
+    required this.storages,
     required this.daysWithoutMovement,
     required this.sum,
   });
@@ -60,12 +64,34 @@ class DashboardGoods {
   factory DashboardGoods.fromJson(Map<String, dynamic> json) {
     return DashboardGoods(
       id: json['id'] as int,
-      article: json['article'] as String,
+      goodVariantId: json['good_variant_id'] as int?,
+      article: json['article'] as String?,
       name: json['name'] as String,
       category: json['category'] as String,
-      quantity: json['quantity'] as String,
+      totalQuantity: json['total_quantity'] as String,
+      storages: (json['storages'] as List?)?.map((i) => Storage.fromJson(i)).toList() ?? [],
       daysWithoutMovement: json['days_without_movement'] as String,
       sum: json['sum'] as String,
+    );
+  }
+}
+
+class Storage {
+  final int id;
+  final String name;
+  final String quantity;
+
+  Storage({
+    required this.id,
+    required this.name,
+    required this.quantity,
+  });
+
+  factory Storage.fromJson(Map<String, dynamic> json) {
+    return Storage(
+      id: json['id'] as int,
+      name: json['name'] as String,
+      quantity: json['quantity'] as String,
     );
   }
 }

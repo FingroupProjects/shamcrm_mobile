@@ -313,7 +313,9 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
 
   // Goods Card - for displaying goods/illiquid goods
   Widget _buildGoodsCard(int index) {
-    return GoodsCard(goods: DashboardGoods(id: 1, article: 'article', name: 'name', category: 'category', quantity: '1', daysWithoutMovement: '1', sum: '1'), onClick: (e) {}, onLongPress: (e) {}, isSelectionMode: false, isSelected: false);
+    return GoodsCard(goods: DashboardGoods(
+        storages: [],
+        id: 1, article: 'article', name: 'name', category: 'category', totalQuantity: '1', daysWithoutMovement: '1', sum: '1'), onClick: (e) {}, onLongPress: (e) {}, isSelectionMode: false, isSelected: false, );
   }
 
   // Generic fallback card
