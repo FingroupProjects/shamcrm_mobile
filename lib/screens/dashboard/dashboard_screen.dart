@@ -75,6 +75,8 @@ import '../../page_2/dashboard/widgets/dialogs/dialog_products_info.dart';
 import '../../page_2/dashboard/widgets/stat_card.dart';
 import '../../widgets/snackbar_widget.dart';
 
+
+
 // Enum для типов дашборда
 enum DashboardType {
   crm,
@@ -92,8 +94,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool isLoading = true;
   bool isRefreshing = false;
   
-  // НОВОЕ: переменная для отслеживания активного дашборда
   DashboardType _activeDashboard = DashboardType.crm;
+  
+  // НОВОЕ: Флаг для проверки прав на дашборд учёта
+  bool _hasAccountingDashboardPermission = false;
 
   final GlobalKey keyNotificationIcon = GlobalKey();
   final GlobalKey keyMyTaskIcon = GlobalKey();
@@ -133,12 +137,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
         await Future.wait([
           _loadUserRoles(),
           _checkPermissionsAndTutorial(),
+          _checkAccountingDashboardPermission(), // НОВОЕ: Проверяем право
           Future.delayed(const Duration(seconds: 3)),
         ]);
         await prefs.setBool('isFirstTime', false);
       } else {
         await _loadUserRoles();
         await _checkPermissionsAndTutorial();
+        await _checkAccountingDashboardPermission(); // НОВОЕ: Проверяем право
       }
 
       if (mounted) {
@@ -147,10 +153,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
         });
       }
     } catch (e) {
-      //print('Error in initialization: $e');
       if (mounted) {
         setState(() {
           isLoading = false;
+        });
+      }
+    }
+  }
+
+  // НОВОЕ: Метод для проверки права на дашборд учёта
+  Future<void> _checkAccountingDashboardPermission() async {
+    try {
+      final hasPermission = await _apiService.hasPermission('accounting_dashboard');
+      if (mounted) {
+        setState(() {
+          _hasAccountingDashboardPermission = hasPermission;
+        });
+      }
+    } catch (e) {
+      debugPrint('Ошибка при проверке права accounting_dashboard: $e');
+      if (mounted) {
+        setState(() {
+          _hasAccountingDashboardPermission = false;
         });
       }
     }
@@ -186,7 +210,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         await prefs.setString('userRoles', userRoles.join(','));
       }
     } catch (e) {
-      //print('Error loading user roles: $e');
       if (mounted) {
         setState(() {
           userRoles = ['Error loading roles'];
@@ -197,7 +220,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _checkPermissionsAndTutorial() async {
     if (_isPermissionsChecked) {
-      //print('Permissions already checked for dashboard, skipping');
       return;
     }
 
@@ -206,7 +228,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final progress = await _apiService.getTutorialProgress();
-      //print('Tutorial Progress for dashboard: $progress');
 
       setState(() {
         tutorialProgress = progress['result'];
@@ -217,7 +238,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           'tutorial_progress', json.encode(progress['result']));
 
       bool isTutorialShown = prefs.getBool('isTutorialShownDashboard') ?? false;
-      //print('isTutorialShown for dashboard: $isTutorialShown');
 
       setState(() {
         _isTutorialShown = isTutorialShown;
@@ -227,24 +247,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
           tutorialProgress != null &&
           !_hasDashboardIndexPermission &&
           mounted) {
-        //print('Scheduling tutorial display for dashboard');
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
             _initTutorialTargets();
-            //showTutorial();
-          } else {
-            //print('Widget not mounted, skipping tutorial for dashboard');
           }
         });
-      } else {
-        //print('Tutorial not shown for dashboard. Reasons:');
-        //print('isTutorialShown: $isTutorialShown');
-        //print('tutorialProgress: $tutorialProgress');
-        //print('hasDashboardIndexPermission: $_hasDashboardIndexPermission');
-        //print('mounted: $mounted');
       }
     } catch (e) {
-      //print('Error fetching tutorial progress for dashboard: $e');
+      debugPrint('Error fetching tutorial progress for dashboard: $e');
     }
   }
 
@@ -259,7 +269,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-void _initAdminTutorialTargets() {
+  void _initAdminTutorialTargets() {
     targets.addAll([
       createTarget(
         identify: "dashboardNotificationIcon",
@@ -354,7 +364,7 @@ void _initAdminTutorialTargets() {
         contentPosition: ContentPosition.below,
       ),
     ]);
-}
+  }
 
   void _initTutorialTargetsManagers() {
     targets.addAll([
@@ -506,7 +516,6 @@ void _initAdminTutorialTargets() {
 
   void showTutorial() async {
     if (_isTutorialShown) {
-      //print('Tutorial already shown for dashboard, skipping');
       return;
     }
 
@@ -516,11 +525,9 @@ void _initAdminTutorialTargets() {
     if (isTutorialShown ||
         tutorialProgress == null ||
         _hasDashboardIndexPermission) {
-      //print('Tutorial not shown in showTutorial for dashboard');
       return;
     }
 
-    //print('Showing tutorial for dashboard');
     TutorialCoachMark(
       targets: targets,
       textSkip: AppLocalizations.of(context)!.translate('skip'),
@@ -538,11 +545,8 @@ void _initAdminTutorialTargets() {
       ),
       colorShadow: Color(0xff1E2E52),
       onSkip: () {
-        //print("Tutorial skipped for dashboard");
         prefs.setBool('isTutorialShownDashboard', true).then((_) {
-          _apiService.markPageCompleted("dashboard", "index").catchError((e) {
-            //print('Error marking page completed on skip for dashboard: $e');
-          });
+          _apiService.markPageCompleted("dashboard", "index").catchError((e) {});
         });
         setState(() {
           _isTutorialShown = true;
@@ -550,13 +554,10 @@ void _initAdminTutorialTargets() {
         return true;
       },
       onFinish: () async {
-        //print("Tutorial finished for dashboard");
         await prefs.setBool('isTutorialShownDashboard', true);
         try {
           await _apiService.markPageCompleted("dashboard", "index");
-        } catch (e) {
-          //print('Error marking page completed on finish for dashboard: $e');
-        }
+        } catch (e) {}
         setState(() {
           _isTutorialShown = true;
         });
@@ -583,8 +584,6 @@ void _initAdminTutorialTargets() {
         duration: Duration(milliseconds: 500),
         curve: Curves.easeInOut,
       );
-    } else {
-      //print("Error: Unable to find render object for key");
     }
   }
 
@@ -603,7 +602,6 @@ void _initAdminTutorialTargets() {
           isRefreshing = false;
         });
 
-        // Обновляем только блоки активного дашборда
         if (_activeDashboard == DashboardType.crm) {
           context.read<TaskCompletionBloc>().add(LoadTaskCompletionData());
           context.read<DashboardChartBloc>().add(LoadLeadChartData());
@@ -625,9 +623,6 @@ void _initAdminTutorialTargets() {
           context
               .read<ProcessSpeedBlocManager>()
               .add(LoadProcessSpeedDataManager());
-        } else {
-          // Обновляем блоки для дашборда учёта если необходимо
-          // context.read<SalesDashboardBloc>().add(...);
         }
       }
     } catch (e) {
@@ -645,7 +640,6 @@ void _initAdminTutorialTargets() {
     
     return MultiBlocProvider(
       providers: [
-        // Блоки для дашборда учёта
         BlocProvider(
           create: (context) => SalesDashboardBloc(),
         ),
@@ -699,16 +693,16 @@ void _initAdminTutorialTargets() {
                 children: [
                   Column(
                     children: [
-                      // НОВОЕ: Переключатель дашбордов
-                      DashboardSwitcher(
-                        activeDashboard: _activeDashboard,
-                        onDashboardChanged: (type) {
-                          setState(() {
-                            _activeDashboard = type;
-                          });
-                        },
-                      ),
-                      // НОВОЕ: Контент в Expanded
+                      // ИЗМЕНЕНО: Показываем переключатель только если есть право
+                      if (_hasAccountingDashboardPermission)
+                        DashboardSwitcher(
+                          activeDashboard: _activeDashboard,
+                          onDashboardChanged: (type) {
+                            setState(() {
+                              _activeDashboard = type;
+                            });
+                          },
+                        ),
                       Expanded(
                         child: RefreshIndicator(
                           color: const Color(0xff1E2E52),
@@ -719,9 +713,10 @@ void _initAdminTutorialTargets() {
                             physics: const AlwaysScrollableScrollPhysics(),
                             padding: const EdgeInsets.all(16),
                             child: Column(
-                              children: _activeDashboard == DashboardType.crm
-                                  ? _buildDashboardContent()
-                                  : _buildAccountingDashboard(),
+                              // ИЗМЕНЕНО: Показываем дашборд учёта только если есть право
+                              children: (_hasAccountingDashboardPermission && _activeDashboard == DashboardType.accounting)
+                                  ? _buildAccountingDashboard()
+                                  : _buildDashboardContent(),
                             ),
                           ),
                         ),
@@ -782,7 +777,6 @@ void _initAdminTutorialTargets() {
     }
   }
 
-  // НОВОЕ: Метод для контента дашборда учёта
   List<Widget> _buildAccountingDashboard() {
     return [
       BlocConsumer<SalesDashboardBloc, SalesDashboardState>(
@@ -836,7 +830,7 @@ void _initAdminTutorialTargets() {
   }
 }
 
-// НОВОЕ: Виджет переключателя дашбордов
+// Виджет переключателя дашбордов (без изменений)
 class DashboardSwitcher extends StatelessWidget {
   final DashboardType activeDashboard;
   final Function(DashboardType) onDashboardChanged;

@@ -10,12 +10,10 @@ import 'package:crm_task_manager/page_2/warehouse/movement/movement_screen.dart'
 import 'package:crm_task_manager/page_2/warehouse/references_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/supplier_return_document/supplier_return_document_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/write_off/write_off_screen.dart';
-// NEW: Добавлены импорты для новых экранов
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
 
-// WarehouseAccountingScreen - страница учета склада с документами
 class WarehouseAccountingScreen extends StatefulWidget {
   @override
   _WarehouseAccountingScreenState createState() =>
@@ -27,214 +25,272 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
   bool isClickAvatarIcon = false;
   bool _isLoading = true;
 
-  // Список документов склада
   List<WarehouseDocument> _documents = [];
+  
+  // Флаги прав доступа для каждого документа
+  bool _hasIncomeDocument = false;
+  bool _hasMovementDocument = false;
+  bool _hasWriteOffDocument = false;
+  bool _hasExpenseDocument = false;
+  bool _hasClientReturnDocument = false;
+  bool _hasSupplierReturnDocument = false;
+  bool _hasMoneyIncome = false;
+  bool _hasMoneyOutcome = false;
+  bool _showReferences = false;
 
   @override
   void initState() {
     super.initState();
-    // _initializeDocuments перенесён в didChangeDependencies
+    _checkPermissions();
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _initializeDocuments();
+    if (!_isLoading) {
+      _initializeDocuments();
+    }
+  }
+
+  Future<void> _checkPermissions() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Проверяем права для каждого документа отдельно
+      _hasIncomeDocument = await _apiService.hasPermission('income_document.read');
+      _hasMovementDocument = await _apiService.hasPermission('movement_document.read');
+      _hasWriteOffDocument = await _apiService.hasPermission('write_off_document.read');
+      _hasExpenseDocument = await _apiService.hasPermission('expense_document.read');
+      _hasClientReturnDocument = await _apiService.hasPermission('client_return_document.read');
+      _hasSupplierReturnDocument = await _apiService.hasPermission('supplier_return_document.read');
+      _hasMoneyIncome = await _apiService.hasPermission('checking_account_pko.read');
+      _hasMoneyOutcome = await _apiService.hasPermission('checking_account_rko.read');
+      
+      // Проверяем права для справочников
+      final hasStorage = await _apiService.hasPermission('storage.read');
+      final hasUnit = await _apiService.hasPermission('unit.read');
+      final hasSupplier = await _apiService.hasPermission('supplier.read');
+      final hasCashRegister = await _apiService.hasPermission('cash_register.read');
+      final hasRkoArticle = await _apiService.hasPermission('rko_article.read');
+      final hasPkoArticle = await _apiService.hasPermission('pko_article.read');
+      
+      // Справочники показываются если есть хотя бы одно право из документов или справочников
+      _showReferences = _hasIncomeDocument ||
+          _hasMovementDocument ||
+          _hasWriteOffDocument ||
+          _hasExpenseDocument ||
+          _hasClientReturnDocument ||
+          _hasSupplierReturnDocument ||
+          _hasMoneyIncome ||
+          _hasMoneyOutcome ||
+          hasStorage ||
+          hasUnit ||
+          hasSupplier ||
+          hasCashRegister ||
+          hasRkoArticle ||
+          hasPkoArticle;
+      
+    } catch (e) {
+      debugPrint('Ошибка при проверке прав доступа: $e');
+      _hasIncomeDocument = false;
+      _hasMovementDocument = false;
+      _hasWriteOffDocument = false;
+      _hasExpenseDocument = false;
+      _hasClientReturnDocument = false;
+      _hasSupplierReturnDocument = false;
+      _hasMoneyIncome = false;
+      _hasMoneyOutcome = false;
+      _showReferences = false;
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+      _initializeDocuments();
+    }
   }
 
   void _initializeDocuments() {
-    // Единый цвет для всех документов
     final Color docColor = const Color(0xff1E2E52);
+    List<WarehouseDocument> allDocuments = [];
 
-    _documents = [
-      WarehouseDocument(
-        title: AppLocalizations.of(context)!.translate('income_goods') ??
-            'Приход',
-        icon: Icons.add_box_outlined,
-        color: docColor,
-      ),
-      WarehouseDocument(
-        title: AppLocalizations.of(context)!.translate('transfer') ??
-            'Перемещение',
-        icon: Icons.swap_horiz,
-        color: docColor,
-      ),
-      WarehouseDocument(
-        title:
-            AppLocalizations.of(context)!.translate('write_off') ?? 'Списание',
-        icon: Icons.remove_circle_outline,
-        color: docColor,
-      ),
-      WarehouseDocument(
-        title: AppLocalizations.of(context)!.translate('client_sale') ??
-            'Реализация клиент',
-        icon: Icons.shopping_cart_outlined,
-        color: docColor,
-      ),
-      WarehouseDocument(
-        title: AppLocalizations.of(context)!.translate('client_return') ??
-            'Возврат от клиента',
-        icon: Icons.keyboard_return,
-        color: docColor,
-      ),
-      WarehouseDocument(
-        title: AppLocalizations.of(context)!.translate('supplier_return') ??
-            'Возврат поставщику',
-        icon: Icons.undo,
-        color: docColor,
-      ),
-      // NEW: Добавлены новые документы для финансов
-      WarehouseDocument(
-        title: AppLocalizations.of(context)!.translate('money_income') ?? 'Приход денег',
-        icon: Icons.add_circle_outline,
-        color: docColor,
-      ),
-      WarehouseDocument(
-        title: AppLocalizations.of(context)!.translate('money_outcome') ?? 'Расход денег',
-        icon: Icons.remove_circle_outline,
-        color: docColor,
-      ),
-    ];
+    // Добавляем документы только если есть соответствующее право
+    if (_hasIncomeDocument) {
+      allDocuments.add(
+        WarehouseDocument(
+          title: AppLocalizations.of(context)!.translate('income_goods') ?? 'Приход',
+          icon: Icons.add_box_outlined,
+          color: docColor,
+        ),
+      );
+    }
+
+    if (_hasMovementDocument) {
+      allDocuments.add(
+        WarehouseDocument(
+          title: AppLocalizations.of(context)!.translate('transfer') ?? 'Перемещение',
+          icon: Icons.swap_horiz,
+          color: docColor,
+        ),
+      );
+    }
+
+    if (_hasWriteOffDocument) {
+      allDocuments.add(
+        WarehouseDocument(
+          title: AppLocalizations.of(context)!.translate('write_off') ?? 'Списание',
+          icon: Icons.remove_circle_outline,
+          color: docColor,
+        ),
+      );
+    }
+
+    if (_hasExpenseDocument) {
+      allDocuments.add(
+        WarehouseDocument(
+          title: AppLocalizations.of(context)!.translate('client_sale') ?? 'Реализация клиент',
+          icon: Icons.shopping_cart_outlined,
+          color: docColor,
+        ),
+      );
+    }
+
+    if (_hasClientReturnDocument) {
+      allDocuments.add(
+        WarehouseDocument(
+          title: AppLocalizations.of(context)!.translate('client_return') ?? 'Возврат от клиента',
+          icon: Icons.keyboard_return,
+          color: docColor,
+        ),
+      );
+    }
+
+    if (_hasSupplierReturnDocument) {
+      allDocuments.add(
+        WarehouseDocument(
+          title: AppLocalizations.of(context)!.translate('supplier_return') ?? 'Возврат поставщику',
+          icon: Icons.undo,
+          color: docColor,
+        ),
+      );
+    }
+
+    if (_hasMoneyIncome) {
+      allDocuments.add(
+        WarehouseDocument(
+          title: AppLocalizations.of(context)!.translate('money_income') ?? 'Приход денег',
+          icon: Icons.add_circle_outline,
+          color: docColor,
+        ),
+      );
+    }
+
+    if (_hasMoneyOutcome) {
+      allDocuments.add(
+        WarehouseDocument(
+          title: AppLocalizations.of(context)!.translate('money_outcome') ?? 'Расход денег',
+          icon: Icons.remove_circle_outline,
+          color: docColor,
+        ),
+      );
+    }
 
     setState(() {
-      _isLoading = false;
+      _documents = allDocuments;
     });
   }
 
   void _navigateToDocument(WarehouseDocument document) {
-    if (document.title ==
-            AppLocalizations.of(context)!.translate('income_goods') ||
+    if (document.title == AppLocalizations.of(context)!.translate('income_goods') ||
         document.title == 'Приход') {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => IncomingScreen()),
       );
-    } else if (document.title ==
-            AppLocalizations.of(context)!.translate('client_sale') ||
+    } else if (document.title == AppLocalizations.of(context)!.translate('client_sale') ||
         document.title == 'Реализация клиент') {
       Navigator.push(
-          context, MaterialPageRoute(builder: (context) => ClientSaleScreen()));
-    } 
-    else if (document.title ==
-        AppLocalizations.of(context)!.translate('supplier_return') ||
-    document.title == 'Возврат поставщику') {
-  // Добавляем навигацию к экрану возврата поставщику
-  Navigator.push(
-    context,
-    MaterialPageRoute(builder: (context) => SupplierReturnScreen()),
-  );
-} else if (document.title ==
-        AppLocalizations.of(context)!.translate('client_return') ||
-    document.title == 'Возврат от клиента') {
-  // Добавляем навигацию к экрану возврата поставщику
-  Navigator.push(
-    context,
-    MaterialPageRoute(builder: (context) => ClientReturnScreen()),
-  );
-}else if (document.title ==
-        AppLocalizations.of(context)!.translate('write_off') ||
-    document.title == 'Списание') {
-  // Добавляем навигацию к экрану возврата поставщику
-  Navigator.push(
-    context,
-    MaterialPageRoute(builder: (context) => WriteOffScreen()),
-  );
-}
-else if (document.title ==
-        AppLocalizations.of(context)!.translate('transfer') ||
-    document.title == 'Перемещение') {
-  // Добавляем навигацию к экрану перемещения с organizationId
-  Navigator.push(
-    context,
-    MaterialPageRoute(builder: (context) => MovementScreen(organizationId: 1)), // или получите реальный ID
-  );
-  // NEW: Добавлена навигация для новых кнопок
-  } else if (document.title == AppLocalizations.of(context)!.translate('money_income') || document.title == 'Приход денег') {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => MoneyIncomeScreen()),
-    );
-  } else if (document.title == AppLocalizations.of(context)!.translate('money_outcome') || document.title == 'Расход денег') {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => MoneyOutcomeScreen()),
-    );
-  }
-  else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context)!
-                    .translate('navigate_to_document')
-                    ?.replaceAll('{document}', document.title) ??
-                'Переход к документу: ${document.title}',
-            style: const TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Colors.white,
-            ),
-          ),
-          backgroundColor: document.color,
-          behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          duration: const Duration(seconds: 2),
-        ),
+        context,
+        MaterialPageRoute(builder: (context) => ClientSaleScreen()),
+      );
+    } else if (document.title == AppLocalizations.of(context)!.translate('supplier_return') ||
+        document.title == 'Возврат поставщику') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => SupplierReturnScreen()),
+      );
+    } else if (document.title == AppLocalizations.of(context)!.translate('client_return') ||
+        document.title == 'Возврат от клиента') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => ClientReturnScreen()),
+      );
+    } else if (document.title == AppLocalizations.of(context)!.translate('write_off') ||
+        document.title == 'Списание') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => WriteOffScreen()),
+      );
+    } else if (document.title == AppLocalizations.of(context)!.translate('transfer') ||
+        document.title == 'Перемещение') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => MovementScreen(organizationId: 1)),
+      );
+    } else if (document.title == AppLocalizations.of(context)!.translate('money_income') ||
+        document.title == 'Приход денег') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => MoneyIncomeScreen()),
+      );
+    } else if (document.title == AppLocalizations.of(context)!.translate('money_outcome') ||
+        document.title == 'Расход денег') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => MoneyOutcomeScreen()),
       );
     }
-    
   }
 
   void _navigateToReferences() {
-    // Переход к странице справочников
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => ReferencesScreen()),
     );
   }
 
-  // АДАПТИВНЫЙ МЕТОД ДЛЯ СЕТКИ ДОКУМЕНТОВ С ПОДДЕРЖКОЙ СКРОЛЛА
   Widget _buildDocumentGrid() {
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Получаем размер экрана для более точной адаптации
         final screenWidth = MediaQuery.of(context).size.width;
         
-        // Определяем количество колонок в зависимости от ширины экрана
         int crossAxisCount;
         double childAspectRatio;
         
         if (screenWidth < 350) {
-          // Очень маленькие экраны
           crossAxisCount = 2;
           childAspectRatio = 0.9;
         } else if (screenWidth < 400) {
-          // Маленькие экраны (включая ваше устройство)
           crossAxisCount = 2;
           childAspectRatio = 1.0;
         } else if (screenWidth < 500) {
-          // Средние экраны 
           crossAxisCount = 2;
           childAspectRatio = 1.1;
         } else if (screenWidth < 600) {
-          // Большие телефоны
           crossAxisCount = 2;
           childAspectRatio = 1.2;
         } else if (screenWidth < 900) {
-          // Планшеты
           crossAxisCount = 3;
           childAspectRatio = 1.1;
         } else {
-          // Большие экраны
           crossAxisCount = 4;
           childAspectRatio = 1.0;
         }
 
         return GridView.builder(
           shrinkWrap: true,
-          physics: const ClampingScrollPhysics(), // ИЗМЕНЕНО: разрешаем скролл
+          physics: const ClampingScrollPhysics(),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: crossAxisCount,
             childAspectRatio: childAspectRatio,
@@ -250,7 +306,6 @@ else if (document.title ==
     );
   }
 
-  // КОМПАКТНЫЙ МЕТОД ДЛЯ КАРТОЧЕК ДОКУМЕНТОВ
   Widget _buildDocumentCard(WarehouseDocument document) {
     return Material(
       color: Colors.transparent,
@@ -279,7 +334,6 @@ else if (document.title ==
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Иконка
                 Container(
                   width: 42,
                   height: 42,
@@ -294,7 +348,6 @@ else if (document.title ==
                   ),
                 ),
                 const SizedBox(height: 8),
-                // Название документа
                 Flexible(
                   child: Text(
                     document.title,
@@ -345,7 +398,6 @@ else if (document.title ==
           child: Row(
             children: [
               const SizedBox(width: 20),
-              // Иконка
               Container(
                 width: 48,
                 height: 48,
@@ -360,7 +412,6 @@ else if (document.title ==
                 ),
               ),
               const SizedBox(width: 16),
-              // Название
               Text(
                 AppLocalizations.of(context)!.translate('references') ?? 'Справочники',
                 style: const TextStyle(
@@ -384,6 +435,46 @@ else if (document.title ==
     );
   }
 
+  Widget _buildNoPermissionsWidget() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.lock_outline,
+              size: 80,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 24),
+            Text(
+              AppLocalizations.of(context)!.translate('no_permissions') ?? 'Нет доступа',
+              style: const TextStyle(
+                fontSize: 20,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w600,
+                color: Color(0xff1E2E52),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              AppLocalizations.of(context)!.translate('no_permissions_description') ?? 
+                  'У вас нет прав доступа к данному разделу. Обратитесь к администратору.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 14,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w400,
+                color: Color(0xff99A4BA),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
@@ -394,8 +485,7 @@ else if (document.title ==
         title: CustomAppBarPage2(
           title: isClickAvatarIcon
               ? localizations.translate('appbar_settings') ?? 'Настройки'
-              : localizations.translate('warehouse_accounting') ??
-                  'Учет склада',
+              : localizations.translate('warehouse_accounting') ?? 'Учет склада',
           onClickProfileAvatar: () {
             setState(() {
               isClickAvatarIcon = !isClickAvatarIcon;
@@ -421,52 +511,50 @@ else if (document.title ==
                     duration: Duration(milliseconds: 1000),
                   ),
                 )
-              : Container(
-                  color: const Color(0xffF8F9FB),
-                  child: SingleChildScrollView( // ДОБАВЛЕНО: оборачиваем в SingleChildScrollView
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Заголовок секции
-                        Text(
-                          localizations.translate('warehouse_documents') ??
-                              'Документы склада',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xff1E2E52),
-                          ),
+              : _documents.isEmpty && !_showReferences
+                  ? _buildNoPermissionsWidget()
+                  : Container(
+                      color: const Color(0xffF8F9FB),
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              localizations.translate('warehouse_documents') ?? 'Документы склада',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xff1E2E52),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              localizations.translate('select_document_type') ??
+                                  'Выберите тип документа для работы со складом',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w400,
+                                color: Color(0xff99A4BA),
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            if (_documents.isNotEmpty) _buildDocumentGrid(),
+                            if (_showReferences) ...[
+                              const SizedBox(height: 16),
+                              _buildReferencesButton(),
+                            ],
+                            const SizedBox(height: 20),
+                          ],
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          localizations.translate('select_document_type') ??
-                              'Выберите тип документа для работы со складом',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w400,
-                            color: Color(0xff99A4BA),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        // АДАПТИВНАЯ СЕТКА ДОКУМЕНТОВ
-                        _buildDocumentGrid(),
-                        const SizedBox(height: 16),
-                        // Длинная кнопка "Справочники"
-                        _buildReferencesButton(),
-                        // ДОБАВЛЕНО: дополнительный отступ снизу для удобства скролла
-                        const SizedBox(height: 20),
-                      ],
+                      ),
                     ),
-                  ),
-                ),
     );
   }
 }
 
-// Класс для хранения информации о документе склада
 class WarehouseDocument {
   final String title;
   final IconData icon;

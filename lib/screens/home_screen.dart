@@ -155,17 +155,17 @@ class _HomeScreenState extends State<HomeScreen> {
     // // НОВЫЙ: Учет склада - тоже можем привязать к hasMiniApp или оставить на permissions
     // // Пока оставляю на permissions, но можно изменить логику по необходимости
     bool hasWarehouseAccess = false;
-    if (await _apiService.hasPermission('product.read') || 
-        await _apiService.hasPermission('order.read')) {
+    if (await _apiService.hasPermission('accounting_of_goods') || 
+        await _apiService.hasPermission('accounting_money')) {
       hasWarehouseAccess = true;
     }
 
     if (hasWarehouseAccess) {
-      widgetsGroup2.add(WarehouseAccountingScreen());
-      titleKeysGroup2.add('appbar_warehouse');
-      navBarTitleKeysGroup2.add('appbar_warehouse');
-         activeIconsGroup2.add('assets/icons/MyNavBar/money_on.png');
-    inactiveIconsGroup2.add('assets/icons/MyNavBar/money_OFF.png');
+      widgetsGroup1.add(WarehouseAccountingScreen());
+      titleKeysGroup1.add('appbar_warehouse');
+      navBarTitleKeysGroup1.add('appbar_warehouse');
+         activeIconsGroup1.add('assets/icons/MyNavBar/money_on.png');
+    inactiveIconsGroup1.add('assets/icons/MyNavBar/google-docs (5).png');
       hasAvailableScreens = true;
     }
 
