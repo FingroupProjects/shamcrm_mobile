@@ -58,16 +58,16 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
   late TabController _tabController;
   late ScrollController _scrollController;
   List<Map<String, dynamic>> _tabTitles = [
-    {'id': 0, 'title': 'Товары / Неликвидный товары', 'count': '15'},
-    {'id': 1, 'title': 'Остаток кассы', 'count': '8'},
-    {'id': 2, 'title': 'Наши долги', 'count': '23'},
-    {'id': 3, 'title': 'Нам должны', 'count': '12'},
-    {'id': 4, 'title': 'Топ продаваемых товаров', 'count': '45'},
-    {'id': 5, 'title': 'Динамика продаж', 'count': '67'},
-    {'id': 6, 'title': 'Чистая прибыль', 'count': '34'},
-    {'id': 7, 'title': 'Рентабельность продаж', 'count': '56'},
-    {'id': 8, 'title': 'Структура затрат', 'count': '78'},
-    {'id': 9, 'title': 'Количество заказов', 'count': '89'},
+    {'id': 0, 'title': 'Товары / Неликвидный товары'},
+    {'id': 1, 'title': 'Остаток кассы'},
+    {'id': 2, 'title': 'Наши долги'},
+    {'id': 3, 'title': 'Нам должны'},
+    {'id': 4, 'title': 'Топ продаваемых товаров'},
+    {'id': 5, 'title': 'Динамика продаж'},
+    {'id': 6, 'title': 'Чистая прибыль'},
+    {'id': 7, 'title': 'Рентабельность продаж'},
+    {'id': 8, 'title': 'Структура затрат'},
+    {'id': 9, 'title': 'Количество заказов'},
   ];
   List<GlobalKey> _tabKeys = [];
   late int _currentTabIndex;
@@ -78,15 +78,23 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
     _currentTabIndex = widget.currentTabIndex;
     _scrollController = ScrollController();
     _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
-    _tabController = TabController(length: _tabTitles.length, vsync: this);
+    _tabController = TabController(
+      length: _tabTitles.length,
+      vsync: this,
+      initialIndex: widget.currentTabIndex,  // This is the key fix
+    );
     _tabController.addListener(() {
       setState(() {
         _currentTabIndex = _tabController.index;
       });
       _scrollToActiveTab();
     });
-  }
 
+    // Optional: Scroll to the initial tab after the frame is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToActiveTab();
+    });
+  }
   @override
   void dispose() {
     _scrollController.dispose();
@@ -145,7 +153,6 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
 
   Widget _buildTabButton(int index) {
     bool isActive = _tabController.index == index;
-    String taskCount = _tabTitles[index]['count'];
 
     return GestureDetector(
       key: _tabKeys[index],
@@ -155,39 +162,11 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
       child: Container(
         decoration: TaskStyles.tabButtonDecoration(isActive),
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              _tabTitles[index]['title'],
-              style: TaskStyles.tabTextStyle.copyWith(
-                color: isActive ? Colors.white : TaskStyles.inactiveColor,
-              ),
-            ),
-            Transform.translate(
-              offset: const Offset(12, 0),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isActive ? const Color(0xff1E2E52) : const Color(0xff99A4BA),
-                    width: 1,
-                  ),
-                ),
-                child: Text(
-                  taskCount.toString(),
-                  style: TextStyle(
-                    color: isActive ? Colors.black : const Color(0xff99A4BA),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                  ),
-                ),
-              ),
-            ),
-          ],
+        child: Text(
+          _tabTitles[index]['title'],
+          style: TaskStyles.tabTextStyle.copyWith(
+            color: isActive ? Colors.white : TaskStyles.inactiveColor,
+          ),
         ),
       ),
     );
@@ -220,34 +199,6 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
         ],
       ),
     );
-  }
-
-  // Helper method to get appropriate icon for each tab
-  Widget _getTabIcon(String tabTitle) {
-    switch (tabTitle) {
-      case 'Товары / Неликвидный товары':
-        return Icon(Icons.inventory_2, color: Color(0xff1E2E52), size: 24);
-      case 'Остаток кассы':
-        return Icon(Icons.account_balance_wallet, color: Color(0xff1E2E52), size: 24);
-      case 'Наши долги':
-        return Icon(Icons.credit_card_off, color: Color(0xff1E2E52), size: 24);
-      case 'Нам должны':
-        return Icon(Icons.account_balance, color: Color(0xff1E2E52), size: 24);
-      case 'Топ продаваемых товаров':
-        return Icon(Icons.trending_up, color: Color(0xff1E2E52), size: 24);
-      case 'Динамика продаж':
-        return Icon(Icons.show_chart, color: Color(0xff1E2E52), size: 24);
-      case 'Чистая прибыль':
-        return Icon(Icons.attach_money, color: Color(0xff1E2E52), size: 24);
-      case 'Рентабельность продаж':
-        return Icon(Icons.pie_chart, color: Color(0xff1E2E52), size: 24);
-      case 'Структура затрат':
-        return Icon(Icons.analytics, color: Color(0xff1E2E52), size: 24);
-      case 'Количество заказов':
-        return Icon(Icons.shopping_cart, color: Color(0xff1E2E52), size: 24);
-      default:
-        return Icon(Icons.analytics_outlined, color: Color(0xff1E2E52), size: 24);
-    }
   }
 
   // Build specialized cards based on data type
@@ -332,44 +283,6 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
   // Generic fallback card
   Widget _buildGenericCard(String category, int index) {
     return _buildDataCard(category, index);
-  }
-
-  // Helper method for info boxes
-  Widget _buildInfoBox(String label, String value, Color accentColor) {
-    return Container(
-      padding: EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Color(0xffF1F5F9),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Color(0xffCBD5E1), width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: Color(0xff475569),
-            ),
-          ),
-          SizedBox(height: 4),
-          Text(
-            value,
-            style: TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: accentColor,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
-    );
   }
 
   void _scrollToActiveTab() {
