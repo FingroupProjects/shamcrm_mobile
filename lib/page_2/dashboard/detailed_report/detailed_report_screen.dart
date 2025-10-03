@@ -1,4 +1,6 @@
+import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/top_selling_goods/sales_dashboard_top_selling_goods_bloc.dart';
 import 'package:crm_task_manager/page_2/dashboard/detailed_report/cash_balance_content.dart';
+import 'package:crm_task_manager/page_2/dashboard/detailed_report/top_selling_goods_content.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/goods/sales_dashboard_goods_bloc.dart';
@@ -196,6 +198,11 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
       return BlocProvider(
         create: (context) => SalesDashboardDebtorsBloc(),
         child: DebtorsContent(),
+      );
+    } else if (id == 4) {
+      return BlocProvider(
+        create: (context) => SalesDashboardTopSellingGoodsBloc(),
+        child: TopSellingGoodsContent(),
       );
     }
     // etc...
