@@ -1,5 +1,3 @@
-import 'package:crm_task_manager/models/page_2/dashboard/dashboard_goods_report.dart';
-import 'package:crm_task_manager/page_2/dashboard/detailed_report/cards/goods_card.dart';
 import 'package:crm_task_manager/page_2/dashboard/detailed_report/cash_balance_content.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -7,15 +5,6 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/goods/sales_dashboar
 import '../../../bloc/page_2_BLOC/dashboard/cash_balance/sales_dashboard_cash_balance_bloc.dart';
 import '../../../bloc/page_2_BLOC/dashboard/creditors/sales_dashboard_creditors_bloc.dart';
 import '../../../bloc/page_2_BLOC/dashboard/debtors/sales_dashboard_debtors_bloc.dart';
-import 'cards/cash_balance_card.dart';
-import 'cards/our_debts_card.dart';
-import 'cards/owed_to_us_card.dart';
-import 'cards/sales_dynamics_card.dart';
-import 'cards/top_selling_products_card.dart';
-import 'cards/net_profit_card.dart';
-import 'cards/sales_profitability_card.dart';
-import 'cards/cost_structure_card.dart';
-import 'cards/orders_count_card.dart';
 import 'creditors_content.dart';
 import 'debtors_content.dart';
 import 'goods_content.dart';
