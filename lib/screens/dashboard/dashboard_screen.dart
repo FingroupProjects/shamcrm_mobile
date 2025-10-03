@@ -24,11 +24,14 @@ import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/task_chart/ta
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/task_chart/task_chart_event.dart';
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/user_task/user_task_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/user_task/user_task_event.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/creditors/sales_dashboard_creditors_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/debtors/sales_dashboard_debtors_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/goods/sales_dashboard_goods_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/sales_dashboard_bloc.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
+import 'package:crm_task_manager/page_2/dashboard/widgets/dialogs/dialog_creditors_info.dart';
 import 'package:crm_task_manager/screens/dashboard/deal_stats.dart';
 import 'package:crm_task_manager/screens/dashboard/users_chart.dart';
 import 'package:crm_task_manager/screens/dashboard/process_speed.dart';
@@ -67,6 +70,7 @@ import '../../models/page_2/dashboard/sales_model.dart';
 import '../../models/page_2/dashboard/top_selling_model.dart';
 import '../../page_2/dashboard/widgets/charts/profitability_chart.dart';
 import '../../page_2/dashboard/widgets/dialogs/dialog_cash_balance_info.dart';
+import '../../page_2/dashboard/widgets/dialogs/dialog_debtors_info.dart';
 import '../../page_2/dashboard/widgets/dialogs/dialog_products_info.dart';
 import '../../page_2/dashboard/widgets/stat_card.dart';
 import '../../widgets/snackbar_widget.dart';
@@ -651,6 +655,12 @@ void _initAdminTutorialTargets() {
         BlocProvider(
           create: (context) => SalesDashboardCashBalanceBloc(),
         ),
+        BlocProvider(
+          create: (context) => SalesDashboardCreditorsBloc(),
+        ),
+        BlocProvider(
+          create: (context) => SalesDashboardDebtorsBloc(),
+        ),
       ],
       child: Scaffold(
         backgroundColor: Colors.white,
@@ -983,7 +993,9 @@ class TopPart extends StatelessWidget {
           children: [
             Expanded(
               child: StatCard(
-                onTap: () {},
+                onTap: () {
+                  showCreditorsDialog(context);
+                },
                 accentColor: Colors.red,
                 title: localizations.translate('our_debts') ?? 'НАШИ ДОЛГИ',
                 leading: const Icon(Icons.trending_down, color: Colors.red),
@@ -997,7 +1009,9 @@ class TopPart extends StatelessWidget {
             const SizedBox(width: 16),
             Expanded(
               child: StatCard(
-                onTap: () {},
+                onTap: () {
+                  showDebtorsDialog(context);
+                },
                 accentColor: Colors.green,
                 title: localizations.translate('owed_to_us') ?? 'НАМ ДОЛЖНЫ',
                 leading: const Icon(Icons.trending_up, color: Colors.green),

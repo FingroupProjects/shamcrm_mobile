@@ -14329,7 +14329,6 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       if (queryParams.isNotEmpty) {
         path += '?${Uri.encodeQueryComponent(queryParams.entries.map((e) => '${e.key}=${e.value}').join('&'))}';
       }
-
       if (kDebugMode) {
         print('ApiService: getDebtorsList - Generated path: $path');
       }
