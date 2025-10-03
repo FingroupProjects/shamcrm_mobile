@@ -137,6 +137,7 @@ import '../../models/page_2/dashboard/net_profit_model.dart';
 import '../../models/page_2/dashboard/order_dashboard_model.dart';
 import '../../models/page_2/dashboard/profitability_dashboard_model.dart';
 import '../../models/page_2/dashboard/sales_model.dart';
+import '../../models/page_2/dashboard/top_selling_card_model.dart';
 import '../../models/page_2/dashboard/top_selling_model.dart';
 
 // final String baseUrl = 'https://fingroup-back.shamcrm.com/api';
@@ -14742,4 +14743,29 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     return allTopSellingData;
   }
 
+  Future<List<TopSellingCardModel>> getTopSellingCardsList() async {
+    final path = await _appendQueryParams('/dashboard/top-selling-goods');
+    debugPrint("ApiService: getTopSellingCardsList path: $path");
+
+    try {
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        final List<dynamic> dataList = data['result']['data'] as List<dynamic>;
+
+        return dataList.map((item) => TopSellingCardModel.fromJson(item)).toList();
+
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при получении данных по топ продаваемым товарам!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

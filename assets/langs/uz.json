@@ -1515,6 +1515,10 @@
   "no_call_center_permissions_description": "Sizda call-centerga kirish huquqi yoʻq. Ruxsat olish uchun administratorga murojaat qiling.",
   "no_dashboard_permissions_description": "Sizda dashboardga kirish huquqi yoʻq. Ruxsat olish uchun administratorga murojaat qiling.",
   "no_reports_permissions_description": "Sizda hisobotlarga kirish huquqi yoʻq. Ruxsat olish uchun administratorga murojaat qiling."
+  "days_without_movement": "Harakatsiz kunlar",
+  "creditor_name_details": "Ism",
+  "debtor_name_details": "Ism",
+  "debt_amount": "Summa"
 
 
 

@@ -1,19 +1,18 @@
+import 'package:crm_task_manager/models/page_2/dashboard/creditors_model.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../models/page_2/dashboard/dashboard_goods_report.dart';
-
-class GoodsCard extends StatelessWidget {
-  final DashboardGoods goods;
-  final Function(DashboardGoods) onClick;
-  final Function(DashboardGoods) onLongPress;
+class CreditorCard extends StatelessWidget {
+  final Creditor creditor;
+  final Function(Creditor) onClick;
+  final Function(Creditor) onLongPress;
   final bool isSelectionMode;
   final bool isSelected;
 
-  const GoodsCard({
+  const CreditorCard({
     Key? key,
-    required this.goods,
+    required this.creditor,
     required this.onClick,
     required this.onLongPress,
     required this.isSelectionMode,
@@ -30,8 +29,8 @@ class GoodsCard extends StatelessWidget {
     final localizations = AppLocalizations.of(context)!;
 
     return GestureDetector(
-      onTap: () => onClick(goods),
-      onLongPress: () => onLongPress(goods),
+      onTap: () => onClick(creditor),
+      onLongPress: () => onLongPress(creditor),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -47,7 +46,7 @@ class GoodsCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '${localizations.translate('goods_name_details') ?? 'Название'}: ${goods.name}',
+                    '${localizations.translate('creditor_name_details') ?? 'Название'}: ${creditor.name}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
@@ -57,37 +56,7 @@ class GoodsCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${localizations.translate('category_details') ?? 'Категория'}: ${goods.category}',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w400,
-                      color: Color(0xff99A4BA),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${localizations.translate('days_without_movement') ?? 'Дней без движения'}: ${goods.daysWithoutMovement}',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w400,
-                      color: Color(0xff99A4BA),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${localizations.translate('quantity') ?? 'Количество'}: ${goods.totalQuantity}',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w400,
-                      color: Color(0xff99A4BA),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${localizations.translate('sum') ?? 'Сумма'}: ${_formatAmount(goods.sum)}',
+                    '${localizations.translate('debt_amount') ?? 'debt_amount'}: ${creditor.debtAmount}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
