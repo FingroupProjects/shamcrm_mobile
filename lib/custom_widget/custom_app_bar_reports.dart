@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
-import 'package:crm_task_manager/custom_widget/filter/page_2/goods/filter_app_bar_goods.dart';
+import 'package:crm_task_manager/custom_widget/filter/page_2/goods/filter_app_bar_goods.dart' as goods;
 import 'package:crm_task_manager/custom_widget/filter/page_2/income/filter_app_bar_income.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/orders/filter_app_bar_orders.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
@@ -20,6 +20,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'filter/page_2/incoming/filter_app_bar_income.dart';
 import 'filter/page_2/reports/cash_balance_filter.dart';
+import 'filter/page_2/reports/goods_filter.dart';
+import 'filter/page_2/reports/creditors_filter.dart';
+import 'filter/page_2/reports/debtors_filter.dart';
+import 'filter/page_2/reports/top_selling_goods_filter.dart';
+import 'filter/page_2/reports/sales_dynamics_filter.dart';
+import 'filter/page_2/reports/net_profit_filter.dart';
+import 'filter/page_2/reports/sales_profitability_filter.dart';
+import 'filter/page_2/reports/cost_structure_filter.dart';
+import 'filter/page_2/reports/orders_count_filter.dart';
 
 class CustomAppBarReports extends StatefulWidget {
   final String title;
@@ -76,7 +85,7 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
   bool _canReadNotice = true;
   Color _iconColor = Colors.black;
   late Timer _timer;
-  bool _isGoodsFiltering = false;
+  bool _isFiltering = false;
 
   @override
   void initState() {
@@ -118,12 +127,7 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
       });
     });
 
-    // Set initial filtering state based on currentFilters
-    _isGoodsFiltering = widget.currentFilters.isNotEmpty ||
-        (widget.currentFilters['managers'] != null && widget.currentFilters['managers'].isNotEmpty);
-
-    _isGoodsFiltering = widget.currentFilters.isNotEmpty ||
-        (widget.currentFilters['managers'] != null && widget.currentFilters['managers'].isNotEmpty);
+    _isFiltering = widget.currentFilters.isNotEmpty;
   }
 
   Future<void> _checkOverdueTasks() async {
@@ -434,7 +438,7 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
               'assets/icons/AppBar/filter.png',
               width: 24,
               height: 24,
-              color: _isGoodsFiltering ? _iconColor : null,
+              color: _isFiltering ? _iconColor : null,
             ),
             onPressed: () => navigateToFilterScreen(context),
           ),
@@ -453,6 +457,7 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
     String? initialAmountFrom;
     String? initialAmountTo;
 
+    // Extract filter parameters
     if (widget.currentFilters.containsKey('fromDate')) {
       final fromDate = widget.currentFilters['fromDate'];
       if (fromDate is DateTime) {
@@ -485,16 +490,43 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
       initialAmountTo = amountTo?.toString();
     }
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => CashBalanceFilterScreen(
+    // Navigate to the appropriate filter screen based on currentTabIndex
+    Widget filterScreen;
+    switch (widget.currentTabIndex) {
+      case 0:
+        filterScreen = GoodsFilterScreen(
+          onSelectedDataFilter: (filters) {
+            if (kDebugMode) {
+              print('CustomAppBarReports: Получены фильтры из GoodsFilterScreen: $filters');
+            }
+            setState(() {
+              _isFiltering = filters.isNotEmpty;
+            });
+            widget.onFilterSelected?.call(filters);
+          },
+          onResetFilters: () {
+            if (kDebugMode) {
+              print('CustomAppBarReports: Сброс фильтров из GoodsFilterScreen');
+            }
+            setState(() {
+              _isFiltering = false;
+            });
+            widget.onResetFilters?.call();
+          },
+          initialFromDate: initialFromDate,
+          initialToDate: initialToDate,
+          initialAmountFrom: initialAmountFrom,
+          initialAmountTo: initialAmountTo,
+        );
+        break;
+      case 1:
+        filterScreen = CashBalanceFilterScreen(
           onSelectedDataFilter: (filters) {
             if (kDebugMode) {
               print('CustomAppBarReports: Получены фильтры из CashBalanceFilterScreen: $filters');
             }
             setState(() {
-              _isGoodsFiltering = filters.isNotEmpty;
+              _isFiltering = filters.isNotEmpty;
             });
             widget.onFilterSelected?.call(filters);
           },
@@ -503,7 +535,7 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
               print('CustomAppBarReports: Сброс фильтров из CashBalanceFilterScreen');
             }
             setState(() {
-              _isGoodsFiltering = false;
+              _isFiltering = false;
             });
             widget.onResetFilters?.call();
           },
@@ -511,8 +543,226 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
           initialToDate: initialToDate,
           initialAmountFrom: initialAmountFrom,
           initialAmountTo: initialAmountTo,
-        ),
-      ),
+        );
+        break;
+      case 2:
+        filterScreen = CreditorsFilterScreen(
+          onSelectedDataFilter: (filters) {
+            if (kDebugMode) {
+              print('CustomAppBarReports: Получены фильтры из CreditorsFilterScreen: $filters');
+            }
+            setState(() {
+              _isFiltering = filters.isNotEmpty;
+            });
+            widget.onFilterSelected?.call(filters);
+          },
+          onResetFilters: () {
+            if (kDebugMode) {
+              print('CustomAppBarReports: Сброс фильтров из CreditorsFilterScreen');
+            }
+            setState(() {
+              _isFiltering = false;
+            });
+            widget.onResetFilters?.call();
+          },
+          initialFromDate: initialFromDate,
+          initialToDate: initialToDate,
+          initialAmountFrom: initialAmountFrom,
+          initialAmountTo: initialAmountTo,
+        );
+        break;
+      case 3:
+        filterScreen = DebtorsFilterScreen(
+          onSelectedDataFilter: (filters) {
+            if (kDebugMode) {
+              print('CustomAppBarReports: Получены фильтры из DebtorsFilterScreen: $filters');
+            }
+            setState(() {
+              _isFiltering = filters.isNotEmpty;
+            });
+            widget.onFilterSelected?.call(filters);
+          },
+          onResetFilters: () {
+            if (kDebugMode) {
+              print('CustomAppBarReports: Сброс фильтров из DebtorsFilterScreen');
+            }
+            setState(() {
+              _isFiltering = false;
+            });
+            widget.onResetFilters?.call();
+          },
+          initialFromDate: initialFromDate,
+          initialToDate: initialToDate,
+          initialAmountFrom: initialAmountFrom,
+          initialAmountTo: initialAmountTo,
+        );
+        break;
+      case 4:
+        filterScreen = TopSellingGoodsFilterScreen(
+          onSelectedDataFilter: (filters) {
+            if (kDebugMode) {
+              print('CustomAppBarReports: Получены фильтры из TopSellingGoodsFilterScreen: $filters');
+            }
+            setState(() {
+              _isFiltering = filters.isNotEmpty;
+            });
+            widget.onFilterSelected?.call(filters);
+          },
+          onResetFilters: () {
+            if (kDebugMode) {
+              print('CustomAppBarReports: Сброс фильтров из TopSellingGoodsFilterScreen');
+            }
+            setState(() {
+              _isFiltering = false;
+            });
+            widget.onResetFilters?.call();
+          },
+          initialFromDate: initialFromDate,
+          initialToDate: initialToDate,
+          initialAmountFrom: initialAmountFrom,
+          initialAmountTo: initialAmountTo,
+        );
+        break;
+      case 5:
+        filterScreen = SalesDynamicsFilterScreen(
+          onSelectedDataFilter: (filters) {
+            if (kDebugMode) {
+              print('CustomAppBarReports: Получены фильтры из SalesDynamicsFilterScreen: $filters');
+            }
+            setState(() {
+              _isFiltering = filters.isNotEmpty;
+            });
+            widget.onFilterSelected?.call(filters);
+          },
+          onResetFilters: () {
+            if (kDebugMode) {
+              print('CustomAppBarReports: Сброс фильтров из SalesDynamicsFilterScreen');
+            }
+            setState(() {
+              _isFiltering = false;
+            });
+            widget.onResetFilters?.call();
+          },
+          initialFromDate: initialFromDate,
+          initialToDate: initialToDate,
+          initialAmountFrom: initialAmountFrom,
+          initialAmountTo: initialAmountTo,
+        );
+        break;
+      case 6:
+        filterScreen = NetProfitFilterScreen(
+          onSelectedDataFilter: (filters) {
+            if (kDebugMode) {
+              print('CustomAppBarReports: Получены фильтры из NetProfitFilterScreen: $filters');
+            }
+            setState(() {
+              _isFiltering = filters.isNotEmpty;
+            });
+            widget.onFilterSelected?.call(filters);
+          },
+          onResetFilters: () {
+            if (kDebugMode) {
+              print('CustomAppBarReports: Сброс фильтров из NetProfitFilterScreen');
+            }
+            setState(() {
+              _isFiltering = false;
+            });
+            widget.onResetFilters?.call();
+          },
+          initialFromDate: initialFromDate,
+          initialToDate: initialToDate,
+          initialAmountFrom: initialAmountFrom,
+          initialAmountTo: initialAmountTo,
+        );
+        break;
+      case 7:
+        filterScreen = SalesProfitabilityFilterScreen(
+          onSelectedDataFilter: (filters) {
+            if (kDebugMode) {
+              print('CustomAppBarReports: Получены фильтры из SalesProfitabilityFilterScreen: $filters');
+            }
+            setState(() {
+              _isFiltering = filters.isNotEmpty;
+            });
+            widget.onFilterSelected?.call(filters);
+          },
+          onResetFilters: () {
+            if (kDebugMode) {
+              print('CustomAppBarReports: Сброс фильтров из SalesProfitabilityFilterScreen');
+            }
+            setState(() {
+              _isFiltering = false;
+            });
+            widget.onResetFilters?.call();
+          },
+          initialFromDate: initialFromDate,
+          initialToDate: initialToDate,
+          initialAmountFrom: initialAmountFrom,
+          initialAmountTo: initialAmountTo,
+        );
+        break;
+      case 8:
+        filterScreen = CostStructureFilterScreen(
+          onSelectedDataFilter: (filters) {
+            if (kDebugMode) {
+              print('CustomAppBarReports: Получены фильтры из CostStructureFilterScreen: $filters');
+            }
+            setState(() {
+              _isFiltering = filters.isNotEmpty;
+            });
+            widget.onFilterSelected?.call(filters);
+          },
+          onResetFilters: () {
+            if (kDebugMode) {
+              print('CustomAppBarReports: Сброс фильтров из CostStructureFilterScreen');
+            }
+            setState(() {
+              _isFiltering = false;
+            });
+            widget.onResetFilters?.call();
+          },
+          initialFromDate: initialFromDate,
+          initialToDate: initialToDate,
+          initialAmountFrom: initialAmountFrom,
+          initialAmountTo: initialAmountTo,
+        );
+        break;
+      case 9:
+        filterScreen = OrdersCountFilterScreen(
+          onSelectedDataFilter: (filters) {
+            if (kDebugMode) {
+              print('CustomAppBarReports: Получены фильтры из OrdersCountFilterScreen: $filters');
+            }
+            setState(() {
+              _isFiltering = filters.isNotEmpty;
+            });
+            widget.onFilterSelected?.call(filters);
+          },
+          onResetFilters: () {
+            if (kDebugMode) {
+              print('CustomAppBarReports: Сброс фильтров из OrdersCountFilterScreen');
+            }
+            setState(() {
+              _isFiltering = false;
+            });
+            widget.onResetFilters?.call();
+          },
+          initialFromDate: initialFromDate,
+          initialToDate: initialToDate,
+          initialAmountFrom: initialAmountFrom,
+          initialAmountTo: initialAmountTo,
+        );
+        break;
+      default:
+        if (kDebugMode) {
+          print('CustomAppBarReports: Неизвестный индекс таба: ${widget.currentTabIndex}');
+        }
+        return; // Exit if tab index is invalid
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => filterScreen),
     );
   }
 }

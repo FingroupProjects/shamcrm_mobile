@@ -3,7 +3,7 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class CashBalanceFilterScreen extends StatefulWidget {
+class SalesProfitabilityFilterScreen extends StatefulWidget {
   final Function(Map<String, dynamic>)? onSelectedDataFilter;
   final VoidCallback? onResetFilters;
   final DateTime? initialFromDate;
@@ -11,7 +11,7 @@ class CashBalanceFilterScreen extends StatefulWidget {
   final String? initialAmountFrom;
   final String? initialAmountTo;
 
-  const CashBalanceFilterScreen({
+  const SalesProfitabilityFilterScreen({
     Key? key,
     this.onSelectedDataFilter,
     this.onResetFilters,
@@ -22,10 +22,10 @@ class CashBalanceFilterScreen extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _CashBalanceFilterScreenState createState() => _CashBalanceFilterScreenState();
+  _SalesProfitabilityFilterScreenState createState() => _SalesProfitabilityFilterScreenState();
 }
 
-class _CashBalanceFilterScreenState extends State<CashBalanceFilterScreen> {
+class _SalesProfitabilityFilterScreenState extends State<SalesProfitabilityFilterScreen> {
   DateTime? _fromDate;
   DateTime? _toDate;
   final TextEditingController _amountFromController = TextEditingController();
@@ -44,29 +44,29 @@ class _CashBalanceFilterScreenState extends State<CashBalanceFilterScreen> {
   Future<void> _loadFilterState() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      final fromDateMillis = prefs.getInt('cash_balance_from_date');
-      final toDateMillis = prefs.getInt('cash_balance_to_date');
+      final fromDateMillis = prefs.getInt('sales_profitability_from_date');
+      final toDateMillis = prefs.getInt('sales_profitability_to_date');
       if (fromDateMillis != null) _fromDate = DateTime.fromMillisecondsSinceEpoch(fromDateMillis);
       if (toDateMillis != null) _toDate = DateTime.fromMillisecondsSinceEpoch(toDateMillis);
-      _amountFromController.text = prefs.getString('cash_balance_amount_from') ?? widget.initialAmountFrom ?? '';
-      _amountToController.text = prefs.getString('cash_balance_amount_to') ?? widget.initialAmountTo ?? '';
+      _amountFromController.text = prefs.getString('sales_profitability_amount_from') ?? widget.initialAmountFrom ?? '';
+      _amountToController.text = prefs.getString('sales_profitability_amount_to') ?? widget.initialAmountTo ?? '';
     });
   }
 
   Future<void> _saveFilterState() async {
     final prefs = await SharedPreferences.getInstance();
     if (_fromDate != null) {
-      await prefs.setInt('cash_balance_from_date', _fromDate!.millisecondsSinceEpoch);
+      await prefs.setInt('sales_profitability_from_date', _fromDate!.millisecondsSinceEpoch);
     } else {
-      await prefs.remove('cash_balance_from_date');
+      await prefs.remove('sales_profitability_from_date');
     }
     if (_toDate != null) {
-      await prefs.setInt('cash_balance_to_date', _toDate!.millisecondsSinceEpoch);
+      await prefs.setInt('sales_profitability_to_date', _toDate!.millisecondsSinceEpoch);
     } else {
-      await prefs.remove('cash_balance_to_date');
+      await prefs.remove('sales_profitability_to_date');
     }
-    await prefs.setString('cash_balance_amount_from', _amountFromController.text);
-    await prefs.setString('cash_balance_amount_to', _amountToController.text);
+    await prefs.setString('sales_profitability_amount_from', _amountFromController.text);
+    await prefs.setString('sales_profitability_amount_to', _amountToController.text);
   }
 
   void _resetFilters() {
