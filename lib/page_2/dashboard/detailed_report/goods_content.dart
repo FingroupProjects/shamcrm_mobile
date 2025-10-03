@@ -29,8 +29,6 @@ class _GoodsContentState extends State<GoodsContent> {
             goods: goods,
             onClick: (e) {},
             onLongPress: (e) {},
-            isSelectionMode: false,
-            isSelected: false,
           ),
         )).toList(),
       ),

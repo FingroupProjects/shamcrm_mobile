@@ -7,6 +7,9 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/goods/sales_dashboar
 import '../../../bloc/page_2_BLOC/dashboard/cash_balance/sales_dashboard_cash_balance_bloc.dart';
 import '../../../bloc/page_2_BLOC/dashboard/creditors/sales_dashboard_creditors_bloc.dart';
 import '../../../bloc/page_2_BLOC/dashboard/debtors/sales_dashboard_debtors_bloc.dart';
+import '../../../custom_widget/custom_app_bar_reports.dart';
+import '../../../screens/profile/languages/app_localizations.dart';
+import '../../../screens/profile/profile_screen.dart';
 import 'creditors_content.dart';
 import 'debtors_content.dart';
 import 'goods_content.dart';
@@ -68,6 +71,20 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
   ];
   List<GlobalKey> _tabKeys = [];
   late int _currentTabIndex;
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
+  bool _isSearching = false;
+  bool isClickAvatarIcon = false;
+
+  void _onSearch(String input) {}
+
+  void _resetSearch() {
+    _searchController.clear();
+    _onSearch('');
+    setState(() {
+      _isSearching = false;
+    });
+  }
 
   @override
   void initState() {
@@ -78,7 +95,7 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
     _tabController = TabController(
       length: _tabTitles.length,
       vsync: this,
-      initialIndex: widget.currentTabIndex,  // This is the key fix
+      initialIndex: widget.currentTabIndex, // This is the key fix
     );
     _tabController.addListener(() {
       setState(() {
@@ -92,6 +109,7 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
       _scrollToActiveTab();
     });
   }
+
   @override
   void dispose() {
     _scrollController.dispose();
@@ -101,35 +119,51 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         forceMaterialTransparency: true,
         elevation: 0,
         backgroundColor: Colors.white,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Color(0xff1E2E52)),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text(
-          'Детальный отчёт',
-          style: TextStyle(
-            fontFamily: 'Gilroy',
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
-          ),
+        automaticallyImplyLeading: !isClickAvatarIcon,
+        title: CustomAppBarReports(
+          title: isClickAvatarIcon
+              ? localizations!.translate('appbar_settings')
+              : localizations!.translate('appbar_detailed_report'),
+          onClickProfileAvatar: () {
+            setState(() {
+              isClickAvatarIcon = !isClickAvatarIcon;
+              //print('CategoryScreen: Переключение на профиль: $isClickAvatarIcon');
+            });
+          },
+          clearButtonClickFiltr: (isSearching) {},
+          showSearchIcon: !isClickAvatarIcon,
+          showFilterIcon: !isClickAvatarIcon,
+          currentTabIndex: _currentTabIndex,
+          onChangedSearchInput: (input) {
+            _onSearch(input);
+          },
+          textEditingController: _searchController,
+          focusNode: _searchFocusNode,
+          clearButtonClick: (isSearching) {
+            _resetSearch();
+          },
+          currentFilters: {},
         ),
       ),
-      body: Column(
-        children: [
-          const SizedBox(height: 15),
-          _buildCustomTabBar(),
-          Expanded(
-            child: _buildTabBarView(),
-          ),
-        ],
-      ),
+      body: isClickAvatarIcon
+          ? ProfileScreen()
+          : Column(
+              children: [
+                const SizedBox(height: 15),
+                _buildCustomTabBar(),
+                Expanded(
+                  child: _buildTabBarView(),
+                ),
+              ],
+            ),
     );
   }
 
@@ -189,7 +223,7 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
         create: (context) => SalesDashboardCashBalanceBloc(),
         child: CashBalanceContent(),
       );
-    }  else if (id == 2) {
+    } else if (id == 2) {
       return BlocProvider(
         create: (context) => SalesDashboardCreditorsBloc(),
         child: CreditorsContent(),
@@ -212,7 +246,8 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ...List.generate(5, (index) => Container(margin: EdgeInsets.only(bottom: 16), child: Container(color: Colors.blue ,height: 200))),
+          ...List.generate(
+              5, (index) => Container(margin: EdgeInsets.only(bottom: 16), child: Container(color: Colors.blue, height: 200))),
         ],
       ),
     );

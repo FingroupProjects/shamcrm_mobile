@@ -1120,6 +1120,7 @@
 "statistics": "Statistics",
 "reports": "Reports",
 "no_reports_found": "No reports found",
+"appbar_detailed_report": "Detailed Report",
 
 "not_called": "Not called",
 "waiting_response": "Client waiting for response",

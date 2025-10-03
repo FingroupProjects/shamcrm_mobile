@@ -16,8 +16,8 @@ class GoodsCard extends StatelessWidget {
     required this.goods,
     required this.onClick,
     required this.onLongPress,
-    required this.isSelectionMode,
-    required this.isSelected,
+    this.isSelectionMode = false,
+    this.isSelected = false,
   }) : super(key: key);
 
   String _formatAmount(String amount) {
