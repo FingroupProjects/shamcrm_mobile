@@ -14258,7 +14258,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         );
       }
     } catch (e) {
-      rethrow;
+      // todo rethrow
+      throw e;
     }
   }
 

@@ -76,7 +76,7 @@ class Debtors {
   String? name;
   String? type;
   String? phone;
-  int? debtAmount;
+  num? debtAmount;
 
   Debtors({this.id, this.name, this.type, this.phone, this.debtAmount});
 

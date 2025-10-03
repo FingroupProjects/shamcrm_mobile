@@ -78,7 +78,6 @@ class _TopSellingProductsChartState extends State<TopSellingProductsChart> {
     final productsData = _getDataForSelectedPeriod();
 
     return Container(
-      margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,

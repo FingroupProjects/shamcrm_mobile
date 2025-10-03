@@ -56,6 +56,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
+import '../../models/page_2/dashboard/expense_structure.dart';
+import '../../models/page_2/dashboard/net_profit_model.dart';
+import '../../models/page_2/dashboard/order_dashboard_model.dart';
+import '../../models/page_2/dashboard/profitability_dashboard_model.dart';
+import '../../models/page_2/dashboard/sales_model.dart';
+import '../../models/page_2/dashboard/top_selling_model.dart';
+import '../../page_2/dashboard/widgets/charts/profitability_chart.dart';
+import '../../widgets/snackbar_widget.dart';
+
 // Enum для типов дашборда
 enum DashboardType {
   crm,
@@ -757,19 +766,53 @@ void _initAdminTutorialTargets() {
   // НОВОЕ: Метод для контента дашборда учёта
   List<Widget> _buildAccountingDashboard() {
     return [
-      // const TopPart(),
-      const SizedBox(height: 16),
-      // const TopSellingProductsChart(),
-      const SizedBox(height: 16),
-      // const SalesDynamicsLineChart(),
-      const SizedBox(height: 16),
-      // const NetProfitChart(),
-      const SizedBox(height: 16),
-      // const ExpenseStructureChart(),
-      const SizedBox(height: 16),
-      // const ProfitMarginChart(),
-      const SizedBox(height: 16),
-      // const OrderQuantityChart(),
+      BlocConsumer<SalesDashboardBloc, SalesDashboardState>(
+        listener: (context, state) {
+          if (state is SalesDashboardError) {
+            showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+          }
+        },
+        builder: (context, state) {
+          if (state is SalesDashboardLoading) {
+            return const Center(
+              child: PlayStoreImageLoading(
+                size: 80.0,
+                duration: Duration(milliseconds: 1000),
+              ),
+            );
+          } else if (state is SalesDashboardLoaded) {
+            final SalesResponse? salesData = state.salesData;
+            final List<AllNetProfitData> netProfitData = state.netProfitData;
+            final List<AllOrdersData> orderDashboardData = state.orderDashboardData;
+            final List<AllExpensesData> expenseStructureData = state.expenseStructureData;
+            final List<AllProfitabilityData> profitabilityData = state.profitabilityData;
+            final List<AllTopSellingData> topSellingData = state.topSellingData;
+
+            return Column(
+              children: [
+                TopPart(state: state),
+                const SizedBox(height: 16),
+                TopSellingProductsChart(topSellingData),
+                const SizedBox(height: 16),
+                SalesDynamicsLineChart(salesData),
+                const SizedBox(height: 16),
+                NetProfitChart(netProfitData),
+                const SizedBox(height: 16),
+                ExpenseStructureChart(expenseStructureData),
+                const SizedBox(height: 16),
+                ProfitabilityChart(profitabilityData: profitabilityData),
+                const SizedBox(height: 16),
+                OrderQuantityChart(orderDashboardData: orderDashboardData),
+                const SizedBox(height: 16),
+              ],
+            );
+          } else {
+            return Center(
+              child: Text(AppLocalizations.of(context)!.translate('error_loading') ?? 'Ошибка загрузки'),
+            );
+          }
+        },
+      ),
     ];
   }
 }
