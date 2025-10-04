@@ -16,21 +16,6 @@ class _DebtorsContentState extends State<DebtorsContent> {
   bool isSelectionMode = false;
   Set<int> selectedDebtors = {};
 
-  @override
-  void initState() {
-    super.initState();
-    context.read<SalesDashboardDebtorsBloc>().add(const LoadDebtorsReport());
-  }
-
-  void _toggleSelectionMode() {
-    setState(() {
-      isSelectionMode = !isSelectionMode;
-      if (!isSelectionMode) {
-        selectedDebtors.clear();
-      }
-    });
-  }
-
   void _onDebtorTap(Debtor debtor) {
     if (isSelectionMode) {
       setState(() {

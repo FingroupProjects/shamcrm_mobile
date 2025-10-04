@@ -1128,6 +1128,7 @@
 "statistics": "Статистика",
 "reports": "Отчеты",
 "no_reports_found": "Отчеты не найдены",
+  "appbar_detailed_report": "Детальный отчёт",
 "not_called": "Не позвонили",
 "waiting_response": "Клиент ждёт ответа",
 "called_during": "Пользователи в разговоре",

@@ -16,21 +16,6 @@ class _CreditorsContentState extends State<CreditorsContent> {
   bool isSelectionMode = false;
   Set<int> selectedCreditors = {};
 
-  @override
-  void initState() {
-    super.initState();
-    context.read<SalesDashboardCreditorsBloc>().add(const LoadCreditorsReport());
-  }
-
-  void _toggleSelectionMode() {
-    setState(() {
-      isSelectionMode = !isSelectionMode;
-      if (!isSelectionMode) {
-        selectedCreditors.clear();
-      }
-    });
-  }
-
   void _onCreditorTap(Creditor creditor) {
     if (isSelectionMode) {
       setState(() {
