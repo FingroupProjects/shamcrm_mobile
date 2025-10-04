@@ -1513,7 +1513,7 @@
   "no_money_permissions_description": "You do not have access rights to money. Please contact the administrator to gain access.",
   "no_call_center_permissions_description": "You do not have access rights to call center. Please contact the administrator to gain access.",
   "no_dashboard_permissions_description": "You do not have access rights to dashboard. Please contact the administrator to gain access.",
-  "no_reports_permissions_description": "You do not have access rights to reports. Please contact the administrator to gain access."
+  "no_reports_permissions_description": "You do not have access rights to reports. Please contact the administrator to gain access.",
   "days_without_movement": "Days without movement",
   "creditor_name_details": "Name",
   "debtor_name_details": "Name",
