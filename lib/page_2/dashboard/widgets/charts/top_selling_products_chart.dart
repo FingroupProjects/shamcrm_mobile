@@ -3,6 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
 import '../../../../models/page_2/dashboard/top_selling_model.dart';
+import '../../detailed_report/detailed_report_screen.dart';
 import 'download_popup_menu.dart';
 
 class TopSellingProductsChart extends StatefulWidget {
@@ -291,7 +292,10 @@ class _TopSellingProductsChartState extends State<TopSellingProductsChart> {
           Align(
             alignment: Alignment.centerRight,
             child: GestureDetector(
-              onTap: () {},
+              onTap: () {
+                debugPrint("Подробнее pressed");
+                Navigator.of(context).push(MaterialPageRoute(builder: (context) => DetailedReportScreen(currentTabIndex: 4)));
+              },
               child: Text(
                 localizations.translate('more_details'),
                 style: const TextStyle(

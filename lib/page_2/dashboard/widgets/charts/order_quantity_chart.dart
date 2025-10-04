@@ -3,19 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 
 import '../../../../screens/profile/languages/app_localizations.dart';
+import '../../detailed_report/detailed_report_screen.dart';
 import 'download_popup_menu.dart';
 
 class _OrderQuantityStrings {
   static const String orderQuantity = 'Количество заказов';
-  static const String day = 'День';
   static const String week = 'Неделя';
   static const String month = 'Месяц';
   static const String year = 'Год';
-  static const String pending = 'В ожидании';
-  static const String paid = 'Оплачено';
-  static const String cancelled = 'Отменено';
   static const String noDataToDisplay = 'Нет данных для отображения';
-  static const String moreDetails = 'Подробнее';
 }
 
 class OrderQuantityChart extends StatefulWidget {
@@ -473,7 +469,10 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
           Align(
             alignment: Alignment.centerRight,
             child: GestureDetector(
-              onTap: () {},
+              onTap: () {
+                debugPrint("Подробнее pressed");
+                Navigator.of(context).push(MaterialPageRoute(builder: (context) => DetailedReportScreen(currentTabIndex: 9)));
+              },
               child: Text(
                 localizations.translate('more_details'),
                 style: const TextStyle(

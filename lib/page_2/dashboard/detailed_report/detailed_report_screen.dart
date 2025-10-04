@@ -338,23 +338,10 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
       return ProfitabilityContent();
     } else if (id == 8) {
       return ExpenseStructureContent();
+    } else {
+      // todo kolichestvo zakazov
+      return Container();
     }
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ...List.generate(
-            5,
-                (index) => Container(
-              margin: const EdgeInsets.only(bottom: 16),
-              child: Container(color: Colors.blue, height: 200),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   void _scrollToActiveTab() {

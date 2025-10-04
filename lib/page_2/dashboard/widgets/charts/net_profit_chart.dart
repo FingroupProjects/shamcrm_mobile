@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
+import '../../detailed_report/detailed_report_screen.dart';
 import 'download_popup_menu.dart';
 
 class NetProfitChart extends StatefulWidget {
@@ -307,7 +308,10 @@ class _NetProfitChartState extends State<NetProfitChart> {
           Align(
             alignment: Alignment.centerRight,
             child: GestureDetector(
-              onTap: () {},
+              onTap: () {
+                debugPrint("Подробнее pressed");
+                Navigator.of(context).push(MaterialPageRoute(builder: (context) => DetailedReportScreen(currentTabIndex: 6)));
+              },
               child: Text(
                 localizations.translate('more_details'),
                 style: const TextStyle(
