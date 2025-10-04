@@ -2,6 +2,8 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/top_selling_goods/sa
 import 'package:crm_task_manager/page_2/dashboard/detailed_report/contents/cash_balance_content.dart';
 import 'package:crm_task_manager/page_2/dashboard/detailed_report/contents/sales_dynamics_content.dart';
 import 'package:crm_task_manager/page_2/dashboard/detailed_report/contents/net_profit_content.dart';
+import 'package:crm_task_manager/page_2/dashboard/detailed_report/contents/profitability_content.dart';
+import 'package:crm_task_manager/page_2/dashboard/detailed_report/contents/expense_structure_content.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/goods/sales_dashboard_goods_bloc.dart';
@@ -10,6 +12,8 @@ import '../../../bloc/page_2_BLOC/dashboard/creditors/sales_dashboard_creditors_
 import '../../../bloc/page_2_BLOC/dashboard/debtors/sales_dashboard_debtors_bloc.dart';
 import '../../../bloc/page_2_BLOC/dashboard/sales_dynamics/sales_dashboard_sales_dynamics_bloc.dart';
 import '../../../bloc/page_2_BLOC/dashboard/net_profit/sales_dashboard_net_profit_bloc.dart';
+import '../../../bloc/page_2_BLOC/dashboard/profitability/sales_dashboard_profitability_bloc.dart';
+import '../../../bloc/page_2_BLOC/dashboard/expense_structure/sales_dashboard_expense_structure_bloc.dart';
 import '../../../custom_widget/custom_app_bar_reports.dart';
 import '../../../screens/profile/languages/app_localizations.dart';
 import '../../../screens/profile/profile_screen.dart';
@@ -90,6 +94,8 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
   late SalesDashboardTopSellingGoodsBloc _topSellingGoodsBloc;
   late SalesDashboardSalesDynamicsBloc _salesDynamicsBloc;
   late SalesDashboardNetProfitBloc _netProfitBloc;
+  late SalesDashboardProfitabilityBloc _profitabilityBloc;
+  late SalesDashboardExpenseStructureBloc _expenseStructureBloc;
 
   @override
   void initState() {
@@ -103,6 +109,8 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
     _topSellingGoodsBloc = SalesDashboardTopSellingGoodsBloc()..add(LoadTopSellingGoodsReport());
     _salesDynamicsBloc = SalesDashboardSalesDynamicsBloc()..add(LoadSalesDynamicsReport());
     _netProfitBloc = SalesDashboardNetProfitBloc()..add(LoadNetProfitReport());
+    _profitabilityBloc = SalesDashboardProfitabilityBloc()..add(LoadProfitabilityReport());
+    _expenseStructureBloc = SalesDashboardExpenseStructureBloc()..add(LoadExpenseStructureReport());
 
     _currentTabIndex = widget.currentTabIndex;
     _scrollController = ScrollController();
@@ -140,6 +148,8 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
     _topSellingGoodsBloc.close();
     _salesDynamicsBloc.close();
     _netProfitBloc.close();
+    _profitabilityBloc.close();
+    _expenseStructureBloc.close();
 
     super.dispose();
   }
@@ -180,6 +190,10 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
       _salesDynamicsBloc.add(LoadSalesDynamicsReport(filter: filter, search: search));
     } else if (id == 6) {
       _netProfitBloc.add(LoadNetProfitReport(filter: filter, search: search));
+    } else if (id == 7) {
+      _profitabilityBloc.add(LoadProfitabilityReport(filter: filter, search: search));
+    } else if (id == 8) {
+      _expenseStructureBloc.add(LoadExpenseStructureReport(filter: filter, search: search));
     }
   }
 
@@ -211,6 +225,8 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
         BlocProvider<SalesDashboardTopSellingGoodsBloc>.value(value: _topSellingGoodsBloc),
         BlocProvider<SalesDashboardSalesDynamicsBloc>.value(value: _salesDynamicsBloc),
         BlocProvider<SalesDashboardNetProfitBloc>.value(value: _netProfitBloc),
+        BlocProvider<SalesDashboardProfitabilityBloc>.value(value: _profitabilityBloc),
+        BlocProvider<SalesDashboardExpenseStructureBloc>.value(value: _expenseStructureBloc),
       ],
       child: Scaffold(
         backgroundColor: Colors.white,
@@ -318,6 +334,10 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
       return SalesDynamicsContent();
     } else if (id == 6) {
       return NetProfitContent();
+    } else if (id == 7) {
+      return ProfitabilityContent();
+    } else if (id == 8) {
+      return ExpenseStructureContent();
     }
 
     return SingleChildScrollView(

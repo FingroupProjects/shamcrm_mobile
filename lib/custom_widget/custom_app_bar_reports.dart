@@ -1,32 +1,23 @@
 import 'dart:async';
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
-import 'package:crm_task_manager/custom_widget/filter/page_2/goods/filter_app_bar_goods.dart' as goods;
-import 'package:crm_task_manager/custom_widget/filter/page_2/income/filter_app_bar_income.dart';
-import 'package:crm_task_manager/custom_widget/filter/page_2/orders/filter_app_bar_orders.dart';
+import 'package:crm_task_manager/custom_widget/filter/page_2/reports/expense_structure_filter.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'filter/page_2/incoming/filter_app_bar_income.dart';
 import 'filter/page_2/reports/cash_balance_filter.dart';
 import 'filter/page_2/reports/goods_filter.dart';
 import 'filter/page_2/reports/creditors_filter.dart';
 import 'filter/page_2/reports/debtors_filter.dart';
+import 'filter/page_2/reports/profitability_filters.dart';
 import 'filter/page_2/reports/top_selling_goods_filter.dart';
 import 'filter/page_2/reports/sales_dynamics_filter.dart';
 import 'filter/page_2/reports/net_profit_filter.dart';
-import 'filter/page_2/reports/sales_profitability_filter.dart';
 import 'filter/page_2/reports/cost_structure_filter.dart';
 import 'filter/page_2/reports/orders_count_filter.dart';
 
@@ -678,27 +669,26 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
         );
         break;
       case 7:
-        filterScreen = SalesProfitabilityFilterScreen(
+        filterScreen = ProfitabilityFilterScreen(
           onSelectedDataFilter: (filters) {
             if (kDebugMode) {
-              print('CustomAppBarReports: Получены фильтры из SalesProfitabilityFilterScreen: $filters');
+              print('CustomAppBarReports: Получены фильтры из ProfitabilityFilterScreen: $filters');
             }
             widget.onFilterSelected?.call(filters);
           },
           onResetFilters: () {
             if (kDebugMode) {
-              print('CustomAppBarReports: Сброс фильтров из SalesProfitabilityFilterScreen');
+              print('CustomAppBarReports: Сброс фильтров из ProfitabilityFilterScreen');
             }
             widget.onResetFilters?.call();
           },
-          initialFromDate: initialFromDate,
-          initialToDate: initialToDate,
-          initialAmountFrom: sumFrom,
-          initialAmountTo: sumTo,
+          period: period,
+          categoryId: categoryId,
+          goodId: goodId,
         );
         break;
       case 8:
-        filterScreen = CostStructureFilterScreen(
+        filterScreen = ExpenseStructureFilterScreen(
           onSelectedDataFilter: (filters) {
             if (kDebugMode) {
               print('CustomAppBarReports: Получены фильтры из CostStructureFilterScreen: $filters');
@@ -711,10 +701,10 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
             }
             widget.onResetFilters?.call();
           },
-          initialFromDate: initialFromDate,
-          initialToDate: initialToDate,
-          initialAmountFrom: sumFrom,
-          initialAmountTo: sumTo,
+          categoryId: categoryId,
+          goodId: goodId,
+          initialDateFrom: initialFromDate,
+          initialDateTo: initialToDate,
         );
         break;
       case 9:
