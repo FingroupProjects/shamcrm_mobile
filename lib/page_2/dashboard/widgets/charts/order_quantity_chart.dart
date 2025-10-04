@@ -193,9 +193,9 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
 
     // Set minimum maxY to avoid division by zero and ensure readable chart
     if (maxY == 0) {
-      maxY = 1;
+      maxY = 5; // Default scale when no data
     } else if (maxY < 5) {
-      maxY = 1; // Minimum scale for better visibility
+      maxY = 5; // Minimum scale for better visibility of small values
     }
 
     double horizontalInterval = maxY / 5;

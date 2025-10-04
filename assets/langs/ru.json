@@ -1519,7 +1519,9 @@
   "enter_minimum_amount": "Введите минимальную сумму",
   "period": "Период",
   "good": "Товар",
-  "select_good": "Выберите товар"
+  "select_good": "Выберите товар",
+  "select_expense_article": "Выберите статью расхода",
+  "expense_article": "Статья расхода"
 
 
 }
