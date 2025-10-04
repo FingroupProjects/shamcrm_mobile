@@ -1521,7 +1521,8 @@
   "amount_from": "Amount from",
   "amount_to": "Amount to",
   "enter_maximum_amount": "Enter maximum amount",
-  "enter_days": "Enter number of days"
+  "enter_days": "Enter number of days",
+  "enter_minimum_amount": "Enter minimum amount"
 
 
 

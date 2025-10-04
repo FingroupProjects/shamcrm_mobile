@@ -1,57 +1,57 @@
-import 'package:crm_task_manager/models/page_2/dashboard/top_selling_card_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../bloc/page_2_BLOC/dashboard/top_selling_goods/sales_dashboard_top_selling_goods_bloc.dart';
-import 'cards/top_selling_card.dart';
+import '../../../../bloc/page_2_BLOC/dashboard/creditors/sales_dashboard_creditors_bloc.dart';
+import '../../../../models/page_2/dashboard/creditors_model.dart';
+import '../cards/creditor_card.dart';
 
-class TopSellingGoodsContent extends StatefulWidget {
-  const TopSellingGoodsContent({super.key});
+class CreditorsContent extends StatefulWidget {
+  const CreditorsContent({super.key});
 
   @override
-  State<TopSellingGoodsContent> createState() => _TopSellingGoodsContentState();
+  State<CreditorsContent> createState() => _CreditorsContentState();
 }
 
-class _TopSellingGoodsContentState extends State<TopSellingGoodsContent> {
+class _CreditorsContentState extends State<CreditorsContent> {
   bool isSelectionMode = false;
-  Set<int> selectedTopSellingGoods = {};
+  Set<int> selectedCreditors = {};
 
-  void _onProductTap(TopSellingCardModel product) {
+  void _onCreditorTap(Creditor creditor) {
     if (isSelectionMode) {
       setState(() {
-        if (selectedTopSellingGoods.contains(product.id)) {
-          selectedTopSellingGoods.remove(product.id);
+        if (selectedCreditors.contains(creditor.id)) {
+          selectedCreditors.remove(creditor.id);
         } else {
-          selectedTopSellingGoods.add(product.id);
+          selectedCreditors.add(creditor.id);
         }
       });
     }
   }
 
-  void _onProductLongPress(TopSellingCardModel product) {
+  void _onCreditorLongPress(Creditor creditor) {
     if (!isSelectionMode) {
       setState(() {
         isSelectionMode = true;
-        selectedTopSellingGoods.add(product.id);
+        selectedCreditors.add(creditor.id);
       });
     }
   }
 
-  Widget _buildTopSellingGoodsList(List<TopSellingCardModel> data) {
+  Widget _buildCreditorsList(CreditorsResponse data) {
     return Expanded(
-      child: data.isNotEmpty
+      child: data.result?.creditors.isNotEmpty == true
           ? ListView.separated(
         separatorBuilder: (context, index) => SizedBox(height: 12),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        itemCount: data.length,
+        itemCount: data.result!.creditors.length,
         itemBuilder: (context, index) {
-          final product = data[index];
-          return TopSellingCard(
-            product: product,
-            onClick: _onProductTap,
-            onLongPress: _onProductLongPress,
+          final creditor = data.result!.creditors[index];
+          return CreditorCard(
+            creditor: creditor,
+            onClick: _onCreditorTap,
+            onLongPress: _onCreditorLongPress,
             isSelectionMode: isSelectionMode,
-            isSelected: selectedTopSellingGoods.contains(product.id),
+            isSelected: selectedCreditors.contains(creditor.id),
           );
         },
       )
@@ -67,13 +67,13 @@ class _TopSellingGoodsContentState extends State<TopSellingGoodsContent> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.shopping_cart_outlined,
+              Icons.credit_card_off_outlined,
               size: 64,
               color: Color(0xff99A4BA),
             ),
             SizedBox(height: 16),
             Text(
-              'Нет данных о продажах',
+              'Нет кредиторской задолженности',
               style: TextStyle(
                 fontFamily: 'Gilroy',
                 fontSize: 18,
@@ -83,7 +83,7 @@ class _TopSellingGoodsContentState extends State<TopSellingGoodsContent> {
             ),
             SizedBox(height: 8),
             Text(
-              'Список самых продаваемых товаров пуст',
+              'Все долги перед поставщиками погашены',
               style: TextStyle(
                 fontFamily: 'Gilroy',
                 fontSize: 14,
@@ -164,7 +164,7 @@ class _TopSellingGoodsContentState extends State<TopSellingGoodsContent> {
               SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () {
-                  context.read<SalesDashboardTopSellingGoodsBloc>().add(const LoadTopSellingGoodsReport());
+                  context.read<SalesDashboardCreditorsBloc>().add(const LoadCreditorsReport());
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Color(0xff1E2E52),
@@ -192,17 +192,17 @@ class _TopSellingGoodsContentState extends State<TopSellingGoodsContent> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<SalesDashboardTopSellingGoodsBloc, SalesDashboardTopSellingGoodsState>(
+    return BlocBuilder<SalesDashboardCreditorsBloc, SalesDashboardCreditorsState>(
       builder: (context, state) {
-        if (state is SalesDashboardTopSellingGoodsLoading) {
+        if (state is SalesDashboardCreditorsLoading) {
           return _buildLoadingState();
-        } else if (state is SalesDashboardTopSellingGoodsError) {
+        } else if (state is SalesDashboardCreditorsError) {
           return _buildErrorState(state.message);
-        } else if (state is SalesDashboardTopSellingGoodsLoaded) {
-          if (state.topSellingGoods.isEmpty) {
+        } else if (state is SalesDashboardCreditorsLoaded) {
+          if (state.result.result == null) {
             return _buildEmptyState();
           }
-          return _buildTopSellingGoodsList(state.topSellingGoods);
+          return _buildCreditorsList(state.result);
         }
 
         return _buildEmptyState();

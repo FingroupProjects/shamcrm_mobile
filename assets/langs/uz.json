@@ -1523,7 +1523,8 @@
   "amount_from": "Summa dan",
   "amount_to": "Summa gacha",
   "enter_maximum_amount": "Maksimal summani kiriting",
-  "enter_days": "Kunlar sonini kiriting"
+  "enter_days": "Kunlar sonini kiriting",
+  "enter_minimum_amount": "Minimal summani kiriting"
 
 
 
