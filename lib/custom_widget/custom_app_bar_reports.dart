@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/custom_widget/filter/page_2/reports/expense_structure_filter.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -687,7 +688,7 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
         );
         break;
       case 8:
-        filterScreen = CostStructureFilterScreen(
+        filterScreen = ExpenseStructureFilterScreen(
           onSelectedDataFilter: (filters) {
             if (kDebugMode) {
               print('CustomAppBarReports: Получены фильтры из CostStructureFilterScreen: $filters');
@@ -700,10 +701,10 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
             }
             widget.onResetFilters?.call();
           },
-          initialFromDate: initialFromDate,
-          initialToDate: initialToDate,
-          initialAmountFrom: sumFrom,
-          initialAmountTo: sumTo,
+          categoryId: categoryId,
+          goodId: goodId,
+          initialDateFrom: initialFromDate,
+          initialDateTo: initialToDate,
         );
         break;
       case 9:

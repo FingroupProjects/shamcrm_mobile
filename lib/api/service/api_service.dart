@@ -139,6 +139,7 @@ import '../../models/page_2/dashboard/profitability_dashboard_model.dart';
 import '../../models/page_2/dashboard/sales_model.dart';
 import '../../models/page_2/dashboard/net_profit_content_model.dart';
 import '../../models/page_2/dashboard/profitability_content_model.dart';
+import '../../models/page_2/dashboard/expense_structure_content.dart';
 import '../../models/page_2/dashboard/top_selling_card_model.dart';
 import '../../models/page_2/dashboard/top_selling_model.dart';
 
@@ -15030,6 +15031,57 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       return ProfitabilityResponse.fromJson(data);
+    } else {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка',
+        response.statusCode,
+      );
+    }
+  }
+
+  Future<ExpenseResponse> getExpenseStructureByFilter(
+    Map<String, dynamic>? filters,
+    String? search,
+  ) async {
+    Map<String, String> queryParams = {};
+    if (search != null && search.isNotEmpty) queryParams['search'] = search;
+    if (filters != null) {
+      if (filters.containsKey('date_from') && filters['date_from'] != null) {
+        debugPrint("ApiService: filters['date_from']: ${filters['date_from']}");
+        final dateFrom = filters['date_from'] as DateTime;
+        queryParams['date_from'] = dateFrom.toIso8601String();
+      }
+      if (filters.containsKey('category_id') && filters['category_id'] != null) {
+        debugPrint("ApiService: filters['category_id']: ${filters['category_id']}");
+        final categoryId = filters['category_id'] as int;
+        queryParams['category_id'] = categoryId.toString();
+      }
+      if (filters.containsKey('article_id') && filters['article_id'] != null) {
+        debugPrint("ApiService: filters['article_id']: ${filters['article_id']}");
+        final articleId = filters['article_id'] as int;
+        queryParams['article_id'] = articleId.toString();
+      }
+    }
+    // Формируем параметры запроса
+    var path = await _appendQueryParams('/fin/dashboard/expense-structure');
+
+    // Fix: Properly encode query parameters
+    if (queryParams.isNotEmpty) {
+      // Check if path already has query params (contains ?)
+      final separator = path.contains('?') ? '&' : '?';
+      final encodedParams =
+      queryParams.entries.map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}').join('&');
+      path += '$separator$encodedParams';
+    }
+
+    debugPrint("ApiService: getExpenseStructure path: $path");
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return ExpenseResponse.fromJson(data);
     } else {
       final message = _extractErrorMessageFromResponse(response);
       throw ApiException(
