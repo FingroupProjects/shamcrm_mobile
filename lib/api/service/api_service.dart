@@ -14815,9 +14815,53 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     return allTopSellingData;
   }
 
-  Future<List<TopSellingCardModel>> getTopSellingCardsList() async {
-    final path = await _appendQueryParams('/dashboard/top-selling-goods');
-    debugPrint("ApiService: getTopSellingCardsList path: $path");
+  Future<List<TopSellingCardModel>> getTopSellingCardsByFilter({
+    String? search,
+    Map<String, dynamic>? filters,
+  }) async {
+    // try{
+    // Формируем параметры запроса
+
+    debugPrint("ApiService: getTopSellingCardsByFilter filters: $filters");
+
+    Map<String, String> queryParams = {};
+    if (search != null && search.isNotEmpty) queryParams['search'] = search;
+    if (filters != null) {
+      if (filters.containsKey('date_from') && filters['date_from'] != null) {
+        debugPrint("ApiService: filters['date_from']: ${filters['date_from']}");
+        final dateFrom = filters['date_from'] as DateTime;
+        queryParams['date_from'] = dateFrom.toIso8601String();
+      }
+
+      if (filters.containsKey('date_to') && filters['date_to'] != null) {
+        debugPrint("ApiService: filters['date_to']: ${filters['date_to']}");
+        final dateTo = filters['date_to'] as DateTime;
+        queryParams['date_to'] = dateTo.toIso8601String();
+      }
+
+      if (filters.containsKey('sum_from') && filters['sum_from'] != null) {
+        debugPrint("ApiService: filters['sum_from']: ${filters['sum_from']}");
+        final sumFrom = filters['sum_from'] as double;
+        queryParams['sum_from'] = sumFrom.toString();
+      }
+
+      if (filters.containsKey('sum_to') && filters['sum_to'] != null) {
+        debugPrint("ApiService: filters['sum_to']: ${filters['sum_to']}");
+        final sumTo = filters['sum_to'] as double;
+        queryParams['sum_to'] = sumTo.toString();
+      }
+    }
+
+    String path = await _appendQueryParams('/dashboard/top-selling-goods');
+
+    // Fix: Properly encode query parameters
+    if (queryParams.isNotEmpty) {
+      // Check if path already has query params (contains ?)
+      final separator = path.contains('?') ? '&' : '?';
+      final encodedParams =
+          queryParams.entries.map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}').join('&');
+      path += '$separator$encodedParams';
+    }
 
     try {
       final response = await _getRequest(path);
@@ -14828,7 +14872,6 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         final List<dynamic> dataList = data['result']['data'] as List<dynamic>;
 
         return dataList.map((item) => TopSellingCardModel.fromJson(item)).toList();
-
       } else {
         final message = _extractErrorMessageFromResponse(response);
         throw ApiException(
@@ -14838,6 +14881,48 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       }
     } catch (e) {
       rethrow;
+    }
+  }
+
+  Future<SalesResponse> getSalesDynamicsByFilter(
+    Map<String, dynamic>? filters,
+    String? search,
+  ) async {
+    Map<String, String> queryParams = {};
+    if (search != null && search.isNotEmpty) queryParams['search'] = search;
+    if (filters != null) {
+      if (filters.containsKey('period') && filters['period'] != null) {
+        debugPrint("ApiService: filters['period']: ${filters['period']}");
+        final period = filters['period'] as DateTime;
+        queryParams['period'] = period.toIso8601String();
+      }
+      if (filters.containsKey('category_id') && filters['category_id'] != null) {
+        debugPrint("ApiService: filters['category_id']: ${filters['category_id']}");
+        final categoryId = filters['category_id'] as int;
+        queryParams['category_id'] = categoryId.toString();
+      }
+      if (filters.containsKey('good_id') && filters['good_id'] != null) {
+        debugPrint("ApiService: filters['good_id']: ${filters['good_id']}");
+        final goodId = filters['good_id'] as int;
+        queryParams['good_id'] = goodId.toString();
+      }
+    }
+    // Формируем параметры запроса
+    var path = await _appendQueryParams('/dashboard/sales-dynamics');
+
+    debugPrint("ApiService: getSalesDynamics path: $path");
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return SalesResponse.fromJson(data);
+    } else {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка',
+        response.statusCode,
+      );
     }
   }
 }

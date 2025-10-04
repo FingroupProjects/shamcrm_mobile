@@ -469,6 +469,7 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
     String? categoryId;
     String? daysWithoutMovement;
     String? goodId;
+    DateTime? period;
 
     final currentFilter = widget.currentFilters[widget.currentTabIndex] ?? {};
 
@@ -492,6 +493,17 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
         initialToDate = DateTime.fromMillisecondsSinceEpoch(toDate);
       } else if (toDate is String) {
         initialToDate = DateTime.tryParse(toDate);
+      }
+    }
+
+    if (currentFilter.containsKey('period')) {
+      final period = currentFilter['period'];
+      if (period is DateTime) {
+        initialToDate = period;
+      } else if (period is int) {
+        initialToDate = DateTime.fromMillisecondsSinceEpoch(period);
+      } else if (period is String) {
+        initialToDate = DateTime.tryParse(period);
       }
     }
 
@@ -619,10 +631,12 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
             }
             widget.onResetFilters?.call();
           },
-          initialFromDate: initialFromDate,
-          initialToDate: initialToDate,
-          initialAmountFrom: sumFrom,
-          initialAmountTo: sumTo,
+          sumFrom: sumFrom,
+          sumTo: sumTo,
+          dateFrom: initialFromDate,
+          dateTo: initialToDate,
+          categoryId: categoryId,
+          goodId: goodId,
         );
         break;
       case 5:
@@ -639,10 +653,9 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
             }
             widget.onResetFilters?.call();
           },
-          initialFromDate: initialFromDate,
-          initialToDate: initialToDate,
-          initialAmountFrom: sumFrom,
-          initialAmountTo: sumTo,
+          categoryId: categoryId,
+          goodId: goodId,
+          period: period,
         );
         break;
       case 6:

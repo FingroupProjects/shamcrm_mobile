@@ -1,62 +1,33 @@
-import 'package:crm_task_manager/models/page_2/dashboard/top_selling_card_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../bloc/page_2_BLOC/dashboard/top_selling_goods/sales_dashboard_top_selling_goods_bloc.dart';
-import '../cards/top_selling_card.dart';
+import '../../../../../models/page_2/dashboard/sales_model.dart';
+import '../../../../../bloc/page_2_BLOC/dashboard/sales_dynamics/sales_dashboard_sales_dynamics_bloc.dart';
+import '../cards/sales_dynamics_card.dart';
 
-class TopSellingGoodsContent extends StatefulWidget {
-  const TopSellingGoodsContent({super.key});
+class SalesDynamicsContent extends StatefulWidget {
+  const SalesDynamicsContent({super.key});
 
   @override
-  State<TopSellingGoodsContent> createState() => _TopSellingGoodsContentState();
+  State<SalesDynamicsContent> createState() => _SalesDynamicsContentState();
 }
 
-class _TopSellingGoodsContentState extends State<TopSellingGoodsContent> {
-  bool isSelectionMode = false;
-  Set<int> selectedTopSellingGoods = {};
-
-  void _onProductTap(TopSellingCardModel product) {
-    if (isSelectionMode) {
-      setState(() {
-        if (selectedTopSellingGoods.contains(product.id)) {
-          selectedTopSellingGoods.remove(product.id);
-        } else {
-          selectedTopSellingGoods.add(product.id);
-        }
-      });
-    }
-  }
-
-  void _onProductLongPress(TopSellingCardModel product) {
-    if (!isSelectionMode) {
-      setState(() {
-        isSelectionMode = true;
-        selectedTopSellingGoods.add(product.id);
-      });
-    }
-  }
-
-  Widget _buildTopSellingGoodsList(List<TopSellingCardModel> data) {
-    // Wrap ListView in a Column with Expanded to ensure proper constraints
+class _SalesDynamicsContentState extends State<SalesDynamicsContent> {
+  Widget _buildSalesDynamicsList(List<MonthData> data) {
     return Column(
       children: [
         Expanded(
           child: data.isNotEmpty
               ? ListView.separated(
-            separatorBuilder: (context, index) => const SizedBox(height: 12),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            itemCount: data.length,
-            itemBuilder: (context, index) {
-              final product = data[index];
-              return TopSellingCard(
-                product: product,
-                onClick: _onProductTap,
-                onLongPress: _onProductLongPress,
-                isSelectionMode: isSelectionMode,
-                isSelected: selectedTopSellingGoods.contains(product.id),
-              );
-            },
-          )
+                  separatorBuilder: (context, index) => const SizedBox(height: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  itemCount: data.length,
+                  itemBuilder: (context, index) {
+                    final monthData = data[index];
+                    return SalesDynamicsCard(
+                      monthData: monthData,
+                    );
+                  },
+                )
               : _buildEmptyState(),
         ),
       ],
@@ -71,13 +42,13 @@ class _TopSellingGoodsContentState extends State<TopSellingGoodsContent> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Icon(
-              Icons.shopping_cart_outlined,
+              Icons.bar_chart_outlined,
               size: 64,
               color: Color(0xff99A4BA),
             ),
             const SizedBox(height: 16),
             Text(
-              'Нет данных о продажах',
+              'Нет данных о динамике продаж',
               style: TextStyle(
                 fontFamily: 'Gilroy',
                 fontSize: 18,
@@ -87,7 +58,7 @@ class _TopSellingGoodsContentState extends State<TopSellingGoodsContent> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Список самых продаваемых товаров пуст',
+              'Список данных по месяцам пуст',
               style: TextStyle(
                 fontFamily: 'Gilroy',
                 fontSize: 14,
@@ -168,7 +139,7 @@ class _TopSellingGoodsContentState extends State<TopSellingGoodsContent> {
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () {
-                  context.read<SalesDashboardTopSellingGoodsBloc>().add(const LoadTopSellingGoodsReport());
+                  context.read<SalesDashboardSalesDynamicsBloc>().add(const LoadSalesDynamicsReport());
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xff1E2E52),
@@ -196,17 +167,17 @@ class _TopSellingGoodsContentState extends State<TopSellingGoodsContent> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<SalesDashboardTopSellingGoodsBloc, SalesDashboardTopSellingGoodsState>(
+    return BlocBuilder<SalesDashboardSalesDynamicsBloc, SalesDashboardSalesDynamicsState>(
       builder: (context, state) {
-        if (state is SalesDashboardTopSellingGoodsLoading) {
+        if (state is SalesDashboardSalesDynamicsLoading) {
           return _buildLoadingState();
-        } else if (state is SalesDashboardTopSellingGoodsError) {
+        } else if (state is SalesDashboardSalesDynamicsError) {
           return _buildErrorState(state.message);
-        } else if (state is SalesDashboardTopSellingGoodsLoaded) {
-          if (state.topSellingGoods.isEmpty) {
+        } else if (state is SalesDashboardSalesDynamicsLoaded) {
+          if (state.data.result.months.isEmpty) {
             return _buildEmptyState();
           }
-          return _buildTopSellingGoodsList(state.topSellingGoods);
+          return _buildSalesDynamicsList(state.data.result.months);
         }
         return _buildEmptyState();
       },
