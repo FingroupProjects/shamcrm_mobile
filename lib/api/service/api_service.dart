@@ -14369,35 +14369,60 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
   /// Получение списка кредиторов
   Future<CreditorsResponse> getCreditorsList({
-    String? from,
-    String? to,
-    int? cashRegisterId,
-    int? supplierId,
-    int? clientId,
-    int? leadId,
-    String? operationType,
+    int? page,
+    int? perPage,
+    Map<String, dynamic>? filters,
     String? search,
   }) async {
     try {
       // Формируем параметры запроса
       Map<String, String> queryParams = {};
 
-      if (from != null) queryParams['from'] = from;
-      if (to != null) queryParams['to'] = to;
-      if (cashRegisterId != null) queryParams['cash_register_id'] = cashRegisterId.toString();
-      if (supplierId != null) queryParams['supplier_id'] = supplierId.toString();
-      if (clientId != null) queryParams['client_id'] = clientId.toString();
-      if (leadId != null) queryParams['lead_id'] = leadId.toString();
-      if (operationType != null) queryParams['operation_type'] = operationType;
-      if (search != null) queryParams['search'] = search;
+      if (page != null) queryParams['page'] = page.toString();
+      if (perPage != null) queryParams['per_page'] = perPage.toString();
+      if (search != null && search.isNotEmpty) queryParams['search'] = search;
+      if (filters != null) {
+        if (filters.containsKey('date_from') && filters['date_from'] is DateTime && filters['date_from'] != null) {
+          debugPrint("ApiService: filters['date_from']: ${filters['date_from']}");
+          final dateFrom = filters['date_from'] as DateTime;
+          queryParams['date_from'] = dateFrom.toIso8601String();
+        }
+        if (filters.containsKey('date_to') && filters['date_to'] is DateTime && filters['date_to'] != null) {
+          debugPrint("ApiService: filters['date_to']: ${filters['date_to']}");
+          final dateTo = filters['date_to'] as DateTime;
+          queryParams['date_to'] = dateTo.toIso8601String();
+        }
+        if (filters.containsKey('lead_id') && filters['lead_id'] != null) {
+          debugPrint("ApiService: filters['lead_id']: ${filters['lead_id']}");
+          queryParams['lead_id'] = filters['lead_id'].toString();
+        }
+        if (filters.containsKey('supplier_id') && filters['supplier_id'] != null) {
+          debugPrint("ApiService: filters['supplier_id']: ${filters['supplier_id']}");
+          queryParams['supplier_id'] = filters['supplier_id'].toString();
+        }
+        if (filters.containsKey('amountFrom') && filters['amountFrom'] != null) {
+          debugPrint("ApiService: filters['amountFrom']: ${filters['amountFrom']}");
+          queryParams['amount_from'] = filters['amountFrom'].toString();
+        }
+        if (filters.containsKey('amountTo') && filters['amountTo'] != null) {
+          debugPrint("ApiService: filters['amountTo']: ${filters['amountTo']}");
+          queryParams['amount_to'] = filters['amountTo'].toString();
+        }
+      }
 
       var path = await _appendQueryParams('/fin/dashboard/creditors-list');
 
-       if (queryParams.isNotEmpty) {
-        path += '?${Uri.encodeQueryComponent(queryParams.entries.map((e) => '${e.key}=${e.value}').join('&'))}';
+      // Fix: Properly encode query parameters
+      if (queryParams.isNotEmpty) {
+        // Check if path already has query params (contains ?)
+        final separator = path.contains('?') ? '&' : '?';
+        final encodedParams = queryParams.entries
+            .map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+            .join('&');
+        path += '$separator$encodedParams';
       }
       if (kDebugMode) {
-        print('ApiService: getCreditorsList - Generated path: $path');
+        print('ApiService: getCreditorsList - Generated path: $path, filter: $filters');
       }
 
       final response = await _getRequest(path);

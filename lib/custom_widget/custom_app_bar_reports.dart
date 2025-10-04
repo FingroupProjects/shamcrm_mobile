@@ -573,6 +573,7 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
             setState(() {
               _isFiltering = filters.isNotEmpty;
             });
+            debugPrint("CustomAppBarReports.filter: $filters");
             widget.onFilterSelected?.call(filters);
           },
           onResetFilters: () {

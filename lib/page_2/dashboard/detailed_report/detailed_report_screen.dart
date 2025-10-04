@@ -154,10 +154,11 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
     final filter = _filters[_currentTabIndex] ?? {};
     final search = _currentSearch;
 
+    debugPrint("DetailedReportScreen._reloadCurrentTabData: filter: $filter and search: $search");
+
     if (id == 0) {
       _goodsBloc.add(LoadGoodsReport(filter: filter, search: search));
     } else if (id == 1) {
-      debugPrint("Reloading Cash Balance with filter: $filter and search: $search");
       _cashBalanceBloc.add(LoadCashBalanceReport(filter: filter, search: search));
     } else if (id == 2) {
       _creditorsBloc.add(LoadCreditorsReport(filter: filter, search: search));
