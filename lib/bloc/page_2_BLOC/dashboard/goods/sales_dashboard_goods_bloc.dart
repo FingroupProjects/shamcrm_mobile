@@ -12,21 +12,59 @@ class SalesDashboardGoodsBloc extends Bloc<SalesDashboardGoodsEvent, SalesDashbo
 
   SalesDashboardGoodsBloc() : super(SalesDashboardProductsInitial()) {
     on<LoadGoodsReport>((event, emit) async {
-      // try {
-        emit(SalesDashboardGoodsLoading());
-        final response = await apiService.getSalesDashboardGoodsReport(
-          page: event.page,
-          perPage: event.perPage,
-        );
-        emit(SalesDashboardGoodsLoaded(
-          goods: response.data,
-          pagination: response.pagination,
-        ));
-      // } catch (e) {
-      //   emit(SalesDashboardGoodsError(
-      //     message: e.toString().replaceAll('Exception: ', ''),
-      //   ));
-      // }
+      try {
+        // Initial load (page 1)
+        if (event.page == 1) {
+          emit(SalesDashboardGoodsLoading());
+          final response = await apiService.getSalesDashboardGoodsReport(
+            page: event.page,
+            perPage: event.perPage,
+          );
+          emit(SalesDashboardGoodsLoaded(
+            goods: response.data,
+            pagination: response.pagination,
+            hasReachedMax: response.pagination.current_page >= response.pagination.total_pages,
+          ));
+        } else {
+          // Pagination load (page 2+)
+          final currentState = state;
+          if (currentState is SalesDashboardGoodsLoaded) {
+            final response = await apiService.getSalesDashboardGoodsReport(
+              page: event.page,
+              perPage: event.perPage,
+            );
+
+            // Append new data to existing data
+            final updatedGoods = List<DashboardGoods>.from(currentState.goods)
+              ..addAll(response.data);
+
+            emit(SalesDashboardGoodsLoaded(
+              goods: updatedGoods,
+              pagination: response.pagination,
+              hasReachedMax: response.pagination.current_page >= response.pagination.total_pages,
+            ));
+          }
+        }
+      } catch (e) {
+        final currentState = state;
+
+        // If it's a pagination error (not initial load), emit pagination error
+        if (event.page > 1 && currentState is SalesDashboardGoodsLoaded) {
+          emit(SalesDashboardGoodsPaginationError(
+            message: e.toString().replaceAll('Exception: ', ''),
+            goods: currentState.goods,
+            pagination: currentState.pagination,
+            hasReachedMax: currentState.hasReachedMax,
+          ));
+          // Return to previous loaded state
+          emit(currentState);
+        } else {
+          // Initial load error
+          emit(SalesDashboardGoodsError(
+            message: e.toString().replaceAll('Exception: ', ''),
+          ));
+        }
+      }
     });
   }
 }
