@@ -1519,7 +1519,11 @@
   "days_without_movement": "Harakatsiz kunlar",
   "creditor_name_details": "Ism",
   "debtor_name_details": "Ism",
-  "debt_amount": "Summa"
+  "debt_amount": "Summa",
+  "amount_from": "Summa dan",
+  "amount_to": "Summa gacha",
+  "enter_maximum_amount": "Maksimal summani kiriting",
+  "enter_days": "Kunlar sonini kiriting"
 
 
 

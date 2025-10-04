@@ -19,6 +19,8 @@ class SalesDashboardGoodsBloc extends Bloc<SalesDashboardGoodsEvent, SalesDashbo
           final response = await apiService.getSalesDashboardGoodsReport(
             page: event.page,
             perPage: event.perPage,
+            filters: event.filter,
+            search: event.search,
           );
           emit(SalesDashboardGoodsLoaded(
             goods: response.data,
@@ -32,6 +34,8 @@ class SalesDashboardGoodsBloc extends Bloc<SalesDashboardGoodsEvent, SalesDashbo
             final response = await apiService.getSalesDashboardGoodsReport(
               page: event.page,
               perPage: event.perPage,
+              filters: event.filter,
+              search: event.search,
             );
 
             // Append new data to existing data

@@ -454,12 +454,15 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
 
     DateTime? initialFromDate;
     DateTime? initialToDate;
-    String? initialAmountFrom;
-    String? initialAmountTo;
+    String? sumFrom;
+    String? sumTo;
+    String? categoryId;
+    String? daysWithoutMovement;
+    String? goodId;
 
     // Extract filter parameters
-    if (widget.currentFilters.containsKey('fromDate')) {
-      final fromDate = widget.currentFilters['fromDate'];
+    if (widget.currentFilters.containsKey('from_date')) {
+      final fromDate = widget.currentFilters['from_date'];
       if (fromDate is DateTime) {
         initialFromDate = fromDate;
       } else if (fromDate is int) {
@@ -469,8 +472,8 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
       }
     }
 
-    if (widget.currentFilters.containsKey('toDate')) {
-      final toDate = widget.currentFilters['toDate'];
+    if (widget.currentFilters.containsKey('to_date')) {
+      final toDate = widget.currentFilters['to_date'];
       if (toDate is DateTime) {
         initialToDate = toDate;
       } else if (toDate is int) {
@@ -480,14 +483,29 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
       }
     }
 
-    if (widget.currentFilters.containsKey('amountFrom')) {
-      final amountFrom = widget.currentFilters['amountFrom'];
-      initialAmountFrom = amountFrom?.toString();
+    if (widget.currentFilters.containsKey('sum_from')) {
+      final sumFromValue = widget.currentFilters['sum_from'];
+      sumFrom = sumFromValue?.toString();
     }
 
-    if (widget.currentFilters.containsKey('amountTo')) {
-      final amountTo = widget.currentFilters['amountTo'];
-      initialAmountTo = amountTo?.toString();
+    if (widget.currentFilters.containsKey('sum_to')) {
+      final sumToValue = widget.currentFilters['sum_to'];
+      sumTo = sumToValue?.toString();
+    }
+
+    if (widget.currentFilters.containsKey('category_id')) {
+      final categoryIdValue = widget.currentFilters['category_id'];
+      categoryId = categoryIdValue?.toString();
+    }
+
+    if (widget.currentFilters.containsKey('days_without_movement')) {
+      final daysWithoutMovementValue = widget.currentFilters['days_without_movement'];
+      daysWithoutMovement = daysWithoutMovementValue?.toString();
+    }
+
+    if (widget.currentFilters.containsKey('good_id')) {
+      final goodIdValue = widget.currentFilters['good_id'];
+      goodId = goodIdValue?.toString();
     }
 
     // Navigate to the appropriate filter screen based on currentTabIndex
@@ -513,10 +531,11 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
             });
             widget.onResetFilters?.call();
           },
-          initialFromDate: initialFromDate,
-          initialToDate: initialToDate,
-          initialAmountFrom: initialAmountFrom,
-          initialAmountTo: initialAmountTo,
+          initialAmountFrom: sumFrom,
+          initialAmountTo: sumTo,
+          categoryId: categoryId,
+          daysWithoutMovement: daysWithoutMovement,
+          goodId: goodId,
         );
         break;
       case 1:
@@ -541,8 +560,8 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
           },
           initialFromDate: initialFromDate,
           initialToDate: initialToDate,
-          initialAmountFrom: initialAmountFrom,
-          initialAmountTo: initialAmountTo,
+          initialAmountFrom: sumFrom,
+          initialAmountTo: sumTo,
         );
         break;
       case 2:
@@ -567,8 +586,8 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
           },
           initialFromDate: initialFromDate,
           initialToDate: initialToDate,
-          initialAmountFrom: initialAmountFrom,
-          initialAmountTo: initialAmountTo,
+          initialAmountFrom: sumFrom,
+          initialAmountTo: sumTo,
         );
         break;
       case 3:
@@ -593,8 +612,8 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
           },
           initialFromDate: initialFromDate,
           initialToDate: initialToDate,
-          initialAmountFrom: initialAmountFrom,
-          initialAmountTo: initialAmountTo,
+          initialAmountFrom: sumFrom,
+          initialAmountTo: sumTo,
         );
         break;
       case 4:
@@ -619,8 +638,8 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
           },
           initialFromDate: initialFromDate,
           initialToDate: initialToDate,
-          initialAmountFrom: initialAmountFrom,
-          initialAmountTo: initialAmountTo,
+          initialAmountFrom: sumFrom,
+          initialAmountTo: sumTo,
         );
         break;
       case 5:
@@ -645,8 +664,8 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
           },
           initialFromDate: initialFromDate,
           initialToDate: initialToDate,
-          initialAmountFrom: initialAmountFrom,
-          initialAmountTo: initialAmountTo,
+          initialAmountFrom: sumFrom,
+          initialAmountTo: sumTo,
         );
         break;
       case 6:
@@ -671,8 +690,8 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
           },
           initialFromDate: initialFromDate,
           initialToDate: initialToDate,
-          initialAmountFrom: initialAmountFrom,
-          initialAmountTo: initialAmountTo,
+          initialAmountFrom: sumFrom,
+          initialAmountTo: sumTo,
         );
         break;
       case 7:
@@ -697,8 +716,8 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
           },
           initialFromDate: initialFromDate,
           initialToDate: initialToDate,
-          initialAmountFrom: initialAmountFrom,
-          initialAmountTo: initialAmountTo,
+          initialAmountFrom: sumFrom,
+          initialAmountTo: sumTo,
         );
         break;
       case 8:
@@ -723,8 +742,8 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
           },
           initialFromDate: initialFromDate,
           initialToDate: initialToDate,
-          initialAmountFrom: initialAmountFrom,
-          initialAmountTo: initialAmountTo,
+          initialAmountFrom: sumFrom,
+          initialAmountTo: sumTo,
         );
         break;
       case 9:
@@ -749,8 +768,8 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
           },
           initialFromDate: initialFromDate,
           initialToDate: initialToDate,
-          initialAmountFrom: initialAmountFrom,
-          initialAmountTo: initialAmountTo,
+          initialAmountFrom: sumFrom,
+          initialAmountTo: sumTo,
         );
         break;
       default:

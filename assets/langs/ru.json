@@ -1510,9 +1510,11 @@
   "days_without_movement": "Дней без движения",
   "creditor_name_details": "Имя",
   "debtor_name_details": "Имя",
-  "debt_amount": "Сумма"
-
-
+  "debt_amount": "Сумма",
+  "amount_from": "Сумма от",
+  "amount_to": "Сумма до",
+  "enter_maximum_amount": "Введите максимальную сумму",
+  "enter_days": "Введите количество дней"
 
 
 }

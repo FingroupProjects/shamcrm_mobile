@@ -14234,8 +14234,24 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
   Future<ResultDashboardGoodsReport> getSalesDashboardGoodsReport({
     int page = 1,
     int perPage = 20,
+    Map<String, dynamic>? filters,
+    String? search,
   }) async {
-    String path = '/dashboard/goods-report?page=$page&per_page=$perPage';
+    String path = '/dashboard/goods-report?';
+
+    final categoryId = filters?['category_id'] as int?;
+    final daysWithoutMovement = filters?['days_without_movement'] as int?;
+    final goodId = filters?['good_id'] as int?;
+    final sumFrom = filters?['sum_from'] as String?;
+    final sumTo = filters?['sum_to'] as String?;
+
+    if (categoryId != null) path += '&category_id=$categoryId';
+    if (daysWithoutMovement != null) path += '&days_without_movement=$daysWithoutMovement';
+    if (goodId != null) path += '&good_id=$goodId';
+    if (sumFrom != null && sumFrom.isNotEmpty) path += '&sum_from=$sumFrom';
+    if (sumTo != null && sumTo.isNotEmpty) path += '&sum_to=$sumTo';
+    if (search != null && search.isNotEmpty) path += '&search=$search';
+    path += '&page=$page&per_page=$perPage';
 
     path = await _appendQueryParams(path);
     if (kDebugMode) {
