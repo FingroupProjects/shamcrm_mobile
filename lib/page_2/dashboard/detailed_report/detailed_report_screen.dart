@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/top_selling_goods/sales_dashboard_top_selling_goods_bloc.dart';
 import 'package:crm_task_manager/page_2/dashboard/detailed_report/contents/cash_balance_content.dart';
 import 'package:crm_task_manager/page_2/dashboard/detailed_report/contents/sales_dynamics_content.dart';
+import 'package:crm_task_manager/page_2/dashboard/detailed_report/contents/net_profit_content.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/goods/sales_dashboard_goods_bloc.dart';
@@ -8,6 +9,7 @@ import '../../../bloc/page_2_BLOC/dashboard/cash_balance/sales_dashboard_cash_ba
 import '../../../bloc/page_2_BLOC/dashboard/creditors/sales_dashboard_creditors_bloc.dart';
 import '../../../bloc/page_2_BLOC/dashboard/debtors/sales_dashboard_debtors_bloc.dart';
 import '../../../bloc/page_2_BLOC/dashboard/sales_dynamics/sales_dashboard_sales_dynamics_bloc.dart';
+import '../../../bloc/page_2_BLOC/dashboard/net_profit/sales_dashboard_net_profit_bloc.dart';
 import '../../../custom_widget/custom_app_bar_reports.dart';
 import '../../../screens/profile/languages/app_localizations.dart';
 import '../../../screens/profile/profile_screen.dart';
@@ -87,6 +89,7 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
   late SalesDashboardDebtorsBloc _debtorsBloc;
   late SalesDashboardTopSellingGoodsBloc _topSellingGoodsBloc;
   late SalesDashboardSalesDynamicsBloc _salesDynamicsBloc;
+  late SalesDashboardNetProfitBloc _netProfitBloc;
 
   @override
   void initState() {
@@ -99,6 +102,7 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
     _debtorsBloc = SalesDashboardDebtorsBloc()..add(LoadDebtorsReport());
     _topSellingGoodsBloc = SalesDashboardTopSellingGoodsBloc()..add(LoadTopSellingGoodsReport());
     _salesDynamicsBloc = SalesDashboardSalesDynamicsBloc()..add(LoadSalesDynamicsReport());
+    _netProfitBloc = SalesDashboardNetProfitBloc()..add(LoadNetProfitReport());
 
     _currentTabIndex = widget.currentTabIndex;
     _scrollController = ScrollController();
@@ -135,6 +139,7 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
     _debtorsBloc.close();
     _topSellingGoodsBloc.close();
     _salesDynamicsBloc.close();
+    _netProfitBloc.close();
 
     super.dispose();
   }
@@ -173,6 +178,8 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
       _topSellingGoodsBloc.add(LoadTopSellingGoodsReport(filter: filter, search: search));
     } else if (id == 5) {
       _salesDynamicsBloc.add(LoadSalesDynamicsReport(filter: filter, search: search));
+    } else if (id == 6) {
+      _netProfitBloc.add(LoadNetProfitReport(filter: filter, search: search));
     }
   }
 
@@ -203,6 +210,7 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
         BlocProvider<SalesDashboardDebtorsBloc>.value(value: _debtorsBloc),
         BlocProvider<SalesDashboardTopSellingGoodsBloc>.value(value: _topSellingGoodsBloc),
         BlocProvider<SalesDashboardSalesDynamicsBloc>.value(value: _salesDynamicsBloc),
+        BlocProvider<SalesDashboardNetProfitBloc>.value(value: _netProfitBloc),
       ],
       child: Scaffold(
         backgroundColor: Colors.white,
@@ -308,6 +316,8 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
       return TopSellingGoodsContent();
     } else if (id == 5) {
       return SalesDynamicsContent();
+    } else if (id == 6) {
+      return NetProfitContent();
     }
 
     return SingleChildScrollView(
