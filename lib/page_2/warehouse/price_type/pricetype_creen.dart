@@ -4,7 +4,6 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/document/price_type/bloc/price
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/price_type/bloc/price_type_state.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
-
 import 'package:crm_task_manager/page_2/warehouse/price_type/add_pricetype_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/price_type/pricetype_card.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -21,101 +20,192 @@ class PriceTypeScreen extends StatefulWidget {
 class _PriceTypeScreenState extends State<PriceTypeScreen> {
   final ApiService _apiService = ApiService();
   late PriceTypeScreenBloc priceType;
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
+
+  // НОВОЕ: Флаги прав доступа
+  bool _hasCreatePermission = false;
+  bool _hasUpdatePermission = false;
+  bool _hasDeletePermission = false;
 
   @override
-  initState() {
-    priceType = PriceTypeScreenBloc(_apiService)..add(FetchPriceType());
+  void initState() {
     super.initState();
+    _checkPermissions();
+    priceType = PriceTypeScreenBloc(_apiService)..add(FetchPriceType());
+  }
+
+  // НОВОЕ: Проверка прав доступа
+  Future<void> _checkPermissions() async {
+    try {
+      final create = await _apiService.hasPermission('price_type.create');
+      final update = await _apiService.hasPermission('price_type.update');
+      final delete = await _apiService.hasPermission('price_type.delete');
+
+      if (mounted) {
+        setState(() {
+          _hasCreatePermission = create;
+          _hasUpdatePermission = update;
+          _hasDeletePermission = delete;
+        });
+      }
+    } catch (e) {
+      debugPrint('Ошибка при проверке прав доступа: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _focusNode.dispose();
+    priceType.close();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    
     return BlocProvider.value(
       value: priceType,
       child: Scaffold(
-          backgroundColor: Colors.white,
-          appBar: AppBar(
-            forceMaterialTransparency: true,
-            title: CustomAppBarPage2(
-              title:  localizations.translate('price_type') ?? 'Типы цен',
-              showSearchIcon: true,
-              showFilterIcon: false,
-              showFilterOrderIcon: false,
-              onChangedSearchInput: (String value) {
-                if (value.isNotEmpty) {
-                  // _isSearching = true;
-                  // _currentFilters['query'] = value;
-                  // _clientSaleBloc.add(FetchClientSales(
-                  //   forceRefresh: true,
-                  //   filters: _currentFilters,
-                  // ));
-                } else {
-                  // _isSearching = false;
-                  // _currentFilters.remove('query');
-                  // _clientSaleBloc
-                  //     .add(const FetchClientSales(forceRefresh: true));
-                }
-              },
-              textEditingController: TextEditingController(),
-              focusNode: FocusNode(),
-              clearButtonClick: (value) {},
-              onClickProfileAvatar: () {},
-              clearButtonClickFiltr: (bool p1) {},
-              currentFilters: {},
-            ),
-          ),
-          floatingActionButton: FloatingActionButton(
-            onPressed: () {
-              if (mounted) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => AddPriceTypeScreen(),
-                  ),
-                ).then((_) {
-                  priceType.add(FetchPriceType());
-                });
-              }
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          forceMaterialTransparency: true,
+          title: CustomAppBarPage2(
+            title: localizations.translate('price_type') ?? 'Типы цен',
+            showSearchIcon: true,
+            showFilterIcon: false,
+            showFilterOrderIcon: false,
+            onChangedSearchInput: (String value) {
+              // Здесь можно добавить логику поиска
             },
-            backgroundColor: const Color(0xff1E2E52),
-            child: const Icon(Icons.add, color: Colors.white),
+            textEditingController: _searchController,
+            focusNode: _focusNode,
+            clearButtonClick: (value) {},
+            onClickProfileAvatar: () {},
+            clearButtonClickFiltr: (bool p1) {},
+            currentFilters: {},
           ),
-          body: BlocBuilder<PriceTypeScreenBloc, PriceTypeState>(
-            builder: (context, state) {
-              if (state is PriceTypeLoading) {
+        ),
+        // ИЗМЕНЕНО: Показываем FAB только если есть право на создание
+        floatingActionButton: _hasCreatePermission
+            ? FloatingActionButton(
+                onPressed: () {
+                  if (mounted) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => AddPriceTypeScreen(),
+                      ),
+                    ).then((_) {
+                      priceType.add(FetchPriceType());
+                    });
+                  }
+                },
+                backgroundColor: const Color(0xff1E2E52),
+                child: const Icon(Icons.add, color: Colors.white),
+              )
+            : null,
+        body: BlocBuilder<PriceTypeScreenBloc, PriceTypeState>(
+          builder: (context, state) {
+            if (state is PriceTypeLoading) {
+              return Center(
+                child: PlayStoreImageLoading(
+                  size: 80.0,
+                  duration: const Duration(milliseconds: 1000),
+                ),
+              );
+            } else if (state is PriceTypeLoaded) {
+              final priceTypes = state.priceTypes;
+
+              if (priceTypes.isEmpty) {
                 return Center(
-                  child: PlayStoreImageLoading(
-                    size: 80.0,
-                    duration: Duration(milliseconds: 1000),
+                  child: Text(
+                    localizations.translate('no_price_types') ?? 'Нет типов цен',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xff99A4BA),
+                    ),
                   ),
                 );
-              } else if (state is PriceTypeLoaded) {
-                final suppliers = state.priceTypes;
-                return RefreshIndicator(
-                  onRefresh: () {
-                    priceType.add(FetchPriceType());
-                    return Future.value();
-                  },
-                  child: ListView.builder(
-                    itemCount: suppliers.length,
-                    itemBuilder: (context, index) {
-                      final supplier = suppliers[index];
-                      return PriceTypeCard(
-                        supplier: supplier,
-                        onDelete: () {
-                          priceType.add(DeletePriceType(supplier.id));
-                        },
-                      );
-                    },
-                  ),
-                );
-              } else if (state is PriceTypeError) {
-                return Center(child: Text('Error: ${state.message}'));
               }
-              return const Center(child: Text('No data'));
-            },
-          )),
+
+              return RefreshIndicator(
+                color: const Color(0xff1E2E52),
+                backgroundColor: Colors.white,
+                onRefresh: () {
+                  priceType.add(FetchPriceType());
+                  return Future.value();
+                },
+                child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  itemCount: priceTypes.length,
+                  itemBuilder: (context, index) {
+                    final priceTypeItem = priceTypes[index];
+                    // НОВОЕ: Передаём права в карточку
+                    return PriceTypeCard(
+                      supplier: priceTypeItem,
+                      hasUpdatePermission: _hasUpdatePermission,
+                      hasDeletePermission: _hasDeletePermission,
+                      onUpdate: () {
+                        priceType.add(FetchPriceType());
+                      },
+                    );
+                  },
+                ),
+              );
+            } else if (state is PriceTypeError) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Error: ${state.message}',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xff1E2E52),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        onPressed: () {
+                          priceType.add(FetchPriceType());
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xff1E2E52),
+                          foregroundColor: Colors.white,
+                        ),
+                        child: Text(
+                          localizations.translate('retry') ?? 'Повторить',
+                        ),
+                      )
+                    ],
+                  ),
+                ),
+              );
+            }
+            return Center(
+              child: Text(
+                localizations.translate('no_data') ?? 'Нет данных',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xff99A4BA),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
     );
   }
 }

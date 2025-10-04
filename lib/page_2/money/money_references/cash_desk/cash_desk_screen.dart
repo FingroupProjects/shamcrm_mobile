@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/cash_desk/add/add_cash_desk_bloc.dart';
 import 'package:crm_task_manager/page_2/money/money_references/cash_desk/add_cash_desk_screen.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
@@ -24,11 +25,37 @@ class _CashDeskScreenState extends State<CashDeskScreen> {
   final ScrollController _scrollController = ScrollController();
   bool isClickAvatarIcon = false;
 
+  // НОВОЕ: Флаги прав доступа
+  bool _hasCreatePermission = false;
+  bool _hasUpdatePermission = false;
+  bool _hasDeletePermission = false;
+  final ApiService _apiService = ApiService();
+
   @override
   void initState() {
     super.initState();
+    _checkPermissions();
     context.read<CashDeskBloc>().add(const FetchCashRegisters());
     _scrollController.addListener(_onScroll);
+  }
+
+  // НОВОЕ: Проверка прав доступа
+  Future<void> _checkPermissions() async {
+    try {
+      final create = await _apiService.hasPermission('checking_account.create');
+      final update = await _apiService.hasPermission('checking_account.update');
+      final delete = await _apiService.hasPermission('checking_account.delete');
+
+      if (mounted) {
+        setState(() {
+          _hasCreatePermission = create;
+          _hasUpdatePermission = update;
+          _hasDeletePermission = delete;
+        });
+      }
+    } catch (e) {
+      debugPrint('Ошибка при проверке прав доступа: $e');
+    }
   }
 
   @override
@@ -75,90 +102,104 @@ class _CashDeskScreenState extends State<CashDeskScreen> {
           currentFilters: {},
         ),
       ),
-      body: isClickAvatarIcon ?
-          ProfileScreen() :
-          BlocBuilder<CashDeskBloc, CashDeskState>(
-        builder: (context, state) {
-          if (state.status == CashDeskStatus.initialLoading) {
-            return Center(
-              child: PlayStoreImageLoading(
-                size: 80.0,
-                duration: const Duration(milliseconds: 1000),
-              ),
-            );
-          } else if (state.status == CashDeskStatus.initialError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(AppLocalizations.of(context)?.translate('error_loading') ?? 'Ошибка загрузки'),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () {
-                      return context
-                          .read<CashDeskBloc>()
-                          .add(const FetchCashRegisters());
-                    },
-                    child: Text(AppLocalizations.of(context)?.translate('retry') ?? 'Повторить'),
-                  ),
-                ],
-              ),
-            );
-          } else if (state.status == CashDeskStatus.initialLoaded ||
-              state.status == CashDeskStatus.loadingMore) {
-            final cashRegisters = state.cashRegisters;
-            if (cashRegisters.isEmpty) {
-              return Center(
-                child: Text(
-                  AppLocalizations.of(context)?.translate('no_data') ?? 'Нет данных',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
-                  ),
-                ),
-              );
-            }
-            return RefreshIndicator(
-              onRefresh: () async {
-                context
-                    .read<CashDeskBloc>()
-                    .add(const FetchCashRegisters());
-              },
-              child: ListView.builder(
-                controller: _scrollController,
-                padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                itemCount: cashRegisters.length +
-                    (state.status == CashDeskStatus.loadingMore ? 1 : 0),
-                itemBuilder: (context, index) {
-                  if (index >= cashRegisters.length) {
-                    // Show loading indicator at the bottom
-                    return Container(
-                      padding: const EdgeInsets.all(16),
-                      alignment: Alignment.center,
-                      child: PlayStoreImageLoading(
-                        size: 80.0,
-                        duration: const Duration(milliseconds: 1000),
+      body: isClickAvatarIcon
+          ? ProfileScreen()
+          : BlocBuilder<CashDeskBloc, CashDeskState>(
+              builder: (context, state) {
+                if (state.status == CashDeskStatus.initialLoading) {
+                  return Center(
+                    child: PlayStoreImageLoading(
+                      size: 80.0,
+                      duration: const Duration(milliseconds: 1000),
+                    ),
+                  );
+                } else if (state.status == CashDeskStatus.initialError) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          AppLocalizations.of(context)?.translate('error_loading') ?? 'Ошибка загрузки',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xff1E2E52),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () {
+                            context.read<CashDeskBloc>().add(const FetchCashRegisters());
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xff1E2E52),
+                            foregroundColor: Colors.white,
+                          ),
+                          child: Text(
+                            AppLocalizations.of(context)?.translate('retry') ?? 'Повторить',
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                } else if (state.status == CashDeskStatus.initialLoaded ||
+                    state.status == CashDeskStatus.loadingMore) {
+                  final cashRegisters = state.cashRegisters;
+                  if (cashRegisters.isEmpty) {
+                    return Center(
+                      child: Text(
+                        AppLocalizations.of(context)?.translate('no_cash_registers') ?? 'Нет касс',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xff99A4BA),
+                        ),
                       ),
                     );
                   }
+                  return RefreshIndicator(
+                    color: const Color(0xff1E2E52),
+                    backgroundColor: Colors.white,
+                    onRefresh: () async {
+                      context.read<CashDeskBloc>().add(const FetchCashRegisters());
+                    },
+                    child: ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      itemCount: cashRegisters.length +
+                          (state.status == CashDeskStatus.loadingMore ? 1 : 0),
+                      itemBuilder: (context, index) {
+                        if (index >= cashRegisters.length) {
+                          return Container(
+                            padding: const EdgeInsets.all(16),
+                            alignment: Alignment.center,
+                            child: PlayStoreImageLoading(
+                              size: 80.0,
+                              duration: const Duration(milliseconds: 1000),
+                            ),
+                          );
+                        }
 
-                  final data = cashRegisters[index];
-                  return _buildCashRegisterCard(data);
-                },
-              ),
-            );
-          }
-          return const SizedBox();
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color(0xff1E2E52),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        onPressed: _navigateToAddReference,
-        child: const Icon(Icons.add, color: Colors.white, size: 32),
-      ),
+                        final data = cashRegisters[index];
+                        return _buildCashRegisterCard(data);
+                      },
+                    ),
+                  );
+                }
+                return const SizedBox();
+              },
+            ),
+      // ИЗМЕНЕНО: Показываем FAB только если есть право на создание
+      floatingActionButton: _hasCreatePermission
+          ? FloatingActionButton(
+              backgroundColor: const Color(0xff1E2E52),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              onPressed: _navigateToAddReference,
+              child: const Icon(Icons.add, color: Colors.white, size: 32),
+            )
+          : null,
     );
   }
 
@@ -169,9 +210,12 @@ class _CashDeskScreenState extends State<CashDeskScreen> {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: () {
-            _navigateToEditReference(data);
-          },
+          // ИЗМЕНЕНО: Открываем редактирование только если есть право
+          onTap: _hasUpdatePermission
+              ? () {
+                  _navigateToEditReference(data);
+                }
+              : null,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
             decoration: BoxDecoration(
@@ -197,16 +241,18 @@ class _CashDeskScreenState extends State<CashDeskScreen> {
                     ],
                   ),
                 ),
-                GestureDetector(
-                  child: Image.asset(
-                    'assets/icons/delete.png',
-                    width: 24,
-                    height: 24,
+                // ИЗМЕНЕНО: Показываем кнопку удаления только если есть право
+                if (_hasDeletePermission)
+                  GestureDetector(
+                    child: Image.asset(
+                      'assets/icons/delete.png',
+                      width: 24,
+                      height: 24,
+                    ),
+                    onTap: () {
+                      _showDeleteConfirmation(data, context);
+                    },
                   ),
-                  onTap: () {
-                    _showDeleteConfirmation(data, context);
-                  },
-                ),
               ],
             ),
           ),
@@ -249,8 +295,7 @@ class _CashDeskScreenState extends State<CashDeskScreen> {
     }
   }
 
-  void _showDeleteConfirmation(
-      CashRegisterModel data, BuildContext parentContext) {
+  void _showDeleteConfirmation(CashRegisterModel data, BuildContext parentContext) {
     showDialog(
       context: parentContext,
       builder: (BuildContext context) {
@@ -259,7 +304,7 @@ class _CashDeskScreenState extends State<CashDeskScreen> {
           title: Center(
             child: Text(
               AppLocalizations.of(context)?.translate('delete_reference') ?? 'Удалить справочник',
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 20,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w600,
@@ -268,8 +313,9 @@ class _CashDeskScreenState extends State<CashDeskScreen> {
             ),
           ),
           content: Text(
-            AppLocalizations.of(context)?.translate('confirm_delete_reference') ?? 'Вы уверены, что хотите удалить справочник',
-            style: TextStyle(
+            AppLocalizations.of(context)?.translate('confirm_delete_reference') ??
+                'Вы уверены, что хотите удалить справочник?',
+            style: const TextStyle(
               fontSize: 16,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w500,
@@ -282,8 +328,7 @@ class _CashDeskScreenState extends State<CashDeskScreen> {
               children: [
                 Expanded(
                   child: CustomButton(
-                    buttonText:
-                    AppLocalizations.of(context)!.translate('cancel'),
+                    buttonText: AppLocalizations.of(context)!.translate('cancel'),
                     onPressed: () {
                       Navigator.of(context).pop();
                     },
@@ -291,20 +336,15 @@ class _CashDeskScreenState extends State<CashDeskScreen> {
                     textColor: Colors.white,
                   ),
                 ),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 Expanded(
                   child: CustomButton(
-                    buttonText:
-                    AppLocalizations.of(context)!.translate('delete'),
+                    buttonText: AppLocalizations.of(context)!.translate('delete'),
                     onPressed: () {
-                      // Use parentContext instead of context to access the CashDeskBloc
-                      parentContext
-                          .read<CashDeskBloc>()
-                          .add(DeleteCashDesk(data.id));
-                      Navigator.of(context)
-                          .pop(); // Use context for dialog navigation
+                      parentContext.read<CashDeskBloc>().add(DeleteCashDesk(data.id));
+                      Navigator.of(context).pop();
                     },
-                    buttonColor: Color(0xff1E2E52),
+                    buttonColor: const Color(0xff1E2E52),
                     textColor: Colors.white,
                   ),
                 ),

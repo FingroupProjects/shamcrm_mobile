@@ -59,8 +59,8 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
       _hasStorage = await _apiService.hasPermission('storage.read');
       _hasUnit = await _apiService.hasPermission('unit.read');
       _hasSupplier = await _apiService.hasPermission('supplier.read');
-      _hasProduct = await _apiService.hasPermission('product.read');
-      _hasPriceType = await _apiService.hasPermission('price_type.read');
+      _hasProduct = await _apiService.hasPermission('cash_register.read');
+      _hasPriceType = await _apiService.hasPermission('cash_register.read');
       _hasCashRegister = await _apiService.hasPermission('cash_register.read');
       _hasRkoArticle = await _apiService.hasPermission('rko_article.read');
       _hasPkoArticle = await _apiService.hasPermission('pko_article.read');

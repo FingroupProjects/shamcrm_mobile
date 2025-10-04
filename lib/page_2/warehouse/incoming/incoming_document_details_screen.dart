@@ -25,11 +25,15 @@ class IncomingDocumentDetailsScreen extends StatefulWidget {
   final int documentId;
   final String docNumber;
   final VoidCallback? onDocumentUpdated;
+  final bool hasUpdatePermission;
+  final bool hasDeletePermission;
 
   const IncomingDocumentDetailsScreen({
     required this.documentId,
     required this.docNumber,
     this.onDocumentUpdated,
+    this.hasUpdatePermission = false,
+    this.hasDeletePermission = false,
     super.key,
   });
 
@@ -45,13 +49,10 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
   String? baseUrl;
   bool _documentUpdated = false;
   bool _isButtonLoading = false;
-    bool _goodMeasurementEnabled = true; // добавляем флаг
+  bool _goodMeasurementEnabled = true;
 
-
-  // Map to store unit details (id -> shortName)
   final Map<int, String> _unitMap = {
-    23: 'шт', // Based on JSON unit_id: 23
-    // Add more mappings or fetch dynamically
+    23: 'шт',
   };
 
   @override
@@ -59,9 +60,9 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
     super.initState();
     _initializeBaseUrl();
     _fetchDocumentDetails();
-        _loadGoodMeasurementSetting(); // загружаем настройку
+    _loadGoodMeasurementSetting();
   }
- // Добавляем метод загрузки настройки
+
   Future<void> _loadGoodMeasurementSetting() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -310,6 +311,7 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
 
     if (currentDocument == null) return const SizedBox.shrink();
 
+    // НОВОЕ: Если документ удалён - показываем кнопку восстановления (не требует специального права)
     if (currentDocument!.deletedAt != null) {
       return StyledActionButton(
         text: AppLocalizations.of(context)!.translate('restore_document') ?? 'Восстановить',
@@ -317,6 +319,11 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
         color: const Color(0xFF2196F3),
         onPressed: _restoreDocument,
       );
+    }
+
+    // НОВОЕ: Кнопки провести/отменить проведение смотрят на право UPDATE
+    if (!widget.hasUpdatePermission) {
+      return const SizedBox.shrink();
     }
 
     if (currentDocument!.approved == 0) {
@@ -468,7 +475,8 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
   }
 
   AppBar _buildAppBar(BuildContext context) {
-    final showActions = currentDocument?.deletedAt == null;
+    final showActions = currentDocument?.deletedAt == null && 
+                        (widget.hasUpdatePermission || widget.hasDeletePermission);
 
     return AppBar(
       backgroundColor: Colors.white,
@@ -507,52 +515,54 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  IconButton(
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    icon: Image.asset(
-                      'assets/icons/edit.png',
-                      width: 24,
-                      height: 24,
-                    ),
-                    onPressed: () async {
-                      final result = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => IncomingDocumentEditScreen(
-                            document: currentDocument!,
+                  if (widget.hasUpdatePermission)
+                    IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      icon: Image.asset(
+                        'assets/icons/edit.png',
+                        width: 24,
+                        height: 24,
+                      ),
+                      onPressed: () async {
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => IncomingDocumentEditScreen(
+                              document: currentDocument!,
+                            ),
                           ),
-                        ),
-                      );
+                        );
 
-                      if (result == true) {
-                        _fetchDocumentDetails();
-                        if (widget.onDocumentUpdated != null) {
-                          widget.onDocumentUpdated!();
+                        if (result == true) {
+                          _fetchDocumentDetails();
+                          if (widget.onDocumentUpdated != null) {
+                            widget.onDocumentUpdated!();
+                          }
                         }
-                      }
-                    },
-                  ),
-                  IconButton(
-                    padding: const EdgeInsets.only(right: 8),
-                    constraints: const BoxConstraints(),
-                    icon: Image.asset(
-                      'assets/icons/delete.png',
-                      width: 24,
-                      height: 24,
+                      },
                     ),
-                    onPressed: () {
-                      showDialog(
-                        context: context,
-                        builder: (BuildContext context) {
-                          return BlocProvider.value(
-                            value: BlocProvider.of<IncomingBloc>(context),
-                            child: DeleteDocumentDialog(documentId: widget.documentId),
-                          );
-                        },
-                      );
-                    },
-                  ),
+                  if (widget.hasDeletePermission)
+                    IconButton(
+                      padding: const EdgeInsets.only(right: 8),
+                      constraints: const BoxConstraints(),
+                      icon: Image.asset(
+                        'assets/icons/delete.png',
+                        width: 24,
+                        height: 24,
+                      ),
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return BlocProvider.value(
+                              value: BlocProvider.of<IncomingBloc>(context),
+                              child: DeleteDocumentDialog(documentId: widget.documentId),
+                            );
+                          },
+                        );
+                      },
+                    ),
                 ],
               ),
             ]
@@ -663,7 +673,7 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
     );
   }
 
- Widget _buildGoodsItem(DocumentGood good) {
+  Widget _buildGoodsItem(DocumentGood good) {
     final unitShortName = good.good?.unitId != null
         ? _unitMap[good.good!.unitId] ?? 'шт'
         : 'шт';
@@ -696,38 +706,34 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
                       const SizedBox(height: 8),
                       Row(
                         children: [
-                          // Ед. изм.
-                                                    if (_goodMeasurementEnabled)
-
-                          Expanded(
-                            flex: 2,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  // change this
-                                  AppLocalizations.of(context)!.translate('unit') ?? 'Ед.',
-                                  style: const TextStyle(
-                                    fontSize: 10,
-                                    fontFamily: 'Gilroy',
-                                    fontWeight: FontWeight.w400,
-                                    color: Color(0xff99A4BA),
+                          if (_goodMeasurementEnabled)
+                            Expanded(
+                              flex: 2,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    AppLocalizations.of(context)!.translate('unit') ?? 'Ед.',
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      fontFamily: 'Gilroy',
+                                      fontWeight: FontWeight.w400,
+                                      color: Color(0xff99A4BA),
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  unitShortName,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontFamily: 'Gilroy',
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xff1E2E52),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    unitShortName,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontFamily: 'Gilroy',
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xff1E2E52),
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ),
-                          // Количество
                           Expanded(
                             flex: 2,
                             child: Column(
@@ -755,7 +761,6 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
                               ],
                             ),
                           ),
-                          // Цена
                           Expanded(
                             flex: 3,
                             child: Column(
@@ -787,7 +792,6 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
                         ],
                       ),
                       const SizedBox(height: 8),
-                      // Итого на отдельной строке
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                         decoration: BoxDecoration(
@@ -842,7 +846,8 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
         width: 100,
         height: 100,
         fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
+        errorBuilder: (context, error,
+        stackTrace) {
           return _buildPlaceholderImage();
         },
         loadingBuilder: (context, child, loadingProgress) {

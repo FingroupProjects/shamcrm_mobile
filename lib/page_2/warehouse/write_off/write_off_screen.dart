@@ -30,15 +30,43 @@ class _WriteOffScreenState extends State<WriteOffScreen> {
   Map<String, dynamic> _currentFilters = {};
   String? _search;
   late WriteOffBloc _writeOffBloc;
+  bool _isInitialLoad = true; // НОВОЕ: Как в примере
   bool _isLoadingMore = false;
   bool _hasReachedMax = false;
   bool _selectionMode = false;
+  bool _isRefreshing = false; // НОВОЕ: Для consistency
+
+  // НОВОЕ: Флаги прав доступа
+  bool _hasCreatePermission = false;
+  bool _hasUpdatePermission = false;
+  bool _hasDeletePermission = false;
+  final ApiService _apiService = ApiService();
 
   @override
   void initState() {
     super.initState();
+    _checkPermissions(); // НОВОЕ: Проверка прав
     _writeOffBloc = WriteOffBloc(ApiService())..add(const FetchWriteOffs(forceRefresh: true));
     _scrollController.addListener(_onScroll);
+  }
+
+  // НОВОЕ: Проверка прав доступа
+  Future<void> _checkPermissions() async {
+    try {
+      final create = await _apiService.hasPermission('write_off_document.create');
+      final update = await _apiService.hasPermission('write_off_document.update');
+      final delete = await _apiService.hasPermission('write_off_document.delete');
+
+      if (mounted) {
+        setState(() {
+          _hasCreatePermission = create;
+          _hasUpdatePermission = update;
+          _hasDeletePermission = delete;
+        });
+      }
+    } catch (e) {
+      debugPrint('Ошибка при проверке прав доступа: $e');
+    }
   }
 
   @override
@@ -55,10 +83,10 @@ class _WriteOffScreenState extends State<WriteOffScreen> {
       _currentFilters = Map.from(filters);
       _hasReachedMax = false;
       _isLoadingMore = false;
+      _isSearching = false;
+      _searchController.clear();
+      _search = null;
     });
-
-    _searchController.clear();
-    _search = null;
 
     _writeOffBloc.add(FetchWriteOffs(
       filters: filters,
@@ -72,6 +100,7 @@ class _WriteOffScreenState extends State<WriteOffScreen> {
       _currentFilters.clear();
       _hasReachedMax = false;
       _isLoadingMore = false;
+      _isSearching = false;
       _searchController.clear();
       _search = null;
     });
@@ -101,8 +130,8 @@ class _WriteOffScreenState extends State<WriteOffScreen> {
   void _onSearch(String query) {
     setState(() {
       _isSearching = query.trim().isNotEmpty;
+      _search = query;
     });
-    _search = query;
     _writeOffBloc.add(FetchWriteOffs(
       forceRefresh: true,
       search: _search,
@@ -113,17 +142,21 @@ class _WriteOffScreenState extends State<WriteOffScreen> {
   Future<void> _onRefresh() async {
     setState(() {
       _hasReachedMax = false;
+      _isSearching = false;
+      _searchController.clear();
+      _search = null;
     });
+
     _writeOffBloc.add(FetchWriteOffs(
       forceRefresh: true,
       filters: _currentFilters,
-      search: _search,
+      search: null,
     ));
     await Future.delayed(const Duration(milliseconds: 500));
   }
 
   void _showSnackBar(String message, bool isSuccess) {
-    if (!mounted) return;
+    if (!mounted || !context.mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -152,6 +185,30 @@ class _WriteOffScreenState extends State<WriteOffScreen> {
     return BlocProvider.value(
       value: _writeOffBloc,
       child: Scaffold(
+        // ИЗМЕНЕНО: FAB только с create-правом
+        floatingActionButton: _hasCreatePermission
+            ? FloatingActionButton(
+                key: const Key('create_write_off_button'),
+                onPressed: () async {
+                  if (!mounted) return;
+
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => CreateWriteOffDocumentScreen(
+                        organizationId: widget.organizationId,
+                      ),
+                    ),
+                  );
+
+                  if (mounted && result == true) {
+                    _writeOffBloc.add(const FetchWriteOffs(forceRefresh: true));
+                  }
+                },
+                backgroundColor: const Color(0xff1E2E52),
+                child: const Icon(Icons.add, color: Colors.white),
+              )
+            : null,
         backgroundColor: Colors.white,
         appBar: AppBar(
           automaticallyImplyLeading: !_selectionMode,
@@ -162,8 +219,11 @@ class _WriteOffScreenState extends State<WriteOffScreen> {
                     if (state is WriteOffLoaded) {
                       bool showApprove = state.selectedData!.any((doc) => doc.approved == 0 && doc.deletedAt == null);
                       bool showDisapprove = state.selectedData!.any((doc) => doc.approved == 1 && doc.deletedAt == null);
-                      bool showDelete = state.selectedData!.any((doc) => doc.deletedAt == null);
+                      // ИЗМЕНЕНО: showDelete только с delete-правом
+                      bool showDelete = _hasDeletePermission &&
+                          state.selectedData!.any((doc) => doc.deletedAt == null);
                       bool showRestore = state.selectedData!.any((doc) => doc.deletedAt != null);
+                      _isRefreshing = false;
 
                       return AppBarSelectionMode(
                         title: localizations?.translate('appbar_write_off') ?? 'Списание',
@@ -216,7 +276,7 @@ class _WriteOffScreenState extends State<WriteOffScreen> {
                   },
                 )
               : CustomAppBarPage2(
-                  title: localizations!.translate('appbar_write_off') ?? 'Списание',
+                  title: localizations?.translate('appbar_write_off') ?? 'Списание',
                   showSearchIcon: true,
                   showFilterIcon: false,
                   showFilterOrderIcon: false,
@@ -253,123 +313,284 @@ class _WriteOffScreenState extends State<WriteOffScreen> {
             if (!mounted) return;
 
             if (state is WriteOffLoaded) {
-              setState(() {
-                _hasReachedMax = state.hasReachedMax;
-                _isLoadingMore = false;
-              });
+              if (mounted) {
+                setState(() {
+                  _hasReachedMax = state.hasReachedMax;
+                  _isInitialLoad = false;
+                  _isLoadingMore = false;
+                  _isRefreshing = false;
+                });
+              }
             } else if (state is WriteOffError) {
-              setState(() {
-                _isLoadingMore = false;
-              });
-              if (state.statusCode == 409) {
-                showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message);
-                return;
+              if (mounted) {
+                setState(() {
+                  _isInitialLoad = false;
+                  _isLoadingMore = false;
+                  _isRefreshing = false;
+                });
+
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && context.mounted) {
+                    if (state.statusCode == 409) {
+                      final localizations = AppLocalizations.of(context)!;
+                      showSimpleErrorDialog(
+                          context,
+                          localizations.translate('error') ?? 'Ошибка',
+                          state.message);
+                      return;
+                    }
+                    _showSnackBar(state.message, false);
+                  }
+                });
               }
-              _showSnackBar(state.message, false);
             } else if (state is WriteOffCreateSuccess) {
-              _showSnackBar(state.message, true);
+              if (mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && context.mounted) {
+                    _showSnackBar(state.message, true);
+                    _writeOffBloc.add(const FetchWriteOffs(forceRefresh: true));
+                  }
+                });
+              }
             } else if (state is WriteOffCreateError) {
-              if (state.statusCode == 409) {
-                showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message);
-                return;
+              if (mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && context.mounted) {
+                    if (state.statusCode == 409) {
+                      final localizations = AppLocalizations.of(context)!;
+                      showSimpleErrorDialog(
+                          context,
+                          localizations.translate('error') ?? 'Ошибка',
+                          state.message);
+                      return;
+                    }
+                    _showSnackBar(state.message, false);
+                  }
+                });
               }
-              _showSnackBar(state.message, false);
-            } else if (state is WriteOffUpdateSuccess) {
-              _showSnackBar(state.message, true);
-            } else if (state is WriteOffUpdateError) {
-              if (state.statusCode == 409) {
-                showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message);
-                return;
+            } else if (state is WriteOffUpdateSuccess) { // НОВОЕ: Обработка update
+              if (mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && context.mounted) {
+                    _showSnackBar(state.message, true);
+                    _writeOffBloc.add(FetchWriteOffs(
+                        forceRefresh: true,
+                        filters: _currentFilters,
+                        search: _search));
+                  }
+                });
               }
-              _showSnackBar(state.message, false);
-            } else if (state is WriteOffApproveMassSuccess) {
-              showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-              _writeOffBloc.add(FetchWriteOffs(forceRefresh: true, filters: _currentFilters, search: _search));
-            } else if (state is WriteOffApproveMassError) {
-              if (state.statusCode == 409) {
-                showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message);
-                return;
+            } else if (state is WriteOffUpdateError) { // НОВОЕ: Обработка update error
+              if (mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && context.mounted) {
+                    if (state.statusCode == 409) {
+                      final localizations = AppLocalizations.of(context)!;
+                      showSimpleErrorDialog(
+                          context,
+                          localizations.translate('error') ?? 'Ошибка',
+                          state.message);
+                      return;
+                    }
+                    _showSnackBar(state.message, false);
+                  }
+                });
               }
-              showCustomSnackBar(context: context, message: state.message, isSuccess: false);
-            } else if (state is WriteOffDisapproveMassSuccess) {
-              showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-              _writeOffBloc.add(FetchWriteOffs(forceRefresh: true, filters: _currentFilters, search: _search));
-            } else if (state is WriteOffDisapproveMassError) {
-              if (state.statusCode == 409) {
-                showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message,
-                    errorDialogEnum: ErrorDialogEnum.goodsIncomingUnapprove);
-                return;
-              }
-              showCustomSnackBar(context: context, message: state.message, isSuccess: false);
             } else if (state is WriteOffDeleteSuccess) {
-  debugPrint("WriteOffScreen.Bloc.State.WriteOffDeleteSuccess: ${_writeOffBloc.state}");
-  _showSnackBar(state.message, true);
-  // ✅ Всегда перезагружаем после удаления
-  _writeOffBloc.add(FetchWriteOffs(
-    forceRefresh: true, 
-    filters: _currentFilters, 
-    search: _search
-  ));
-}else if (state is WriteOffDeleteError) {
-              if (state.statusCode == 409) {
-                showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message,
-                    errorDialogEnum: ErrorDialogEnum.goodsIncomingDelete);
-                _writeOffBloc.add(FetchWriteOffs(forceRefresh: true, filters: _currentFilters, search: _search));
-                return;
+              debugPrint("WriteOffScreen.Bloc.State.WriteOffDeleteSuccess: ${_writeOffBloc.state}");
+              if (mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && context.mounted) {
+                    _showSnackBar(state.message, true);
+                    setState(() {
+                      _isRefreshing = true; // ИЗМЕНЕНО: Как в примере
+                    });
+                    _writeOffBloc.add(FetchWriteOffs(
+                        forceRefresh: true,
+                        filters: _currentFilters,
+                        search: _search));
+                  }
+                });
               }
-              showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+            } else if (state is WriteOffDeleteError) {
+              if (mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && context.mounted) {
+                    if (state.statusCode == 409) {
+                      showSimpleErrorDialog(
+                          context,
+                          localizations?.translate('error') ?? 'Ошибка',
+                          state.message);
+                      _writeOffBloc.add(FetchWriteOffs(forceRefresh: true, filters: _currentFilters, search: _search));
+                      return;
+                    }
+                    _showSnackBar(state.message, false);
+                  }
+                });
+              }
+            } else if (state is WriteOffApproveMassSuccess) {
+              if (mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && context.mounted) {
+                    showCustomSnackBar(
+                        context: context,
+                        message: state.message,
+                        isSuccess: true);
+                    _writeOffBloc.add(FetchWriteOffs(
+                        forceRefresh: true,
+                        filters: _currentFilters,
+                        search: _search));
+                  }
+                });
+              }
+            } else if (state is WriteOffApproveMassError) {
+              if (mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && context.mounted) {
+                    if (state.statusCode == 409) {
+                      showSimpleErrorDialog(
+                          context,
+                          localizations?.translate('error') ?? 'Ошибка',
+                          state.message);
+                      return;
+                    }
+                    showCustomSnackBar(
+                        context: context,
+                        message: state.message,
+                        isSuccess: false);
+                  }
+                });
+              }
+            } else if (state is WriteOffDisapproveMassSuccess) {
+              if (mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && context.mounted) {
+                    showCustomSnackBar(
+                        context: context,
+                        message: state.message,
+                        isSuccess: true);
+                    _writeOffBloc.add(FetchWriteOffs(
+                        forceRefresh: true,
+                        filters: _currentFilters,
+                        search: _search));
+                  }
+                });
+              }
+            } else if (state is WriteOffDisapproveMassError) {
+              if (mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && context.mounted) {
+                    if (state.statusCode == 409) {
+                      showSimpleErrorDialog(
+                          context,
+                          localizations?.translate('error') ?? 'Ошибка',
+                          state.message);
+                      return;
+                    }
+                    showCustomSnackBar(
+                        context: context,
+                        message: state.message,
+                        isSuccess: false);
+                  }
+                });
+              }
             } else if (state is WriteOffDeleteMassSuccess) {
-              showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-              _writeOffBloc.add(FetchWriteOffs(forceRefresh: true, filters: _currentFilters, search: _search));
+              if (mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && context.mounted) {
+                    showCustomSnackBar(
+                        context: context,
+                        message: state.message,
+                        isSuccess: true);
+                    _writeOffBloc.add(FetchWriteOffs(
+                        forceRefresh: true,
+                        filters: _currentFilters,
+                        search: _search));
+                  }
+                });
+              }
             } else if (state is WriteOffDeleteMassError) {
-              if (state.statusCode == 409) {
-                showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message,
-                    errorDialogEnum: ErrorDialogEnum.goodsIncomingDelete);
-                _writeOffBloc.add(FetchWriteOffs(forceRefresh: true, filters: _currentFilters, search: _search));
-                return;
+              if (mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && context.mounted) {
+                    if (state.statusCode == 409) {
+                      showSimpleErrorDialog(
+                          context,
+                          localizations?.translate('error') ?? 'Ошибка',
+                          state.message);
+                      _writeOffBloc.add(FetchWriteOffs(forceRefresh: true, filters: _currentFilters, search: _search));
+                      return;
+                    }
+                    showCustomSnackBar(
+                        context: context,
+                        message: state.message,
+                        isSuccess: false);
+                  }
+                });
               }
-              showCustomSnackBar(context: context, message: state.message, isSuccess: false);
             } else if (state is WriteOffRestoreMassSuccess) {
-              showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-              _writeOffBloc.add(FetchWriteOffs(forceRefresh: true, filters: _currentFilters, search: _search));
-            } else if (state is WriteOffRestoreMassError) {
-              if (state.statusCode == 409) {
-                showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message);
-                return;
+              if (mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && context.mounted) {
+                    showCustomSnackBar(
+                        context: context,
+                        message: state.message,
+                        isSuccess: true);
+                    _writeOffBloc.add(FetchWriteOffs(
+                        forceRefresh: true,
+                        filters: _currentFilters,
+                        search: _search));
+                  }
+                });
               }
-              showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+            } else if (state is WriteOffRestoreMassError) {
+              if (mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && context.mounted) {
+                    if (state.statusCode == 409) {
+                      showSimpleErrorDialog(
+                          context,
+                          localizations?.translate('error') ?? 'Ошибка',
+                          state.message);
+                      return;
+                    }
+                    showCustomSnackBar(
+                        context: context,
+                        message: state.message,
+                        isSuccess: false);
+                  }
+                });
+              }
             }
           },
-       child: BlocBuilder<WriteOffBloc, WriteOffState>(
-  builder: (context, state) {
-    // ✅ Показываем загрузку при Loading или DeleteLoading
-    if (state is WriteOffLoading || state is WriteOffDeleteLoading) {
-      return Center(
-        child: PlayStoreImageLoading(
-          size: 80.0,
-          duration: const Duration(milliseconds: 1000),
-        ),
-      );
-    }
+          child: BlocBuilder<WriteOffBloc, WriteOffState>(
+            builder: (context, state) {
+              if (state is WriteOffLoading || state is WriteOffDeleteLoading) {
+                return Center(
+                  child: PlayStoreImageLoading(
+                    size: 80.0,
+                    duration: const Duration(milliseconds: 1000),
+                  ),
+                );
+              }
 
-    final List<IncomingDocument> currentData = state is WriteOffLoaded ? state.data : [];
+              final List<IncomingDocument> currentData = state is WriteOffLoaded ? state.data : [];
 
-    if (currentData.isEmpty && state is WriteOffLoaded) {
-      return Center(
-        child: Text(
-          _isSearching
-              ? localizations!.translate('nothing_found') ?? 'Ничего не найдено'
-              : localizations!.translate('no_write_offs') ?? 'Нет документов списания',
-          style: const TextStyle(
-            fontSize: 18,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w500,
-            color: Color(0xff99A4BA),
-          ),
-        ),
-      );
-    }
-
+              if (currentData.isEmpty && state is WriteOffLoaded) {
+                return Center(
+                  child: Text(
+                    _isSearching
+                        ? (localizations?.translate('nothing_found') ?? 'Ничего не найдено')
+                        : (localizations?.translate('no_write_offs') ?? 'Нет документов списания'),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xff99A4BA),
+                    ),
+                  ),
+                );
+              }
 
               return RefreshIndicator(
                 color: const Color(0xff1E2E52),
@@ -389,139 +610,143 @@ class _WriteOffScreenState extends State<WriteOffScreen> {
                               child: Center(
                                 child: PlayStoreImageLoading(
                                   size: 80.0,
-                                  duration: Duration(milliseconds: 1000),
+                                  duration: const Duration(milliseconds: 1000),
                                 ),
                               ),
                             )
                           : const SizedBox.shrink();
                     }
-                    return Dismissible(
-                      key: Key(currentData[index].id.toString()),
-                      direction: DismissDirection.endToStart,
-                      background: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 8,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        alignment: Alignment.centerRight,
-                        child: const Icon(Icons.delete, color: Colors.white, size: 24),
-                      ),
-                      confirmDismiss: (direction) async {
-                        return currentData[index].deletedAt == null;
-                      },
-                    onDismissed: (direction) {
-  print("🗑️ [UI] Удаление документа ID: ${currentData[index].id}");
-  // ❌ Убираем setState с removeAt
-  // setState(() {
-  //   currentData.removeAt(index);
-  // });
-  
-  _writeOffBloc.add(DeleteWriteOffDocument(
-    currentData[index].id!,
-    localizations!,
-    shouldReload: true, // ✅ Всегда true для свайпа
-  ));
-},
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: WriteOffCard(
-                          document: currentData[index],
-                          onTap: () async {
-                            if (_selectionMode) {
-                              _writeOffBloc.add(SelectDocument(currentData[index]));
 
-                              final currentState = context.read<WriteOffBloc>().state;
-
-                              if (currentState is WriteOffLoaded) {
-                                final selectedCount = currentState.selectedData?.length ?? 0;
-                                if (selectedCount <= 1 && currentState.selectedData?.contains(currentData[index]) == true) {
-                                  setState(() {
-                                    _selectionMode = false;
-                                  });
-                                }
-                              }
-                              return;
-                            }
-
-                            final result = await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (ctx) => BlocProvider(
-                                  create: (context) => WriteOffBloc(context.read<ApiService>()),
-                                  child: WriteOffDocumentDetailsScreen(
-                                    documentId: currentData[index].id!,
-                                    docNumber: currentData[index].docNumber ?? 'N/A',
-                                    onDocumentUpdated: () {
-                                      _writeOffBloc.add(FetchWriteOffs(
-                                        forceRefresh: true,
-                                        filters: _currentFilters,
-                                        search: _search,
-                                      ));
-                                    },
+                    // ИЗМЕНЕНО: Dismissible только с delete-правом
+                    return _hasDeletePermission
+                        ? Dismissible(
+                            key: Key(currentData[index].id.toString()),
+                            direction: DismissDirection.endToStart,
+                            background: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.05),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 4),
                                   ),
-                                ),
+                                ],
                               ),
-                            );
-                            
-                            // If document was deleted from details screen, refresh the list
-                            if (result == true) {
-                              _writeOffBloc.add(FetchWriteOffs(
-                                forceRefresh: true,
-                                filters: _currentFilters,
-                                search: _search,
+                              alignment: Alignment.centerRight,
+                              child: const Icon(Icons.delete, color: Colors.white, size: 24),
+                            ),
+                            confirmDismiss: (direction) async {
+                              return currentData[index].deletedAt == null;
+                            },
+                            onDismissed: (direction) {
+                              debugPrint("🗑️ [UI] Удаление документа ID: ${currentData[index].id}");
+                              _writeOffBloc.add(DeleteWriteOffDocument(
+                                currentData[index].id!,
+                                localizations!,
+                                shouldReload: true,
                               ));
-                            }
-                          },
-                          isSelectionMode: _selectionMode,
-                          isSelected: (state as WriteOffLoaded).selectedData?.contains(currentData[index]) ?? false,
-                          onLongPress: () {
-                            if (_selectionMode) return;
-                            setState(() {
-                              _selectionMode = true;
-                            });
-                            _writeOffBloc.add(SelectDocument(currentData[index]));
-                          },
-                        ),
-                      ),
-                    );
+                            },
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: WriteOffCard(
+                                document: currentData[index],
+                                onTap: () {
+                                  if (_selectionMode) {
+                                    _writeOffBloc.add(SelectDocument(currentData[index]));
+
+                                    final currentState = context.read<WriteOffBloc>().state;
+
+                                    if (currentState is WriteOffLoaded) {
+                                      final selectedCount = currentState.selectedData?.length ?? 0;
+                                      if (selectedCount <= 1 &&
+                                          currentState.selectedData?.contains(currentData[index]) == true) {
+                                        setState(() {
+                                          _selectionMode = false;
+                                        });
+                                      }
+                                    }
+                                    return;
+                                  }
+
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (ctx) => BlocProvider(
+                                        create: (context) => WriteOffBloc(context.read<ApiService>()),
+                                        child: WriteOffDocumentDetailsScreen(
+                                          documentId: currentData[index].id!,
+                                          docNumber: currentData[index].docNumber ?? 'N/A',
+                                          // ИЗМЕНЕНО: Передаём права
+                                          hasUpdatePermission: _hasUpdatePermission,
+                                          hasDeletePermission: _hasDeletePermission,
+                                          onDocumentUpdated: () {
+                                            _writeOffBloc.add(FetchWriteOffs(
+                                              forceRefresh: true,
+                                              filters: _currentFilters,
+                                              search: _search,
+                                            ));
+                                          },
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                                isSelectionMode: _selectionMode,
+                                isSelected: (state as WriteOffLoaded).selectedData?.contains(currentData[index]) ?? false,
+                                // ИЗМЕНЕНО: onLongPress только с delete-правом
+                                onLongPress: _hasDeletePermission
+                                    ? () {
+                                        if (_selectionMode) return;
+                                        setState(() {
+                                          _selectionMode = true;
+                                        });
+                                        _writeOffBloc.add(SelectDocument(currentData[index]));
+                                      }
+                                    : () {},
+                              ),
+                            ),
+                          )
+                        : ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: WriteOffCard(
+                              document: currentData[index],
+                              onTap: () {
+                                // ... (тот же onTap без longPress)
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (ctx) => BlocProvider(
+                                      create: (context) => WriteOffBloc(context.read<ApiService>()),
+                                      child: WriteOffDocumentDetailsScreen(
+                                        documentId: currentData[index].id!,
+                                        docNumber: currentData[index].docNumber ?? 'N/A',
+                                        hasUpdatePermission: _hasUpdatePermission,
+                                        hasDeletePermission: _hasDeletePermission,
+                                        onDocumentUpdated: () {
+                                          _writeOffBloc.add(FetchWriteOffs(
+                                            forceRefresh: true,
+                                            filters: _currentFilters,
+                                            search: _search,
+                                          ));
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                              isSelectionMode: _selectionMode,
+                              isSelected: (state as WriteOffLoaded).selectedData?.contains(currentData[index]) ?? false,
+                              onLongPress: () {}, // Без delete — ничего
+                            ),
+                          );
                   },
                 ),
               );
             },
           ),
-        ),
-        floatingActionButton: FloatingActionButton(
-          key: const Key('create_write_off_button'),
-          onPressed: () async {
-            if (mounted) {
-              final result = await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => CreateWriteOffDocumentScreen(
-                    organizationId: widget.organizationId,
-                  ),
-                ),
-              );
-
-              if (result == true && mounted) {
-                _writeOffBloc.add(FetchWriteOffs(
-                  forceRefresh: true,
-                  filters: _currentFilters,
-                  search: _search,
-                ));
-              }
-            }
-          },
-          backgroundColor: const Color(0xff1E2E52),
-          child: const Icon(Icons.add, color: Colors.white),
         ),
       ),
     );

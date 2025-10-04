@@ -2,6 +2,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/client_return/client_return_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
+import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/goods_details_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_return/client_return_delete.dart';
@@ -20,11 +21,16 @@ class ClientReturnDocumentDetailsScreen extends StatefulWidget {
   final int documentId;
   final String docNumber;
   final VoidCallback? onDocumentUpdated;
+  // НОВОЕ: Параметры прав доступа
+  final bool hasUpdatePermission;
+  final bool hasDeletePermission;
 
   const ClientReturnDocumentDetailsScreen({
     required this.documentId,
     required this.docNumber,
     this.onDocumentUpdated,
+    this.hasUpdatePermission = false,
+    this.hasDeletePermission = false,
     super.key,
   });
 
@@ -42,11 +48,9 @@ class _ClientReturnDocumentDetailsScreenState
   bool _isButtonLoading = false;
   String? baseUrl;
   bool _documentUpdated = false;
-  bool _goodMeasurementEnabled = true; // добавляем флаг
-  // Map to store unit details (id -> shortName)
-  final Map<int, String> _unitMap = {
-    23: 'шт', // Based on JSON unit_id: 23
-    // Add more mappings or fetch dynamically
+  bool _goodMeasurementEnabled = true;
+  final Map<int, String> _unitMap = { // Оставляем, но используем availableUnits ниже
+    23: 'шт',
   };
 
   @override
@@ -54,15 +58,16 @@ class _ClientReturnDocumentDetailsScreenState
     super.initState();
     _initializeBaseUrl();
     _fetchDocumentDetails();
-        _loadGoodMeasurementSetting(); // загружаем настройку
+    _loadGoodMeasurementSetting();
   }
-  // Добавляем метод загрузки настройки
+
   Future<void> _loadGoodMeasurementSetting() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _goodMeasurementEnabled = prefs.getBool('good_measurement') ?? true;
     });
   }
+
   Future<void> _initializeBaseUrl() async {
     try {
       final staticBaseUrl = await _apiService.getStaticBaseUrl();
@@ -96,10 +101,7 @@ class _ClientReturnDocumentDetailsScreenState
         showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
         return;
       }
-      _showSnackBar(
-          AppLocalizations.of(context)!.translate('error_loading_document') ??
-              'Ошибка загрузки документа: $e',
-          false);
+      _showSnackBar('Ошибка загрузки документа: $e', false);
     }
   }
 
@@ -116,9 +118,7 @@ class _ClientReturnDocumentDetailsScreenState
       },
       {
         'label': '${AppLocalizations.of(context)!.translate('date') ?? 'Дата'}:',
-        'value': document.date != null
-            ? DateFormat('dd.MM.yyyy').format(document.date!)
-            : '',
+        'value': document.date != null ? DateFormat('dd.MM.yyyy').format(document.date!) : '',
       },
       {
         'label': '${AppLocalizations.of(context)!.translate('storage') ?? 'Склад'}:',
@@ -164,7 +164,7 @@ class _ClientReturnDocumentDetailsScreenState
     final localizations = AppLocalizations.of(context)!;
 
     if (document.deletedAt != null) {
-      return localizations.translate('deleted_return') ?? 'Удален';
+      return localizations.translate('deleted') ?? 'Удален'; // ИЗМЕНЕНО: Унифицировано
     }
 
     if (document.approved == 1) {
@@ -205,6 +205,12 @@ class _ClientReturnDocumentDetailsScreenState
   }
 
   Future<void> _approveDocument() async {
+    // НОВОЕ: Проверяем update-право
+    if (!widget.hasUpdatePermission) {
+      _showSnackBar('Нет прав на проведение документа', false);
+      return;
+    }
+
     setState(() {
       _isButtonLoading = true;
     });
@@ -215,18 +221,15 @@ class _ClientReturnDocumentDetailsScreenState
         _documentUpdated = true;
       });
       _updateStatusOnly();
-      context.read<ClientReturnBloc>().add(FetchClientReturns(forceRefresh: true));
-      _showSnackBar(AppLocalizations.of(context)!.translate('document_approved') ?? 'Документ проведен', true);
+      context.read<ClientReturnBloc>().add(const FetchClientReturns(forceRefresh: true));
+      _showSnackBar('Документ проведен', true);
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
         showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
         return;
       }
-      _showSnackBar(
-          AppLocalizations.of(context)!.translate('error_approving_document') ??
-              'Ошибка при проведении документа: $e',
-          false);
+      _showSnackBar('Ошибка при проведении документа: $e', false);
     } finally {
       setState(() {
         _isButtonLoading = false;
@@ -235,6 +238,12 @@ class _ClientReturnDocumentDetailsScreenState
   }
 
   Future<void> _unApproveDocument() async {
+    // НОВОЕ: Проверяем update-право
+    if (!widget.hasUpdatePermission) {
+      _showSnackBar('Нет прав на отмену проведения', false);
+      return;
+    }
+
     setState(() {
       _isButtonLoading = true;
     });
@@ -245,21 +254,15 @@ class _ClientReturnDocumentDetailsScreenState
         _documentUpdated = true;
       });
       _updateStatusOnly();
-      context.read<ClientReturnBloc>().add(FetchClientReturns(forceRefresh: true));
-      _showSnackBar(
-          AppLocalizations.of(context)!.translate('document_unapproved') ??
-              'Проведение документа отменено',
-          true);
+      context.read<ClientReturnBloc>().add(const FetchClientReturns(forceRefresh: true));
+      _showSnackBar('Проведение документа отменено', true);
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
         showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
         return;
       }
-      _showSnackBar(
-          AppLocalizations.of(context)!.translate('error_unapproving_document') ??
-              'Ошибка при отмене проведения документа: $e',
-          false);
+      _showSnackBar('Ошибка при отмене проведения документа: $e', false);
     } finally {
       setState(() {
         _isButtonLoading = false;
@@ -268,28 +271,31 @@ class _ClientReturnDocumentDetailsScreenState
   }
 
   Future<void> _restoreDocument() async {
+    // НОВОЕ: Привязываем к update-праву
+    if (!widget.hasUpdatePermission) {
+      _showSnackBar('Нет прав на восстановление', false);
+      return;
+    }
+
     setState(() {
       _isButtonLoading = true;
     });
     try {
       await _apiService.restoreClientReturnDocument(widget.documentId);
-      await _fetchDocumentDetails();
-      _documentUpdated = true;
-      _showSnackBar(
-          AppLocalizations.of(context)!.translate('document_restored') ??
-              'Документ восстановлен',
-          true);
-      context.read<ClientReturnBloc>().add(FetchClientReturns(forceRefresh: true));
+      setState(() {
+        currentDocument = currentDocument!.copyWith(deletedAt: null);
+        _documentUpdated = true;
+      });
+      _updateStatusOnly();
+      _showSnackBar('Документ восстановлен', true);
+      context.read<ClientReturnBloc>().add(const FetchClientReturns(forceRefresh: true));
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
         showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
         return;
       }
-      _showSnackBar(
-          AppLocalizations.of(context)!.translate('error_restoring_document') ??
-              'Ошибка при восстановлении документа: $e',
-          false);
+      _showSnackBar('Ошибка при восстановлении документа: $e', false);
     } finally {
       setState(() {
         _isButtonLoading = false;
@@ -303,7 +309,7 @@ class _ClientReturnDocumentDetailsScreenState
         height: 48,
         width: 200,
         decoration: BoxDecoration(
-          color: const Color.fromARGB(255, 255, 255, 255),
+          color: Colors.white,
           borderRadius: BorderRadius.circular(8),
         ),
         child: const Center(
@@ -321,13 +327,20 @@ class _ClientReturnDocumentDetailsScreenState
 
     if (currentDocument == null) return const SizedBox.shrink();
 
+    // НОВОЕ: Restore только с update-правом
     if (currentDocument!.deletedAt != null) {
+      if (!widget.hasUpdatePermission) return const SizedBox.shrink();
       return StyledActionButton(
         text: AppLocalizations.of(context)!.translate('restore_document') ?? 'Восстановить',
         icon: Icons.restore,
         color: const Color(0xFF2196F3),
         onPressed: _restoreDocument,
       );
+    }
+
+    // НОВОЕ: approve/unapprove только с update-правом
+    if (!widget.hasUpdatePermission) {
+      return const SizedBox.shrink();
     }
 
     if (currentDocument!.approved == 0) {
@@ -424,7 +437,7 @@ class _ClientReturnDocumentDetailsScreenState
               ? Center(
                   child: PlayStoreImageLoading(
                     size: 80.0,
-                    duration: Duration(milliseconds: 1000),
+                    duration: const Duration(milliseconds: 1000),
                   ),
                 )
               : currentDocument == null
@@ -464,7 +477,9 @@ class _ClientReturnDocumentDetailsScreenState
   }
 
   AppBar _buildAppBar(BuildContext context) {
-    final showActions = currentDocument?.deletedAt == null;
+    // ИЗМЕНЕНО: showActions с правами
+    final showActions = currentDocument?.deletedAt == null && 
+                        (widget.hasUpdatePermission || widget.hasDeletePermission);
 
     return AppBar(
       backgroundColor: Colors.white,
@@ -503,51 +518,55 @@ class _ClientReturnDocumentDetailsScreenState
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  IconButton(
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    icon: Image.asset(
-                      'assets/icons/edit.png',
-                      width: 24,
-                      height: 24,
-                    ),
-                    onPressed: () async {
-                      final result = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => EditClientReturnDocumentScreen(
-                            document: currentDocument!,
+                  // НОВОЕ: Edit только с update-правом
+                  if (widget.hasUpdatePermission)
+                    IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      icon: Image.asset(
+                        'assets/icons/edit.png',
+                        width: 24,
+                        height: 24,
+                      ),
+                      onPressed: () async {
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => EditClientReturnDocumentScreen(
+                              document: currentDocument!,
+                            ),
                           ),
-                        ),
-                      );
-                      if (result == true) {
-                        _fetchDocumentDetails();
-                        if (widget.onDocumentUpdated != null) {
-                          widget.onDocumentUpdated!();
+                        );
+                        if (result == true) {
+                          _fetchDocumentDetails();
+                          if (widget.onDocumentUpdated != null) {
+                            widget.onDocumentUpdated!();
+                          }
                         }
-                      }
-                    },
-                  ),
-                  IconButton(
-                    padding: const EdgeInsets.only(right: 8),
-                    constraints: const BoxConstraints(),
-                    icon: Image.asset(
-                      'assets/icons/delete.png',
-                      width: 24,
-                      height: 24,
+                      },
                     ),
-                    onPressed: () {
-                      showDialog(
-                        context: context,
-                        builder: (BuildContext context) {
-                          return BlocProvider.value(
-                            value: BlocProvider.of<ClientReturnBloc>(context),
-                            child: ClientReturnDeleteDocumentDialog(documentId: widget.documentId),
-                          );
-                        },
-                      );
-                    },
-                  ),
+                  // НОВОЕ: Delete только с delete-правом
+                  if (widget.hasDeletePermission)
+                    IconButton(
+                      padding: const EdgeInsets.only(right: 8),
+                      constraints: const BoxConstraints(),
+                      icon: Image.asset(
+                        'assets/icons/delete.png',
+                        width: 24,
+                        height: 24,
+                      ),
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return BlocProvider.value(
+                              value: BlocProvider.of<ClientReturnBloc>(context),
+                              child: ClientReturnDeleteDocumentDialog(documentId: widget.documentId),
+                            );
+                          },
+                        );
+                      },
+                    ),
                 ],
               ),
             ]
@@ -659,9 +678,13 @@ class _ClientReturnDocumentDetailsScreenState
   }
 
   Widget _buildGoodsItem(DocumentGood good) {
-    final unitShortName = good.good?.unitId != null
-        ? _unitMap[good.good!.unitId] ?? 'шт'
-        : 'шт';
+    // ИЗМЕНЕНО: Unit из availableUnits как в предыдущих
+    final availableUnits = good.good?.units ?? [];
+    final selectedUnit = availableUnits.firstWhere(
+      (unit) => unit.id == good.unitId,
+      orElse: () => Unit(id: 23, name: 'шт', shortName: 'шт'),
+    );
+    final unitShortName = selectedUnit.shortName ?? selectedUnit.name ?? 'шт';
 
     return GestureDetector(
       onTap: () {
@@ -691,37 +714,34 @@ class _ClientReturnDocumentDetailsScreenState
                       const SizedBox(height: 8),
                       Row(
                         children: [
-                          // Ед. изм.
                           if (_goodMeasurementEnabled)
-                          Expanded(
-                            flex: 2,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  // change this
-                                  AppLocalizations.of(context)!.translate('unit') ?? 'Ед.',
-                                  style: const TextStyle(
-                                    fontSize: 10,
-                                    fontFamily: 'Gilroy',
-                                    fontWeight: FontWeight.w400,
-                                    color: Color(0xff99A4BA),
+                            Expanded(
+                              flex: 2,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    AppLocalizations.of(context)!.translate('unit') ?? 'Ед.',
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      fontFamily: 'Gilroy',
+                                      fontWeight: FontWeight.w400,
+                                      color: Color(0xff99A4BA),
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  unitShortName,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontFamily: 'Gilroy',
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xff1E2E52),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    unitShortName,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontFamily: 'Gilroy',
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xff1E2E52),
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ),
-                          // Количество
                           Expanded(
                             flex: 2,
                             child: Column(
@@ -749,7 +769,6 @@ class _ClientReturnDocumentDetailsScreenState
                               ],
                             ),
                           ),
-                          // Цена
                           Expanded(
                             flex: 3,
                             child: Column(
@@ -781,7 +800,6 @@ class _ClientReturnDocumentDetailsScreenState
                         ],
                       ),
                       const SizedBox(height: 8),
-                      // Итого на отдельной строке
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                         decoration: BoxDecoration(
@@ -864,10 +882,7 @@ class _ClientReturnDocumentDetailsScreenState
   void _navigateToGoodsDetails(DocumentGood good) {
     final goodId = good.good?.id;
     if (goodId == null || goodId == 0) {
-      _showSnackBar(
-          AppLocalizations.of(context)!.translate('error_no_good_id') ??
-              'Ошибка: Не удалось определить ID товара',
-          false);
+      _showSnackBar('Ошибка: Не удалось определить ID товара', false);
       return;
     }
 

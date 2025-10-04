@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/income/add/add_income_bloc.dart';
 import 'package:crm_task_manager/page_2/money/money_references/income/add_income_screen.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
@@ -24,11 +25,37 @@ class _IncomeScreenState extends State<IncomeScreen> {
   final ScrollController _scrollController = ScrollController();
   bool isClickAvatarIcon = false;
 
+  // НОВОЕ: Флаги прав доступа
+  bool _hasCreatePermission = false;
+  bool _hasUpdatePermission = false;
+  bool _hasDeletePermission = false;
+  final ApiService _apiService = ApiService();
+
   @override
   void initState() {
     super.initState();
+    _checkPermissions();
     context.read<IncomeBloc>().add(const FetchIncomes());
     _scrollController.addListener(_onScroll);
+  }
+
+  // НОВОЕ: Проверка прав доступа
+  Future<void> _checkPermissions() async {
+    try {
+      final create = await _apiService.hasPermission('pko_articles.create');
+      final update = await _apiService.hasPermission('pko_articles.update');
+      final delete = await _apiService.hasPermission('pko_articles.delete');
+
+      if (mounted) {
+        setState(() {
+          _hasCreatePermission = create;
+          _hasUpdatePermission = update;
+          _hasDeletePermission = delete;
+        });
+      }
+    } catch (e) {
+      debugPrint('Ошибка при проверке прав доступа: $e');
+    }
   }
 
   @override
@@ -75,90 +102,103 @@ class _IncomeScreenState extends State<IncomeScreen> {
           currentFilters: {},
         ),
       ),
-      body: isClickAvatarIcon ?
-          ProfileScreen() :
-          BlocBuilder<IncomeBloc, IncomeState>(
-        builder: (context, state) {
-          if (state.status == IncomeStatus.initialLoading) {
-            return Center(
-              child: PlayStoreImageLoading(
-                size: 80.0,
-                duration: const Duration(milliseconds: 1000),
-              ),
-            );
-          } else if (state.status == IncomeStatus.initialError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text('Ошибка загрузки'),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () {
-                      return context
-                          .read<IncomeBloc>()
-                          .add(const FetchIncomes());
-                    },
-                    child: const Text('Повторить'),
-                  ),
-                ],
-              ),
-            );
-          } else if (state.status == IncomeStatus.initialLoaded ||
-              state.status == IncomeStatus.loadingMore) {
-            final incomes = state.incomes;
-            if (incomes.isEmpty) {
-              return const Center(
-                child: Text(
-                  'Нет данных',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
-                  ),
-                ),
-              );
-            }
-            return RefreshIndicator(
-              onRefresh: () async {
-                context
-                    .read<IncomeBloc>()
-                    .add(const FetchIncomes());
-              },
-              child: ListView.builder(
-                controller: _scrollController,
-                padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                itemCount: incomes.length +
-                    (state.status == IncomeStatus.loadingMore ? 1 : 0),
-                itemBuilder: (context, index) {
-                  if (index >= incomes.length) {
-                    // Show loading indicator at the bottom
-                    return Container(
-                      padding: const EdgeInsets.all(16),
-                      alignment: Alignment.center,
-                      child: PlayStoreImageLoading(
-                        size: 80.0,
-                        duration: const Duration(milliseconds: 1000),
+      body: isClickAvatarIcon
+          ? ProfileScreen()
+          : BlocBuilder<IncomeBloc, IncomeState>(
+              builder: (context, state) {
+                if (state.status == IncomeStatus.initialLoading) {
+                  return Center(
+                    child: PlayStoreImageLoading(
+                      size: 80.0,
+                      duration: const Duration(milliseconds: 1000),
+                    ),
+                  );
+                } else if (state.status == IncomeStatus.initialError) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          AppLocalizations.of(context)?.translate('error_loading') ?? 'Ошибка загрузки',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xff1E2E52),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () {
+                            context.read<IncomeBloc>().add(const FetchIncomes());
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xff1E2E52),
+                            foregroundColor: Colors.white,
+                          ),
+                          child: Text(
+                            AppLocalizations.of(context)?.translate('retry') ?? 'Повторить',
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                } else if (state.status == IncomeStatus.initialLoaded ||
+                    state.status == IncomeStatus.loadingMore) {
+                  final incomes = state.incomes;
+                  if (incomes.isEmpty) {
+                    return Center(
+                      child: Text(
+                        AppLocalizations.of(context)?.translate('no_incomes') ?? 'Нет доходов',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xff99A4BA),
+                        ),
                       ),
                     );
                   }
+                  return RefreshIndicator(
+                    color: const Color(0xff1E2E52),
+                    backgroundColor: Colors.white,
+                    onRefresh: () async {
+                      context.read<IncomeBloc>().add(const FetchIncomes());
+                    },
+                    child: ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      itemCount: incomes.length + (state.status == IncomeStatus.loadingMore ? 1 : 0),
+                      itemBuilder: (context, index) {
+                        if (index >= incomes.length) {
+                          return Container(
+                            padding: const EdgeInsets.all(16),
+                            alignment: Alignment.center,
+                            child: PlayStoreImageLoading(
+                              size: 80.0,
+                              duration: const Duration(milliseconds: 1000),
+                            ),
+                          );
+                        }
 
-                  final data = incomes[index];
-                  return _buildIncomeCard(data);
-                },
-              ),
-            );
-          }
-          return const SizedBox();
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color(0xff1E2E52),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        onPressed: _navigateToAddIncome,
-        child: const Icon(Icons.add, color: Colors.white, size: 32),
-      ),
+                        final data = incomes[index];
+                        return _buildIncomeCard(data);
+                      },
+                    ),
+                  );
+                }
+                return const SizedBox();
+              },
+            ),
+      // ИЗМЕНЕНО: Показываем FAB только если есть право на создание
+      floatingActionButton: _hasCreatePermission
+          ? FloatingActionButton(
+              backgroundColor: const Color(0xff1E2E52),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              onPressed: _navigateToAddIncome,
+              child: const Icon(Icons.add, color: Colors.white, size: 32),
+            )
+          : null,
     );
   }
 
@@ -169,9 +209,12 @@ class _IncomeScreenState extends State<IncomeScreen> {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: () {
-            _navigateToEditIncome(data);
-          },
+          // ИЗМЕНЕНО: Открываем редактирование только если есть право
+          onTap: _hasUpdatePermission
+              ? () {
+                  _navigateToEditIncome(data);
+                }
+              : null,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
             decoration: BoxDecoration(
@@ -197,16 +240,18 @@ class _IncomeScreenState extends State<IncomeScreen> {
                     ],
                   ),
                 ),
-                GestureDetector(
-                  child: Image.asset(
-                    'assets/icons/delete.png',
-                    width: 24,
-                    height: 24,
+                // ИЗМЕНЕНО: Показываем кнопку удаления только если есть право
+                if (_hasDeletePermission)
+                  GestureDetector(
+                    child: Image.asset(
+                      'assets/icons/delete.png',
+                      width: 24,
+                      height: 24,
+                    ),
+                    onTap: () {
+                      _showDeleteConfirmation(data, context);
+                    },
                   ),
-                  onTap: () {
-                    _showDeleteConfirmation(data, context);
-                  },
-                ),
               ],
             ),
           ),
@@ -249,8 +294,7 @@ class _IncomeScreenState extends State<IncomeScreen> {
     }
   }
 
-  void _showDeleteConfirmation(
-      IncomeModel data, BuildContext parentContext) {
+  void _showDeleteConfirmation(IncomeModel data, BuildContext parentContext) {
     showDialog(
       context: parentContext,
       builder: (BuildContext context) {
@@ -259,7 +303,7 @@ class _IncomeScreenState extends State<IncomeScreen> {
           title: Center(
             child: Text(
               AppLocalizations.of(context)?.translate('delete_income') ?? 'Удалить доход',
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 20,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w600,
@@ -269,7 +313,7 @@ class _IncomeScreenState extends State<IncomeScreen> {
           ),
           content: Text(
             '${AppLocalizations.of(context)?.translate('delete_income_confirm') ?? 'Вы уверены, что хотите удалить доход'} "${data.name}"?',
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 16,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w500,
@@ -282,8 +326,7 @@ class _IncomeScreenState extends State<IncomeScreen> {
               children: [
                 Expanded(
                   child: CustomButton(
-                    buttonText:
-                    AppLocalizations.of(context)!.translate('cancel'),
+                    buttonText: AppLocalizations.of(context)!.translate('cancel'),
                     onPressed: () {
                       Navigator.of(context).pop();
                     },
@@ -291,20 +334,15 @@ class _IncomeScreenState extends State<IncomeScreen> {
                     textColor: Colors.white,
                   ),
                 ),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 Expanded(
                   child: CustomButton(
-                    buttonText:
-                    AppLocalizations.of(context)!.translate('delete'),
+                    buttonText: AppLocalizations.of(context)!.translate('delete'),
                     onPressed: () {
-                      // Use parentContext instead of context to access the IncomeBloc
-                      parentContext
-                          .read<IncomeBloc>()
-                          .add(DeleteIncome(data.id));
-                      Navigator.of(context)
-                          .pop(); // Use context for dialog navigation
+                      parentContext.read<IncomeBloc>().add(DeleteIncome(data.id));
+                      Navigator.of(context).pop();
                     },
-                    buttonColor: Color(0xff1E2E52),
+                    buttonColor: const Color(0xff1E2E52),
                     textColor: Colors.white,
                   ),
                 ),

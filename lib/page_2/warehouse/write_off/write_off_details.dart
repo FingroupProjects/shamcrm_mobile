@@ -21,11 +21,16 @@ class WriteOffDocumentDetailsScreen extends StatefulWidget {
   final int documentId;
   final String docNumber;
   final VoidCallback? onDocumentUpdated;
+  // НОВОЕ: Параметры прав доступа
+  final bool hasUpdatePermission;
+  final bool hasDeletePermission;
 
   const WriteOffDocumentDetailsScreen({
     required this.documentId,
     required this.docNumber,
     this.onDocumentUpdated,
+    this.hasUpdatePermission = false,
+    this.hasDeletePermission = false,
     super.key,
   });
 
@@ -41,7 +46,7 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
   bool _isButtonLoading = false;
   String? baseUrl;
   bool _documentUpdated = false;
-  bool _goodMeasurementEnabled = true; // добавляем флаг
+  bool _goodMeasurementEnabled = true;
   final Map<int, String> _unitMap = {
     23: 'шт',
   };
@@ -51,15 +56,16 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
     super.initState();
     _initializeBaseUrl();
     _fetchDocumentDetails();
-        _loadGoodMeasurementSetting(); // загружаем настройку
+    _loadGoodMeasurementSetting();
   }
-  // Добавляем метод загрузки настройки
+
   Future<void> _loadGoodMeasurementSetting() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _goodMeasurementEnabled = prefs.getBool('good_measurement') ?? true;
     });
   }
+
   Future<void> _initializeBaseUrl() async {
     try {
       final staticBaseUrl = await _apiService.getStaticBaseUrl();
@@ -93,7 +99,7 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
         showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
         return;
       }
-      _showSnackBar(AppLocalizations.of(context)!.translate('error_loading_document') ?? 'Ошибка загрузки документа: $e', false);
+      _showSnackBar('Ошибка загрузки документа: $e', false);
     }
   }
 
@@ -181,6 +187,12 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
   }
 
   Future<void> _approveDocument() async {
+    // ИЗМЕНЕНО: Проверяем update-право
+    if (!widget.hasUpdatePermission) {
+      _showSnackBar('Нет прав на проведение документа', false);
+      return;
+    }
+
     setState(() {
       _isButtonLoading = true;
     });
@@ -191,15 +203,14 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
         _documentUpdated = true;
       });
       _updateStatusOnly();
-      _showSnackBar(AppLocalizations.of(context)!.translate('document_approved') ?? 'Документ проведен', true);
+      _showSnackBar('Документ проведен', true);
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
         showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
         return;
       }
-      _showSnackBar(
-          AppLocalizations.of(context)!.translate('error_approving_document') ?? 'Ошибка при проведении документа: $e', false);
+      _showSnackBar('Ошибка при проведении документа: $e', false);
     } finally {
       setState(() {
         _isButtonLoading = false;
@@ -208,6 +219,12 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
   }
 
   Future<void> _unApproveDocument() async {
+    // ИЗМЕНЕНО: Проверяем update-право
+    if (!widget.hasUpdatePermission) {
+      _showSnackBar('Нет прав на отмену проведения', false);
+      return;
+    }
+
     setState(() {
       _isButtonLoading = true;
     });
@@ -218,16 +235,14 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
         _documentUpdated = true;
       });
       _updateStatusOnly();
-      _showSnackBar(AppLocalizations.of(context)!.translate('document_unapproved') ?? 'Проведение документа отменено', true);
+      _showSnackBar('Проведение документа отменено', true);
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
         showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
         return;
       }
-      _showSnackBar(
-          AppLocalizations.of(context)!.translate('error_unapproving_document') ?? 'Ошибка при отмене проведения документа: $e',
-          false);
+      _showSnackBar('Ошибка при отмене проведения документа: $e', false);
     } finally {
       setState(() {
         _isButtonLoading = false;
@@ -236,24 +251,32 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
   }
 
   Future<void> _restoreDocument() async {
+    // ИЗМЕНЕНО: Привязываем к update или delete (здесь — update, как approve)
+    if (!widget.hasUpdatePermission) {
+      _showSnackBar('Нет прав на восстановление', false);
+      return;
+    }
+
     setState(() {
       _isButtonLoading = true;
     });
     try {
       await _apiService.restoreWriteOffDocument(widget.documentId);
-      await _fetchDocumentDetails();
-      _documentUpdated = true;
-      _showSnackBar(AppLocalizations.of(context)!.translate('document_restored') ?? 'Документ восстановлен', true);
-      context.read<WriteOffBloc>().add(FetchWriteOffs());
+      setState(() {
+        currentDocument = currentDocument!.copyWith(deletedAt: null); // clearDeletedAt
+        _documentUpdated = true;
+      });
+      _updateStatusOnly();
+      _showSnackBar('Документ восстановлен', true);
+      // ИЗМЕНЕНО: Reload через BLoC
+      context.read<WriteOffBloc>().add(const FetchWriteOffs(forceRefresh: true));
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
         showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
         return;
       }
-      _showSnackBar(
-          AppLocalizations.of(context)!.translate('error_restoring_document') ?? 'Ошибка при восстановлении документа: $e',
-          false);
+      _showSnackBar('Ошибка при восстановлении документа: $e', false);
     } finally {
       setState(() {
         _isButtonLoading = false;
@@ -267,7 +290,7 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
         height: 48,
         width: 200,
         decoration: BoxDecoration(
-          color: const Color.fromARGB(255, 255, 255, 255),
+          color: Colors.white,
           borderRadius: BorderRadius.circular(8),
         ),
         child: const Center(
@@ -285,13 +308,20 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
 
     if (currentDocument == null) return const SizedBox.shrink();
 
+    // НОВОЕ: Если удалён — restore только с update-правом
     if (currentDocument!.deletedAt != null) {
+      if (!widget.hasUpdatePermission) return const SizedBox.shrink();
       return StyledActionButton(
         text: AppLocalizations.of(context)!.translate('restore_document') ?? 'Восстановить',
         icon: Icons.restore,
         color: const Color(0xFF2196F3),
         onPressed: _restoreDocument,
       );
+    }
+
+    // НОВОЕ: approve/unapprove только с update-правом
+    if (!widget.hasUpdatePermission) {
+      return const SizedBox.shrink();
     }
 
     if (currentDocument!.approved == 0) {
@@ -370,56 +400,58 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
   @override
   Widget build(BuildContext context) {
     return PopScope(
-        onPopInvoked: (didPop) {
-          if (didPop && _documentUpdated && widget.onDocumentUpdated != null) {
-            widget.onDocumentUpdated!();
-          }
-        },
-        child: Scaffold(
-          appBar: _buildAppBar(context),
-          backgroundColor: Colors.white,
-          body: _isLoading
-              ? Center(
-                  child: PlayStoreImageLoading(
-                    size: 80.0,
-                    duration: Duration(milliseconds: 1000),
-                  ),
-                )
-              : currentDocument == null
-                  ? Center(
-                      child: Text(
-                        AppLocalizations.of(context)!.translate('document_data_unavailable') ?? 'Данные документа недоступны',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xff99A4BA),
-                        ),
-                      ),
-                    )
-                  : Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                      child: ListView(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 16),
-                            child: Center(child: _buildActionButton()),
-                          ),
-                          _buildDetailsList(),
-                          const SizedBox(height: 16),
-                          if (currentDocument!.documentGoods != null && currentDocument!.documentGoods!.isNotEmpty) ...[
-                            _buildGoodsList(currentDocument!.documentGoods!),
-                            const SizedBox(height: 16),
-                          ],
-                        ],
+      onPopInvoked: (didPop) {
+        if (didPop && _documentUpdated && widget.onDocumentUpdated != null) {
+          widget.onDocumentUpdated!();
+        }
+      },
+      child: Scaffold(
+        appBar: _buildAppBar(context),
+        backgroundColor: Colors.white,
+        body: _isLoading
+            ? Center(
+                child: PlayStoreImageLoading(
+                  size: 80.0,
+                  duration: const Duration(milliseconds: 1000),
+                ),
+              )
+            : currentDocument == null
+                ? Center(
+                    child: Text(
+                      AppLocalizations.of(context)!.translate('document_data_unavailable') ?? 'Данные документа недоступны',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff99A4BA),
                       ),
                     ),
-        ),
-      );
+                  )
+                : Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                    child: ListView(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: Center(child: _buildActionButton()),
+                        ),
+                        _buildDetailsList(),
+                        const SizedBox(height: 16),
+                        if (currentDocument!.documentGoods != null && currentDocument!.documentGoods!.isNotEmpty) ...[
+                          _buildGoodsList(currentDocument!.documentGoods!),
+                          const SizedBox(height: 16),
+                        ],
+                      ],
+                    ),
+                  ),
+      ),
+    );
   }
 
   AppBar _buildAppBar(BuildContext context) {
-    final showActions = currentDocument?.deletedAt == null;
+    // ИЗМЕНЕНО: showActions с правами
+    final showActions = currentDocument?.deletedAt == null && 
+                        (widget.hasUpdatePermission || widget.hasDeletePermission);
 
     return AppBar(
       backgroundColor: Colors.white,
@@ -458,64 +490,62 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  IconButton(
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    icon: Image.asset(
-                      'assets/icons/edit.png',
-                      width: 24,
-                      height: 24,
-                    ),
-                    onPressed: () async {
-                      final result = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => EditWriteOffDocumentScreen(
-                            document: currentDocument!,
+                  // НОВОЕ: Edit только с update-правом
+                  if (widget.hasUpdatePermission)
+                    IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      icon: Image.asset(
+                        'assets/icons/edit.png',
+                        width: 24,
+                        height: 24,
+                      ),
+                      onPressed: () async {
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => EditWriteOffDocumentScreen(
+                              document: currentDocument!,
+                            ),
                           ),
-                        ),
-                      );
-                      if (result == true) {
-                        _fetchDocumentDetails();
-                        if (widget.onDocumentUpdated != null) {
-                          widget.onDocumentUpdated!();
+                        );
+
+                        if (result == true) {
+                          _fetchDocumentDetails();
+                          if (widget.onDocumentUpdated != null) {
+                            widget.onDocumentUpdated!();
+                          }
                         }
-                      }
-                    },
-                  ),
-                  IconButton(
-                    padding: const EdgeInsets.only(right: 8),
-                    constraints: const BoxConstraints(),
-                    icon: Image.asset(
-                      'assets/icons/delete.png',
-                      width: 24,
-                      height: 24,
+                      },
                     ),
-                    onPressed: () async {
-                      final result = await showDialog<bool>(
-                        context: context,
-                        builder: (BuildContext context) {
-                          return BlocProvider.value(
-                            value: BlocProvider.of<WriteOffBloc>(context),
-                            child: WriteOffDeleteDocumentDialog(documentId: widget.documentId),
-                          );
-                        },
-                      );
-                      if (result == true) {
-                        if (widget.onDocumentUpdated != null) {
-                          widget.onDocumentUpdated!();
-                        }
-                        Navigator.of(context).pop(true);
-                      }
-                    },
-                  ),
+                  // НОВОЕ: Delete только с delete-правом
+                  if (widget.hasDeletePermission)
+                    IconButton(
+                      padding: const EdgeInsets.only(right: 8),
+                      constraints: const BoxConstraints(),
+                      icon: Image.asset(
+                        'assets/icons/delete.png',
+                        width: 24,
+                        height: 24,
+                      ),
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return BlocProvider.value(
+                              value: BlocProvider.of<WriteOffBloc>(context),
+                              child: WriteOffDeleteDocumentDialog(documentId: widget.documentId),
+                            );
+                          },
+                        );
+                      },
+                    ),
                 ],
               ),
             ]
           : [],
     );
-  }
-
+  } 
   Widget _buildDetailsList() {
     return ListView.builder(
       shrinkWrap: true,

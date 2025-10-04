@@ -11,11 +11,18 @@ import 'package:intl/intl.dart';
 class WareHouseCard extends StatefulWidget {
   final WareHouse warehouse;
   final VoidCallback? onDelete;
+  // НОВОЕ: Параметры прав доступа
+  final bool hasUpdatePermission;
+  final bool hasDeletePermission;
+  final VoidCallback? onUpdate;
 
   const WareHouseCard({
     Key? key,
     required this.warehouse,
     this.onDelete,
+    this.hasUpdatePermission = false,
+    this.hasDeletePermission = false,
+    this.onUpdate,
   }) : super(key: key);
 
   @override
@@ -40,34 +47,41 @@ class _WareHouseCardState extends State<WareHouseCard> {
     final localization = AppLocalizations.of(context);
     
     return GestureDetector(
-      onTap: () {
-        if (mounted) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => EditWarehouseScreen(
-                warehouse: widget.warehouse,
-                userIds: widget.warehouse.userIds ?? [], // Get userIds from warehouse or empty list
-              ),
-            ),
-          ).then((result) {
-            // Если результат true, обновляем список
-            if (result == true) {
-              context.read<WareHouseBloc>().add(FetchWareHouse());
+      // ИЗМЕНЕНО: Открываем редактирование только если есть право
+      onTap: widget.hasUpdatePermission
+          ? () {
+              if (mounted) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => EditWarehouseScreen(
+                      warehouse: widget.warehouse,
+                      userIds: widget.warehouse.userIds ?? [],
+                    ),
+                  ),
+                ).then((result) {
+                  if (result == true) {
+                    if (widget.onUpdate != null) {
+                      widget.onUpdate!();
+                    } else {
+                      context.read<WareHouseBloc>().add(FetchWareHouse());
+                    }
+                  }
+                });
+              }
             }
-          });
-        }
-      },
+          : null,
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+        margin: const EdgeInsets.symmetric(vertical: 6),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: const Color(0xFFE9EDF5),
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.shade200,
-              blurRadius: 4,
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
@@ -78,7 +92,7 @@ class _WareHouseCardState extends State<WareHouseCard> {
               children: [
                 Expanded(
                   child: Text(
-                    '${localization!.translate('empty_0') ?? 'Склад'}${widget.warehouse.name ?? 'N/A'}',
+                    '${localization!.translate('empty_0') ?? 'Склад'} ${widget.warehouse.name ?? 'N/A'}',
                     style: const TextStyle(
                       fontSize: 18,
                       fontFamily: 'Gilroy',
@@ -89,22 +103,28 @@ class _WareHouseCardState extends State<WareHouseCard> {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                GestureDetector(
-                  child: Image.asset(
-                    'assets/icons/delete.png',
-                    width: 24,
-                    height: 24,
+                // ИЗМЕНЕНО: Показываем кнопку удаления только если есть право
+                if (widget.hasDeletePermission)
+                  GestureDetector(
+                    child: Image.asset(
+                      'assets/icons/delete.png',
+                      width: 24,
+                      height: 24,
+                    ),
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) =>
+                            WareHouseDeletion(wareHouseId: widget.warehouse.id),
+                      ).then((_) {
+                        if (widget.onUpdate != null) {
+                          widget.onUpdate!();
+                        } else {
+                          context.read<WareHouseBloc>().add(FetchWareHouse());
+                        }
+                      });
+                    },
                   ),
-                  onTap: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) =>
-                          WareHouseDeletion(wareHouseId: widget.warehouse.id),
-                    ).then((_) {
-                      context.read<WareHouseBloc>().add(FetchWareHouse());
-                    });
-                  },
-                ),
               ],
             ),
             const SizedBox(height: 8),
