@@ -672,10 +672,9 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
             }
             widget.onResetFilters?.call();
           },
-          initialFromDate: initialFromDate,
-          initialToDate: initialToDate,
-          initialAmountFrom: sumFrom,
-          initialAmountTo: sumTo,
+          categoryId: categoryId,
+          goodId: goodId,
+          period: period,
         );
         break;
       case 7:

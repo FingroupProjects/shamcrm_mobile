@@ -137,6 +137,7 @@ import '../../models/page_2/dashboard/net_profit_model.dart';
 import '../../models/page_2/dashboard/order_dashboard_model.dart';
 import '../../models/page_2/dashboard/profitability_dashboard_model.dart';
 import '../../models/page_2/dashboard/sales_model.dart';
+import '../../models/page_2/dashboard/net_profit_content_model.dart';
 import '../../models/page_2/dashboard/top_selling_card_model.dart';
 import '../../models/page_2/dashboard/top_selling_model.dart';
 
@@ -14910,6 +14911,15 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     // Формируем параметры запроса
     var path = await _appendQueryParams('/dashboard/sales-dynamics');
 
+    // Fix: Properly encode query parameters
+    if (queryParams.isNotEmpty) {
+      // Check if path already has query params (contains ?)
+      final separator = path.contains('?') ? '&' : '?';
+      final encodedParams =
+      queryParams.entries.map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}').join('&');
+      path += '$separator$encodedParams';
+    }
+
     debugPrint("ApiService: getSalesDynamics path: $path");
 
     final response = await _getRequest(path);
@@ -14917,6 +14927,57 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       return SalesResponse.fromJson(data);
+    } else {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка',
+        response.statusCode,
+      );
+    }
+  }
+
+  Future<NetProfitResponse> getNetProfitByFilter(
+    Map<String, dynamic>? filters,
+    String? search,
+  ) async {
+    Map<String, String> queryParams = {};
+    if (search != null && search.isNotEmpty) queryParams['search'] = search;
+    if (filters != null) {
+      if (filters.containsKey('period') && filters['period'] != null) {
+        debugPrint("ApiService: filters['period']: ${filters['period']}");
+        final period = filters['period'] as DateTime;
+        queryParams['period'] = period.toIso8601String();
+      }
+      if (filters.containsKey('category_id') && filters['category_id'] != null) {
+        debugPrint("ApiService: filters['category_id']: ${filters['category_id']}");
+        final categoryId = filters['category_id'] as int;
+        queryParams['category_id'] = categoryId.toString();
+      }
+      if (filters.containsKey('good_id') && filters['good_id'] != null) {
+        debugPrint("ApiService: filters['good_id']: ${filters['good_id']}");
+        final goodId = filters['good_id'] as int;
+        queryParams['good_id'] = goodId.toString();
+      }
+    }
+    // Формируем параметры запроса
+    var path = await _appendQueryParams('/dashboard/net-profit');
+
+    // Fix: Properly encode query parameters
+    if (queryParams.isNotEmpty) {
+      // Check if path already has query params (contains ?)
+      final separator = path.contains('?') ? '&' : '?';
+      final encodedParams =
+      queryParams.entries.map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}').join('&');
+      path += '$separator$encodedParams';
+    }
+
+    debugPrint("ApiService: getNetProfit path: $path");
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return NetProfitResponse.fromJson(data);
     } else {
       final message = _extractErrorMessageFromResponse(response);
       throw ApiException(
