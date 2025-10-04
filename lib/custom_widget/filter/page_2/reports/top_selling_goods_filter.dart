@@ -1,6 +1,12 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/category_dashboard_warehouse/category_dashboard_warehouse_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/good_dashboard_warehouse/good_dashboard_warehouse_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
+import 'package:crm_task_manager/custom_widget/filter/page_2/reports/category_dashboard_warehouse_widget.dart';
+import 'package:crm_task_manager/custom_widget/filter/page_2/reports/good_dashboard_warehouse_widget.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class TopSellingGoodsFilterScreen extends StatefulWidget {
@@ -34,6 +40,11 @@ class _TopSellingGoodsFilterScreenState extends State<TopSellingGoodsFilterScree
   DateTime? dateTo;
   final TextEditingController _sumFromController = TextEditingController();
   final TextEditingController _sumToController = TextEditingController();
+  final ApiService _apiService = ApiService();
+
+  // Local state for selected IDs
+  String? selectedCategoryId;
+  String? selectedGoodId;
 
   @override
   void initState() {
@@ -42,35 +53,52 @@ class _TopSellingGoodsFilterScreenState extends State<TopSellingGoodsFilterScree
     _sumToController.text = widget.sumTo ?? '';
     dateFrom = widget.dateFrom;
     dateTo = widget.dateTo;
+    selectedCategoryId = widget.categoryId;
+    selectedGoodId = widget.goodId;
     _loadFilterState();
   }
 
   Future<void> _loadFilterState() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      final fromMillis = prefs.getInt('goods_date_from');
-      final toMillis = prefs.getInt('goods_date_to');
+      final fromMillis = prefs.getInt('top_selling_date_from');
+      final toMillis = prefs.getInt('top_selling_date_to');
       if (fromMillis != null) dateFrom = DateTime.fromMillisecondsSinceEpoch(fromMillis);
       if (toMillis != null) dateTo = DateTime.fromMillisecondsSinceEpoch(toMillis);
-      _sumFromController.text = prefs.getString('goods_sum_from') ?? widget.sumFrom ?? '';
-      _sumToController.text = prefs.getString('goods_sum_to') ?? widget.sumTo ?? '';
+      _sumFromController.text = prefs.getString('top_selling_sum_from') ?? widget.sumFrom ?? '';
+      _sumToController.text = prefs.getString('top_selling_sum_to') ?? widget.sumTo ?? '';
+
+      selectedCategoryId = prefs.getString('top_selling_category_id') ?? widget.categoryId;
+      selectedGoodId = prefs.getString('top_selling_good_id') ?? widget.goodId;
     });
   }
 
   Future<void> _saveFilterState() async {
     final prefs = await SharedPreferences.getInstance();
     if (dateFrom != null) {
-      await prefs.setInt('goods_date_from', dateFrom!.millisecondsSinceEpoch);
+      await prefs.setInt('top_selling_date_from', dateFrom!.millisecondsSinceEpoch);
     } else {
-      await prefs.remove('goods_date_from');
+      await prefs.remove('top_selling_date_from');
     }
     if (dateTo != null) {
-      await prefs.setInt('goods_date_to', dateTo!.millisecondsSinceEpoch);
+      await prefs.setInt('top_selling_date_to', dateTo!.millisecondsSinceEpoch);
     } else {
-      await prefs.remove('goods_date_to');
+      await prefs.remove('top_selling_date_to');
     }
-    await prefs.setString('goods_sum_from', _sumFromController.text);
-    await prefs.setString('goods_sum_to', _sumToController.text);
+    await prefs.setString('top_selling_sum_from', _sumFromController.text);
+    await prefs.setString('top_selling_sum_to', _sumToController.text);
+
+    if (selectedCategoryId != null && selectedCategoryId!.isNotEmpty) {
+      await prefs.setString('top_selling_category_id', selectedCategoryId!);
+    } else {
+      await prefs.remove('top_selling_category_id');
+    }
+
+    if (selectedGoodId != null && selectedGoodId!.isNotEmpty) {
+      await prefs.setString('top_selling_good_id', selectedGoodId!);
+    } else {
+      await prefs.remove('top_selling_good_id');
+    }
   }
 
   void _resetFilters() {
@@ -79,6 +107,8 @@ class _TopSellingGoodsFilterScreenState extends State<TopSellingGoodsFilterScree
       dateTo = null;
       _sumFromController.text = '';
       _sumToController.text = '';
+      selectedCategoryId = null;
+      selectedGoodId = null;
     });
     widget.onResetFilters?.call();
     _saveFilterState();
@@ -118,7 +148,12 @@ class _TopSellingGoodsFilterScreenState extends State<TopSellingGoodsFilterScree
   }
 
   bool _isAnyFilterSelected() {
-    return dateFrom != null || dateTo != null || _sumFromController.text.isNotEmpty || _sumToController.text.isNotEmpty;
+    return dateFrom != null ||
+        dateTo != null ||
+        _sumFromController.text.isNotEmpty ||
+        _sumToController.text.isNotEmpty ||
+        selectedCategoryId != null ||
+        selectedGoodId != null;
   }
 
   double? _parseSum(String text) {
@@ -136,10 +171,42 @@ class _TopSellingGoodsFilterScreenState extends State<TopSellingGoodsFilterScree
         'sum_to': _parseSum(_sumToController.text),
         'date_from': dateFrom,
         'date_to': dateTo,
+        'category_id': selectedCategoryId != null ? int.tryParse(selectedCategoryId!) : null,
+        'good_id': selectedGoodId != null ? int.tryParse(selectedGoodId!) : null,
       };
       widget.onSelectedDataFilter?.call(filters);
     }
     Navigator.pop(context);
+  }
+
+  Widget _buildCategoryWidget() {
+    return BlocProvider<CategoryDashboardWarehouseBloc>(
+      create: (context) => CategoryDashboardWarehouseBloc(_apiService),
+      child: CategoryDashboardWarehouseWidget(
+        selectedCategoryDashboardWarehouse: selectedCategoryId,
+        onChanged: (id) {
+          setState(() {
+            selectedCategoryId = id;
+          });
+          FocusScope.of(context).unfocus();
+        },
+      ),
+    );
+  }
+
+  Widget _buildGoodWidget() {
+    return BlocProvider<GoodDashboardWarehouseBloc>(
+      create: (context) => GoodDashboardWarehouseBloc(_apiService),
+      child: GoodDashboardWarehouseWidget(
+        selectedGoodDashboardWarehouse: selectedGoodId,
+        onChanged: (id) {
+          setState(() {
+            selectedGoodId = id;
+          });
+          FocusScope.of(context).unfocus();
+        },
+      ),
+    );
   }
 
   @override
@@ -249,7 +316,37 @@ class _TopSellingGoodsFilterScreenState extends State<TopSellingGoodsFilterScree
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       color: Colors.white,
                       child: Padding(
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildCategoryWidget(),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+
+                    Card(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      color: Colors.white,
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildGoodWidget(),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+
+                    Card(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      color: Colors.white,
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -257,7 +354,7 @@ class _TopSellingGoodsFilterScreenState extends State<TopSellingGoodsFilterScree
                               controller: _sumFromController,
                               keyboardType: TextInputType.number,
                               hintText:
-                                  AppLocalizations.of(context)!.translate('enter_minimum_amount') ?? 'Введите минимальную сумму',
+                              AppLocalizations.of(context)!.translate('enter_minimum_amount') ?? 'Введите минимальную сумму',
                               label: AppLocalizations.of(context)!.translate('amount_from') ?? 'Сумма от',
                             ),
                           ],
@@ -270,7 +367,7 @@ class _TopSellingGoodsFilterScreenState extends State<TopSellingGoodsFilterScree
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       color: Colors.white,
                       child: Padding(
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.all(12),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -278,17 +375,13 @@ class _TopSellingGoodsFilterScreenState extends State<TopSellingGoodsFilterScree
                               controller: _sumToController,
                               keyboardType: TextInputType.number,
                               hintText:
-                                  AppLocalizations.of(context)!.translate('enter_maximum_amount') ?? 'Введите максимальную сумму',
+                              AppLocalizations.of(context)!.translate('enter_maximum_amount') ?? 'Введите максимальную сумму',
                               label: AppLocalizations.of(context)!.translate('amount_to') ?? 'Сумма до',
                             ),
                           ],
                         ),
                       ),
                     ),
-                    // _buildCategoryWidget(),
-                    // const SizedBox(height: 8),
-                    // _buildGoodWidget(),
-                    // const SizedBox(height: 16),
                   ],
                 ),
               ),

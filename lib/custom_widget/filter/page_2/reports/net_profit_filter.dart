@@ -1,8 +1,12 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/category_dashboard_warehouse/category_dashboard_warehouse_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/good_dashboard_warehouse/good_dashboard_warehouse_bloc.dart';
+import 'package:crm_task_manager/custom_widget/filter/page_2/reports/category_dashboard_warehouse_widget.dart';
+import 'package:crm_task_manager/custom_widget/filter/page_2/reports/good_dashboard_warehouse_widget.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class NetProfitFilterScreen extends StatefulWidget {
@@ -10,7 +14,7 @@ class NetProfitFilterScreen extends StatefulWidget {
   final VoidCallback? onResetFilters;
   final String? categoryId;
   final String? goodId;
-  final DateTime? period; // Changed from String? to DateTime?
+  final DateTime? period;
 
   const NetProfitFilterScreen({
     Key? key,
@@ -27,46 +31,29 @@ class NetProfitFilterScreen extends StatefulWidget {
 
 class _NetProfitFilterScreenState extends State<NetProfitFilterScreen> {
   final ApiService _apiService = ApiService();
-  SubCategoryAttributesData? selectedCategory;
-  DateTime? selectedPeriod; // Changed from String? to DateTime?
-  List<SubCategoryAttributesData> subCategories = [];
-  bool isLoading = false;
+  DateTime? selectedPeriod;
+
+  // Local state for selected IDs
+  String? selectedCategoryId;
+  String? selectedGoodId;
 
   @override
   void initState() {
     super.initState();
-    fetchSubCategories();
+    selectedCategoryId = widget.categoryId;
+    selectedGoodId = widget.goodId;
+    selectedPeriod = widget.period;
     _loadFilterState();
-  }
-
-  Future<void> fetchSubCategories() async {
-    setState(() => isLoading = true);
-    try {
-      final categories = await _apiService.getSubCategoryAttributes();
-      setState(() {
-        subCategories = categories;
-      });
-    } catch (e) {
-      // Error fetching subcategories
-    } finally {
-      setState(() => isLoading = false);
-    }
   }
 
   Future<void> _loadFilterState() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      final categoryId = prefs.getInt('goods_category_id');
-      if (categoryId != null && subCategories.isNotEmpty) {
-        try {
-          selectedCategory = subCategories.firstWhere((c) => c.id == categoryId);
-        } catch (e) {
-          selectedCategory = null;
-        }
-      }
+      selectedCategoryId = prefs.getString('net_profit_category_id') ?? widget.categoryId;
+      selectedGoodId = prefs.getString('net_profit_good_id') ?? widget.goodId;
 
       // Load period as DateTime
-      final savedYear = prefs.getInt('goods_period_year');
+      final savedYear = prefs.getInt('net_profit_period_year');
       if (savedYear != null) {
         selectedPeriod = DateTime(savedYear);
       } else if (widget.period != null) {
@@ -77,25 +64,31 @@ class _NetProfitFilterScreenState extends State<NetProfitFilterScreen> {
 
   Future<void> _saveFilterState() async {
     final prefs = await SharedPreferences.getInstance();
-    if (selectedCategory != null) {
-      await prefs.setString('goods_category', selectedCategory!.name);
-      await prefs.setInt('goods_category_id', selectedCategory!.id);
+
+    if (selectedCategoryId != null && selectedCategoryId!.isNotEmpty) {
+      await prefs.setString('net_profit_category_id', selectedCategoryId!);
     } else {
-      await prefs.remove('goods_category');
-      await prefs.remove('goods_category_id');
+      await prefs.remove('net_profit_category_id');
+    }
+
+    if (selectedGoodId != null && selectedGoodId!.isNotEmpty) {
+      await prefs.setString('net_profit_good_id', selectedGoodId!);
+    } else {
+      await prefs.remove('net_profit_good_id');
     }
 
     // Save period as year integer
     if (selectedPeriod != null) {
-      await prefs.setInt('goods_period_year', selectedPeriod!.year);
+      await prefs.setInt('net_profit_period_year', selectedPeriod!.year);
     } else {
-      await prefs.remove('goods_period_year');
+      await prefs.remove('net_profit_period_year');
     }
   }
 
   void _resetFilters() {
     setState(() {
-      selectedCategory = null;
+      selectedCategoryId = null;
+      selectedGoodId = null;
       selectedPeriod = null;
     });
     widget.onResetFilters?.call();
@@ -103,7 +96,9 @@ class _NetProfitFilterScreenState extends State<NetProfitFilterScreen> {
   }
 
   bool _isAnyFilterSelected() {
-    return selectedCategory != null || selectedPeriod != null;
+    return selectedCategoryId != null ||
+        selectedGoodId != null ||
+        selectedPeriod != null;
   }
 
   void _applyFilters() async {
@@ -112,7 +107,8 @@ class _NetProfitFilterScreenState extends State<NetProfitFilterScreen> {
       widget.onResetFilters?.call();
     } else {
       widget.onSelectedDataFilter?.call({
-        'category_id': selectedCategory?.id,
+        'category_id': selectedCategoryId != null ? int.tryParse(selectedCategoryId!) : null,
+        'good_id': selectedGoodId != null ? int.tryParse(selectedGoodId!) : null,
         'period': selectedPeriod,
       });
     }
@@ -120,100 +116,31 @@ class _NetProfitFilterScreenState extends State<NetProfitFilterScreen> {
   }
 
   Widget _buildCategoryWidget() {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      color: Colors.white,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              AppLocalizations.of(context)!.translate('category') ?? 'Категория',
-              style: const TextStyle(
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w500,
-                color: Color(0xff1E2E52),
-                fontSize: 14,
-              ),
-            ),
-            const SizedBox(height: 8),
-            isLoading
-                ? Container(
-              height: 50,
-              decoration: BoxDecoration(
-                color: const Color(0xffF4F7FD),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Center(
-                child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Color(0xff1E2E52),
-                  ),
-                ),
-              ),
-            )
-                : CustomDropdown<SubCategoryAttributesData>.search(
-              items: subCategories,
-              searchHintText: AppLocalizations.of(context)!.translate('search') ?? 'Поиск',
-              overlayHeight: 300,
-              closeDropDownOnClearFilterSearch: true,
-              decoration: CustomDropdownDecoration(
-                closedFillColor: const Color(0xffF4F7FD),
-                expandedFillColor: Colors.white,
-                closedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1.5),
-                closedBorderRadius: BorderRadius.circular(12),
-                expandedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1.5),
-                expandedBorderRadius: BorderRadius.circular(12),
-              ),
-              listItemBuilder: (context, item, isSelected, onItemSelect) {
-                return Text(
-                  item.name,
-                  style: const TextStyle(
-                    color: Color(0xff1E2E52),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                  ),
-                );
-              },
-              headerBuilder: (context, selectedItem, enabled) {
-                return Text(
-                  selectedItem?.name ??
-                      AppLocalizations.of(context)!.translate('select_category') ?? 'Выберите категорию',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
-                  ),
-                );
-              },
-              hintBuilder: (context, hint, enabled) => Text(
-                AppLocalizations.of(context)!.translate('list_select_subcategories') ?? 'Выберите категорию',
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
-                ),
-              ),
-              excludeSelected: false,
-              initialItem: selectedCategory,
-              onChanged: (value) {
-                if (value != null) {
-                  setState(() {
-                    selectedCategory = value;
-                  });
-                  FocusScope.of(context).unfocus();
-                }
-              },
-            ),
-          ],
-        ),
+    return BlocProvider<CategoryDashboardWarehouseBloc>(
+      create: (context) => CategoryDashboardWarehouseBloc(_apiService),
+      child: CategoryDashboardWarehouseWidget(
+        selectedCategoryDashboardWarehouse: selectedCategoryId,
+        onChanged: (id) {
+          setState(() {
+            selectedCategoryId = id;
+          });
+          FocusScope.of(context).unfocus();
+        },
+      ),
+    );
+  }
+
+  Widget _buildGoodWidget() {
+    return BlocProvider<GoodDashboardWarehouseBloc>(
+      create: (context) => GoodDashboardWarehouseBloc(_apiService),
+      child: GoodDashboardWarehouseWidget(
+        selectedGoodDashboardWarehouse: selectedGoodId,
+        onChanged: (id) {
+          setState(() {
+            selectedGoodId = id;
+          });
+          FocusScope.of(context).unfocus();
+        },
       ),
     );
   }
@@ -222,7 +149,7 @@ class _NetProfitFilterScreenState extends State<NetProfitFilterScreen> {
     final int currentYear = DateTime.now().year;
     final List<DateTime> years = List.generate(
       10, // Last 10 years
-          (index) => DateTime(currentYear - index), // Create DateTime objects with only year
+          (index) => DateTime(currentYear - index),
     );
 
     return Card(
@@ -376,8 +303,34 @@ class _NetProfitFilterScreenState extends State<NetProfitFilterScreen> {
               child: SingleChildScrollView(
                 child: Column(
                   children: [
-                    _buildCategoryWidget(),
-                    const SizedBox(height: 16),
+                    Card(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      color: Colors.white,
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildCategoryWidget(),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Card(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      color: Colors.white,
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildGoodWidget(),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
                     _buildPeriodWidget(),
                   ],
                 ),

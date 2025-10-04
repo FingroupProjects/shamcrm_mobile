@@ -61,6 +61,7 @@ import 'package:crm_task_manager/models/page_2/call_center_model.dart';
 import 'package:crm_task_manager/models/page_2/call_statistics1_model.dart';
 import 'package:crm_task_manager/models/page_2/call_summary_stats_model.dart';
 import 'package:crm_task_manager/models/page_2/category_dashboard_warehouse_model.dart';
+import 'package:crm_task_manager/models/page_2/expense_article_dashboard_warehouse_model.dart';
 import 'package:crm_task_manager/models/page_2/category_model.dart';
 import 'package:crm_task_manager/models/page_2/character_list_model.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/dashboard_goods_report.dart';
@@ -14855,6 +14856,18 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         final sumTo = filters['sum_to'] as double;
         queryParams['sum_to'] = sumTo.toString();
       }
+
+      if (filters.containsKey('good_id') && filters['good_id'] != null) {
+        debugPrint("ApiService: filters['good_id']: ${filters['good_id']}");
+        final goodId = filters['good_id'] as int;
+        queryParams['good_id'] = goodId.toString();
+      }
+
+      if (filters.containsKey('category_id') && filters['category_id'] != null) {
+        debugPrint("ApiService: filters['category_id']: ${filters['category_id']}");
+        final categoryId = filters['category_id'] as int;
+        queryParams['category_id'] = categoryId.toString();
+      }
     }
 
     String path = await _appendQueryParams('/dashboard/top-selling-goods');
@@ -15146,6 +15159,38 @@ Future<List<GoodDashboardWarehouse>> getGoodDashboardWarehouse() async {
         .toList();
   } else {
     throw Exception('Ошибка загрузки товаров');
+  }
+}
+
+// Метод для получения Статей расхода
+Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehouse() async {
+  final path = await _appendQueryParams('/article?type=expense');
+  if (kDebugMode) {
+    print('ApiService: getExpenseArticleDashboardWarehouse - Generated path: $path');
+  }
+
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    print('Полученные данные статей расхода: $data');
+    
+    // Navigate to nested data: result -> data
+    final resultData = data['result'];
+    if (resultData == null) {
+      return [];
+    }
+    
+    final dataList = resultData['data'] as List?;
+    if (dataList == null) {
+      return [];
+    }
+    
+    return dataList
+        .map((article) => ExpenseArticleDashboardWarehouse.fromJson(article))
+        .toList();
+  } else {
+    throw Exception('Ошибка загрузки статей расхода');
   }
 }
 }

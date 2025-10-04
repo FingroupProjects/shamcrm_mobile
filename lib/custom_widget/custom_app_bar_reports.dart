@@ -460,6 +460,7 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
     String? categoryId;
     String? daysWithoutMovement;
     String? goodId;
+    String? article_id;
     DateTime? period;
 
     final currentFilter = widget.currentFilters[widget.currentTabIndex] ?? {};
@@ -521,6 +522,11 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
     if (currentFilter.containsKey('good_id')) {
       final goodIdValue = currentFilter['good_id'];
       goodId = goodIdValue?.toString();
+    }
+
+    if (currentFilter.containsKey('article_id')) {
+      final expenseArticleIdValue = currentFilter['article_id'];
+      article_id = expenseArticleIdValue?.toString();
     }
 
     // Navigate to the appropriate filter screen based on currentTabIndex
@@ -702,7 +708,7 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
             widget.onResetFilters?.call();
           },
           categoryId: categoryId,
-          goodId: goodId,
+          articleId: article_id,
           initialDateFrom: initialFromDate,
           initialDateTo: initialToDate,
         );

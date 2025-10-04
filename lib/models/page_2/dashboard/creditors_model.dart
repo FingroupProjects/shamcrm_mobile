@@ -129,18 +129,18 @@ class Period extends Equatable {
 }
 
 class DateRange extends Equatable {
-  final String from;
-  final String to;
+  final String? from;  // Changed to nullable
+  final String? to;    // Changed to nullable
 
   const DateRange({
-    required this.from,
-    required this.to,
+    this.from,  // No longer required
+    this.to,    // No longer required
   });
 
   factory DateRange.fromJson(Map<String, dynamic> json) {
     return DateRange(
-      from: json['from'] as String,
-      to: json['to'] as String,
+      from: json['from'] as String?,  // Cast to String?
+      to: json['to'] as String?,      // Cast to String?
     );
   }
 
@@ -152,5 +152,5 @@ class DateRange extends Equatable {
   }
 
   @override
-  List<Object> get props => [from, to];
+  List<Object?> get props => [from, to];  // Changed to Object? to handle nulls
 }

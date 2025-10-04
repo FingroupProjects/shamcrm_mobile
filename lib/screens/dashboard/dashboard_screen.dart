@@ -48,9 +48,7 @@ import 'package:crm_task_manager/page_2/dashboard/widgets/charts/top_selling_pro
 import 'package:crm_task_manager/page_2/dashboard/widgets/charts/sales_dynamics_line_chart.dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/charts/net_profit_chart.dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/charts/expense_structure_chart.dart';
-// import 'package:crm_task_manager/page_2/dashboard/widgets/charts/profit_margin_chart.dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/charts/order_quantity_chart.dart';
-import 'package:crm_task_manager/page_2/dashboard/sales_dashboard_screen.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
@@ -623,6 +621,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           context
               .read<ProcessSpeedBlocManager>()
               .add(LoadProcessSpeedDataManager());
+        } else {
+        context.read<SalesDashboardBloc>().add(LoadInitialData());
         }
       }
     } catch (e) {

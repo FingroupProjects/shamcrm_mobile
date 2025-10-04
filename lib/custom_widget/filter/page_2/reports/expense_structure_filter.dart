@@ -1,15 +1,18 @@
-import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/category_dashboard_warehouse/category_dashboard_warehouse_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/expense_article_dashboard_warehouse/expense_article_dashboard_warehouse_bloc.dart';
+import 'package:crm_task_manager/custom_widget/filter/page_2/reports/category_dashboard_warehouse_widget.dart';
+import 'package:crm_task_manager/custom_widget/filter/page_2/reports/expense_article_dashboard_warehouse_widget.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ExpenseStructureFilterScreen extends StatefulWidget {
   final Function(Map<String, dynamic>)? onSelectedDataFilter;
   final VoidCallback? onResetFilters;
   final String? categoryId;
-  final String? goodId;
+  final String? articleId;
   final DateTime? initialDateFrom;
   final DateTime? initialDateTo;
 
@@ -18,7 +21,7 @@ class ExpenseStructureFilterScreen extends StatefulWidget {
     this.onSelectedDataFilter,
     this.onResetFilters,
     this.categoryId,
-    this.goodId,
+    this.articleId,
     this.initialDateFrom,
     this.initialDateTo,
   }) : super(key: key);
@@ -29,50 +32,30 @@ class ExpenseStructureFilterScreen extends StatefulWidget {
 
 class _ExpenseStructureFilterScreenState extends State<ExpenseStructureFilterScreen> {
   final ApiService _apiService = ApiService();
-  SubCategoryAttributesData? selectedCategory;
+  String? selectedCategoryId;
+  String? selectedExpenseArticleId;
   DateTime? _dateFrom;
   DateTime? _dateTo;
-  List<SubCategoryAttributesData> subCategories = [];
-  bool isLoading = false;
 
   @override
   void initState() {
     super.initState();
+    selectedCategoryId = widget.categoryId;
+    selectedExpenseArticleId = widget.articleId;
     _dateFrom = widget.initialDateFrom;
     _dateTo = widget.initialDateTo;
-    fetchSubCategories();
     _loadFilterState();
-  }
-
-  Future<void> fetchSubCategories() async {
-    setState(() => isLoading = true);
-    try {
-      final categories = await _apiService.getSubCategoryAttributes();
-      setState(() {
-        subCategories = categories;
-      });
-    } catch (e) {
-      // Error fetching subcategories
-    } finally {
-      setState(() => isLoading = false);
-    }
   }
 
   Future<void> _loadFilterState() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      final categoryId = prefs.getInt('goods_category_id');
-      if (categoryId != null && subCategories.isNotEmpty) {
-        try {
-          selectedCategory = subCategories.firstWhere((c) => c.id == categoryId);
-        } catch (e) {
-          selectedCategory = null;
-        }
-      }
+      selectedCategoryId = prefs.getString('expense_structure_category_id') ?? widget.categoryId;
+      selectedExpenseArticleId = prefs.getString('expense_structure_article_id') ?? widget.articleId;
 
       // Load date_from and date_to
-      final dateFromMillis = prefs.getInt('goods_date_from');
-      final dateToMillis = prefs.getInt('goods_date_to');
+      final dateFromMillis = prefs.getInt('expense_structure_date_from');
+      final dateToMillis = prefs.getInt('expense_structure_date_to');
       if (dateFromMillis != null) _dateFrom = DateTime.fromMillisecondsSinceEpoch(dateFromMillis);
       if (dateToMillis != null) _dateTo = DateTime.fromMillisecondsSinceEpoch(dateToMillis);
     });
@@ -80,30 +63,36 @@ class _ExpenseStructureFilterScreenState extends State<ExpenseStructureFilterScr
 
   Future<void> _saveFilterState() async {
     final prefs = await SharedPreferences.getInstance();
-    if (selectedCategory != null) {
-      await prefs.setString('goods_category', selectedCategory!.name);
-      await prefs.setInt('goods_category_id', selectedCategory!.id);
+    
+    if (selectedCategoryId != null && selectedCategoryId!.isNotEmpty) {
+      await prefs.setString('expense_structure_category_id', selectedCategoryId!);
     } else {
-      await prefs.remove('goods_category');
-      await prefs.remove('goods_category_id');
+      await prefs.remove('expense_structure_category_id');
+    }
+
+    if (selectedExpenseArticleId != null && selectedExpenseArticleId!.isNotEmpty) {
+      await prefs.setString('expense_structure_article_id', selectedExpenseArticleId!);
+    } else {
+      await prefs.remove('expense_structure_article_id');
     }
 
     // Save date_from and date_to
     if (_dateFrom != null) {
-      await prefs.setInt('goods_date_from', _dateFrom!.millisecondsSinceEpoch);
+      await prefs.setInt('expense_structure_date_from', _dateFrom!.millisecondsSinceEpoch);
     } else {
-      await prefs.remove('goods_date_from');
+      await prefs.remove('expense_structure_date_from');
     }
     if (_dateTo != null) {
-      await prefs.setInt('goods_date_to', _dateTo!.millisecondsSinceEpoch);
+      await prefs.setInt('expense_structure_date_to', _dateTo!.millisecondsSinceEpoch);
     } else {
-      await prefs.remove('goods_date_to');
+      await prefs.remove('expense_structure_date_to');
     }
   }
 
   void _resetFilters() {
     setState(() {
-      selectedCategory = null;
+      selectedCategoryId = null;
+      selectedExpenseArticleId = null;
       _dateFrom = null;
       _dateTo = null;
     });
@@ -147,7 +136,7 @@ class _ExpenseStructureFilterScreenState extends State<ExpenseStructureFilterScr
   }
 
   bool _isAnyFilterSelected() {
-    return selectedCategory != null || _dateFrom != null || _dateTo != null;
+    return selectedCategoryId != null || selectedExpenseArticleId != null || _dateFrom != null || _dateTo != null;
   }
 
   void _applyFilters() async {
@@ -156,7 +145,8 @@ class _ExpenseStructureFilterScreenState extends State<ExpenseStructureFilterScr
       widget.onResetFilters?.call();
     } else {
       widget.onSelectedDataFilter?.call({
-        'category_id': selectedCategory?.id,
+        'category_id': selectedCategoryId != null ? int.tryParse(selectedCategoryId!) : null,
+        'article_id': selectedExpenseArticleId != null ? int.tryParse(selectedExpenseArticleId!) : null,
         'date_from': _dateFrom,
         'date_to': _dateTo,
       });
@@ -165,100 +155,31 @@ class _ExpenseStructureFilterScreenState extends State<ExpenseStructureFilterScr
   }
 
   Widget _buildCategoryWidget() {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      color: Colors.white,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              AppLocalizations.of(context)!.translate('category') ?? 'Категория',
-              style: const TextStyle(
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w500,
-                color: Color(0xff1E2E52),
-                fontSize: 14,
-              ),
-            ),
-            const SizedBox(height: 8),
-            isLoading
-                ? Container(
-              height: 50,
-              decoration: BoxDecoration(
-                color: const Color(0xffF4F7FD),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Center(
-                child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Color(0xff1E2E52),
-                  ),
-                ),
-              ),
-            )
-                : CustomDropdown<SubCategoryAttributesData>.search(
-              items: subCategories,
-              searchHintText: AppLocalizations.of(context)!.translate('search') ?? 'Поиск',
-              overlayHeight: 300,
-              closeDropDownOnClearFilterSearch: true,
-              decoration: CustomDropdownDecoration(
-                closedFillColor: const Color(0xffF4F7FD),
-                expandedFillColor: Colors.white,
-                closedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1.5),
-                closedBorderRadius: BorderRadius.circular(12),
-                expandedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1.5),
-                expandedBorderRadius: BorderRadius.circular(12),
-              ),
-              listItemBuilder: (context, item, isSelected, onItemSelect) {
-                return Text(
-                  item.name,
-                  style: const TextStyle(
-                    color: Color(0xff1E2E52),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                  ),
-                );
-              },
-              headerBuilder: (context, selectedItem, enabled) {
-                return Text(
-                  selectedItem?.name ??
-                      AppLocalizations.of(context)!.translate('select_category') ?? 'Выберите категорию',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
-                  ),
-                );
-              },
-              hintBuilder: (context, hint, enabled) => Text(
-                AppLocalizations.of(context)!.translate('list_select_subcategories') ?? 'Выберите категорию',
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
-                ),
-              ),
-              excludeSelected: false,
-              initialItem: selectedCategory,
-              onChanged: (value) {
-                if (value != null) {
-                  setState(() {
-                    selectedCategory = value;
-                  });
-                  FocusScope.of(context).unfocus();
-                }
-              },
-            ),
-          ],
-        ),
+    return BlocProvider<CategoryDashboardWarehouseBloc>(
+      create: (context) => CategoryDashboardWarehouseBloc(_apiService),
+      child: CategoryDashboardWarehouseWidget(
+        selectedCategoryDashboardWarehouse: selectedCategoryId,
+        onChanged: (id) {
+          setState(() {
+            selectedCategoryId = id;
+          });
+          FocusScope.of(context).unfocus();
+        },
+      ),
+    );
+  }
+
+  Widget _buildExpenseArticleWidget() {
+    return BlocProvider<ExpenseArticleDashboardWarehouseBloc>(
+      create: (context) => ExpenseArticleDashboardWarehouseBloc(_apiService),
+      child: ExpenseArticleDashboardWarehouseWidget(
+        selectedExpenseArticleDashboardWarehouse: selectedExpenseArticleId,
+        onChanged: (id) {
+          setState(() {
+            selectedExpenseArticleId = id;
+          });
+          FocusScope.of(context).unfocus();
+        },
       ),
     );
   }
@@ -281,7 +202,7 @@ class _ExpenseStructureFilterScreenState extends State<ExpenseStructureFilterScr
               Text(
                 _dateFrom != null && _dateTo != null
                     ? "${_dateFrom!.day.toString().padLeft(2, '0')}.${_dateFrom!.month.toString().padLeft(2, '0')}.${_dateFrom!.year} - ${_dateTo!.day.toString().padLeft(2, '0')}.${_dateTo!.month.toString().padLeft(2, '0')}.${_dateTo!.year}"
-                    : AppLocalizations.of(context)!.translate('select_date_range') ?? 'Выберите диапазон дат',
+                    : AppLocalizations.of(context)!.translate('select_date_range'),
                 style: TextStyle(
                   fontFamily: 'Gilroy',
                   color: _dateFrom != null && _dateTo != null ? Colors.black : const Color(0xff99A4BA),
@@ -367,7 +288,33 @@ class _ExpenseStructureFilterScreenState extends State<ExpenseStructureFilterScr
               child: SingleChildScrollView(
                 child: Column(
                   children: [
-                    _buildCategoryWidget(),
+                    Card(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      color: Colors.white,
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildCategoryWidget(),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Card(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      color: Colors.white,
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildExpenseArticleWidget(),
+                          ],
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: 16),
                     _buildDateRangeWidget(),
                   ],
