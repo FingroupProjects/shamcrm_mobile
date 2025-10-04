@@ -10,7 +10,7 @@ class SalesDynamicsFilterScreen extends StatefulWidget {
   final VoidCallback? onResetFilters;
   final String? categoryId;
   final String? goodId;
-  final String? period;
+  final DateTime? period; // Changed from String? to DateTime?
 
   const SalesDynamicsFilterScreen({
     Key? key,
@@ -28,7 +28,7 @@ class SalesDynamicsFilterScreen extends StatefulWidget {
 class _SalesDynamicsFilterScreenState extends State<SalesDynamicsFilterScreen> {
   final ApiService _apiService = ApiService();
   SubCategoryAttributesData? selectedCategory;
-  String? selectedPeriod;
+  DateTime? selectedPeriod; // Changed from String? to DateTime?
   List<SubCategoryAttributesData> subCategories = [];
   bool isLoading = false;
 
@@ -64,7 +64,14 @@ class _SalesDynamicsFilterScreenState extends State<SalesDynamicsFilterScreen> {
           selectedCategory = null;
         }
       }
-      selectedPeriod = prefs.getString('goods_period') ?? widget.period;
+
+      // Load period as DateTime
+      final savedYear = prefs.getInt('goods_period_year');
+      if (savedYear != null) {
+        selectedPeriod = DateTime(savedYear);
+      } else if (widget.period != null) {
+        selectedPeriod = widget.period;
+      }
     });
   }
 
@@ -77,10 +84,12 @@ class _SalesDynamicsFilterScreenState extends State<SalesDynamicsFilterScreen> {
       await prefs.remove('goods_category');
       await prefs.remove('goods_category_id');
     }
+
+    // Save period as year integer
     if (selectedPeriod != null) {
-      await prefs.setString('goods_period', selectedPeriod!);
+      await prefs.setInt('goods_period_year', selectedPeriod!.year);
     } else {
-      await prefs.remove('goods_period');
+      await prefs.remove('goods_period_year');
     }
   }
 
@@ -211,10 +220,11 @@ class _SalesDynamicsFilterScreenState extends State<SalesDynamicsFilterScreen> {
 
   Widget _buildPeriodWidget() {
     final int currentYear = DateTime.now().year;
-    final List<String> years = List.generate(
+    final List<DateTime> years = List.generate(
       10, // Last 10 years
-          (index) => (currentYear - index).toString(), // From current year backward
+          (index) => DateTime(currentYear - index), // Create DateTime objects with only year
     );
+
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       color: Colors.white,
@@ -233,7 +243,7 @@ class _SalesDynamicsFilterScreenState extends State<SalesDynamicsFilterScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            CustomDropdown<String>.search(
+            CustomDropdown<DateTime>.search(
               items: years,
               searchHintText: AppLocalizations.of(context)!.translate('search') ?? 'Поиск',
               overlayHeight: 300,
@@ -248,7 +258,7 @@ class _SalesDynamicsFilterScreenState extends State<SalesDynamicsFilterScreen> {
               ),
               listItemBuilder: (context, item, isSelected, onItemSelect) {
                 return Text(
-                  item,
+                  item.year.toString(),
                   style: const TextStyle(
                     color: Color(0xff1E2E52),
                     fontSize: 16,
@@ -259,7 +269,7 @@ class _SalesDynamicsFilterScreenState extends State<SalesDynamicsFilterScreen> {
               },
               headerBuilder: (context, selectedItem, enabled) {
                 return Text(
-                  selectedItem ??
+                  selectedItem?.year.toString() ??
                       AppLocalizations.of(context)!.translate('select_year') ?? 'Выберите год',
                   style: const TextStyle(
                     fontSize: 16,

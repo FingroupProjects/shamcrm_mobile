@@ -469,7 +469,7 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
     String? categoryId;
     String? daysWithoutMovement;
     String? goodId;
-    String? period;
+    DateTime? period;
 
     final currentFilter = widget.currentFilters[widget.currentTabIndex] ?? {};
 

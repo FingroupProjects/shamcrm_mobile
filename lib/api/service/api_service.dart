@@ -14883,4 +14883,46 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       rethrow;
     }
   }
+
+  Future<SalesResponse> getSalesDynamicsByFilter(
+    Map<String, dynamic>? filters,
+    String? search,
+  ) async {
+    Map<String, String> queryParams = {};
+    if (search != null && search.isNotEmpty) queryParams['search'] = search;
+    if (filters != null) {
+      if (filters.containsKey('period') && filters['period'] != null) {
+        debugPrint("ApiService: filters['period']: ${filters['period']}");
+        final period = filters['period'] as DateTime;
+        queryParams['period'] = period.toIso8601String();
+      }
+      if (filters.containsKey('category_id') && filters['category_id'] != null) {
+        debugPrint("ApiService: filters['category_id']: ${filters['category_id']}");
+        final categoryId = filters['category_id'] as int;
+        queryParams['category_id'] = categoryId.toString();
+      }
+      if (filters.containsKey('good_id') && filters['good_id'] != null) {
+        debugPrint("ApiService: filters['good_id']: ${filters['good_id']}");
+        final goodId = filters['good_id'] as int;
+        queryParams['good_id'] = goodId.toString();
+      }
+    }
+    // Формируем параметры запроса
+    var path = await _appendQueryParams('/dashboard/sales-dynamics');
+
+    debugPrint("ApiService: getSalesDynamics path: $path");
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return SalesResponse.fromJson(data);
+    } else {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка',
+        response.statusCode,
+      );
+    }
+  }
 }
