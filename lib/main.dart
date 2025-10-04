@@ -69,6 +69,8 @@ import 'package:crm_task_manager/bloc/organization/organization_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_by_id/catgeoryById_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/category_dashboard_warehouse/category_dashboard_warehouse_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/good_dashboard_warehouse/good_dashboard_warehouse_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/deliviry_adress/delivery_address_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/client_return/client_return_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/client_sale/bloc/client_sale_bloc.dart';
@@ -635,7 +637,14 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => CashDeskBloc()),
         BlocProvider(create: (context) => ExpenseBloc()),
         BlocProvider(create: (context) => IncomeBloc()),
+                BlocProvider(create: (context) => CategoryDashboardWarehouseBloc(widget.apiService)),
+
+        BlocProvider(create: (context) => GoodDashboardWarehouseBloc(widget.apiService)),
+
+
+          
       ],
+
       child: MaterialApp(
         locale: _locale ?? const Locale('ru'),
         color: Colors.white,

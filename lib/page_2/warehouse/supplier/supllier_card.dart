@@ -11,11 +11,18 @@ import 'package:intl/intl.dart';
 class SupplierCard extends StatefulWidget {
   final Supplier supplier;
   final VoidCallback? onDelete;
+  // НОВОЕ: Параметры прав доступа
+  final bool hasUpdatePermission;
+  final bool hasDeletePermission;
+  final VoidCallback? onUpdate;
 
   const SupplierCard({
     Key? key,
     required this.supplier,
     this.onDelete,
+    this.hasUpdatePermission = false,
+    this.hasDeletePermission = false,
+    this.onUpdate,
   }) : super(key: key);
 
   @override
@@ -38,25 +45,36 @@ class _SupplierCardState extends State<SupplierCard> {
   @override
   Widget build(BuildContext context) {
     final localization = AppLocalizations.of(context);
+    
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) =>
-                  EditSupplierScreen(supplier: widget.supplier),
-            ));
-      },
+      // ИЗМЕНЕНО: Открываем редактирование только если есть право
+      onTap: widget.hasUpdatePermission
+          ? () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => EditSupplierScreen(supplier: widget.supplier),
+                ),
+              ).then((_) {
+                if (widget.onUpdate != null) {
+                  widget.onUpdate!();
+                } else {
+                  context.read<SupplierBloc>().add(FetchSupplier());
+                }
+              });
+            }
+          : null,
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+        margin: const EdgeInsets.symmetric(vertical: 6),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: const Color(0xFFE9EDF5),
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.shade200,
-              blurRadius: 4,
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
@@ -67,7 +85,7 @@ class _SupplierCardState extends State<SupplierCard> {
               children: [
                 Expanded(
                   child: Text(
-                    '${localization!.translate('empty_0') ?? 'Поставщик'}${widget.supplier.name ?? 'N/A'}',
+                    '${localization!.translate('empty_0') ?? 'Поставщик'} ${widget.supplier.name ?? 'N/A'}',
                     style: const TextStyle(
                       fontSize: 18,
                       fontFamily: 'Gilroy',
@@ -78,23 +96,27 @@ class _SupplierCardState extends State<SupplierCard> {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                GestureDetector(
-                  child: Image.asset(
-                    'assets/icons/delete.png',
-                    width: 24,
-                    height: 24,
-                  ),
-                  onTap: () {
-                    showDialog(
+                // ИЗМЕНЕНО: Показываем кнопку удаления только если есть право
+                if (widget.hasDeletePermission)
+                  GestureDetector(
+                    child: Image.asset(
+                      'assets/icons/delete.png',
+                      width: 24,
+                      height: 24,
+                    ),
+                    onTap: () {
+                      showDialog(
                         context: context,
-                        builder: (context) => SupplierDeleteDialog(
-                            documentId: widget.supplier.id)).then(
-                      (value) {
-                        context.read<SupplierBloc>().add(FetchSupplier());
-                      },
-                    );
-                  },
-                ),
+                        builder: (context) => SupplierDeleteDialog(documentId: widget.supplier.id),
+                      ).then((value) {
+                        if (widget.onUpdate != null) {
+                          widget.onUpdate!();
+                        } else {
+                          context.read<SupplierBloc>().add(FetchSupplier());
+                        }
+                      });
+                    },
+                  ),
               ],
             ),
             const SizedBox(height: 8),
@@ -127,8 +149,7 @@ class _SupplierCardState extends State<SupplierCard> {
                 color: Color(0xff99A4BA),
               ),
             ),
-            if (widget.supplier.note != null &&
-                widget.supplier.note!.isNotEmpty)
+            if (widget.supplier.note != null && widget.supplier.note!.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(

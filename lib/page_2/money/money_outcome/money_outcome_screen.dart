@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/models/money/money_outcome_document_model.dart';
@@ -33,18 +34,44 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
   final FocusNode _focusNode = FocusNode();
   bool _isSearching = false;
   Map<String, dynamic> _currentFilters = {};
-  String? _search = null;
+  String? _search;
   late MoneyOutcomeBloc _moneyOutcomeBloc;
 
   bool _selectionMode = false;
   bool _isLoadingMore = false;
   bool _hasReachedMax = false;
 
+  // НОВОЕ: Флаги прав доступа
+  bool _hasCreatePermission = false;
+  bool _hasUpdatePermission = false;
+  bool _hasDeletePermission = false;
+  final ApiService _apiService = ApiService();
+
   @override
   void initState() {
     super.initState();
+    _checkPermissions();
     _moneyOutcomeBloc = MoneyOutcomeBloc()..add(const FetchMoneyOutcome(forceRefresh: true));
     _scrollController.addListener(_onScroll);
+  }
+
+  // НОВОЕ: Проверка прав доступа
+  Future<void> _checkPermissions() async {
+    try {
+      final create = await _apiService.hasPermission('checking_account_rko.create');
+      final update = await _apiService.hasPermission('checking_account_rko.update');
+      final delete = await _apiService.hasPermission('checking_account_rko.delete');
+
+      if (mounted) {
+        setState(() {
+          _hasCreatePermission = create;
+          _hasUpdatePermission = update;
+          _hasDeletePermission = delete;
+        });
+      }
+    } catch (e) {
+      debugPrint('Ошибка при проверке прав доступа: $e');
+    }
   }
 
   @override
@@ -82,7 +109,7 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
       _search = null;
     });
 
-    _moneyOutcomeBloc.add(FetchMoneyOutcome(
+    _moneyOutcomeBloc.add(const FetchMoneyOutcome(
       filters: {},
       forceRefresh: true,
       search: null,
@@ -137,9 +164,6 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
       case MoneyOutcomeOperationType.client_return:
         targetScreen = EditMoneyOutcomeFromClient(document: document);
         break;
-      // case MoneyOutcomeOperationType.send_another_cash_register:
-      //   targetScreen = EditMoneyOutcomeAnotherCashRegister(document: document);
-      //   break;
       case MoneyOutcomeOperationType.other_expenses:
         targetScreen = EditMoneyOutcomeOtherOutcome(document: document);
         break;
@@ -163,24 +187,6 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
     }
   }
 
-/*  void showDeleteDialog({required BuildContext context, required Document document, required VoidCallback onDelete}) {
-    showDialog(
-      context: context,
-      builder: (_) => BlocProvider.value(
-        value: context.read<MoneyOutcomeBloc>(),
-        child: MoneyOutcomeDeleteDialog(
-            documentId: document.id!,
-            onDelete: (id) {
-              onDelete();
-            }),
-      ),
-    ).then((value) {
-      if (mounted) {
-        FocusScope.of(context).requestFocus(FocusNode());
-      }
-    });
-  }*/
-
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
@@ -198,7 +204,8 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                 if (state is MoneyOutcomeLoaded) {
                   bool showApprove = state.selectedData!.any((doc) => doc.approved == false && doc.deletedAt == null);
                   bool showDisapprove = state.selectedData!.any((doc) => doc.approved == true && doc.deletedAt == null);
-                  bool showDelete = state.selectedData!.any((doc) => doc.deletedAt == null);
+                  // ИЗМЕНЕНО: Показываем кнопку удаления только если есть право
+                  bool showDelete = _hasDeletePermission && state.selectedData!.any((doc) => doc.deletedAt == null);
                   bool showRestore = state.selectedData!.any((doc) => doc.deletedAt != null);
 
                   return AppBarSelectionMode(
@@ -267,11 +274,11 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                   setState(() {
                     _isSearching = false;
                     _searchController.clear();
-                    _search = null; // Очищаем поиск
+                    _search = null;
                   });
                   _moneyOutcomeBloc.add(FetchMoneyOutcome(
                     forceRefresh: true,
-                    filters: _currentFilters, // Сохраняем фильтры при очистке поиска
+                    filters: _currentFilters,
                   ));
                 }
               },
@@ -425,7 +432,9 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
 
                       final document = currentData[index];
 
-                      return Dismissible(
+                      // ИЗМЕНЕНО: Показываем Dismissible только если есть право на удаление
+                      return _hasDeletePermission
+                          ? Dismissible(
                         key: Key(document.id.toString()),
                         direction: DismissDirection.endToStart,
                         background: Container(
@@ -454,57 +463,18 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                           });
                           _moneyOutcomeBloc.add(DeleteMoneyOutcome(document));
                         },
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: MoneyOutcomeCard(
-                            isSelectionMode: _selectionMode,
-                            isSelected: (state as MoneyOutcomeLoaded).selectedData?.contains(document) ?? false,
-                            document: document,
-                            onLongPress: (document) {
-                              if (_selectionMode) return;
-                              setState(() {
-                                _selectionMode = true;
-                              });
-                              _moneyOutcomeBloc.add(SelectDocument(document));
-                            },
-                            onClick: (document) {
-                              if (_selectionMode) {
-                                final currentState = context.read<MoneyOutcomeBloc>().state;
-                                if (currentState is MoneyOutcomeLoaded) {
-                                  final selectedCount = currentState.selectedData?.length ?? 0;
-                                  if (selectedCount <= 1 && currentState.selectedData?.contains(document) == true) {
-                                    setState(() {
-                                      _selectionMode = false;
-                                    });
-                                  }
-                                }
-
-                                _moneyOutcomeBloc.add(SelectDocument(document));
-                              } else {
-                                if (document.deletedAt == null) {
-                                  _navigateToEditScreen(context, document);
-                                }
-                              }
-                            },
-                            /*onDelete: () {
-                              debugPrint("show delete dialog for document ID: ${document.id}");
-                              showDeleteDialog(
-                                  context: context,
-                                  document: currentData[index],
-                                  onDelete: () {
-                                    _moneyOutcomeBloc.add(DeleteMoneyOutcome(document));
-                                  });
-                            },*/
-                          ),
-                        ),
-                      );
+                        child: _buildMoneyOutcomeCard(document, state),
+                      )
+                          : _buildMoneyOutcomeCard(document, state);
                     },
                   ),
                 );
               },
             ),
           ),
-          floatingActionButton: PopupMenuButton<String>(
+          // ИЗМЕНЕНО: Показываем FAB только если есть право на создание
+          floatingActionButton: _hasCreatePermission
+              ? PopupMenuButton<String>(
             key: const Key('create_money_outcome_button'),
             onSelected: (String value) async {
               if (!mounted) return;
@@ -513,9 +483,7 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
 
               if (value == MoneyOutcomeOperationType.client_return.name) {
                 targetScreen = const AddMoneyOutcomeFromClient();
-              } /*else if (value == MoneyOutcomeOperationType.send_another_cash_register.name) {
-                targetScreen = const AddMoneyOutcomeAnotherCashRegister();
-              }*/ else if (value == MoneyOutcomeOperationType.other_expenses.name) {
+              } else if (value == MoneyOutcomeOperationType.other_expenses.name) {
                 targetScreen = const AddMoneyOutcomeOtherOutcome();
               } else if (value == MoneyOutcomeOperationType.supplier_payment.name) {
                 targetScreen = const AddMoneyOutcomeSupplierReturn();
@@ -563,30 +531,6 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                     ],
                   ),
                 ),
-                // PopupMenuItem<String>(
-                //   value: MoneyOutcomeOperationType.send_another_cash_register.name,
-                //   child: Row(
-                //     children: [
-                //       const Icon(
-                //         Icons.swap_horiz,
-                //         color: Color(0xff1E2E52),
-                //         size: 20,
-                //       ),
-                //       const SizedBox(width: 12),
-                //       Expanded(
-                //         child: Text(
-                //           localizations.translate(MoneyOutcomeOperationType.send_another_cash_register.name),
-                //           style: const TextStyle(
-                //             fontSize: 14,
-                //             fontFamily: 'Gilroy',
-                //             fontWeight: FontWeight.w500,
-                //             color: Color(0xff1E2E52),
-                //           ),
-                //         ),
-                //       ),
-                //     ],
-                //   ),
-                // ),
                 PopupMenuItem<String>(
                   value: MoneyOutcomeOperationType.other_expenses.name,
                   child: Row(
@@ -654,7 +598,48 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                 size: 24,
               ),
             ),
-          )),
+          )
+              : null),
+    );
+  }
+
+  Widget _buildMoneyOutcomeCard(Document document, MoneyOutcomeState state) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: MoneyOutcomeCard(
+        isSelectionMode: _selectionMode,
+        isSelected: (state as MoneyOutcomeLoaded).selectedData?.contains(document) ?? false,
+        document: document,
+        // ИЗМЕНЕНО: Разрешаем долгое нажатие только если есть право на удаление
+        onLongPress: _hasDeletePermission
+            ? (document) {
+                if (_selectionMode) return;
+                setState(() {
+                  _selectionMode = true;
+                });
+                _moneyOutcomeBloc.add(SelectDocument(document));
+              }
+            : (document) {},
+        onClick: (document) {
+          if (_selectionMode) {
+            final currentState = context.read<MoneyOutcomeBloc>().state;
+            if (currentState is MoneyOutcomeLoaded) {
+              final selectedCount = currentState.selectedData?.length ?? 0;
+              if (selectedCount <= 1 && currentState.selectedData?.contains(document) == true) {
+                setState(() {
+                  _selectionMode = false;
+                });
+              }
+            }
+
+            _moneyOutcomeBloc.add(SelectDocument(document));
+          } else {
+            if (document.deletedAt == null) {
+              _navigateToEditScreen(context, document);
+            }
+          }
+        },
+      ),
     );
   }
 }

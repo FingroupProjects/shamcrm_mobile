@@ -22,11 +22,16 @@ class MovementDocumentDetailsScreen extends StatefulWidget {
   final int documentId;
   final String docNumber;
   final VoidCallback? onDocumentUpdated;
+  // НОВОЕ: Добавляем параметры прав доступа
+  final bool hasUpdatePermission;
+  final bool hasDeletePermission;
 
   const MovementDocumentDetailsScreen({
     required this.documentId,
     required this.docNumber,
     this.onDocumentUpdated,
+    this.hasUpdatePermission = false,
+    this.hasDeletePermission = false,
     super.key,
   });
 
@@ -42,8 +47,8 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
   bool _isButtonLoading = false;
   String? baseUrl;
   bool _documentUpdated = false;
-  bool _goodMeasurementEnabled = true; // добавляем флаг
-  // Map для хранения единиц измерения
+  bool _goodMeasurementEnabled = true;
+  
   final Map<int, String> _unitMap = {
     23: 'шт',
   };
@@ -53,15 +58,16 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
     super.initState();
     _initializeBaseUrl();
     _fetchDocumentDetails();
-        _loadGoodMeasurementSetting(); // загружаем настройку
+    _loadGoodMeasurementSetting();
   }
-    // Добавляем метод загрузки настройки
+
   Future<void> _loadGoodMeasurementSetting() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _goodMeasurementEnabled = prefs.getBool('good_measurement') ?? true;
     });
   }
+
   Future<void> _initializeBaseUrl() async {
     try {
       final staticBaseUrl = await _apiService.getStaticBaseUrl();
@@ -289,6 +295,7 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
 
     if (currentDocument == null) return const SizedBox.shrink();
 
+    // НОВОЕ: Если документ удалён - показываем кнопку восстановления
     if (currentDocument!.deletedAt != null) {
       return StyledActionButton(
         text: AppLocalizations.of(context)!.translate('restore_document') ?? 'Восстановить',
@@ -296,6 +303,11 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
         color: const Color(0xFF2196F3),
         onPressed: _restoreDocument,
       );
+    }
+
+    // НОВОЕ: Кнопки провести/отменить проведение требуют права UPDATE
+    if (!widget.hasUpdatePermission) {
+      return const SizedBox.shrink();
     }
 
     if (currentDocument!.approved == 0) {
@@ -423,7 +435,9 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
   }
 
   AppBar _buildAppBar(BuildContext context) {
-    final showActions = currentDocument?.deletedAt == null;
+    // ИЗМЕНЕНО: Показываем кнопки только если есть права И документ не удалён
+    final showActions = currentDocument?.deletedAt == null && 
+                        (widget.hasUpdatePermission || widget.hasDeletePermission);
 
     return AppBar(
       backgroundColor: Colors.white,
@@ -462,52 +476,56 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  IconButton(
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    icon: Image.asset(
-                      'assets/icons/edit.png',
-                      width: 24,
-                      height: 24,
-                    ),
-                    onPressed: () async {
-                      final result = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => EditMovementDocumentScreen(
-                            document: currentDocument!,
+                  // НОВОЕ: Кнопка редактирования только если есть право
+                  if (widget.hasUpdatePermission)
+                    IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      icon: Image.asset(
+                        'assets/icons/edit.png',
+                        width: 24,
+                        height: 24,
+                      ),
+                      onPressed: () async {
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => EditMovementDocumentScreen(
+                              document: currentDocument!,
+                            ),
                           ),
-                        ),
-                      );
+                        );
 
-                      if (result == true) {
-                        _fetchDocumentDetails();
-                        if (widget.onDocumentUpdated != null) {
-                          widget.onDocumentUpdated!();
+                        if (result == true) {
+                          _fetchDocumentDetails();
+                          if (widget.onDocumentUpdated != null) {
+                            widget.onDocumentUpdated!();
+                          }
                         }
-                      }
-                    },
-                  ),
-                  IconButton(
-                    padding: const EdgeInsets.only(right: 8),
-                    constraints: const BoxConstraints(),
-                    icon: Image.asset(
-                      'assets/icons/delete.png',
-                      width: 24,
-                      height: 24,
+                      },
                     ),
-                    onPressed: () {
-                      showDialog(
-                        context: context,
-                        builder: (BuildContext context) {
-                          return BlocProvider.value(
-                            value: BlocProvider.of<MovementBloc>(context),
-                            child: MovementDeleteDocumentDialog(documentId: widget.documentId),
-                          );
-                        },
-                      );
-                    },
-                  ),
+                  // НОВОЕ: Кнопка удаления только если есть право
+                  if (widget.hasDeletePermission)
+                    IconButton(
+                      padding: const EdgeInsets.only(right: 8),
+                      constraints: const BoxConstraints(),
+                      icon: Image.asset(
+                        'assets/icons/delete.png',
+                        width: 24,
+                        height: 24,
+                      ),
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return BlocProvider.value(
+                              value: BlocProvider.of<MovementBloc>(context),
+                              child: MovementDeleteDocumentDialog(documentId: widget.documentId),
+                            );
+                          },
+                        );
+                      },
+                    ),
                 ],
               ),
             ]
@@ -617,112 +635,110 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
     );
   }
 
-Widget _buildGoodsItem(DocumentGood good) {
-  // Извлекаем единицу измерения из good.good?.units
-  final availableUnits = good.good?.units ?? [];
-  final selectedUnit = availableUnits.firstWhere(
-    (unit) => unit.id == good.unitId,
-    orElse: () => Unit(id: 23, name: 'шт', shortName: 'шт'),
-  );
-  final unitShortName = selectedUnit.shortName ?? selectedUnit.name ?? 'шт';
+  Widget _buildGoodsItem(DocumentGood good) {
+    final availableUnits = good.good?.units ?? [];
+    final selectedUnit = availableUnits.firstWhere(
+      (unit) => unit.id == good.unitId,
+      orElse: () => Unit(id: 23, name: 'шт', shortName: 'шт'),
+    );
+    final unitShortName = selectedUnit.shortName ?? selectedUnit.name ?? 'шт';
 
-  return GestureDetector(
-    onTap: () {
-      _navigateToGoodsDetails(good);
-    },
-    child: Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Container(
-        decoration: TaskCardStyles.taskCardDecoration,
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              _buildImageWidget(good),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      good.fullName ?? good.good?.name ?? 'N/A',
-                      style: TaskCardStyles.titleStyle.copyWith(fontSize: 14),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        // Ед. изм.
-                        if (_goodMeasurementEnabled)
-                        Expanded(
-                          flex: 2,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                AppLocalizations.of(context)!.translate('unit') ?? 'Ед.',
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  fontFamily: 'Gilroy',
-                                  fontWeight: FontWeight.w400,
-                                  color: Color(0xff99A4BA),
-                                ),
+    return GestureDetector(
+      onTap: () {
+        _navigateToGoodsDetails(good);
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Container(
+          decoration: TaskCardStyles.taskCardDecoration,
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                _buildImageWidget(good),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        good.fullName ?? good.good?.name ?? 'N/A',
+                        style: TaskCardStyles.titleStyle.copyWith(fontSize: 14),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          if (_goodMeasurementEnabled)
+                            Expanded(
+                              flex: 2,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    AppLocalizations.of(context)!.translate('unit') ?? 'Ед.',
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      fontFamily: 'Gilroy',
+                                      fontWeight: FontWeight.w400,
+                                      color: Color(0xff99A4BA),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    unitShortName,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontFamily: 'Gilroy',
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xff1E2E52),
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(height: 2),
-                              Text(
-                                unitShortName,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontFamily: 'Gilroy',
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xff1E2E52),
+                            ),
+                          Expanded(
+                            flex: 3,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  AppLocalizations.of(context)!.translate('quantity') ?? 'Кол-во',
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    fontFamily: 'Gilroy',
+                                    fontWeight: FontWeight.w400,
+                                    color: Color(0xff99A4BA),
+                                  ),
                                 ),
-                              ),
-                            ],
+                                const SizedBox(height: 2),
+                                Text(
+                                  '${good.quantity ?? 0}',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontFamily: 'Gilroy',
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xff1E2E52),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                        // Количество
-                        Expanded(
-                          flex: 3,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                AppLocalizations.of(context)!.translate('quantity') ?? 'Кол-во',
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  fontFamily: 'Gilroy',
-                                  fontWeight: FontWeight.w400,
-                                  color: Color(0xff99A4BA),
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                '${good.quantity ?? 0}',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontFamily: 'Gilroy',
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xff1E2E52),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
+
   Widget _buildImageWidget(DocumentGood good) {
     if (baseUrl == null || good.good == null || good.good!.files == null || good.good!.files!.isEmpty) {
       return _buildPlaceholderImage();

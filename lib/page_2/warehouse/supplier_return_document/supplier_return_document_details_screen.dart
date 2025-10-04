@@ -22,11 +22,16 @@ class SupplierReturnDocumentDetailsScreen extends StatefulWidget {
   final int documentId;
   final String docNumber;
   final VoidCallback? onDocumentUpdated;
+  // НОВОЕ: Параметры прав доступа
+  final bool hasUpdatePermission;
+  final bool hasDeletePermission;
 
   const SupplierReturnDocumentDetailsScreen({
     required this.documentId,
     required this.docNumber,
     this.onDocumentUpdated,
+    this.hasUpdatePermission = false,
+    this.hasDeletePermission = false,
     super.key,
   });
 
@@ -41,12 +46,10 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
   bool _isLoading = false;
   String? baseUrl;
   bool _documentUpdated = false;
-  bool _isButtonLoading = false; // Для загрузки только кнопок
-  bool _goodMeasurementEnabled = true; // добавляем флаг
-  // Map to store unit details (id -> shortName)
+  bool _isButtonLoading = false;
+  bool _goodMeasurementEnabled = true;
   final Map<int, String> _unitMap = {
-    23: 'шт', // Based on JSON unit_id: 23
-    // Add more mappings or fetch dynamically
+    23: 'шт',
   };
 
   @override
@@ -54,15 +57,16 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
     super.initState();
     _initializeBaseUrl();
     _fetchDocumentDetails();
-        _loadGoodMeasurementSetting(); // загружаем настройку
+    _loadGoodMeasurementSetting();
   }
-      // Добавляем метод загрузки настройки
+
   Future<void> _loadGoodMeasurementSetting() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _goodMeasurementEnabled = prefs.getBool('good_measurement') ?? true;
     });
   }
+
   Future<void> _initializeBaseUrl() async {
     try {
       final staticBaseUrl = await _apiService.getStaticBaseUrl();
@@ -96,73 +100,70 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
         showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
         return;
       }
-      _showSnackBar(
-          AppLocalizations.of(context)!.translate('error_loading_document') ??
-              'Ошибка загрузки документа: $e',
-          false);
+      _showSnackBar('Ошибка загрузки документа: $e', false);
     }
   }
 
- void _updateDetails(IncomingDocument? document) {
-  if (document == null) {
-    details.clear();
-    return;
-  }
+  void _updateDetails(IncomingDocument? document) {
+    if (document == null) {
+      details.clear();
+      return;
+    }
 
-  details = [
-    {
-      'label': '${AppLocalizations.of(context)!.translate('document_number') ?? 'Номер документа'}:',
-      'value': document.docNumber ?? '',
-    },
-    {
-      'label': '${AppLocalizations.of(context)!.translate('date') ?? 'Дата'}:',
-      'value': document.date != null ? DateFormat('dd.MM.yyyy').format(document.date!) : '',
-    },
-    {
-      'label': '${AppLocalizations.of(context)!.translate('storage') ?? 'Склад'}:',
-      'value': document.storage?.name ?? '',
-    },
-    {
-      'label': '${AppLocalizations.of(context)!.translate('supplier') ?? 'Поставщик'}:',
-      'value': document.model?.name ?? '',
-    },
-    {
-      'label': '${AppLocalizations.of(context)!.translate('supplier_phone') ?? 'Телефон поставщика'}:',
-      'value': document.model?.phone ?? '',
-    },
-    {
-      'label': '${AppLocalizations.of(context)!.translate('supplier_inn') ?? 'ИНН поставщика'}:',
-      'value': document.model?.inn?.toString() ?? '',
-    },
-    {
-      'label': '${AppLocalizations.of(context)!.translate('comment') ?? 'Комментарий'}',
-      'value': document.comment ?? '',
-    },
-    {
-      'label': '${AppLocalizations.of(context)!.translate('total_quantity') ?? 'Общее количество'}:',
-      'value': document.totalQuantity.toString(),
-    },
-    {
-      'label': '${AppLocalizations.of(context)!.translate('total_sum') ?? 'Общая сумма'}:',
-      'value': '${document.totalSum.toStringAsFixed(2)} ${document.currency?.symbolCode ?? ''}',
-    },
-    {
-      'label': '${AppLocalizations.of(context)!.translate('status') ?? 'Статус'}:',
-      'value': _getLocalizedStatus(document),
-    },
-    if (document.deletedAt != null)
+    details = [
       {
-        'label': '${AppLocalizations.of(context)!.translate('deleted_at') ?? 'Дата удаления'}:',
-        'value': DateFormat('dd.MM.yyyy HH:mm').format(document.deletedAt!),
+        'label': '${AppLocalizations.of(context)!.translate('document_number') ?? 'Номер документа'}:',
+        'value': document.docNumber ?? '',
       },
-  ];
-}
+      {
+        'label': '${AppLocalizations.of(context)!.translate('date') ?? 'Дата'}:',
+        'value': document.date != null ? DateFormat('dd.MM.yyyy').format(document.date!) : '',
+      },
+      {
+        'label': '${AppLocalizations.of(context)!.translate('storage') ?? 'Склад'}:',
+        'value': document.storage?.name ?? '',
+      },
+      {
+        'label': '${AppLocalizations.of(context)!.translate('supplier') ?? 'Поставщик'}:',
+        'value': document.model?.name ?? '',
+      },
+      {
+        'label': '${AppLocalizations.of(context)!.translate('supplier_phone') ?? 'Телефон поставщика'}:',
+        'value': document.model?.phone ?? '',
+      },
+      {
+        'label': '${AppLocalizations.of(context)!.translate('supplier_inn') ?? 'ИНН поставщика'}:',
+        'value': document.model?.inn?.toString() ?? '',
+      },
+      {
+        'label': '${AppLocalizations.of(context)!.translate('comment') ?? 'Комментарий'}',
+        'value': document.comment ?? '',
+      },
+      {
+        'label': '${AppLocalizations.of(context)!.translate('total_quantity') ?? 'Общее количество'}:',
+        'value': document.totalQuantity.toString(),
+      },
+      {
+        'label': '${AppLocalizations.of(context)!.translate('total_sum') ?? 'Общая сумма'}:',
+        'value': '${document.totalSum.toStringAsFixed(2)} ${document.currency?.symbolCode ?? ''}',
+      },
+      {
+        'label': '${AppLocalizations.of(context)!.translate('status') ?? 'Статус'}:',
+        'value': _getLocalizedStatus(document),
+      },
+      if (document.deletedAt != null)
+        {
+          'label': '${AppLocalizations.of(context)!.translate('deleted_at') ?? 'Дата удаления'}:',
+          'value': DateFormat('dd.MM.yyyy HH:mm').format(document.deletedAt!),
+        },
+    ];
+  }
 
   String _getLocalizedStatus(IncomingDocument document) {
     final localizations = AppLocalizations.of(context)!;
     
     if (document.deletedAt != null) {
-      return localizations.translate('deleted_supplier_return') ?? 'Удален';
+      return localizations.translate('deleted') ?? 'Удален'; // ИЗМЕНЕНО: Унифицировано
     }
     
     if (document.approved == 1) {
@@ -194,7 +195,6 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
     );
   }
 
-  // Обновляем только статус без полной перезагрузки
   void _updateStatusOnly() {
     if (currentDocument != null) {
       setState(() {
@@ -204,12 +204,17 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
   }
 
   Future<void> _approveDocument() async {
+    // НОВОЕ: Проверяем update-право
+    if (!widget.hasUpdatePermission) {
+      _showSnackBar('Нет прав на проведение документа', false);
+      return;
+    }
+
     setState(() {
       _isButtonLoading = true;
     });
     try {
       await _apiService.approveSupplierReturnDocument(widget.documentId);
-      // Обновляем статус в объекте
       setState(() {
         currentDocument = currentDocument!.copyWith(approved: 1);
         _documentUpdated = true;
@@ -231,6 +236,12 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
   }
 
   Future<void> _unApproveDocument() async {
+    // НОВОЕ: Проверяем update-право
+    if (!widget.hasUpdatePermission) {
+      _showSnackBar('Нет прав на отмену проведения', false);
+      return;
+    }
+
     setState(() {
       _isButtonLoading = true;
     });
@@ -244,11 +255,10 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
       _showSnackBar('Проведение документа отменено', true);
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
-      final localizations = AppLocalizations.of(context)!;
-      showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
-      return;
-    }
-
+        final localizations = AppLocalizations.of(context)!;
+        showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
+        return;
+      }
       _showSnackBar('Ошибка при отмене проведения документа: $e', false);
     } finally {
       setState(() {
@@ -258,13 +268,19 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
   }
 
   Future<void> _restoreDocument() async {
+    // НОВОЕ: Привязываем к update-праву
+    if (!widget.hasUpdatePermission) {
+      _showSnackBar('Нет прав на восстановление', false);
+      return;
+    }
+
     setState(() {
       _isButtonLoading = true;
     });
     try {
       await _apiService.restoreSupplierReturnDocument(widget.documentId);
       setState(() {
-        currentDocument = currentDocument!.copyWith(clearDeletedAt: true);
+        currentDocument = currentDocument!.copyWith(deletedAt: null);
         _documentUpdated = true;
       });
       _updateStatusOnly();
@@ -289,7 +305,7 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
         height: 48,
         width: 200,
         decoration: BoxDecoration(
-          color: const Color.fromARGB(255, 255, 255, 255),
+          color: Colors.white,
           borderRadius: BorderRadius.circular(8),
         ),
         child: const Center(
@@ -307,8 +323,9 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
 
     if (currentDocument == null) return const SizedBox.shrink();
 
-    // Если документ удален - показываем кнопку восстановления
+    // НОВОЕ: Если удалён — restore только с update-правом
     if (currentDocument!.deletedAt != null) {
+      if (!widget.hasUpdatePermission) return const SizedBox.shrink();
       return StyledActionButton(
         text: AppLocalizations.of(context)!.translate('restore_document') ?? 'Восстановить',
         icon: Icons.restore,
@@ -317,7 +334,11 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
       );
     }
 
-    // Если не проведен - показываем кнопку проведения
+    // НОВОЕ: approve/unapprove только с update-правом
+    if (!widget.hasUpdatePermission) {
+      return const SizedBox.shrink();
+    }
+
     if (currentDocument!.approved == 0) {
       return StyledActionButton(
         text: AppLocalizations.of(context)!.translate('approve_document') ?? 'Провести',
@@ -327,7 +348,6 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
       );
     }
 
-    // Если проведен - показываем кнопку отмены проведения
     return StyledActionButton(
       text: AppLocalizations.of(context)!.translate('unapprove_document') ?? 'Отменить проведение',
       icon: Icons.cancel_outlined,
@@ -392,62 +412,64 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
     );
   }
 
-  // TODO check delete error message (use as a reference: IncomingDocumentDetailsScreen)
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      onPopInvoked: (didPop) {
-        if (didPop && _documentUpdated && widget.onDocumentUpdated != null) {
-          widget.onDocumentUpdated!();
-        }
-      },
-      child: Scaffold(
-        appBar: _buildAppBar(context),
-        backgroundColor: Colors.white,
-        body: _isLoading
-            ? Center(
-                child: PlayStoreImageLoading(
-                  size: 80.0,
-                  duration: Duration(milliseconds: 1000),
-                ),
-              )
-            : currentDocument == null
-                ? Center(
-                    child: Text(
-                      AppLocalizations.of(context)!.translate('document_data_unavailable') ?? 'Данные документа недоступны',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xff99A4BA),
+    return BlocProvider<SupplierReturnBloc>( // НОВОЕ: BlocProvider
+      create: (context) => SupplierReturnBloc(context.read<ApiService>()),
+      child: PopScope(
+        onPopInvoked: (didPop) {
+          if (didPop && _documentUpdated && widget.onDocumentUpdated != null) {
+            widget.onDocumentUpdated!();
+          }
+        },
+        child: Scaffold(
+          appBar: _buildAppBar(context),
+          backgroundColor: Colors.white,
+          body: _isLoading
+              ? Center(
+                  child: PlayStoreImageLoading(
+                    size: 80.0,
+                    duration: Duration(milliseconds: 1000),
+                  ),
+                )
+              : currentDocument == null
+                  ? Center(
+                      child: Text(
+                        AppLocalizations.of(context)!.translate('document_data_unavailable') ?? 'Данные документа недоступны',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xff99A4BA),
+                        ),
+                      ),
+                    )
+                  : Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                      child: ListView(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            child: Center(child: _buildActionButton()),
+                          ),
+                          _buildDetailsList(),
+                          const SizedBox(height: 16),
+                          if (currentDocument!.documentGoods != null && currentDocument!.documentGoods!.isNotEmpty) ...[
+                            _buildGoodsList(currentDocument!.documentGoods!),
+                            const SizedBox(height: 16),
+                          ],
+                        ],
                       ),
                     ),
-                  )
-                : Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                    child: ListView(
-                      children: [
-                        // Кнопка действия (Провести/Отменить/Восстановить)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: Center(child: _buildActionButton()),
-                        ),
-                        _buildDetailsList(),
-                        const SizedBox(height: 16),
-                        if (currentDocument!.documentGoods != null && currentDocument!.documentGoods!.isNotEmpty) ...[
-                          _buildGoodsList(currentDocument!.documentGoods!),
-                          const SizedBox(height: 16),
-                        ],
-                      ],
-                    ),
-                  ),
+        ),
       ),
     );
   }
 
   AppBar _buildAppBar(BuildContext context) {
-    // Скрываем иконки редактирования и удаления для удаленных документов
-    final showActions = currentDocument?.deletedAt == null;
+    // ИЗМЕНЕНО: showActions с правами
+    final showActions = currentDocument?.deletedAt == null && 
+                        (widget.hasUpdatePermission || widget.hasDeletePermission);
 
     return AppBar(
       backgroundColor: Colors.white,
@@ -485,52 +507,56 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            IconButton(
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-              icon: Image.asset(
-                'assets/icons/edit.png',
-                width: 24,
-                height: 24,
-              ),
-              onPressed: () async {
-                final result = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => SupplierReturnDocumentEditScreen(
-                      document: currentDocument!,
+            // НОВОЕ: Edit только с update-правом
+            if (widget.hasUpdatePermission)
+              IconButton(
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                icon: Image.asset(
+                  'assets/icons/edit.png',
+                  width: 24,
+                  height: 24,
+                ),
+                onPressed: () async {
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => SupplierReturnDocumentEditScreen(
+                        document: currentDocument!,
+                      ),
                     ),
-                  ),
-                );
-                
-                if (result == true) {
-                  _fetchDocumentDetails();
-                  if (widget.onDocumentUpdated != null) {
-                    widget.onDocumentUpdated!();
+                  );
+                  
+                  if (result == true) {
+                    _fetchDocumentDetails();
+                    if (widget.onDocumentUpdated != null) {
+                      widget.onDocumentUpdated!();
+                    }
                   }
-                }
-              },
-            ),
-            IconButton(
-              padding: const EdgeInsets.only(right: 8),
-              constraints: const BoxConstraints(),
-              icon: Image.asset(
-                'assets/icons/delete.png',
-                width: 24,
-                height: 24,
+                },
               ),
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (BuildContext context) {
-                    return BlocProvider.value(
-                      value: BlocProvider.of<SupplierReturnBloc>(context),
-                      child: SupplierReturnDeleteDocumentDialog(documentId: widget.documentId),
-                    );
-                  },
-                );
-              },
-            ),
+            // НОВОЕ: Delete только с delete-правом
+            if (widget.hasDeletePermission)
+              IconButton(
+                padding: const EdgeInsets.only(right: 8),
+                constraints: const BoxConstraints(),
+                icon: Image.asset(
+                  'assets/icons/delete.png',
+                  width: 24,
+                  height: 24,
+                ),
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return BlocProvider.value(
+                        value: BlocProvider.of<SupplierReturnBloc>(context),
+                        child: SupplierReturnDeleteDocumentDialog(documentId: widget.documentId),
+                      );
+                    },
+                  );
+                },
+              ),
           ],
         ),
       ] : [],
@@ -599,46 +625,46 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
     );
   }
 
-Widget _buildGoodsList(List<DocumentGood> goods) {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      _buildTitleRow(AppLocalizations.of(context)!.translate('goods') ?? 'Товары'),
-      const SizedBox(height: 8),
-      if (goods.isEmpty)
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Container(
-            decoration: TaskCardStyles.taskCardDecoration,
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  AppLocalizations.of(context)!.translate('empty') ?? 'Нет товаров',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xff1E2E52),
+  Widget _buildGoodsList(List<DocumentGood> goods) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildTitleRow(AppLocalizations.of(context)!.translate('goods') ?? 'Товары'),
+        const SizedBox(height: 8),
+        if (goods.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Container(
+              decoration: TaskCardStyles.taskCardDecoration,
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    AppLocalizations.of(context)!.translate('empty') ?? 'Нет товаров',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xff1E2E52),
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.center,
                 ),
               ),
             ),
+          )
+        else
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: goods.length,
+            itemBuilder: (context, index) {
+              return _buildGoodsItem(goods[index]);
+            },
           ),
-        )
-      else
-        ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: goods.length,
-          itemBuilder: (context, index) {
-            return _buildGoodsItem(goods[index]);
-          },
-        ),
-    ],
-  );
-}
+      ],
+    );
+  }
 
   Widget _buildGoodsItem(DocumentGood good) {
     final unitShortName = good.good?.unitId != null
@@ -673,7 +699,6 @@ Widget _buildGoodsList(List<DocumentGood> goods) {
                       const SizedBox(height: 8),
                       Row(
                         children: [
-                          // Ед. изм.
                           if (_goodMeasurementEnabled)
                           Expanded(
                             flex: 2,
@@ -681,7 +706,6 @@ Widget _buildGoodsList(List<DocumentGood> goods) {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  // change this
                                   AppLocalizations.of(context)!.translate('unit') ?? 'Ед.',
                                   style: const TextStyle(
                                     fontSize: 10,
@@ -703,7 +727,6 @@ Widget _buildGoodsList(List<DocumentGood> goods) {
                               ],
                             ),
                           ),
-                          // Количество
                           Expanded(
                             flex: 2,
                             child: Column(
@@ -731,7 +754,6 @@ Widget _buildGoodsList(List<DocumentGood> goods) {
                               ],
                             ),
                           ),
-                          // Цена
                           Expanded(
                             flex: 3,
                             child: Column(
@@ -763,7 +785,6 @@ Widget _buildGoodsList(List<DocumentGood> goods) {
                         ],
                       ),
                       const SizedBox(height: 8),
-                      // Итого на отдельной строке
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                         decoration: BoxDecoration(
@@ -856,7 +877,7 @@ Widget _buildGoodsList(List<DocumentGood> goods) {
         builder: (context) => GoodsDetailsScreen(
           id: goodId,
           isFromOrder: false,
-          showEditButton: false, // Скрываем кнопку редактирования
+          showEditButton: false,
         ),
       ),
     );

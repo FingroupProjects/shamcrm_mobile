@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/expense/add/add_expense_bloc.dart';
 import 'package:crm_task_manager/page_2/money/money_references/expense/add_expense_screen.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
@@ -24,11 +25,37 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
   final ScrollController _scrollController = ScrollController();
   bool isClickAvatarIcon = false;
 
+  // НОВОЕ: Флаги прав доступа
+  bool _hasCreatePermission = false;
+  bool _hasUpdatePermission = false;
+  bool _hasDeletePermission = false;
+  final ApiService _apiService = ApiService();
+
   @override
   void initState() {
     super.initState();
+    _checkPermissions();
     context.read<ExpenseBloc>().add(const FetchExpenses());
     _scrollController.addListener(_onScroll);
+  }
+
+  // НОВОЕ: Проверка прав доступа
+  Future<void> _checkPermissions() async {
+    try {
+      final create = await _apiService.hasPermission('rko_articles.create');
+      final update = await _apiService.hasPermission('rko_articles.update');
+      final delete = await _apiService.hasPermission('rko_articles.delete');
+
+      if (mounted) {
+        setState(() {
+          _hasCreatePermission = create;
+          _hasUpdatePermission = update;
+          _hasDeletePermission = delete;
+        });
+      }
+    } catch (e) {
+      debugPrint('Ошибка при проверке прав доступа: $e');
+    }
   }
 
   @override
@@ -75,90 +102,103 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
           currentFilters: {},
         ),
       ),
-      body: isClickAvatarIcon ?
-          ProfileScreen() :
-          BlocBuilder<ExpenseBloc, ExpenseState>(
-        builder: (context, state) {
-          if (state.status == ExpenseStatus.initialLoading) {
-            return Center(
-              child: PlayStoreImageLoading(
-                size: 80.0,
-                duration: const Duration(milliseconds: 1000),
-              ),
-            );
-          } else if (state.status == ExpenseStatus.initialError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text('Ошибка загрузки'),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () {
-                      return context
-                          .read<ExpenseBloc>()
-                          .add(const FetchExpenses());
-                    },
-                    child: const Text('Повторить'),
-                  ),
-                ],
-              ),
-            );
-          } else if (state.status == ExpenseStatus.initialLoaded ||
-              state.status == ExpenseStatus.loadingMore) {
-            final expenses = state.expenses;
-            if (expenses.isEmpty) {
-              return const Center(
-                child: Text(
-                  'Нет данных',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
-                  ),
-                ),
-              );
-            }
-            return RefreshIndicator(
-              onRefresh: () async {
-                context
-                    .read<ExpenseBloc>()
-                    .add(const FetchExpenses());
-              },
-              child: ListView.builder(
-                controller: _scrollController,
-                padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                itemCount: expenses.length +
-                    (state.status == ExpenseStatus.loadingMore ? 1 : 0),
-                itemBuilder: (context, index) {
-                  if (index >= expenses.length) {
-                    // Show loading indicator at the bottom
-                    return Container(
-                      padding: const EdgeInsets.all(16),
-                      alignment: Alignment.center,
-                      child: PlayStoreImageLoading(
-                        size: 80.0,
-                        duration: const Duration(milliseconds: 1000),
+      body: isClickAvatarIcon
+          ? ProfileScreen()
+          : BlocBuilder<ExpenseBloc, ExpenseState>(
+              builder: (context, state) {
+                if (state.status == ExpenseStatus.initialLoading) {
+                  return Center(
+                    child: PlayStoreImageLoading(
+                      size: 80.0,
+                      duration: const Duration(milliseconds: 1000),
+                    ),
+                  );
+                } else if (state.status == ExpenseStatus.initialError) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          AppLocalizations.of(context)?.translate('error_loading') ?? 'Ошибка загрузки',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xff1E2E52),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () {
+                            context.read<ExpenseBloc>().add(const FetchExpenses());
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xff1E2E52),
+                            foregroundColor: Colors.white,
+                          ),
+                          child: Text(
+                            AppLocalizations.of(context)?.translate('retry') ?? 'Повторить',
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                } else if (state.status == ExpenseStatus.initialLoaded ||
+                    state.status == ExpenseStatus.loadingMore) {
+                  final expenses = state.expenses;
+                  if (expenses.isEmpty) {
+                    return Center(
+                      child: Text(
+                        AppLocalizations.of(context)?.translate('no_expenses') ?? 'Нет расходов',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xff99A4BA),
+                        ),
                       ),
                     );
                   }
+                  return RefreshIndicator(
+                    color: const Color(0xff1E2E52),
+                    backgroundColor: Colors.white,
+                    onRefresh: () async {
+                      context.read<ExpenseBloc>().add(const FetchExpenses());
+                    },
+                    child: ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      itemCount: expenses.length + (state.status == ExpenseStatus.loadingMore ? 1 : 0),
+                      itemBuilder: (context, index) {
+                        if (index >= expenses.length) {
+                          return Container(
+                            padding: const EdgeInsets.all(16),
+                            alignment: Alignment.center,
+                            child: PlayStoreImageLoading(
+                              size: 80.0,
+                              duration: const Duration(milliseconds: 1000),
+                            ),
+                          );
+                        }
 
-                  final data = expenses[index];
-                  return _buildExpenseCard(data);
-                },
-              ),
-            );
-          }
-          return const SizedBox();
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color(0xff1E2E52),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        onPressed: _navigateToAddExpense,
-        child: const Icon(Icons.add, color: Colors.white, size: 32),
-      ),
+                        final data = expenses[index];
+                        return _buildExpenseCard(data);
+                      },
+                    ),
+                  );
+                }
+                return const SizedBox();
+              },
+            ),
+      // ИЗМЕНЕНО: Показываем FAB только если есть право на создание
+      floatingActionButton: _hasCreatePermission
+          ? FloatingActionButton(
+              backgroundColor: const Color(0xff1E2E52),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              onPressed: _navigateToAddExpense,
+              child: const Icon(Icons.add, color: Colors.white, size: 32),
+            )
+          : null,
     );
   }
 
@@ -169,9 +209,12 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: () {
-            _navigateToEditExpense(data);
-          },
+          // ИЗМЕНЕНО: Открываем редактирование только если есть право
+          onTap: _hasUpdatePermission
+              ? () {
+                  _navigateToEditExpense(data);
+                }
+              : null,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
             decoration: BoxDecoration(
@@ -197,16 +240,18 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                     ],
                   ),
                 ),
-                GestureDetector(
-                  child: Image.asset(
-                    'assets/icons/delete.png',
-                    width: 24,
-                    height: 24,
+                // ИЗМЕНЕНО: Показываем кнопку удаления только если есть право
+                if (_hasDeletePermission)
+                  GestureDetector(
+                    child: Image.asset(
+                      'assets/icons/delete.png',
+                      width: 24,
+                      height: 24,
+                    ),
+                    onTap: () {
+                      _showDeleteConfirmation(data, context);
+                    },
                   ),
-                  onTap: () {
-                    _showDeleteConfirmation(data, context);
-                  },
-                ),
               ],
             ),
           ),
@@ -249,8 +294,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
     }
   }
 
-  void _showDeleteConfirmation(
-      ExpenseModel data, BuildContext parentContext) {
+  void _showDeleteConfirmation(ExpenseModel data, BuildContext parentContext) {
     showDialog(
       context: parentContext,
       builder: (BuildContext context) {
@@ -259,7 +303,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
           title: Center(
             child: Text(
               AppLocalizations.of(context)?.translate('delete_expense') ?? 'Удалить расход',
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 20,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w600,
@@ -269,7 +313,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
           ),
           content: Text(
             '${AppLocalizations.of(context)?.translate('delete_expense_confirm') ?? 'Вы уверены, что хотите удалить расход'} "${data.name}"?',
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 16,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w500,
@@ -282,8 +326,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
               children: [
                 Expanded(
                   child: CustomButton(
-                    buttonText:
-                    AppLocalizations.of(context)!.translate('cancel'),
+                    buttonText: AppLocalizations.of(context)!.translate('cancel'),
                     onPressed: () {
                       Navigator.of(context).pop();
                     },
@@ -291,20 +334,15 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                     textColor: Colors.white,
                   ),
                 ),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 Expanded(
                   child: CustomButton(
-                    buttonText:
-                    AppLocalizations.of(context)!.translate('delete'),
+                    buttonText: AppLocalizations.of(context)!.translate('delete'),
                     onPressed: () {
-                      // Use parentContext instead of context to access the ExpenseBloc
-                      parentContext
-                          .read<ExpenseBloc>()
-                          .add(DeleteExpense(data.id));
-                      Navigator.of(context)
-                          .pop(); // Use context for dialog navigation
+                      parentContext.read<ExpenseBloc>().add(DeleteExpense(data.id));
+                      Navigator.of(context).pop();
                     },
-                    buttonColor: Color(0xff1E2E52),
+                    buttonColor: const Color(0xff1E2E52),
                     textColor: Colors.white,
                   ),
                 ),

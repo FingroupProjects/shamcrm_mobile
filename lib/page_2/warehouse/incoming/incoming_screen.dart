@@ -36,12 +36,38 @@ class _IncomingScreenState extends State<IncomingScreen> {
   bool _hasReachedMax = false;
   bool _selectionMode = false;
 
+  // НОВОЕ: Флаги прав доступа
+  bool _hasCreatePermission = false;
+  bool _hasUpdatePermission = false;
+  bool _hasDeletePermission = false;
+  final ApiService _apiService = ApiService();
+
   @override
   void initState() {
     super.initState();
+    _checkPermissions();
     _incomingBloc = IncomingBloc(ApiService())
       ..add(const FetchIncoming(forceRefresh: true));
     _scrollController.addListener(_onScroll);
+  }
+
+  // НОВОЕ: Проверка прав доступа
+  Future<void> _checkPermissions() async {
+    try {
+      final create = await _apiService.hasPermission('income_document.create');
+      final update = await _apiService.hasPermission('income_document.update');
+      final delete = await _apiService.hasPermission('income_document.delete');
+
+      if (mounted) {
+        setState(() {
+          _hasCreatePermission = create;
+          _hasUpdatePermission = update;
+          _hasDeletePermission = delete;
+        });
+      }
+    } catch (e) {
+      debugPrint('Ошибка при проверке прав доступа: $e');
+    }
   }
 
   @override
@@ -167,7 +193,8 @@ class _IncomingScreenState extends State<IncomingScreen> {
                           (doc) => doc.approved == 0 && doc.deletedAt == null);
                       bool showDisapprove = state.selectedData!.any(
                           (doc) => doc.approved == 1 && doc.deletedAt == null);
-                      bool showDelete = state.selectedData!
+                      // ИЗМЕНЕНО: Показываем кнопку удаления только если есть право
+                      bool showDelete = _hasDeletePermission && state.selectedData!
                           .any((doc) => doc.deletedAt == null);
                       bool showRestore = state.selectedData!
                           .any((doc) => doc.deletedAt != null);
@@ -334,7 +361,6 @@ class _IncomingScreenState extends State<IncomingScreen> {
             } else if (state is IncomingDeleteSuccess) {
               _showSnackBar(state.message, true);
               if (state.shouldReload) {
-                // ✅ Перед перезагрузкой временно показываем загрузку
                 setState(() {
                   _hasReachedMax = false;
                 });
@@ -405,7 +431,6 @@ class _IncomingScreenState extends State<IncomingScreen> {
           },
           child: BlocBuilder<IncomingBloc, IncomingState>(
             builder: (context, state) {
-              // ✅ Показываем загрузку при удалении последнего элемента
               if (state is IncomingLoading || state is IncomingDeleteLoading) {
                 return Center(
                   child: PlayStoreImageLoading(
@@ -462,134 +487,138 @@ class _IncomingScreenState extends State<IncomingScreen> {
                             )
                           : const SizedBox.shrink();
                     }
-                    return Dismissible(
-                        key: Key(currentData[index].id.toString()),
-                        direction: DismissDirection.endToStart,
-                        background: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.red,
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          alignment: Alignment.centerRight,
-                          child: const Icon(Icons.delete,
-                              color: Colors.white, size: 24),
-                        ),
-                        confirmDismiss: (direction) async {
-                          return currentData[index].deletedAt == null;
-                        },
-                        onDismissed: (direction) {
-                          print(
-                              "🗑️ [UI] Удаление документа ID: ${currentData[index].id}");
-                          // ❌ Убираем setState с removeAt
-                          _incomingBloc.add(DeleteIncoming(
-                            currentData[index].id!,
-                            localizations!,
-                            shouldReload: true, // ✅ Всегда перезагружаем
-                          ));
-                        },
-                        child: ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: IncomingCard(
-                              onTap: () {
-                                if (_selectionMode) {
-                                  _incomingBloc
-                                      .add(SelectDocument(currentData[index]));
-
-                                  final currentState =
-                                      context.read<IncomingBloc>().state;
-
-                                  if (currentState is IncomingLoaded) {
-                                    final selectedCount =
-                                        currentState.selectedData?.length ?? 0;
-                                    if (selectedCount <= 1 &&
-                                        currentState.selectedData?.contains(
-                                                currentData[index]) ==
-                                            true) {
-                                      setState(() {
-                                        _selectionMode = false;
-                                      });
-                                    }
-                                  }
-                                  return;
-                                }
-
-                                if (currentData[index].deletedAt != null)
-                                  return;
-
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        IncomingDocumentDetailsScreen(
-                                      documentId: currentData[index].id!,
-                                      docNumber:
-                                          currentData[index].docNumber ?? 'N/A',
-                                      onDocumentUpdated: () {
-                                        _incomingBloc.add(FetchIncoming(
-                                          forceRefresh: true,
-                                          filters: _currentFilters,
-                                          search: _search,
-                                        ));
-                                      },
-                                    ),
+                    // ИЗМЕНЕНО: Показываем Dismissible только если есть право на удаление
+                    return _hasDeletePermission
+                        ? Dismissible(
+                            key: Key(currentData[index].id.toString()),
+                            direction: DismissDirection.endToStart,
+                            background: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.05),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 4),
                                   ),
-                                );
-                              },
-                              isSelectionMode: _selectionMode,
-                              isSelected: (state as IncomingLoaded)
-                                      .selectedData
-                                      ?.contains(currentData[index]) ??
-                                  false,
-                              onLongPress: () {
-                                if (_selectionMode) return;
-                                setState(() {
-                                  _selectionMode = true;
-                                });
-                                _incomingBloc
-                                    .add(SelectDocument(currentData[index]));
-                              },
-                              document: currentData[index],
-                            )));
+                                ],
+                              ),
+                              alignment: Alignment.centerRight,
+                              child: const Icon(Icons.delete,
+                                  color: Colors.white, size: 24),
+                            ),
+                            confirmDismiss: (direction) async {
+                              return currentData[index].deletedAt == null;
+                            },
+                            onDismissed: (direction) {
+                              print(
+                                  "🗑️ [UI] Удаление документа ID: ${currentData[index].id}");
+                              _incomingBloc.add(DeleteIncoming(
+                                currentData[index].id!,
+                                localizations!,
+                                shouldReload: true,
+                              ));
+                            },
+                            child: _buildIncomingCard(currentData, index, state),
+                          )
+                        : _buildIncomingCard(currentData, index, state);
                   },
                 ),
               );
             },
           ),
         ),
-        floatingActionButton: FloatingActionButton(
-          key: const Key('create_incoming_button'),
-          onPressed: () async {
-            if (mounted) {
-              final result = await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => IncomingDocumentCreateScreen(
-                    organizationId: widget.organizationId,
-                  ),
-                ),
-              );
+        // ИЗМЕНЕНО: Показываем кнопку создания только если есть право
+        floatingActionButton: _hasCreatePermission
+            ? FloatingActionButton(
+                key: const Key('create_incoming_button'),
+                onPressed: () async {
+                  if (mounted) {
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => IncomingDocumentCreateScreen(
+                          organizationId: widget.organizationId,
+                        ),
+                      ),
+                    );
 
-              if (result == true && mounted) {
-                _incomingBloc.add(FetchIncoming(
-                  forceRefresh: true,
-                  filters: _currentFilters,
-                  search: _search,
-                ));
-              }
-            }
-          },
-          backgroundColor: const Color(0xff1E2E52),
-          child: const Icon(Icons.add, color: Colors.white),
-        ),
+                    if (result == true && mounted) {
+                      _incomingBloc.add(FetchIncoming(
+                        forceRefresh: true,
+                        filters: _currentFilters,
+                        search: _search,
+                      ));
+                    }
+                  }
+                },
+                backgroundColor: const Color(0xff1E2E52),
+                child: const Icon(Icons.add, color: Colors.white),
+              )
+            : null,
       ),
     );
   }
-}
+
+  Widget _buildIncomingCard(List<IncomingDocument> currentData, int index, IncomingState state) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: IncomingCard(
+        onTap: () {
+          if (_selectionMode) {
+            _incomingBloc.add(SelectDocument(currentData[index]));
+
+            final currentState = context.read<IncomingBloc>().state;
+
+            if (currentState is IncomingLoaded) {
+              final selectedCount = currentState.selectedData?.length ?? 0;
+              if (selectedCount <= 1 &&
+                  currentState.selectedData?.contains(currentData[index]) == true) {
+                setState(() {
+                  _selectionMode = false;
+                });
+              }
+            }
+            return;
+          }
+
+          if (currentData[index].deletedAt != null) return;
+
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => IncomingDocumentDetailsScreen(
+                documentId: currentData[index].id!,
+                docNumber: currentData[index].docNumber ?? 'N/A',
+                hasUpdatePermission: _hasUpdatePermission,
+                hasDeletePermission: _hasDeletePermission,
+                onDocumentUpdated: () {
+                  _incomingBloc.add(FetchIncoming(
+                    forceRefresh: true,
+                    filters: _currentFilters,
+                    search: _search,
+                  ));
+                },
+              ),
+            ),
+          );
+        },
+        isSelectionMode: _selectionMode,
+        isSelected: (state as IncomingLoaded).selectedData?.contains(currentData[index]) ?? false,
+        // ИЗМЕНЕНО: Разрешаем долгое нажатие только если есть право на удаление
+        onLongPress: _hasDeletePermission
+            ? () {
+                if (_selectionMode) return;
+                setState(() {
+                  _selectionMode = true;
+                });
+                _incomingBloc.add(SelectDocument(currentData[index]));
+              }
+            : () {},
+        document: currentData[index],
+      ),
+    );
+  }
+} 

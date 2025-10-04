@@ -1203,7 +1203,7 @@
 "transfer": "Перемещение",
 "write_off": "Списание",
 "client_sale": "Реализация клиент",
-"client_return": "Возврат клиенту",
+"client_return": "Возврат от клиента",
 "supplier_return": "Возврат поставщику",
 "appbar_money_income": "Приход",
 "client_payment": "Оплата от клиента",
@@ -1517,7 +1517,9 @@
   "enter_maximum_amount": "Введите максимальную сумму",
   "enter_days": "Введите количество дней",
   "enter_minimum_amount": "Введите минимальную сумму",
-  "period": "Период"
+  "period": "Период",
+  "good": "Товар",
+  "select_good": "Выберите товар"
 
 
 }

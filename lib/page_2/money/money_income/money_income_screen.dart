@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/models/money/money_income_document_model.dart';
@@ -36,18 +37,44 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
   final FocusNode _focusNode = FocusNode();
   bool _isSearching = false;
   Map<String, dynamic> _currentFilters = {};
-  String? _search = null;
+  String? _search;
   late MoneyIncomeBloc _moneyIncomeBloc;
 
   bool _selectionMode = false;
   bool _isLoadingMore = false;
   bool _hasReachedMax = false;
 
+  // НОВОЕ: Флаги прав доступа
+  bool _hasCreatePermission = false;
+  bool _hasUpdatePermission = false;
+  bool _hasDeletePermission = false;
+  final ApiService _apiService = ApiService();
+
   @override
   void initState() {
     super.initState();
+    _checkPermissions();
     _moneyIncomeBloc = MoneyIncomeBloc()..add(const FetchMoneyIncome(forceRefresh: true));
     _scrollController.addListener(_onScroll);
+  }
+
+  // НОВОЕ: Проверка прав доступа
+  Future<void> _checkPermissions() async {
+    try {
+      final create = await _apiService.hasPermission('checking_account_pko.create');
+      final update = await _apiService.hasPermission('checking_account_pko.update');
+      final delete = await _apiService.hasPermission('checking_account_pko.delete');
+
+      if (mounted) {
+        setState(() {
+          _hasCreatePermission = create;
+          _hasUpdatePermission = update;
+          _hasDeletePermission = delete;
+        });
+      }
+    } catch (e) {
+      debugPrint('Ошибка при проверке прав доступа: $e');
+    }
   }
 
   @override
@@ -85,7 +112,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
       _search = null;
     });
 
-    _moneyIncomeBloc.add(FetchMoneyIncome(
+    _moneyIncomeBloc.add(const FetchMoneyIncome(
       filters: {},
       forceRefresh: true,
       search: null,
@@ -166,24 +193,6 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
     }
   }
 
-/*  void showDeleteDialog({required BuildContext context, required Document document, required VoidCallback onDelete}) {
-    showDialog(
-      context: context,
-      builder: (_) => BlocProvider.value(
-        value: context.read<MoneyIncomeBloc>(),
-        child: MoneyIncomeDeleteDialog(
-            documentId: document.id!,
-            onDelete: (id) {
-              onDelete();
-            }),
-      ),
-    ).then((value) {
-      if (mounted) {
-        FocusScope.of(context).requestFocus(FocusNode());
-      }
-    });
-  }*/
-
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
@@ -201,7 +210,8 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                       if (state is MoneyIncomeLoaded) {
                         bool showApprove = state.selectedData!.any((doc) => doc.approved == false && doc.deletedAt == null);
                         bool showDisapprove = state.selectedData!.any((doc) => doc.approved == true && doc.deletedAt == null);
-                        bool showDelete = state.selectedData!.any((doc) => doc.deletedAt == null);
+                        // ИЗМЕНЕНО: Показываем кнопку удаления только если есть право
+                        bool showDelete = _hasDeletePermission && state.selectedData!.any((doc) => doc.deletedAt == null);
                         bool showRestore = state.selectedData!.any((doc) => doc.deletedAt != null);
 
                         return AppBarSelectionMode(
@@ -270,11 +280,11 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                         setState(() {
                           _isSearching = false;
                           _searchController.clear();
-                          _search = null; // Очищаем поиск
+                          _search = null;
                         });
                         _moneyIncomeBloc.add(FetchMoneyIncome(
                           forceRefresh: true,
-                          filters: _currentFilters, // Сохраняем фильтры при очистке поиска
+                          filters: _currentFilters,
                         ));
                       }
                     },
@@ -428,236 +438,241 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
 
                       final document = currentData[index];
 
-                      return Dismissible(
-                        key: Key(document.id.toString()),
-                        direction: DismissDirection.endToStart,
-                        background: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.red,
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
+                      // ИЗМЕНЕНО: Показываем Dismissible только если есть право на удаление
+                      return _hasDeletePermission
+                          ? Dismissible(
+                              key: Key(document.id.toString()),
+                              direction: DismissDirection.endToStart,
+                              background: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.red,
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.05),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                alignment: Alignment.centerRight,
+                                child: const Icon(Icons.delete, color: Colors.white, size: 24),
                               ),
-                            ],
-                          ),
-                          alignment: Alignment.centerRight,
-                          child: const Icon(Icons.delete, color: Colors.white, size: 24),
-                        ),
-                        confirmDismiss: (direction) async {
-                          return document.deletedAt == null;
-                        },
-                        onDismissed: (direction) {
-                          print("🗑️ [UI] Удаление dokumenta ID: ${document.id}");
-                          setState(() {
-                            currentData.removeAt(index);
-                          });
-                          _moneyIncomeBloc.add(DeleteMoneyIncome(document));
-                        },
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: MoneyIncomeCard(
-                            isSelectionMode: _selectionMode,
-                            isSelected: (state as MoneyIncomeLoaded).selectedData?.contains(document) ?? false,
-                            document: document,
-                            onLongPress: (document) {
-                              if (_selectionMode) return;
-                              setState(() {
-                                _selectionMode = true;
-                              });
-                              _moneyIncomeBloc.add(SelectDocument(document));
-                            },
-                            onClick: (document) {
-                              if (_selectionMode) {
-                                final currentState = context.read<MoneyIncomeBloc>().state;
-                                if (currentState is MoneyIncomeLoaded) {
-                                  final selectedCount = currentState.selectedData?.length ?? 0;
-                                  if (selectedCount <= 1 && currentState.selectedData?.contains(document) == true) {
-                                    setState(() {
-                                      _selectionMode = false;
-                                    });
-                                  }
-                                }
-
-                                _moneyIncomeBloc.add(SelectDocument(document));
-                              } else {
-                                if (document.deletedAt == null) {
-                                  _navigateToEditScreen(context, document);
-                                }
-                              }
-                            },
-                            /*onDelete: () {
-                              debugPrint("show delete dialog for document ID: ${document.id}");
-                              showDeleteDialog(
-                                  context: context,
-                                  document: currentData[index],
-                                  onDelete: () {
-                                    _moneyIncomeBloc.add(DeleteMoneyIncome(document));
-                                  });
-                            },*/
-                          ),
-                        ),
-                      );
+                              confirmDismiss: (direction) async {
+                                return document.deletedAt == null;
+                              },
+                              onDismissed: (direction) {
+                                print("🗑️ [UI] Удаление dokumenta ID: ${document.id}");
+                                setState(() {
+                                  currentData.removeAt(index);
+                                });
+                                _moneyIncomeBloc.add(DeleteMoneyIncome(document));
+                              },
+                              child: _buildMoneyIncomeCard(document, state),
+                            )
+                          : _buildMoneyIncomeCard(document, state);
                     },
                   ),
                 );
               },
             ),
           ),
-          floatingActionButton: PopupMenuButton<String>(
-            key: const Key('create_money_income_button'),
-            onSelected: (String value) async {
-              if (!mounted) return;
+          // ИЗМЕНЕНО: Показываем FAB только если есть право на создание
+          floatingActionButton: _hasCreatePermission
+              ? PopupMenuButton<String>(
+                  key: const Key('create_money_income_button'),
+                  onSelected: (String value) async {
+                    if (!mounted) return;
 
-              Widget targetScreen;
+                    Widget targetScreen;
 
-              if (value == MoneyIncomeOperationType.client_payment.name) {
-                targetScreen = const AddMoneyIncomeFromClient();
-              } else if (value == MoneyIncomeOperationType.send_another_cash_register.name) {
-                targetScreen = const AddMoneyIncomeAnotherCashRegister();
-              } else if (value == MoneyIncomeOperationType.other_incomes.name) {
-                targetScreen = const AddMoneyIncomeOtherIncome();
-              } else if (value == MoneyIncomeOperationType.return_supplier.name) {
-                targetScreen = const AddMoneyIncomeSupplierReturn();
-              } else {
-                return;
+                    if (value == MoneyIncomeOperationType.client_payment.name) {
+                      targetScreen = const AddMoneyIncomeFromClient();
+                    } else if (value == MoneyIncomeOperationType.send_another_cash_register.name) {
+                      targetScreen = const AddMoneyIncomeAnotherCashRegister();
+                    } else if (value == MoneyIncomeOperationType.other_incomes.name) {
+                      targetScreen = const AddMoneyIncomeOtherIncome();
+                    } else if (value == MoneyIncomeOperationType.return_supplier.name) {
+                      targetScreen = const AddMoneyIncomeSupplierReturn();
+                    } else {
+                      return;
+                    }
+
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => BlocProvider.value(
+                          value: _moneyIncomeBloc,
+                          child: targetScreen,
+                        ),
+                      ),
+                    );
+
+                    if (result == true && mounted) {
+                      _moneyIncomeBloc.add(const FetchMoneyIncome(forceRefresh: true));
+                    }
+                  },
+                  itemBuilder: (BuildContext context) {
+                    return [
+                      PopupMenuItem<String>(
+                        value: MoneyIncomeOperationType.client_payment.name,
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.person,
+                              color: Color(0xff1E2E52),
+                              size: 20,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                localizations.translate('client_payment'),
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontFamily: 'Gilroy',
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xff1E2E52),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem<String>(
+                        value: MoneyIncomeOperationType.send_another_cash_register.name,
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.swap_horiz,
+                              color: Color(0xff1E2E52),
+                              size: 20,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                localizations.translate('cash_register_transfer'),
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontFamily: 'Gilroy',
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xff1E2E52),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem<String>(
+                        value: MoneyIncomeOperationType.other_incomes.name,
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.add_circle_outline,
+                              color: Color(0xff1E2E52),
+                              size: 20,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                localizations.translate('other_income'),
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontFamily: 'Gilroy',
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xff1E2E52),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem<String>(
+                        value: MoneyIncomeOperationType.return_supplier.name,
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.keyboard_return,
+                              color: Color(0xff1E2E52),
+                              size: 20,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                localizations.translate('supplier_return'),
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontFamily: 'Gilroy',
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xff1E2E52),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ];
+                  },
+                  offset: const Offset(0, -220),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  color: Colors.white,
+                  elevation: 8,
+                  shadowColor: Colors.black.withOpacity(0.1),
+                  child: Container(
+                    width: 56,
+                    height: 56,
+                    decoration: const BoxDecoration(color: Color(0xff1E2E52), borderRadius: BorderRadius.all(Radius.circular(18))),
+                    child: const Icon(
+                      Icons.add,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                )
+              : null),
+    );
+  }
+
+  Widget _buildMoneyIncomeCard(Document document, MoneyIncomeState state) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: MoneyIncomeCard(
+        isSelectionMode: _selectionMode,
+        isSelected: (state as MoneyIncomeLoaded).selectedData?.contains(document) ?? false,
+        document: document,
+        // ИЗМЕНЕНО: Разрешаем долгое нажатие только если есть право на удаление
+        onLongPress: _hasDeletePermission
+            ? (document) {
+                if (_selectionMode) return;
+                setState(() {
+                  _selectionMode = true;
+                });
+                _moneyIncomeBloc.add(SelectDocument(document));
+                return null;
               }
-
-              final result = await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => BlocProvider.value(
-                    value: _moneyIncomeBloc,
-                    child: targetScreen,
-                  ),
-                ),
-              );
-
-              if (result == true && mounted) {
-                _moneyIncomeBloc.add(const FetchMoneyIncome(forceRefresh: true));
+            : (document) => null,
+        onClick: (document) {
+          if (_selectionMode) {
+            final currentState = context.read<MoneyIncomeBloc>().state;
+            if (currentState is MoneyIncomeLoaded) {
+              final selectedCount = currentState.selectedData?.length ?? 0;
+              if (selectedCount <= 1 && currentState.selectedData?.contains(document) == true) {
+                setState(() {
+                  _selectionMode = false;
+                });
               }
-            },
-            itemBuilder: (BuildContext context) {
-              return [
-                PopupMenuItem<String>(
-                  value: MoneyIncomeOperationType.client_payment.name,
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.person,
-                        color: Color(0xff1E2E52),
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          localizations.translate('client_payment'),
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xff1E2E52),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                PopupMenuItem<String>(
-                  value: MoneyIncomeOperationType.send_another_cash_register.name,
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.swap_horiz,
-                        color: Color(0xff1E2E52),
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          localizations.translate('cash_register_transfer'),
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xff1E2E52),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                PopupMenuItem<String>(
-                  value: MoneyIncomeOperationType.other_incomes.name,
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.add_circle_outline,
-                        color: Color(0xff1E2E52),
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          localizations.translate('other_income'),
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xff1E2E52),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                PopupMenuItem<String>(
-                  value: MoneyIncomeOperationType.return_supplier.name,
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.keyboard_return,
-                        color: Color(0xff1E2E52),
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          localizations.translate('supplier_return'),
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xff1E2E52),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ];
-            },
-            offset: const Offset(0, -220),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            color: Colors.white,
-            elevation: 8,
-            shadowColor: Colors.black.withOpacity(0.1),
-            child: Container(
-              width: 56,
-              height: 56,
-              decoration: const BoxDecoration(color: Color(0xff1E2E52), borderRadius: BorderRadius.all(Radius.circular(18))),
-              child: const Icon(
-                Icons.add,
-                color: Colors.white,
-                size: 24,
-              ),
-            ),
-          )),
+            }
+
+            _moneyIncomeBloc.add(SelectDocument(document));
+          } else {
+            if (document.deletedAt == null) {
+              _navigateToEditScreen(context, document);
+            }
+          }
+        },
+      ),
     );
   }
 }

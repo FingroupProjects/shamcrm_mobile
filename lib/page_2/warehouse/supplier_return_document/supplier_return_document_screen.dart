@@ -7,6 +7,7 @@ import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/page_2/money/widgets/error_dialog.dart';
 import 'package:crm_task_manager/page_2/warehouse/supplier_return_document/supplier_return_document_card_screen.dart';
+import 'package:crm_task_manager/page_2/warehouse/supplier_return_document/supplier_return_document_details_screen.dart'; // НОВОЕ: Импорт Details
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -33,11 +34,37 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
   bool _isLoadingMore = false;
   bool _hasReachedMax = false;
 
+  // НОВОЕ: Флаги прав доступа
+  bool _hasCreatePermission = false;
+  bool _hasUpdatePermission = false;
+  bool _hasDeletePermission = false;
+  final ApiService _apiService = ApiService();
+
   @override
   void initState() {
     super.initState();
+    _checkPermissions(); // НОВОЕ: Проверка прав
     _supplierReturnBloc = SupplierReturnBloc(ApiService())..add(const FetchSupplierReturn(forceRefresh: true));
     _scrollController.addListener(_onScroll);
+  }
+
+  // НОВОЕ: Проверка прав доступа
+  Future<void> _checkPermissions() async {
+    try {
+      final create = await _apiService.hasPermission('supplier_return_document.create');
+      final update = await _apiService.hasPermission('supplier_return_document.update');
+      final delete = await _apiService.hasPermission('supplier_return_document.delete');
+
+      if (mounted) {
+        setState(() {
+          _hasCreatePermission = create;
+          _hasUpdatePermission = update;
+          _hasDeletePermission = delete;
+        });
+      }
+    } catch (e) {
+      debugPrint('Ошибка при проверке прав доступа: $e');
+    }
   }
 
   @override
@@ -155,41 +182,70 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
                 _isInitialLoad = false;
                 _isLoadingMore = false;
               });
-              if (state.statusCode  == 409) {
-                final localizations = AppLocalizations.of(context)!;
-                showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
-                return;
-              }
-              _showSnackBar(state.message, false);
+              WidgetsBinding.instance.addPostFrameCallback((_) { // НОВОЕ: postFrame
+                if (mounted && context.mounted) {
+                  if (state.statusCode  == 409) {
+                    final localizations = AppLocalizations.of(context)!;
+                    showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                    return;
+                  }
+                  _showSnackBar(state.message, false);
+                }
+              });
             } else if (state is SupplierReturnCreateSuccess) {
-              _showSnackBar(state.message, true);
+              WidgetsBinding.instance.addPostFrameCallback((_) { // НОВОЕ: postFrame
+                if (mounted && context.mounted) {
+                  _showSnackBar(state.message, true);
+                }
+              });
             } else if (state is SupplierReturnCreateError) {
-              if (state.statusCode  == 409) {
-                final localizations = AppLocalizations.of(context)!;
-                showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
-                return;
-              }
-              _showSnackBar(state.message, false);
-            } else if (state is SupplierReturnUpdateSuccess) {
-              _showSnackBar(state.message, true);
-            } else if (state is SupplierReturnUpdateError) {
-              if (state.statusCode  == 409) {
-                final localizations = AppLocalizations.of(context)!;
-                showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
-                return;
-              }
-              _showSnackBar(state.message, false);
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted && context.mounted) {
+                  if (state.statusCode  == 409) {
+                    final localizations = AppLocalizations.of(context)!;
+                    showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                    return;
+                  }
+                  _showSnackBar(state.message, false);
+                }
+              });
+            } else if (state is SupplierReturnUpdateSuccess) { // НОВОЕ: Обработка update
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted && context.mounted) {
+                  _showSnackBar(state.message, true);
+                  _supplierReturnBloc.add(const FetchSupplierReturn(forceRefresh: true));
+                }
+              });
+            } else if (state is SupplierReturnUpdateError) { // НОВОЕ
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted && context.mounted) {
+                  if (state.statusCode  == 409) {
+                    final localizations = AppLocalizations.of(context)!;
+                    showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                    return;
+                  }
+                  _showSnackBar(state.message, false);
+                }
+              });
             }else if (state is SupplierReturnDeleteSuccess) {
-  _showSnackBar(state.message, true);
-  _supplierReturnBloc.add(FetchSupplierReturn(forceRefresh: true, filters: _currentFilters));
+              WidgetsBinding.instance.addPostFrameCallback((_) { // НОВОЕ: postFrame
+                if (mounted && context.mounted) {
+                  _showSnackBar(state.message, true);
+                  _supplierReturnBloc.add(FetchSupplierReturn(forceRefresh: true, filters: _currentFilters));
+                }
+              });
 } else if (state is SupplierReturnDeleteError) {
-  if (state.statusCode == 409) {
-    final localizations = AppLocalizations.of(context)!;
-    showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
-    _supplierReturnBloc.add(FetchSupplierReturn(forceRefresh: true, filters: _currentFilters));
-    return;
-  }
-  _showSnackBar(state.message, false);
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (mounted && context.mounted) {
+      if (state.statusCode == 409) {
+        final localizations = AppLocalizations.of(context)!;
+        showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+        _supplierReturnBloc.add(FetchSupplierReturn(forceRefresh: true, filters: _currentFilters));
+        return;
+      }
+      _showSnackBar(state.message, false);
+    }
+  });
 }
           },
          child: BlocBuilder<SupplierReturnBloc, SupplierReturnState>(
@@ -203,7 +259,7 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
       );
     }
 
-    final currentData = state is SupplierReturnLoaded ? state.data : [];
+    final List<IncomingDocument> currentData = state is SupplierReturnLoaded ? state.data : []; // ИЗМЕНЕНО: List<>
 
     if (currentData.isEmpty && state is SupplierReturnLoaded) {
       return Center(
@@ -244,70 +300,81 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
                 : const SizedBox.shrink();
           }
           
-          return Dismissible(
-            key: Key(currentData[index].id.toString()),
-            direction: DismissDirection.endToStart,
-            background: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.red,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
+          // ИЗМЕНЕНО: Dismissible только с delete-правом
+          return _hasDeletePermission
+              ? Dismissible(
+                  key: Key(currentData[index].id.toString()),
+                  direction: DismissDirection.endToStart,
+                  background: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    alignment: Alignment.centerRight,
+                    child: const Icon(Icons.delete, color: Colors.white, size: 24),
                   ),
-                ],
-              ),
-              alignment: Alignment.centerRight,
-              child: const Icon(Icons.delete, color: Colors.white, size: 24),
-            ),
-            confirmDismiss: (direction) async {
-              return currentData[index].deletedAt == null;
-            },
-           onDismissed: (direction) {
-  print("🗑️ [UI] Удаление документа ID: ${currentData[index].id}");
-  _supplierReturnBloc.add(DeleteSupplierReturn(
-    currentData[index].id!,
-    shouldReload: true,
-  ));
-},
-            child: SupplierReturnCard(
-              document: currentData[index],
-              onUpdate: () {
-                _supplierReturnBloc.add(const FetchSupplierReturn(forceRefresh: true));
-              },
-            ),
-          );
+                  confirmDismiss: (direction) async {
+                    return currentData[index].deletedAt == null;
+                  },
+                 onDismissed: (direction) {
+      debugPrint("🗑️ [UI] Удаление документа ID: ${currentData[index].id}"); // ИЗМЕНЕНО: debugPrint
+      _supplierReturnBloc.add(DeleteSupplierReturn(
+        currentData[index].id!,
+        shouldReload: true,
+      ));
+  },
+                  child: SupplierReturnCard(
+                    document: currentData[index],
+                    onUpdate: () {
+                      _supplierReturnBloc.add(const FetchSupplierReturn(forceRefresh: true));
+                    },
+                  ),
+                )
+              : SupplierReturnCard(
+                  document: currentData[index],
+                  onUpdate: () {
+                    _supplierReturnBloc.add(const FetchSupplierReturn(forceRefresh: true));
+                  },
+                );
         },
       ),
     );
   },
 ),
         ),
-        floatingActionButton: FloatingActionButton(
-          key: const Key('create_supplier_return_button'),
-          onPressed: () async {
-            if (mounted) {
-              final result = await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => SupplierReturnDocumentCreateScreen(
-                    organizationId: widget.organizationId,
-                  ),
-                ),
-              );
+        // ИЗМЕНЕНО: FAB только с create-правом
+        floatingActionButton: _hasCreatePermission
+            ? FloatingActionButton(
+                key: const Key('create_supplier_return_button'),
+                onPressed: () async {
+                  if (mounted) {
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => SupplierReturnDocumentCreateScreen(
+                          organizationId: widget.organizationId,
+                        ),
+                      ),
+                    );
 
-              if (result == true && mounted) {
-                _supplierReturnBloc.add(const FetchSupplierReturn(forceRefresh: true));
-              }
-            }
-          },
-          backgroundColor: const Color(0xff1E2E52),
-          child: const Icon(Icons.add, color: Colors.white),
-        ),
+                    if (result == true && mounted) {
+                      _supplierReturnBloc.add(const FetchSupplierReturn(forceRefresh: true));
+                    }
+                  }
+                },
+                backgroundColor: const Color(0xff1E2E52),
+                child: const Icon(Icons.add, color: Colors.white),
+              )
+            : null,
       ),
     );
   }
