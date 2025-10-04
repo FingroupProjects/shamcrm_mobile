@@ -1,7 +1,6 @@
 import 'package:crm_task_manager/models/page_2/dashboard/top_selling_card_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import '../../../../bloc/page_2_BLOC/dashboard/top_selling_goods/sales_dashboard_top_selling_goods_bloc.dart';
 import '../cards/top_selling_card.dart';
 
@@ -38,24 +37,29 @@ class _TopSellingGoodsContentState extends State<TopSellingGoodsContent> {
   }
 
   Widget _buildTopSellingGoodsList(List<TopSellingCardModel> data) {
-    return Expanded(
-      child: data.isNotEmpty
-          ? ListView.separated(
-        separatorBuilder: (context, index) => SizedBox(height: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        itemCount: data.length,
-        itemBuilder: (context, index) {
-          final product = data[index];
-          return TopSellingCard(
-            product: product,
-            onClick: _onProductTap,
-            onLongPress: _onProductLongPress,
-            isSelectionMode: isSelectionMode,
-            isSelected: selectedTopSellingGoods.contains(product.id),
-          );
-        },
-      )
-          : _buildEmptyState(),
+    // Wrap ListView in a Column with Expanded to ensure proper constraints
+    return Column(
+      children: [
+        Expanded(
+          child: data.isNotEmpty
+              ? ListView.separated(
+            separatorBuilder: (context, index) => const SizedBox(height: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            itemCount: data.length,
+            itemBuilder: (context, index) {
+              final product = data[index];
+              return TopSellingCard(
+                product: product,
+                onClick: _onProductTap,
+                onLongPress: _onProductLongPress,
+                isSelectionMode: isSelectionMode,
+                isSelected: selectedTopSellingGoods.contains(product.id),
+              );
+            },
+          )
+              : _buildEmptyState(),
+        ),
+      ],
     );
   }
 
@@ -66,28 +70,28 @@ class _TopSellingGoodsContentState extends State<TopSellingGoodsContent> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
+            const Icon(
               Icons.shopping_cart_outlined,
               size: 64,
               color: Color(0xff99A4BA),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             Text(
               'Нет данных о продажах',
               style: TextStyle(
                 fontFamily: 'Gilroy',
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: Color(0xff1E2E52),
+                color: const Color(0xff1E2E52),
               ),
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(
               'Список самых продаваемых товаров пуст',
               style: TextStyle(
                 fontFamily: 'Gilroy',
                 fontSize: 14,
-                color: Color(0xff99A4BA),
+                color: const Color(0xff99A4BA),
               ),
             ),
           ],
@@ -101,16 +105,16 @@ class _TopSellingGoodsContentState extends State<TopSellingGoodsContent> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(
+          const CircularProgressIndicator(
             color: Color(0xff1E2E52),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Text(
             'Загрузка данных...',
             style: TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 16,
-              color: Color(0xff64748B),
+              color: const Color(0xff64748B),
             ),
           ),
         ],
@@ -124,53 +128,53 @@ class _TopSellingGoodsContentState extends State<TopSellingGoodsContent> {
         padding: const EdgeInsets.all(24),
         child: Container(
           width: double.infinity,
-          padding: EdgeInsets.all(24),
+          padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Color(0xffFEF2F2),
+            color: const Color(0xffFEF2F2),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: Color(0xffFECACA),
+              color: const Color(0xffFECACA),
               width: 1,
             ),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
+              const Icon(
                 Icons.error_outline,
                 size: 48,
                 color: Color(0xffEF4444),
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               Text(
                 'Ошибка загрузки',
                 style: TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xff1E2E52),
+                  color: const Color(0xff1E2E52),
                 ),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
                 message,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 14,
-                  color: Color(0xff64748B),
+                  color: const Color(0xff64748B),
                 ),
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () {
                   context.read<SalesDashboardTopSellingGoodsBloc>().add(const LoadTopSellingGoodsReport());
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xff1E2E52),
+                  backgroundColor: const Color(0xff1E2E52),
                   foregroundColor: Colors.white,
                   elevation: 0,
-                  padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -204,7 +208,6 @@ class _TopSellingGoodsContentState extends State<TopSellingGoodsContent> {
           }
           return _buildTopSellingGoodsList(state.topSellingGoods);
         }
-
         return _buildEmptyState();
       },
     );

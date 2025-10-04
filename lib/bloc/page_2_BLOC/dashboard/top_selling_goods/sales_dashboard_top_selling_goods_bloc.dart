@@ -16,7 +16,10 @@ class SalesDashboardTopSellingGoodsBloc extends Bloc<SalesDashboardTopSellingGoo
     on<LoadTopSellingGoodsReport>((event, emit) async {
       // try {
       emit(SalesDashboardTopSellingGoodsLoading());
-      final response = await apiService.getTopSellingCardsList();
+      final response = await apiService.getTopSellingCardsByFilter(
+        filters: event.filter,
+        search: event.search,
+      );
       emit(SalesDashboardTopSellingGoodsLoaded(
         topSellingGoods: response,
       ));
