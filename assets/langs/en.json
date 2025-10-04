@@ -1517,7 +1517,12 @@
   "days_without_movement": "Days without movement",
   "creditor_name_details": "Name",
   "debtor_name_details": "Name",
-  "debt_amount": "Amount"
+  "debt_amount": "Amount",
+  "amount_from": "Amount from",
+  "amount_to": "Amount to",
+  "enter_maximum_amount": "Enter maximum amount",
+  "enter_days": "Enter number of days",
+  "enter_minimum_amount": "Enter minimum amount"
 
 
 

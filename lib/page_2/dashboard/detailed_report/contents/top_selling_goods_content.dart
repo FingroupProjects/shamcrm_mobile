@@ -1,79 +1,97 @@
+import 'package:crm_task_manager/models/page_2/dashboard/top_selling_card_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../models/page_2/dashboard/cash_balance_model.dart';
-import '../../../bloc/page_2_BLOC/dashboard/cash_balance/sales_dashboard_cash_balance_bloc.dart';
-import 'cards/cash_register_card.dart';
+import '../../../../bloc/page_2_BLOC/dashboard/top_selling_goods/sales_dashboard_top_selling_goods_bloc.dart';
+import '../cards/top_selling_card.dart';
 
-class CashBalanceContent extends StatefulWidget {
-  const CashBalanceContent({super.key});
+class TopSellingGoodsContent extends StatefulWidget {
+  const TopSellingGoodsContent({super.key});
 
   @override
-  State<CashBalanceContent> createState() => _CashBalanceContentState();
+  State<TopSellingGoodsContent> createState() => _TopSellingGoodsContentState();
 }
 
-class _CashBalanceContentState extends State<CashBalanceContent> {
-  Widget _buildCashBalanceList(CashBalanceResponse data) {
-    final cashRegisters = data.result?.cashBalanceSummary?.cashRegisters ?? [];
-    
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          if (cashRegisters.isNotEmpty) ...[
-            // Показываем список кассовых регистров
-            ...cashRegisters.map((cashRegister) => Container(
-              margin: EdgeInsets.only(bottom: 12),
-              child: CashRegisterCard(
-                cashRegister: cashRegister,
-                onClick: (register) {
-                  // Обработка нажатия на кассовый регистр
-                  print('Выбран кассовый регистр: ${register.name}');
-                },
-                onLongPress: (register) {
-                  // Обработка длительного нажатия
-                  print('Длительное нажатие на кассовый регистр: ${register.name}');
-                },
-                isSelectionMode: false,
-                isSelected: false,
-              ),
-            )).toList(),
-          ],
-        ],
-      ),
+class _TopSellingGoodsContentState extends State<TopSellingGoodsContent> {
+  bool isSelectionMode = false;
+  Set<int> selectedTopSellingGoods = {};
+
+  void _onProductTap(TopSellingCardModel product) {
+    if (isSelectionMode) {
+      setState(() {
+        if (selectedTopSellingGoods.contains(product.id)) {
+          selectedTopSellingGoods.remove(product.id);
+        } else {
+          selectedTopSellingGoods.add(product.id);
+        }
+      });
+    }
+  }
+
+  void _onProductLongPress(TopSellingCardModel product) {
+    if (!isSelectionMode) {
+      setState(() {
+        isSelectionMode = true;
+        selectedTopSellingGoods.add(product.id);
+      });
+    }
+  }
+
+  Widget _buildTopSellingGoodsList(List<TopSellingCardModel> data) {
+    return Expanded(
+      child: data.isNotEmpty
+          ? ListView.separated(
+        separatorBuilder: (context, index) => SizedBox(height: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        itemCount: data.length,
+        itemBuilder: (context, index) {
+          final product = data[index];
+          return TopSellingCard(
+            product: product,
+            onClick: _onProductTap,
+            onLongPress: _onProductLongPress,
+            isSelectionMode: isSelectionMode,
+            isSelected: selectedTopSellingGoods.contains(product.id),
+          );
+        },
+      )
+          : _buildEmptyState(),
     );
   }
 
   Widget _buildEmptyState() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.account_balance_wallet_outlined,
-            size: 64,
-            color: Color(0xff99A4BA),
-          ),
-          SizedBox(height: 16),
-          Text(
-            'Нет данных о кассовых регистрах',
-            style: TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
-            ),
-          ),
-          SizedBox(height: 8),
-          Text(
-            'Информация о кассовых регистрах недоступна',
-            style: TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 14,
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.shopping_cart_outlined,
+              size: 64,
               color: Color(0xff99A4BA),
             ),
-          ),
-        ],
+            SizedBox(height: 16),
+            Text(
+              'Нет данных о продажах',
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Color(0xff1E2E52),
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Список самых продаваемых товаров пуст',
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 14,
+                color: Color(0xff99A4BA),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -146,7 +164,7 @@ class _CashBalanceContentState extends State<CashBalanceContent> {
               SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () {
-                  context.read<SalesDashboardCashBalanceBloc>().add(const LoadCashBalanceReport());
+                  context.read<SalesDashboardTopSellingGoodsBloc>().add(const LoadTopSellingGoodsReport());
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Color(0xff1E2E52),
@@ -174,18 +192,17 @@ class _CashBalanceContentState extends State<CashBalanceContent> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<SalesDashboardCashBalanceBloc, SalesDashboardCashBalanceState>(
+    return BlocBuilder<SalesDashboardTopSellingGoodsBloc, SalesDashboardTopSellingGoodsState>(
       builder: (context, state) {
-        if (state is SalesDashboardCashBalanceLoading) {
+        if (state is SalesDashboardTopSellingGoodsLoading) {
           return _buildLoadingState();
-        } else if (state is SalesDashboardCashBalanceError) {
+        } else if (state is SalesDashboardTopSellingGoodsError) {
           return _buildErrorState(state.message);
-        } else if (state is SalesDashboardCashBalanceLoaded) {
-          if (state.data.result?.cashBalanceSummary?.cashRegisters == null || 
-              state.data.result!.cashBalanceSummary!.cashRegisters!.isEmpty) {
+        } else if (state is SalesDashboardTopSellingGoodsLoaded) {
+          if (state.topSellingGoods.isEmpty) {
             return _buildEmptyState();
           }
-          return _buildCashBalanceList(state.data);
+          return _buildTopSellingGoodsList(state.topSellingGoods);
         }
 
         return _buildEmptyState();

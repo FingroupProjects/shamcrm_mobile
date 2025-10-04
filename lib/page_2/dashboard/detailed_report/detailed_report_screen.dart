@@ -1,6 +1,5 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/top_selling_goods/sales_dashboard_top_selling_goods_bloc.dart';
-import 'package:crm_task_manager/page_2/dashboard/detailed_report/cash_balance_content.dart';
-import 'package:crm_task_manager/page_2/dashboard/detailed_report/top_selling_goods_content.dart';
+import 'package:crm_task_manager/page_2/dashboard/detailed_report/contents/cash_balance_content.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/goods/sales_dashboard_goods_bloc.dart';
@@ -10,9 +9,10 @@ import '../../../bloc/page_2_BLOC/dashboard/debtors/sales_dashboard_debtors_bloc
 import '../../../custom_widget/custom_app_bar_reports.dart';
 import '../../../screens/profile/languages/app_localizations.dart';
 import '../../../screens/profile/profile_screen.dart';
-import 'creditors_content.dart';
-import 'debtors_content.dart';
-import 'goods_content.dart';
+import 'contents/creditors_content.dart';
+import 'contents/debtors_content.dart';
+import 'contents/goods_content.dart';
+import 'contents/top_selling_goods_content.dart';
 
 class TaskStyles {
   static const Color activeColor = Color(0xff1E2E52);
@@ -154,6 +154,8 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
     final filter = _filters[_currentTabIndex] ?? {};
     final search = _currentSearch;
 
+    debugPrint("DetailedReportScreen._reloadCurrentTabData: filter: $filter and search: $search");
+
     if (id == 0) {
       _goodsBloc.add(LoadGoodsReport(filter: filter, search: search));
     } else if (id == 1) {
@@ -168,6 +170,7 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
   }
 
   void _handleFilterSelected(Map<String, dynamic> selectedFilters) {
+    debugPrint("Selected Filters: $selectedFilters, currentTabIndex: $_currentTabIndex");
     setState(() {
       _filters[_currentTabIndex] = selectedFilters;
     });
@@ -209,7 +212,7 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
                 isClickAvatarIcon = !isClickAvatarIcon;
               });
             },
-            clearButtonClickFiltr: (isSearching) {},
+            clearButtonClickFilter: (isSearching) {},
             showSearchIcon: !isClickAvatarIcon,
             showFilterIcon: !isClickAvatarIcon,
             currentTabIndex: _currentTabIndex,
@@ -219,7 +222,7 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
             clearButtonClick: (isSearching) {
               _resetSearch();
             },
-            currentFilters: _filters[_currentTabIndex] ?? {},
+            currentFilters: _filters,
             onFilterSelected: _handleFilterSelected,
             onResetFilters: _handleResetFilters,
           ),

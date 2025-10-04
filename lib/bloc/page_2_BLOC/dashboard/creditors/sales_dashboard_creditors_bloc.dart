@@ -14,7 +14,10 @@ class SalesDashboardCreditorsBloc extends Bloc<SalesDashboardCreditorsEvent, Sal
     on<LoadCreditorsReport>((event, emit) async {
       // try {
         emit(SalesDashboardCreditorsLoading());
-        final response = await apiService.getCreditorsList();
+        final response = await apiService.getCreditorsList(
+          filters: event.filter,
+          search: event.search,
+        );
         emit(SalesDashboardCreditorsLoaded(result: response));
       // } catch (e) {
       //   emit(SalesDashboardCreditorsError(

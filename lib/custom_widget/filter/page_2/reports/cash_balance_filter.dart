@@ -134,10 +134,10 @@ class _CashBalanceFilterScreenState extends State<CashBalanceFilterScreen> {
       widget.onResetFilters?.call();
     } else {
       widget.onSelectedDataFilter?.call({
-        'fromDate': _fromDate,
-        'toDate': _toDate,
-        'amountFrom': _parseAmount(_amountFromController.text),
-        'amountTo': _parseAmount(_amountToController.text),
+        'date_from': _fromDate,
+        'date_to': _toDate,
+        'sum_from': _parseAmount(_amountFromController.text),
+        'sum_to': _parseAmount(_amountToController.text),
       });
     }
     Navigator.pop(context);
@@ -247,7 +247,6 @@ class _CashBalanceFilterScreenState extends State<CashBalanceFilterScreen> {
                     ),
                     const SizedBox(height: 8),
 
-                    // Amount From Card
                     Card(
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       color: Colors.white,
@@ -256,21 +255,11 @@ class _CashBalanceFilterScreenState extends State<CashBalanceFilterScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'Amount From',
-                              style: TextStyle(
-                                fontFamily: 'Gilroy',
-                                fontWeight: FontWeight.w500,
-                                color: const Color(0xff1E2E52),
-                                fontSize: 14,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
                             CustomTextField(
                               controller: _amountFromController,
                               keyboardType: TextInputType.number,
-                              hintText: 'Enter minimum amount',
-                              label: '',
+                              hintText: AppLocalizations.of(context)!.translate('enter_minimum_amount') ?? 'Введите минимальную сумму',
+                              label: AppLocalizations.of(context)!.translate('amount_from') ?? 'Сумма от',
                             ),
                           ],
                         ),
@@ -278,7 +267,6 @@ class _CashBalanceFilterScreenState extends State<CashBalanceFilterScreen> {
                     ),
                     const SizedBox(height: 8),
 
-                    // Amount To Card
                     Card(
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       color: Colors.white,
@@ -287,21 +275,11 @@ class _CashBalanceFilterScreenState extends State<CashBalanceFilterScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'Amount To',
-                              style: TextStyle(
-                                fontFamily: 'Gilroy',
-                                fontWeight: FontWeight.w500,
-                                color: const Color(0xff1E2E52),
-                                fontSize: 14,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
                             CustomTextField(
                               controller: _amountToController,
                               keyboardType: TextInputType.number,
-                              hintText: 'Enter maximum amount',
-                              label: '',
+                              hintText: AppLocalizations.of(context)!.translate('enter_maximum_amount') ?? 'Введите максимальную сумму',
+                              label: AppLocalizations.of(context)!.translate('amount_to') ?? 'Сумма до',
                             ),
                           ],
                         ),

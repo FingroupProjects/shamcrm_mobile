@@ -17,14 +17,16 @@ final class SalesDashboardGoodsLoading extends SalesDashboardGoodsState {
 final class SalesDashboardGoodsLoaded extends SalesDashboardGoodsState {
   final List<DashboardGoods> goods;
   final Pagination pagination;
+  final bool hasReachedMax;
 
   const SalesDashboardGoodsLoaded({
     required this.goods,
     required this.pagination,
+    required this.hasReachedMax,
   });
 
   @override
-  List<Object> get props => [goods, pagination];
+  List<Object> get props => [goods, pagination, hasReachedMax];
 }
 
 final class SalesDashboardGoodsError extends SalesDashboardGoodsState {
@@ -34,4 +36,21 @@ final class SalesDashboardGoodsError extends SalesDashboardGoodsState {
 
   @override
   List<Object> get props => [message];
+}
+
+final class SalesDashboardGoodsPaginationError extends SalesDashboardGoodsState {
+  final String message;
+  final List<DashboardGoods> goods;
+  final Pagination pagination;
+  final bool hasReachedMax;
+
+  const SalesDashboardGoodsPaginationError({
+    required this.message,
+    required this.goods,
+    required this.pagination,
+    required this.hasReachedMax,
+  });
+
+  @override
+  List<Object> get props => [message, goods, pagination, hasReachedMax];
 }

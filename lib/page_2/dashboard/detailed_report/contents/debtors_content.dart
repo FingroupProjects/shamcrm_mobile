@@ -1,60 +1,60 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../models/page_2/dashboard/creditors_model.dart';
-import '../../../bloc/page_2_BLOC/dashboard/creditors/sales_dashboard_creditors_bloc.dart';
-import 'cards/creditor_card.dart';
+import '../../../../models/page_2/dashboard/debtors_model.dart';
+import '../../../../bloc/page_2_BLOC/dashboard/debtors/sales_dashboard_debtors_bloc.dart';
+import '../cards/debtor_card.dart';
 
-class CreditorsContent extends StatefulWidget {
-  const CreditorsContent({super.key});
+class DebtorsContent extends StatefulWidget {
+  const DebtorsContent({super.key});
 
   @override
-  State<CreditorsContent> createState() => _CreditorsContentState();
+  State<DebtorsContent> createState() => _DebtorsContentState();
 }
 
-class _CreditorsContentState extends State<CreditorsContent> {
+class _DebtorsContentState extends State<DebtorsContent> {
   bool isSelectionMode = false;
-  Set<int> selectedCreditors = {};
+  Set<int> selectedDebtors = {};
 
-  void _onCreditorTap(Creditor creditor) {
+  void _onDebtorTap(Debtor debtor) {
     if (isSelectionMode) {
       setState(() {
-        if (selectedCreditors.contains(creditor.id)) {
-          selectedCreditors.remove(creditor.id);
+        if (selectedDebtors.contains(debtor.id)) {
+          selectedDebtors.remove(debtor.id);
         } else {
-          selectedCreditors.add(creditor.id);
+          selectedDebtors.add(debtor.id);
         }
       });
     }
   }
 
-  void _onCreditorLongPress(Creditor creditor) {
+  void _onDebtorLongPress(Debtor debtor) {
     if (!isSelectionMode) {
       setState(() {
         isSelectionMode = true;
-        selectedCreditors.add(creditor.id);
+        selectedDebtors.add(debtor.id);
       });
     }
   }
 
-  Widget _buildCreditorsList(CreditorsResponse data) {
+  Widget _buildDebtorsList(DebtorsResponse data) {
     return Expanded(
-      child: data.result?.creditors.isNotEmpty == true
+      child: data.result?.debtors.isNotEmpty == true
           ? ListView.separated(
-        separatorBuilder: (context, index) => SizedBox(height: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        itemCount: data.result!.creditors.length,
-        itemBuilder: (context, index) {
-          final creditor = data.result!.creditors[index];
-          return CreditorCard(
-            creditor: creditor,
-            onClick: _onCreditorTap,
-            onLongPress: _onCreditorLongPress,
-            isSelectionMode: isSelectionMode,
-            isSelected: selectedCreditors.contains(creditor.id),
-          );
-        },
-      )
+              separatorBuilder: (context, index) => SizedBox(height: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              itemCount: data.result!.debtors.length,
+              itemBuilder: (context, index) {
+                final debtor = data.result!.debtors[index];
+                return DebtorsCard(
+                  debtor: debtor,
+                  onClick: _onDebtorTap,
+                  onLongPress: _onDebtorLongPress,
+                  isSelectionMode: isSelectionMode,
+                  isSelected: selectedDebtors.contains(debtor.id),
+                );
+              },
+            )
           : _buildEmptyState(),
     );
   }
@@ -67,13 +67,13 @@ class _CreditorsContentState extends State<CreditorsContent> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.credit_card_off_outlined,
+              Icons.account_balance_outlined,
               size: 64,
               color: Color(0xff99A4BA),
             ),
             SizedBox(height: 16),
             Text(
-              'Нет кредиторской задолженности',
+              'Нет дебиторской задолженности',
               style: TextStyle(
                 fontFamily: 'Gilroy',
                 fontSize: 18,
@@ -83,7 +83,7 @@ class _CreditorsContentState extends State<CreditorsContent> {
             ),
             SizedBox(height: 8),
             Text(
-              'Все долги перед поставщиками погашены',
+              'Все клиенты рассчитались по долгам',
               style: TextStyle(
                 fontFamily: 'Gilroy',
                 fontSize: 14,
@@ -164,7 +164,7 @@ class _CreditorsContentState extends State<CreditorsContent> {
               SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () {
-                  context.read<SalesDashboardCreditorsBloc>().add(const LoadCreditorsReport());
+                  context.read<SalesDashboardDebtorsBloc>().add(const LoadDebtorsReport());
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Color(0xff1E2E52),
@@ -192,17 +192,17 @@ class _CreditorsContentState extends State<CreditorsContent> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<SalesDashboardCreditorsBloc, SalesDashboardCreditorsState>(
+    return BlocBuilder<SalesDashboardDebtorsBloc, SalesDashboardDebtorsState>(
       builder: (context, state) {
-        if (state is SalesDashboardCreditorsLoading) {
+        if (state is SalesDashboardDebtorsLoading) {
           return _buildLoadingState();
-        } else if (state is SalesDashboardCreditorsError) {
+        } else if (state is SalesDashboardDebtorsError) {
           return _buildErrorState(state.message);
-        } else if (state is SalesDashboardCreditorsLoaded) {
+        } else if (state is SalesDashboardDebtorsLoaded) {
           if (state.result.result == null) {
             return _buildEmptyState();
           }
-          return _buildCreditorsList(state.result);
+          return _buildDebtorsList(state.result);
         }
 
         return _buildEmptyState();

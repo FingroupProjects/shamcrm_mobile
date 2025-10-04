@@ -14234,8 +14234,24 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
   Future<ResultDashboardGoodsReport> getSalesDashboardGoodsReport({
     int page = 1,
     int perPage = 20,
+    Map<String, dynamic>? filters,
+    String? search,
   }) async {
-    String path = '/dashboard/goods-report?page=$page&per_page=$perPage';
+    String path = '/dashboard/goods-report?';
+
+    final categoryId = filters?['category_id'] as int?;
+    final daysWithoutMovement = filters?['days_without_movement'] as int?;
+    final goodId = filters?['good_id'] as int?;
+    final sumFrom = filters?['sum_from'] as String?;
+    final sumTo = filters?['sum_to'] as String?;
+
+    if (categoryId != null) path += '&category_id=$categoryId';
+    if (daysWithoutMovement != null) path += '&days_without_movement=$daysWithoutMovement';
+    if (goodId != null) path += '&good_id=$goodId';
+    if (sumFrom != null && sumFrom.isNotEmpty) path += '&sum_from=$sumFrom';
+    if (sumTo != null && sumTo.isNotEmpty) path += '&sum_to=$sumTo';
+    if (search != null && search.isNotEmpty) path += '&search=$search';
+    path += '&page=$page&per_page=$perPage';
 
     path = await _appendQueryParams(path);
     if (kDebugMode) {
@@ -14353,35 +14369,60 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
   /// Получение списка кредиторов
   Future<CreditorsResponse> getCreditorsList({
-    String? from,
-    String? to,
-    int? cashRegisterId,
-    int? supplierId,
-    int? clientId,
-    int? leadId,
-    String? operationType,
+    int? page,
+    int? perPage,
+    Map<String, dynamic>? filters,
     String? search,
   }) async {
     try {
       // Формируем параметры запроса
       Map<String, String> queryParams = {};
 
-      if (from != null) queryParams['from'] = from;
-      if (to != null) queryParams['to'] = to;
-      if (cashRegisterId != null) queryParams['cash_register_id'] = cashRegisterId.toString();
-      if (supplierId != null) queryParams['supplier_id'] = supplierId.toString();
-      if (clientId != null) queryParams['client_id'] = clientId.toString();
-      if (leadId != null) queryParams['lead_id'] = leadId.toString();
-      if (operationType != null) queryParams['operation_type'] = operationType;
-      if (search != null) queryParams['search'] = search;
+      if (page != null) queryParams['page'] = page.toString();
+      if (perPage != null) queryParams['per_page'] = perPage.toString();
+      if (search != null && search.isNotEmpty) queryParams['search'] = search;
+      if (filters != null) {
+        if (filters.containsKey('date_from') && filters['date_from'] is DateTime && filters['date_from'] != null) {
+          debugPrint("ApiService: filters['date_from']: ${filters['date_from']}");
+          final dateFrom = filters['date_from'] as DateTime;
+          queryParams['date_from'] = dateFrom.toIso8601String();
+        }
+        if (filters.containsKey('date_to') && filters['date_to'] is DateTime && filters['date_to'] != null) {
+          debugPrint("ApiService: filters['date_to']: ${filters['date_to']}");
+          final dateTo = filters['date_to'] as DateTime;
+          queryParams['date_to'] = dateTo.toIso8601String();
+        }
+        if (filters.containsKey('lead_id') && filters['lead_id'] != null) {
+          debugPrint("ApiService: filters['lead_id']: ${filters['lead_id']}");
+          queryParams['lead_id'] = filters['lead_id'].toString();
+        }
+        if (filters.containsKey('supplier_id') && filters['supplier_id'] != null) {
+          debugPrint("ApiService: filters['supplier_id']: ${filters['supplier_id']}");
+          queryParams['supplier_id'] = filters['supplier_id'].toString();
+        }
+        if (filters.containsKey('amountFrom') && filters['amountFrom'] != null) {
+          debugPrint("ApiService: filters['amountFrom']: ${filters['amountFrom']}");
+          queryParams['amount_from'] = filters['amountFrom'].toString();
+        }
+        if (filters.containsKey('amountTo') && filters['amountTo'] != null) {
+          debugPrint("ApiService: filters['amountTo']: ${filters['amountTo']}");
+          queryParams['amount_to'] = filters['amountTo'].toString();
+        }
+      }
 
       var path = await _appendQueryParams('/fin/dashboard/creditors-list');
 
-       if (queryParams.isNotEmpty) {
-        path += '?${Uri.encodeQueryComponent(queryParams.entries.map((e) => '${e.key}=${e.value}').join('&'))}';
+      // Fix: Properly encode query parameters
+      if (queryParams.isNotEmpty) {
+        // Check if path already has query params (contains ?)
+        final separator = path.contains('?') ? '&' : '?';
+        final encodedParams = queryParams.entries
+            .map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+            .join('&');
+        path += '$separator$encodedParams';
       }
       if (kDebugMode) {
-        print('ApiService: getCreditorsList - Generated path: $path');
+        print('ApiService: getCreditorsList - Generated path: $path, filter: $filters');
       }
 
       final response = await _getRequest(path);
@@ -14442,43 +14483,74 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
   /// Получение баланса денежных средств
   Future<CashBalanceResponse> getSalesDashboardCashBalance({
-    String? from,
-    String? to,
+    String? search,
+    Map<String, dynamic>? filters,
     int? page,
     int? perPage,
   }) async {
     // try{
-      // Формируем параметры запроса
-      Map<String, String> queryParams = {};
+    // Формируем параметры запроса
 
-      if (from != null) queryParams['from'] = from;
-      if (to != null) queryParams['to'] = to;
-      if (page != null) queryParams['page'] = page.toString();
-      if (perPage != null) queryParams['per_page'] = perPage.toString();
+    debugPrint("ApiService: getSalesDashboardCashBalance filters: $filters");
 
-      var path = await _appendQueryParams('/fin/dashboard/cash-balance');
-
-      if (queryParams.isNotEmpty) {
-        path += '?${Uri.encodeQueryComponent(queryParams.entries.map((e) => '${e.key}=${e.value}').join('&'))}';
+    Map<String, String> queryParams = {};
+    if (page != null) queryParams['page'] = page.toString();
+    if (perPage != null) queryParams['per_page'] = perPage.toString();
+    if (search != null && search.isNotEmpty) queryParams['search'] = search;
+    if (filters != null) {
+      if (filters.containsKey('date_from') && filters['date_from'] != null) {
+        debugPrint("ApiService: filters['date_from']: ${filters['date_from']}");
+        final dateFrom = filters['date_from'] as DateTime;
+        queryParams['date_from'] = dateFrom.toIso8601String();
       }
 
-
-      if (kDebugMode) {
-        print('ApiService: getCashBalance - Generated path: $path');
+      if (filters.containsKey('date_to') && filters['date_to'] != null) {
+        debugPrint("ApiService: filters['date_to']: ${filters['date_to']}");
+        final dateTo = filters['date_to'] as DateTime;
+        queryParams['date_to'] = dateTo.toIso8601String();
       }
 
-      final response = await _getRequest(path);
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return CashBalanceResponse.fromJson(data);
-      } else {
-        final message = _extractErrorMessageFromResponse(response);
-        throw ApiException(
-          message ?? 'Ошибка при получении баланса денежных средств!',
-          response.statusCode,
-        );
+      if (filters.containsKey('sum_from') && filters['sum_from'] != null) {
+        debugPrint("ApiService: filters['sum_from']: ${filters['sum_from']}");
+        final sumFrom = filters['sum_from'] as double;
+        queryParams['sum_from'] = sumFrom.toString();
       }
+
+      if (filters.containsKey('sum_to') && filters['sum_to'] != null) {
+        debugPrint("ApiService: filters['sum_to']: ${filters['sum_to']}");
+        final sumTo = filters['sum_to'] as double;
+        queryParams['sum_to'] = sumTo.toString();
+      }
+    }
+
+    var path = await _appendQueryParams('/fin/dashboard/cash-balance');
+
+    // Fix: Properly encode query parameters
+    if (queryParams.isNotEmpty) {
+      // Check if path already has query params (contains ?)
+      final separator = path.contains('?') ? '&' : '?';
+      final encodedParams = queryParams.entries
+          .map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+          .join('&');
+      path += '$separator$encodedParams';
+    }
+
+    if (kDebugMode) {
+      print('ApiService: getCashBalance - Generated path: $path');
+    }
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return CashBalanceResponse.fromJson(data);
+    } else {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка при получении баланса денежных средств!',
+        response.statusCode,
+      );
+    }
     // } catch (e) {
     //   throw e;
     // }

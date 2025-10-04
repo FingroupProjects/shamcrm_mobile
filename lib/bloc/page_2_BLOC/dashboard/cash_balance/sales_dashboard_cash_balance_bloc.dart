@@ -1,5 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter/cupertino.dart';
 
 import '../../../../api/service/api_service.dart';
 import '../../../../models/page_2/dashboard/cash_balance_model.dart';
@@ -14,9 +15,14 @@ class SalesDashboardCashBalanceBloc extends Bloc<SalesDashboardCashBalanceEvent,
     on<LoadCashBalanceReport>((event, emit) async {
       // try {
         emit(SalesDashboardCashBalanceLoading());
+
+        debugPrint("Fetching cash balance report: page=${event.page}, perPage=${event.perPage}, filter=${event.filter}, search=${event.search}");
+
         final response = await apiService.getSalesDashboardCashBalance(
           page: event.page,
           perPage: event.perPage,
+          filters: event.filter,
+          search: event.search,
         );
         emit(SalesDashboardCashBalanceLoaded(data: response));
       // } catch (e) {
