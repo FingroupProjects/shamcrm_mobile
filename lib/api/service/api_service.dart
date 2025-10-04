@@ -14458,43 +14458,74 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
   /// Получение баланса денежных средств
   Future<CashBalanceResponse> getSalesDashboardCashBalance({
-    String? from,
-    String? to,
+    String? search,
+    Map<String, dynamic>? filters,
     int? page,
     int? perPage,
   }) async {
     // try{
-      // Формируем параметры запроса
-      Map<String, String> queryParams = {};
+    // Формируем параметры запроса
 
-      if (from != null) queryParams['from'] = from;
-      if (to != null) queryParams['to'] = to;
-      if (page != null) queryParams['page'] = page.toString();
-      if (perPage != null) queryParams['per_page'] = perPage.toString();
+    debugPrint("ApiService: getSalesDashboardCashBalance filters: $filters");
 
-      var path = await _appendQueryParams('/fin/dashboard/cash-balance');
-
-      if (queryParams.isNotEmpty) {
-        path += '?${Uri.encodeQueryComponent(queryParams.entries.map((e) => '${e.key}=${e.value}').join('&'))}';
+    Map<String, String> queryParams = {};
+    if (page != null) queryParams['page'] = page.toString();
+    if (perPage != null) queryParams['per_page'] = perPage.toString();
+    if (search != null && search.isNotEmpty) queryParams['search'] = search;
+    if (filters != null) {
+      if (filters.containsKey('date_from') && filters['date_from'] != null) {
+        debugPrint("ApiService: filters['date_from']: ${filters['date_from']}");
+        final dateFrom = filters['date_from'] as DateTime;
+        queryParams['date_from'] = dateFrom.toIso8601String();
       }
 
-
-      if (kDebugMode) {
-        print('ApiService: getCashBalance - Generated path: $path');
+      if (filters.containsKey('date_to') && filters['date_to'] != null) {
+        debugPrint("ApiService: filters['date_to']: ${filters['date_to']}");
+        final dateTo = filters['date_to'] as DateTime;
+        queryParams['date_to'] = dateTo.toIso8601String();
       }
 
-      final response = await _getRequest(path);
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return CashBalanceResponse.fromJson(data);
-      } else {
-        final message = _extractErrorMessageFromResponse(response);
-        throw ApiException(
-          message ?? 'Ошибка при получении баланса денежных средств!',
-          response.statusCode,
-        );
+      if (filters.containsKey('sum_from') && filters['sum_from'] != null) {
+        debugPrint("ApiService: filters['sum_from']: ${filters['sum_from']}");
+        final sumFrom = filters['sum_from'] as double;
+        queryParams['sum_from'] = sumFrom.toString();
       }
+
+      if (filters.containsKey('sum_to') && filters['sum_to'] != null) {
+        debugPrint("ApiService: filters['sum_to']: ${filters['sum_to']}");
+        final sumTo = filters['sum_to'] as double;
+        queryParams['sum_to'] = sumTo.toString();
+      }
+    }
+
+    var path = await _appendQueryParams('/fin/dashboard/cash-balance');
+
+    // Fix: Properly encode query parameters
+    if (queryParams.isNotEmpty) {
+      // Check if path already has query params (contains ?)
+      final separator = path.contains('?') ? '&' : '?';
+      final encodedParams = queryParams.entries
+          .map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+          .join('&');
+      path += '$separator$encodedParams';
+    }
+
+    if (kDebugMode) {
+      print('ApiService: getCashBalance - Generated path: $path');
+    }
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return CashBalanceResponse.fromJson(data);
+    } else {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка при получении баланса денежных средств!',
+        response.statusCode,
+      );
+    }
     // } catch (e) {
     //   throw e;
     // }

@@ -13,7 +13,7 @@ class LoadCashBalanceReport extends SalesDashboardCashBalanceEvent {
   const LoadCashBalanceReport({
     this.page = 1,
     this.perPage = 20,
-    this. filter,
+    this.filter,
     this.search,
   });
 

@@ -37,7 +37,7 @@ class CustomAppBarReports extends StatefulWidget {
   final TextEditingController textEditingController;
   final ValueChanged<String>? onChangedSearchInput;
   Function(bool) clearButtonClick;
-  Function(bool) clearButtonClickFiltr;
+  Function(bool) clearButtonClickFilter;
   final bool showSearchIcon;
   final bool showFilterIcon;
   final Function(Map<String, dynamic>)? onFilterSelected;
@@ -54,7 +54,7 @@ class CustomAppBarReports extends StatefulWidget {
     required this.textEditingController,
     required this.focusNode,
     required this.clearButtonClick,
-    required this.clearButtonClickFiltr,
+    required this.clearButtonClickFilter,
     this.showSearchIcon = true,
     this.showFilterIcon = true,
     this.onFilterSelected,

@@ -157,6 +157,7 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
     if (id == 0) {
       _goodsBloc.add(LoadGoodsReport(filter: filter, search: search));
     } else if (id == 1) {
+      debugPrint("Reloading Cash Balance with filter: $filter and search: $search");
       _cashBalanceBloc.add(LoadCashBalanceReport(filter: filter, search: search));
     } else if (id == 2) {
       _creditorsBloc.add(LoadCreditorsReport(filter: filter, search: search));
@@ -168,6 +169,7 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
   }
 
   void _handleFilterSelected(Map<String, dynamic> selectedFilters) {
+    debugPrint("Selected Filters: $selectedFilters, currentTabIndex: $_currentTabIndex");
     setState(() {
       _filters[_currentTabIndex] = selectedFilters;
     });
@@ -209,7 +211,7 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
                 isClickAvatarIcon = !isClickAvatarIcon;
               });
             },
-            clearButtonClickFiltr: (isSearching) {},
+            clearButtonClickFilter: (isSearching) {},
             showSearchIcon: !isClickAvatarIcon,
             showFilterIcon: !isClickAvatarIcon,
             currentTabIndex: _currentTabIndex,
