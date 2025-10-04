@@ -60,6 +60,7 @@ import 'package:crm_task_manager/models/page_2/call_center_by_id_model.dart';
 import 'package:crm_task_manager/models/page_2/call_center_model.dart';
 import 'package:crm_task_manager/models/page_2/call_statistics1_model.dart';
 import 'package:crm_task_manager/models/page_2/call_summary_stats_model.dart';
+import 'package:crm_task_manager/models/page_2/category_dashboard_warehouse_model.dart';
 import 'package:crm_task_manager/models/page_2/category_model.dart';
 import 'package:crm_task_manager/models/page_2/character_list_model.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/dashboard_goods_report.dart';
@@ -69,6 +70,7 @@ import 'package:crm_task_manager/models/page_2/dashboard/debtors_model.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/creditors_model.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/illiquids_model.dart';
 import 'package:crm_task_manager/models/page_2/delivery_address_model.dart';
+import 'package:crm_task_manager/models/page_2/good_dashboard_warehouse_model.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_history_model.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
@@ -14986,4 +14988,59 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       );
     }
   }
+
+
+
+  // Метод для получения Категорий
+Future<List<CategoryDashboardWarehouse>> getCategoryDashboardWarehouse() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/category');
+  if (kDebugMode) {
+    print('ApiService: getCategoryDashboardWarehouse - Generated path: $path');
+  }
+
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    print('Полученные данные: $data');  // Для отладки, как в примере
+    // Данные в "result", не прямой массив
+    final resultList = data['result'] as List?;
+    if (resultList == null) {
+      return [];
+    }
+    return resultList
+        .map((category) => CategoryDashboardWarehouse.fromJson(category))
+        .toList();
+  } else {
+    throw Exception('Ошибка загрузки категорий');
+  }
+
+}
+// Метод для получения Товаров
+Future<List<GoodDashboardWarehouse>> getGoodDashboardWarehouse() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/good');
+  if (kDebugMode) {
+    print('ApiService: getGoodDashboardWarehouse - Generated path: $path');
+  }
+
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    print('Полученные данные: $data');  // Для отладки
+    // Данные в result.data, плюс пагинация (игнорируем для списка)
+    final resultObj = data['result'] as Map<String, dynamic>?;
+    final dataList = resultObj?['data'] as List?;
+    if (dataList == null) {
+      return [];
+    }
+    return dataList
+        .map((good) => GoodDashboardWarehouse.fromJson(good))
+        .toList();
+  } else {
+    throw Exception('Ошибка загрузки товаров');
+  }
+}
 }
