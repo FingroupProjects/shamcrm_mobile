@@ -36,14 +36,40 @@ class _MovementScreenState extends State<MovementScreen> {
   bool _isLoadingMore = false;
   bool _hasReachedMax = false;
   bool _selectionMode = false;
-    bool _isRefreshing = false; // ✅ Новый флаг
+  bool _isRefreshing = false;
 
+  // НОВОЕ: Флаги прав доступа
+  bool _hasCreatePermission = false;
+  bool _hasUpdatePermission = false;
+  bool _hasDeletePermission = false;
+  final ApiService _apiService = ApiService();
 
   @override
   void initState() {
     super.initState();
-    _movementBloc = MovementBloc(ApiService())..add(const FetchMovements(forceRefresh: true));
+    _checkPermissions();
+    _movementBloc = MovementBloc(ApiService())
+      ..add(const FetchMovements(forceRefresh: true));
     _scrollController.addListener(_onScroll);
+  }
+
+  // НОВОЕ: Проверка прав доступа
+  Future<void> _checkPermissions() async {
+    try {
+      final create = await _apiService.hasPermission('movement_document.create');
+      final update = await _apiService.hasPermission('movement_document.update');
+      final delete = await _apiService.hasPermission('movement_document.delete');
+
+      if (mounted) {
+        setState(() {
+          _hasCreatePermission = create;
+          _hasUpdatePermission = update;
+          _hasDeletePermission = delete;
+        });
+      }
+    } catch (e) {
+      debugPrint('Ошибка при проверке прав доступа: $e');
+    }
   }
 
   @override
@@ -97,7 +123,8 @@ class _MovementScreenState extends State<MovementScreen> {
   void _onScroll() {
     if (!mounted) return;
 
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200 &&
+    if (_scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 200 &&
         !_isLoadingMore &&
         !_hasReachedMax) {
       setState(() {
@@ -177,24 +204,28 @@ class _MovementScreenState extends State<MovementScreen> {
     return BlocProvider<MovementBloc>(
       create: (context) => _movementBloc,
       child: Scaffold(
-        floatingActionButton: FloatingActionButton(
-          onPressed: () async {
-            if (!mounted) return;
+        // ИЗМЕНЕНО: Показываем FAB только если есть право на создание
+        floatingActionButton: _hasCreatePermission
+            ? FloatingActionButton(
+                onPressed: () async {
+                  if (!mounted) return;
 
-            final result = await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => CreateMovementDocumentScreen(organizationId: widget.organizationId),
-              ),
-            );
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => CreateMovementDocumentScreen(
+                          organizationId: widget.organizationId),
+                    ),
+                  );
 
-            if (mounted && result == true) {
-              _movementBloc.add(const FetchMovements(forceRefresh: true));
-            }
-          },
-          backgroundColor: const Color(0xff1E2E52),
-          child: const Icon(Icons.add, color: Colors.white),
-        ),
+                  if (mounted && result == true) {
+                    _movementBloc.add(const FetchMovements(forceRefresh: true));
+                  }
+                },
+                backgroundColor: const Color(0xff1E2E52),
+                child: const Icon(Icons.add, color: Colors.white),
+              )
+            : null,
         backgroundColor: Colors.white,
         appBar: AppBar(
           automaticallyImplyLeading: !_selectionMode,
@@ -203,14 +234,21 @@ class _MovementScreenState extends State<MovementScreen> {
               ? BlocBuilder<MovementBloc, MovementState>(
                   builder: (context, state) {
                     if (state is MovementLoaded) {
-                      bool showApprove = state.selectedData!.any((doc) => doc.approved == 0 && doc.deletedAt == null);
-                      bool showDisapprove = state.selectedData!.any((doc) => doc.approved == 1 && doc.deletedAt == null);
-                      bool showDelete = state.selectedData!.any((doc) => doc.deletedAt == null);
-                      bool showRestore = state.selectedData!.any((doc) => doc.deletedAt != null);
-                              _isRefreshing = false; // ✅ Сбрасываем флаг
+                      bool showApprove = state.selectedData!.any(
+                          (doc) => doc.approved == 0 && doc.deletedAt == null);
+                      bool showDisapprove = state.selectedData!.any(
+                          (doc) => doc.approved == 1 && doc.deletedAt == null);
+                      // ИЗМЕНЕНО: Показываем кнопку удаления только если есть право
+                      bool showDelete = _hasDeletePermission &&
+                          state.selectedData!
+                              .any((doc) => doc.deletedAt == null);
+                      bool showRestore = state.selectedData!
+                          .any((doc) => doc.deletedAt != null);
+                      _isRefreshing = false;
 
                       return AppBarSelectionMode(
-                        title: localizations?.translate('appbar_movement') ?? 'Перемещение',
+                        title: localizations?.translate('appbar_movement') ??
+                            'Перемещение',
                         onDismiss: () {
                           setState(() {
                             _selectionMode = false;
@@ -249,7 +287,8 @@ class _MovementScreenState extends State<MovementScreen> {
                     }
 
                     return AppBarSelectionMode(
-                      title: localizations?.translate('appbar_movement') ?? 'Перемещение',
+                      title: localizations?.translate('appbar_movement') ??
+                          'Перемещение',
                       onDismiss: () {
                         setState(() {
                           _selectionMode = false;
@@ -260,7 +299,8 @@ class _MovementScreenState extends State<MovementScreen> {
                   },
                 )
               : CustomAppBarPage2(
-                  title: localizations?.translate('appbar_movement') ?? 'Перемещение',
+                  title: localizations?.translate('appbar_movement') ??
+                      'Перемещение',
                   showSearchIcon: true,
                   showFilterIcon: false,
                   showFilterOrderIcon: false,
@@ -298,66 +338,69 @@ class _MovementScreenState extends State<MovementScreen> {
               listener: (context, state) {
                 if (!mounted) return;
 
-               if (state is MovementLoaded) {
-  if (mounted) {
-    setState(() {
-      _hasReachedMax = state.hasReachedMax;
-      _isInitialLoad = false;
-      _isLoadingMore = false;
-      _isRefreshing = false; // ✅ Сбрасываем флаг
-    });
-  }
-} else if (state is MovementError) {
-  if (mounted) {
-    setState(() {
-      _isInitialLoad = false;
-      _isLoadingMore = false;
-      _isRefreshing = false; // ✅ Сбрасываем и при ошибке
-    });
+                if (state is MovementLoaded) {
+                  if (mounted) {
+                    setState(() {
+                      _hasReachedMax = state.hasReachedMax;
+                      _isInitialLoad = false;
+                      _isLoadingMore = false;
+                      _isRefreshing = false;
+                    });
+                  }
+                } else if (state is MovementError) {
+                  if (mounted) {
+                    setState(() {
+                      _isInitialLoad = false;
+                      _isLoadingMore = false;
+                      _isRefreshing = false;
+                    });
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && context.mounted) {
-        if (state.statusCode == 409) {
-          final localizations = AppLocalizations.of(context)!;
-          showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
-          return;
-        }
-        _showSnackBar(state.message, false);
-      }
-    });
-  }
-} else if (state is MovementCreateSuccess) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted && context.mounted) {
+                        if (state.statusCode == 409) {
+                          final localizations = AppLocalizations.of(context)!;
+                          showSimpleErrorDialog(
+                              context,
+                              localizations.translate('error') ?? 'Ошибка',
+                              state.message);
+                          return;
+                        }
+                        _showSnackBar(state.message, false);
+                      }
+                    });
+                  }
+                } else if (state is MovementCreateSuccess) {
                   if (mounted) {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       if (mounted && context.mounted) {
                         _showSnackBar(state.message, true);
-                        _movementBloc.add(const FetchMovements(forceRefresh: true));
+                        _movementBloc
+                            .add(const FetchMovements(forceRefresh: true));
                       }
                     });
                   }
                 } else if (state is MovementDeleteSuccess) {
-  if (mounted) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && context.mounted) {
-        _showSnackBar(state.message, true);
-        // ✅ Устанавливаем флаг перед перезагрузкой
-        setState(() {
-          _isRefreshing = true;
-        });
-        _movementBloc.add(FetchMovements(
-          forceRefresh: true, 
-          filters: _currentFilters, 
-          search: _search
-        ));
-      }
-    });
-  }
-}else if (state is MovementRestoreSuccess) {
                   if (mounted) {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       if (mounted && context.mounted) {
                         _showSnackBar(state.message, true);
-                        _movementBloc.add(const FetchMovements(forceRefresh: true));
+                        setState(() {
+                          _isRefreshing = true;
+                        });
+                        _movementBloc.add(FetchMovements(
+                            forceRefresh: true,
+                            filters: _currentFilters,
+                            search: _search));
+                      }
+                    });
+                  }
+                } else if (state is MovementRestoreSuccess) {
+                  if (mounted) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted && context.mounted) {
+                        _showSnackBar(state.message, true);
+                        _movementBloc
+                            .add(const FetchMovements(forceRefresh: true));
                       }
                     });
                   }
@@ -365,8 +408,14 @@ class _MovementScreenState extends State<MovementScreen> {
                   if (mounted) {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       if (mounted && context.mounted) {
-                        showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-                        _movementBloc.add(FetchMovements(forceRefresh: true, filters: _currentFilters, search: _search));
+                        showCustomSnackBar(
+                            context: context,
+                            message: state.message,
+                            isSuccess: true);
+                        _movementBloc.add(FetchMovements(
+                            forceRefresh: true,
+                            filters: _currentFilters,
+                            search: _search));
                       }
                     });
                   }
@@ -375,10 +424,16 @@ class _MovementScreenState extends State<MovementScreen> {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       if (mounted && context.mounted) {
                         if (state.statusCode == 409) {
-                          showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message);
+                          showSimpleErrorDialog(
+                              context,
+                              localizations?.translate('error') ?? 'Ошибка',
+                              state.message);
                           return;
                         }
-                        showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+                        showCustomSnackBar(
+                            context: context,
+                            message: state.message,
+                            isSuccess: false);
                       }
                     });
                   }
@@ -386,8 +441,14 @@ class _MovementScreenState extends State<MovementScreen> {
                   if (mounted) {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       if (mounted && context.mounted) {
-                        showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-                        _movementBloc.add(FetchMovements(forceRefresh: true, filters: _currentFilters, search: _search));
+                        showCustomSnackBar(
+                            context: context,
+                            message: state.message,
+                            isSuccess: true);
+                        _movementBloc.add(FetchMovements(
+                            forceRefresh: true,
+                            filters: _currentFilters,
+                            search: _search));
                       }
                     });
                   }
@@ -396,10 +457,16 @@ class _MovementScreenState extends State<MovementScreen> {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       if (mounted && context.mounted) {
                         if (state.statusCode == 409) {
-                          showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message);
+                          showSimpleErrorDialog(
+                              context,
+                              localizations?.translate('error') ?? 'Ошибка',
+                              state.message);
                           return;
                         }
-                        showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+                        showCustomSnackBar(
+                            context: context,
+                            message: state.message,
+                            isSuccess: false);
                       }
                     });
                   }
@@ -407,8 +474,14 @@ class _MovementScreenState extends State<MovementScreen> {
                   if (mounted) {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       if (mounted && context.mounted) {
-                        showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-                        _movementBloc.add(FetchMovements(forceRefresh: true, filters: _currentFilters, search: _search));
+                        showCustomSnackBar(
+                            context: context,
+                            message: state.message,
+                            isSuccess: true);
+                        _movementBloc.add(FetchMovements(
+                            forceRefresh: true,
+                            filters: _currentFilters,
+                            search: _search));
                       }
                     });
                   }
@@ -417,10 +490,16 @@ class _MovementScreenState extends State<MovementScreen> {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       if (mounted && context.mounted) {
                         if (state.statusCode == 409) {
-                          showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message);
+                          showSimpleErrorDialog(
+                              context,
+                              localizations?.translate('error') ?? 'Ошибка',
+                              state.message);
                           return;
                         }
-                        showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+                        showCustomSnackBar(
+                            context: context,
+                            message: state.message,
+                            isSuccess: false);
                       }
                     });
                   }
@@ -428,8 +507,14 @@ class _MovementScreenState extends State<MovementScreen> {
                   if (mounted) {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       if (mounted && context.mounted) {
-                        showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-                        _movementBloc.add(FetchMovements(forceRefresh: true, filters: _currentFilters, search: _search));
+                        showCustomSnackBar(
+                            context: context,
+                            message: state.message,
+                            isSuccess: true);
+                        _movementBloc.add(FetchMovements(
+                            forceRefresh: true,
+                            filters: _currentFilters,
+                            search: _search));
                       }
                     });
                   }
@@ -438,10 +523,16 @@ class _MovementScreenState extends State<MovementScreen> {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       if (mounted && context.mounted) {
                         if (state.statusCode == 409) {
-                          showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message);
+                          showSimpleErrorDialog(
+                              context,
+                              localizations?.translate('error') ?? 'Ошибка',
+                              state.message);
                           return;
                         }
-                        showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+                        showCustomSnackBar(
+                            context: context,
+                            message: state.message,
+                            isSuccess: false);
                       }
                     });
                   }
@@ -449,35 +540,37 @@ class _MovementScreenState extends State<MovementScreen> {
               },
             ),
           ],
-child: BlocBuilder<MovementBloc, MovementState>(
-  builder: (context, state) {
-    // ✅ Показываем загрузку при Loading или DeleteLoading
-    if (state is MovementLoading || state is MovementDeleteLoading) {
-      return Center(
-        child: PlayStoreImageLoading(
-          size: 80.0,
-          duration: const Duration(milliseconds: 1000),
-        ),
-      );
-    }
+          child: BlocBuilder<MovementBloc, MovementState>(
+            builder: (context, state) {
+              if (state is MovementLoading || state is MovementDeleteLoading) {
+                return Center(
+                  child: PlayStoreImageLoading(
+                    size: 80.0,
+                    duration: const Duration(milliseconds: 1000),
+                  ),
+                );
+              }
 
-    final List<IncomingDocument> currentData = state is MovementLoaded ? state.data : [];
+              final List<IncomingDocument> currentData =
+                  state is MovementLoaded ? state.data : [];
 
-    if (currentData.isEmpty && state is MovementLoaded) {
-      return Center(
-        child: Text(
-          _isSearching
-              ? (localizations?.translate('nothing_found') ?? 'Ничего не найдено')
-              : (localizations?.translate('no_movements') ?? 'Нет документов перемещения'),
-          style: const TextStyle(
-            fontSize: 18,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w500,
-            color: Color(0xff99A4BA),
-          ),
-        ),
-      );
-    }
+              if (currentData.isEmpty && state is MovementLoaded) {
+                return Center(
+                  child: Text(
+                    _isSearching
+                        ? (localizations?.translate('nothing_found') ??
+                            'Ничего не найдено')
+                        : (localizations?.translate('no_movements') ??
+                            'Нет документов перемещения'),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xff99A4BA),
+                    ),
+                  ),
+                );
+              }
 
               return RefreshIndicator(
                 color: const Color(0xff1E2E52),
@@ -502,96 +595,46 @@ child: BlocBuilder<MovementBloc, MovementState>(
                           : const SizedBox.shrink();
                     }
 
-                    return Dismissible(
-                      key: Key(currentData[index].id.toString()),
-                      direction: DismissDirection.endToStart,
-                      background: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 8,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        alignment: Alignment.centerRight,
-                        child: const Icon(Icons.delete, color: Colors.white, size: 24),
-                      ),
-                      confirmDismiss: (direction) async {
-                        return currentData[index].deletedAt == null;
-                      },
-                    onDismissed: (direction) {
-  print("🗑️ [UI] Удаление документа ID: ${currentData[index].id}");
-  // ❌ Не удаляем из currentData здесь - это вызовет дубликаты
-  // setState(() {
-  //   currentData.removeAt(index);
-  // });
-  
-  _movementBloc.add(DeleteMovementDocument(
-    currentData[index].id!,
-    localizations!,
-    shouldReload: true, // ✅ Всегда true для свайпа
-  ));
-},  
-                      child: MovementCard(
-                        document: currentData[index],
-                        onTap: () {
-                          if (_selectionMode) {
-                            _movementBloc.add(SelectDocument(currentData[index]));
-
-                            final currentState = context.read<MovementBloc>().state;
-
-                            if (currentState is MovementLoaded) {
-                              final selectedCount = currentState.selectedData?.length ?? 0;
-                              if (selectedCount <= 1 && currentState.selectedData?.contains(currentData[index]) == true) {
-                                setState(() {
-                                  _selectionMode = false;
-                                });
-                              }
-                            }
-                            return;
-                          }
-
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (ctx) => BlocProvider(
-                                create: (context) => MovementBloc(context.read<ApiService>()),
-                                child: MovementDocumentDetailsScreen(
-                                  documentId: currentData[index].id!,
-                                  docNumber: currentData[index].docNumber ?? '',
-                                  onDocumentUpdated: () {
-                                    if (mounted) {
-                                      _movementBloc
-                                          .add(FetchMovements(forceRefresh: true, filters: _currentFilters, search: _search));
-                                    }
-                                  },
-                                ),
+                    // ИЗМЕНЕНО: Показываем Dismissible только если есть право на удаление
+                    return _hasDeletePermission
+                        ? Dismissible(
+                            key: Key(currentData[index].id.toString()),
+                            direction: DismissDirection.endToStart,
+                            background: Container(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16),
+                              margin: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.05),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
                               ),
+                              alignment: Alignment.centerRight,
+                              child: const Icon(Icons.delete,
+                                  color: Colors.white, size: 24),
                             ),
-                          );
-                        },
-                        onLongPress: () {
-                          if (_selectionMode) return;
-                          setState(() {
-                            _selectionMode = true;
-                          });
-                          _movementBloc.add(SelectDocument(currentData[index]));
-                        },
-                        isSelectionMode: _selectionMode,
-                        isSelected: (state as MovementLoaded).selectedData?.contains(currentData[index]) ?? false,
-                        onUpdate: () {
-                          if (mounted) {
-                            _movementBloc.add(FetchMovements(forceRefresh: true, filters: _currentFilters, search: _search));
-                          }
-                        },
-                      ),
-                    );
+                            confirmDismiss: (direction) async {
+                              return currentData[index].deletedAt == null;
+                            },
+                            onDismissed: (direction) {
+                              print(
+                                  "🗑️ [UI] Удаление документа ID: ${currentData[index].id}");
+                              _movementBloc.add(DeleteMovementDocument(
+                                currentData[index].id!,
+                                localizations!,
+                                shouldReload: true,
+                              ));
+                            },
+                            child: _buildMovementCard(currentData, index, state),
+                          )
+                        : _buildMovementCard(currentData, index, state);
                   },
                 ),
               );
@@ -599,6 +642,76 @@ child: BlocBuilder<MovementBloc, MovementState>(
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildMovementCard(
+      List<IncomingDocument> currentData, int index, MovementState state) {
+    return MovementCard(
+      document: currentData[index],
+      onTap: () {
+        if (_selectionMode) {
+          _movementBloc.add(SelectDocument(currentData[index]));
+
+          final currentState = context.read<MovementBloc>().state;
+
+          if (currentState is MovementLoaded) {
+            final selectedCount = currentState.selectedData?.length ?? 0;
+            if (selectedCount <= 1 &&
+                currentState.selectedData?.contains(currentData[index]) ==
+                    true) {
+              setState(() {
+                _selectionMode = false;
+              });
+            }
+          }
+          return;
+        }
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (ctx) => BlocProvider(
+              create: (context) => MovementBloc(context.read<ApiService>()),
+              child: MovementDocumentDetailsScreen(
+                documentId: currentData[index].id!,
+                docNumber: currentData[index].docNumber ?? '',
+                hasUpdatePermission: _hasUpdatePermission,
+                hasDeletePermission: _hasDeletePermission,
+                onDocumentUpdated: () {
+                  if (mounted) {
+                    _movementBloc.add(FetchMovements(
+                        forceRefresh: true,
+                        filters: _currentFilters,
+                        search: _search));
+                  }
+                },
+              ),
+            ),
+          ),
+        );
+      },
+      // ИЗМЕНЕНО: Разрешаем долгое нажатие только если есть право на удаление
+      onLongPress: _hasDeletePermission
+          ? () {
+              if (_selectionMode) return;
+              setState(() {
+                _selectionMode = true;
+              });
+              _movementBloc.add(SelectDocument(currentData[index]));
+            }
+          : () {},
+      isSelectionMode: _selectionMode,
+      isSelected: (state as MovementLoaded)
+              .selectedData
+              ?.contains(currentData[index]) ??
+          false,
+      onUpdate: () {
+        if (mounted) {
+          _movementBloc.add(FetchMovements(
+              forceRefresh: true, filters: _currentFilters, search: _search));
+        }
+      },
     );
   }
 }
