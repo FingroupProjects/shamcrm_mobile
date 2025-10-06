@@ -10,10 +10,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class GoodDashboardWarehouseWidget extends StatefulWidget {
   final String? selectedGoodDashboardWarehouse;
   final ValueChanged<String?> onChanged;
+  final Key? key;
 
   const GoodDashboardWarehouseWidget({
     required this.selectedGoodDashboardWarehouse,
     required this.onChanged,
+    this.key,
   });
 
   @override
@@ -90,6 +92,7 @@ class _GoodDashboardWarehouseWidgetState extends State<GoodDashboardWarehouseWid
               ),
               const SizedBox(height: 4),
               CustomDropdown<GoodDashboardWarehouse>.search(
+                key: widget.key,
                 closeDropDownOnClearFilterSearch: true,
                 items: state is GoodDashboardWarehouseLoaded ? state.goodDashboardWarehouse : [],
                 searchHintText: AppLocalizations.of(context)!.translate('search'),

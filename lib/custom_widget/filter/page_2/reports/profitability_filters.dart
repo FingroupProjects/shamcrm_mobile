@@ -37,6 +37,11 @@ class _ProfitabilityFilterScreenState extends State<ProfitabilityFilterScreen> {
   String? selectedCategoryId;
   String? selectedGoodId;
 
+  // Keys for dropdowns - using ValueKey to force rebuild on reset
+  Key _categoryDropdownKey = UniqueKey();
+  Key _goodDropdownKey = UniqueKey();
+  Key _periodDropdownKey = UniqueKey();
+
   @override
   void initState() {
     super.initState();
@@ -90,6 +95,10 @@ class _ProfitabilityFilterScreenState extends State<ProfitabilityFilterScreen> {
       selectedCategoryId = null;
       selectedGoodId = null;
       selectedPeriod = null;
+      // Generate new keys to force rebuild
+      _categoryDropdownKey = UniqueKey();
+      _goodDropdownKey = UniqueKey();
+      _periodDropdownKey = UniqueKey();
     });
     widget.onResetFilters?.call();
     _saveFilterState();
@@ -117,6 +126,7 @@ class _ProfitabilityFilterScreenState extends State<ProfitabilityFilterScreen> {
 
   Widget _buildCategoryWidget() {
     return BlocProvider<CategoryDashboardWarehouseBloc>(
+      key: _categoryDropdownKey,
       create: (context) => CategoryDashboardWarehouseBloc(_apiService),
       child: CategoryDashboardWarehouseWidget(
         selectedCategoryDashboardWarehouse: selectedCategoryId,
@@ -132,6 +142,7 @@ class _ProfitabilityFilterScreenState extends State<ProfitabilityFilterScreen> {
 
   Widget _buildGoodWidget() {
     return BlocProvider<GoodDashboardWarehouseBloc>(
+      key: _goodDropdownKey,
       create: (context) => GoodDashboardWarehouseBloc(_apiService),
       child: GoodDashboardWarehouseWidget(
         selectedGoodDashboardWarehouse: selectedGoodId,
@@ -171,6 +182,7 @@ class _ProfitabilityFilterScreenState extends State<ProfitabilityFilterScreen> {
             ),
             const SizedBox(height: 8),
             CustomDropdown<DateTime>.search(
+              key: _periodDropdownKey,
               items: years,
               searchHintText: AppLocalizations.of(context)!.translate('search') ?? 'Поиск',
               overlayHeight: 300,
@@ -303,6 +315,8 @@ class _ProfitabilityFilterScreenState extends State<ProfitabilityFilterScreen> {
               child: SingleChildScrollView(
                 child: Column(
                   children: [
+                    _buildPeriodWidget(),
+                    const SizedBox(height: 8),
                     Card(
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       color: Colors.white,
@@ -331,7 +345,6 @@ class _ProfitabilityFilterScreenState extends State<ProfitabilityFilterScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    _buildPeriodWidget(),
                   ],
                 ),
               ),

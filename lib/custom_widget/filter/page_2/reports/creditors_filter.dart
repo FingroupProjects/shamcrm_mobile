@@ -50,6 +50,8 @@ class _CreditorsFilterScreenState extends State<CreditorsFilterScreen> {
   SupplierData? _selectedSupplier;
   List<LeadData> leadsList = [];
   LeadData? _selectedLead;
+  Key _supplierDropdownKey = UniqueKey();
+  Key _leadDropdownKey = UniqueKey();
 
   @override
   void initState() {
@@ -133,6 +135,9 @@ class _CreditorsFilterScreenState extends State<CreditorsFilterScreen> {
       _amountToController.text = '';
       _selectedLead = null;
       _selectedSupplier = null;
+      // Force dropdowns to rebuild with new keys
+      _supplierDropdownKey = UniqueKey();
+      _leadDropdownKey = UniqueKey();
     });
     widget.onResetFilters?.call();
     _saveFilterState();
@@ -283,6 +288,7 @@ class _CreditorsFilterScreenState extends State<CreditorsFilterScreen> {
                 }
 
                 return CustomDropdown<SupplierData>.search(
+                  key: _supplierDropdownKey,
                   items: suppliersList,
                   searchHintText: AppLocalizations.of(context)!.translate('search') ?? 'Поиск',
                   overlayHeight: 300,
@@ -424,6 +430,7 @@ class _CreditorsFilterScreenState extends State<CreditorsFilterScreen> {
                 }
 
                 return CustomDropdown<LeadData>.search(
+                  key: _leadDropdownKey,
                   items: leadsList,
                   searchHintText: AppLocalizations.of(context)!.translate('search') ?? 'Поиск',
                   overlayHeight: 300,

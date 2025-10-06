@@ -36,6 +36,8 @@ class _ExpenseStructureFilterScreenState extends State<ExpenseStructureFilterScr
   String? selectedExpenseArticleId;
   DateTime? _dateFrom;
   DateTime? _dateTo;
+  Key _expenseArticleKey = UniqueKey();
+  Key _categoryKey = UniqueKey();
 
   @override
   void initState() {
@@ -63,7 +65,7 @@ class _ExpenseStructureFilterScreenState extends State<ExpenseStructureFilterScr
 
   Future<void> _saveFilterState() async {
     final prefs = await SharedPreferences.getInstance();
-    
+
     if (selectedCategoryId != null && selectedCategoryId!.isNotEmpty) {
       await prefs.setString('expense_structure_category_id', selectedCategoryId!);
     } else {
@@ -95,6 +97,8 @@ class _ExpenseStructureFilterScreenState extends State<ExpenseStructureFilterScr
       selectedExpenseArticleId = null;
       _dateFrom = null;
       _dateTo = null;
+      _categoryKey = UniqueKey();
+      _expenseArticleKey = UniqueKey();
     });
     widget.onResetFilters?.call();
     _saveFilterState();
@@ -158,6 +162,7 @@ class _ExpenseStructureFilterScreenState extends State<ExpenseStructureFilterScr
     return BlocProvider<CategoryDashboardWarehouseBloc>(
       create: (context) => CategoryDashboardWarehouseBloc(_apiService),
       child: CategoryDashboardWarehouseWidget(
+        key: _categoryKey,
         selectedCategoryDashboardWarehouse: selectedCategoryId,
         onChanged: (id) {
           setState(() {
@@ -173,6 +178,7 @@ class _ExpenseStructureFilterScreenState extends State<ExpenseStructureFilterScr
     return BlocProvider<ExpenseArticleDashboardWarehouseBloc>(
       create: (context) => ExpenseArticleDashboardWarehouseBloc(_apiService),
       child: ExpenseArticleDashboardWarehouseWidget(
+        key: _expenseArticleKey,
         selectedExpenseArticleDashboardWarehouse: selectedExpenseArticleId,
         onChanged: (id) {
           setState(() {
@@ -288,6 +294,8 @@ class _ExpenseStructureFilterScreenState extends State<ExpenseStructureFilterScr
               child: SingleChildScrollView(
                 child: Column(
                   children: [
+                    _buildDateRangeWidget(),
+                    const SizedBox(height: 8),
                     Card(
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       color: Colors.white,
@@ -316,7 +324,6 @@ class _ExpenseStructureFilterScreenState extends State<ExpenseStructureFilterScr
                       ),
                     ),
                     const SizedBox(height: 16),
-                    _buildDateRangeWidget(),
                   ],
                 ),
               ),
