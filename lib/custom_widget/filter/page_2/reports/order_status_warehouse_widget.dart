@@ -11,10 +11,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class OrderStatusWarehouseWidget extends StatefulWidget {
   final String? selectedOrderStatusWarehouse;
   final ValueChanged<String?> onChanged;
+  final Key? key;
 
   const OrderStatusWarehouseWidget({
     required this.selectedOrderStatusWarehouse,
     required this.onChanged,
+    this.key,
   });
 
   @override
@@ -91,6 +93,7 @@ class _OrderStatusWarehouseWidgetState extends State<OrderStatusWarehouseWidget>
               ),
               const SizedBox(height: 4),
               CustomDropdown<OrderStatusWarehouse>.search(
+                key: widget.key,
                 closeDropDownOnClearFilterSearch: true,
                 items: state is OrderStatusWarehouseLoaded ? state.orderStatusWarehouse : [],
                 searchHintText: AppLocalizations.of(context)!.translate('search'),

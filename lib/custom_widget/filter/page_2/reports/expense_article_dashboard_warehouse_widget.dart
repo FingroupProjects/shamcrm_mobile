@@ -10,10 +10,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class ExpenseArticleDashboardWarehouseWidget extends StatefulWidget {
   final String? selectedExpenseArticleDashboardWarehouse;
   final ValueChanged<String?> onChanged;
+  final Key? key;
 
   const ExpenseArticleDashboardWarehouseWidget({
     required this.selectedExpenseArticleDashboardWarehouse,
     required this.onChanged,
+    this.key,
   });
 
   @override
@@ -90,6 +92,7 @@ class _ExpenseArticleDashboardWarehouseWidgetState extends State<ExpenseArticleD
               ),
               const SizedBox(height: 4),
               CustomDropdown<ExpenseArticleDashboardWarehouse>.search(
+                key: widget.key,
                 closeDropDownOnClearFilterSearch: true,
                 items: state is ExpenseArticleDashboardWarehouseLoaded ? state.expenseArticleDashboardWarehouse : [],
                 searchHintText: AppLocalizations.of(context)!.translate('search'),

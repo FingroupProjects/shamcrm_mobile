@@ -42,8 +42,10 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
   final TextEditingController _amountToController = TextEditingController();
   final TextEditingController _daysWithoutMovementController = TextEditingController();
   final ApiService _apiService = ApiService();
+  Key _goodKey = UniqueKey();
+  Key _categoryKey = UniqueKey();
 
-  // Новое: локальные selected ID для dropdown
+// Новое: локальные selected ID для dropdown
   String? selectedCategoryId;
   String? selectedGoodId;
 
@@ -68,7 +70,7 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
       selectedCategoryId = prefs.getString('goods_category_id') ?? widget.categoryId;
       selectedGoodId = prefs.getString('goods_good_id') ?? widget.goodId;
 
-      // Убрали поиск selectedCategory — виджеты сами найдут по id
+// Убрали поиск selectedCategory — виджеты сами найдут по id
     });
   }
 
@@ -98,6 +100,8 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
       _daysWithoutMovementController.text = '';
       selectedCategoryId = null;
       selectedGoodId = null;
+      _categoryKey = UniqueKey();
+      _goodKey = UniqueKey();
     });
     widget.onResetFilters?.call();
     _saveFilterState();
@@ -141,6 +145,7 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
     return BlocProvider<CategoryDashboardWarehouseBloc>(
       create: (context) => CategoryDashboardWarehouseBloc(_apiService),
       child: CategoryDashboardWarehouseWidget(
+        key: _categoryKey,
         selectedCategoryDashboardWarehouse: selectedCategoryId,
         onChanged: (id) {
           setState(() {
@@ -156,6 +161,7 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
     return BlocProvider<GoodDashboardWarehouseBloc>(
       create: (context) => GoodDashboardWarehouseBloc(_apiService),
       child: GoodDashboardWarehouseWidget(
+        key: _goodKey,
         selectedGoodDashboardWarehouse: selectedGoodId,
         onChanged: (id) {
           setState(() {
@@ -246,17 +252,7 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Text(
-                            //   AppLocalizations.of(context)!.translate('category') ?? 'Категория',
-                            //   style: const TextStyle(
-                            //     fontFamily: 'Gilroy',
-                            //     fontWeight: FontWeight.w500,
-                            //     color: Color(0xff1E2E52),
-                            //     fontSize: 14,
-                            //   ),
-                            // ),
-                            // const SizedBox(height: 8),
-                            _buildCategoryWidget(),  // Теперь наш BLoC-виджет
+                            _buildCategoryWidget(), // Теперь наш BLoC-виджет
                           ],
                         ),
                       ),
@@ -270,17 +266,7 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Text(
-                            //   AppLocalizations.of(context)!.translate('good') ?? 'Товар',
-                            //   style: const TextStyle(
-                            //     fontFamily: 'Gilroy',
-                            //     fontWeight: FontWeight.w500,
-                            //     color: Color(0xff1E2E52),
-                            //     fontSize: 14,
-                            //   ),
-                            // ),
-                            // const SizedBox(height: 8),
-                            _buildGoodWidget(),  // Новый BLoC-виджет для товара
+                            _buildGoodWidget(), // Новый BLoC-виджет для товара
                           ],
                         ),
                       ),
@@ -297,7 +283,8 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
                             CustomTextField(
                               controller: _amountFromController,
                               keyboardType: TextInputType.number,
-                              hintText: AppLocalizations.of(context)!.translate('enter_minimum_amount') ?? 'Введите минимальную сумму',
+                              hintText:
+                                  AppLocalizations.of(context)!.translate('enter_minimum_amount') ?? 'Введите минимальную сумму',
                               label: AppLocalizations.of(context)!.translate('amount_from') ?? 'Сумма от',
                             ),
                           ],
@@ -316,7 +303,8 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
                             CustomTextField(
                               controller: _amountToController,
                               keyboardType: TextInputType.number,
-                              hintText: AppLocalizations.of(context)!.translate('enter_maximum_amount') ?? 'Введите максимальную сумму',
+                              hintText:
+                                  AppLocalizations.of(context)!.translate('enter_maximum_amount') ?? 'Введите максимальную сумму',
                               label: AppLocalizations.of(context)!.translate('amount_to') ?? 'Сумма до',
                             ),
                           ],

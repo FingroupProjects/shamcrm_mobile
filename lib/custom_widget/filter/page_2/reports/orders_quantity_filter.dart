@@ -37,6 +37,7 @@ class _OrdersQuantityFilterScreenState extends State<OrdersQuantityFilterScreen>
   final TextEditingController _sumFromController = TextEditingController();
   final TextEditingController _sumToController = TextEditingController();
   String? _selectedStatus;
+  Key _statusKey = UniqueKey();
 
   @override
   void initState() {
@@ -90,6 +91,7 @@ class _OrdersQuantityFilterScreenState extends State<OrdersQuantityFilterScreen>
       _sumFromController.text = '';
       _sumToController.text = '';
       _selectedStatus = null;
+      _statusKey = UniqueKey();
     });
     widget.onResetFilters?.call();
     _saveFilterState();
@@ -169,6 +171,7 @@ class _OrdersQuantityFilterScreenState extends State<OrdersQuantityFilterScreen>
         child: BlocProvider<OrderStatusWarehouseBloc>(
           create: (context) => OrderStatusWarehouseBloc(ApiService()),
           child: OrderStatusWarehouseWidget(
+            key: _statusKey,
             selectedOrderStatusWarehouse: _selectedStatus,
             onChanged: (value) {
               setState(() {
@@ -185,8 +188,8 @@ class _OrdersQuantityFilterScreenState extends State<OrdersQuantityFilterScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        backgroundColor: const Color(0xffF4F7FD),
-        appBar: AppBar(
+      backgroundColor: const Color(0xffF4F7FD),
+      appBar: AppBar(
         titleSpacing: 0,
         title: Text(
           AppLocalizations.of(context)!.translate('filter'),

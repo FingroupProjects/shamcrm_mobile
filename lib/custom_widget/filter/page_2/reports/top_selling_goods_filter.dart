@@ -41,6 +41,8 @@ class _TopSellingGoodsFilterScreenState extends State<TopSellingGoodsFilterScree
   final TextEditingController _sumFromController = TextEditingController();
   final TextEditingController _sumToController = TextEditingController();
   final ApiService _apiService = ApiService();
+  Key _categoryKey = UniqueKey();
+  Key _goodKey = UniqueKey();
 
   // Local state for selected IDs
   String? selectedCategoryId;
@@ -109,6 +111,8 @@ class _TopSellingGoodsFilterScreenState extends State<TopSellingGoodsFilterScree
       _sumToController.text = '';
       selectedCategoryId = null;
       selectedGoodId = null;
+      _categoryKey = UniqueKey();
+      _goodKey = UniqueKey();
     });
     widget.onResetFilters?.call();
     _saveFilterState();
@@ -183,6 +187,7 @@ class _TopSellingGoodsFilterScreenState extends State<TopSellingGoodsFilterScree
     return BlocProvider<CategoryDashboardWarehouseBloc>(
       create: (context) => CategoryDashboardWarehouseBloc(_apiService),
       child: CategoryDashboardWarehouseWidget(
+        key: _categoryKey,
         selectedCategoryDashboardWarehouse: selectedCategoryId,
         onChanged: (id) {
           setState(() {
@@ -198,6 +203,7 @@ class _TopSellingGoodsFilterScreenState extends State<TopSellingGoodsFilterScree
     return BlocProvider<GoodDashboardWarehouseBloc>(
       create: (context) => GoodDashboardWarehouseBloc(_apiService),
       child: GoodDashboardWarehouseWidget(
+        key: _goodKey,
         selectedGoodDashboardWarehouse: selectedGoodId,
         onChanged: (id) {
           setState(() {

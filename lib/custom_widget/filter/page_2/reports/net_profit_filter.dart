@@ -37,6 +37,9 @@ class _NetProfitFilterScreenState extends State<NetProfitFilterScreen> {
   String? selectedCategoryId;
   String? selectedGoodId;
 
+  Key _categoryKey = UniqueKey();
+  Key _goodKey = UniqueKey();
+
   @override
   void initState() {
     super.initState();
@@ -90,6 +93,8 @@ class _NetProfitFilterScreenState extends State<NetProfitFilterScreen> {
       selectedCategoryId = null;
       selectedGoodId = null;
       selectedPeriod = null;
+      _categoryKey = UniqueKey();
+      _goodKey = UniqueKey();
     });
     widget.onResetFilters?.call();
     _saveFilterState();
@@ -119,6 +124,7 @@ class _NetProfitFilterScreenState extends State<NetProfitFilterScreen> {
     return BlocProvider<CategoryDashboardWarehouseBloc>(
       create: (context) => CategoryDashboardWarehouseBloc(_apiService),
       child: CategoryDashboardWarehouseWidget(
+        key: _categoryKey,
         selectedCategoryDashboardWarehouse: selectedCategoryId,
         onChanged: (id) {
           setState(() {
@@ -134,6 +140,7 @@ class _NetProfitFilterScreenState extends State<NetProfitFilterScreen> {
     return BlocProvider<GoodDashboardWarehouseBloc>(
       create: (context) => GoodDashboardWarehouseBloc(_apiService),
       child: GoodDashboardWarehouseWidget(
+        key: _goodKey,
         selectedGoodDashboardWarehouse: selectedGoodId,
         onChanged: (id) {
           setState(() {

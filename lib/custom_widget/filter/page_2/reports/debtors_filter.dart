@@ -50,6 +50,8 @@ class _DebtorsFilterScreenState extends State<DebtorsFilterScreen> {
   SupplierData? _selectedSupplier;
   List<LeadData> leadsList = [];
   LeadData? _selectedLead;
+  Key _supplierDropdownKey = UniqueKey();
+  Key _leadDropdownKey = UniqueKey();
 
   @override
   void initState() {
@@ -133,6 +135,9 @@ class _DebtorsFilterScreenState extends State<DebtorsFilterScreen> {
       _amountToController.text = '';
       _selectedLead = null;
       _selectedSupplier = null;
+      // Force dropdowns to rebuild with new keys
+      _supplierDropdownKey = UniqueKey();
+      _leadDropdownKey = UniqueKey();
     });
     widget.onResetFilters?.call();
     _saveFilterState();
@@ -199,7 +204,7 @@ class _DebtorsFilterScreenState extends State<DebtorsFilterScreen> {
         'lead_id': _selectedLead?.id, // Include lead ID
         'supplier_id': _selectedSupplier?.id, // Include supplier ID
       };
-      debugPrint('CreditorFilter.filters: $filters'); // Debug print
+      debugPrint('DebtorFilter.filters: $filters'); // Debug print
       widget.onSelectedDataFilter?.call(filters);
     }
     Navigator.pop(context);
@@ -283,6 +288,7 @@ class _DebtorsFilterScreenState extends State<DebtorsFilterScreen> {
                 }
 
                 return CustomDropdown<SupplierData>.search(
+                  key: _supplierDropdownKey,
                   items: suppliersList,
                   searchHintText: AppLocalizations.of(context)!.translate('search') ?? 'Поиск',
                   overlayHeight: 300,
@@ -424,6 +430,7 @@ class _DebtorsFilterScreenState extends State<DebtorsFilterScreen> {
                 }
 
                 return CustomDropdown<LeadData>.search(
+                  key: _leadDropdownKey,
                   items: leadsList,
                   searchHintText: AppLocalizations.of(context)!.translate('search') ?? 'Поиск',
                   overlayHeight: 300,

@@ -37,6 +37,9 @@ class _SalesDynamicsFilterScreenState extends State<SalesDynamicsFilterScreen> {
   String? selectedCategoryId;
   String? selectedGoodId;
 
+  Key _categoryKey = UniqueKey();
+  Key _goodKey = UniqueKey();
+
   @override
   void initState() {
     super.initState();
@@ -49,11 +52,11 @@ class _SalesDynamicsFilterScreenState extends State<SalesDynamicsFilterScreen> {
   Future<void> _loadFilterState() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      selectedCategoryId = prefs.getString('sales_dynamics_category_id') ?? widget.categoryId;
-      selectedGoodId = prefs.getString('sales_dynamics_good_id') ?? widget.goodId;
+      selectedCategoryId = prefs.getString('net_profit_category_id') ?? widget.categoryId;
+      selectedGoodId = prefs.getString('net_profit_good_id') ?? widget.goodId;
 
       // Load period as DateTime
-      final savedYear = prefs.getInt('sales_dynamics_period_year');
+      final savedYear = prefs.getInt('net_profit_period_year');
       if (savedYear != null) {
         selectedPeriod = DateTime(savedYear);
       } else if (widget.period != null) {
@@ -66,22 +69,22 @@ class _SalesDynamicsFilterScreenState extends State<SalesDynamicsFilterScreen> {
     final prefs = await SharedPreferences.getInstance();
 
     if (selectedCategoryId != null && selectedCategoryId!.isNotEmpty) {
-      await prefs.setString('sales_dynamics_category_id', selectedCategoryId!);
+      await prefs.setString('net_profit_category_id', selectedCategoryId!);
     } else {
-      await prefs.remove('sales_dynamics_category_id');
+      await prefs.remove('net_profit_category_id');
     }
 
     if (selectedGoodId != null && selectedGoodId!.isNotEmpty) {
-      await prefs.setString('sales_dynamics_good_id', selectedGoodId!);
+      await prefs.setString('net_profit_good_id', selectedGoodId!);
     } else {
-      await prefs.remove('sales_dynamics_good_id');
+      await prefs.remove('net_profit_good_id');
     }
 
     // Save period as year integer
     if (selectedPeriod != null) {
-      await prefs.setInt('sales_dynamics_period_year', selectedPeriod!.year);
+      await prefs.setInt('net_profit_period_year', selectedPeriod!.year);
     } else {
-      await prefs.remove('sales_dynamics_period_year');
+      await prefs.remove('net_profit_period_year');
     }
   }
 
@@ -90,6 +93,8 @@ class _SalesDynamicsFilterScreenState extends State<SalesDynamicsFilterScreen> {
       selectedCategoryId = null;
       selectedGoodId = null;
       selectedPeriod = null;
+      _categoryKey = UniqueKey();
+      _goodKey = UniqueKey();
     });
     widget.onResetFilters?.call();
     _saveFilterState();
@@ -119,6 +124,7 @@ class _SalesDynamicsFilterScreenState extends State<SalesDynamicsFilterScreen> {
     return BlocProvider<CategoryDashboardWarehouseBloc>(
       create: (context) => CategoryDashboardWarehouseBloc(_apiService),
       child: CategoryDashboardWarehouseWidget(
+        key: _categoryKey,
         selectedCategoryDashboardWarehouse: selectedCategoryId,
         onChanged: (id) {
           setState(() {
@@ -134,6 +140,7 @@ class _SalesDynamicsFilterScreenState extends State<SalesDynamicsFilterScreen> {
     return BlocProvider<GoodDashboardWarehouseBloc>(
       create: (context) => GoodDashboardWarehouseBloc(_apiService),
       child: GoodDashboardWarehouseWidget(
+        key: _goodKey,
         selectedGoodDashboardWarehouse: selectedGoodId,
         onChanged: (id) {
           setState(() {

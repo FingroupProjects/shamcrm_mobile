@@ -11,10 +11,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class CategoryDashboardWarehouseWidget extends StatefulWidget {
   final String? selectedCategoryDashboardWarehouse;
   final ValueChanged<String?> onChanged;
+  final Key? key;
 
   const CategoryDashboardWarehouseWidget({
     required this.selectedCategoryDashboardWarehouse,
     required this.onChanged,
+    this.key,
   });
 
   @override
@@ -91,6 +93,7 @@ class _CategoryDashboardWarehouseWidgetState extends State<CategoryDashboardWare
               ),
               const SizedBox(height: 4),
               CustomDropdown<CategoryDashboardWarehouse>.search(
+                key: widget.key,
                 closeDropDownOnClearFilterSearch: true,
                 items: state is CategoryDashboardWarehouseLoaded ? state.categoryDashboardWarehouse : [],
                 searchHintText: AppLocalizations.of(context)!.translate('search'),
