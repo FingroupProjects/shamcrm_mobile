@@ -182,6 +182,7 @@
   "deal_statuses": "Статусы сделки",
   "event_statuses": "Статусы cобитый",
   "select_status": "Выберите статус",
+  "select_order_status": "Выберите статус заказа",
   "field_required": "Поле обязательно для заполнения",
   "normal": "Обычный",
   "important": "Важный",
@@ -1519,7 +1520,9 @@
   "enter_minimum_amount": "Введите минимальную сумму",
   "period": "Период",
   "good": "Товар",
-  "select_good": "Выберите товар"
+  "select_good": "Выберите товар",
+  "select_expense_article": "Выберите статью расхода",
+  "expense_article": "Статья расхода"
 
 
 }

@@ -61,6 +61,8 @@ import 'package:crm_task_manager/models/page_2/call_center_model.dart';
 import 'package:crm_task_manager/models/page_2/call_statistics1_model.dart';
 import 'package:crm_task_manager/models/page_2/call_summary_stats_model.dart';
 import 'package:crm_task_manager/models/page_2/category_dashboard_warehouse_model.dart';
+import 'package:crm_task_manager/models/page_2/order_status_warehouse_model.dart';
+import 'package:crm_task_manager/models/page_2/expense_article_dashboard_warehouse_model.dart';
 import 'package:crm_task_manager/models/page_2/category_model.dart';
 import 'package:crm_task_manager/models/page_2/character_list_model.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/dashboard_goods_report.dart';
@@ -137,6 +139,7 @@ import '../../models/outcome_categories_data_response.dart';
 import '../../models/page_2/dashboard/expense_structure.dart';
 import '../../models/page_2/dashboard/net_profit_model.dart';
 import '../../models/page_2/dashboard/order_dashboard_model.dart';
+import '../../models/page_2/dashboard/order_quantity_content.dart';
 import '../../models/page_2/dashboard/profitability_dashboard_model.dart';
 import '../../models/page_2/dashboard/sales_model.dart';
 import '../../models/page_2/dashboard/net_profit_content_model.dart';
@@ -14855,6 +14858,18 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         final sumTo = filters['sum_to'] as double;
         queryParams['sum_to'] = sumTo.toString();
       }
+
+      if (filters.containsKey('good_id') && filters['good_id'] != null) {
+        debugPrint("ApiService: filters['good_id']: ${filters['good_id']}");
+        final goodId = filters['good_id'] as int;
+        queryParams['good_id'] = goodId.toString();
+      }
+
+      if (filters.containsKey('category_id') && filters['category_id'] != null) {
+        debugPrint("ApiService: filters['category_id']: ${filters['category_id']}");
+        final categoryId = filters['category_id'] as int;
+        queryParams['category_id'] = categoryId.toString();
+      }
     }
 
     String path = await _appendQueryParams('/dashboard/top-selling-goods');
@@ -15093,7 +15108,70 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     }
   }
 
+  Future<OrderQuantityContent> getOrderByFilter(
+      Map<String, dynamic>? filters,
+      String? search,
+      ) async {
+    Map<String, String> queryParams = {};
+    if (search != null && search.isNotEmpty) queryParams['search'] = search;
+    if (filters != null) {
+      if (filters.containsKey('date_from') && filters['date_from'] != null) {
+        debugPrint("ApiService: filters['date_from']: ${filters['date_from']}");
+        final date_from = filters['date_from'] as DateTime;
+        queryParams['date_from'] = date_from.toIso8601String();
+      }
 
+      if (filters.containsKey('date_to') && filters['date_to'] != null) {
+        debugPrint("ApiService: filters['date_to']: ${filters['date_to']}");
+        final date_to = filters['date_to'] as DateTime;
+        queryParams['date_to'] = date_to.toIso8601String();
+      }
+
+      if (filters.containsKey('sum_from') && filters['sum_from'] != null) {
+        debugPrint("ApiService: filters['sum_from']: ${filters['sum_from']}");
+        final sumFrom = filters['sum_from'] as double;
+        queryParams['sum_from'] = sumFrom.toString();
+      }
+
+      if (filters.containsKey('sum_to') && filters['sum_to'] != null) {
+        debugPrint("ApiService: filters['sum_to']: ${filters['sum_to']}");
+        final sumTo = filters['sum_to'] as double;
+        queryParams['sum_to'] = sumTo.toString();
+      }
+
+      if (filters.containsKey('status_id') && filters['status_id'] != null) {
+        debugPrint("ApiService: filters['status_id']: ${filters['status_id']}");
+        final statusID = filters['status_id'] as int;
+        queryParams['status_id'] = statusID.toString();
+      }
+    }
+    // Формируем параметры запроса
+    var path = await _appendQueryParams('/order/dashboard');
+
+    // Fix: Properly encode query parameters
+    if (queryParams.isNotEmpty) {
+      // Check if path already has query params (contains ?)
+      final separator = path.contains('?') ? '&' : '?';
+      final encodedParams =
+      queryParams.entries.map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}').join('&');
+      path += '$separator$encodedParams';
+    }
+
+    debugPrint("ApiService: getOrderByFilter path: $path");
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return OrderQuantityContent.fromJson(data);
+    } else {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка',
+        response.statusCode,
+      );
+    }
+  }
 
 
   // Метод для получения Категорий
@@ -15122,6 +15200,33 @@ Future<List<CategoryDashboardWarehouse>> getCategoryDashboardWarehouse() async {
   }
 
 }
+
+// Метод для получения статусов заказов
+Future<List<OrderStatusWarehouse>> getOrderStatusWarehouse() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/order-status');
+  if (kDebugMode) {
+    print('ApiService: getOrderStatusWarehouse - Generated path: $path');
+  }
+
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    print('Полученные данные: $data');  // Для отладки
+    // Данные в "result", не прямой массив
+    final resultList = data['result'] as List?;
+    if (resultList == null) {
+      return [];
+    }
+    return resultList
+        .map((orderStatus) => OrderStatusWarehouse.fromJson(orderStatus))
+        .toList();
+  } else {
+    throw Exception('Ошибка загрузки статусов заказов');
+  }
+}
+
 // Метод для получения Товаров
 Future<List<GoodDashboardWarehouse>> getGoodDashboardWarehouse() async {
   // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
@@ -15146,6 +15251,38 @@ Future<List<GoodDashboardWarehouse>> getGoodDashboardWarehouse() async {
         .toList();
   } else {
     throw Exception('Ошибка загрузки товаров');
+  }
+}
+
+// Метод для получения Статей расхода
+Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehouse() async {
+  final path = await _appendQueryParams('/article?type=expense');
+  if (kDebugMode) {
+    print('ApiService: getExpenseArticleDashboardWarehouse - Generated path: $path');
+  }
+
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    print('Полученные данные статей расхода: $data');
+    
+    // Navigate to nested data: result -> data
+    final resultData = data['result'];
+    if (resultData == null) {
+      return [];
+    }
+    
+    final dataList = resultData['data'] as List?;
+    if (dataList == null) {
+      return [];
+    }
+    
+    return dataList
+        .map((article) => ExpenseArticleDashboardWarehouse.fromJson(article))
+        .toList();
+  } else {
+    throw Exception('Ошибка загрузки статей расхода');
   }
 }
 }

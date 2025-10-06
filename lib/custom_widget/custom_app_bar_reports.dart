@@ -19,7 +19,7 @@ import 'filter/page_2/reports/top_selling_goods_filter.dart';
 import 'filter/page_2/reports/sales_dynamics_filter.dart';
 import 'filter/page_2/reports/net_profit_filter.dart';
 import 'filter/page_2/reports/cost_structure_filter.dart';
-import 'filter/page_2/reports/orders_count_filter.dart';
+import 'filter/page_2/reports/orders_quantity_filter.dart';
 
 class CustomAppBarReports extends StatefulWidget {
   final String title;
@@ -460,6 +460,10 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
     String? categoryId;
     String? daysWithoutMovement;
     String? goodId;
+    String? article_id;
+    String? leadId;
+    String? supplierId;
+    String? statusId;
     DateTime? period;
 
     final currentFilter = widget.currentFilters[widget.currentTabIndex] ?? {};
@@ -521,6 +525,26 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
     if (currentFilter.containsKey('good_id')) {
       final goodIdValue = currentFilter['good_id'];
       goodId = goodIdValue?.toString();
+    }
+
+    if (currentFilter.containsKey('article_id')) {
+      final expenseArticleIdValue = currentFilter['article_id'];
+      article_id = expenseArticleIdValue?.toString();
+    }
+
+    if (currentFilter.containsKey('lead_id')) {
+      final leadIdValue = currentFilter['lead_id'];
+      leadId = leadIdValue?.toString();
+    }
+
+    if (currentFilter.containsKey('supplier_id')) {
+      final supplierIdValue = currentFilter['supplier_id'];
+      supplierId = supplierIdValue?.toString();
+    }
+
+    if (currentFilter.containsKey('status_id')) {
+      final statusIdValue = currentFilter['status_id'];
+      statusId = statusIdValue?.toString();
     }
 
     // Navigate to the appropriate filter screen based on currentTabIndex
@@ -586,6 +610,8 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
           initialToDate: initialToDate,
           initialAmountFrom: sumFrom,
           initialAmountTo: sumTo,
+          initialLead: leadId,
+          initialSupplier: supplierId,
         );
         break;
       case 3:
@@ -606,6 +632,8 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
           initialToDate: initialToDate,
           initialAmountFrom: sumFrom,
           initialAmountTo: sumTo,
+          initialLead: leadId,
+          initialSupplier: supplierId
         );
         break;
       case 4:
@@ -702,13 +730,13 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
             widget.onResetFilters?.call();
           },
           categoryId: categoryId,
-          goodId: goodId,
+          articleId: article_id,
           initialDateFrom: initialFromDate,
           initialDateTo: initialToDate,
         );
         break;
       case 9:
-        filterScreen = OrdersCountFilterScreen(
+        filterScreen = OrdersQuantityFilterScreen(
           onSelectedDataFilter: (filters) {
             if (kDebugMode) {
               print('CustomAppBarReports: Получены фильтры из OrdersCountFilterScreen: $filters');
@@ -723,8 +751,9 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
           },
           initialFromDate: initialFromDate,
           initialToDate: initialToDate,
-          initialAmountFrom: sumFrom,
-          initialAmountTo: sumTo,
+          initialSumFrom: sumFrom,
+          initialSumTo: sumTo,
+          initialStatus: statusId,
         );
         break;
       default:

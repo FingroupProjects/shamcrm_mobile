@@ -1,80 +1,95 @@
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
+import 'package:crm_task_manager/custom_widget/filter/page_2/reports/order_status_warehouse_widget.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../../bloc/page_2_BLOC/dashboard/order_status_warehouse/order_status_warehouse_bloc.dart';
+import '../../../../api/service/api_service.dart';
 
-class OrdersCountFilterScreen extends StatefulWidget {
+class OrdersQuantityFilterScreen extends StatefulWidget {
   final Function(Map<String, dynamic>)? onSelectedDataFilter;
   final VoidCallback? onResetFilters;
   final DateTime? initialFromDate;
   final DateTime? initialToDate;
-  final String? initialAmountFrom;
-  final String? initialAmountTo;
+  final String? initialSumFrom;
+  final String? initialSumTo;
+  final String? initialStatus;
 
-  const OrdersCountFilterScreen({
+  const OrdersQuantityFilterScreen({
     Key? key,
     this.onSelectedDataFilter,
     this.onResetFilters,
     this.initialFromDate,
     this.initialToDate,
-    this.initialAmountFrom,
-    this.initialAmountTo,
+    this.initialSumFrom,
+    this.initialSumTo,
+    this.initialStatus,
   }) : super(key: key);
 
   @override
-  _OrdersCountFilterScreenState createState() => _OrdersCountFilterScreenState();
+  _OrdersQuantityFilterScreenState createState() => _OrdersQuantityFilterScreenState();
 }
 
-class _OrdersCountFilterScreenState extends State<OrdersCountFilterScreen> {
+class _OrdersQuantityFilterScreenState extends State<OrdersQuantityFilterScreen> {
   DateTime? _fromDate;
   DateTime? _toDate;
-  final TextEditingController _amountFromController = TextEditingController();
-  final TextEditingController _amountToController = TextEditingController();
+  final TextEditingController _sumFromController = TextEditingController();
+  final TextEditingController _sumToController = TextEditingController();
+  String? _selectedStatus;
 
   @override
   void initState() {
     super.initState();
     _fromDate = widget.initialFromDate;
     _toDate = widget.initialToDate;
-    _amountFromController.text = widget.initialAmountFrom ?? '';
-    _amountToController.text = widget.initialAmountTo ?? '';
+    _sumFromController.text = widget.initialSumFrom ?? '';
+    _sumToController.text = widget.initialSumTo ?? '';
+    _selectedStatus = widget.initialStatus;
     _loadFilterState();
   }
 
   Future<void> _loadFilterState() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      final fromDateMillis = prefs.getInt('orders_count_from_date');
-      final toDateMillis = prefs.getInt('orders_count_to_date');
+      final fromDateMillis = prefs.getInt('orders_quantity_from_date');
+      final toDateMillis = prefs.getInt('orders_quantity_to_date');
       if (fromDateMillis != null) _fromDate = DateTime.fromMillisecondsSinceEpoch(fromDateMillis);
       if (toDateMillis != null) _toDate = DateTime.fromMillisecondsSinceEpoch(toDateMillis);
-      _amountFromController.text = prefs.getString('orders_count_amount_from') ?? widget.initialAmountFrom ?? '';
-      _amountToController.text = prefs.getString('orders_count_amount_to') ?? widget.initialAmountTo ?? '';
+      _sumFromController.text = prefs.getString('orders_quantity_sum_from') ?? widget.initialSumFrom ?? '';
+      _sumToController.text = prefs.getString('orders_quantity_sum_to') ?? widget.initialSumTo ?? '';
+      _selectedStatus = prefs.getString('orders_quantity_status') ?? widget.initialStatus;
     });
   }
 
   Future<void> _saveFilterState() async {
     final prefs = await SharedPreferences.getInstance();
     if (_fromDate != null) {
-      await prefs.setInt('orders_count_from_date', _fromDate!.millisecondsSinceEpoch);
+      await prefs.setInt('orders_quantity_from_date', _fromDate!.millisecondsSinceEpoch);
     } else {
-      await prefs.remove('orders_count_from_date');
+      await prefs.remove('orders_quantity_from_date');
     }
     if (_toDate != null) {
-      await prefs.setInt('orders_count_to_date', _toDate!.millisecondsSinceEpoch);
+      await prefs.setInt('orders_quantity_to_date', _toDate!.millisecondsSinceEpoch);
     } else {
-      await prefs.remove('orders_count_to_date');
+      await prefs.remove('orders_quantity_to_date');
     }
-    await prefs.setString('orders_count_amount_from', _amountFromController.text);
-    await prefs.setString('orders_count_amount_to', _amountToController.text);
+    await prefs.setString('orders_quantity_sum_from', _sumFromController.text);
+    await prefs.setString('orders_quantity_sum_to', _sumToController.text);
+    if (_selectedStatus != null && _selectedStatus!.isNotEmpty) {
+      await prefs.setString('orders_quantity_status', _selectedStatus!);
+    } else {
+      await prefs.remove('orders_quantity_status');
+    }
   }
 
   void _resetFilters() {
     setState(() {
       _fromDate = null;
       _toDate = null;
-      _amountFromController.text = '';
-      _amountToController.text = '';
+      _sumFromController.text = '';
+      _sumToController.text = '';
+      _selectedStatus = null;
     });
     widget.onResetFilters?.call();
     _saveFilterState();
@@ -118,13 +133,14 @@ class _OrdersCountFilterScreenState extends State<OrdersCountFilterScreen> {
   bool _isAnyFilterSelected() {
     return _fromDate != null ||
         _toDate != null ||
-        _amountFromController.text.isNotEmpty ||
-        _amountToController.text.isNotEmpty;
+        _sumFromController.text.isNotEmpty ||
+        _sumToController.text.isNotEmpty ||
+        (_selectedStatus != null && _selectedStatus!.isNotEmpty);
   }
 
-  double? _parseAmount(String text) {
+  double? _parseSum(String text) {
     if (text.isEmpty) return null;
-    final parsed = double.tryParse(text.replaceAll(',', '')); // Handle commas if needed
+    final parsed = double.tryParse(text.replaceAll(',', ''));
     return parsed;
   }
 
@@ -134,20 +150,43 @@ class _OrdersCountFilterScreenState extends State<OrdersCountFilterScreen> {
       widget.onResetFilters?.call();
     } else {
       widget.onSelectedDataFilter?.call({
-        'fromDate': _fromDate,
-        'toDate': _toDate,
-        'amountFrom': _parseAmount(_amountFromController.text),
-        'amountTo': _parseAmount(_amountToController.text),
+        'date_from': _fromDate,
+        'date_to': _toDate,
+        'sum_from': _parseSum(_sumFromController.text),
+        'sum_to': _parseSum(_sumToController.text),
+        'status_id': _selectedStatus != null ? int.tryParse(_selectedStatus!) : null,
       });
     }
     Navigator.pop(context);
   }
 
+  Widget _buildStatusDropdown() {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: BlocProvider<OrderStatusWarehouseBloc>(
+          create: (context) => OrderStatusWarehouseBloc(ApiService()),
+          child: OrderStatusWarehouseWidget(
+            selectedOrderStatusWarehouse: _selectedStatus,
+            onChanged: (value) {
+              setState(() {
+                _selectedStatus = value;
+              });
+              FocusScope.of(context).unfocus();
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xffF4F7FD),
-      appBar: AppBar(
+        backgroundColor: const Color(0xffF4F7FD),
+        appBar: AppBar(
         titleSpacing: 0,
         title: Text(
           AppLocalizations.of(context)!.translate('filter'),
@@ -247,30 +286,20 @@ class _OrdersCountFilterScreenState extends State<OrdersCountFilterScreen> {
                     ),
                     const SizedBox(height: 8),
 
-                    // Amount From Card
+                    // Sum From Card
                     Card(
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       color: Colors.white,
                       child: Padding(
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(8),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'Amount From',
-                              style: TextStyle(
-                                fontFamily: 'Gilroy',
-                                fontWeight: FontWeight.w500,
-                                color: const Color(0xff1E2E52),
-                                fontSize: 14,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
                             CustomTextField(
-                              controller: _amountFromController,
+                              controller: _sumFromController,
                               keyboardType: TextInputType.number,
-                              hintText: 'Enter minimum amount',
-                              label: '',
+                              hintText: AppLocalizations.of(context)!.translate('enter_minimum_amount') ?? 'Введите минимальную сумму',
+                              label: AppLocalizations.of(context)!.translate('amount_from') ?? 'Сумма от',
                             ),
                           ],
                         ),
@@ -278,35 +307,29 @@ class _OrdersCountFilterScreenState extends State<OrdersCountFilterScreen> {
                     ),
                     const SizedBox(height: 8),
 
-                    // Amount To Card
+                    // Sum To Card
                     Card(
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       color: Colors.white,
                       child: Padding(
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(8),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'Amount To',
-                              style: TextStyle(
-                                fontFamily: 'Gilroy',
-                                fontWeight: FontWeight.w500,
-                                color: const Color(0xff1E2E52),
-                                fontSize: 14,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
                             CustomTextField(
-                              controller: _amountToController,
+                              controller: _sumToController,
                               keyboardType: TextInputType.number,
-                              hintText: 'Enter maximum amount',
-                              label: '',
+                              hintText: AppLocalizations.of(context)!.translate('enter_maximum_amount') ?? 'Введите максимальную сумму',
+                              label: AppLocalizations.of(context)!.translate('amount_to') ?? 'Сумма до',
                             ),
                           ],
                         ),
                       ),
                     ),
+                    const SizedBox(height: 8),
+
+                    // Status Dropdown Card
+                    _buildStatusDropdown(),
                   ],
                 ),
               ),
@@ -319,8 +342,8 @@ class _OrdersCountFilterScreenState extends State<OrdersCountFilterScreen> {
 
   @override
   void dispose() {
-    _amountFromController.dispose();
-    _amountToController.dispose();
+    _sumFromController.dispose();
+    _sumToController.dispose();
     super.dispose();
   }
 }

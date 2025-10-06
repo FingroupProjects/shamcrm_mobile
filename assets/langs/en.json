@@ -182,6 +182,7 @@
     "deal_statuses": "Deal statuses",
     "event_statuses": "Event statuses",
     "select_status": "Select Status",
+    "select_order_status": "Select Order Status",
     "field_required": "Field is required",
     "normal": "Normal",
     "important": "Important",
@@ -1524,7 +1525,9 @@
   "enter_maximum_amount": "Enter maximum amount",
   "enter_days": "Enter number of days",
   "enter_minimum_amount": "Enter minimum amount",
-  "period": "Period"
+  "period": "Period",
+  "select_expense_article": "Select expense article",
+  "expense_article": "Expense article"
 
 
 

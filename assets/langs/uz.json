@@ -182,6 +182,7 @@
   "deal_statuses": "Bitim holatlari",
   "event_statuses": "Voqea holatlari",
   "select_status": "Holatni tanlang",
+  "select_order_status": "Buyurtma holatini tanlang",
   "field_required": "Maydonni to'ldirish shart",
   "normal": "Oddiy",
   "important": "Muhim",
@@ -1526,7 +1527,9 @@
   "enter_maximum_amount": "Maksimal summani kiriting",
   "enter_days": "Kunlar sonini kiriting",
   "enter_minimum_amount": "Minimal summani kiriting",
-  "period": "Davr"
+  "period": "Davr",
+  "select_expense_article": "Xarajat moddasini tanlang",
+  "expense_article": "Xarajat moddasi"
 
 
 
