@@ -182,6 +182,7 @@
   "deal_statuses": "Bitim holatlari",
   "event_statuses": "Voqea holatlari",
   "select_status": "Holatni tanlang",
+  "select_order_status": "Buyurtma holatini tanlang",
   "field_required": "Maydonni to'ldirish shart",
   "normal": "Oddiy",
   "important": "Muhim",

@@ -1,7 +1,11 @@
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
+import 'package:crm_task_manager/custom_widget/filter/page_2/reports/order_status_warehouse_widget.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../../bloc/page_2_BLOC/dashboard/order_status_warehouse/order_status_warehouse_bloc.dart';
+import '../../../../api/service/api_service.dart';
 
 class OrdersQuantityFilterScreen extends StatefulWidget {
   final Function(Map<String, dynamic>)? onSelectedDataFilter;
@@ -33,14 +37,6 @@ class _OrdersQuantityFilterScreenState extends State<OrdersQuantityFilterScreen>
   final TextEditingController _sumFromController = TextEditingController();
   final TextEditingController _sumToController = TextEditingController();
   String? _selectedStatus;
-
-  // Define status options
-  final List<Map<String, String>> _statusOptions = [
-    {'id': 'pending', 'name': 'Pending'},
-    {'id': 'processing', 'name': 'Processing'},
-    {'id': 'completed', 'name': 'Completed'},
-    {'id': 'cancelled', 'name': 'Cancelled'},
-  ];
 
   @override
   void initState() {
@@ -158,7 +154,7 @@ class _OrdersQuantityFilterScreenState extends State<OrdersQuantityFilterScreen>
         'date_to': _toDate,
         'sum_from': _parseSum(_sumFromController.text),
         'sum_to': _parseSum(_sumToController.text),
-        'status': _selectedStatus,
+        'status_id': _selectedStatus != null ? int.tryParse(_selectedStatus!) : null,
       });
     }
     Navigator.pop(context);
@@ -170,69 +166,17 @@ class _OrdersQuantityFilterScreenState extends State<OrdersQuantityFilterScreen>
       color: Colors.white,
       child: Padding(
         padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              AppLocalizations.of(context)!.translate('status'),
-              style: const TextStyle(
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w500,
-                color: Color(0xff1E2E52),
-                fontSize: 14,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              decoration: BoxDecoration(
-                border: Border.all(color: const Color(0xffE5E9F2)),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  isExpanded: true,
-                  value: _selectedStatus,
-                  hint: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Text(
-                      AppLocalizations.of(context)!.translate('select_status'),
-                      style: const TextStyle(
-                        fontFamily: 'Gilroy',
-                        color: Color(0xff99A4BA),
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                  items: _statusOptions.map((status) {
-                    return DropdownMenuItem<String>(
-                      value: status['id'],
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Text(
-                          status['name']!,
-                          style: const TextStyle(
-                            fontFamily: 'Gilroy',
-                            color: Color(0xff1E2E52),
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedStatus = value;
-                    });
-                    FocusScope.of(context).unfocus();
-                  },
-                  icon: const Padding(
-                    padding: EdgeInsets.only(right: 12),
-                    child: Icon(Icons.keyboard_arrow_down, color: Color(0xff99A4BA)),
-                  ),
-                ),
-              ),
-            ),
-          ],
+        child: BlocProvider<OrderStatusWarehouseBloc>(
+          create: (context) => OrderStatusWarehouseBloc(ApiService()),
+          child: OrderStatusWarehouseWidget(
+            selectedOrderStatusWarehouse: _selectedStatus,
+            onChanged: (value) {
+              setState(() {
+                _selectedStatus = value;
+              });
+              FocusScope.of(context).unfocus();
+            },
+          ),
         ),
       ),
     );
@@ -241,8 +185,8 @@ class _OrdersQuantityFilterScreenState extends State<OrdersQuantityFilterScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xffF4F7FD),
-      appBar: AppBar(
+        backgroundColor: const Color(0xffF4F7FD),
+        appBar: AppBar(
         titleSpacing: 0,
         title: Text(
           AppLocalizations.of(context)!.translate('filter'),

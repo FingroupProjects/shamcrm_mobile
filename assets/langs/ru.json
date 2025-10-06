@@ -182,6 +182,7 @@
   "deal_statuses": "Статусы сделки",
   "event_statuses": "Статусы cобитый",
   "select_status": "Выберите статус",
+  "select_order_status": "Выберите статус заказа",
   "field_required": "Поле обязательно для заполнения",
   "normal": "Обычный",
   "important": "Важный",

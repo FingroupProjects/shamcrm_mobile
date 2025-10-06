@@ -61,6 +61,7 @@ import 'package:crm_task_manager/models/page_2/call_center_model.dart';
 import 'package:crm_task_manager/models/page_2/call_statistics1_model.dart';
 import 'package:crm_task_manager/models/page_2/call_summary_stats_model.dart';
 import 'package:crm_task_manager/models/page_2/category_dashboard_warehouse_model.dart';
+import 'package:crm_task_manager/models/page_2/order_status_warehouse_model.dart';
 import 'package:crm_task_manager/models/page_2/expense_article_dashboard_warehouse_model.dart';
 import 'package:crm_task_manager/models/page_2/category_model.dart';
 import 'package:crm_task_manager/models/page_2/character_list_model.dart';
@@ -15199,6 +15200,33 @@ Future<List<CategoryDashboardWarehouse>> getCategoryDashboardWarehouse() async {
   }
 
 }
+
+// Метод для получения статусов заказов
+Future<List<OrderStatusWarehouse>> getOrderStatusWarehouse() async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/order-status');
+  if (kDebugMode) {
+    print('ApiService: getOrderStatusWarehouse - Generated path: $path');
+  }
+
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    print('Полученные данные: $data');  // Для отладки
+    // Данные в "result", не прямой массив
+    final resultList = data['result'] as List?;
+    if (resultList == null) {
+      return [];
+    }
+    return resultList
+        .map((orderStatus) => OrderStatusWarehouse.fromJson(orderStatus))
+        .toList();
+  } else {
+    throw Exception('Ошибка загрузки статусов заказов');
+  }
+}
+
 // Метод для получения Товаров
 Future<List<GoodDashboardWarehouse>> getGoodDashboardWarehouse() async {
   // Используем _appendQueryParams для добавления organization_id и sales_funnel_id

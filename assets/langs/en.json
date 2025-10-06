@@ -182,6 +182,7 @@
     "deal_statuses": "Deal statuses",
     "event_statuses": "Event statuses",
     "select_status": "Select Status",
+    "select_order_status": "Select Order Status",
     "field_required": "Field is required",
     "normal": "Normal",
     "important": "Important",
