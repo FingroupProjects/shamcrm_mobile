@@ -33,7 +33,7 @@ class MyNavBar extends StatefulWidget {
 
 class _MyNavBarState extends State<MyNavBar> {
   final ScrollController _scrollController = ScrollController();
-  static final double _navBarHeight = Platform.isIOS ? 80 : 60;
+  static final double _navBarHeight = Platform.isIOS ? 60 : 60;
   List<NavBarItemData>? _orderedItems;
   bool _isReordering = false;
   int _lastItemCount = 0;
