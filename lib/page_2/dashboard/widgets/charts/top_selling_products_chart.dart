@@ -154,7 +154,7 @@ class _TopSellingProductsChartState extends State<TopSellingProductsChart> {
                 BarChartData(
                   alignment: BarChartAlignment.spaceAround,
                   maxY: productsData
-                      .map((e) => double.parse(e.totalAmount))
+                      .map((e) => double.parse(e.totalQuantity.toString()))
                       .reduce((a, b) => a > b ? a : b) *
                       1.2,
                   minY: 0,
@@ -269,7 +269,7 @@ class _TopSellingProductsChartState extends State<TopSellingProductsChart> {
                       x: index,
                       barRods: [
                         BarChartRodData(
-                          toY: double.parse(productsData[index].totalAmount),
+                          toY: double.parse(productsData[index].totalQuantity.toString()),
                           color: const Color(0xFF3935E7),
                           width: 28,
                           borderRadius: const BorderRadius.only(
@@ -281,8 +281,6 @@ class _TopSellingProductsChartState extends State<TopSellingProductsChart> {
                     ),
                   ),
                 ),
-                duration: const Duration(milliseconds: 800),
-                curve: Curves.easeInOut,
               ),
             ),
           ),
@@ -314,14 +312,19 @@ class _TopSellingProductsChartState extends State<TopSellingProductsChart> {
 
   double _getIntervalForPeriod() {
     final productsData = _getDataForSelectedPeriod();
-    if (productsData.isEmpty) return 100;
+    if (productsData.isEmpty) return 1;  // ← Changed from 100 to 1
 
     final maxValue = productsData
-        .map((e) => double.parse(e.totalAmount))
+        .map((e) => e.totalQuantity.toDouble())
         .reduce((a, b) => a > b ? a : b);
 
-    if (maxValue > 2000) return 500;
-    if (maxValue > 1000) return 200;
-    return 100;
+    // ← Added more granular intervals for small values
+    if (maxValue <= 10) return 2;
+    if (maxValue <= 50) return 10;
+    if (maxValue <= 100) return 20;
+    if (maxValue <= 500) return 50;
+    if (maxValue <= 1000) return 100;
+    if (maxValue <= 2000) return 200;
+    return 500;
   }
 }

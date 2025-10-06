@@ -387,9 +387,12 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
 
   double _calculateInterval() {
     final maxY = _calculateMaxY();
-    if (maxY <= 100) return 20;
-    if (maxY <= 500) return 100;
-    if (maxY <= 1000) return 200;
+    if (maxY <= 10) return 2;
+    if (maxY <= 50) return 10;
+    if (maxY <= 150) return 20;
+    if (maxY <= 500) return 50;
+    if (maxY <= 1000) return 100;
+    if (maxY <= 2000) return 200;
     return 500;
   }
 

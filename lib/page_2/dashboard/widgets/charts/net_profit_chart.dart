@@ -341,11 +341,13 @@ class _NetProfitChartState extends State<NetProfitChart> {
 
   double _calculateInterval(List<NetProfitMonth> months) {
     final maxY = _calculateMaxY(months);
-    if (maxY <= 100) return 20;
-    if (maxY <= 500) return 100;
-    if (maxY <= 1000) return 200;
-    if (maxY <= 5000) return 1000;
-    return 2000;
+    if (maxY <= 10) return 2;
+    if (maxY <= 50) return 10;
+    if (maxY <= 150) return 20;
+    if (maxY <= 500) return 50;
+    if (maxY <= 1000) return 100;
+    if (maxY <= 5000) return 500;
+    return 1000;
   }
 
   String _formatValue(double value) {
