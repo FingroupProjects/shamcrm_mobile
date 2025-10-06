@@ -292,7 +292,7 @@ class _TopSellingProductsChartState extends State<TopSellingProductsChart> {
             child: GestureDetector(
               onTap: () {
                 debugPrint("Подробнее pressed");
-                Navigator.of(context).push(MaterialPageRoute(builder: (context) => DetailedReportScreen(currentTabIndex: 4)));
+                Navigator.of(context).push(MaterialPageRoute(builder: (context) => DetailedReportScreen(currentTabIndex: 5)));
               },
               child: Text(
                 localizations.translate('more_details'),

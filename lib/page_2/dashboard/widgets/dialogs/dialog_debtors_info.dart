@@ -440,7 +440,7 @@ class _DebtorsDialogState extends State<DebtorsDialog> {
                             Navigator.of(context).pop(); // Сначала закрываем диалог
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (context) => DetailedReportScreen(currentTabIndex: 3),
+                                builder: (context) => DetailedReportScreen(currentTabIndex: 4),
                               ),
                             );
                           },

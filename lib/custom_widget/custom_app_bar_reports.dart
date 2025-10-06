@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/custom_widget/filter/page_2/reports/act_filter.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/reports/expense_structure_filter.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 
@@ -754,6 +755,28 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
           initialSumFrom: sumFrom,
           initialSumTo: sumTo,
           initialStatus: statusId,
+        );
+        break;
+      case 10:
+        filterScreen = ActFilterScreen(
+            onSelectedDataFilter: (filters) {
+              if (kDebugMode) {
+                print('CustomAppBarReports: Получены фильтры из DebtorsFilterScreen: $filters');
+              }
+              widget.onFilterSelected?.call(filters);
+            },
+            onResetFilters: () {
+              if (kDebugMode) {
+                print('CustomAppBarReports: Сброс фильтров из ActFilter');
+              }
+              widget.onResetFilters?.call();
+            },
+            initialFromDate: initialFromDate,
+            initialToDate: initialToDate,
+            initialAmountFrom: sumFrom,
+            initialAmountTo: sumTo,
+            initialLead: leadId,
+            initialSupplier: supplierId
         );
         break;
       default:

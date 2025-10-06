@@ -310,7 +310,7 @@ class _NetProfitChartState extends State<NetProfitChart> {
             child: GestureDetector(
               onTap: () {
                 debugPrint("Подробнее pressed");
-                Navigator.of(context).push(MaterialPageRoute(builder: (context) => DetailedReportScreen(currentTabIndex: 6)));
+                Navigator.of(context).push(MaterialPageRoute(builder: (context) => DetailedReportScreen(currentTabIndex: 7)));
               },
               child: Text(
                 localizations.translate('more_details'),

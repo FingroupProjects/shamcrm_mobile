@@ -547,7 +547,7 @@ class _CashBalanceDialogState extends State<CashBalanceDialog> {
                           onPressed: () {
                             debugPrint("Подробнее pressed");
                             Navigator.of(context).pop(); // Сначала закрываем диалог
-                            Navigator.of(context).push(MaterialPageRoute(builder: (context) => DetailedReportScreen(currentTabIndex: 1)));
+                            Navigator.of(context).push(MaterialPageRoute(builder: (context) => DetailedReportScreen(currentTabIndex: 2)));
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white,
