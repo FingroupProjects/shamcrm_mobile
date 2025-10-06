@@ -2307,15 +2307,21 @@ Future<http.Response> _patchRequest(
   }
 
 //Метод для получения лида
-Future<LeadsDataResponse> getAllLeadWithAllPages() async {
+// В ApiService добавьте параметр showDebt
+Future<LeadsDataResponse> getAllLeadWithAllPages({bool showDebt = false}) async {
   List<LeadData> allLeads = [];
   int currentPage = 1;
   bool hasMorePages = true;
 
   while (hasMorePages) {
     try {
-      // Добавляем параметр page к запросу
-      final path = await _appendQueryParams('/lead?page=$currentPage');
+      // Формируем путь с параметром show_debt если нужно
+      String basePath = '/lead?page=$currentPage';
+      if (showDebt) {
+        basePath += '&show_debt=1';
+      }
+      
+      final path = await _appendQueryParams(basePath);
 
       if (kDebugMode) {
         print('ApiService: getAllLeadWithAllPages - Loading page $currentPage, path: $path');
@@ -2332,8 +2338,6 @@ Future<LeadsDataResponse> getAllLeadWithAllPages() async {
           if (pageResponse.result != null && pageResponse.result!.isNotEmpty) {
             allLeads.addAll(pageResponse.result!);
 
-            // Проверяем, есть ли еще страницы
-            // Предполагаем, что если количество элементов меньше размера страницы, то это последняя страница
             if (pageResponse.result!.length < 20) {
               hasMorePages = false;
             } else {
@@ -2353,7 +2357,6 @@ Future<LeadsDataResponse> getAllLeadWithAllPages() async {
         throw Exception('Ошибка при получении данных со страницы $currentPage!');
       }
 
-      // Небольшая задержка между запросами, чтобы не перегружать сервер
       if (hasMorePages) {
         await Future.delayed(const Duration(milliseconds: 100));
       }
@@ -2362,11 +2365,9 @@ Future<LeadsDataResponse> getAllLeadWithAllPages() async {
       if (kDebugMode) {
         print('ApiService: Error loading page $currentPage: $e');
       }
-      // Если ошибка на первой странице - пробрасываем её
       if (currentPage == 1) {
         rethrow;
       }
-      // Если ошибка на последующих страницах - просто прекращаем загрузку
       hasMorePages = false;
     }
   }
@@ -2381,9 +2382,8 @@ Future<LeadsDataResponse> getAllLeadWithAllPages() async {
   );
 }
 
-// Обновляем существующий метод, чтобы использовать новую логику
-Future<LeadsDataResponse> getAllLead() async {
-  return await getAllLeadWithAllPages();
+Future<LeadsDataResponse> getAllLead({bool showDebt = false}) async {
+  return await getAllLeadWithAllPages(showDebt: showDebt);
 }
 
 // Метод для Удаления Статуса Лида
@@ -8526,70 +8526,60 @@ Future<String> _appendQueryParams(String path) async {
   }
 
   Future<List<Variant>> getVariants({
-    int page = 1,
-    int perPage = 15,
-    String? search,
-    Map<String, dynamic>? filters,
-  }) async {
-    String path = '/good/get/variant?page=$page&per_page=$perPage';
-    if (search != null && search.isNotEmpty) {
-      path += '&search=$search';
-    }
+  int page = 1,
+  int perPage = 15,
+  String? search,
+  Map<String, dynamic>? filters,
+}) async {
+  String path = '/good/get/variant?page=$page&per_page=$perPage';
+  
+  if (search != null && search.isNotEmpty) {
+    path += '&search=$search';
+  }
 
-    if (filters != null) {
-      if (filters.containsKey('category_id') &&
-          filters['category_id'] is List &&
-          (filters['category_id'] as List).isNotEmpty) {
-        final categoryIds = filters['category_id'] as List;
-        for (int i = 0; i < categoryIds.length; i++) {
-          path += '&category_id[]=${categoryIds[i]}';
-        }
-      }
-      if (filters.containsKey('is_active')) {
-        path += '&is_active=${filters['is_active'] ? 1 : 0}';
-        if (kDebugMode) {
-          ////print('ApiService: Добавлен параметр is_active: ${filters['is_active']}');
-        }
+  if (filters != null) {
+    // Добавляем counterparty_id
+    if (filters.containsKey('counterparty_id')) {
+      path += '&counterparty_id=${filters['counterparty_id']}';
+    }
+    
+    // Добавляем storage_id
+    if (filters.containsKey('storage_id')) {
+      path += '&storage_id=${filters['storage_id']}';
+    }
+    
+    if (filters.containsKey('category_id') &&
+        filters['category_id'] is List &&
+        (filters['category_id'] as List).isNotEmpty) {
+      final categoryIds = filters['category_id'] as List;
+      for (int i = 0; i < categoryIds.length; i++) {
+        path += '&category_id[]=${categoryIds[i]}';
       }
     }
-
-    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    path = await _appendQueryParams(path);
-    if (kDebugMode) {
-      //print('ApiService: getVariants - Generated path: $path');
-    }
-
-    final response = await _getRequest(path);
-    if (kDebugMode) {
-      ////print('ApiService: Ответ сервера: statusCode=${response.statusCode}, body=${response.body}');
-    }
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> data = json.decode(response.body);
-      if (data.containsKey('result') && data['result']['data'] is List) {
-        final variants = (data['result']['data'] as List)
-            .map((item) => Variant.fromJson(item as Map<String, dynamic>))
-            .toList();
-        final paginationData = data['result']['pagination'] ?? {};
-        final total = paginationData['total'] ?? variants.length;
-        final totalPages = paginationData['total_pages'] ??
-            (variants.length < perPage ? page : page + 1);
-        if (kDebugMode) {
-          ////print('ApiService: Успешно получено ${variants.length} вариантов, всего: $total, страниц: $totalPages');
-        }
-        return variants;
-      } else {
-        if (kDebugMode) {
-          //print('ApiService: Ошибка формата данных: $data');
-        }
-        throw Exception('Ошибка: Неверный формат данных');
-      }
-    } else {
-      if (kDebugMode) {
-        //print('ApiService: Ошибка загрузки вариантов: ${response.statusCode}');
-      }
-      throw Exception('Ошибка загрузки вариантов: ${response.statusCode}');
+    
+    if (filters.containsKey('is_active')) {
+      path += '&is_active=${filters['is_active'] ? 1 : 0}';
     }
   }
+
+  path = await _appendQueryParams(path);
+  
+  final response = await _getRequest(path);
+  
+  if (response.statusCode == 200) {
+    final Map<String, dynamic> data = json.decode(response.body);
+    if (data.containsKey('result') && data['result']['data'] is List) {
+      final variants = (data['result']['data'] as List)
+          .map((item) => Variant.fromJson(item as Map<String, dynamic>))
+          .toList();
+      return variants;
+    } else {
+      throw Exception('Ошибка: Неверный формат данных');
+    }
+  } else {
+    throw Exception('Ошибка загрузки вариантов: ${response.statusCode}');
+  }
+}
 
   Future<List<Goods>> getGoodsById(int goodsId,
       {bool isFromOrder = false}) async {

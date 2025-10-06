@@ -13,6 +13,8 @@ class Variant {
   int quantitySelected;
   String? selectedUnit;
   final List<Unit> availableUnits;
+    final int? remainder; // ← ДОБАВЛЯЕМ
+
 
   Variant({
     required this.id,
@@ -26,6 +28,7 @@ class Variant {
     this.quantitySelected = 1,
     this.selectedUnit,
     required this.availableUnits, // Added required modifier
+    this.remainder,
   });
 
   factory Variant.fromJson(Map<String, dynamic> json) {
@@ -81,6 +84,8 @@ class Variant {
       quantitySelected: 1,
       selectedUnit: units.isNotEmpty ? units.first.shortName ?? units.first.name : null,
       availableUnits: units, // Always non-null
+            remainder: json['remainder'] as int?, // ← ДОБАВЛЯЕМ парсинг
+
     );
   }
 }

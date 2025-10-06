@@ -114,7 +114,27 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
   void _initializeDocuments() {
     final Color docColor = const Color(0xff1E2E52);
     List<WarehouseDocument> allDocuments = [];
+   if (_hasExpenseDocument) {
+      allDocuments.add(
+        WarehouseDocument(
+          title: AppLocalizations.of(context)!.translate('client_sale') ?? 'Продажа',
+          icon: Icons.shopping_cart_outlined,
+          color: docColor,
+        ),
+      );
+    }
 
+
+    if (_hasClientReturnDocument) {
+      allDocuments.add(
+        WarehouseDocument(
+          title: AppLocalizations.of(context)!.translate('client_return') ?? 'Возврат от клиента',
+          icon: Icons.keyboard_return,
+          color: docColor,
+        ),
+      );
+    }
+    
     // Добавляем документы только если есть соответствующее право
     if (_hasIncomeDocument) {
       allDocuments.add(
@@ -146,25 +166,8 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
       );
     }
 
-    if (_hasExpenseDocument) {
-      allDocuments.add(
-        WarehouseDocument(
-          title: AppLocalizations.of(context)!.translate('client_sale') ?? 'Реализация клиент',
-          icon: Icons.shopping_cart_outlined,
-          color: docColor,
-        ),
-      );
-    }
+ 
 
-    if (_hasClientReturnDocument) {
-      allDocuments.add(
-        WarehouseDocument(
-          title: AppLocalizations.of(context)!.translate('client_return') ?? 'Возврат от клиента',
-          icon: Icons.keyboard_return,
-          color: docColor,
-        ),
-      );
-    }
 
     if (_hasSupplierReturnDocument) {
       allDocuments.add(

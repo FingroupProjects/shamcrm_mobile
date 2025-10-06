@@ -10,11 +10,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class LeadRadioGroupWidget extends StatefulWidget {
   final String? selectedLead;
   final Function(LeadData) onSelectLead;
+  final bool showDebt; // ← Добавляем параметр
 
   const LeadRadioGroupWidget({
     super.key,
     required this.onSelectLead,
     this.selectedLead,
+    this.showDebt = false, // ← По умолчанию не показываем
   });
 
   @override
@@ -36,7 +38,8 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
           _updateSelectedLeadData();
         }
         if (state is! GetAllLeadSuccess) {
-          context.read<GetAllLeadBloc>().add(GetAllLeadEv());
+          // ← Передаём параметр showDebt
+          context.read<GetAllLeadBloc>().add(GetAllLeadEv(showDebt: widget.showDebt));
         }
       }
     });
@@ -97,14 +100,33 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                 expandedBorderRadius: BorderRadius.circular(12),
               ),
               listItemBuilder: (context, item, isSelected, onItemSelect) {
-                return Text(
-                  item.name ?? '',
-                  style: const TextStyle(
-                    color: Color(0xff1E2E52),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                  ),
+                // ← Показываем долг если showDebt = true
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.name ?? '',
+                      style: const TextStyle(
+                        color: Color(0xff1E2E52),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: 'Gilroy',
+                      ),
+                    ),
+                    if (widget.showDebt && item.debt != null && double.tryParse(item.debt!) != null && double.parse(item.debt!) != 0)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(
+                          'Долг: ${double.parse(item.debt!).toStringAsFixed(2)}',
+                          style: TextStyle(
+                            color: double.parse(item.debt!) > 0 ? Colors.red : Colors.green,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            fontFamily: 'Gilroy',
+                          ),
+                        ),
+                      ),
+                  ],
                 );
               },
               headerBuilder: (context, selectedItem, enabled) {
@@ -119,14 +141,31 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                     ),
                   );
                 }
-                return Text(
-                  selectedItem?.name ?? AppLocalizations.of(context)!.translate('select_lead'),
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
-                  ),
+                
+                // ← В заголовке тоже показываем долг если есть
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      selectedItem?.name ?? AppLocalizations.of(context)!.translate('select_lead'),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: 'Gilroy',
+                        color: Color(0xff1E2E52),
+                      ),
+                    ),
+                    if (widget.showDebt && selectedItem?.debt != null && double.tryParse(selectedItem!.debt!) != null && double.parse(selectedItem.debt!) != 0)
+                      Text(
+                        'Долг: ${double.parse(selectedItem.debt!).toStringAsFixed(2)}',
+                        style: TextStyle(
+                          color: double.parse(selectedItem.debt!) > 0 ? Colors.red : Colors.green,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          fontFamily: 'Gilroy',
+                        ),
+                      ),
+                  ],
                 );
               },
               hintBuilder: (context, hint, enabled) => Text(

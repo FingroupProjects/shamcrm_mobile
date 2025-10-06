@@ -23,45 +23,41 @@ class VariantBloc extends Bloc<VariantEvent, VariantState> {
     on<FilterVariants>(_filterVariants);
   }
 
-  Future<void> _fetchVariants(FetchVariants event, Emitter<VariantState> emit) async {
-    emit(VariantLoading());
-    if (kDebugMode) {
-      // print('VariantBloc: Загрузка вариантов, страница: ${event.page}, поиск: $_currentQuery, фильтры: $_currentFilters');
-    }
+Future<void> _fetchVariants(FetchVariants event, Emitter<VariantState> emit) async {
+  emit(VariantLoading());
 
-    if (await _checkInternetConnection()) {
-      try {
-        allVariants = [];
-        final variants = await apiService.getVariants(
-          page: event.page,
-          search: _currentQuery,
-          filters: _currentFilters,
-        );
+  if (await _checkInternetConnection()) {
+    try {
+      allVariants = [];
+      final variants = await apiService.getVariants(
+        page: event.page,
+        search: _currentQuery,
+        filters: _currentFilters, // ← Здесь будут counterparty_id и storage_id
+      );
 
-        allVariants = variants;
-        allVariantsFetched = variants.length < _perPage;
+      allVariants = variants;
+      allVariantsFetched = variants.length < _perPage;
 
-        final pagination = Pagination(
-          total: variants.length,
-          count: variants.length,
-          perPage: _perPage,
-          currentPage: event.page,
-          totalPages: allVariantsFetched ? event.page : event.page + 1,
-        );
+      final pagination = Pagination(
+        total: variants.length,
+        count: variants.length,
+        perPage: _perPage,
+        currentPage: event.page,
+        totalPages: allVariantsFetched ? event.page : event.page + 1,
+      );
 
-        if (variants.isEmpty) {
-          emit(VariantEmpty());
-        } else {
-          emit(VariantDataLoaded(variants, pagination));
-        }
-      } catch (e) {
-        emit(VariantError('Не удалось загрузить варианты: $e'));
+      if (variants.isEmpty) {
+        emit(VariantEmpty());
+      } else {
+        emit(VariantDataLoaded(variants, pagination));
       }
-    } else {
-      emit(VariantError('Нет подключения к интернету'));
+    } catch (e) {
+      emit(VariantError('Не удалось загрузить варианты: $e'));
     }
+  } else {
+    emit(VariantError('Нет подключения к интернету'));
   }
-
+}
   Future<void> _fetchMoreVariants(FetchMoreVariants event, Emitter<VariantState> emit) async {
     if (allVariantsFetched || state is! VariantDataLoaded) return;
 

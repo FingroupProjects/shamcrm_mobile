@@ -56,50 +56,65 @@ class CreateClienSalesDocumentScreenState
     context.read<VariantBloc>().add(FetchVariants());
   }
 
-  void _handleVariantSelection(Map<String, dynamic>? newItem) {
-    if (mounted && newItem != null) {
-      setState(() {
-        // Проверяем, не добавлен ли уже этот товар
-        final existingIndex = _items.indexWhere((item) => item['variantId'] == newItem['variantId']);
+void _handleVariantSelection(Map<String, dynamic>? newItem) {
+  if (mounted && newItem != null) {
+    setState(() {
+      final existingIndex = _items.indexWhere((item) => item['variantId'] == newItem['variantId']);
 
-        if (existingIndex == -1) {
-          // Добавляем новый товар
-          _items.add(newItem);
+      if (existingIndex == -1) {
+        // Добавляем новый товар
+        _items.add(newItem);
 
-          // Создаем контроллеры для нового товара БЕЗ начальных значений
-          final variantId = newItem['variantId'] as int;
-          _priceControllers[variantId] = TextEditingController();
-          _quantityControllers[variantId] = TextEditingController();
+        final variantId = newItem['variantId'] as int;
+        
+        // Устанавливаем начальную цену из данных варианта
+        final initialPrice = newItem['price'] ?? 0.0;
+        _priceControllers[variantId] = TextEditingController(
+          text: initialPrice > 0 ? initialPrice.toStringAsFixed(2) : ''
+        );
+        
+        // Устанавливаем quantity = 1
+        _quantityControllers[variantId] = TextEditingController(
+          text: '1'
+        );
 
-          // Инициализируем состояние ошибок
-          _priceErrors[variantId] = false;
-          _quantityErrors[variantId] = false;
+        // Инициализируем данные в item
+        _items.last['quantity'] = 1;
+        _items.last['price'] = initialPrice;
+        
+        // Вычисляем total
+        final amount = newItem['amount'] ?? 1;
+        _items.last['total'] = 1 * initialPrice * amount;
 
-          // Убеждаемся что amount существует
-          if (!newItem.containsKey('amount')) {
-            _items.last['amount'] = 1;
-          }
+        // Инициализируем состояние ошибок
+        _priceErrors[variantId] = false;
+        _quantityErrors[variantId] = false;
 
-          // Анимация добавления
-          _listKey.currentState?.insertItem(
-            _items.length - 1,
-            duration: const Duration(milliseconds: 300),
-          );
-
-          // Автоматическая прокрутка вниз после добавления товара
-          Future.delayed(const Duration(milliseconds: 350), () {
-            if (mounted && _scrollController.hasClients) {
-              _scrollController.animateTo(
-                _scrollController.position.maxScrollExtent,
-                duration: const Duration(milliseconds: 400),
-                curve: Curves.easeOut,
-              );
-            }
-          });
+        // Убеждаемся что amount существует
+        if (!newItem.containsKey('amount')) {
+          _items.last['amount'] = 1;
         }
-      });
-    }
+
+        // Анимация добавления
+        _listKey.currentState?.insertItem(
+          _items.length - 1,
+          duration: const Duration(milliseconds: 300),
+        );
+
+        // Автоматическая прокрутка вниз
+        Future.delayed(const Duration(milliseconds: 350), () {
+          if (mounted && _scrollController.hasClients) {
+            _scrollController.animateTo(
+              _scrollController.position.maxScrollExtent,
+              duration: const Duration(milliseconds: 400),
+              curve: Curves.easeOut,
+            );
+          }
+        });
+      }
+    });
   }
+}
 
   void _removeItem(int index) {
     if (mounted) {
@@ -128,20 +143,43 @@ class CreateClienSalesDocumentScreenState
     }
   }
 
-  void _openVariantSelection() async {
-    final result = await showModalBottomSheet<Map<String, dynamic>>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => VariantSelectionBottomSheet(
-        existingItems: _items,
-      ),
+ void _openVariantSelection() async {
+  // Проверяем, выбраны ли лид и склад
+  if (_selectedLead == null) {
+    _showSnackBar(
+      AppLocalizations.of(context)!.translate('select_lead_first') ?? 'Сначала выберите лида',
+      false,
     );
-
-    if (result != null) {
-      _handleVariantSelection(result);
-    }
+    return;
   }
+
+  if (_selectedStorage == null) {
+    _showSnackBar(
+      AppLocalizations.of(context)!.translate('select_storage_first') ?? 'Сначала выберите склад',
+      false,
+    );
+    return;
+  }
+
+  // Устанавливаем фильтры с counterparty_id и storage_id
+  context.read<VariantBloc>().add(FilterVariants({
+    'counterparty_id': _selectedLead!.id,
+    'storage_id': int.parse(_selectedStorage!),
+  }));
+
+  final result = await showModalBottomSheet<Map<String, dynamic>>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (context) => VariantSelectionBottomSheet(
+      existingItems: _items,
+    ),
+  );
+
+  if (result != null) {
+    _handleVariantSelection(result);
+  }
+}
 
   void _updateItemQuantity(int variantId, String value) {
     final quantity = int.tryParse(value);
@@ -372,6 +410,7 @@ class CreateClienSalesDocumentScreenState
                       LeadRadioGroupWidget(
                         selectedLead: _selectedLead?.id.toString(),
                         onSelectLead: (lead) => setState(() => _selectedLead = lead),
+                        showDebt: true, // ← Показываем долг
                       ),
                       const SizedBox(height: 16),
                       StorageWidget(
@@ -589,6 +628,19 @@ class CreateClienSalesDocumentScreenState
                     onPressed: () => _removeItem(index),
                   ),
                 ],
+              ),
+                    if (item['remainder'] != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 4, bottom: 4),
+                child: Text(
+                  '${AppLocalizations.of(context)!.translate('available') ?? 'Доступно'}: ${item['remainder']} ${item['selectedUnit'] ?? 'шт'}',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w400,
+                    color: Color(0xff4CAF50),
+                  ),
+                ),
               ),
               const SizedBox(height: 10),
               const Divider(height: 1, color: Color(0xFFE5E7EB)),

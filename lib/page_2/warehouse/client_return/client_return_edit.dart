@@ -114,42 +114,60 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
     }
   }
 
-  void _handleVariantSelection(Map<String, dynamic>? newItem) {
-    if (mounted && newItem != null) {
-      setState(() {
-        final existingIndex = _items.indexWhere((item) => item['variantId'] == newItem['variantId']);
+ void _handleVariantSelection(Map<String, dynamic>? newItem) {
+  if (mounted && newItem != null) {
+    setState(() {
+      final existingIndex = _items.indexWhere((item) => item['variantId'] == newItem['variantId']);
 
-        if (existingIndex == -1) {
-          _items.add(newItem);
+      if (existingIndex == -1) {
+        _items.add(newItem);
 
-          final variantId = newItem['variantId'] as int;
-          _priceControllers[variantId] = TextEditingController();
-          _quantityControllers[variantId] = TextEditingController();
-          _priceErrors[variantId] = false;
-          _quantityErrors[variantId] = false;
+        final variantId = newItem['variantId'] as int;
+        
+        // ← ИЗМЕНЕНИЕ: Устанавливаем начальную цену из данных варианта
+        final initialPrice = newItem['price'] ?? 0.0;
+        _priceControllers[variantId] = TextEditingController(
+          text: initialPrice > 0 ? initialPrice.toStringAsFixed(2) : ''
+        );
+        
+        // ← ИЗМЕНЕНИЕ: Устанавливаем quantity = 1
+        _quantityControllers[variantId] = TextEditingController(
+          text: '1'
+        );
 
-          if (!newItem.containsKey('amount')) {
-            _items.last['amount'] = 1;
-          }
+        // Инициализируем данные в item
+        _items.last['quantity'] = 1;
+        _items.last['price'] = initialPrice;
+        
+        // Вычисляем total
+        final amount = newItem['amount'] ?? 1;
+        _items.last['total'] = 1 * initialPrice * amount;
 
-          _listKey.currentState?.insertItem(
-            _items.length - 1,
-            duration: const Duration(milliseconds: 300),
-          );
+        _priceErrors[variantId] = false;
+        _quantityErrors[variantId] = false;
 
-          Future.delayed(const Duration(milliseconds: 350), () {
-            if (mounted && _scrollController.hasClients) {
-              _scrollController.animateTo(
-                _scrollController.position.maxScrollExtent,
-                duration: const Duration(milliseconds: 400),
-                curve: Curves.easeOut,
-              );
-            }
-          });
+        if (!newItem.containsKey('amount')) {
+          _items.last['amount'] = 1;
         }
-      });
-    }
+
+        _listKey.currentState?.insertItem(
+          _items.length - 1,
+          duration: const Duration(milliseconds: 300),
+        );
+
+        Future.delayed(const Duration(milliseconds: 350), () {
+          if (mounted && _scrollController.hasClients) {
+            _scrollController.animateTo(
+              _scrollController.position.maxScrollExtent,
+              duration: const Duration(milliseconds: 400),
+              curve: Curves.easeOut,
+            );
+          }
+        });
+      }
+    });
   }
+}
 
   void _removeItem(int index) {
     if (mounted) {
@@ -369,7 +387,9 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
                       LeadRadioGroupWidget(
                         selectedLead: _selectedLead?.id?.toString(),
                         onSelectLead: (lead) => setState(() => _selectedLead = lead),
+                         showDebt: true, // ← Показываем долг
                       ),
+                      
                       const SizedBox(height: 16),
                       StorageWidget(
                         selectedStorage: _selectedStorage,
@@ -585,6 +605,7 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
                   ),
                 ],
               ),
+              
               const SizedBox(height: 10),
               const Divider(height: 1, color: Color(0xFFE5E7EB)),
               const SizedBox(height: 10),

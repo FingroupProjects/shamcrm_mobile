@@ -54,9 +54,9 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
   // НОВОЕ: Проверка прав доступа
   Future<void> _checkPermissions() async {
     try {
-      final create = await _apiService.hasPermission('client_sale_document.create');
-      final update = await _apiService.hasPermission('client_sale_document.update');
-      final delete = await _apiService.hasPermission('client_sale_document.delete');
+      final create = await _apiService.hasPermission('expense_document.create');
+      final update = await _apiService.hasPermission('expense_document.update');
+      final delete = await _apiService.hasPermission('expense_document.delete');
 
       if (mounted) {
         setState(() {
