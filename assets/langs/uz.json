@@ -1535,8 +1535,26 @@
   "warehouse_visibility": "Ombor ko'rinishi",
   "delete_warehouse": "Omborni o'chirish",
   "delete_warehouse_confirm": "Bu omborni o'chirishni xohlaysizmi?",
-  "warehouse_created_successfully": "Ombor muvaffaqiyatli yaratildi"
-
+  "warehouse_created_successfully": "Ombor muvaffaqiyatli yaratildi",
+  "reconciliation_act": "Yarashish akti",
+  "reconciliation_act_parameters": "Yarashish akti parametrlari",
+  "organization": "Tashkilot",
+  "load": "Yuklash",
+  "no_reconciliation_data": "Yarashish akti ma'lumotlari yo'q",
+  "select_parameters_and_load": "Parametrlarni tanlang va ma'lumotlarni yuklang",
+  "loading_reconciliation_act": "Yarashish akti yuklanmoqda...",
+  "reconciliation_act_error": "Yuklash xatosi",
+  "movement_type": "Harakat turi",
+  "counterparty": "Kontragent",
+  "sale_sum": "Sotish summasi",
+  "model": "Model",
+  "not_updated": "Yangilanmagan",
+  "invalid_date": "Noto'g'ri sana",
+  "selected_reconciliation_item": "Yarashish akti elementi tanlandi",
+  "long_press_reconciliation_item": "Yarashish akti elementiga uzoq bosish",
+  "filter_type": "Filtr turi",
+  "filter_by_client" : "По клиенту",
+  "filter_by_supplier" : "По поставщику"
 
 
 

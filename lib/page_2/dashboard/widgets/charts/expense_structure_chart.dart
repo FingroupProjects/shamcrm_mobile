@@ -385,7 +385,7 @@ class _ExpenseStructureChartState extends State<ExpenseStructureChart> with Sing
             child: GestureDetector(
               onTap: () {
                 debugPrint("Подробнее pressed");
-                Navigator.of(context).push(MaterialPageRoute(builder: (context) => DetailedReportScreen(currentTabIndex: 8)));
+                Navigator.of(context).push(MaterialPageRoute(builder: (context) => DetailedReportScreen(currentTabIndex: 9)));
               },
               child: Text(
                 localizations.translate('more_details'),

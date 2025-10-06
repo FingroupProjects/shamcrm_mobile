@@ -1528,7 +1528,27 @@
   "warehouse_visibility": "Отображение склада",
   "delete_warehouse": "Удалить склад",
   "delete_warehouse_confirm": "Вы уверены, что хотите удалить этот склад?",
-  "warehouse_created_successfully": "Склад успешно создан"
+  "warehouse_created_successfully": "Склад успешно создан",
+  "reconciliation_act": "Акт сверки",
+  "reconciliation_act_parameters": "Параметры акта сверки",
+  "organization": "Организация",
+  "load": "Загрузить",
+  "no_reconciliation_data": "Нет данных об акте сверки",
+  "select_parameters_and_load": "Выберите параметры и загрузите данные",
+  "loading_reconciliation_act": "Загрузка акта сверки...",
+  "reconciliation_act_error": "Ошибка загрузки",
+  "movement_type": "Тип движения",
+  "counterparty": "Контрагент",
+  "sale_sum": "Сумма продажи",
+  "model": "Модель",
+  "not_updated": "Не обновлялось",
+  "invalid_date": "Неверная дата",
+  "selected_reconciliation_item": "Выбран элемент акта сверки",
+  "long_press_reconciliation_item": "Длительное нажатие на элемент акта сверки",
+  "filter_type": "Тип фильтра",
+  "filter_by_client" : "По клиенту",
+  "filter_by_supplier" : "По поставщику"
+
 
 
 }

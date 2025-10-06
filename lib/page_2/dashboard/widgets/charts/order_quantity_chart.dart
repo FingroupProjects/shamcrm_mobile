@@ -476,7 +476,7 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
             child: GestureDetector(
               onTap: () {
                 debugPrint("Подробнее pressed");
-                Navigator.of(context).push(MaterialPageRoute(builder: (context) => DetailedReportScreen(currentTabIndex: 9)));
+                Navigator.of(context).push(MaterialPageRoute(builder: (context) => DetailedReportScreen(currentTabIndex: 10)));
               },
               child: Text(
                 localizations.translate('more_details'),

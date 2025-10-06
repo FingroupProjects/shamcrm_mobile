@@ -360,7 +360,7 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
             child: GestureDetector(
               onTap: () {
                 debugPrint("Подробнее pressed");
-                Navigator.of(context).push(MaterialPageRoute(builder: (context) => DetailedReportScreen(currentTabIndex: 5)));
+                Navigator.of(context).push(MaterialPageRoute(builder: (context) => DetailedReportScreen(currentTabIndex: 6)));
               },
               child: Text(
                 localizations.translate('more_details'),

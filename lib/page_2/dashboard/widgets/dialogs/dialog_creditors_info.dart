@@ -440,7 +440,7 @@ class _CreditorsDialogState extends State<CreditorsDialog> {
                             Navigator.of(context).pop(); // Сначала закрываем диалог
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (context) => DetailedReportScreen(currentTabIndex: 2),
+                                builder: (context) => DetailedReportScreen(currentTabIndex: 3),
                               ),
                             );
                           },

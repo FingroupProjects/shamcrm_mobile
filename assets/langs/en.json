@@ -1533,8 +1533,26 @@
   "warehouse_visibility": "Warehouse visibility",
   "delete_warehouse": "Delete warehouse",
   "delete_warehouse_confirm": "Are you sure you want to delete this warehouse?",
-  "warehouse_created_successfully": "Warehouse created successfully"
-
+  "warehouse_created_successfully": "Warehouse created successfully",
+  "reconciliation_act": "Reconciliation Act",
+  "reconciliation_act_parameters": "Reconciliation Act Parameters",
+  "organization": "Organization",
+  "load": "Load",
+  "no_reconciliation_data": "No reconciliation act data",
+  "select_parameters_and_load": "Select parameters and load data",
+  "loading_reconciliation_act": "Loading reconciliation act...",
+  "reconciliation_act_error": "Loading error",
+  "movement_type": "Movement Type",
+  "counterparty": "Counterparty",
+  "sale_sum": "Sale Sum",
+  "model": "Model",
+  "not_updated": "Not updated",
+  "invalid_date": "Invalid date",
+  "selected_reconciliation_item": "Selected reconciliation act item",
+  "long_press_reconciliation_item": "Long press on reconciliation act item",
+    "filter_type": "Тип фильтра",
+    "filter_by_client" : "По клиенту",
+    "filter_by_supplier" : "По поставщику"
 
 
 
