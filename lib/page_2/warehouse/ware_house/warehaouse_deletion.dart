@@ -56,7 +56,7 @@ class WareHouseDeletion extends StatelessWidget {
         ),
         content: Text(
           AppLocalizations.of(context)!
-                  .translate('delete_wharehouse_confirm') ??
+                  .translate('delete_warehouse_confirm') ??
               'Вы уверены, что хотите удалить эту единицу измерения?',
           style: const TextStyle(
             fontSize: 16,

@@ -1527,7 +1527,13 @@
   "enter_minimum_amount": "Enter minimum amount",
   "period": "Period",
   "select_expense_article": "Select expense article",
-  "expense_article": "Expense article"
+  "expense_article": "Expense article",
+  "warehouse_visible_off": "Show warehouse: Off",
+  "warehouse_visible_on": "Show warehouse: On",
+  "warehouse_visibility": "Warehouse visibility",
+  "delete_warehouse": "Delete warehouse",
+  "delete_warehouse_confirm": "Are you sure you want to delete this warehouse?",
+  "warehouse_created_successfully": "Warehouse created successfully"
 
 
 

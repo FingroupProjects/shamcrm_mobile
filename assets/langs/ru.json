@@ -1522,7 +1522,13 @@
   "good": "Товар",
   "select_good": "Выберите товар",
   "select_expense_article": "Выберите статью расхода",
-  "expense_article": "Статья расхода"
+  "expense_article": "Статья расхода",
+  "warehouse_visible_off": "Показывать склад: Выкл",
+  "warehouse_visible_on": "Показывать склад: Вкл",
+  "warehouse_visibility": "Отображение склада",
+  "delete_warehouse": "Удалить склад",
+  "delete_warehouse_confirm": "Вы уверены, что хотите удалить этот склад?",
+  "warehouse_created_successfully": "Склад успешно создан"
 
 
 }

@@ -1529,7 +1529,13 @@
   "enter_minimum_amount": "Minimal summani kiriting",
   "period": "Davr",
   "select_expense_article": "Xarajat moddasini tanlang",
-  "expense_article": "Xarajat moddasi"
+  "expense_article": "Xarajat moddasi",
+  "warehouse_visible_off": "Omborni ko'rsatish: O'chirilgan",
+  "warehouse_visible_on": "Omborni ko'rsatish: Yoqilgan",
+  "warehouse_visibility": "Ombor ko'rinishi",
+  "delete_warehouse": "Omborni o'chirish",
+  "delete_warehouse_confirm": "Bu omborni o'chirishni xohlaysizmi?",
+  "warehouse_created_successfully": "Ombor muvaffaqiyatli yaratildi"
 
 
 
