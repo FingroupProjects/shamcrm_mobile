@@ -811,11 +811,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(height: 16),
                 NetProfitChart(netProfitData),
                 const SizedBox(height: 16),
-                ExpenseStructureChart(expenseStructureData),
-                const SizedBox(height: 16),
                 ProfitabilityChart(profitabilityData: profitabilityData),
                 const SizedBox(height: 16),
                 OrderQuantityChart(orderDashboardData: orderDashboardData),
+                const SizedBox(height: 16),
+                ExpenseStructureChart(expenseStructureData),
                 const SizedBox(height: 16),
               ],
             );
