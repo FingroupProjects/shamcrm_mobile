@@ -640,9 +640,6 @@ class _MyAppState extends State<MyApp> {
                 BlocProvider(create: (context) => CategoryDashboardWarehouseBloc(widget.apiService)),
 
         BlocProvider(create: (context) => GoodDashboardWarehouseBloc(widget.apiService)),
-
-
-          
       ],
 
       child: MaterialApp(
