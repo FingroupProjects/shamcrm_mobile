@@ -11266,6 +11266,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     final body = {
       'name': unit.name,
       "users": userIds,
+      "show_to_online_store": unit.showToOnlineStore,
       'organization_id': organizationId,
       'sales_funnel_id': salesFunnelId,
     };
@@ -11283,7 +11284,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
   Future<PriceTypeModel> updateStorage(
       {required WareHouse storage,
       required int id,
-      required List<int> ids}) async {
+      required List<int> ids,
+      }) async {
     final path = await _appendQueryParams('/storage/$id');
     if (kDebugMode) {
       //print('ApiService: updateSupplier - Generated path: $path');
@@ -11292,7 +11294,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     final salesFunnelId = await getSelectedSalesFunnel() ?? '';
     final body = {
       'name': storage.name,
-      'ids': ids,
+      'users': ids,
+      'show_to_online_store': storage.showToOnlineStore,
       'organization_id': organizationId,
       'sales_funnel_id': salesFunnelId,
     };
