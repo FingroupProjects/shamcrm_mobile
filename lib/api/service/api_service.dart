@@ -138,6 +138,7 @@ import '../../models/outcome_categories_data_response.dart';
 import '../../models/page_2/dashboard/expense_structure.dart';
 import '../../models/page_2/dashboard/net_profit_model.dart';
 import '../../models/page_2/dashboard/order_dashboard_model.dart';
+import '../../models/page_2/dashboard/order_quantity_content.dart';
 import '../../models/page_2/dashboard/profitability_dashboard_model.dart';
 import '../../models/page_2/dashboard/sales_model.dart';
 import '../../models/page_2/dashboard/net_profit_content_model.dart';
@@ -15106,7 +15107,70 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     }
   }
 
+  Future<OrderQuantityContent> getOrderByFilter(
+      Map<String, dynamic>? filters,
+      String? search,
+      ) async {
+    Map<String, String> queryParams = {};
+    if (search != null && search.isNotEmpty) queryParams['search'] = search;
+    if (filters != null) {
+      if (filters.containsKey('date_from') && filters['date_from'] != null) {
+        debugPrint("ApiService: filters['date_from']: ${filters['date_from']}");
+        final date_from = filters['date_from'] as DateTime;
+        queryParams['date_from'] = date_from.toIso8601String();
+      }
 
+      if (filters.containsKey('date_to') && filters['date_to'] != null) {
+        debugPrint("ApiService: filters['date_to']: ${filters['date_to']}");
+        final date_to = filters['date_to'] as DateTime;
+        queryParams['date_to'] = date_to.toIso8601String();
+      }
+
+      if (filters.containsKey('sum_from') && filters['sum_from'] != null) {
+        debugPrint("ApiService: filters['sum_from']: ${filters['sum_from']}");
+        final sumFrom = filters['sum_from'] as double;
+        queryParams['sum_from'] = sumFrom.toString();
+      }
+
+      if (filters.containsKey('sum_to') && filters['sum_to'] != null) {
+        debugPrint("ApiService: filters['sum_to']: ${filters['sum_to']}");
+        final sumTo = filters['sum_to'] as double;
+        queryParams['sum_to'] = sumTo.toString();
+      }
+
+      if (filters.containsKey('status_id') && filters['status_id'] != null) {
+        debugPrint("ApiService: filters['status_id']: ${filters['status_id']}");
+        final statusID = filters['status_id'] as int;
+        queryParams['status_id'] = statusID.toString();
+      }
+    }
+    // Формируем параметры запроса
+    var path = await _appendQueryParams('/order/dashboard');
+
+    // Fix: Properly encode query parameters
+    if (queryParams.isNotEmpty) {
+      // Check if path already has query params (contains ?)
+      final separator = path.contains('?') ? '&' : '?';
+      final encodedParams =
+      queryParams.entries.map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}').join('&');
+      path += '$separator$encodedParams';
+    }
+
+    debugPrint("ApiService: getOrderByFilter path: $path");
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return OrderQuantityContent.fromJson(data);
+    } else {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка',
+        response.statusCode,
+      );
+    }
+  }
 
 
   // Метод для получения Категорий
