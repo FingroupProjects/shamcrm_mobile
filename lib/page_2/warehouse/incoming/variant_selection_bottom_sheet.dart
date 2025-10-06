@@ -60,43 +60,44 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
   }
 
   void _onVariantTap(Variant variant) {
-    final isAlreadyAdded = widget.existingItems.any((item) => item['variantId'] == variant.id);
-    
-    if (isAlreadyAdded) {
-      _showErrorSnackBar(
-        AppLocalizations.of(context)!.translate('item_already_added') ?? 'Товар уже добавлен'
-      );
-      return;
-    }
-
-    final firstUnitAmount = variant.availableUnits.isNotEmpty 
-        ? (variant.availableUnits.first.amount ?? 1) 
-        : 1;
-
-    // Формируем результат с учётом настройки good_measurement
-    final result = {
-      'id': variant.goodId,
-      'variantId': variant.id,
-      'name': variant.fullName ?? variant.good?.name ?? 'Неизвестный товар',
-      'quantity': 1,
-      'price': 0.0,
-      'total': 0.0,
-      'amount': firstUnitAmount,
-      'availableUnits': variant.availableUnits,
-    };
-
-    // Добавляем unit-поля только если good_measurement включен
-    if (_goodMeasurementEnabled) {
-      result['selectedUnit'] = (variant.availableUnits.isNotEmpty
-          ? (variant.availableUnits.first.shortName ?? variant.availableUnits.first.name)
-          : null)!;
-      result['unit_id'] = variant.availableUnits.isNotEmpty 
-          ? variant.availableUnits.first.id 
-          : 2;
-    }
-
-    Navigator.pop(context, result);
+  final isAlreadyAdded = widget.existingItems.any((item) => item['variantId'] == variant.id);
+  
+  if (isAlreadyAdded) {
+    _showErrorSnackBar(
+      AppLocalizations.of(context)!.translate('item_already_added') ?? 'Товар уже добавлен'
+    );
+    return;
   }
+
+  final firstUnitAmount = variant.availableUnits.isNotEmpty 
+      ? (variant.availableUnits.first.amount ?? 1) 
+      : 1;
+
+  // Формируем результат с ценой и остатком
+  final result = {
+    'id': variant.goodId,
+    'variantId': variant.id,
+    'name': variant.fullName ?? variant.good?.name ?? 'Неизвестный товар',
+    'quantity': 1, // По умолчанию 1
+    'price': variant.price ?? 0.0, // ← Берём цену из variant
+    'total': 0.0,
+    'amount': firstUnitAmount,
+    'availableUnits': variant.availableUnits,
+    'remainder': variant.remainder ?? 0, // ← Добавляем остаток
+  };
+
+  // Добавляем unit-поля только если good_measurement включен
+  if (_goodMeasurementEnabled) {
+    result['selectedUnit'] = (variant.availableUnits.isNotEmpty
+        ? (variant.availableUnits.first.shortName ?? variant.availableUnits.first.name)
+        : null)!;
+    result['unit_id'] = variant.availableUnits.isNotEmpty 
+        ? variant.availableUnits.first.id 
+        : 2;
+  }
+
+  Navigator.pop(context, result);
+}
 
   void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(

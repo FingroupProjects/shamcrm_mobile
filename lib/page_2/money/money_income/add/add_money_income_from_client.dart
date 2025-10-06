@@ -193,7 +193,9 @@ class _AddMoneyIncomeFromClientState extends State<AddMoneyIncomeFromClient> {
                               _selectedLead = selectedLeadData;
                             });
                           }
+
                         },
+                        showDebt: true,
                       ),
                       const SizedBox(height: 16),
                       _buildDateField(localizations),

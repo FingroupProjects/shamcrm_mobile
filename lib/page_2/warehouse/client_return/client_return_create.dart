@@ -363,7 +363,8 @@ class CreateClientReturnDocumentScreenState
                       const SizedBox(height: 16),
                       LeadRadioGroupWidget(
                         selectedLead: _selectedLead?.id?.toString(),
-                        onSelectLead: (lead) => setState(() => _selectedLead = lead),
+                        onSelectLead: (lead) => setState(() => _selectedLead = lead), 
+                        showDebt: true, // ← Показываем долг
                       ),
                       const SizedBox(height: 16),
                       StorageWidget(

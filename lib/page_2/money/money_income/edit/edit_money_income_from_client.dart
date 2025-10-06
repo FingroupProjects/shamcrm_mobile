@@ -308,6 +308,7 @@ class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
                             });
                           }
                         },
+                        showDebt: true, // ← Показываем долг
                       ),
                       const SizedBox(height: 16),
                       _buildDateField(localizations),

@@ -3,7 +3,14 @@ import 'package:flutter/material.dart';
 @immutable
 sealed class GetAllLeadEvent {}
 
-class GetAllLeadEv extends GetAllLeadEvent {}
+class GetAllLeadEv extends GetAllLeadEvent {
+  final bool showDebt;
+  
+  GetAllLeadEv({this.showDebt = false});
+}
 
-// Новое событие для принудительного обновления
-class RefreshAllLeadEv extends GetAllLeadEvent {}
+class RefreshAllLeadEv extends GetAllLeadEvent {
+  final bool showDebt;
+  
+  RefreshAllLeadEv({this.showDebt = false});
+}
