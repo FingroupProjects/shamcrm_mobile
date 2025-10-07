@@ -625,6 +625,9 @@ class _MyAppState extends State<MyApp> {
         // BlocProvider<ClientSaleDocumentHistoryBloc>(
         //   create: (context) => ClientSaleDocumentHistoryBloc(widget.apiService),
         // ),
+        // TODO fix bloc providers warehouse folder
+        // COMMENT BLOCS ON MAIN SCREEN AND USE THEM ON THEIR SCREENS PROPERLY
+        BlocProvider(create: (context) => ClientReturnBloc(widget.apiService)),
         BlocProvider(create: (context) => SupplierBloc(widget.apiService)),
         BlocProvider(create: (context) => MeasureUnitsBloc(widget.apiService)),
         BlocProvider(create: (context) => WareHouseBloc(widget.apiService)),
@@ -632,7 +635,6 @@ class _MyAppState extends State<MyApp> {
             create: (context) => PriceTypeScreenBloc(widget.apiService)),
         BlocProvider(
             create: (context) => SupplierReturnBloc(widget.apiService)),
-        BlocProvider(create: (context) => ClientReturnBloc(widget.apiService)),
         BlocProvider(create: (context) => WriteOffBloc(widget.apiService)),
         BlocProvider(create: (context) => MovementBloc(widget.apiService)),
         BlocProvider(create: (context) => CashDeskBloc()),

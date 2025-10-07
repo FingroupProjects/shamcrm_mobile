@@ -872,7 +872,7 @@ class DashboardSwitcher extends StatelessWidget {
           Expanded(
             child: _buildTab(
               context: context,
-              label: 'Учёт',
+              label: AppLocalizations.of(context)!.translate('accounting_title') ?? 'Учёт',
               icon: Icons.analytics_rounded,
               isActive: activeDashboard == DashboardType.accounting,
               onTap: () => onDashboardChanged(DashboardType.accounting),

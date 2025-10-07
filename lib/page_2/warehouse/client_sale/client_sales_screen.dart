@@ -548,6 +548,7 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
                   child: Text(
                     _isSearching
                         ? (localizations?.translate('nothing_found') ?? 'Ничего не найдено')
+
                         : (localizations?.translate('no_client_sales') ?? 'Нет документов реализации'), // ИЗМЕНЕНО: Текст
                     style: const TextStyle(
                       fontSize: 18,
