@@ -156,29 +156,6 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
     await Future.delayed(const Duration(milliseconds: 500));
   }
 
-  void _showSnackBar(String message, bool isSuccess) {
-    if (!mounted || !context.mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          message,
-          style: const TextStyle(
-            fontFamily: 'Gilroy',
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: Colors.white,
-          ),
-        ),
-        backgroundColor: isSuccess ? Colors.green : Colors.red,
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        duration: const Duration(seconds: 3),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
@@ -341,7 +318,8 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
                           state.message);
                       return;
                     }
-                    _showSnackBar(state.message, false);
+                    debugPrint("ClientSaleScreen.Error: ${state.message}");
+                    showCustomSnackBar(context: context, message: state.message, isSuccess: false);
                   }
                 });
               }
@@ -349,7 +327,7 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
               if (mounted) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (mounted && context.mounted) {
-                    _showSnackBar(state.message, true);
+                    showCustomSnackBar(context: context, message: state.message, isSuccess: true);
                     _clientSaleBloc.add(const FetchClientSales(forceRefresh: true));
                   }
                 });
@@ -366,7 +344,7 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
                           state.message);
                       return;
                     }
-                    _showSnackBar(state.message, false);
+                    showCustomSnackBar(context: context, message: state.message, isSuccess: false);
                   }
                 });
               }
@@ -374,7 +352,7 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
               if (mounted) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (mounted && context.mounted) {
-                    _showSnackBar(state.message, true);
+                    showCustomSnackBar(context: context, message: state.message, isSuccess: true);
                     _clientSaleBloc.add(FetchClientSales(
                         forceRefresh: true,
                         filters: _currentFilters,
@@ -394,7 +372,7 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
                           state.message);
                       return;
                     }
-                    _showSnackBar(state.message, false);
+                    showCustomSnackBar(context: context, message: state.message, isSuccess: false);
                   }
                 });
               }
@@ -445,7 +423,7 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
               if (mounted) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (mounted && context.mounted) {
-                    _showSnackBar(state.message, true);
+                    showCustomSnackBar(context: context, message: state.message, isSuccess: true);
                     setState(() {
                       _isRefreshing = true; // ИЗМЕНЕНО: Как в примере
                     });
@@ -468,7 +446,7 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
                       _clientSaleBloc.add(FetchClientSales(forceRefresh: true, filters: _currentFilters, search: _search));
                       return;
                     }
-                    _showSnackBar(state.message, false);
+                    showCustomSnackBar(context: context, message: state.message, isSuccess: false);
                   }
                 });
               }
