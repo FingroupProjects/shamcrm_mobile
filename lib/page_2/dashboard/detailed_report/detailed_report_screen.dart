@@ -70,17 +70,17 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
   late TabController _tabController;
   late ScrollController _scrollController;
   final List<Map<String, dynamic>> _tabTitles = [
-    {'id': 0, 'title': 'Товары / Неликвидный товары'},
-    {'id': 10, 'title': 'Акт сверки'},
-    {'id': 1, 'title': 'Остаток кассы'},
-    {'id': 2, 'title': 'Наши долги'},
-    {'id': 3, 'title': 'Нам должны'},
-    {'id': 4, 'title': 'Топ продаваемых товаров'},
-    {'id': 5, 'title': 'Динамика продаж'},
-    {'id': 6, 'title': 'Чистая прибыль'},
-    {'id': 7, 'title': 'Рентабельность продаж'},
-    {'id': 8, 'title': 'Структура затрат'},
-    {'id': 9, 'title': 'Количество заказов'},
+    {'id': 0, 'titleKey': 'tab_goods_illiquid'},
+    {'id': 10, 'titleKey': 'tab_reconciliation_act'},
+    {'id': 1, 'titleKey': 'tab_cash_balance'},
+    {'id': 2, 'titleKey': 'tab_our_debts'},
+    {'id': 3, 'titleKey': 'tab_owed_to_us'},
+    {'id': 4, 'titleKey': 'tab_top_selling_products'},
+    {'id': 5, 'titleKey': 'tab_sales_dynamics'},
+    {'id': 6, 'titleKey': 'tab_net_profit'},
+    {'id': 7, 'titleKey': 'tab_profitability_sales'},
+    {'id': 8, 'titleKey': 'tab_expense_structure'},
+    {'id': 9, 'titleKey': 'tab_order_quantity'},
   ];
   late List<GlobalKey> _tabKeys;
   late int _currentTabIndex;
@@ -313,6 +313,7 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
 
   Widget _buildTabButton(int index) {
     bool isActive = _tabController.index == index;
+    final localizations = AppLocalizations.of(context)!;
 
     return GestureDetector(
       key: _tabKeys[index],
@@ -323,7 +324,7 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
         decoration: TaskStyles.tabButtonDecoration(isActive),
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
         child: Text(
-          _tabTitles[index]['title'],
+          localizations.translate(_tabTitles[index]['titleKey']),
           style: TaskStyles.tabTextStyle.copyWith(
             color: isActive ? Colors.white : TaskStyles.inactiveColor,
           ),
@@ -336,12 +337,12 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
     return TabBarView(
       controller: _tabController,
       children: List.generate(_tabTitles.length, (index) {
-        return _buildTabContent(_tabTitles[index]['id'], _tabTitles[index]['title']);
+        return _buildTabContent(_tabTitles[index]['id']);
       }),
     );
   }
 
-  Widget _buildTabContent(int id, String tabTitle) {
+  Widget _buildTabContent(int id) {
     if (id == 0) {
       return GoodsContent();
     } else if (id == 1) {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../models/page_2/dashboard/net_profit_content_model.dart';
 import '../../../../../bloc/page_2_BLOC/dashboard/net_profit/sales_dashboard_net_profit_bloc.dart';
+import '../../../../screens/profile/languages/app_localizations.dart';
 import '../cards/net_profit_card.dart';
 
 class NetProfitContent extends StatefulWidget {
@@ -35,6 +36,8 @@ class _NetProfitContentState extends State<NetProfitContent> {
   }
 
   Widget _buildEmptyState() {
+    final localizations = AppLocalizations.of(context)!;
+    
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -48,7 +51,7 @@ class _NetProfitContentState extends State<NetProfitContent> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Нет данных о чистой прибыли',
+              localizations.translate('no_net_profit_data'),
               style: TextStyle(
                 fontFamily: 'Gilroy',
                 fontSize: 18,
@@ -58,7 +61,7 @@ class _NetProfitContentState extends State<NetProfitContent> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Список данных по месяцам пуст',
+              localizations.translate('monthly_data_list_empty'),
               style: TextStyle(
                 fontFamily: 'Gilroy',
                 fontSize: 14,
@@ -72,6 +75,8 @@ class _NetProfitContentState extends State<NetProfitContent> {
   }
 
   Widget _buildLoadingState() {
+    final localizations = AppLocalizations.of(context)!;
+    
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -81,7 +86,7 @@ class _NetProfitContentState extends State<NetProfitContent> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Загрузка данных...',
+            localizations.translate('loading_data'),
             style: TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 16,
@@ -94,6 +99,8 @@ class _NetProfitContentState extends State<NetProfitContent> {
   }
 
   Widget _buildErrorState(String message) {
+    final localizations = AppLocalizations.of(context)!;
+    
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -118,7 +125,7 @@ class _NetProfitContentState extends State<NetProfitContent> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Ошибка загрузки',
+                localizations.translate('error_loading_dialog'),
                 style: TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 18,
@@ -151,7 +158,7 @@ class _NetProfitContentState extends State<NetProfitContent> {
                   ),
                 ),
                 child: Text(
-                  'Повторить',
+                  localizations.translate('retry'),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w600,

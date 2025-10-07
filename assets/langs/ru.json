@@ -1587,5 +1587,16 @@
   "no_profitability_data": "Нет данных о рентабельности",
   "no_sales_dynamics_data": "Нет данных о динамике продаж",
   "no_sales_data": "Нет данных о продажах",
-  "top_selling_products_list_empty": "Список самых продаваемых товаров пуст"
+  "top_selling_products_list_empty": "Список самых продаваемых товаров пуст",
+  "tab_goods_illiquid": "Товары / Неликвидный товары",
+  "tab_reconciliation_act": "Акт сверки",
+  "tab_cash_balance": "Остаток кассы",
+  "tab_our_debts": "Наши долги",
+  "tab_owed_to_us": "Нам должны",
+  "tab_top_selling_products": "Топ продаваемых товаров",
+  "tab_sales_dynamics": "Динамика продаж",
+  "tab_net_profit": "Чистая прибыль",
+  "tab_profitability_sales": "Рентабельность продаж",
+  "tab_expense_structure": "Структура затрат",
+  "tab_order_quantity": "Количество заказов"
 }

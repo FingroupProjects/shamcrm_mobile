@@ -1593,5 +1593,16 @@
   "no_profitability_data": "No profitability data",
   "no_sales_dynamics_data": "No sales dynamics data",
   "no_sales_data": "No sales data",
-  "top_selling_products_list_empty": "Top selling products list is empty"
+  "top_selling_products_list_empty": "Top selling products list is empty",
+  "tab_goods_illiquid": "Goods / Illiquid goods",
+  "tab_reconciliation_act": "Reconciliation act",
+  "tab_cash_balance": "Cash balance",
+  "tab_our_debts": "Our debts",
+  "tab_owed_to_us": "Owed to us",
+  "tab_top_selling_products": "Top selling products",
+  "tab_sales_dynamics": "Sales dynamics",
+  "tab_net_profit": "Net profit",
+  "tab_profitability_sales": "Sales profitability",
+  "tab_expense_structure": "Expense structure",
+  "tab_order_quantity": "Order quantity"
 }
