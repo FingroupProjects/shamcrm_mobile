@@ -2,8 +2,8 @@ class WareHouse {
   final int id;
   final String name;
   final bool showToOnlineStore;
-  final String createdAt;
-  final String updatedAt;
+  final String? createdAt;
+  final String? updatedAt;
     final List<int>? userIds;
 
 
@@ -11,8 +11,8 @@ class WareHouse {
     required this.id,
     required this.name,
     required this.showToOnlineStore,
-    required this.createdAt,
-    required this.updatedAt,
+    this.createdAt,
+    this.updatedAt,
     this.userIds,
   });
 

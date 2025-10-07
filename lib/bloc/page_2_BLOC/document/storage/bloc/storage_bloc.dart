@@ -17,12 +17,12 @@ class WareHouseBloc extends Bloc<WareHouseEvent, WareHouseState> {
   Future<void> _onFetch(
       FetchWareHouse event, Emitter<WareHouseState> emit) async {
     emit(WareHouseLoading());
-    try {
+    // try {
       final storages = await apiService.getWareHouses();
       emit(WareHouseLoaded(storages));
-    } catch (e) {
-      emit(WareHouseError("Не удалось загрузить склады"));
-    }
+    // } catch (e) {
+    //   emit(WareHouseError("Не удалось загрузить склады"));
+    // }
   }
 
   Future<void> _onCreate(

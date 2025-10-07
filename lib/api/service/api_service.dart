@@ -11249,7 +11249,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
       return resultList.map((storage) => WareHouse.fromJson(storage)).toList();
     } else {
-      throw Exception('Ошибка загрузки складов');
+      throw ApiException('Ошибка загрузки складов', response.statusCode);
     }
   }
 
