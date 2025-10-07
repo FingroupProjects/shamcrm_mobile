@@ -175,7 +175,7 @@ void main() async {
 
     // App Tracking Transparency
     await AppTrackingTransparency.requestTrackingAuthorization();
-
+    
     // Firebase Messaging инициализация
     await _initializeFirebaseMessaging(apiService);
 
