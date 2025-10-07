@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../models/page_2/dashboard/dashboard_goods_report.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/goods/sales_dashboard_goods_bloc.dart';
+import '../../../../screens/profile/languages/app_localizations.dart';
 import '../../detailed_report/detailed_report_screen.dart';
 
 void showSimpleInfoDialog(BuildContext context) {
@@ -62,13 +63,15 @@ class _InfoDialogState extends State<InfoDialog> {
               ),
               SizedBox(width: 12),
               Expanded(
-                child: Text(
-                  'Неликвидные товары',
-                  style: TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xff1E2E52),
+                child: Builder(
+                  builder: (context) => Text(
+                    AppLocalizations.of(context)!.translate('illiquid_goods'),
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xff1E2E52),
+                    ),
                   ),
                 ),
               ),
@@ -99,13 +102,15 @@ class _InfoDialogState extends State<InfoDialog> {
                   color: Color(0xff64748B),
                 ),
                 SizedBox(height: 12),
-                Text(
-                  'Нет неликвидных товаров',
-                  style: TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xff475569),
+                Builder(
+                  builder: (context) => Text(
+                    AppLocalizations.of(context)!.translate('no_data_to_display'),
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xff475569),
+                    ),
                   ),
                 ),
               ],
@@ -210,13 +215,15 @@ class _InfoDialogState extends State<InfoDialog> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Категория:',
-                          style: TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xff475569),
+                        Builder(
+                          builder: (context) => Text(
+                            '${AppLocalizations.of(context)!.translate('category')}:',
+                            style: TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xff475569),
+                            ),
                           ),
                         ),
                         SizedBox(height: 4),
@@ -254,13 +261,15 @@ class _InfoDialogState extends State<InfoDialog> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         FittedBox(
-                          child: Text(
-                            'Дней без движения:',
-                            style: TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xff475569),
+                          child: Builder(
+                            builder: (context) => Text(
+                              '${AppLocalizations.of(context)!.translate('days_without_movement')}:',
+                              style: TextStyle(
+                                fontFamily: 'Gilroy',
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xff475569),
+                              ),
                             ),
                           ),
                         ),
@@ -304,13 +313,15 @@ class _InfoDialogState extends State<InfoDialog> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Количество:',
-                          style: TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xff475569),
+                        Builder(
+                          builder: (context) => Text(
+                            '${AppLocalizations.of(context)!.translate('quantity')}:',
+                            style: TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xff475569),
+                            ),
                           ),
                         ),
                         SizedBox(height: 4),
@@ -345,13 +356,15 @@ class _InfoDialogState extends State<InfoDialog> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Сумма:',
-                          style: TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xff475569),
+                        Builder(
+                          builder: (context) => Text(
+                            '${AppLocalizations.of(context)!.translate('amount')}:',
+                            style: TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xff475569),
+                            ),
                           ),
                         ),
                         SizedBox(height: 4),
@@ -435,7 +448,7 @@ class _InfoDialogState extends State<InfoDialog> {
                       ),
                       SizedBox(width: 12),
                       Text(
-                        'Отчёт по товарам',
+                        AppLocalizations.of(context)!.translate('illiquid_goods'),
                         style: TextStyle(
                           fontFamily: 'Gilroy',
                           fontSize: 18,
@@ -460,7 +473,7 @@ class _InfoDialogState extends State<InfoDialog> {
                               ),
                               SizedBox(height: 16),
                               Text(
-                                'Загрузка данных...',
+                                AppLocalizations.of(context)!.translate('loading_data_dialog'),
                                 style: TextStyle(
                                   fontFamily: 'Gilroy',
                                   fontSize: 16,
@@ -484,7 +497,7 @@ class _InfoDialogState extends State<InfoDialog> {
                                     ),
                                     SizedBox(height: 16),
                                     Text(
-                                      'Ошибка загрузки',
+                                      AppLocalizations.of(context)!.translate('error_loading_dialog'),
                                       style: TextStyle(
                                         fontFamily: 'Gilroy',
                                         fontSize: 18,
@@ -517,7 +530,7 @@ class _InfoDialogState extends State<InfoDialog> {
                                         ),
                                       ),
                                       child: Text(
-                                        'Повторить',
+                                        AppLocalizations.of(context)!.translate('retry_dialog'),
                                         style: TextStyle(
                                           fontFamily: 'Gilroy',
                                           fontWeight: FontWeight.w600,
@@ -562,7 +575,7 @@ class _InfoDialogState extends State<InfoDialog> {
                             ),
                           ),
                           child: Text(
-                            'Подробнее',
+                            AppLocalizations.of(context)!.translate('more_details_button'),
                             style: TextStyle(
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w600,
@@ -588,7 +601,7 @@ class _InfoDialogState extends State<InfoDialog> {
                             ),
                           ),
                           child: Text(
-                            'Понятно',
+                            AppLocalizations.of(context)!.translate('understood_button'),
                             style: TextStyle(
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w600,

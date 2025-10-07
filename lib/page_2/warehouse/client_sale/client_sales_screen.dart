@@ -156,29 +156,6 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
     await Future.delayed(const Duration(milliseconds: 500));
   }
 
-  void _showSnackBar(String message, bool isSuccess) {
-    if (!mounted || !context.mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          message,
-          style: const TextStyle(
-            fontFamily: 'Gilroy',
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: Colors.white,
-          ),
-        ),
-        backgroundColor: isSuccess ? Colors.green : Colors.red,
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        duration: const Duration(seconds: 3),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
@@ -196,7 +173,10 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
                   final result = await Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => CreateClienSalesDocumentScreen(organizationId: widget.organizationId),
+                      builder: (context) => BlocProvider.value(
+                        value: _clientSaleBloc,
+                        child: CreateClienSalesDocumentScreen(organizationId: widget.organizationId),
+                      ),
                     ),
                   );
 
@@ -338,7 +318,8 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
                           state.message);
                       return;
                     }
-                    _showSnackBar(state.message, false);
+                    debugPrint("ClientSaleScreen.Error: ${state.message}");
+                    showCustomSnackBar(context: context, message: state.message, isSuccess: false);
                   }
                 });
               }
@@ -346,7 +327,7 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
               if (mounted) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (mounted && context.mounted) {
-                    _showSnackBar(state.message, true);
+                    showCustomSnackBar(context: context, message: state.message, isSuccess: true);
                     _clientSaleBloc.add(const FetchClientSales(forceRefresh: true));
                   }
                 });
@@ -363,7 +344,7 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
                           state.message);
                       return;
                     }
-                    _showSnackBar(state.message, false);
+                    showCustomSnackBar(context: context, message: state.message, isSuccess: false);
                   }
                 });
               }
@@ -371,7 +352,7 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
               if (mounted) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (mounted && context.mounted) {
-                    _showSnackBar(state.message, true);
+                    showCustomSnackBar(context: context, message: state.message, isSuccess: true);
                     _clientSaleBloc.add(FetchClientSales(
                         forceRefresh: true,
                         filters: _currentFilters,
@@ -391,7 +372,7 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
                           state.message);
                       return;
                     }
-                    _showSnackBar(state.message, false);
+                    showCustomSnackBar(context: context, message: state.message, isSuccess: false);
                   }
                 });
               }
@@ -442,7 +423,7 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
               if (mounted) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (mounted && context.mounted) {
-                    _showSnackBar(state.message, true);
+                    showCustomSnackBar(context: context, message: state.message, isSuccess: true);
                     setState(() {
                       _isRefreshing = true; // ИЗМЕНЕНО: Как в примере
                     });
@@ -465,7 +446,7 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
                       _clientSaleBloc.add(FetchClientSales(forceRefresh: true, filters: _currentFilters, search: _search));
                       return;
                     }
-                    _showSnackBar(state.message, false);
+                    showCustomSnackBar(context: context, message: state.message, isSuccess: false);
                   }
                 });
               }
@@ -522,8 +503,14 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
           },
           child: BlocBuilder<ClientSaleBloc, ClientSaleState>(
             builder: (context, state) {
+
+              debugPrint("ClientSaleScreen.Bloc.State.Build: ${_clientSaleBloc.state}");
+
               // ИЗМЕНЕНО: Loading с _isInitialLoad
-              if ((_isInitialLoad && state is ClientSaleLoading) || state is ClientSaleDeleteLoading) {
+              if (_isInitialLoad || state is ClientSaleLoading || state is ClientSaleDeleteLoading ||
+              state is ClientSaleCreateLoading || state is ClientSaleApproveMassLoading ||
+              state is ClientSaleDisapproveMassLoading || state is ClientSaleDeleteMassLoading || state is ClientSaleRestoreMassLoading ||
+              _isRefreshing) {
                 return Center(
                   child: PlayStoreImageLoading(
                     size: 80.0,
@@ -539,6 +526,7 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
                   child: Text(
                     _isSearching
                         ? (localizations?.translate('nothing_found') ?? 'Ничего не найдено')
+
                         : (localizations?.translate('no_client_sales') ?? 'Нет документов реализации'), // ИЗМЕНЕНО: Текст
                     style: const TextStyle(
                       fontSize: 18,
@@ -631,9 +619,11 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (ctx) => ClientSalesDocumentDetailsScreen(
-                                        documentId: currentData[index].id!,
-                                        docNumber: currentData[index].docNumber ?? 'N/A',
+                                      builder: (ctx) => BlocProvider.value(
+                                        value: _clientSaleBloc,
+                                        child: ClientSalesDocumentDetailsScreen(
+                                          documentId: currentData[index].id!,
+                                          docNumber: currentData[index].docNumber ?? 'N/A',
                                         // ИЗМЕНЕНО: Передаём права
                                         hasUpdatePermission: _hasUpdatePermission,
                                         hasDeletePermission: _hasDeletePermission,
@@ -644,6 +634,7 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
                                             search: _search,
                                           ));
                                         },
+                                      ),
                                       ),
                                     ),
                                   );

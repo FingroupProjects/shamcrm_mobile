@@ -21,7 +21,7 @@ class _TopSellingProductsChartState extends State<TopSellingProductsChart> {
   List<TopSellingData> _getDataForSelectedPeriod() {
     try {
       final periodData = widget.allTopSellingData.firstWhere(
-            (item) => item.period == selectedPeriod,
+        (item) => item.period == selectedPeriod,
       );
       return periodData.data.data;
     } catch (e) {
@@ -38,15 +38,16 @@ class _TopSellingProductsChartState extends State<TopSellingProductsChart> {
   }
 
   String getPeriodText(BuildContext context, TopSellingTimePeriod period) {
+    final localizations = AppLocalizations.of(context)!;
     switch (period) {
       case TopSellingTimePeriod.day:
-        return 'День';
+        return localizations.translate('day');
       case TopSellingTimePeriod.week:
-        return 'Неделя';
+        return localizations.translate('week');
       case TopSellingTimePeriod.month:
-        return 'Месяц';
+        return localizations.translate('month');
       case TopSellingTimePeriod.year:
-        return 'Год';
+        return localizations.translate('year');
     }
   }
 
@@ -97,13 +98,15 @@ class _TopSellingProductsChartState extends State<TopSellingProductsChart> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                localizations.translate('top_selling_products'),
-                style: const TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black,
+              Expanded(
+                child: Text(
+                  localizations.translate('top_selling_products'),
+                  style: const TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black,
+                  ),
                 ),
               ),
               Transform.translate(
@@ -138,151 +141,148 @@ class _TopSellingProductsChartState extends State<TopSellingProductsChart> {
             height: 300,
             child: productsData.isEmpty
                 ? Center(
-              child: Text(
-                localizations.translate('no_data_to_display'),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontFamily: "Gilroy",
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black54,
-                ),
-              ),
-            )
-                : Padding(
-              padding: const EdgeInsets.only(right: 16, top: 16),
-              child: BarChart(
-                BarChartData(
-                  alignment: BarChartAlignment.spaceAround,
-                  maxY: productsData
-                      .map((e) => double.parse(e.totalQuantity.toString()))
-                      .reduce((a, b) => a > b ? a : b) *
-                      1.2,
-                  minY: 0,
-                  groupsSpace: 20,
-                  backgroundColor: Colors.transparent,
-                  barTouchData: BarTouchData(
-                    enabled: true,
-                    touchTooltipData: BarTouchTooltipData(
-                      tooltipRoundedRadius: 8,
-                      tooltipPadding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                      tooltipMargin: 8,
-                      fitInsideVertically: true,
-                      fitInsideHorizontally: true,
-                      getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                        final product = productsData[groupIndex];
-                        return BarTooltipItem(
-                          '${product.name}\n',
-                          const TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.white,
-                          ),
-                          children: [
-                            TextSpan(
-                              text: '${rod.toY.toStringAsFixed(2)}',
-                              style: const TextStyle(
-                                fontFamily: 'Gilroy',
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        );
-                      },
+                    child: Text(
+                      localizations.translate('no_data_to_display'),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontFamily: "Gilroy",
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black54,
+                      ),
                     ),
-                  ),
-                  titlesData: FlTitlesData(
-                    show: true,
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (value, meta) {
-                          if (value < 0 || value >= productsData.length) {
-                            return const SizedBox.shrink();
-                          }
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: Transform.rotate(
-                              angle: -0.5,
-                              child: Text(
-                                productsData[value.toInt()].name,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
+                  )
+                : Padding(
+                    padding: const EdgeInsets.only(right: 16, top: 16),
+                    child: BarChart(
+                      BarChartData(
+                        alignment: BarChartAlignment.spaceAround,
+                        maxY: productsData.map((e) => double.parse(e.totalQuantity.toString())).reduce((a, b) => a > b ? a : b) *
+                            1.2,
+                        minY: 0,
+                        groupsSpace: 20,
+                        backgroundColor: Colors.transparent,
+                        barTouchData: BarTouchData(
+                          enabled: true,
+                          touchTooltipData: BarTouchTooltipData(
+                            tooltipRoundedRadius: 8,
+                            tooltipPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            tooltipMargin: 8,
+                            fitInsideVertically: true,
+                            fitInsideHorizontally: true,
+                            getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                              final product = productsData[groupIndex];
+                              return BarTooltipItem(
+                                '${product.name}\n',
+                                const TextStyle(
                                   fontFamily: 'Gilroy',
                                   fontSize: 12,
                                   fontWeight: FontWeight.w500,
-                                  color: Colors.black54,
+                                  color: Colors.white,
                                 ),
-                              ),
-                            ),
-                          );
-                        },
-                        reservedSize: 50,
-                      ),
-                    ),
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (value, meta) {
-                          return Text(
-                            value.toInt().toString(),
-                            style: const TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black54,
-                            ),
-                          );
-                        },
-                        reservedSize: 40,
-                        interval: _getIntervalForPeriod(),
-                      ),
-                    ),
-                    rightTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                    topTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                  ),
-                  gridData: FlGridData(
-                    show: true,
-                    drawHorizontalLine: true,
-                    drawVerticalLine: false,
-                    horizontalInterval: _getIntervalForPeriod(),
-                    getDrawingHorizontalLine: (value) {
-                      return FlLine(
-                        color: Colors.grey.withOpacity(0.2),
-                        strokeWidth: 1,
-                      );
-                    },
-                  ),
-                  borderData: FlBorderData(
-                    show: false,
-                  ),
-                  barGroups: List.generate(
-                    productsData.length,
-                        (index) => BarChartGroupData(
-                      x: index,
-                      barRods: [
-                        BarChartRodData(
-                          toY: double.parse(productsData[index].totalQuantity.toString()),
-                          color: const Color(0xFF3935E7),
-                          width: 28,
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(8),
-                            topRight: Radius.circular(8),
+                                children: [
+                                  TextSpan(
+                                    text: '${rod.toY.toStringAsFixed(2)}',
+                                    style: const TextStyle(
+                                      fontFamily: 'Gilroy',
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
                           ),
                         ),
-                      ],
+                        titlesData: FlTitlesData(
+                          show: true,
+                          bottomTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              getTitlesWidget: (value, meta) {
+                                if (value < 0 || value >= productsData.length) {
+                                  return const SizedBox.shrink();
+                                }
+                                return Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: Transform.rotate(
+                                    angle: -0.5,
+                                    child: Text(
+                                      productsData[value.toInt()].name,
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        fontFamily: 'Gilroy',
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.black54,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                              reservedSize: 50,
+                            ),
+                          ),
+                          leftTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              getTitlesWidget: (value, meta) {
+                                return Text(
+                                  value.toInt().toString(),
+                                  style: const TextStyle(
+                                    fontFamily: 'Gilroy',
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.black54,
+                                  ),
+                                );
+                              },
+                              reservedSize: 40,
+                              interval: _getIntervalForPeriod(),
+                            ),
+                          ),
+                          rightTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                          topTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                        ),
+                        gridData: FlGridData(
+                          show: true,
+                          drawHorizontalLine: true,
+                          drawVerticalLine: false,
+                          horizontalInterval: _getIntervalForPeriod(),
+                          getDrawingHorizontalLine: (value) {
+                            return FlLine(
+                              color: Colors.grey.withOpacity(0.2),
+                              strokeWidth: 1,
+                            );
+                          },
+                        ),
+                        borderData: FlBorderData(
+                          show: false,
+                        ),
+                        barGroups: List.generate(
+                          productsData.length,
+                          (index) => BarChartGroupData(
+                            x: index,
+                            barRods: [
+                              BarChartRodData(
+                                toY: double.parse(productsData[index].totalQuantity.toString()),
+                                color: const Color(0xFF3935E7),
+                                width: 28,
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(8),
+                                  topRight: Radius.circular(8),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
-            ),
           ),
 
           const SizedBox(height: 16),
@@ -312,11 +312,9 @@ class _TopSellingProductsChartState extends State<TopSellingProductsChart> {
 
   double _getIntervalForPeriod() {
     final productsData = _getDataForSelectedPeriod();
-    if (productsData.isEmpty) return 1;  // ← Changed from 100 to 1
+    if (productsData.isEmpty) return 1; // ← Changed from 100 to 1
 
-    final maxValue = productsData
-        .map((e) => e.totalQuantity.toDouble())
-        .reduce((a, b) => a > b ? a : b);
+    final maxValue = productsData.map((e) => e.totalQuantity.toDouble()).reduce((a, b) => a > b ? a : b);
 
     // ← Added more granular intervals for small values
     if (maxValue <= 10) return 2;

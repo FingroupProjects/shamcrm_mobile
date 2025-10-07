@@ -32,6 +32,36 @@ class _OrderStatusWarehouseWidgetState extends State<OrderStatusWarehouseWidget>
     context.read<OrderStatusWarehouseBloc>().add(FetchOrderStatusWarehouse());
   }
 
+  /// Безопасно парсит цвет из строки
+  /// Возвращает серый цвет по умолчанию в случае ошибки
+  Color _parseColorSafely(String? colorString) {
+    if (colorString == null || colorString.isEmpty) {
+      return const Color(0xFF9E9E9E); // Серый цвет по умолчанию
+    }
+
+    try {
+      // Удаляем # если есть
+      String cleanColor = colorString.replaceAll('#', '');
+      
+      // Если цвет уже содержит альфа-канал (8 символов), используем как есть
+      if (cleanColor.length == 8) {
+        return Color(int.parse('0x$cleanColor'));
+      }
+      
+      // Если цвет без альфа-канала (6 символов), добавляем FF в начало
+      if (cleanColor.length == 6) {
+        return Color(int.parse('0xFF$cleanColor'));
+      }
+      
+      // Если длина не 6 и не 8, возвращаем цвет по умолчанию
+      return const Color(0xFF9E9E9E);
+    } catch (e) {
+      // В случае любой ошибки парсинга возвращаем цвет по умолчанию
+      debugPrint('Ошибка парсинга цвета: $colorString, error: $e');
+      return const Color(0xFF9E9E9E);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<OrderStatusWarehouseBloc, OrderStatusWarehouseState>(
@@ -122,7 +152,7 @@ class _OrderStatusWarehouseWidgetState extends State<OrderStatusWarehouseWidget>
                           width: 12,
                           height: 12,
                           decoration: BoxDecoration(
-                            color: Color(int.parse('0xFF${item.color}')),
+                            color: _parseColorSafely(item.color),
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -171,17 +201,15 @@ class _OrderStatusWarehouseWidgetState extends State<OrderStatusWarehouseWidget>
                   }
                   return Row(
                     children: [
-                      if (selectedItem != null) ...[
-                        Container(
-                          width: 12,
-                          height: 12,
-                          decoration: BoxDecoration(
-                            color: Color(int.parse('0xFF${selectedItem.color}')),
-                            shape: BoxShape.circle,
-                          ),
+                      Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: _parseColorSafely(selectedItem.color),
+                          shape: BoxShape.circle,
                         ),
-                        const SizedBox(width: 8),
-                      ],
+                      ),
+                      const SizedBox(width: 8),
                       Text(
                         selectedItem.name,
                         style: const TextStyle(

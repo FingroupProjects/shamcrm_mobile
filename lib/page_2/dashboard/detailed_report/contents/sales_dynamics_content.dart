@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../models/page_2/dashboard/sales_model.dart';
 import '../../../../../bloc/page_2_BLOC/dashboard/sales_dynamics/sales_dashboard_sales_dynamics_bloc.dart';
+import '../../../../screens/profile/languages/app_localizations.dart';
 import '../cards/sales_dynamics_card.dart';
 
 class SalesDynamicsContent extends StatefulWidget {
@@ -35,6 +36,8 @@ class _SalesDynamicsContentState extends State<SalesDynamicsContent> {
   }
 
   Widget _buildEmptyState() {
+    final localizations = AppLocalizations.of(context)!;
+    
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -48,7 +51,7 @@ class _SalesDynamicsContentState extends State<SalesDynamicsContent> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Нет данных о динамике продаж',
+              localizations.translate('no_sales_dynamics_data'),
               style: TextStyle(
                 fontFamily: 'Gilroy',
                 fontSize: 18,
@@ -58,7 +61,7 @@ class _SalesDynamicsContentState extends State<SalesDynamicsContent> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Список данных по месяцам пуст',
+              localizations.translate('monthly_data_list_empty'),
               style: TextStyle(
                 fontFamily: 'Gilroy',
                 fontSize: 14,
@@ -72,6 +75,8 @@ class _SalesDynamicsContentState extends State<SalesDynamicsContent> {
   }
 
   Widget _buildLoadingState() {
+    final localizations = AppLocalizations.of(context)!;
+    
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -81,7 +86,7 @@ class _SalesDynamicsContentState extends State<SalesDynamicsContent> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Загрузка данных...',
+            localizations.translate('loading_data'),
             style: TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 16,
@@ -94,6 +99,8 @@ class _SalesDynamicsContentState extends State<SalesDynamicsContent> {
   }
 
   Widget _buildErrorState(String message) {
+    final localizations = AppLocalizations.of(context)!;
+    
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -118,7 +125,7 @@ class _SalesDynamicsContentState extends State<SalesDynamicsContent> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Ошибка загрузки',
+                localizations.translate('error_loading_dialog'),
                 style: TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 18,
@@ -151,7 +158,7 @@ class _SalesDynamicsContentState extends State<SalesDynamicsContent> {
                   ),
                 ),
                 child: Text(
-                  'Повторить',
+                  localizations.translate('retry'),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w600,
