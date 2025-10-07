@@ -136,6 +136,7 @@ import '../../models/login_model.dart';
 import '../../models/money/money_income_document_model.dart';
 import '../../models/money/money_outcome_document_model.dart';
 import '../../models/outcome_categories_data_response.dart';
+import '../../models/page_2/dashboard/act_of_reconciliation_model.dart';
 import '../../models/page_2/dashboard/expense_structure.dart';
 import '../../models/page_2/dashboard/net_profit_model.dart';
 import '../../models/page_2/dashboard/order_dashboard_model.dart';
@@ -11266,6 +11267,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     final body = {
       'name': unit.name,
       "users": userIds,
+      "show_to_online_store": unit.showToOnlineStore,
       'organization_id': organizationId,
       'sales_funnel_id': salesFunnelId,
     };
@@ -11283,7 +11285,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
   Future<PriceTypeModel> updateStorage(
       {required WareHouse storage,
       required int id,
-      required List<int> ids}) async {
+      required List<int> ids,
+      }) async {
     final path = await _appendQueryParams('/storage/$id');
     if (kDebugMode) {
       //print('ApiService: updateSupplier - Generated path: $path');
@@ -11292,7 +11295,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     final salesFunnelId = await getSelectedSalesFunnel() ?? '';
     final body = {
       'name': storage.name,
-      'ids': ids,
+      'users': ids,
+      'show_to_online_store': storage.showToOnlineStore,
       'organization_id': organizationId,
       'sales_funnel_id': salesFunnelId,
     };
@@ -15163,6 +15167,63 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     }
   }
 
+  // metod dlya polucheniya акт сверки
+  Future<ActOfReconciliationResponse> getReconciliationAct({
+    final String? search,
+    final Map<String, dynamic>? filters,
+  }) async {
+    Map<String, String> queryParams = {};
+    if (search != null && search.isNotEmpty) queryParams['search'] = search;
+    if (filters != null) {
+      if (filters.containsKey('date_from') && filters['date_from'] != null) {
+        debugPrint("ApiService: filters['date_from']: ${filters['date_from']}");
+        final date_from = filters['date_from'] as DateTime;
+        queryParams['date_from'] = date_from.toIso8601String();
+      }
+
+      if (filters.containsKey('date_to') && filters['date_to'] != null) {
+        debugPrint("ApiService: filters['date_to']: ${filters['date_to']}");
+        final date_to = filters['date_to'] as DateTime;
+        queryParams['date_to'] = date_to.toIso8601String();
+      }
+
+      if (filters.containsKey('sum_from') && filters['sum_from'] != null) {
+        debugPrint("ApiService: filters['sum_from']: ${filters['sum_from']}");
+        final sumFrom = filters['sum_from'] as double;
+        queryParams['sum_from'] = sumFrom.toString();
+      }
+
+      if (filters.containsKey('sum_to') && filters['sum_to'] != null) {
+        debugPrint("ApiService: filters['sum_to']: ${filters['sum_to']}");
+        final sumTo = filters['sum_to'] as double;
+        queryParams['sum_to'] = sumTo.toString();
+      }
+    }
+
+    var type = filters!['lead_id'] != null ? 'lead' : 'supplier';
+    var id = filters['lead_id'] ?? filters['supplier_id'];
+
+    var path = await _appendQueryParams('/dashboard/act-of-reconciliation/$type/$id');
+
+    debugPrint("ApiService: getReconciliationAct path: $path");
+
+    try {
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = json.decode(response.body);
+        return ActOfReconciliationResponse.fromJson(data);
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при получении акта сверки!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      throw e;
+    }
+  }
 
   // Метод для получения Категорий
 Future<List<CategoryDashboardWarehouse>> getCategoryDashboardWarehouse() async {

@@ -105,140 +105,137 @@ class _WareHouseScreenState extends State<WareHouseScreen> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
 
-    return BlocProvider(
-      create: (_) => WareHouseBloc(ApiService())..add(FetchWareHouse()),
-      child: Scaffold(
-        appBar: AppBar(
-          forceMaterialTransparency: true,
-          title: CustomAppBarPage2(
-            title: localizations!.translate('warehouse') ?? 'Склад',
-            showSearchIcon: true,
-            showFilterIcon: false,
-            showFilterOrderIcon: false,
-            onChangedSearchInput: _onSearch,
-            textEditingController: _searchController,
-            focusNode: _focusNode,
-            clearButtonClick: (value) {
-              if (!value) {
-                setState(() {
-                  _isSearching = false;
-                  _searchController.clear();
-                });
-                _warehousebloc.add(FetchWareHouse());
-              }
-            },
-            onClickProfileAvatar: () {},
-            clearButtonClickFiltr: (bool p1) {},
-            currentFilters: {},
-          ),
+    return Scaffold(
+      appBar: AppBar(
+        forceMaterialTransparency: true,
+        title: CustomAppBarPage2(
+          title: localizations!.translate('warehouse') ?? 'Склад',
+          showSearchIcon: true,
+          showFilterIcon: false,
+          showFilterOrderIcon: false,
+          onChangedSearchInput: _onSearch,
+          textEditingController: _searchController,
+          focusNode: _focusNode,
+          clearButtonClick: (value) {
+            if (!value) {
+              setState(() {
+                _isSearching = false;
+                _searchController.clear();
+              });
+              _warehousebloc.add(FetchWareHouse());
+            }
+          },
+          onClickProfileAvatar: () {},
+          clearButtonClickFiltr: (bool p1) {},
+          currentFilters: {},
         ),
-        // ИЗМЕНЕНО: Показываем FAB только если есть право на создание
-        floatingActionButton: _hasCreatePermission
-            ? FloatingActionButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => AddWarehouseScreen(),
-                    ),
-                  ).then((value) {
-                    context.read<WareHouseBloc>().add(FetchWareHouse());
-                  });
-                },
-                backgroundColor: const Color(0xff1E2E52),
-                child: const Icon(Icons.add, color: Colors.white),
-              )
-            : null,
-        body: BlocBuilder<WareHouseBloc, WareHouseState>(
-          builder: (context, state) {
-            if (state is WareHouseLoading) {
-              return Center(
-                child: PlayStoreImageLoading(
-                  size: 80.0,
-                  duration: const Duration(milliseconds: 1000),
-                ),
-              );
-            } else if (state is WareHouseLoaded) {
-              if (state.storages.isEmpty) {
-                return Center(
-                  child: Text(
-                    _isSearching
-                        ? (localizations.translate('nothing_found') ?? 'Ничего не найдено')
-                        : (localizations.translate('no_warehouses') ?? 'Нет складов'),
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xff99A4BA),
-                    ),
+      ),
+      // ИЗМЕНЕНО: Показываем FAB только если есть право на создание
+      floatingActionButton: _hasCreatePermission
+          ? FloatingActionButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => AddWarehouseScreen(),
                   ),
-                );
-              }
-
-              return RefreshIndicator(
-                color: const Color(0xff1E2E52),
-                backgroundColor: Colors.white,
-                onRefresh: () async {
+                ).then((value) {
                   context.read<WareHouseBloc>().add(FetchWareHouse());
-                },
-                child: ListView.builder(
-                  controller: _scrollController,
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  itemCount: state.storages.length,
-                  itemBuilder: (context, index) {
-                    final WareHouse warehouse = state.storages[index];
-                    // НОВОЕ: Передаём права в карточку склада
-                    return WareHouseCard(
-                      warehouse: warehouse,
-                      hasUpdatePermission: _hasUpdatePermission,
-                      hasDeletePermission: _hasDeletePermission,
-                      onUpdate: () {
-                        context.read<WareHouseBloc>().add(FetchWareHouse());
-                      },
-                    );
-                  },
-                ),
-              );
-            } else if (state is WareHouseError) {
+                });
+              },
+              backgroundColor: const Color(0xff1E2E52),
+              child: const Icon(Icons.add, color: Colors.white),
+            )
+          : null,
+      body: BlocBuilder<WareHouseBloc, WareHouseState>(
+        builder: (context, state) {
+          if (state is WareHouseLoading) {
+            return Center(
+              child: PlayStoreImageLoading(
+                size: 80.0,
+                duration: const Duration(milliseconds: 1000),
+              ),
+            );
+          } else if (state is WareHouseLoaded) {
+            if (state.storages.isEmpty) {
               return Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Error: ${state.message}',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xff1E2E52),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      ElevatedButton(
-                        onPressed: () {
-                          context.read<WareHouseBloc>().add(FetchWareHouse());
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xff1E2E52),
-                          foregroundColor: Colors.white,
-                        ),
-                        child: Text(
-                          localizations.translate('retry') ?? 'Повторить',
-                        ),
-                      )
-                    ],
+                child: Text(
+                  _isSearching
+                      ? (localizations.translate('nothing_found') ?? 'Ничего не найдено')
+                      : (localizations.translate('no_warehouses') ?? 'Нет складов'),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xff99A4BA),
                   ),
                 ),
               );
             }
 
-            return const SizedBox.shrink();
-          },
-        ),
+            return RefreshIndicator(
+              color: const Color(0xff1E2E52),
+              backgroundColor: Colors.white,
+              onRefresh: () async {
+                context.read<WareHouseBloc>().add(FetchWareHouse());
+              },
+              child: ListView.builder(
+                controller: _scrollController,
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                itemCount: state.storages.length,
+                itemBuilder: (context, index) {
+                  final WareHouse warehouse = state.storages[index];
+                  // НОВОЕ: Передаём права в карточку склада
+                  return WareHouseCard(
+                    warehouse: warehouse,
+                    hasUpdatePermission: _hasUpdatePermission,
+                    hasDeletePermission: _hasDeletePermission,
+                    onUpdate: () {
+                      context.read<WareHouseBloc>().add(FetchWareHouse());
+                    },
+                  );
+                },
+              ),
+            );
+          } else if (state is WareHouseError) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Error: ${state.message}',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff1E2E52),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    ElevatedButton(
+                      onPressed: () {
+                        context.read<WareHouseBloc>().add(FetchWareHouse());
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xff1E2E52),
+                        foregroundColor: Colors.white,
+                      ),
+                      child: Text(
+                        localizations.translate('retry') ?? 'Повторить',
+                      ),
+                    )
+                  ],
+                ),
+              ),
+            );
+          }
+
+          return const SizedBox.shrink();
+        },
       ),
     );
   }
