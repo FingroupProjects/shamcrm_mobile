@@ -132,25 +132,25 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // ИЗМЕНЕННОЕ: Онлайн магазин - теперь проверяем hasMiniApp вместо permissions
     // Получаем сохраненное значение hasMiniApp из SharedPreferences
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    bool hasMiniApp = prefs.getBool('hasMiniApp') ?? false;
+    // SharedPreferences prefs = await SharedPreferences.getInstance();
+    // bool hasMiniApp = prefs.getBool('hasMiniApp') ?? false;
     
-    print('HomeScreen: hasMiniApp value: $hasMiniApp'); // Для отладки
+    // print('HomeScreen: hasMiniApp value: $hasMiniApp'); // Для отладки
 
 
-    //   bool hasOnlineStoreAccess = false;
+    //  bool hasOnlineStoreAccess = false;
     // if (await _apiService.hasPermission('product.read') || 
     //     await _apiService.hasPermission('order.read')) {
     //   hasOnlineStoreAccess = true;
     // }
-    //  {
-    //       widgetsGroup2.add(OnlineStoreScreen());
-    //       titleKeysGroup2.add('appbar_online_store');
-    //       navBarTitleKeysGroup2.add('appbar_online_store');
-    //       activeIconsGroup2.add('assets/icons/MyNavBar/category_ON.png');
-    //       inactiveIconsGroup2.add('assets/icons/MyNavBar/category_OFF.png');
-    //       hasAvailableScreens = true;
-    //     }
+     {
+          widgetsGroup2.add(OnlineStoreScreen());
+          titleKeysGroup2.add('appbar_online_store');
+          navBarTitleKeysGroup2.add('appbar_online_store');
+          activeIconsGroup2.add('assets/icons/MyNavBar/category_ON.png');
+          inactiveIconsGroup2.add('assets/icons/MyNavBar/category_OFF.png');
+          hasAvailableScreens = true;
+        }
 
     // // НОВЫЙ: Учет склада - тоже можем привязать к hasMiniApp или оставить на permissions
     // // Пока оставляю на permissions, но можно изменить логику по необходимости
