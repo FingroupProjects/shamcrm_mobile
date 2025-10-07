@@ -71,20 +71,19 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
   late ScrollController _scrollController;
   final List<Map<String, dynamic>> _tabTitles = [
     {'id': 0, 'titleKey': 'tab_goods_illiquid'},
-    {'id': 10, 'titleKey': 'tab_reconciliation_act'},
-    {'id': 1, 'titleKey': 'tab_cash_balance'},
-    {'id': 2, 'titleKey': 'tab_our_debts'},
-    {'id': 3, 'titleKey': 'tab_owed_to_us'},
-    {'id': 4, 'titleKey': 'tab_top_selling_products'},
-    {'id': 5, 'titleKey': 'tab_sales_dynamics'},
-    {'id': 6, 'titleKey': 'tab_net_profit'},
-    {'id': 7, 'titleKey': 'tab_profitability_sales'},
-    {'id': 8, 'titleKey': 'tab_expense_structure'},
-    {'id': 9, 'titleKey': 'tab_order_quantity'},
+    {'id': 1, 'titleKey': 'tab_reconciliation_act'},
+    {'id': 2, 'titleKey': 'tab_cash_balance'},
+    {'id': 3, 'titleKey': 'tab_our_debts'},
+    {'id': 4, 'titleKey': 'tab_owed_to_us'},
+    {'id': 5, 'titleKey': 'tab_top_selling_products'},
+    {'id': 6, 'titleKey': 'tab_sales_dynamics'},
+    {'id': 7, 'titleKey': 'tab_net_profit'},
+    {'id': 8, 'titleKey': 'tab_profitability_sales'},
+    {'id': 9, 'titleKey': 'tab_expense_structure'},
+    {'id': 10, 'titleKey': 'tab_order_quantity'},
   ];
   late List<GlobalKey> _tabKeys;
   late int _currentTabIndex;
-  late int _currentTabId;
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   bool isClickAvatarIcon = false;
@@ -123,7 +122,6 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
     _reconciliationActBloc = SalesDashboardReconciliationActBloc();
 
     _currentTabIndex = widget.currentTabIndex;
-    _currentTabId = _tabTitles[_currentTabIndex]['id'];
     _scrollController = ScrollController();
     _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
     _tabController = TabController(
@@ -135,7 +133,6 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
       if (_tabController.indexIsChanging) return;
       setState(() {
         _currentTabIndex = _tabController.index;
-        _currentTabId = _tabTitles[_currentTabIndex]['id'];
       });
       _scrollToActiveTab();
     });
@@ -193,25 +190,25 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
     if (id == 0) {
       _goodsBloc.add(LoadGoodsReport(filter: filter, search: search));
     } else if (id == 1) {
-      _cashBalanceBloc.add(LoadCashBalanceReport(filter: filter, search: search));
-    } else if (id == 2) {
-      _creditorsBloc.add(LoadCreditorsReport(filter: filter, search: search));
-    } else if (id == 3) {
-      _debtorsBloc.add(LoadDebtorsReport(filter: filter, search: search));
-    } else if (id == 4) {
-      _topSellingGoodsBloc.add(LoadTopSellingGoodsReport(filter: filter, search: search));
-    } else if (id == 5) {
-      _salesDynamicsBloc.add(LoadSalesDynamicsReport(filter: filter, search: search));
-    } else if (id == 6) {
-      _netProfitBloc.add(LoadNetProfitReport(filter: filter, search: search));
-    } else if (id == 7) {
-      _profitabilityBloc.add(LoadProfitabilityReport(filter: filter, search: search));
-    } else if (id == 8) {
-      _expenseStructureBloc.add(LoadExpenseStructureReport(filter: filter, search: search));
-    } else if (id == 9) {
-      _orderQuantityBloc.add(LoadOrderQuantityReport(filter: filter, search: search));
-    } else if (id == 10) {
       _reconciliationActBloc.add(LoadReconciliationActReport(filter: filter, search: search));
+    } else if (id == 2) {
+      _cashBalanceBloc.add(LoadCashBalanceReport(filter: filter, search: search));
+    } else if (id == 3) {
+      _creditorsBloc.add(LoadCreditorsReport(filter: filter, search: search));
+    } else if (id == 4) {
+      _debtorsBloc.add(LoadDebtorsReport(filter: filter, search: search));
+    } else if (id == 5) {
+      _topSellingGoodsBloc.add(LoadTopSellingGoodsReport(filter: filter, search: search));
+    } else if (id == 6) {
+      _salesDynamicsBloc.add(LoadSalesDynamicsReport(filter: filter, search: search));
+    } else if (id == 7) {
+      _netProfitBloc.add(LoadNetProfitReport(filter: filter, search: search));
+    } else if (id == 8) {
+      _profitabilityBloc.add(LoadProfitabilityReport(filter: filter, search: search));
+    } else if (id == 9) {
+      _expenseStructureBloc.add(LoadExpenseStructureReport(filter: filter, search: search));
+    } else if (id == 10) {
+      _orderQuantityBloc.add(LoadOrderQuantityReport(filter: filter, search: search));
     }
   }
 
@@ -219,7 +216,6 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
     debugPrint("Selected Filters: $selectedFilters, currentTabIndex: $_currentTabIndex");
     setState(() {
       _filters[_currentTabIndex] = selectedFilters;
-      _currentTabId = _tabTitles[_currentTabIndex]['id'];
     });
     _reloadCurrentTabData();
   }
@@ -227,7 +223,6 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
   void _handleResetFilters() {
     setState(() {
       _filters[_currentTabIndex] = {};
-      _currentTabId = _tabTitles[_currentTabIndex]['id'];
     });
     _reloadCurrentTabData();
   }
@@ -269,7 +264,7 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
             clearButtonClickFilter: (isSearching) {},
             showSearchIcon: !isClickAvatarIcon,
             showFilterIcon: !isClickAvatarIcon,
-            currentTabIndex: _currentTabId,
+            currentTabIndex: _currentTabIndex,
             onChangedSearchInput: _onSearch,
             textEditingController: _searchController,
             focusNode: _searchFocusNode,
@@ -346,25 +341,25 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
     if (id == 0) {
       return GoodsContent();
     } else if (id == 1) {
-      return CashBalanceContent();
-    } else if (id == 2) {
-      return CreditorsContent();
-    } else if (id == 3) {
-      return DebtorsContent();
-    } else if (id == 4) {
-      return TopSellingGoodsContent();
-    } else if (id == 5) {
-      return SalesDynamicsContent();
-    } else if (id == 6) {
-      return NetProfitContent();
-    } else if (id == 7) {
-      return ProfitabilityContent();
-    } else if (id == 8) {
-      return ExpenseStructureContent();
-    } else if (id == 9) {
-      return OrderQuantityContent();
-    } else if (id == 10) {
       return ReconciliationActContent();
+    } else if (id == 2) {
+      return CashBalanceContent();
+    } else if (id == 3) {
+      return CreditorsContent();
+    } else if (id == 4) {
+      return DebtorsContent();
+    } else if (id == 5) {
+      return TopSellingGoodsContent();
+    } else if (id == 6) {
+      return SalesDynamicsContent();
+    } else if (id == 7) {
+      return NetProfitContent();
+    } else if (id == 8) {
+      return ProfitabilityContent();
+    } else if (id == 9) {
+      return ExpenseStructureContent();
+    } else if (id == 10) {
+      return OrderQuantityContent();
     } else {
       return Container();
     }
@@ -372,7 +367,6 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
 
   void _scrollToActiveTab() {
     final keyContext = _tabKeys[_currentTabIndex].currentContext;
-    _currentTabId = _tabTitles[_currentTabIndex]['id'];
     if (keyContext != null) {
       final box = keyContext.findRenderObject() as RenderBox;
       final position = box.localToGlobal(Offset.zero, ancestor: context.findRenderObject());
