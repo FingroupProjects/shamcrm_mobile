@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../models/page_2/dashboard/cash_balance_model.dart';
 import '../../../../bloc/page_2_BLOC/dashboard/cash_balance/sales_dashboard_cash_balance_bloc.dart';
+import '../../../../screens/profile/languages/app_localizations.dart';
 import '../cards/cash_register_card.dart';
 
 class CashBalanceContent extends StatefulWidget {
@@ -45,6 +46,8 @@ class _CashBalanceContentState extends State<CashBalanceContent> {
   }
 
   Widget _buildEmptyState() {
+    final localizations = AppLocalizations.of(context)!;
+    
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -56,7 +59,7 @@ class _CashBalanceContentState extends State<CashBalanceContent> {
           ),
           SizedBox(height: 16),
           Text(
-            'Нет данных о кассовых регистрах',
+            localizations.translate('no_cash_register_data'),
             style: TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 18,
@@ -66,7 +69,7 @@ class _CashBalanceContentState extends State<CashBalanceContent> {
           ),
           SizedBox(height: 8),
           Text(
-            'Информация о кассовых регистрах недоступна',
+            localizations.translate('cash_register_info_unavailable'),
             style: TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 14,
@@ -79,6 +82,8 @@ class _CashBalanceContentState extends State<CashBalanceContent> {
   }
 
   Widget _buildLoadingState() {
+    final localizations = AppLocalizations.of(context)!;
+    
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -88,7 +93,7 @@ class _CashBalanceContentState extends State<CashBalanceContent> {
           ),
           SizedBox(height: 16),
           Text(
-            'Загрузка данных...',
+            localizations.translate('loading_data'),
             style: TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 16,
@@ -101,6 +106,8 @@ class _CashBalanceContentState extends State<CashBalanceContent> {
   }
 
   Widget _buildErrorState(String message) {
+    final localizations = AppLocalizations.of(context)!;
+    
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -125,7 +132,7 @@ class _CashBalanceContentState extends State<CashBalanceContent> {
               ),
               SizedBox(height: 16),
               Text(
-                'Ошибка загрузки',
+                localizations.translate('error_loading_dialog'),
                 style: TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 18,
@@ -158,7 +165,7 @@ class _CashBalanceContentState extends State<CashBalanceContent> {
                   ),
                 ),
                 child: Text(
-                  'Повторить',
+                  localizations.translate('retry'),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w600,
