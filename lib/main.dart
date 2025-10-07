@@ -618,12 +618,13 @@ class _MyAppState extends State<MyApp> {
         BlocProvider<SupplierBloc>(
           create: (context) => SupplierBloc(widget.apiService),
         ),
-        BlocProvider<ClientSaleBloc>(
-          create: (context) => ClientSaleBloc(widget.apiService),
-        ),
-        BlocProvider<ClientSaleDocumentHistoryBloc>(
-          create: (context) => ClientSaleDocumentHistoryBloc(widget.apiService),
-        ),
+        // remove bloc from main
+        // BlocProvider<ClientSaleBloc>(
+        //   create: (context) => ClientSaleBloc(widget.apiService),
+        // ),
+        // BlocProvider<ClientSaleDocumentHistoryBloc>(
+        //   create: (context) => ClientSaleDocumentHistoryBloc(widget.apiService),
+        // ),
         BlocProvider(create: (context) => SupplierBloc(widget.apiService)),
         BlocProvider(create: (context) => MeasureUnitsBloc(widget.apiService)),
         BlocProvider(create: (context) => WareHouseBloc(widget.apiService)),

@@ -196,7 +196,10 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
                   final result = await Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => CreateClienSalesDocumentScreen(organizationId: widget.organizationId),
+                      builder: (context) => BlocProvider.value(
+                        value: _clientSaleBloc,
+                        child: CreateClienSalesDocumentScreen(organizationId: widget.organizationId),
+                      ),
                     ),
                   );
 
@@ -522,8 +525,14 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
           },
           child: BlocBuilder<ClientSaleBloc, ClientSaleState>(
             builder: (context, state) {
+
+              debugPrint("ClientSaleScreen.Bloc.State.Build: ${_clientSaleBloc.state}");
+
               // ИЗМЕНЕНО: Loading с _isInitialLoad
-              if ((_isInitialLoad && state is ClientSaleLoading) || state is ClientSaleDeleteLoading) {
+              if (_isInitialLoad || state is ClientSaleLoading || state is ClientSaleDeleteLoading ||
+              state is ClientSaleCreateLoading || state is ClientSaleApproveMassLoading ||
+              state is ClientSaleDisapproveMassLoading || state is ClientSaleDeleteMassLoading || state is ClientSaleRestoreMassLoading ||
+              _isRefreshing) {
                 return Center(
                   child: PlayStoreImageLoading(
                     size: 80.0,
@@ -631,9 +640,11 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (ctx) => ClientSalesDocumentDetailsScreen(
-                                        documentId: currentData[index].id!,
-                                        docNumber: currentData[index].docNumber ?? 'N/A',
+                                      builder: (ctx) => BlocProvider.value(
+                                        value: _clientSaleBloc,
+                                        child: ClientSalesDocumentDetailsScreen(
+                                          documentId: currentData[index].id!,
+                                          docNumber: currentData[index].docNumber ?? 'N/A',
                                         // ИЗМЕНЕНО: Передаём права
                                         hasUpdatePermission: _hasUpdatePermission,
                                         hasDeletePermission: _hasDeletePermission,
@@ -644,6 +655,7 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
                                             search: _search,
                                           ));
                                         },
+                                      ),
                                       ),
                                     ),
                                   );
