@@ -1553,7 +1553,10 @@
     "error_loading_storages": "Не удалось загрузить склады",
   "suppliers": "Поставщики",
   "shortName": "Краткое название",
-  "measure_unit_created_successfully": "Единица измерения успешно создана"
+  "measure_unit_created_successfully": "Единица измерения успешно создана",
+  "no_cash_registers": "Нет касс",
+  "no_incomes": "Нет доходов",
+    "no_expenses": "Нет расходов"
 
 
 

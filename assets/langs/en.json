@@ -1556,7 +1556,10 @@
     "error_loading_storages": "Error loading storages",
     "suppliers": "Suppliers",
     "shortName": "Short name",
-    "measure_unit_created_successfully": "Measurement unit created successfully"
+    "measure_unit_created_successfully": "Measurement unit created successfully",
+    "no_cash_registers": "No cash registers",
+    "no_incomes": "No incomes",
+    "no_expenses": "No expenses"
 
 
 }

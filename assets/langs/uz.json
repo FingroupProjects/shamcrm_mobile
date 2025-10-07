@@ -1558,8 +1558,10 @@
   "error_loading_storages": "Omborlarni yuklashda xatolik",
   "suppliers": "Ta’minotchilar",
   "shortName": "Qisqa nom",
-  "measure_unit_created_successfully": "O‘lchov birligi muvaffaqiyatli yaratildi"
-
+  "measure_unit_created_successfully": "O‘lchov birligi muvaffaqiyatli yaratildi",
+  "no_cash_registers": "Kassalar yo‘q",
+  "no_incomes": "Tushumlar yo‘q",
+    "no_expenses": "Chiqimlar yo‘q"
 
 
 
