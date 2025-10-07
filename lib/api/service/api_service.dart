@@ -12038,30 +12038,6 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     }
   }
 
-  // TODO remove if is not used anywhere
-  Future<IncomingDocumentHistoryResponse> getSupplierReturnDocumentHistory(
-      int documentId) async {
-    String url = '/supplier-return-documents/history/$documentId';
-
-    final path = await _appendQueryParams(url);
-    if (kDebugMode) {
-      print('ApiService: getSupplierReturnDocumentHistory - Generated path: $path');
-    }
-
-    try {
-      final response = await _getRequest(path);
-      if (response.statusCode == 200) {
-        final rawData = json.decode(response.body)['result'];
-        return IncomingDocumentHistoryResponse.fromJson(rawData);
-      } else {
-        final message = _extractErrorMessageFromResponse(response);
-        throw ApiException(message ?? "Ошибка получения истории документа", response.statusCode);
-      }
-    } catch (e) {
-     rethrow;
-    }
-  }
-
   Future<void> createSupplierReturnDocument({
     required String date,
     required int storageId,

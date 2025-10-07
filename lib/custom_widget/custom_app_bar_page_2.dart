@@ -950,7 +950,6 @@ void navigateToOrderFilterScreen(BuildContext context) {
               _isIncomingFiltering = filters.isNotEmpty ||
                   filters['date_from'] != null ||
                   filters['date_to'] != null ||
-                  // todo check income screen author sending from filters
                   filters['author_id'] != null;
             });
             debugPrint("_isIncomingFiltering: $_isIncomingFiltering");
