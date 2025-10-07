@@ -23,6 +23,7 @@ class _WarehouseMultiUserState extends State<WarehouseMultiUser> {
   List<UserData> usersList = [];
   List<UserData> selectedUsersData = [];
   bool allSelected = false;
+  bool _hasInitialized = false; // NEW: Track initialization
 
   final TextStyle userTextStyle = const TextStyle(
     fontSize: 16,
@@ -31,7 +32,6 @@ class _WarehouseMultiUserState extends State<WarehouseMultiUser> {
     color: Color(0xff1E2E52),
   );
 
-  // Sentinel for "Select All" - a dummy UserData
   static final UserData selectAllSentinel = UserData(
     id: -1,
     name: 'SELECT_ALL',
@@ -44,13 +44,24 @@ class _WarehouseMultiUserState extends State<WarehouseMultiUser> {
     context.read<GetAllClientBloc>().add(GetAllClientEv());
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Pre-selection can be updated here if needed, but we'll handle it after fetch
+  // NEW: Initialize selected users when data is available
+  void _initializeSelection(List<UserData> fetchedUsers) {
+    if (!_hasInitialized && widget.selectedUsers != null && widget.selectedUsers!.isNotEmpty) {
+      selectedUsersData = fetchedUsers
+          .where((user) => widget.selectedUsers!.contains(user.id.toString()))
+          .toList();
+      allSelected = selectedUsersData.length == fetchedUsers.length;
+      _hasInitialized = true;
+
+      // Notify parent of initial selection
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (selectedUsersData.isNotEmpty) {
+          widget.onSelectUsers(selectedUsersData);
+        }
+      });
+    }
   }
 
-  // Function to toggle select all
   void _toggleSelectAll() {
     setState(() {
       allSelected = !allSelected;
@@ -109,26 +120,19 @@ class _WarehouseMultiUserState extends State<WarehouseMultiUser> {
                     );
                   } else if (state is GetAllClientSuccess) {
                     final fetchedUsers = state.dataUser.result ?? [];
-                    if (usersList.isEmpty ||
-                        fetchedUsers.length != usersList.length - 1) {
+
+                    // FIXED: Always update usersList and initialize selection
+                    if (usersList.isEmpty) {
                       usersList = [selectAllSentinel, ...fetchedUsers];
-                      // Apply pre-selection only on first load or data change
-                      if (widget.selectedUsers != null) {
-                        selectedUsersData = fetchedUsers
-                            .where((user) => widget.selectedUsers!
-                                .contains(user.id.toString()))
-                            .toList();
-                        allSelected =
-                            selectedUsersData.length == fetchedUsers.length;
-                      }
+                      _initializeSelection(fetchedUsers);
                     }
+
                     return CustomDropdown<UserData>.multiSelectSearch(
                       items: usersList,
-                      initialItems: selectedUsersData,
+                      initialItems: selectedUsersData, // Now properly initialized
                       searchHintText:
-                          AppLocalizations.of(context)!.translate('search'),
-                      overlayHeight: MediaQuery.of(context).size.height *
-                          0.5, // Dynamic height
+                      AppLocalizations.of(context)!.translate('search'),
+                      overlayHeight: MediaQuery.of(context).size.height * 0.5,
                       decoration: CustomDropdownDecoration(
                         closedFillColor: const Color(0xffF4F7FD),
                         expandedFillColor: Colors.white,
@@ -165,17 +169,17 @@ class _WarehouseMultiUserState extends State<WarehouseMultiUser> {
                                               color: const Color(0xff1E2E52),
                                               width: 1),
                                           borderRadius:
-                                              BorderRadius.circular(4),
+                                          BorderRadius.circular(4),
                                           color: allSelected
                                               ? const Color(0xff1E2E52)
                                               : Colors.transparent,
                                         ),
                                         child: allSelected
                                             ? const Icon(
-                                                Icons.check,
-                                                color: Colors.white,
-                                                size: 14,
-                                              )
+                                          Icons.check,
+                                          color: Colors.white,
+                                          size: 14,
+                                        )
                                             : null,
                                       ),
                                       const SizedBox(width: 12),
@@ -193,25 +197,24 @@ class _WarehouseMultiUserState extends State<WarehouseMultiUser> {
                               const Divider(
                                 height: 20,
                                 color: Color(0xFFE5E7EB),
-                              ), // Divider
+                              ),
                             ],
                           );
                         }
-                        // Regular items
                         return _buildListItem(item, isSelected, onItemSelect);
                       },
                       headerListBuilder: (context, hint, enabled) {
                         String selectedUsersNames = selectedUsersData.isEmpty
                             ? AppLocalizations.of(context)!
-                                .translate('select_assignees_list')
+                            .translate('select_assignees_list')
                             : selectedUsersData
-                                    .take(3) // Limit to 3 for performance
-                                    .map((e) =>
-                                        '${e.name ?? 'Unknown'} ${e.lastname ?? ''}')
-                                    .join(', ') +
-                                (selectedUsersData.length > 3
-                                    ? ' +${selectedUsersData.length - 3} more'
-                                    : '');
+                            .take(3)
+                            .map((e) =>
+                        '${e.name ?? 'Unknown'} ${e.lastname ?? ''}')
+                            .join(', ') +
+                            (selectedUsersData.length > 3
+                                ? ' +${selectedUsersData.length - 3} more'
+                                : '');
                         return Text(
                           selectedUsersNames,
                           style: userTextStyle,
@@ -227,7 +230,6 @@ class _WarehouseMultiUserState extends State<WarehouseMultiUser> {
                         ),
                       ),
                       onListChanged: (values) {
-                        // Filter out sentinel if somehow selected
                         final filteredValues = values
                             .where((v) => v != selectAllSentinel)
                             .toList();
@@ -241,7 +243,7 @@ class _WarehouseMultiUserState extends State<WarehouseMultiUser> {
                       },
                     );
                   }
-                  return const SizedBox.shrink(); // Fallback
+                  return const SizedBox.shrink();
                 },
               ),
             ),
@@ -281,14 +283,14 @@ class _WarehouseMultiUserState extends State<WarehouseMultiUser> {
                 ),
                 borderRadius: BorderRadius.circular(4),
                 color:
-                    isSelected ? const Color(0xff1E2E52) : Colors.transparent,
+                isSelected ? const Color(0xff1E2E52) : Colors.transparent,
               ),
               child: isSelected
                   ? const Icon(
-                      Icons.check,
-                      color: Colors.white,
-                      size: 14,
-                    )
+                Icons.check,
+                color: Colors.white,
+                size: 14,
+              )
                   : null,
             ),
             const SizedBox(width: 12),

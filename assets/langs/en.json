@@ -1552,9 +1552,11 @@
   "long_press_reconciliation_item": "Long press on reconciliation act item",
     "filter_type": "Тип фильтра",
     "filter_by_client" : "По клиенту",
-    "filter_by_supplier" : "По поставщику"
-
-
+    "filter_by_supplier" : "По поставщику",
+    "error_loading_storages": "Error loading storages",
+    "suppliers": "Suppliers",
+    "shortName": "Short name",
+    "measure_unit_created_successfully": "Measurement unit created successfully"
 
 
 }

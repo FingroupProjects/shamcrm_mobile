@@ -1553,8 +1553,15 @@
   "selected_reconciliation_item": "Yarashish akti elementi tanlandi",
   "long_press_reconciliation_item": "Yarashish akti elementiga uzoq bosish",
   "filter_type": "Filtr turi",
-  "filter_by_client" : "По клиенту",
-  "filter_by_supplier" : "По поставщику"
+  "filter_by_client" : "Klient bo‘yicha",
+  "filter_by_supplier" : "Ta’minotchi bo‘yicha",
+  "error_loading_storages": "Omborlarni yuklashda xatolik",
+  "suppliers": "Ta’minotchilar",
+  "shortName": "Qisqa nom",
+  "measure_unit_created_successfully": "O‘lchov birligi muvaffaqiyatli yaratildi"
+
+
+
 
 
 

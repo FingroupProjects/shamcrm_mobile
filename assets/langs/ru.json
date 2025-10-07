@@ -1549,7 +1549,12 @@
   "long_press_reconciliation_item": "Длительное нажатие на элемент акта сверки",
   "filter_type": "Тип фильтра",
   "filter_by_client" : "По клиенту",
-  "filter_by_supplier" : "По поставщику"
+  "filter_by_supplier" : "По поставщику",
+    "error_loading_storages": "Не удалось загрузить склады",
+  "suppliers": "Поставщики",
+  "shortName": "Краткое название",
+  "measure_unit_created_successfully": "Единица измерения успешно создана"
+
 
 
 

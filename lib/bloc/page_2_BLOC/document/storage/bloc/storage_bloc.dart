@@ -17,12 +17,12 @@ class WareHouseBloc extends Bloc<WareHouseEvent, WareHouseState> {
   Future<void> _onFetch(
       FetchWareHouse event, Emitter<WareHouseState> emit) async {
     emit(WareHouseLoading());
-    // try {
+    try {
       final storages = await apiService.getWareHouses();
       emit(WareHouseLoaded(storages));
-    // } catch (e) {
-    //   emit(WareHouseError("Не удалось загрузить склады"));
-    // }
+    } catch (e) {
+      emit(WareHouseError("error_loading_storages"));
+    }
   }
 
   Future<void> _onCreate(
@@ -33,7 +33,7 @@ class WareHouseBloc extends Bloc<WareHouseEvent, WareHouseState> {
         emit(WareHouseSuccess());
       }
     } catch (e) {
-      emit(WareHouseError("Не удалось создать склад"));
+      emit(WareHouseError("error_loading_storages"));
     }
   }
 
@@ -44,7 +44,7 @@ class WareHouseBloc extends Bloc<WareHouseEvent, WareHouseState> {
           storage: event.storage, ids: event.ids, id: event.id);
       add(FetchWareHouse());
     } catch (e) {
-      emit(WareHouseError("Не удалось обновить склад"));
+      emit(WareHouseError("error_loading_storages"));
     }
   }
 
@@ -54,7 +54,7 @@ class WareHouseBloc extends Bloc<WareHouseEvent, WareHouseState> {
       await apiService.deleteStorage(event.id);
       add(FetchWareHouse());
     } catch (e) {
-      emit(WareHouseError("Не удалось удалить склад"));
+      emit(WareHouseError("error_loading_storages"));
     }
   }
 }
