@@ -340,10 +340,7 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
       ));
     } catch (e) {
       setState(() => _isLoading = false);
-      _showSnackBar(
-        AppLocalizations.of(context)!.translate('enter_valid_datetime') ?? 'Введите корректную дату и время',
-        false,
-      );
+      _showSnackBar(e.toString(), false);
     }
   }
 
