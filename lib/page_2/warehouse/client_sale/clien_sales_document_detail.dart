@@ -420,9 +420,9 @@ class _ClientSalesDocumentDetailsScreenState
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider<ClientSaleBloc>(
-          create: (context) => ClientSaleBloc(context.read<ApiService>()),
-        ),
+        // BlocProvider<ClientSaleBloc>(
+        //   create: (context) => ClientSaleBloc(context.read<ApiService>()),
+        // ),
         BlocProvider<ClientSaleDocumentHistoryBloc>(
           create: (context) => ClientSaleDocumentHistoryBloc(context.read<ApiService>()),
         ),
@@ -560,7 +560,7 @@ class _ClientSalesDocumentDetailsScreenState
                       onPressed: () {
                         showDialog(
                           context: context,
-                          builder: (BuildContext context) {
+                          builder: (BuildContext ctx) {
                             return BlocProvider.value(
                               value: BlocProvider.of<ClientSaleBloc>(context),
                               child: ClientSaleDeleteDocumentDialog(documentId: widget.documentId),

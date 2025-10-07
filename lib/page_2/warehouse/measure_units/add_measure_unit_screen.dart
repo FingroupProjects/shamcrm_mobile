@@ -87,8 +87,7 @@ class _AddMeasureUnitScreenState extends State<AddMeasureUnitScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  AppLocalizations.of(context)!
-                          .translate('measure_unit_created_successfully') ??
+                  AppLocalizations.of(context)!.translate('measure_unit_created_successfully') ??
                       'Единица измерения успешно создана',
                   style: const TextStyle(
                     fontFamily: 'Gilroy',

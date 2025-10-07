@@ -6,13 +6,7 @@ import '../../../../screens/profile/languages/app_localizations.dart';
 import '../../detailed_report/detailed_report_screen.dart';
 import 'download_popup_menu.dart';
 
-class _OrderQuantityStrings {
-  static const String orderQuantity = 'Количество заказов';
-  static const String week = 'Неделя';
-  static const String month = 'Месяц';
-  static const String year = 'Год';
-  static const String noDataToDisplay = 'Нет данных для отображения';
-}
+// Removed hardcoded strings - now using localization
 
 class OrderQuantityChart extends StatefulWidget {
   const OrderQuantityChart({super.key, required this.orderDashboardData});
@@ -81,13 +75,14 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
   }
 
   String getPeriodText(BuildContext context, OrderTimePeriod period) {
+    final localizations = AppLocalizations.of(context)!;
     switch (period) {
       case OrderTimePeriod.week:
-        return _OrderQuantityStrings.week;
+        return localizations.translate('week');
       case OrderTimePeriod.month:
-        return _OrderQuantityStrings.month;
+        return localizations.translate('month');
       case OrderTimePeriod.year:
-        return _OrderQuantityStrings.year;
+        return localizations.translate('year');
     }
   }
 
@@ -403,7 +398,7 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                _OrderQuantityStrings.orderQuantity,
+                localizations.translate('order_quantity'),
                 style: const TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 18,
@@ -454,7 +449,7 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
             child: chartData.isEmpty
                 ? Center(
               child: Text(
-                _OrderQuantityStrings.noDataToDisplay,
+                localizations.translate('no_data_to_display'),
                 style: const TextStyle(
                   fontSize: 16,
                   fontFamily: "Gilroy",

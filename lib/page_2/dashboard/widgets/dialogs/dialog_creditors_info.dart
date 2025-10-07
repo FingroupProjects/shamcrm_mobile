@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../models/page_2/dashboard/creditors_model.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/creditors/sales_dashboard_creditors_bloc.dart';
+import '../../../../screens/profile/languages/app_localizations.dart';
 import '../../detailed_report/detailed_report_screen.dart';
 
 void showCreditorsDialog(BuildContext context) {
@@ -62,13 +63,15 @@ class _CreditorsDialogState extends State<CreditorsDialog> {
               ),
               SizedBox(width: 12),
               Expanded(
-                child: Text(
-                  'Кредиторы',
-                  style: TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xff1E2E52),
+                child: Builder(
+                  builder: (context) => Text(
+                    AppLocalizations.of(context)!.translate('our_debts'),
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xff1E2E52),
+                    ),
                   ),
                 ),
               ),
@@ -99,13 +102,15 @@ class _CreditorsDialogState extends State<CreditorsDialog> {
                   color: Color(0xff64748B),
                 ),
                 SizedBox(height: 12),
-                Text(
-                  'Нет кредиторов',
-                  style: TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xff475569),
+                Builder(
+                  builder: (context) => Text(
+                    AppLocalizations.of(context)!.translate('no_data_to_display'),
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xff475569),
+                    ),
                   ),
                 ),
               ],
@@ -193,13 +198,15 @@ class _CreditorsDialogState extends State<CreditorsDialog> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Сумма:',
-                          style: TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xff475569),
+                        Builder(
+                          builder: (context) => Text(
+                            '${AppLocalizations.of(context)!.translate('amount')}:',
+                            style: TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xff475569),
+                            ),
                           ),
                         ),
                         SizedBox(height: 4),
@@ -234,24 +241,28 @@ class _CreditorsDialogState extends State<CreditorsDialog> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Телефон:',
-                          style: TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xff475569),
+                        Builder(
+                          builder: (context) => Text(
+                            '${AppLocalizations.of(context)!.translate('phone')}:',
+                            style: TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xff475569),
+                            ),
                           ),
                         ),
                         SizedBox(height: 4),
                         FittedBox(
-                          child: Text(
-                            item.phone ?? 'Не указан',
-                            style: TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xff1E2E52),
+                          child: Builder(
+                            builder: (context) => Text(
+                              item.phone ?? AppLocalizations.of(context)!.translate('not_specified'),
+                              style: TextStyle(
+                                fontFamily: 'Gilroy',
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xff1E2E52),
+                              ),
                             ),
                           ),
                         ),
@@ -326,7 +337,7 @@ class _CreditorsDialogState extends State<CreditorsDialog> {
                       ),
                       SizedBox(width: 12),
                       Text(
-                        'Наши долги',
+                        AppLocalizations.of(context)!.translate('our_debts'),
                         style: TextStyle(
                           fontFamily: 'Gilroy',
                           fontSize: 18,
@@ -351,7 +362,7 @@ class _CreditorsDialogState extends State<CreditorsDialog> {
                         ),
                         SizedBox(height: 16),
                         Text(
-                          'Загрузка данных...',
+                          AppLocalizations.of(context)!.translate('loading_data_dialog'),
                           style: TextStyle(
                             fontFamily: 'Gilroy',
                             fontSize: 16,
@@ -375,7 +386,7 @@ class _CreditorsDialogState extends State<CreditorsDialog> {
                           ),
                           SizedBox(height: 16),
                           Text(
-                            'Ошибка загрузки',
+                            AppLocalizations.of(context)!.translate('error_loading_dialog'),
                             style: TextStyle(
                               fontFamily: 'Gilroy',
                               fontSize: 18,
@@ -408,7 +419,7 @@ class _CreditorsDialogState extends State<CreditorsDialog> {
                               ),
                             ),
                             child: Text(
-                              'Повторить',
+                              AppLocalizations.of(context)!.translate('retry_dialog'),
                               style: TextStyle(
                                 fontFamily: 'Gilroy',
                                 fontWeight: FontWeight.w600,
@@ -458,7 +469,7 @@ class _CreditorsDialogState extends State<CreditorsDialog> {
                             ),
                           ),
                           child: Text(
-                            'Подробнее',
+                            AppLocalizations.of(context)!.translate('more_details_button'),
                             style: TextStyle(
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w600,
@@ -484,7 +495,7 @@ class _CreditorsDialogState extends State<CreditorsDialog> {
                             ),
                           ),
                           child: Text(
-                            'Понятно',
+                            AppLocalizations.of(context)!.translate('understood_button'),
                             style: TextStyle(
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w600,

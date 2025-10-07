@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../models/page_2/dashboard/debtors_model.dart';
 import '../../../../bloc/page_2_BLOC/dashboard/debtors/sales_dashboard_debtors_bloc.dart';
+import '../../../../screens/profile/languages/app_localizations.dart';
 import '../cards/debtor_card.dart';
 
 class DebtorsContent extends StatefulWidget {
@@ -60,6 +61,8 @@ class _DebtorsContentState extends State<DebtorsContent> {
   }
 
   Widget _buildEmptyState() {
+    final localizations = AppLocalizations.of(context)!;
+    
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -73,7 +76,7 @@ class _DebtorsContentState extends State<DebtorsContent> {
             ),
             SizedBox(height: 16),
             Text(
-              'Нет дебиторской задолженности',
+              localizations.translate('no_debtor_debt'),
               style: TextStyle(
                 fontFamily: 'Gilroy',
                 fontSize: 18,
@@ -83,7 +86,7 @@ class _DebtorsContentState extends State<DebtorsContent> {
             ),
             SizedBox(height: 8),
             Text(
-              'Все клиенты рассчитались по долгам',
+              localizations.translate('all_client_debts_paid'),
               style: TextStyle(
                 fontFamily: 'Gilroy',
                 fontSize: 14,
@@ -97,6 +100,8 @@ class _DebtorsContentState extends State<DebtorsContent> {
   }
 
   Widget _buildLoadingState() {
+    final localizations = AppLocalizations.of(context)!;
+    
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -106,7 +111,7 @@ class _DebtorsContentState extends State<DebtorsContent> {
           ),
           SizedBox(height: 16),
           Text(
-            'Загрузка данных...',
+            localizations.translate('loading_data'),
             style: TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 16,
@@ -119,6 +124,8 @@ class _DebtorsContentState extends State<DebtorsContent> {
   }
 
   Widget _buildErrorState(String message) {
+    final localizations = AppLocalizations.of(context)!;
+    
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -143,7 +150,7 @@ class _DebtorsContentState extends State<DebtorsContent> {
               ),
               SizedBox(height: 16),
               Text(
-                'Ошибка загрузки',
+                localizations.translate('error_loading_dialog'),
                 style: TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 18,
@@ -176,7 +183,7 @@ class _DebtorsContentState extends State<DebtorsContent> {
                   ),
                 ),
                 child: Text(
-                  'Повторить',
+                  localizations.translate('retry'),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w600,

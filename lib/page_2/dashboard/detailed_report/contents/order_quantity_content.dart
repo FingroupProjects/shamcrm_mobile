@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../models/page_2/dashboard/order_quantity_content.dart';
 import '../../../../../bloc/page_2_BLOC/dashboard/order_quantity/sales_dashboard_order_quantity_bloc.dart';
+import '../../../../screens/profile/languages/app_localizations.dart';
 import '../cards/order_quantity_card.dart';
 
 class OrderQuantityContent extends StatefulWidget {
@@ -35,6 +36,8 @@ class _OrderQuantityContentState extends State<OrderQuantityContent> {
   }
 
   Widget _buildEmptyState() {
+    final localizations = AppLocalizations.of(context)!;
+    
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -48,7 +51,7 @@ class _OrderQuantityContentState extends State<OrderQuantityContent> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Нет данных о количестве заказов',
+              localizations.translate('no_order_quantity_data'),
               style: TextStyle(
                 fontFamily: 'Gilroy',
                 fontSize: 18,
@@ -58,7 +61,7 @@ class _OrderQuantityContentState extends State<OrderQuantityContent> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Список заказов пуст',
+              localizations.translate('order_list_empty'),
               style: TextStyle(
                 fontFamily: 'Gilroy',
                 fontSize: 14,
@@ -72,6 +75,8 @@ class _OrderQuantityContentState extends State<OrderQuantityContent> {
   }
 
   Widget _buildLoadingState() {
+    final localizations = AppLocalizations.of(context)!;
+    
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -81,7 +86,7 @@ class _OrderQuantityContentState extends State<OrderQuantityContent> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Загрузка данных...',
+            localizations.translate('loading_data'),
             style: TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 16,
@@ -94,6 +99,8 @@ class _OrderQuantityContentState extends State<OrderQuantityContent> {
   }
 
   Widget _buildErrorState(String message) {
+    final localizations = AppLocalizations.of(context)!;
+    
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -118,7 +125,7 @@ class _OrderQuantityContentState extends State<OrderQuantityContent> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Ошибка загрузки',
+                localizations.translate('error_loading_dialog'),
                 style: TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 18,
@@ -151,7 +158,7 @@ class _OrderQuantityContentState extends State<OrderQuantityContent> {
                   ),
                 ),
                 child: Text(
-                  'Повторить',
+                  localizations.translate('retry'),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w600,

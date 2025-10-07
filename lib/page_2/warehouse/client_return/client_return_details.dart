@@ -420,9 +420,9 @@ class _ClientReturnDocumentDetailsScreenState
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider<ClientReturnBloc>(
-          create: (context) => ClientReturnBloc(context.read<ApiService>()),
-        ),
+        // BlocProvider<ClientReturnBloc>(
+        //   create: (context) => ClientReturnBloc(context.read<ApiService>()),
+        // ),
       ],
       child: PopScope(
         onPopInvoked: (didPop) {

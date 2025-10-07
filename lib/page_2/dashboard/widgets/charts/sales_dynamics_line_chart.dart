@@ -93,12 +93,12 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
     }
   }
 
-  String getPeriodText(TimePeriod period) {
+  String getPeriodText(TimePeriod period, AppLocalizations localizations) {
     switch (period) {
       case TimePeriod.year:
-        return 'текущий год';
+        return localizations.translate('current_year_lowercase');
       case TimePeriod.previousYear:
-        return 'прошлый год';
+        return localizations.translate('previous_year');
     }
   }
 
@@ -428,8 +428,9 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
         }
       },
       headerBuilder: (context, selectedItem, enabled) {
+        final localizations = AppLocalizations.of(context)!;
         return Text(
-          getPeriodText(selectedItem),
+          getPeriodText(selectedItem, localizations),
           style: const TextStyle(
             fontFamily: 'Gilroy',
             fontSize: 12,
@@ -439,8 +440,9 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
         );
       },
       listItemBuilder: (context, item, isSelected, onItemSelect) {
+        final localizations = AppLocalizations.of(context)!;
         return Text(
-          getPeriodText(item),
+          getPeriodText(item, localizations),
           style: const TextStyle(
             fontFamily: 'Gilroy',
             fontSize: 12,

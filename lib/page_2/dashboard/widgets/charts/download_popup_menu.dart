@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
 enum DownloadFormat {
-  svg('svg', 'Download SVG', Icons.download),
-  png('png', 'Download PNG', Icons.image),
-  csv('csv', 'Download CSV', Icons.table_chart);
+  svg('svg', 'download_svg', Icons.download),
+  png('png', 'download_png', Icons.image),
+  csv('csv', 'download_csv', Icons.table_chart);
 
-  const DownloadFormat(this.value, this.label, this.icon);
+  const DownloadFormat(this.value, this.labelKey, this.icon);
 
   final String value;
-  final String label;
+  final String labelKey;
   final IconData icon;
+  
+  String getLabel(BuildContext context) {
+    return AppLocalizations.of(context)!.translate(labelKey);
+  }
 }
 
 class DownloadPopupMenu extends StatelessWidget {
@@ -18,7 +23,6 @@ class DownloadPopupMenu extends StatelessWidget {
     required this.onDownload,
     this.formats = const [DownloadFormat.svg, DownloadFormat.png, DownloadFormat.csv],
     this.icon,
-    this.tooltip = 'Download options',
     this.enabled = true,
     this.loading = false,
     this.offset = const Offset(0, 40),
@@ -31,7 +35,6 @@ class DownloadPopupMenu extends StatelessWidget {
   final Function(DownloadFormat) onDownload;
   final List<DownloadFormat> formats;
   final Widget? icon;
-  final String tooltip;
   final bool enabled;
   final bool loading;
   final Offset offset;
@@ -49,6 +52,8 @@ class DownloadPopupMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+    
     if (loading) {
       return SizedBox(
         width: iconSize,
@@ -62,7 +67,7 @@ class DownloadPopupMenu extends StatelessWidget {
 
     return PopupMenuButton<DownloadFormat>(
       enabled: enabled,
-      tooltip: tooltip,
+      tooltip: localizations.translate('download_options'),
       padding: EdgeInsets.zero, // Remove default padding
       icon: icon ??
           Icon(
@@ -89,7 +94,7 @@ class DownloadPopupMenu extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Text(
-                format.label,
+                format.getLabel(context),
                 style: textStyle ?? _defaultTextStyle,
               ),
             ],
@@ -122,9 +127,10 @@ class DownloadHandler {
     }
 
     if (context != null) {
+      final localizations = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('${format.label} downloaded successfully!'),
+          content: Text('${format.getLabel(context)} ${localizations.translate('downloaded_successfully')}'),
           backgroundColor: Colors.green,
         ),
       );

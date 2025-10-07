@@ -381,32 +381,34 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
                   : Container(
                       color: const Color(0xffF8F9FB),
                       padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            localizations.translate('reference_data') ?? 'Справочные данные',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xff1E2E52),
+                      child: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              localizations.translate('reference_data') ?? 'Справочные данные',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xff1E2E52),
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            localizations.translate('select_reference_type') ??
-                                'Выберите тип справочника для работы с данными',
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w400,
-                              color: Color(0xff99A4BA),
+                            const SizedBox(height: 8),
+                            Text(
+                              localizations.translate('select_reference_type') ??
+                                  'Выберите тип справочника для работы с данными',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w400,
+                                color: Color(0xff99A4BA),
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 20),
-                          _buildReferencesLayout(),
-                        ],
+                            const SizedBox(height: 20),
+                            _buildReferencesLayout(),
+                          ],
+                        ),
                       ),
                     ),
     );

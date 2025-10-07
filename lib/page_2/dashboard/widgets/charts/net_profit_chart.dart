@@ -45,12 +45,12 @@ class _NetProfitChartState extends State<NetProfitChart> {
     }
   }
 
-  String getPeriodText(NetProfitPeriod period) {
+  String getPeriodText(NetProfitPeriod period, AppLocalizations localizations) {
     switch (period) {
       case NetProfitPeriod.year:
-        return 'Текущий год';
+        return localizations.translate('current_year');
       case NetProfitPeriod.last_year:
-        return 'Прошлый год';
+        return localizations.translate('last_year');
     }
   }
 
@@ -388,8 +388,9 @@ class _NetProfitChartState extends State<NetProfitChart> {
         }
       },
       headerBuilder: (context, selectedItem, enabled) {
+        final localizations = AppLocalizations.of(context)!;
         return Text(
-          getPeriodText(selectedItem),
+          getPeriodText(selectedItem, localizations),
           style: const TextStyle(
             fontFamily: 'Gilroy',
             fontSize: 12,
@@ -399,8 +400,9 @@ class _NetProfitChartState extends State<NetProfitChart> {
         );
       },
       listItemBuilder: (context, item, isSelected, onItemSelect) {
+        final localizations = AppLocalizations.of(context)!;
         return Text(
-          getPeriodText(item),
+          getPeriodText(item, localizations),
           style: const TextStyle(
             fontFamily: 'Gilroy',
             fontSize: 12,

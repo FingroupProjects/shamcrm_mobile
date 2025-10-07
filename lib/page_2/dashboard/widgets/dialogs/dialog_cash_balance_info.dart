@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../models/page_2/dashboard/cash_balance_model.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/cash_balance/sales_dashboard_cash_balance_bloc.dart';
+import '../../../../screens/profile/languages/app_localizations.dart';
 
 import '../../detailed_report/detailed_report_screen.dart';
 
@@ -60,7 +61,7 @@ class _CashBalanceDialogState extends State<CashBalanceDialog> {
               SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Остаток кассы',
+                  AppLocalizations.of(context)!.translate('cash_balance_title'),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -81,7 +82,7 @@ class _CashBalanceDialogState extends State<CashBalanceDialog> {
               Expanded(
                 flex: 3,
                 child: Text(
-                  'Касса',
+                  AppLocalizations.of(context)!.translate('cash_register_column'),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 12,
@@ -93,7 +94,7 @@ class _CashBalanceDialogState extends State<CashBalanceDialog> {
               Expanded(
                 flex: 2,
                 child: Text(
-                  'Остаток',
+                  AppLocalizations.of(context)!.translate('balance_column'),
                   textAlign: TextAlign.right,
                   style: TextStyle(
                     fontFamily: 'Gilroy',
@@ -185,7 +186,7 @@ class _CashBalanceDialogState extends State<CashBalanceDialog> {
               SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Движение средств за сегодня',
+                  AppLocalizations.of(context)!.translate('funds_movement_today'),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -219,7 +220,7 @@ class _CashBalanceDialogState extends State<CashBalanceDialog> {
                 ),
                 SizedBox(height: 12),
                 Text(
-                  'Нет движений за сегодня',
+                  AppLocalizations.of(context)!.translate('no_movements_today'),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -236,24 +237,25 @@ class _CashBalanceDialogState extends State<CashBalanceDialog> {
     );
   }
 
-  String _getOperationName(String operationType) {
+  String _getOperationName(BuildContext context, String operationType) {
+    final localizations = AppLocalizations.of(context)!;
     switch (operationType) {
       case 'client_return':
-        return 'Возврат от клиента';
+        return localizations.translate('client_return');
       case 'send_another_cash_register':
-        return 'Получение с другой кассы';
+        return localizations.translate('send_another_cash_register');
       case 'client_payment':
-        return 'Оплата клиента';
+        return localizations.translate('client_payment');
       case 'supplier_payment':
-        return 'Оплата поставщику';
+        return localizations.translate('supplier_payment');
       case 'other_expenses':
-        return 'Прочие расходы';
+        return localizations.translate('other_expenses');
       case 'other_incomes':
-        return 'Прочие доходы';
+        return localizations.translate('other_income');
       case 'return_supplier':
-        return 'Возврат поставщику';
+        return localizations.translate('supplier_return');
       default:
-        return 'Операция';
+        return localizations.translate('operation_label');
     }
   }
 
@@ -278,13 +280,15 @@ class _CashBalanceDialogState extends State<CashBalanceDialog> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
-                child: Text(
-                  _getOperationName(movement.operationType ?? ''),
-                  style: TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xff1E2E52),
+                child: Builder(
+                  builder: (context) => Text(
+                    _getOperationName(context, movement.operationType ?? ''),
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xff1E2E52),
+                    ),
                   ),
                 ),
               ),
@@ -308,13 +312,15 @@ class _CashBalanceDialogState extends State<CashBalanceDialog> {
                 color: Color(0xff64748B),
               ),
               SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  movement.counterparty ?? 'Неизвестно',
-                  style: TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 12,
-                    color: Color(0xff64748B),
+                Expanded(
+                child: Builder(
+                  builder: (context) => Text(
+                    movement.counterparty ?? AppLocalizations.of(context)!.translate('unknown_dialog'),
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 12,
+                      color: Color(0xff64748B),
+                    ),
                   ),
                 ),
               ),
@@ -332,12 +338,14 @@ class _CashBalanceDialogState extends State<CashBalanceDialog> {
                     color: Color(0xff64748B),
                   ),
                   SizedBox(width: 4),
-                  Text(
-                    movement.method ?? 'Неизвестно',
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 12,
-                      color: Color(0xff64748B),
+                  Builder(
+                    builder: (context) => Text(
+                      movement.method ?? AppLocalizations.of(context)!.translate('unknown_dialog'),
+                      style: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 12,
+                        color: Color(0xff64748B),
+                      ),
                     ),
                   ),
                 ],
@@ -426,7 +434,7 @@ class _CashBalanceDialogState extends State<CashBalanceDialog> {
                       ),
                       SizedBox(width: 12),
                       Text(
-                        'Отчёт по кассе',
+                        AppLocalizations.of(context)!.translate('cash_report_title'),
                         style: TextStyle(
                           fontFamily: 'Gilroy',
                           fontSize: 18,
@@ -451,7 +459,7 @@ class _CashBalanceDialogState extends State<CashBalanceDialog> {
                         ),
                         SizedBox(height: 16),
                         Text(
-                          'Загрузка данных...',
+                          AppLocalizations.of(context)!.translate('loading_data_dialog'),
                           style: TextStyle(
                             fontFamily: 'Gilroy',
                             fontSize: 16,
@@ -475,7 +483,7 @@ class _CashBalanceDialogState extends State<CashBalanceDialog> {
                           ),
                           SizedBox(height: 16),
                           Text(
-                            'Ошибка загрузки',
+                            AppLocalizations.of(context)!.translate('error_loading_dialog'),
                             style: TextStyle(
                               fontFamily: 'Gilroy',
                               fontSize: 18,
@@ -508,7 +516,7 @@ class _CashBalanceDialogState extends State<CashBalanceDialog> {
                               ),
                             ),
                             child: Text(
-                              'Повторить',
+                              AppLocalizations.of(context)!.translate('retry_dialog'),
                               style: TextStyle(
                                 fontFamily: 'Gilroy',
                                 fontWeight: FontWeight.w600,
@@ -563,7 +571,7 @@ class _CashBalanceDialogState extends State<CashBalanceDialog> {
                             ),
                           ),
                           child: Text(
-                            'Подробнее',
+                            AppLocalizations.of(context)!.translate('more_details_button'),
                             style: TextStyle(
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w600,
@@ -589,7 +597,7 @@ class _CashBalanceDialogState extends State<CashBalanceDialog> {
                             ),
                           ),
                           child: Text(
-                            'Понятно',
+                            AppLocalizations.of(context)!.translate('understood_button'),
                             style: TextStyle(
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w600,

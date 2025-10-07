@@ -64,17 +64,18 @@ class _ExpenseStructureChartState extends State<ExpenseStructureChart> with Sing
   }
 
   String getPeriodText(BuildContext context, ExpensePeriodEnum period) {
+    final localizations = AppLocalizations.of(context)!;
     switch (period) {
       case ExpensePeriodEnum.today:
-        return 'Сегодня';
+        return localizations.translate('today');
       case ExpensePeriodEnum.week:
-        return 'Неделя';
+        return localizations.translate('week');
       case ExpensePeriodEnum.month:
-        return 'Текущий месяц';
+        return localizations.translate('current_month');
       case ExpensePeriodEnum.quarter:
-        return 'Квартал';
+        return localizations.translate('quarter');
       case ExpensePeriodEnum.year:
-        return 'Год';
+        return localizations.translate('year');
     }
   }
 
