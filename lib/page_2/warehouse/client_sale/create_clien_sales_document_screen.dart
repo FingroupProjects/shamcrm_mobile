@@ -67,7 +67,7 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
         // Устанавливаем начальную цену из данных варианта
         final initialPrice = newItem['price'] ?? 0.0;
         _priceControllers[variantId] = TextEditingController(
-          text: initialPrice > 0 ? initialPrice.toStringAsFixed(2) : ''
+          text: initialPrice > 0 ? initialPrice.toStringAsFixed(3) : ''
         );
 
         // Устанавливаем quantity = 1
@@ -81,7 +81,7 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
 
         // Вычисляем total
         final amount = newItem['amount'] ?? 1;
-        _items.last['total'] = 1 * initialPrice * amount;
+        _items.last['total'] = (1 * initialPrice * amount).round();
 
         // Инициализируем состояние ошибок
         _priceErrors[variantId] = false;
@@ -187,7 +187,7 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
           _items[index]['quantity'] = quantity;
           // Пересчитываем total с учётом amount
           final amount = _items[index]['amount'] ?? 1;
-          _items[index]['total'] = _items[index]['quantity'] * _items[index]['price'] * amount;
+          _items[index]['total'] = (_items[index]['quantity'] * _items[index]['price'] * amount).round();
         }
         // Убираем ошибку если поле заполнено корректно
         _quantityErrors[variantId] = false;
@@ -197,7 +197,7 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
         final index = _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
           _items[index]['quantity'] = 0;
-          _items[index]['total'] = 0.0;
+          _items[index]['total'] = 0;
         }
       });
     }
@@ -212,7 +212,8 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
           _items[index]['price'] = price;
           // Пересчитываем total с учётом amount
           final amount = _items[index]['amount'] ?? 1;
-          _items[index]['total'] = _items[index]['quantity'] * _items[index]['price'] * amount;
+          final formattedPrice = double.parse(price.toStringAsFixed(3));
+          _items[index]['total'] = (_items[index]['quantity'] * formattedPrice * amount).round();
         }
         // Убираем ошибку если поле заполнено корректно
         _priceErrors[variantId] = false;
@@ -245,7 +246,7 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
 
         // Пересчитываем total с учётом нового amount
         final amount = _items[index]['amount'] ?? 1;
-        _items[index]['total'] = _items[index]['quantity'] * _items[index]['price'] * amount;
+        _items[index]['total'] = (_items[index]['quantity'] * _items[index]['price'] * amount).round();
       }
     });
   }
@@ -326,7 +327,7 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
         comment: _commentController.text.trim(),
         counterpartyId: _selectedLead!.id!,
         documentGoods: _items.map((item) => {
-          'good_id': item['id'],
+          'good_id': item['d'],
           'quantity': item['quantity'].toString(),
           'price': item['price'].toString(),
           'unit_id': item['unit_id'].toString(), // Может быть null'
@@ -816,7 +817,7 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
                             controller: priceController,
                             keyboardType: const TextInputType.numberWithOptions(decimal: true),
                             inputFormatters: [
-                              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+                              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,3}')),
                             ],
                             style: const TextStyle(
                               fontSize: 13,
@@ -901,7 +902,7 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
                       ],
                     ),
                     Text(
-                      (item['total'] ?? 0.0).toStringAsFixed(2),
+                      (item['total'] ?? 0.0).toStringAsFixed(0),
                       style: const TextStyle(
                         fontSize: 14,
                         fontFamily: 'Gilroy',
@@ -951,7 +952,7 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
             ),
           ),
           Text(
-            total.toStringAsFixed(2),
+            total.toStringAsFixed(0),
             style: const TextStyle(
               fontSize: 20,
               fontFamily: 'Gilroy',

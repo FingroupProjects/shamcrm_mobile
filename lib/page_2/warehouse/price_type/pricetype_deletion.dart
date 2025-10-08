@@ -3,7 +3,6 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/document/price_type/bloc/price
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/price_type/bloc/price_type_state.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/supplier_bloc/supplier_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/supplier_bloc/supplier_event.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/supplier_bloc/supplier_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -46,7 +45,7 @@ class PriceTypesDeleteDialog extends StatelessWidget {
         backgroundColor: Colors.white,
         title: Center(
           child: Text(
-            AppLocalizations.of(context)!.translate('delete_supplier'),
+            AppLocalizations.of(context)!.translate('delete_pricetype'),
             style: TextStyle(
               fontSize: 20,
               fontFamily: 'Gilroy',
@@ -56,8 +55,8 @@ class PriceTypesDeleteDialog extends StatelessWidget {
           ),
         ),
         content: Text(
-          AppLocalizations.of(context)?.translate('delete_supplier_confirm') ??
-              'Вы уверены, что хотите удалить этот документ?',
+          AppLocalizations.of(context)?.translate('delete_pricetype_confirm') ??
+              'Вы уверены, что хотите удалить этот тип цены?',
           style: TextStyle(
             fontSize: 16,
             fontFamily: 'Gilroy',

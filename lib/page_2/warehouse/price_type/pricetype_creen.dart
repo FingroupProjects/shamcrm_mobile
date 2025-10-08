@@ -164,7 +164,7 @@ class _PriceTypeScreenState extends State<PriceTypeScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'Error: ${state.message}',
+                        '${state.message}',
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                           fontSize: 16,

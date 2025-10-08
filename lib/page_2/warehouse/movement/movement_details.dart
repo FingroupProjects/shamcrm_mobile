@@ -101,7 +101,8 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
         showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
         return;
       }
-      _showSnackBar('Ошибка загрузки документа: $e', false);
+      final localizations = AppLocalizations.of(context)!;
+      _showSnackBar('${localizations.translate('error_loading_document') ?? 'Ошибка загрузки документа'}: $e', false);
     }
   }
 
@@ -203,14 +204,16 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
         _documentUpdated = true;
       });
       _updateStatusOnly();
-      _showSnackBar('Документ проведен', true);
+      final localizations = AppLocalizations.of(context)!;
+      _showSnackBar(localizations.translate('document_approved') ?? 'Документ проведен', true);
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
         showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
         return;
       }
-      _showSnackBar('Ошибка при проведении документа: $e', false);
+      final localizations = AppLocalizations.of(context)!;
+      _showSnackBar('${localizations.translate('error_approving_document') ?? 'Ошибка при проведении документа'}: $e', false);
     } finally {
       setState(() {
         _isButtonLoading = false;
@@ -229,14 +232,16 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
         _documentUpdated = true;
       });
       _updateStatusOnly();
-      _showSnackBar('Проведение документа отменено', true);
+      final localizations = AppLocalizations.of(context)!;
+      _showSnackBar(localizations.translate('document_unapproved') ?? 'Проведение документа отменено', true);
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
         showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
         return;
       }
-      _showSnackBar('Ошибка при отмене проведения документа: $e', false);
+      final localizations = AppLocalizations.of(context)!;
+      _showSnackBar('${localizations.translate('error_unapproving_document') ?? 'Ошибка при отмене проведения документа'}: $e', false);
     } finally {
       setState(() {
         _isButtonLoading = false;
@@ -255,14 +260,16 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
         _documentUpdated = true;
       });
       _updateStatusOnly();
-      _showSnackBar('Документ восстановлен', true);
+      final localizations = AppLocalizations.of(context)!;
+      _showSnackBar(localizations.translate('document_restored') ?? 'Документ восстановлен', true);
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
         showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
         return;
       }
-      _showSnackBar('Ошибка при восстановлении документа: $e', false);
+      final localizations = AppLocalizations.of(context)!;
+      _showSnackBar('${localizations.translate('error_restoring_document') ?? 'Ошибка при восстановлении документа'}: $e', false);
     } finally {
       setState(() {
         _isButtonLoading = false;
@@ -778,7 +785,8 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
   void _navigateToGoodsDetails(DocumentGood good) {
     final goodId = good.good?.id;
     if (goodId == null || goodId == 0) {
-      _showSnackBar('Ошибка: Не удалось определить ID товара', false);
+      final localizations = AppLocalizations.of(context)!;
+      _showSnackBar(localizations.translate('error_no_good_id') ?? 'Ошибка: Не удалось определить ID товара', false);
       return;
     }
 

@@ -70,8 +70,8 @@ class _AddPriceTypeScreenState extends State<AddPriceTypeScreen> {
           },
         ),
         title: Text(
-          AppLocalizations.of(context)!.translate('Add Price Types') ??
-              'Add Price Types',
+          AppLocalizations.of(context)!.translate('add_pricetype') ??
+              'Добавить тип цены',
           style: const TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',
@@ -93,7 +93,7 @@ class _AddPriceTypeScreenState extends State<AddPriceTypeScreen> {
                 content: Text(
                   AppLocalizations.of(context)!
                           .translate('pricetype_created_successfully') ??
-                      'Поставщик успешно создан',
+                      'Тип цены успешно создан',
                   style: const TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -134,7 +134,7 @@ class _AddPriceTypeScreenState extends State<AddPriceTypeScreen> {
                           controller: nameController,
                           hintText: AppLocalizations.of(context)!
                                   .translate('enter_pricetype_name') ??
-                              'Введите название поставщика',
+                              'Введите название типа цены',
                           label:
                               AppLocalizations.of(context)!.translate('name') ??
                                   'Название',

@@ -96,7 +96,7 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
         });
         
         // Создаем контроллеры с существующими значениями
-        _priceControllers[variantId] = TextEditingController(text: price.toStringAsFixed(2));
+        _priceControllers[variantId] = TextEditingController(text: price.toStringAsFixed(3));
         _quantityControllers[variantId] = TextEditingController(text: quantity.toString());
         _priceErrors[variantId] = false;
         _quantityErrors[variantId] = false;
@@ -188,7 +188,8 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
         if (index != -1) {
           _items[index]['quantity'] = quantity;
           final amount = _items[index]['amount'] ?? 1;
-          _items[index]['total'] = _items[index]['quantity'] * _items[index]['price'] * amount;
+          final num total = _items[index]['quantity'] * _items[index]['price'] * amount;
+          _items[index]['total'] = total.round().toInt(); // Округляем до целого
         }
         _quantityErrors[variantId] = false;
       });
@@ -797,7 +798,7 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
                             controller: priceController,
                             keyboardType: const TextInputType.numberWithOptions(decimal: true),
                             inputFormatters: [
-                              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+                              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,3}')),
                             ],
                             style: const TextStyle(
                               fontSize: 13,
@@ -881,7 +882,7 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
                       ],
                     ),
                     Text(
-                      (item['total'] ?? 0.0).toStringAsFixed(2),
+                      (item['total'] ?? 0.0).toStringAsFixed(0),
                       style: const TextStyle(
                         fontSize: 14,
                         fontFamily: 'Gilroy',
@@ -931,7 +932,7 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
             ),
           ),
           Text(
-            total.toStringAsFixed(2),
+            total.toStringAsFixed(0),
             style: const TextStyle(
               fontSize: 20,
               fontFamily: 'Gilroy',

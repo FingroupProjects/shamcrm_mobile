@@ -644,7 +644,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       ],
       child: Scaffold(
         appBar: _buildAppBar(
-            context, AppLocalizations.of(context)!.translate('view_lead')),
+            context, AppLocalizations.of(context)!.translate('view_lead')  + widget.leadId),
         backgroundColor: Colors.white,
         body: BlocListener<LeadByIdBloc, LeadByIdState>(
           listener: (context, state) {
