@@ -1698,5 +1698,9 @@
   "status_order_update_successfully": "Buyurtma holati muvaffaqiyatli yangilandi",
   "version_mobilе": "Mobil versiya",
   "warehouse_deleted": "Ombor muvaffaqiyatli o'chirildi",
-  "warehouse_management": "Omborlarni boshqarish"
+  "warehouse_management": "Omborlarni boshqarish",
+  "no_permission_to_approve": "Hujjatni tasdiqlashga ruxsat yo'q",
+  "no_permission_to_unapprove": "Tasdiqni bekor qilishga ruxsat yo'q",
+  "document_approval_canceled": "Hujjat tasdig'i bekor qilindi",
+  "no_permission_to_restore": "Tiklashga ruxsat yo'q"
 }

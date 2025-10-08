@@ -1698,5 +1698,9 @@
   "status_order_type_success": "Успешно",
   "status_order_type_wating_payment": "Ожидает оплаты",
   "status_order_update_successfully": "Статус заказа успешно обновлен",
-  "version_mobilе": "Версия мобильного приложения"
+  "version_mobilе": "Версия мобильного приложения",
+  "no_permission_to_approve": "Нет прав на проведение документа",
+  "no_permission_to_unapprove": "Нет прав на отмену проведения",
+  "document_approval_canceled": "Проведение документа отменено",
+  "no_permission_to_restore": "Нет прав на восстановление"
 }
