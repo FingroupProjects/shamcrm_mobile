@@ -1421,6 +1421,7 @@
   "approved_incoming": "Approved",
   "not_approved_incoming": "Not approved",
   "deleted_at": "Deleted at",
+  "date_not_specified": "Date not specified",
   "deleting": "Deleting...",
   "edit_incoming_document": "Edit incoming",
   "edit_client_sale": "Edit document",

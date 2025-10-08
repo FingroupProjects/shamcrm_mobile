@@ -187,7 +187,7 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
 
     if (_selectedSenderStorage == _selectedRecipientStorage) {
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('storages_must_be_different') ?? 'Склад отправитель и получатель не могут быть одинаковыми',
+        AppLocalizations.of(context)!.translate('storages_must_be_different') ?? 'Склад-отправитель и склад-получатель должны быть разными',
         false,
       );
       return;

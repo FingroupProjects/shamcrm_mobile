@@ -134,7 +134,7 @@ class _MovementDeleteDocumentDialogState extends State<MovementDeleteDocumentDia
               Expanded(
                 child: CustomButton(
                   buttonText: _isDeleting 
-                    ? 'Удаление...' 
+                    ? (localizations.translate('deleting') ?? 'Удаление...') 
                     : (localizations.translate('delete') ?? 'Удалить'),
                   onPressed: _isDeleting 
                       ? () {} 
