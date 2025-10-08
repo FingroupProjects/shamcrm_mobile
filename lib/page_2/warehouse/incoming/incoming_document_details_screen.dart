@@ -1,14 +1,11 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_bloc.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_state.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_document_history/incoming_document_history_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/goods_details_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/incoming_delete_dialog.dart';
-import 'package:crm_task_manager/page_2/warehouse/incoming/incoming_document_history_widget.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/incoming_document_update_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/styled_action_button.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -401,74 +398,67 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider<IncomingDocumentHistoryBloc>(
-          create: (context) => IncomingDocumentHistoryBloc(context.read<ApiService>()),
-        ),
-      ],
-      child: BlocListener<IncomingBloc, IncomingState>(
-        listener: (context, state) {
-          if (state is IncomingDeleteSuccess) {
-            Navigator.pop(context);
+    return BlocListener<IncomingBloc, IncomingState>(
+      listener: (context, state) {
+        if (state is IncomingDeleteSuccess) {
+          Navigator.pop(context);
+        }
+        if (state is IncomingDeleteError) {
+          final localizations = AppLocalizations.of(context);
+          debugPrint("[ERROR] IncomingDeleteError:::::: ${state.message}, enumType: ${ErrorDialogEnum.goodsIncomingDelete}");
+          if (state.statusCode == 409) {
+            showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message,
+                errorDialogEnum: ErrorDialogEnum.goodsIncomingUnapprove);
+            return;
           }
-          if (state is IncomingDeleteError) {
-            final localizations = AppLocalizations.of(context);
-            debugPrint("[ERROR] IncomingDeleteError:::::: ${state.message}, enumType: ${ErrorDialogEnum.goodsIncomingDelete}");
-            if (state.statusCode == 409) {
-              showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message,
-                  errorDialogEnum: ErrorDialogEnum.goodsIncomingUnapprove);
-              return;
-            }
-            showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+          showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+        }
+      },
+      child: PopScope(
+        onPopInvoked: (didPop) {
+          if (didPop && _documentUpdated && widget.onDocumentUpdated != null) {
+            widget.onDocumentUpdated!();
           }
         },
-        child: PopScope(
-          onPopInvoked: (didPop) {
-            if (didPop && _documentUpdated && widget.onDocumentUpdated != null) {
-              widget.onDocumentUpdated!();
-            }
-          },
-          child: Scaffold(
-            appBar: _buildAppBar(context),
-            backgroundColor: Colors.white,
-            body: _isLoading
-                ? Center(
-                    child: PlayStoreImageLoading(
-                      size: 80.0,
-                      duration: Duration(milliseconds: 1000),
-                    ),
-                  )
-                : currentDocument == null
-                    ? Center(
-                        child: Text(
-                          AppLocalizations.of(context)!.translate('document_data_unavailable') ?? 'Данные документа недоступны',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xff99A4BA),
-                          ),
-                        ),
-                      )
-                    : Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                        child: ListView(
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 16),
-                              child: Center(child: _buildActionButton()),
-                            ),
-                            _buildDetailsList(),
-                            const SizedBox(height: 16),
-                            if (currentDocument!.documentGoods != null && currentDocument!.documentGoods!.isNotEmpty) ...[
-                              _buildGoodsList(currentDocument!.documentGoods!),
-                              const SizedBox(height: 16),
-                            ],
-                          ],
+        child: Scaffold(
+          appBar: _buildAppBar(context),
+          backgroundColor: Colors.white,
+          body: _isLoading
+              ? Center(
+                  child: PlayStoreImageLoading(
+                    size: 80.0,
+                    duration: Duration(milliseconds: 1000),
+                  ),
+                )
+              : currentDocument == null
+                  ? Center(
+                      child: Text(
+                        AppLocalizations.of(context)!.translate('document_data_unavailable') ?? 'Данные документа недоступны',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xff99A4BA),
                         ),
                       ),
-          ),
+                    )
+                  : Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                      child: ListView(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            child: Center(child: _buildActionButton()),
+                          ),
+                          _buildDetailsList(),
+                          const SizedBox(height: 16),
+                          if (currentDocument!.documentGoods != null && currentDocument!.documentGoods!.isNotEmpty) ...[
+                            _buildGoodsList(currentDocument!.documentGoods!),
+                            const SizedBox(height: 16),
+                          ],
+                        ],
+                      ),
+                    ),
         ),
       ),
     );

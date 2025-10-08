@@ -1,6 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/client_sale/bloc/client_sale_bloc.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/document/client_sale/bloc/client_sale_document_history/bloc/client_sale_document_history_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
@@ -418,62 +417,52 @@ class _ClientSalesDocumentDetailsScreenState
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        // BlocProvider<ClientSaleBloc>(
-        //   create: (context) => ClientSaleBloc(context.read<ApiService>()),
-        // ),
-        BlocProvider<ClientSaleDocumentHistoryBloc>(
-          create: (context) => ClientSaleDocumentHistoryBloc(context.read<ApiService>()),
-        ),
-      ],
-      child: PopScope(
-        onPopInvoked: (didPop) {
-          if (didPop && _documentUpdated && widget.onDocumentUpdated != null) {
-            widget.onDocumentUpdated!();
-          }
-        },
-        child: Scaffold(
-          appBar: _buildAppBar(context),
-          backgroundColor: Colors.white,
-          body: _isLoading
-              ? Center(
-                  child: PlayStoreImageLoading(
-                    size: 80.0,
-                    duration: const Duration(milliseconds: 1000),
-                  ),
-                )
-              : currentDocument == null
-                  ? Center(
-                      child: Text(
-                        AppLocalizations.of(context)!.translate('document_data_unavailable') ?? 'Данные документа недоступны',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xff99A4BA),
-                        ),
-                      ),
-                    )
-                  : Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                      child: ListView(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 16),
-                            child: Center(child: _buildActionButton()),
-                          ),
-                          _buildDetailsList(),
-                          const SizedBox(height: 16),
-                          if (currentDocument!.documentGoods != null && currentDocument!.documentGoods!.isNotEmpty) ...[
-                            _buildGoodsList(currentDocument!.documentGoods!),
-                            const SizedBox(height: 16),
-                          ],
-                          // ClientSaleDocumentHistoryWidget(documentId: widget.documentId), // Закомментировано, как в оригинале
-                        ],
+    return PopScope(
+      onPopInvoked: (didPop) {
+        if (didPop && _documentUpdated && widget.onDocumentUpdated != null) {
+          widget.onDocumentUpdated!();
+        }
+      },
+      child: Scaffold(
+        appBar: _buildAppBar(context),
+        backgroundColor: Colors.white,
+        body: _isLoading
+            ? Center(
+                child: PlayStoreImageLoading(
+                  size: 80.0,
+                  duration: const Duration(milliseconds: 1000),
+                ),
+              )
+            : currentDocument == null
+                ? Center(
+                    child: Text(
+                      AppLocalizations.of(context)!.translate('document_data_unavailable') ?? 'Данные документа недоступны',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff99A4BA),
                       ),
                     ),
-        ),
+                  )
+                : Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                    child: ListView(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: Center(child: _buildActionButton()),
+                        ),
+                        _buildDetailsList(),
+                        const SizedBox(height: 16),
+                        if (currentDocument!.documentGoods != null && currentDocument!.documentGoods!.isNotEmpty) ...[
+                          _buildGoodsList(currentDocument!.documentGoods!),
+                          const SizedBox(height: 16),
+                        ],
+                        // ClientSaleDocumentHistoryWidget(documentId: widget.documentId), // Закомментировано, как в оригинале
+                      ],
+                    ),
+                  ),
       ),
     );
   }

@@ -893,6 +893,7 @@
   "total": "Total",
   "currency": "TJS",
   "add_at_least_one_product": "Add at least one product",
+  "add_at_least_one_item": "Add at least one product",
   "fill_all_required_fields": "Fill all required fields",
   "order_updated_successfully": "Order updated successfully",
   "enter_delivery_address": "Enter delivery address",

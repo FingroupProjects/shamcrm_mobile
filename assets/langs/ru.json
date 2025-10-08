@@ -892,6 +892,7 @@
   "total": "Итого:",
   "currency": "сом",
   "add_at_least_one_product": "Добавьте хотя бы один товар",
+  "add_at_least_one_item": "Добавьте хотя бы один товар!",
   "fill_all_required_fields": "Заполните все обязательные поля!",
   "order_updated_successfully": "Заказ успешно обновлен",
   "enter_delivery_address": "Введите адрес доставки",

@@ -879,6 +879,7 @@
   "total": "Jami",
   "currency": "soʻm",
   "add_at_least_one_product": "Hech bo‘lmaganda bitta mahsulot qo‘shing",
+  "add_at_least_one_item": "Hech bo‘lmaganda bitta mahsulot qo‘shing",
   "fill_all_required_fields": "Barcha majburiy maydonlarni to‘ldiring",
   "order_updated_successfully": "Buyurtma muvaffaqiyatli yangilandi",
   "enter_delivery_address": "Yetkazib berish manzilini kiriting",

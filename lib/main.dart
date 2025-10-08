@@ -131,6 +131,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'bloc/cash_register_list/cash_register_list_bloc.dart';
+import 'bloc/page_2_BLOC/document/incoming/incoming_document_history/incoming_document_history_bloc.dart';
 import 'bloc/supplier_list/supplier_list_bloc.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home_screen.dart';
@@ -618,15 +619,16 @@ class _MyAppState extends State<MyApp> {
         BlocProvider<SupplierBloc>(
           create: (context) => SupplierBloc(widget.apiService),
         ),
-        // remove bloc from main
-        // BlocProvider<ClientSaleBloc>(
-        //   create: (context) => ClientSaleBloc(widget.apiService),
-        // ),
-        // BlocProvider<ClientSaleDocumentHistoryBloc>(
-        //   create: (context) => ClientSaleDocumentHistoryBloc(widget.apiService),
-        // ),
+        BlocProvider<ClientSaleBloc>(
+          create: (context) => ClientSaleBloc(widget.apiService),
+        ),
+        BlocProvider<ClientSaleDocumentHistoryBloc>(
+          create: (context) => ClientSaleDocumentHistoryBloc(widget.apiService),
+        ),
+        BlocProvider<IncomingDocumentHistoryBloc>(
+          create: (context) => IncomingDocumentHistoryBloc(context.read<ApiService>()),
+        ),
         // TODO fix bloc providers warehouse folder
-        // COMMENT BLOCS ON MAIN SCREEN AND USE THEM ON THEIR SCREENS PROPERLY
         BlocProvider(create: (context) => ClientReturnBloc(widget.apiService)),
         BlocProvider(create: (context) => SupplierBloc(widget.apiService)),
         BlocProvider(create: (context) => MeasureUnitsBloc(widget.apiService)),
