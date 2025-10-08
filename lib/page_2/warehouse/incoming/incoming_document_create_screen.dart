@@ -170,7 +170,8 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
           _items[index]['price'] = price;
           // Пересчитываем total с учётом amount
           final amount = _items[index]['amount'] ?? 1;
-          _items[index]['total'] = _items[index]['quantity'] * _items[index]['price'] * amount;
+          final num total = _items[index]['quantity'] * _items[index]['price'] * amount;
+          _items[index]['total'] = total.round().toInt(); // Округляем до целого
         }
         // Убираем ошибку если поле заполнено корректно
         _priceErrors[variantId] = false;
@@ -763,7 +764,7 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
                             controller: priceController,
                             keyboardType: const TextInputType.numberWithOptions(decimal: true),
                             inputFormatters: [
-                              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+                              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,3}')),
                             ],
                             style: const TextStyle(
                               fontSize: 13,
@@ -848,7 +849,7 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
                       ],
                     ),
                     Text(
-                      (item['total'] ?? 0.0).toStringAsFixed(2),
+                      (item['total'] ?? 0.0).toStringAsFixed(0),
                       style: const TextStyle(
                         fontSize: 14,
                         fontFamily: 'Gilroy',
@@ -898,7 +899,7 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
             ),
           ),
           Text(
-            total.toStringAsFixed(2),
+            total.toStringAsFixed(0),
             style: const TextStyle(
               fontSize: 20,
               fontFamily: 'Gilroy',
