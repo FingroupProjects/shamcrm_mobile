@@ -1412,6 +1412,7 @@
   "delete_supplier": "Delete supplier",
   "delete_supplier_confirm": "Are you sure you want to delete this supplier?",
   "supplier_created_successfully": "Supplier created successfully",
+  "supplier_updated_successfully": "Supplier updated successfully",
   "add_measure_unit": "Add measurement unit",
   "enter_measure_unit_name": "Enter measurement unit name",
   "short_name": "Short name",

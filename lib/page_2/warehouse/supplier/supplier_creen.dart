@@ -164,7 +164,7 @@ class _SupplierCreenState extends State<SupplierCreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'Error: ${state.message}',
+                        state.message,
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                           fontSize: 16,

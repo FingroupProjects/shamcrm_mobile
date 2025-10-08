@@ -1424,6 +1424,7 @@
   "delete_supplier": "Ta'minotchini o'chirish",
   "delete_supplier_confirm": "Ushbu ta'minotchini o'chirishni xohlaysizmi?",
   "supplier_created_successfully": "Ta'minotchi muvaffaqiyatli yaratildi",
+  "supplier_updated_successfully": "Ta'minotchi muvaffaqiyatli yangilandi",
   "add_measure_unit": "O'lchov birligi qo'shish",
   "enter_measure_unit_name": "O‘lchov birligi nomini kiriting",
   "short_name": "Qisqa nom",
