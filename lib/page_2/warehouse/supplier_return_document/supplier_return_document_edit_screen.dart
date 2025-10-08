@@ -96,7 +96,7 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
         });
 
         // Создаем контроллеры с существующими значениями
-        _priceControllers[variantId] = TextEditingController(text: price.toStringAsFixed(2));
+        _priceControllers[variantId] = TextEditingController(text: price.toStringAsFixed(3));
         _quantityControllers[variantId] = TextEditingController(text: quantity.toString());
         _priceErrors[variantId] = false;
         _quantityErrors[variantId] = false;
@@ -188,7 +188,7 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
         if (index != -1) {
           _items[index]['quantity'] = quantity;
           final amount = _items[index]['amount'] ?? 1;
-          _items[index]['total'] = _items[index]['quantity'] * _items[index]['price'] * amount;
+          _items[index]['total'] = (_items[index]['quantity'] * _items[index]['price'] * amount).round();
         }
         _quantityErrors[variantId] = false;
       });
@@ -211,7 +211,7 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
         if (index != -1) {
           _items[index]['price'] = price;
           final amount = _items[index]['amount'] ?? 1;
-          _items[index]['total'] = _items[index]['quantity'] * _items[index]['price'] * amount;
+          _items[index]['total'] = (_items[index]['quantity'] * _items[index]['price'] * amount).round();
         }
         _priceErrors[variantId] = false;
       });
@@ -242,7 +242,7 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
         _items[index]['amount'] = selectedUnitObj.amount ?? 1;
 
         final amount = _items[index]['amount'] ?? 1;
-        _items[index]['total'] = _items[index]['quantity'] * _items[index]['price'] * amount;
+        _items[index]['total'] = (_items[index]['quantity'] * _items[index]['price'] * amount).round();
       }
     });
   }
@@ -759,7 +759,7 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
                             controller: priceController,
                             keyboardType: const TextInputType.numberWithOptions(decimal: true),
                             inputFormatters: [
-                              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+                              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,3}')),
                             ],
                             style: const TextStyle(
                               fontSize: 13,
@@ -843,7 +843,7 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
                       ],
                     ),
                     Text(
-                      (item['total'] ?? 0.0).toStringAsFixed(2),
+                      (item['total'] ?? 0.0).toStringAsFixed(0),
                       style: const TextStyle(
                         fontSize: 14,
                         fontFamily: 'Gilroy',
@@ -893,7 +893,7 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
             ),
           ),
           Text(
-            total.toStringAsFixed(2),
+            total.toStringAsFixed(0),
             style: const TextStyle(
               fontSize: 20,
               fontFamily: 'Gilroy',
