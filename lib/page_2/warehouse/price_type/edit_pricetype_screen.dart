@@ -79,7 +79,7 @@ class _EditPriceTypeScreenState extends State<EditPriceTypeScreen> {
         ),
         title: Text(
           AppLocalizations.of(context)!.translate('edit_pricetype') ??
-              'Редактировать поставщика',
+              'Редактировать тип цены',
           style: const TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',
@@ -101,8 +101,8 @@ class _EditPriceTypeScreenState extends State<EditPriceTypeScreen> {
               SnackBar(
                 content: Text(
                   AppLocalizations.of(context)!
-                          .translate('supplier_updated_successfully') ??
-                      'Поставщик успешно обновлен',
+                          .translate('pricetype_updated_successfully') ??
+                      'Тип цены успешно обновлен',
                   style: const TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -142,8 +142,8 @@ class _EditPriceTypeScreenState extends State<EditPriceTypeScreen> {
                         CustomTextField(
                           controller: nameController,
                           hintText: AppLocalizations.of(context)!
-                                  .translate('enter_supplier_name') ??
-                              'Введите название поставщика',
+                                  .translate('enter_pricetype_name') ??
+                              'Введите название типа цены',
                           label:
                               AppLocalizations.of(context)!.translate('name') ??
                                   'Название',
