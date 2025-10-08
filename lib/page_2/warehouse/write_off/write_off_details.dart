@@ -99,7 +99,8 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
         showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
         return;
       }
-      _showSnackBar('Ошибка загрузки документа: $e', false);
+      final localizations = AppLocalizations.of(context)!;
+      _showSnackBar('${localizations.translate('error_loading_document') ?? 'Ошибка загрузки документа'}: $e', false);
     }
   }
 
@@ -189,7 +190,8 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
   Future<void> _approveDocument() async {
     // ИЗМЕНЕНО: Проверяем update-право
     if (!widget.hasUpdatePermission) {
-      _showSnackBar('Нет прав на проведение документа', false);
+      final localizations = AppLocalizations.of(context)!;
+      _showSnackBar(localizations.translate('no_permission_to_approve') ?? 'Нет прав на проведение документа', false);
       return;
     }
 
@@ -203,7 +205,8 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
         _documentUpdated = true;
       });
       _updateStatusOnly();
-      _showSnackBar('Документ проведен', true);
+      final localizations = AppLocalizations.of(context)!;
+      _showSnackBar(localizations.translate('document_approved') ?? 'Документ проведен', true);
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
@@ -221,7 +224,8 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
   Future<void> _unApproveDocument() async {
     // ИЗМЕНЕНО: Проверяем update-право
     if (!widget.hasUpdatePermission) {
-      _showSnackBar('Нет прав на отмену проведения', false);
+      final localizations = AppLocalizations.of(context)!;
+      _showSnackBar(localizations.translate('no_permission_to_unapprove') ?? 'Нет прав на отмену проведения', false);
       return;
     }
 
@@ -235,7 +239,8 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
         _documentUpdated = true;
       });
       _updateStatusOnly();
-      _showSnackBar('Проведение документа отменено', true);
+      final localizations = AppLocalizations.of(context)!;
+      _showSnackBar(localizations.translate('document_approval_canceled') ?? 'Проведение документа отменено', true);
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
@@ -253,7 +258,8 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
   Future<void> _restoreDocument() async {
     // ИЗМЕНЕНО: Привязываем к update или delete (здесь — update, как approve)
     if (!widget.hasUpdatePermission) {
-      _showSnackBar('Нет прав на восстановление', false);
+      final localizations = AppLocalizations.of(context)!;
+      _showSnackBar(localizations.translate('no_permission_to_restore') ?? 'Нет прав на восстановление', false);
       return;
     }
 
@@ -267,7 +273,8 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
         _documentUpdated = true;
       });
       _updateStatusOnly();
-      _showSnackBar('Документ восстановлен', true);
+      final localizations = AppLocalizations.of(context)!;
+      _showSnackBar(localizations.translate('document_restored') ?? 'Документ восстановлен', true);
       // ИЗМЕНЕНО: Reload через BLoC
       context.read<WriteOffBloc>().add(const FetchWriteOffs(forceRefresh: true));
     } catch (e) {

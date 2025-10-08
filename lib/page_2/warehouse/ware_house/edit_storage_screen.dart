@@ -75,7 +75,10 @@ class _EditWarehouseScreenState extends State<EditWarehouseScreen> {
       body: BlocListener<WareHouseBloc, WareHouseState>(
         listener: (context, state) {
           if (state is WareHouseError) {
-            _showSnack(context, state.message, isError: true);
+            _showSnack(
+                context,
+                AppLocalizations.of(context)!.translate(state.message) ?? state.message,isError: true);
+         
           } else if (state is WareHouseLoaded) {
             _showSnack(
               context,

@@ -114,7 +114,7 @@ class _WarehouseMultiUserState extends State<WarehouseMultiUser> {
                     return Padding(
                       padding: const EdgeInsets.all(16.0),
                       child: Text(
-                        'Error: ${state.message}',
+                        '${state.message}',
                         style: const TextStyle(color: Colors.red),
                       ),
                     );

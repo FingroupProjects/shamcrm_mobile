@@ -251,17 +251,26 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
     if (!_formKey.currentState!.validate()) return;
 
     if (_items.isEmpty) {
-      _showSnackBar('Добавьте хотя бы один товар', false);
+      _showSnackBar(
+        AppLocalizations.of(context)!.translate('add_at_least_one_good') ?? 'Добавьте хотя бы один товар',
+        false,
+      );
       return;
     }
 
     if (_selectedStorage == null) {
-      _showSnackBar('Выберите склад', false);
+      _showSnackBar(
+        AppLocalizations.of(context)!.translate('select_warehouse_first') ?? 'Выберите склад',
+        false,
+      );
       return;
     }
 
     if (_selectedSupplier == null) {
-      _showSnackBar('Выберите поставщика', false);
+      _showSnackBar(
+        AppLocalizations.of(context)!.translate('select_supplier_first') ?? 'Выберите поставщика',
+        false,
+      );
       return;
     }
 
@@ -646,7 +655,7 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
                               ),
                               alignment: Alignment.centerLeft,
                               child: Text(
-                                item['selectedUnit'] ?? 'шт',
+                                item['selectedUnit'] ?? (AppLocalizations.of(context)!.translate('unit_pieces_short') ?? 'шт'),
                                 style: const TextStyle(
                                   fontSize: 12,
                                   fontFamily: 'Gilroy',
