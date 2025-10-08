@@ -22,7 +22,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   try {
-    // Убеждаемся, что Firebase инициализирован
     if (Firebase.apps.isEmpty) {
       await Firebase.initializeApp();
     }
@@ -53,9 +52,17 @@ class FirebaseApi {
 
   Future<void> initNotifications() async {
     try {
-      // Проверяем, что Firebase инициализирован
+      // КРИТИЧЕСКАЯ ПРОВЕРКА: Firebase должен быть инициализирован
       if (Firebase.apps.isEmpty) {
-        print('Firebase не инициализирован, пропускаем настройку уведомлений');
+        print('FirebaseApi: Firebase не инициализирован, пропускаем настройку уведомлений');
+        return;
+      }
+
+      // ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: Проверяем доступность default app
+      try {
+        Firebase.app();
+      } catch (e) {
+        print('FirebaseApi: Default Firebase app недоступен: $e');
         return;
       }
 
@@ -71,7 +78,6 @@ class FirebaseApi {
         sound: true,
       );
 
-      // Проверяем, предоставлено ли разрешение
       if (settings.authorizationStatus != AuthorizationStatus.authorized) {
         print('User declined or has not accepted notification permission');
         return;
@@ -94,11 +100,18 @@ class FirebaseApi {
         print('Failed to get FCM token');
       }
 
-      // Безопасно регистрируем background handler
+      // Безопасная регистрация background handler
       try {
-        FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+        if (Firebase.apps.isNotEmpty) {
+          FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+          print('Background message handler зарегистрирован');
+        }
       } catch (e) {
-        print('Background handler уже зарегистрирован или ошибка регистрации: $e');
+        if (e.toString().contains('already')) {
+          print('Background handler уже зарегистрирован');
+        } else {
+          print('Ошибка регистрации background handler: $e');
+        }
       }
 
       await initPushNotification();
@@ -107,15 +120,12 @@ class FirebaseApi {
 
     } catch (e) {
       print('Error initializing notifications: $e');
+      // НЕ пробрасываем ошибку дальше
     }
   }
 
   Future<void> initPushNotification() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final savedPin = prefs.getString('user_pin');
-
-      // Сохраняем пуш, но не обрабатываем сразу
       _initialMessage = await FirebaseMessaging.instance.getInitialMessage();
 
       FirebaseMessaging.onMessageOpenedApp.listen((message) {
@@ -541,7 +551,6 @@ class FirebaseApi {
     }
   }
 
-  // Подписка на топик
   Future<void> subscribeToTopic(String topic) async {
     try {
       if (Firebase.apps.isEmpty) {
@@ -556,7 +565,6 @@ class FirebaseApi {
     }
   }
 
-  // Отписка от топика
   Future<void> unsubscribeFromTopic(String topic) async {
     try {
       if (Firebase.apps.isEmpty) {
@@ -571,7 +579,6 @@ class FirebaseApi {
     }
   }
 
-  // Очистка ресурсов
   void dispose() {
     _isInitialized = false;
     _initialMessage = null;

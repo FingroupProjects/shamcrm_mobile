@@ -3,6 +3,7 @@ import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
 import 'package:crm_task_manager/page_2/money/money_income/money_income_screen.dart';
 import 'package:crm_task_manager/page_2/money/money_outcome/money_outcome_screen.dart';
+import 'package:crm_task_manager/page_2/order/order_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_return/client_return_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_sale/client_sales_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/incoming_screen.dart';
@@ -36,6 +37,7 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
   bool _hasSupplierReturnDocument = false;
   bool _hasMoneyIncome = false;
   bool _hasMoneyOutcome = false;
+  bool _hasOrder = false; // Новое право для заказов
   bool _showReferences = false;
 
   @override
@@ -67,6 +69,7 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
       _hasSupplierReturnDocument = await _apiService.hasPermission('supplier_return_document.read');
       _hasMoneyIncome = await _apiService.hasPermission('checking_account_pko.read');
       _hasMoneyOutcome = await _apiService.hasPermission('checking_account_rko.read');
+      // _hasOrder = await _apiService.hasPermission('order.read'); // Проверка права для заказов
       
       // Проверяем права для справочников
       final hasStorage = await _apiService.hasPermission('storage.read');
@@ -85,6 +88,7 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
           _hasSupplierReturnDocument ||
           _hasMoneyIncome ||
           _hasMoneyOutcome ||
+          _hasOrder ||
           hasStorage ||
           hasUnit ||
           hasSupplier ||
@@ -102,6 +106,7 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
       _hasSupplierReturnDocument = false;
       _hasMoneyIncome = false;
       _hasMoneyOutcome = false;
+      _hasOrder = false;
       _showReferences = false;
     } finally {
       setState(() {
@@ -114,7 +119,11 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
   void _initializeDocuments() {
     final Color docColor = const Color(0xff1E2E52);
     List<WarehouseDocument> allDocuments = [];
-   if (_hasExpenseDocument) {
+    
+    // Добавляем заказы первыми
+ 
+
+    if (_hasExpenseDocument) {
       allDocuments.add(
         WarehouseDocument(
           title: AppLocalizations.of(context)!.translate('client_sale') ?? 'Продажа',
@@ -123,7 +132,6 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
         ),
       );
     }
-
 
     if (_hasClientReturnDocument) {
       allDocuments.add(
@@ -166,9 +174,6 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
       );
     }
 
- 
-
-
     if (_hasSupplierReturnDocument) {
       allDocuments.add(
         WarehouseDocument(
@@ -199,13 +204,23 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
       );
     }
 
+    if (_showReferences) {
+      allDocuments.add(
+        WarehouseDocument(
+          title: AppLocalizations.of(context)!.translate('references') ?? 'Справочники',
+          icon: Icons.library_books_outlined,
+          color: docColor,
+        ),
+      );
+    }
+
     setState(() {
       _documents = allDocuments;
     });
   }
 
   void _navigateToDocument(WarehouseDocument document) {
-    if (document.title == AppLocalizations.of(context)!.translate('income_goods') ||
+     if (document.title == AppLocalizations.of(context)!.translate('income_goods') ||
         document.title == 'Приход') {
       Navigator.push(
         context,
@@ -253,14 +268,13 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
         context,
         MaterialPageRoute(builder: (context) => MoneyOutcomeScreen()),
       );
+    } else if (document.title == AppLocalizations.of(context)!.translate('references') ||
+        document.title == 'Справочники') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => ReferencesScreen()),
+      );
     }
-  }
-
-  void _navigateToReferences() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => ReferencesScreen()),
-    );
   }
 
   Widget _buildDocumentGrid() {
@@ -271,22 +285,17 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
         int crossAxisCount;
         double childAspectRatio;
         
-        if (screenWidth < 350) {
-          crossAxisCount = 2;
-          childAspectRatio = 0.9;
-        } else if (screenWidth < 400) {
+        // Новая логика: 3 колонки по умолчанию, компактнее
+        if (screenWidth < 400) {
+          // Очень маленькие экраны - 2 колонки
           crossAxisCount = 2;
           childAspectRatio = 1.0;
-        } else if (screenWidth < 500) {
-          crossAxisCount = 2;
-          childAspectRatio = 1.1;
-        } else if (screenWidth < 600) {
-          crossAxisCount = 2;
-          childAspectRatio = 1.2;
-        } else if (screenWidth < 900) {
+        } else if (screenWidth < 800) {
+          // Обычные телефоны и планшеты - 3 колонки (по умолчанию)
           crossAxisCount = 3;
-          childAspectRatio = 1.1;
+          childAspectRatio = 0.95;
         } else {
+          // Большие экраны - 4 колонки
           crossAxisCount = 4;
           childAspectRatio = 1.0;
         }
@@ -297,8 +306,8 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: crossAxisCount,
             childAspectRatio: childAspectRatio,
-            crossAxisSpacing: 10,
-            mainAxisSpacing: 10,
+            crossAxisSpacing: 8, // Уменьшено с 10 до 8
+            mainAxisSpacing: 8,  // Уменьшено с 10 до 8
           ),
           itemCount: _documents.length,
           itemBuilder: (context, index) {
@@ -321,9 +330,9 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.06),
-                blurRadius: 8,
-                offset: const Offset(0, 3),
+                color: Colors.black.withOpacity(0.05), // Немного уменьшили тень
+                blurRadius: 6, // Уменьшено с 8 до 6
+                offset: const Offset(0, 2), // Уменьшено с 3 до 2
               ),
             ],
             border: Border.all(
@@ -332,25 +341,25 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
             ),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(12.0),
+            padding: const EdgeInsets.all(10.0), // Уменьшено с 12 до 10
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  width: 42,
-                  height: 42,
+                  width: 36,  // Уменьшено с 42 до 36
+                  height: 36, // Уменьшено с 42 до 36
                   decoration: BoxDecoration(
                     color: document.color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(9), // Уменьшено с 10 до 9
                   ),
                   child: Icon(
                     document.icon,
-                    size: 24,
+                    size: 20, // Уменьшено с 24 до 20
                     color: document.color,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6), // Уменьшено с 8 до 6
                 Flexible(
                   child: Text(
                     document.title,
@@ -358,80 +367,16 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontSize: 13,
+                      fontSize: 12,  // Уменьшено с 13 до 12
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w600,
                       color: Color(0xff1E2E52),
-                      height: 1.1,
+                      height: 1.2, // Немного увеличили высоту строки для читаемости
                     ),
                   ),
                 ),
               ],
             ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildReferencesButton() {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: _navigateToReferences,
-        child: Container(
-          width: double.infinity,
-          height: 72,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.06),
-                blurRadius: 8,
-                offset: const Offset(0, 3),
-              ),
-            ],
-            border: Border.all(
-              color: const Color(0xffE5E9F2),
-              width: 1,
-            ),
-          ),
-          child: Row(
-            children: [
-              const SizedBox(width: 20),
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: const Color(0xff1E2E52).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.library_books_outlined,
-                  size: 28,
-                  color: Color(0xff1E2E52),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Text(
-                AppLocalizations.of(context)!.translate('references') ?? 'Справочники',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xff1E2E52),
-                ),
-              ),
-              const Spacer(),
-              const Icon(
-                Icons.arrow_forward_ios,
-                size: 16,
-                color: Color(0xff99A4BA),
-              ),
-              const SizedBox(width: 20),
-            ],
           ),
         ),
       ),
@@ -514,7 +459,7 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
                     duration: Duration(milliseconds: 1000),
                   ),
                 )
-              : _documents.isEmpty && !_showReferences
+              : _documents.isEmpty
                   ? _buildNoPermissionsWidget()
                   : Container(
                       color: const Color(0xffF8F9FB),
@@ -545,10 +490,6 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
                             ),
                             const SizedBox(height: 20),
                             if (_documents.isNotEmpty) _buildDocumentGrid(),
-                            if (_showReferences) ...[
-                              const SizedBox(height: 16),
-                              _buildReferencesButton(),
-                            ],
                             const SizedBox(height: 20),
                           ],
                         ),

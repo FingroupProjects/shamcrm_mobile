@@ -48,157 +48,136 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> initializeScreensWithPermissions() async {
-    List<Widget> widgetsGroup1 = [];
-    List<Widget> widgetsGroup2 = [];
-    List<String> titleKeysGroup1 = [];
-    List<String> titleKeysGroup2 = [];
-    List<String> navBarTitleKeysGroup1 = [];
-    List<String> navBarTitleKeysGroup2 = [];
-    List<String> activeIconsGroup1 = [];
-    List<String> activeIconsGroup2 = [];
-    List<String> inactiveIconsGroup1 = [];
-    List<String> inactiveIconsGroup2 = [];
+  List<Widget> widgetsGroup1 = [];
+  List<Widget> widgetsGroup2 = [];
+  List<String> titleKeysGroup1 = [];
+  List<String> titleKeysGroup2 = [];
+  List<String> navBarTitleKeysGroup1 = [];
+  List<String> navBarTitleKeysGroup2 = [];
+  List<String> activeIconsGroup1 = [];
+  List<String> activeIconsGroup2 = [];
+  List<String> inactiveIconsGroup1 = [];
+  List<String> inactiveIconsGroup2 = [];
 
-    bool hasAvailableScreens = false;
+  bool hasAvailableScreens = false;
 
-    // Дашборд
-    if (await _apiService.hasPermission('section.dashboard')) {
-      widgetsGroup1.add(DashboardScreen());
-      titleKeysGroup1.add('appbar_dashboard');
-      navBarTitleKeysGroup1.add('appbar_dashboard');
-      activeIconsGroup1.add('assets/icons/MyNavBar/dashboard_ON.png');
-      inactiveIconsGroup1.add('assets/icons/MyNavBar/dashboard_OFF.png');
-      hasAvailableScreens = true;
-    }
+  // Дашборд
+  if (await _apiService.hasPermission('section.dashboard')) {
+    widgetsGroup1.add(DashboardScreen());
+    titleKeysGroup1.add('appbar_dashboard');
+    navBarTitleKeysGroup1.add('appbar_dashboard');
+    activeIconsGroup1.add('assets/icons/MyNavBar/dashboard_ON.png');
+    inactiveIconsGroup1.add('assets/icons/MyNavBar/dashboard_OFF.png');
+    hasAvailableScreens = true;
+  }
 
-    // Задачи
-    if (await _apiService.hasPermission('task.read')) {
-      widgetsGroup1.add(TaskScreen());
-      titleKeysGroup1.add('appbar_tasks');
-      navBarTitleKeysGroup1.add('appbar_tasks');
-      activeIconsGroup1.add('assets/icons/MyNavBar/tasks_ON.png');
-      inactiveIconsGroup1.add('assets/icons/MyNavBar/tasks_OFF.png');
-      hasAvailableScreens = true;
-    }
+  // Задачи
+  if (await _apiService.hasPermission('task.read')) {
+    widgetsGroup1.add(TaskScreen());
+    titleKeysGroup1.add('appbar_tasks');
+    navBarTitleKeysGroup1.add('appbar_tasks');
+    activeIconsGroup1.add('assets/icons/MyNavBar/tasks_ON.png');
+    inactiveIconsGroup1.add('assets/icons/MyNavBar/tasks_OFF.png');
+    hasAvailableScreens = true;
+  }
 
-    // Лиды
-    if (await _apiService.hasPermission('lead.read')) {
-      widgetsGroup1.add(LeadScreen());
-      titleKeysGroup1.add('appbar_leads');
-      navBarTitleKeysGroup1.add('appbar_leads');
-      activeIconsGroup1.add('assets/icons/MyNavBar/clients_ON.png');
-      inactiveIconsGroup1.add('assets/icons/MyNavBar/clients_OFF.png');
-      hasAvailableScreens = true;
-    }
+  // Лиды
+  if (await _apiService.hasPermission('lead.read')) {
+    widgetsGroup1.add(LeadScreen());
+    titleKeysGroup1.add('appbar_leads');
+    navBarTitleKeysGroup1.add('appbar_leads');
+    activeIconsGroup1.add('assets/icons/MyNavBar/clients_ON.png');
+    inactiveIconsGroup1.add('assets/icons/MyNavBar/clients_OFF.png');
+    hasAvailableScreens = true;
+  }
 
-    // Сделки
-    if (await _apiService.hasPermission('deal.read')) {
-      widgetsGroup1.add(DealScreen());
-      titleKeysGroup1.add('appbar_deals');
-      navBarTitleKeysGroup1.add('appbar_deals');
-      activeIconsGroup1.add('assets/icons/MyNavBar/deal_ON.png');
-      inactiveIconsGroup1.add('assets/icons/MyNavBar/deal_OFF.png');
-      hasAvailableScreens = true;
-    }
+  // Сделки
+  if (await _apiService.hasPermission('deal.read')) {
+    widgetsGroup1.add(DealScreen());
+    titleKeysGroup1.add('appbar_deals');
+    navBarTitleKeysGroup1.add('appbar_deals');
+    activeIconsGroup1.add('assets/icons/MyNavBar/deal_ON.png');
+    inactiveIconsGroup1.add('assets/icons/MyNavBar/deal_OFF.png');
+    hasAvailableScreens = true;
+  }
+
+  // Чаты
+  widgetsGroup1.add(ChatsScreen());
+  titleKeysGroup1.add('appbar_chats');
+  navBarTitleKeysGroup1.add('appbar_chats');
+  activeIconsGroup1.add('assets/icons/MyNavBar/chats_ON.png');
+  inactiveIconsGroup1.add('assets/icons/MyNavBar/chats_OFF.png');
+  hasAvailableScreens = true;
+
+  // ========== КЛЮЧЕВАЯ ЛОГИКА ==========
   
+  // Проверяем доступ к складскому учёту
+  bool hasWarehouseAccess = false;
+  if (await _apiService.hasPermission('accounting_of_goods') || 
+      await _apiService.hasPermission('accounting_money')) {
+    hasWarehouseAccess = true;
+  }
 
-    // Чаты
-    widgetsGroup1.add(ChatsScreen());
-    titleKeysGroup1.add('appbar_chats');
-    navBarTitleKeysGroup1.add('appbar_chats');
-    activeIconsGroup1.add('assets/icons/MyNavBar/chats_ON.png');
-    inactiveIconsGroup1.add('assets/icons/MyNavBar/chats_OFF.png');
+  // Проверяем доступ к заказам
+  bool hasOrderAccess = await _apiService.hasPermission('order.read');
+
+  // ЛОГИКА ВЗАИМОИСКЛЮЧЕНИЯ:
+  if (hasWarehouseAccess) {
+    // Если есть складской учёт → добавляем WarehouseAccountingScreen и OrderScreen (если есть доступ)
+    widgetsGroup1.add(WarehouseAccountingScreen());
+    titleKeysGroup1.add('appbar_warehouse');
+    navBarTitleKeysGroup1.add('appbar_warehouse');
+    activeIconsGroup1.add('assets/icons/MyNavBar/money_on.png');
+    inactiveIconsGroup1.add('assets/icons/MyNavBar/google-docs (5).png');
     hasAvailableScreens = true;
 
-
-    // // /// PAGE 2 ЭКРАНЫ (вторая группа)
-    // bool hasDashboard2Access = true;
-    // if (hasDashboard2Access) {
-    //   widgetsGroup2.add(SalesDashboardScreen());
-    //   titleKeysGroup2.add('appbar_sales_dashboard');
-    //   navBarTitleKeysGroup2.add('appbar_sales_dashboard');
-    //   activeIconsGroup2.add('assets/icons/MyNavBar/dashboard_ON.png');
-    //   inactiveIconsGroup2.add('assets/icons/MyNavBar/dashboard_OFF.png');
-    //   hasAvailableScreens = true;
-    // }
-
-    // ИЗМЕНЕНО: Онлайн магазин (вместо отдельных Category, Goods, Orders)
-    // Проверяем, есть ли доступ к любой части онлайн магазина
-    bool hasOnlineStoreAccess = false;
-    if (await _apiService.hasPermission('product.read') || 
-        await _apiService.hasPermission('order.read')) {
-      hasOnlineStoreAccess = true;
-    }
-
-    // ИЗМЕНЕННОЕ: Онлайн магазин - теперь проверяем hasMiniApp вместо permissions
-    // Получаем сохраненное значение hasMiniApp из SharedPreferences
-    // SharedPreferences prefs = await SharedPreferences.getInstance();
-    // bool hasMiniApp = prefs.getBool('hasMiniApp') ?? false;
-    
-    // print('HomeScreen: hasMiniApp value: $hasMiniApp'); // Для отладки
-
-
-    //  bool hasOnlineStoreAccess = false;
-    // if (await _apiService.hasPermission('product.read') || 
-    //     await _apiService.hasPermission('order.read')) {
-    //   hasOnlineStoreAccess = true;
-    // }
-     {
-          widgetsGroup2.add(OnlineStoreScreen());
-          titleKeysGroup2.add('appbar_online_store');
-          navBarTitleKeysGroup2.add('appbar_online_store');
-          activeIconsGroup2.add('assets/icons/MyNavBar/category_ON.png');
-          inactiveIconsGroup2.add('assets/icons/MyNavBar/category_OFF.png');
-          hasAvailableScreens = true;
-        }
-
-    // // НОВЫЙ: Учет склада - тоже можем привязать к hasMiniApp или оставить на permissions
-    // // Пока оставляю на permissions, но можно изменить логику по необходимости
-    bool hasWarehouseAccess = false;
-    if (await _apiService.hasPermission('accounting_of_goods') || 
-        await _apiService.hasPermission('accounting_money')) {
-      hasWarehouseAccess = true;
-    }
-
-    if (hasWarehouseAccess) {
-      widgetsGroup1.add(WarehouseAccountingScreen());
-      titleKeysGroup1.add('appbar_warehouse');
-      navBarTitleKeysGroup1.add('appbar_warehouse');
-         activeIconsGroup1.add('assets/icons/MyNavBar/money_ON.png');
-    inactiveIconsGroup1.add('assets/icons/MyNavBar/google-docs (5).png');
+    // Добавляем OrderScreen во вторую группу, если есть доступ
+    if (hasOrderAccess) {
+      widgetsGroup2.add(OrderScreen());
+      titleKeysGroup2.add('appbar_orders'); // Используем ключ 'orders' для локализации
+      navBarTitleKeysGroup2.add('appbar_orders');
+      activeIconsGroup2.add('assets/icons/MyNavBar/orderon.png'); // Убедитесь, что иконка существует
+      inactiveIconsGroup2.add('assets/icons/MyNavBar/order_OFF.png');
       hasAvailableScreens = true;
     }
-
-    // // // // "Деньги"
-    // widgetsGroup2.add(MoneyScreen());
-    // titleKeysGroup2.add('money');
-    // navBarTitleKeysGroup2.add('money');
-    // activeIconsGroup2.add('assets/icons/MyNavBar/coins_ON.png');
-    // inactiveIconsGroup2.add('assets/icons/MyNavBar/coins_OFF.png');
-
-    if (mounted) {
-      setState(() {
-        _widgetOptionsGroup1 = widgetsGroup1;
-        _widgetOptionsGroup2 = widgetsGroup2;
-        _titleKeysGroup1 = titleKeysGroup1;
-        _titleKeysGroup2 = titleKeysGroup2;
-        _navBarTitleKeysGroup1 = navBarTitleKeysGroup1;
-        _navBarTitleKeysGroup2 = navBarTitleKeysGroup2;
-        _activeIconsGroup1 = activeIconsGroup1;
-        _activeIconsGroup2 = activeIconsGroup2;
-        _inactiveIconsGroup1 = inactiveIconsGroup1;
-        _inactiveIconsGroup2 = inactiveIconsGroup2;
-        
-        // Если текущий пользователь находится во второй группе, но она пуста,
-        // переключаем на первую группу
-        if (_selectedIndexGroup2 != -1 && widgetsGroup2.isEmpty) {
-          _selectedIndexGroup1 = 0;
-          _selectedIndexGroup2 = -1;
-        }
-      });
-    }
+    
+    // НЕ добавляем OnlineStoreScreen!
+    
+  } else {
+    // Если НЕТ складского учёта → добавляем OnlineStoreScreen
+    // (внутри него уже есть заказы)
+    widgetsGroup2.add(OnlineStoreScreen());
+    titleKeysGroup2.add('appbar_online_store');
+    navBarTitleKeysGroup2.add('appbar_online_store');
+    activeIconsGroup2.add('assets/icons/MyNavBar/category_ON.png');
+    inactiveIconsGroup2.add('assets/icons/MyNavBar/category_OFF.png');
+    hasAvailableScreens = true;
+    
+    // НЕ добавляем OrderScreen отдельно!
   }
-  
+
+  if (mounted) {
+    setState(() {
+      _widgetOptionsGroup1 = widgetsGroup1;
+      _widgetOptionsGroup2 = widgetsGroup2;
+      _titleKeysGroup1 = titleKeysGroup1;
+      _titleKeysGroup2 = titleKeysGroup2;
+      _navBarTitleKeysGroup1 = navBarTitleKeysGroup1;
+      _navBarTitleKeysGroup2 = navBarTitleKeysGroup2;
+      _activeIconsGroup1 = activeIconsGroup1;
+      _activeIconsGroup2 = activeIconsGroup2;
+      _inactiveIconsGroup1 = inactiveIconsGroup1;
+      _inactiveIconsGroup2 = inactiveIconsGroup2;
+      
+      // Если текущий пользователь находится во второй группе, но она пуста,
+      // переключаем на первую группу
+      if (_selectedIndexGroup2 != -1 && widgetsGroup2.isEmpty) {
+        _selectedIndexGroup1 = 0;
+        _selectedIndexGroup2 = -1;
+      }
+    });
+  }
+}
 
   @override
   void didChangeDependencies() {

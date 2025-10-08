@@ -42,9 +42,9 @@ class _IncomeScreenState extends State<IncomeScreen> {
   // НОВОЕ: Проверка прав доступа
   Future<void> _checkPermissions() async {
     try {
-      final create = await _apiService.hasPermission('pko_articles.create');
-      final update = await _apiService.hasPermission('pko_articles.update');
-      final delete = await _apiService.hasPermission('pko_articles.delete');
+      final create = await _apiService.hasPermission('pko_article.create');
+      final update = await _apiService.hasPermission('pko_article.update');
+      final delete = await _apiService.hasPermission('pko_article.delete');
 
       if (mounted) {
         setState(() {

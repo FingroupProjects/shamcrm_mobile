@@ -42,9 +42,9 @@ class _CashDeskScreenState extends State<CashDeskScreen> {
   // НОВОЕ: Проверка прав доступа
   Future<void> _checkPermissions() async {
     try {
-      final create = await _apiService.hasPermission('checking_account.create');
-      final update = await _apiService.hasPermission('checking_account.update');
-      final delete = await _apiService.hasPermission('checking_account.delete');
+      final create = await _apiService.hasPermission('cash_register.create');
+      final update = await _apiService.hasPermission('cash_register.update');
+      final delete = await _apiService.hasPermission('cash_register.delete');
 
       if (mounted) {
         setState(() {

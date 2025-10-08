@@ -161,10 +161,15 @@ class Goods {
         }
       }
 
-      String? priceString = json['price'] as String?;
+      dynamic priceRaw = json['price'];
+      String? priceString;
       double? discountPrice;
-      if (priceString != null) {
-        discountPrice = double.tryParse(priceString);
+      if (priceRaw is String) {
+        priceString = priceRaw;
+        discountPrice = double.tryParse(priceRaw);
+      } else if (priceRaw is num) {
+        priceString = priceRaw.toString();
+        discountPrice = priceRaw.toDouble();
       }
 
       int? discountPercent;

@@ -42,9 +42,9 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
   // НОВОЕ: Проверка прав доступа
   Future<void> _checkPermissions() async {
     try {
-      final create = await _apiService.hasPermission('rko_articles.create');
-      final update = await _apiService.hasPermission('rko_articles.update');
-      final delete = await _apiService.hasPermission('rko_articles.delete');
+      final create = await _apiService.hasPermission('rko_article.create');
+      final update = await _apiService.hasPermission('rko_article.update');
+      final delete = await _apiService.hasPermission('rko_article.delete');
 
       if (mounted) {
         setState(() {
