@@ -102,7 +102,7 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
         });
 
         // Создаем контроллеры с существующими значениями
-        _priceControllers[variantId] = TextEditingController(text: price.toStringAsFixed(2));
+        _priceControllers[variantId] = TextEditingController(text: price.toStringAsFixed(3));
         _quantityControllers[variantId] = TextEditingController(text: quantity.toString());
         _priceErrors[variantId] = false;
         _quantityErrors[variantId] = false;
@@ -123,7 +123,7 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
         // ← КРИТИЧЕСКИ ВАЖНО: Устанавливаем начальную цену и количество
         final initialPrice = newItem['price'] ?? 0.0;
         _priceControllers[variantId] = TextEditingController(
-          text: initialPrice > 0 ? initialPrice.toStringAsFixed(2) : ''
+          text: initialPrice > 0 ? initialPrice.toStringAsFixed(3) : ''
         );
         
         _quantityControllers[variantId] = TextEditingController(
@@ -848,7 +848,7 @@ if (item['remainder'] != null)
                             controller: priceController,
                             keyboardType: const TextInputType.numberWithOptions(decimal: true),
                             inputFormatters: [
-                              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+                              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,3}')),
                             ],
                             style: const TextStyle(
                               fontSize: 13,
@@ -932,7 +932,7 @@ if (item['remainder'] != null)
                       ],
                     ),
                     Text(
-                      (item['total'] ?? 0.0).toStringAsFixed(2),
+                      (item['total'] ?? 0.0).toStringAsFixed(0),
                       style: const TextStyle(
                         fontSize: 14,
                         fontFamily: 'Gilroy',
@@ -982,7 +982,7 @@ if (item['remainder'] != null)
             ),
           ),
           Text(
-            total.toStringAsFixed(2),
+            total.toStringAsFixed(0),
             style: const TextStyle(
               fontSize: 20,
               fontFamily: 'Gilroy',
