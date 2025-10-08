@@ -205,7 +205,7 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
         
         // Пересчитываем total с учётом нового amount
         final amount = _items[index]['amount'] ?? 1;
-        _items[index]['total'] = _items[index]['quantity'] * _items[index]['price'] * amount;
+        _items[index]['total'] = (_items[index]['quantity'] * _items[index]['price'] * amount).round();
       }
     });
   }
