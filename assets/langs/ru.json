@@ -1247,6 +1247,8 @@
   "add_supplier": "Добавить поставщика",
   "edit_supplier": "Редактировать поставщика",
   "delete_supplier": "Удалить поставщика",
+  "delete_supplier_confirm": "Вы уверены, что хотите удалить этого поставщика?",
+  "supplier_created_successfully": "Поставщик успешно создан",
   "add_measure_unit": "Добавить единицу измерения",
   "enter_measure_unit_name": "Введите название единицы измерения",
   "short_name": "Краткое наименование",

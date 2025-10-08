@@ -1410,6 +1410,8 @@
   "add_supplier": "Add supplier",
   "edit_supplier": "Edit supplier",
   "delete_supplier": "Delete supplier",
+  "delete_supplier_confirm": "Are you sure you want to delete this supplier?",
+  "supplier_created_successfully": "Supplier created successfully",
   "add_measure_unit": "Add measurement unit",
   "enter_measure_unit_name": "Enter measurement unit name",
   "short_name": "Short name",

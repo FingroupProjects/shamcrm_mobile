@@ -111,9 +111,6 @@ import 'package:crm_task_manager/bloc/user/create_cleant/create_client_bloc.dart
 import 'package:crm_task_manager/bloc/user/user_bloc.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/firebase_options.dart';
-import 'package:crm_task_manager/models/page_2/order_history_model.dart';
-import 'package:crm_task_manager/page_2/money/money_references/expense/expense_screen.dart';
-import 'package:crm_task_manager/page_2/money/money_references/income/income_screen.dart';
 import 'package:crm_task_manager/screens/auth/pin_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_screen.dart';
 import 'package:crm_task_manager/screens/auth/pin_setup_screen.dart';
@@ -121,8 +118,6 @@ import 'package:crm_task_manager/screens/auth/auth_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/languages/local_manager_lang.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
-import 'package:crm_task_manager/screens/profile/profile_widget/phone_call_screen.dart';
-import 'package:crm_task_manager/screens/profile/profile_widget/phone_verification_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
