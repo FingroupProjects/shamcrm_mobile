@@ -1271,6 +1271,7 @@
   "enter_pricetype_name": "Narx turi nomini kiriting",
   "pricetype_created_successfully": "Narx turi muvaffaqiyatli yaratildi",
   "pricetype_updated_successfully": "Narx turi muvaffaqiyatli yangilandi",
+  "pricetype_deleted_successfully": "Narx turi muvaffaqiyatli o'chirildi",
   "delete_pricetype": "Narx turini o'chirish",
   "delete_pricetype_confirm": "Ushbu narx turini o'chirishga ishonchingiz komilmi?",
   "create_supplier_return": "Qaytarishni yaratish",

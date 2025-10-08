@@ -1431,6 +1431,7 @@
   "enter_pricetype_name": "Enter price type name",
   "pricetype_created_successfully": "Price type created successfully",
   "pricetype_updated_successfully": "Price type updated successfully",
+  "pricetype_deleted_successfully": "Price type deleted successfully",
   "delete_pricetype": "Delete Price Type",
   "delete_pricetype_confirm": "Are you sure you want to delete this price type?",
   "edit_warehouse": "Edit warehouse",

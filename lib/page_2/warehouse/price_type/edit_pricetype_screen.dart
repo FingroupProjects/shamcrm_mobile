@@ -1,8 +1,6 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/price_type/bloc/price_type_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/price_type/bloc/price_type_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/price_type/bloc/price_type_state.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/supplier_bloc/supplier_bloc.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/supplier_bloc/supplier_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/models/page_2/price_type_model.dart';
@@ -11,9 +9,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class EditPriceTypeScreen extends StatefulWidget {
-  final PriceTypeModel supplier;
+  final PriceTypeModel priceType;
 
-  const EditPriceTypeScreen({Key? key, required this.supplier})
+  const EditPriceTypeScreen({Key? key, required this.priceType})
       : super(key: key);
 
   @override
@@ -29,7 +27,7 @@ class _EditPriceTypeScreenState extends State<EditPriceTypeScreen> {
   @override
   void initState() {
     super.initState();
-    nameController = TextEditingController(text: widget.supplier.name);
+    nameController = TextEditingController(text: widget.priceType.name);
   }
 
   void _showErrorSnackBar(BuildContext context, String message) {
@@ -96,7 +94,7 @@ class _EditPriceTypeScreenState extends State<EditPriceTypeScreen> {
                 context,
                 AppLocalizations.of(context)!.translate(state.message) ??
                     state.message);
-          } else if (state is SupplierSuccess) {
+          } else if (state is PriceTypeSuccess) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
@@ -180,9 +178,9 @@ class _EditPriceTypeScreenState extends State<EditPriceTypeScreen> {
                     ),
                     const SizedBox(width: 16),
                     Expanded(
-                      child: BlocBuilder<SupplierBloc, SupplierState>(
+                      child: BlocBuilder<PriceTypeScreenBloc, PriceTypeState>(
                         builder: (context, state) {
-                          if (state is SupplierLoading) {
+                          if (state is PriceTypeLoading) {
                             return const Center(
                               child: CircularProgressIndicator(
                                 color: Color(0xff1E2E52),
@@ -197,19 +195,17 @@ class _EditPriceTypeScreenState extends State<EditPriceTypeScreen> {
                               textColor: Colors.white,
                               onPressed: () {
                                 if (_formKey.currentState!.validate()) {
-                                  final supplier = PriceTypeModel(
-                                    id: widget.supplier.id,
+                                  final priceType = PriceTypeModel(
+                                    id: widget.priceType.id,
                                     name: nameController.text,
-                                    createdAt: widget.supplier.createdAt,
+                                    createdAt: widget.priceType.createdAt,
                                     updatedAt: DateTime.now(),
                                     organizationId: 0,
                                     oneCId: null,
                                   );
                                   context.read<PriceTypeScreenBloc>().add(
                                       EditPriceTypeEvent(
-                                          supplier, supplier.id));
-
-                                  Navigator.pop(context);
+                                          priceType, priceType.id));
                                 }
                               },
                             );
