@@ -136,7 +136,7 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
         
         // Вычисляем total
         final amount = newItem['amount'] ?? 1;
-        _items.last['total'] = 1 * initialPrice * amount;
+        _items.last['total'] = (initialPrice * amount).round();
 
         _priceErrors[variantId] = false;
         _quantityErrors[variantId] = false;
@@ -234,7 +234,7 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
         if (index != -1) {
           _items[index]['quantity'] = quantity;
           final amount = _items[index]['amount'] ?? 1;
-          _items[index]['total'] = _items[index]['quantity'] * _items[index]['price'] * amount;
+          _items[index]['total'] = (_items[index]['quantity'] * _items[index]['price'] * amount).round();
         }
         _quantityErrors[variantId] = false;
       });
@@ -257,7 +257,7 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
         if (index != -1) {
           _items[index]['price'] = price;
           final amount = _items[index]['amount'] ?? 1;
-          _items[index]['total'] = _items[index]['quantity'] * _items[index]['price'] * amount;
+          _items[index]['total'] = (_items[index]['quantity'] * _items[index]['price'] * amount).round();
         }
         _priceErrors[variantId] = false;
       });
@@ -288,7 +288,7 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
         _items[index]['amount'] = selectedUnitObj.amount ?? 1;
 
         final amount = _items[index]['amount'] ?? 1;
-        _items[index]['total'] = _items[index]['quantity'] * _items[index]['price'] * amount;
+        _items[index]['total'] = (_items[index]['quantity'] * _items[index]['price'] * amount).round();
       }
     });
   }

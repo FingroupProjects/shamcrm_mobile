@@ -106,7 +106,7 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
         });
 
         // Создаем контроллеры с существующими значениями
-        _priceControllers[variantId] = TextEditingController(text: price.toStringAsFixed(2));
+        _priceControllers[variantId] = TextEditingController(text: price.toStringAsFixed(3));
         _quantityControllers[variantId] = TextEditingController(text: quantity.toString());
         _priceErrors[variantId] = false;
         _quantityErrors[variantId] = false;
@@ -127,7 +127,7 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
         // ← ИЗМЕНЕНИЕ: Устанавливаем начальную цену из данных варианта
         final initialPrice = newItem['price'] ?? 0.0;
         _priceControllers[variantId] = TextEditingController(
-          text: initialPrice > 0 ? initialPrice.toStringAsFixed(2) : ''
+          text: initialPrice > 0 ? initialPrice.toStringAsFixed(3) : ''
         );
         
         // ← ИЗМЕНЕНИЕ: Устанавливаем quantity = 1
@@ -866,7 +866,7 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
                       ],
                     ),
                     Text(
-                      (item['total'] ?? 0.0).toStringAsFixed(2),
+                      (item['total'] ?? 0.0).toStringAsFixed(0),
                       style: const TextStyle(
                         fontSize: 14,
                         fontFamily: 'Gilroy',
@@ -916,7 +916,7 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
             ),
           ),
           Text(
-            total.toStringAsFixed(2),
+            total.toStringAsFixed(0),
             style: const TextStyle(
               fontSize: 20,
               fontFamily: 'Gilroy',
