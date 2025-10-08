@@ -47,7 +47,7 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
   void initState() {
     super.initState();
     _checkPermissions(); // НОВОЕ: Проверка прав
-    _clientSaleBloc = ClientSaleBloc(ApiService())..add(const FetchClientSales(forceRefresh: true));
+    _clientSaleBloc = context.read<ClientSaleBloc>()..add(const FetchClientSales(forceRefresh: true));
     _scrollController.addListener(_onScroll);
   }
 
@@ -75,7 +75,6 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
     _scrollController.dispose();
     _searchController.dispose();
     _focusNode.dispose();
-    _clientSaleBloc.close();
     super.dispose();
   }
 

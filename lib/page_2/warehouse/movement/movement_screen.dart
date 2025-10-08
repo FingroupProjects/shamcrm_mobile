@@ -48,8 +48,7 @@ class _MovementScreenState extends State<MovementScreen> {
   void initState() {
     super.initState();
     _checkPermissions();
-    _movementBloc = MovementBloc(ApiService())
-      ..add(const FetchMovements(forceRefresh: true));
+    _movementBloc = context.read<MovementBloc>()..add(const FetchMovements(forceRefresh: true));
     _scrollController.addListener(_onScroll);
   }
 
@@ -78,7 +77,6 @@ class _MovementScreenState extends State<MovementScreen> {
     _scrollController.dispose();
     _searchController.dispose();
     _focusNode.dispose();
-    _movementBloc.close();
     super.dispose();
   }
 
@@ -201,8 +199,8 @@ class _MovementScreenState extends State<MovementScreen> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
 
-    return BlocProvider<MovementBloc>(
-      create: (context) => _movementBloc,
+    return BlocProvider.value(
+      value: _movementBloc,
       child: Scaffold(
         // ИЗМЕНЕНО: Показываем FAB только если есть право на создание
         floatingActionButton: _hasCreatePermission
@@ -671,8 +669,8 @@ class _MovementScreenState extends State<MovementScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (ctx) => BlocProvider(
-              create: (context) => MovementBloc(context.read<ApiService>()),
+            builder: (ctx) => BlocProvider.value(
+              value: _movementBloc,
               child: MovementDocumentDetailsScreen(
                 documentId: currentData[index].id!,
                 docNumber: currentData[index].docNumber ?? '',

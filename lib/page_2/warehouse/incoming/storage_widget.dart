@@ -64,7 +64,7 @@ class _StorageWidgetState extends State<StorageWidget> {
             if (widget.selectedStorage != null && storageList.isNotEmpty) {
               try {
                 selectedStorageData = storageList.firstWhere(
-                  (storage) => storage.id.toString() == widget.selectedStorage,
+                      (storage) => storage.id.toString() == widget.selectedStorage,
                 );
               } catch (e) {
                 selectedStorageData = null;
@@ -91,7 +91,7 @@ class _StorageWidgetState extends State<StorageWidget> {
                   closeDropDownOnClearFilterSearch: true,
                   items: state is StorageLoaded ? state.storageList : [],
                   searchHintText:
-                      AppLocalizations.of(context)!.translate('search'),
+                  AppLocalizations.of(context)!.translate('search'),
                   overlayHeight: 400,
                   enabled: true, // Всегда enabled
                   decoration: CustomDropdownDecoration(
@@ -125,14 +125,6 @@ class _StorageWidgetState extends State<StorageWidget> {
                     if (state is StorageLoading) {
                       return Row(
                         children: [
-                          // SizedBox(
-                          //   width: 16,
-                          //   height: 16,
-                          //   child: CircularProgressIndicator(
-                          //     strokeWidth: 2,
-                          //     valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
-                          //   ),
-                          // ),
                           Text(
                             AppLocalizations.of(context)!
                                 .translate('select_storage'),
@@ -169,15 +161,15 @@ class _StorageWidgetState extends State<StorageWidget> {
                   ),
                   excludeSelected: false,
                   initialItem: (state is StorageLoaded &&
-                          state.storageList.contains(selectedStorageData))
+                      state.storageList.contains(selectedStorageData))
                       ? selectedStorageData
                       : null,
-                  // validator: (value) {
-                  //   if (value == null) {
-                  //     return AppLocalizations.of(context)!.translate('field_required_storage');
-                  //   }
-                  //   return null;
-                  // },
+                  validator: (value) {
+                    if (value == null) {
+                      return AppLocalizations.of(context)!.translate('field_required_project');
+                    }
+                    return null;
+                  },
                   onChanged: (value) {
                     if (value != null) {
                       widget.onChanged(value.id.toString());

@@ -1,12 +1,9 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/client_sale/bloc/client_sale_bloc.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/variant_selection_bottom_sheet.dart';
-import 'package:crm_task_manager/page_2/widgets/goods_Selection_Bottom_Sheet.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/storage_widget.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -66,13 +63,13 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
         _items.add(newItem);
 
         final variantId = newItem['variantId'] as int;
-        
+
         // Устанавливаем начальную цену из данных варианта
         final initialPrice = newItem['price'] ?? 0.0;
         _priceControllers[variantId] = TextEditingController(
           text: initialPrice > 0 ? initialPrice.toStringAsFixed(2) : ''
         );
-        
+
         // Устанавливаем quantity = 1
         _quantityControllers[variantId] = TextEditingController(
           text: '1'
@@ -81,7 +78,7 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
         // Инициализируем данные в item
         _items.last['quantity'] = 1;
         _items.last['price'] = initialPrice;
-        
+
         // Вычисляем total
         final amount = newItem['amount'] ?? 1;
         _items.last['total'] = 1 * initialPrice * amount;

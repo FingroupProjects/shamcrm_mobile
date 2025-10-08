@@ -4,7 +4,6 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/supplier_bloc/supplier_event.d
 import 'package:crm_task_manager/bloc/page_2_BLOC/supplier_bloc/supplier_state.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
-import 'package:crm_task_manager/models/page_2/supplier_model.dart';
 import 'package:crm_task_manager/page_2/warehouse/supplier/add_supplier_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/supplier/supllier_card.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -33,7 +32,7 @@ class _SupplierCreenState extends State<SupplierCreen> {
   void initState() {
     super.initState();
     _checkPermissions();
-    _supplierBloc = SupplierBloc(_apiService)..add(FetchSupplier());
+    _supplierBloc = context.read<SupplierBloc>()..add(FetchSupplier());
   }
 
   // НОВОЕ: Проверка прав доступа
@@ -59,7 +58,6 @@ class _SupplierCreenState extends State<SupplierCreen> {
   void dispose() {
     _searchController.dispose();
     _focusNode.dispose();
-    _supplierBloc.close();
     super.dispose();
   }
 

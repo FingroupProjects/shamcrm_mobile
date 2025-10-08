@@ -46,8 +46,7 @@ class _IncomingScreenState extends State<IncomingScreen> {
   void initState() {
     super.initState();
     _checkPermissions();
-    _incomingBloc = IncomingBloc(ApiService())
-      ..add(const FetchIncoming(forceRefresh: true));
+    _incomingBloc = context.read<IncomingBloc>()..add(const FetchIncoming(forceRefresh: true));
     _scrollController.addListener(_onScroll);
   }
 
@@ -75,7 +74,6 @@ class _IncomingScreenState extends State<IncomingScreen> {
     _scrollController.dispose();
     _searchController.dispose();
     _focusNode.dispose();
-    _incomingBloc.close();
     super.dispose();
   }
 

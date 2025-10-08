@@ -414,54 +414,51 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<SupplierReturnBloc>( // НОВОЕ: BlocProvider
-      create: (context) => SupplierReturnBloc(context.read<ApiService>()),
-      child: PopScope(
-        onPopInvoked: (didPop) {
-          if (didPop && _documentUpdated && widget.onDocumentUpdated != null) {
-            widget.onDocumentUpdated!();
-          }
-        },
-        child: Scaffold(
-          appBar: _buildAppBar(context),
-          backgroundColor: Colors.white,
-          body: _isLoading
-              ? Center(
-                  child: PlayStoreImageLoading(
-                    size: 80.0,
-                    duration: Duration(milliseconds: 1000),
-                  ),
-                )
-              : currentDocument == null
-                  ? Center(
-                      child: Text(
-                        AppLocalizations.of(context)!.translate('document_data_unavailable') ?? 'Данные документа недоступны',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xff99A4BA),
-                        ),
-                      ),
-                    )
-                  : Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                      child: ListView(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 16),
-                            child: Center(child: _buildActionButton()),
-                          ),
-                          _buildDetailsList(),
-                          const SizedBox(height: 16),
-                          if (currentDocument!.documentGoods != null && currentDocument!.documentGoods!.isNotEmpty) ...[
-                            _buildGoodsList(currentDocument!.documentGoods!),
-                            const SizedBox(height: 16),
-                          ],
-                        ],
+    return PopScope(
+      onPopInvoked: (didPop) {
+        if (didPop && _documentUpdated && widget.onDocumentUpdated != null) {
+          widget.onDocumentUpdated!();
+        }
+      },
+      child: Scaffold(
+        appBar: _buildAppBar(context),
+        backgroundColor: Colors.white,
+        body: _isLoading
+            ? Center(
+                child: PlayStoreImageLoading(
+                  size: 80.0,
+                  duration: Duration(milliseconds: 1000),
+                ),
+              )
+            : currentDocument == null
+                ? Center(
+                    child: Text(
+                      AppLocalizations.of(context)!.translate('document_data_unavailable') ?? 'Данные документа недоступны',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff99A4BA),
                       ),
                     ),
-        ),
+                  )
+                : Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                    child: ListView(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: Center(child: _buildActionButton()),
+                        ),
+                        _buildDetailsList(),
+                        const SizedBox(height: 16),
+                        if (currentDocument!.documentGoods != null && currentDocument!.documentGoods!.isNotEmpty) ...[
+                          _buildGoodsList(currentDocument!.documentGoods!),
+                          const SizedBox(height: 16),
+                        ],
+                      ],
+                    ),
+                  ),
       ),
     );
   }
