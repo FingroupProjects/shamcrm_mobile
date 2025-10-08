@@ -1,14 +1,9 @@
-import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/supplier_return/supplier_return_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/supplier_return/supplier_return_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/supplier_return/supplier_return_state.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
-import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
-import 'package:crm_task_manager/page_2/widgets/goods_Selection_Bottom_Sheet.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/storage_widget.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/supplier_widget.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -155,7 +150,7 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
           _items[index]['quantity'] = quantity;
           // Пересчитываем total с учётом amount
           final amount = _items[index]['amount'] ?? 1;
-          _items[index]['total'] = _items[index]['quantity'] * _items[index]['price'] * amount;
+          _items[index]['total'] = (_items[index]['quantity'] * _items[index]['price'] * amount).round();
         }
         // Убираем ошибку если поле заполнено корректно
         _quantityErrors[variantId] = false;
@@ -180,7 +175,7 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
           _items[index]['price'] = price;
           // Пересчитываем total с учётом amount
           final amount = _items[index]['amount'] ?? 1;
-          _items[index]['total'] = _items[index]['quantity'] * _items[index]['price'] * amount;
+          _items[index]['total'] = (_items[index]['quantity'] * _items[index]['price'] * amount).round();
         }
         // Убираем ошибку если поле заполнено корректно
         _priceErrors[variantId] = false;
@@ -214,7 +209,7 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
 
         // Пересчитываем total с учётом нового amount
         final amount = _items[index]['amount'] ?? 1;
-        _items[index]['total'] = _items[index]['quantity'] * _items[index]['price'] * amount;
+        _items[index]['total'] = (_items[index]['quantity'] * _items[index]['price'] * amount).round();
       }
     });
   }
@@ -223,17 +218,26 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
     if (!_formKey.currentState!.validate()) return;
 
     if (_items.isEmpty) {
-      _showSnackBar('Добавьте хотя бы один товар', false);
+      _showSnackBar(
+        AppLocalizations.of(context)!.translate('add_at_least_one_good') ?? 'Добавьте хотя бы один товар',
+        false,
+      );
       return;
     }
 
     if (_selectedStorage == null) {
-      _showSnackBar('Выберите склад', false);
+      _showSnackBar(
+        AppLocalizations.of(context)!.translate('select_warehouse_first') ?? 'Выберите склад',
+        false,
+      );
       return;
     }
 
     if (_selectedSupplier == null) {
-      _showSnackBar('Выберите поставщика', false);
+      _showSnackBar(
+        AppLocalizations.of(context)!.translate('select_supplier_first') ?? 'Выберите поставщика',
+        false,
+      );
       return;
     }
 
@@ -661,7 +665,7 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
                               ),
                               alignment: Alignment.centerLeft,
                               child: Text(
-                                item['selectedUnit'] ?? 'шт',
+                                item['selectedUnit'] ?? (AppLocalizations.of(context)!.translate('unit_pieces_short') ?? 'шт'),
                                 style: const TextStyle(
                                   fontSize: 12,
                                   fontFamily: 'Gilroy',
@@ -767,7 +771,7 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
                             controller: priceController,
                             keyboardType: const TextInputType.numberWithOptions(decimal: true),
                             inputFormatters: [
-                              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+                              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,3}')),
                             ],
                             style: const TextStyle(
                               fontSize: 13,
@@ -852,7 +856,7 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
                       ],
                     ),
                     Text(
-                      (item['total'] ?? 0.0).toStringAsFixed(2),
+                      (item['total'] ?? 0.0).toStringAsFixed(0),
                       style: const TextStyle(
                         fontSize: 14,
                         fontFamily: 'Gilroy',
@@ -902,7 +906,7 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
             ),
           ),
           Text(
-            total.toStringAsFixed(2),
+            total.toStringAsFixed(0),
             style: const TextStyle(
               fontSize: 20,
               fontFamily: 'Gilroy',

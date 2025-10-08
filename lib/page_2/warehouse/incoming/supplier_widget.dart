@@ -189,12 +189,12 @@ class _SupplierWidgetState extends State<SupplierWidget> {
                           state.supplierList.contains(selectedSupplierData))
                       ? selectedSupplierData
                       : null,
-                  // validator: (value) {
-                  //   if (value == null) {
-                  //     return AppLocalizations.of(context)!.translate('field_required_supplier');
-                  //   }
-                  //   return null;
-                  // },
+                  validator: (value) {
+                    if (value == null) {
+                      return AppLocalizations.of(context)!.translate('field_required_project');
+                    }
+                    return null;
+                  },
                   onChanged: (value) {
                     if (value != null) {
                       widget.onChanged(value.id.toString());

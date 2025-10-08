@@ -127,16 +127,6 @@ class _WareHouseCardState extends State<WareHouseCard> {
                   ),
               ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              '${localization.translate('created_at_details') ?? 'Дата создания'}: ${_formatDate(widget.warehouse.createdAt.toString())}',
-              style: const TextStyle(
-                fontSize: 14,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w400,
-                color: Color(0xff99A4BA),
-              ),
-            ),
           ],
         ),
       ),

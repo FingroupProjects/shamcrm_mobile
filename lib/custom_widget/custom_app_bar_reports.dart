@@ -19,7 +19,6 @@ import 'filter/page_2/reports/profitability_filters.dart';
 import 'filter/page_2/reports/top_selling_goods_filter.dart';
 import 'filter/page_2/reports/sales_dynamics_filter.dart';
 import 'filter/page_2/reports/net_profit_filter.dart';
-import 'filter/page_2/reports/cost_structure_filter.dart';
 import 'filter/page_2/reports/orders_quantity_filter.dart';
 
 class CustomAppBarReports extends StatefulWidget {
@@ -450,7 +449,7 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
 
   void navigateToFilterScreen(BuildContext context) {
     if (kDebugMode) {
-      print('CustomAppBarReports: Переход к экрану фильтров widget.currentTabIndex=${widget.currentTabIndex}');
+      print('CustomAppBarReports: Переход к экрану фильтров widget.currentTabId=${widget.currentTabIndex}');
       print('CustomAppBarReports: Текущие фильтры: ${widget.currentFilters[widget.currentTabIndex]}');
     }
 
@@ -573,6 +572,28 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
         );
         break;
       case 1:
+        filterScreen = ActFilterScreen(
+            onSelectedDataFilter: (filters) {
+              if (kDebugMode) {
+                print('CustomAppBarReports: Получены фильтры из ActFilterScreen: $filters');
+              }
+              widget.onFilterSelected?.call(filters);
+            },
+            onResetFilters: () {
+              if (kDebugMode) {
+                print('CustomAppBarReports: Сброс фильтров из ActFilter');
+              }
+              widget.onResetFilters?.call();
+            },
+            initialFromDate: initialFromDate,
+            initialToDate: initialToDate,
+            initialAmountFrom: sumFrom,
+            initialAmountTo: sumTo,
+            initialLead: leadId,
+            initialSupplier: supplierId
+        );
+        break;
+      case 2:
         filterScreen = CashBalanceFilterScreen(
           onSelectedDataFilter: (filters) {
             if (kDebugMode) {
@@ -592,7 +613,7 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
           initialAmountTo: sumTo,
         );
         break;
-      case 2:
+      case 3:
         filterScreen = CreditorsFilterScreen(
           onSelectedDataFilter: (filters) {
             if (kDebugMode) {
@@ -615,7 +636,7 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
           initialSupplier: supplierId,
         );
         break;
-      case 3:
+      case 4:
         filterScreen = DebtorsFilterScreen(
           onSelectedDataFilter: (filters) {
             if (kDebugMode) {
@@ -637,7 +658,7 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
           initialSupplier: supplierId
         );
         break;
-      case 4:
+      case 5:
         filterScreen = TopSellingGoodsFilterScreen(
           onSelectedDataFilter: (filters) {
             if (kDebugMode) {
@@ -659,7 +680,7 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
           goodId: goodId,
         );
         break;
-      case 5:
+      case 6:
         filterScreen = SalesDynamicsFilterScreen(
           onSelectedDataFilter: (filters) {
             if (kDebugMode) {
@@ -678,7 +699,7 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
           period: period,
         );
         break;
-      case 6:
+      case 7:
         filterScreen = NetProfitFilterScreen(
           onSelectedDataFilter: (filters) {
             if (kDebugMode) {
@@ -697,7 +718,7 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
           period: period,
         );
         break;
-      case 7:
+      case 8:
         filterScreen = ProfitabilityFilterScreen(
           onSelectedDataFilter: (filters) {
             if (kDebugMode) {
@@ -716,17 +737,17 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
           goodId: goodId,
         );
         break;
-      case 8:
+      case 9:
         filterScreen = ExpenseStructureFilterScreen(
           onSelectedDataFilter: (filters) {
             if (kDebugMode) {
-              print('CustomAppBarReports: Получены фильтры из CostStructureFilterScreen: $filters');
+              print('CustomAppBarReports: Получены фильтры из ExpenseStructureFilterScreen: $filters');
             }
             widget.onFilterSelected?.call(filters);
           },
           onResetFilters: () {
             if (kDebugMode) {
-              print('CustomAppBarReports: Сброс фильтров из CostStructureFilterScreen');
+              print('CustomAppBarReports: Сброс фильтров из ExpenseStructureFilterScreen');
             }
             widget.onResetFilters?.call();
           },
@@ -736,17 +757,17 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
           initialDateTo: initialToDate,
         );
         break;
-      case 9:
+      case 10:
         filterScreen = OrdersQuantityFilterScreen(
           onSelectedDataFilter: (filters) {
             if (kDebugMode) {
-              print('CustomAppBarReports: Получены фильтры из OrdersCountFilterScreen: $filters');
+              print('CustomAppBarReports: Получены фильтры из OrdersQuantityFilterScreen: $filters');
             }
             widget.onFilterSelected?.call(filters);
           },
           onResetFilters: () {
             if (kDebugMode) {
-              print('CustomAppBarReports: Сброс фильтров из OrdersCountFilterScreen');
+              print('CustomAppBarReports: Сброс фильтров из OrdersQuantityFilterScreen');
             }
             widget.onResetFilters?.call();
           },
@@ -755,28 +776,6 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
           initialSumFrom: sumFrom,
           initialSumTo: sumTo,
           initialStatus: statusId,
-        );
-        break;
-      case 10:
-        filterScreen = ActFilterScreen(
-            onSelectedDataFilter: (filters) {
-              if (kDebugMode) {
-                print('CustomAppBarReports: Получены фильтры из DebtorsFilterScreen: $filters');
-              }
-              widget.onFilterSelected?.call(filters);
-            },
-            onResetFilters: () {
-              if (kDebugMode) {
-                print('CustomAppBarReports: Сброс фильтров из ActFilter');
-              }
-              widget.onResetFilters?.call();
-            },
-            initialFromDate: initialFromDate,
-            initialToDate: initialToDate,
-            initialAmountFrom: sumFrom,
-            initialAmountTo: sumTo,
-            initialLead: leadId,
-            initialSupplier: supplierId
         );
         break;
       default:

@@ -1,12 +1,9 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/client_sale/bloc/client_sale_bloc.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/variant_selection_bottom_sheet.dart';
-import 'package:crm_task_manager/page_2/widgets/goods_Selection_Bottom_Sheet.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/storage_widget.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -66,13 +63,13 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
         _items.add(newItem);
 
         final variantId = newItem['variantId'] as int;
-        
+
         // Устанавливаем начальную цену из данных варианта
         final initialPrice = newItem['price'] ?? 0.0;
         _priceControllers[variantId] = TextEditingController(
-          text: initialPrice > 0 ? initialPrice.toStringAsFixed(2) : ''
+          text: initialPrice > 0 ? initialPrice.toStringAsFixed(3) : ''
         );
-        
+
         // Устанавливаем quantity = 1
         _quantityControllers[variantId] = TextEditingController(
           text: '1'
@@ -81,10 +78,10 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
         // Инициализируем данные в item
         _items.last['quantity'] = 1;
         _items.last['price'] = initialPrice;
-        
+
         // Вычисляем total
         final amount = newItem['amount'] ?? 1;
-        _items.last['total'] = 1 * initialPrice * amount;
+        _items.last['total'] = (1 * initialPrice * amount).round();
 
         // Инициализируем состояние ошибок
         _priceErrors[variantId] = false;
@@ -190,7 +187,7 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
           _items[index]['quantity'] = quantity;
           // Пересчитываем total с учётом amount
           final amount = _items[index]['amount'] ?? 1;
-          _items[index]['total'] = _items[index]['quantity'] * _items[index]['price'] * amount;
+          _items[index]['total'] = (_items[index]['quantity'] * _items[index]['price'] * amount).round();
         }
         // Убираем ошибку если поле заполнено корректно
         _quantityErrors[variantId] = false;
@@ -200,7 +197,7 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
         final index = _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
           _items[index]['quantity'] = 0;
-          _items[index]['total'] = 0.0;
+          _items[index]['total'] = 0;
         }
       });
     }
@@ -215,7 +212,8 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
           _items[index]['price'] = price;
           // Пересчитываем total с учётом amount
           final amount = _items[index]['amount'] ?? 1;
-          _items[index]['total'] = _items[index]['quantity'] * _items[index]['price'] * amount;
+          final formattedPrice = double.parse(price.toStringAsFixed(3));
+          _items[index]['total'] = (_items[index]['quantity'] * formattedPrice * amount).round();
         }
         // Убираем ошибку если поле заполнено корректно
         _priceErrors[variantId] = false;
@@ -248,7 +246,7 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
 
         // Пересчитываем total с учётом нового amount
         final amount = _items[index]['amount'] ?? 1;
-        _items[index]['total'] = _items[index]['quantity'] * _items[index]['price'] * amount;
+        _items[index]['total'] = (_items[index]['quantity'] * _items[index]['price'] * amount).round();
       }
     });
   }
@@ -329,7 +327,7 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
         comment: _commentController.text.trim(),
         counterpartyId: _selectedLead!.id!,
         documentGoods: _items.map((item) => {
-          'good_id': item['id'],
+          'good_id': item['d'],
           'quantity': item['quantity'].toString(),
           'price': item['price'].toString(),
           'unit_id': item['unit_id'].toString(), // Может быть null'
@@ -340,10 +338,7 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
       ));
     } catch (e) {
       setState(() => _isLoading = false);
-      _showSnackBar(
-        AppLocalizations.of(context)!.translate('enter_valid_datetime') ?? 'Введите корректную дату и время',
-        false,
-      );
+      _showSnackBar(e.toString(), false);
     }
   }
 
@@ -822,7 +817,7 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
                             controller: priceController,
                             keyboardType: const TextInputType.numberWithOptions(decimal: true),
                             inputFormatters: [
-                              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+                              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,3}')),
                             ],
                             style: const TextStyle(
                               fontSize: 13,
@@ -907,7 +902,7 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
                       ],
                     ),
                     Text(
-                      (item['total'] ?? 0.0).toStringAsFixed(2),
+                      (item['total'] ?? 0.0).toStringAsFixed(0),
                       style: const TextStyle(
                         fontSize: 14,
                         fontFamily: 'Gilroy',
@@ -957,7 +952,7 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
             ),
           ),
           Text(
-            total.toStringAsFixed(2),
+            total.toStringAsFixed(0),
             style: const TextStyle(
               fontSize: 20,
               fontFamily: 'Gilroy',

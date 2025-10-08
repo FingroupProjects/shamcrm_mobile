@@ -100,7 +100,11 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
         showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
         return;
       }
-      _showSnackBar('Ошибка загрузки документа: $e', false);
+      final localizations = AppLocalizations.of(context)!;
+      _showSnackBar(
+        '${localizations.translate('error_loading_document_details') ?? 'Ошибка загрузки документа'}: $e',
+        false,
+      );
     }
   }
 
@@ -206,7 +210,11 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
   Future<void> _approveDocument() async {
     // НОВОЕ: Проверяем update-право
     if (!widget.hasUpdatePermission) {
-      _showSnackBar('Нет прав на проведение документа', false);
+      final localizations = AppLocalizations.of(context)!;
+      _showSnackBar(
+        localizations.translate('no_permission_to_approve') ?? 'Нет прав на проведение документа',
+        false,
+      );
       return;
     }
 
@@ -220,14 +228,22 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
         _documentUpdated = true;
       });
       _updateStatusOnly();
-      _showSnackBar('Документ проведен', true);
+      final localizations = AppLocalizations.of(context)!;
+      _showSnackBar(
+        localizations.translate('document_approved_successfully') ?? 'Документ проведен',
+        true,
+      );
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
         showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
         return;
       }
-      _showSnackBar('Ошибка при проведении документа: $e', false);
+      final localizations = AppLocalizations.of(context)!;
+      _showSnackBar(
+        '${localizations.translate('error_approving_document') ?? 'Ошибка при проведении документа'}: $e',
+        false,
+      );
     } finally {
       setState(() {
         _isButtonLoading = false;
@@ -238,7 +254,11 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
   Future<void> _unApproveDocument() async {
     // НОВОЕ: Проверяем update-право
     if (!widget.hasUpdatePermission) {
-      _showSnackBar('Нет прав на отмену проведения', false);
+      final localizations = AppLocalizations.of(context)!;
+      _showSnackBar(
+        localizations.translate('no_permission_to_unapprove') ?? 'Нет прав на отмену проведения',
+        false,
+      );
       return;
     }
 
@@ -252,14 +272,22 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
         _documentUpdated = true;
       });
       _updateStatusOnly();
-      _showSnackBar('Проведение документа отменено', true);
+      final localizations = AppLocalizations.of(context)!;
+      _showSnackBar(
+        localizations.translate('document_approval_canceled') ?? 'Проведение документа отменено',
+        true,
+      );
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
         showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
         return;
       }
-      _showSnackBar('Ошибка при отмене проведения документа: $e', false);
+      final localizations = AppLocalizations.of(context)!;
+      _showSnackBar(
+        '${localizations.translate('error_unapproving_document') ?? 'Ошибка при отмене проведения документа'}: $e',
+        false,
+      );
     } finally {
       setState(() {
         _isButtonLoading = false;
@@ -270,7 +298,11 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
   Future<void> _restoreDocument() async {
     // НОВОЕ: Привязываем к update-праву
     if (!widget.hasUpdatePermission) {
-      _showSnackBar('Нет прав на восстановление', false);
+      final localizations = AppLocalizations.of(context)!;
+      _showSnackBar(
+        localizations.translate('no_permission_to_restore') ?? 'Нет прав на восстановление',
+        false,
+      );
       return;
     }
 
@@ -284,14 +316,22 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
         _documentUpdated = true;
       });
       _updateStatusOnly();
-      _showSnackBar('Документ восстановлен', true);
+      final localizations = AppLocalizations.of(context)!;
+      _showSnackBar(
+        localizations.translate('document_restored_successfully') ?? 'Документ восстановлен',
+        true,
+      );
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
         showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
         return;
       }
-      _showSnackBar('Ошибка при восстановлении документа: $e', false);
+      final localizations = AppLocalizations.of(context)!;
+      _showSnackBar(
+        '${localizations.translate('error_restoring_document') ?? 'Ошибка при восстановлении документа'}: $e',
+        false,
+      );
     } finally {
       setState(() {
         _isButtonLoading = false;
@@ -414,54 +454,51 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<SupplierReturnBloc>( // НОВОЕ: BlocProvider
-      create: (context) => SupplierReturnBloc(context.read<ApiService>()),
-      child: PopScope(
-        onPopInvoked: (didPop) {
-          if (didPop && _documentUpdated && widget.onDocumentUpdated != null) {
-            widget.onDocumentUpdated!();
-          }
-        },
-        child: Scaffold(
-          appBar: _buildAppBar(context),
-          backgroundColor: Colors.white,
-          body: _isLoading
-              ? Center(
-                  child: PlayStoreImageLoading(
-                    size: 80.0,
-                    duration: Duration(milliseconds: 1000),
-                  ),
-                )
-              : currentDocument == null
-                  ? Center(
-                      child: Text(
-                        AppLocalizations.of(context)!.translate('document_data_unavailable') ?? 'Данные документа недоступны',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xff99A4BA),
-                        ),
-                      ),
-                    )
-                  : Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                      child: ListView(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 16),
-                            child: Center(child: _buildActionButton()),
-                          ),
-                          _buildDetailsList(),
-                          const SizedBox(height: 16),
-                          if (currentDocument!.documentGoods != null && currentDocument!.documentGoods!.isNotEmpty) ...[
-                            _buildGoodsList(currentDocument!.documentGoods!),
-                            const SizedBox(height: 16),
-                          ],
-                        ],
+    return PopScope(
+      onPopInvoked: (didPop) {
+        if (didPop && _documentUpdated && widget.onDocumentUpdated != null) {
+          widget.onDocumentUpdated!();
+        }
+      },
+      child: Scaffold(
+        appBar: _buildAppBar(context),
+        backgroundColor: Colors.white,
+        body: _isLoading
+            ? Center(
+                child: PlayStoreImageLoading(
+                  size: 80.0,
+                  duration: Duration(milliseconds: 1000),
+                ),
+              )
+            : currentDocument == null
+                ? Center(
+                    child: Text(
+                      AppLocalizations.of(context)!.translate('document_data_unavailable') ?? 'Данные документа недоступны',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff99A4BA),
                       ),
                     ),
-        ),
+                  )
+                : Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                    child: ListView(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: Center(child: _buildActionButton()),
+                        ),
+                        _buildDetailsList(),
+                        const SizedBox(height: 16),
+                        if (currentDocument!.documentGoods != null && currentDocument!.documentGoods!.isNotEmpty) ...[
+                          _buildGoodsList(currentDocument!.documentGoods!),
+                          const SizedBox(height: 16),
+                        ],
+                      ],
+                    ),
+                  ),
       ),
     );
   }
@@ -668,8 +705,8 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
 
   Widget _buildGoodsItem(DocumentGood good) {
     final unitShortName = good.good?.unitId != null
-        ? _unitMap[good.good!.unitId] ?? 'шт'
-        : 'шт';
+        ? _unitMap[good.good!.unitId] ?? (AppLocalizations.of(context)!.translate('unit_pieces_short') ?? 'шт')
+        : (AppLocalizations.of(context)!.translate('unit_pieces_short') ?? 'шт');
 
     return GestureDetector(
       onTap: () {
@@ -867,7 +904,11 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
   void _navigateToGoodsDetails(DocumentGood good) {
     final goodId = good.good?.id;
     if (goodId == null || goodId == 0) {
-      _showSnackBar('Ошибка: Не удалось определить ID товара', false);
+      final localizations = AppLocalizations.of(context)!;
+      _showSnackBar(
+        localizations.translate('error_no_good_id') ?? 'Ошибка: Не удалось определить ID товара',
+        false,
+      );
       return;
     }
 

@@ -2,13 +2,10 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/document/price_type/bloc/price
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/price_type/bloc/price_type_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/price_type/bloc/price_type_state.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/supplier_bloc/supplier_bloc.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/supplier_bloc/supplier_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/supplier_bloc/supplier_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
-import 'package:crm_task_manager/custom_widget/custom_phone_number_input.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/models/page_2/price_type_model.dart';
-import 'package:crm_task_manager/models/page_2/supplier_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -82,7 +79,7 @@ class _EditPriceTypeScreenState extends State<EditPriceTypeScreen> {
         ),
         title: Text(
           AppLocalizations.of(context)!.translate('edit_pricetype') ??
-              'Редактировать поставщика',
+              'Редактировать тип цены',
           style: const TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',
@@ -104,8 +101,8 @@ class _EditPriceTypeScreenState extends State<EditPriceTypeScreen> {
               SnackBar(
                 content: Text(
                   AppLocalizations.of(context)!
-                          .translate('supplier_updated_successfully') ??
-                      'Поставщик успешно обновлен',
+                          .translate('pricetype_updated_successfully') ??
+                      'Тип цены успешно обновлен',
                   style: const TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -145,8 +142,8 @@ class _EditPriceTypeScreenState extends State<EditPriceTypeScreen> {
                         CustomTextField(
                           controller: nameController,
                           hintText: AppLocalizations.of(context)!
-                                  .translate('enter_supplier_name') ??
-                              'Введите название поставщика',
+                                  .translate('enter_pricetype_name') ??
+                              'Введите название типа цены',
                           label:
                               AppLocalizations.of(context)!.translate('name') ??
                                   'Название',

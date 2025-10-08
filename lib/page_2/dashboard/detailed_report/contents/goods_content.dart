@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../models/page_2/dashboard/dashboard_goods_report.dart';
 import '../../../../bloc/page_2_BLOC/dashboard/goods/sales_dashboard_goods_bloc.dart';
+import '../../../../screens/profile/languages/app_localizations.dart';
 import '../cards/goods_card.dart';
 
 class GoodsContent extends StatefulWidget {
@@ -91,6 +92,8 @@ class _GoodsContentState extends State<GoodsContent> {
   }
 
   Widget _buildEmptyState() {
+    final localizations = AppLocalizations.of(context)!;
+    
     return RefreshIndicator(
       onRefresh: _onRefresh,
       child: ListView(
@@ -109,7 +112,7 @@ class _GoodsContentState extends State<GoodsContent> {
                   ),
                   SizedBox(height: 16),
                   Text(
-                    'Нет неликвидных товаров',
+                    localizations.translate('no_illiquid_goods'),
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 18,
@@ -119,7 +122,7 @@ class _GoodsContentState extends State<GoodsContent> {
                   ),
                   SizedBox(height: 8),
                   Text(
-                    'Все товары находятся в активном обороте',
+                    localizations.translate('all_goods_in_circulation'),
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 14,
@@ -136,6 +139,8 @@ class _GoodsContentState extends State<GoodsContent> {
   }
 
   Widget _buildLoadingState() {
+    final localizations = AppLocalizations.of(context)!;
+    
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -145,7 +150,7 @@ class _GoodsContentState extends State<GoodsContent> {
           ),
           SizedBox(height: 16),
           Text(
-            'Загрузка данных...',
+            localizations.translate('loading_data'),
             style: TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 16,
@@ -158,6 +163,8 @@ class _GoodsContentState extends State<GoodsContent> {
   }
 
   Widget _buildErrorState(String message) {
+    final localizations = AppLocalizations.of(context)!;
+    
     return RefreshIndicator(
       onRefresh: _onRefresh,
       child: ListView(
@@ -189,7 +196,7 @@ class _GoodsContentState extends State<GoodsContent> {
                       ),
                       SizedBox(height: 16),
                       Text(
-                        'Ошибка загрузки',
+                        localizations.translate('error_loading_dialog'),
                         style: TextStyle(
                           fontFamily: 'Gilroy',
                           fontSize: 18,
@@ -222,7 +229,7 @@ class _GoodsContentState extends State<GoodsContent> {
                           ),
                         ),
                         child: Text(
-                          'Повторить',
+                          localizations.translate('retry'),
                           style: TextStyle(
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w600,

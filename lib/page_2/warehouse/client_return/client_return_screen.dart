@@ -3,13 +3,11 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/document/client_return/client_
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
-import 'package:crm_task_manager/page_2/money/money_income/money_income_screen.dart';
 import 'package:crm_task_manager/page_2/money/widgets/error_dialog.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_return/client_return_card.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_return/client_return_create.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_return/client_return_details.dart'; // Добавь импорт Details
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -44,8 +42,7 @@ class _ClientReturnScreenState extends State<ClientReturnScreen> {
   void initState() {
     super.initState();
     _checkPermissions(); // НОВОЕ: Проверка прав
-    _clientReturnBloc = ClientReturnBloc(ApiService())
-      ..add(const FetchClientReturns(forceRefresh: true));
+    _clientReturnBloc = context.read<ClientReturnBloc>()..add(const FetchClientReturns(forceRefresh: true));
     _scrollController.addListener(_onScroll);
   }
 
@@ -73,7 +70,6 @@ class _ClientReturnScreenState extends State<ClientReturnScreen> {
     _scrollController.dispose();
     _searchController.dispose();
     _focusNode.dispose();
-    _clientReturnBloc.close();
     super.dispose();
   }
 
@@ -422,8 +418,8 @@ class _ClientReturnScreenState extends State<ClientReturnScreen> {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (ctx) => BlocProvider(
-                                      create: (context) => ClientReturnBloc(context.read<ApiService>()),
+                                    builder: (ctx) => BlocProvider.value(
+                                      value: _clientReturnBloc,
                                       child: ClientReturnDocumentDetailsScreen(
                                         documentId: currentData[index].id!,
                                         docNumber: currentData[index].docNumber ?? 'N/A',
@@ -451,8 +447,8 @@ class _ClientReturnScreenState extends State<ClientReturnScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (ctx) => BlocProvider(
-                                    create: (context) => ClientReturnBloc(context.read<ApiService>()),
+                                  builder: (ctx) => BlocProvider.value(
+                                    value: _clientReturnBloc,
                                     child: ClientReturnDocumentDetailsScreen(
                                       documentId: currentData[index].id!,
                                       docNumber: currentData[index].docNumber ?? 'N/A',

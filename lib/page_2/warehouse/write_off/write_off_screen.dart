@@ -46,7 +46,7 @@ class _WriteOffScreenState extends State<WriteOffScreen> {
   void initState() {
     super.initState();
     _checkPermissions(); // НОВОЕ: Проверка прав
-    _writeOffBloc = WriteOffBloc(ApiService())..add(const FetchWriteOffs(forceRefresh: true));
+    _writeOffBloc = context.read<WriteOffBloc>()..add(FetchWriteOffs(forceRefresh: true,));
     _scrollController.addListener(_onScroll);
   }
 
@@ -74,7 +74,6 @@ class _WriteOffScreenState extends State<WriteOffScreen> {
     _scrollController.dispose();
     _searchController.dispose();
     _focusNode.dispose();
-    _writeOffBloc.close();
     super.dispose();
   }
 
@@ -674,8 +673,8 @@ class _WriteOffScreenState extends State<WriteOffScreen> {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (ctx) => BlocProvider(
-                                        create: (context) => WriteOffBloc(context.read<ApiService>()),
+                                      builder: (ctx) => BlocProvider.value(
+                                        value: _writeOffBloc,
                                         child: WriteOffDocumentDetailsScreen(
                                           documentId: currentData[index].id!,
                                           docNumber: currentData[index].docNumber ?? 'N/A',
@@ -718,8 +717,8 @@ class _WriteOffScreenState extends State<WriteOffScreen> {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (ctx) => BlocProvider(
-                                      create: (context) => WriteOffBloc(context.read<ApiService>()),
+                                    builder: (ctx) => BlocProvider.value(
+                                      value: _writeOffBloc,
                                       child: WriteOffDocumentDetailsScreen(
                                         documentId: currentData[index].id!,
                                         docNumber: currentData[index].docNumber ?? 'N/A',

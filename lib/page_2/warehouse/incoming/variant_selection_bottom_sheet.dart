@@ -90,7 +90,7 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
   if (_goodMeasurementEnabled) {
     result['selectedUnit'] = (variant.availableUnits.isNotEmpty
         ? (variant.availableUnits.first.shortName ?? variant.availableUnits.first.name)
-        : null)!;
+        : '');
     result['unit_id'] = variant.availableUnits.isNotEmpty 
         ? variant.availableUnits.first.id 
         : 2;

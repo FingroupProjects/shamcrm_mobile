@@ -111,9 +111,6 @@ import 'package:crm_task_manager/bloc/user/create_cleant/create_client_bloc.dart
 import 'package:crm_task_manager/bloc/user/user_bloc.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/firebase_options.dart';
-import 'package:crm_task_manager/models/page_2/order_history_model.dart';
-import 'package:crm_task_manager/page_2/money/money_references/expense/expense_screen.dart';
-import 'package:crm_task_manager/page_2/money/money_references/income/income_screen.dart';
 import 'package:crm_task_manager/screens/auth/pin_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_screen.dart';
 import 'package:crm_task_manager/screens/auth/pin_setup_screen.dart';
@@ -121,8 +118,6 @@ import 'package:crm_task_manager/screens/auth/auth_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/languages/local_manager_lang.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
-import 'package:crm_task_manager/screens/profile/profile_widget/phone_call_screen.dart';
-import 'package:crm_task_manager/screens/profile/profile_widget/phone_verification_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -131,6 +126,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'bloc/cash_register_list/cash_register_list_bloc.dart';
+import 'bloc/page_2_BLOC/document/incoming/incoming_document_history/incoming_document_history_bloc.dart';
 import 'bloc/supplier_list/supplier_list_bloc.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home_screen.dart';
@@ -654,6 +650,11 @@ class _MyAppState extends State<MyApp> {
         BlocProvider<ClientSaleDocumentHistoryBloc>(
           create: (context) => ClientSaleDocumentHistoryBloc(widget.apiService),
         ),
+        BlocProvider<IncomingDocumentHistoryBloc>(
+          create: (context) => IncomingDocumentHistoryBloc(context.read<ApiService>()),
+        ),
+        // TODO fix bloc providers warehouse folder
+        BlocProvider(create: (context) => ClientReturnBloc(widget.apiService)),
         BlocProvider(create: (context) => SupplierBloc(widget.apiService)),
         BlocProvider(create: (context) => MeasureUnitsBloc(widget.apiService)),
         BlocProvider(create: (context) => WareHouseBloc(widget.apiService)),
@@ -661,7 +662,6 @@ class _MyAppState extends State<MyApp> {
             create: (context) => PriceTypeScreenBloc(widget.apiService)),
         BlocProvider(
             create: (context) => SupplierReturnBloc(widget.apiService)),
-        BlocProvider(create: (context) => ClientReturnBloc(widget.apiService)),
         BlocProvider(create: (context) => WriteOffBloc(widget.apiService)),
         BlocProvider(create: (context) => MovementBloc(widget.apiService)),
         BlocProvider(create: (context) => CashDeskBloc()),

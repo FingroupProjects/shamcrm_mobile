@@ -1,11 +1,8 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/client_return/client_return_bloc.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
-import 'package:crm_task_manager/page_2/widgets/goods_Selection_Bottom_Sheet.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/storage_widget.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -151,7 +148,7 @@ class CreateClientReturnDocumentScreenState
           _items[index]['quantity'] = quantity;
           // Пересчитываем total с учётом amount
           final amount = _items[index]['amount'] ?? 1;
-          _items[index]['total'] = _items[index]['quantity'] * _items[index]['price'] * amount;
+          _items[index]['total'] = (_items[index]['quantity'] * _items[index]['price'] * amount).round();
         }
         // Убираем ошибку если поле заполнено корректно
         _quantityErrors[variantId] = false;
@@ -176,7 +173,7 @@ class CreateClientReturnDocumentScreenState
           _items[index]['price'] = price;
           // Пересчитываем total с учётом amount
           final amount = _items[index]['amount'] ?? 1;
-          _items[index]['total'] = _items[index]['quantity'] * _items[index]['price'] * amount;
+          _items[index]['total'] = (_items[index]['quantity'] * _items[index]['price'] * amount).round();
         }
         // Убираем ошибку если поле заполнено корректно
         _priceErrors[variantId] = false;
@@ -210,7 +207,7 @@ class CreateClientReturnDocumentScreenState
 
         // Пересчитываем total с учётом нового amount
         final amount = _items[index]['amount'] ?? 1;
-        _items[index]['total'] = _items[index]['quantity'] * _items[index]['price'] * amount;
+        _items[index]['total'] = (_items[index]['quantity'] * _items[index]['price'] * amount).round();
       }
     });
   }
@@ -762,7 +759,7 @@ class CreateClientReturnDocumentScreenState
                             controller: priceController,
                             keyboardType: const TextInputType.numberWithOptions(decimal: true),
                             inputFormatters: [
-                              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+                              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,3}')),
                             ],
                             style: const TextStyle(
                               fontSize: 13,
@@ -847,7 +844,7 @@ class CreateClientReturnDocumentScreenState
                       ],
                     ),
                     Text(
-                      (item['total'] ?? 0.0).toStringAsFixed(2),
+                      (item['total'] ?? 0.0).toStringAsFixed(0),
                       style: const TextStyle(
                         fontSize: 14,
                         fontFamily: 'Gilroy',
@@ -897,7 +894,7 @@ class CreateClientReturnDocumentScreenState
             ),
           ),
           Text(
-            total.toStringAsFixed(2),
+            total.toStringAsFixed(0),
             style: const TextStyle(
               fontSize: 20,
               fontFamily: 'Gilroy',

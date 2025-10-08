@@ -121,16 +121,6 @@ class _SupplierCardState extends State<SupplierCard> {
             ),
             const SizedBox(height: 8),
             Text(
-              '${localization.translate('created_at_details') ?? 'Дата создания'}: ${_formatDate(widget.supplier.createdAt)}',
-              style: const TextStyle(
-                fontSize: 14,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w400,
-                color: Color(0xff99A4BA),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
               '${localization.translate('phone') ?? 'Телефон'}: ${widget.supplier.phone ?? 'N/A'}',
               style: const TextStyle(
                 fontSize: 14,
@@ -149,19 +139,19 @@ class _SupplierCardState extends State<SupplierCard> {
                 color: Color(0xff99A4BA),
               ),
             ),
-            if (widget.supplier.note != null && widget.supplier.note!.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text(
-                  '${localization.translate('note') ?? 'Примечание'}: ${widget.supplier.note}',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w400,
-                    color: Color(0xff99A4BA),
-                  ),
-                ),
-              ),
+            // if (widget.supplier.note != null && widget.supplier.note!.isNotEmpty)
+            //   Padding(
+            //     padding: const EdgeInsets.only(top: 8),
+            //     child: Text(
+            //       '${localization.translate('note') ?? 'Примечание'}: ${widget.supplier.note}',
+            //       style: const TextStyle(
+            //         fontSize: 14,
+            //         fontFamily: 'Gilroy',
+            //         fontWeight: FontWeight.w400,
+            //         color: Color(0xff99A4BA),
+            //       ),
+            //     ),
+            //   ),
           ],
         ),
       ),

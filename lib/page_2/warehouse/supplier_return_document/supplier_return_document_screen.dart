@@ -44,7 +44,7 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
   void initState() {
     super.initState();
     _checkPermissions(); // НОВОЕ: Проверка прав
-    _supplierReturnBloc = SupplierReturnBloc(ApiService())..add(const FetchSupplierReturn(forceRefresh: true));
+    _supplierReturnBloc = context.read<SupplierReturnBloc>()..add(FetchSupplierReturn(forceRefresh: true,));
     _scrollController.addListener(_onScroll);
   }
 
@@ -72,7 +72,6 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
     _scrollController.dispose();
     _searchController.dispose();
     _focusNode.dispose();
-    _supplierReturnBloc.close();
     super.dispose();
   }
 

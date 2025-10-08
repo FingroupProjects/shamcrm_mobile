@@ -1,12 +1,9 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/client_sale/bloc/client_sale_bloc.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
-import 'package:crm_task_manager/page_2/widgets/goods_Selection_Bottom_Sheet.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/storage_widget.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -105,7 +102,7 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
         });
 
         // Создаем контроллеры с существующими значениями
-        _priceControllers[variantId] = TextEditingController(text: price.toStringAsFixed(2));
+        _priceControllers[variantId] = TextEditingController(text: price.toStringAsFixed(3));
         _quantityControllers[variantId] = TextEditingController(text: quantity.toString());
         _priceErrors[variantId] = false;
         _quantityErrors[variantId] = false;
@@ -126,7 +123,7 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
         // ← КРИТИЧЕСКИ ВАЖНО: Устанавливаем начальную цену и количество
         final initialPrice = newItem['price'] ?? 0.0;
         _priceControllers[variantId] = TextEditingController(
-          text: initialPrice > 0 ? initialPrice.toStringAsFixed(2) : ''
+          text: initialPrice > 0 ? initialPrice.toStringAsFixed(3) : ''
         );
         
         _quantityControllers[variantId] = TextEditingController(
@@ -139,7 +136,7 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
         
         // Вычисляем total
         final amount = newItem['amount'] ?? 1;
-        _items.last['total'] = 1 * initialPrice * amount;
+        _items.last['total'] = (initialPrice * amount).round();
 
         _priceErrors[variantId] = false;
         _quantityErrors[variantId] = false;
@@ -237,7 +234,7 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
         if (index != -1) {
           _items[index]['quantity'] = quantity;
           final amount = _items[index]['amount'] ?? 1;
-          _items[index]['total'] = _items[index]['quantity'] * _items[index]['price'] * amount;
+          _items[index]['total'] = (_items[index]['quantity'] * _items[index]['price'] * amount).round();
         }
         _quantityErrors[variantId] = false;
       });
@@ -260,7 +257,7 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
         if (index != -1) {
           _items[index]['price'] = price;
           final amount = _items[index]['amount'] ?? 1;
-          _items[index]['total'] = _items[index]['quantity'] * _items[index]['price'] * amount;
+          _items[index]['total'] = (_items[index]['quantity'] * _items[index]['price'] * amount).round();
         }
         _priceErrors[variantId] = false;
       });
@@ -291,7 +288,7 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
         _items[index]['amount'] = selectedUnitObj.amount ?? 1;
 
         final amount = _items[index]['amount'] ?? 1;
-        _items[index]['total'] = _items[index]['quantity'] * _items[index]['price'] * amount;
+        _items[index]['total'] = (_items[index]['quantity'] * _items[index]['price'] * amount).round();
       }
     });
   }
@@ -851,7 +848,7 @@ if (item['remainder'] != null)
                             controller: priceController,
                             keyboardType: const TextInputType.numberWithOptions(decimal: true),
                             inputFormatters: [
-                              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+                              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,3}')),
                             ],
                             style: const TextStyle(
                               fontSize: 13,
@@ -935,7 +932,7 @@ if (item['remainder'] != null)
                       ],
                     ),
                     Text(
-                      (item['total'] ?? 0.0).toStringAsFixed(2),
+                      (item['total'] ?? 0.0).toStringAsFixed(0),
                       style: const TextStyle(
                         fontSize: 14,
                         fontFamily: 'Gilroy',
@@ -985,7 +982,7 @@ if (item['remainder'] != null)
             ),
           ),
           Text(
-            total.toStringAsFixed(2),
+            total.toStringAsFixed(0),
             style: const TextStyle(
               fontSize: 20,
               fontFamily: 'Gilroy',
