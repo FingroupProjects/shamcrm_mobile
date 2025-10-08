@@ -2,13 +2,10 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/document/price_type/bloc/price
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/price_type/bloc/price_type_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/price_type/bloc/price_type_state.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/supplier_bloc/supplier_bloc.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/supplier_bloc/supplier_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/supplier_bloc/supplier_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
-import 'package:crm_task_manager/custom_widget/custom_phone_number_input.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/models/page_2/price_type_model.dart';
-import 'package:crm_task_manager/models/page_2/supplier_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

@@ -19,7 +19,7 @@ class PriceTypeScreen extends StatefulWidget {
 
 class _PriceTypeScreenState extends State<PriceTypeScreen> {
   final ApiService _apiService = ApiService();
-  late PriceTypeScreenBloc priceType;
+  late PriceTypeScreenBloc _priceTypeBloc;
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
 
@@ -32,7 +32,7 @@ class _PriceTypeScreenState extends State<PriceTypeScreen> {
   void initState() {
     super.initState();
     _checkPermissions();
-    priceType = PriceTypeScreenBloc(_apiService)..add(FetchPriceType());
+    _priceTypeBloc = PriceTypeScreenBloc(_apiService)..add(FetchPriceType());
   }
 
   // НОВОЕ: Проверка прав доступа
@@ -58,7 +58,6 @@ class _PriceTypeScreenState extends State<PriceTypeScreen> {
   void dispose() {
     _searchController.dispose();
     _focusNode.dispose();
-    priceType.close();
     super.dispose();
   }
 
@@ -67,7 +66,7 @@ class _PriceTypeScreenState extends State<PriceTypeScreen> {
     final localizations = AppLocalizations.of(context)!;
     
     return BlocProvider.value(
-      value: priceType,
+      value: _priceTypeBloc,
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
@@ -99,7 +98,7 @@ class _PriceTypeScreenState extends State<PriceTypeScreen> {
                         builder: (context) => AddPriceTypeScreen(),
                       ),
                     ).then((_) {
-                      priceType.add(FetchPriceType());
+                      _priceTypeBloc.add(FetchPriceType());
                     });
                   }
                 },
@@ -137,7 +136,7 @@ class _PriceTypeScreenState extends State<PriceTypeScreen> {
                 color: const Color(0xff1E2E52),
                 backgroundColor: Colors.white,
                 onRefresh: () {
-                  priceType.add(FetchPriceType());
+                  _priceTypeBloc.add(FetchPriceType());
                   return Future.value();
                 },
                 child: ListView.builder(
@@ -151,7 +150,7 @@ class _PriceTypeScreenState extends State<PriceTypeScreen> {
                       hasUpdatePermission: _hasUpdatePermission,
                       hasDeletePermission: _hasDeletePermission,
                       onUpdate: () {
-                        priceType.add(FetchPriceType());
+                        _priceTypeBloc.add(FetchPriceType());
                       },
                     );
                   },
@@ -177,7 +176,7 @@ class _PriceTypeScreenState extends State<PriceTypeScreen> {
                       const SizedBox(height: 12),
                       ElevatedButton(
                         onPressed: () {
-                          priceType.add(FetchPriceType());
+                          _priceTypeBloc.add(FetchPriceType());
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xff1E2E52),
