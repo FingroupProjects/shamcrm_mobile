@@ -82,18 +82,18 @@ class _AddPriceTypeScreenState extends State<AddPriceTypeScreen> {
       ),
       body: BlocListener<PriceTypeScreenBloc, PriceTypeState>(
         listener: (context, state) {
+
+          debugPrint("PriceTypeState: $state");
+
           if (state is PriceTypeError) {
             _showErrorSnackBar(
                 context,
-                AppLocalizations.of(context)!.translate(state.message) ??
-                    state.message);
+                AppLocalizations.of(context)!.translate(state.message) ?? state.message);
           } else if (state is PriceTypeSuccess) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  AppLocalizations.of(context)!
-                          .translate('pricetype_created_successfully') ??
-                      'Тип цены успешно создан',
+                  AppLocalizations.of(context)!.translate('pricetype_created_successfully') ?? 'Тип цены успешно создан',
                   style: const TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -188,7 +188,7 @@ class _AddPriceTypeScreenState extends State<AddPriceTypeScreen> {
                               textColor: Colors.white,
                               onPressed: () {
                                 if (_formKey.currentState!.validate()) {
-                                  final supplier = PriceTypeModel(
+                                  final priceType = PriceTypeModel(
                                     id: 0, // ID will be set by the backend
                                     name: nameController.text,
 
@@ -198,7 +198,7 @@ class _AddPriceTypeScreenState extends State<AddPriceTypeScreen> {
                                   );
                                   context
                                       .read<PriceTypeScreenBloc>()
-                                      .add(AddPriceType(supplier));
+                                      .add(AddPriceType(priceType));
                                 }
                               },
                             );
