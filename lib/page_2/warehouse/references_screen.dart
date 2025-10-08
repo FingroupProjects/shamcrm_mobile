@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
+import 'package:crm_task_manager/page_2/category/category_screen.dart';
 import 'package:crm_task_manager/page_2/goods/goods_screen.dart';
 import 'package:crm_task_manager/page_2/money/money_references/cash_desk/cash_desk_screen.dart';
 import 'package:crm_task_manager/page_2/money/money_references/expense/expense_screen.dart';
@@ -34,6 +35,7 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
   bool _hasCashRegister = false;
   bool _hasRkoArticle = false;
   bool _hasPkoArticle = false;
+  bool _hasCategory = false; // Новое право для категорий
 
   @override
   void initState() {
@@ -64,6 +66,7 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
       _hasCashRegister = await _apiService.hasPermission('cash_register.read');
       _hasRkoArticle = await _apiService.hasPermission('rko_article.read');
       _hasPkoArticle = await _apiService.hasPermission('pko_article.read');
+      _hasCategory = await _apiService.hasPermission('category.read'); // Проверка права для категорий
       
     } catch (e) {
       debugPrint('Ошибка при проверке прав доступа: $e');
@@ -75,6 +78,7 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
       _hasCashRegister = false;
       _hasRkoArticle = false;
       _hasPkoArticle = false;
+      _hasCategory = false;
     } finally {
       setState(() {
         _isLoading = false;
@@ -123,6 +127,16 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
         ReferenceItem(
           title: AppLocalizations.of(context)!.translate('product') ?? 'Товар',
           icon: Icons.inventory_2_outlined,
+          color: refColor,
+        ),
+      );
+    }
+
+    if (_hasCategory) {
+      allReferences.add(
+        ReferenceItem(
+          title: AppLocalizations.of(context)!.translate('appbar_categories') ?? 'Категории',
+          icon: Icons.category_outlined,
           color: refColor,
         ),
       );
@@ -194,6 +208,11 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
         context,
         MaterialPageRoute(builder: (context) => GoodsScreen()),
       );
+    } else if (reference.title == (AppLocalizations.of(context)!.translate('appbar_categories') ?? 'Категории')) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => CategoryScreen()),
+      );
     } else if (reference.title == (AppLocalizations.of(context)!.translate('price_type') ?? 'Тип цены')) {
       Navigator.push(
         context,
@@ -229,9 +248,9 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.06),
-                blurRadius: 8,
-                offset: const Offset(0, 3),
+                color: Colors.black.withOpacity(0.05), // Немного уменьшили тень
+                blurRadius: 6, // Уменьшено с 8 до 6
+                offset: const Offset(0, 2), // Уменьшено с 3 до 2
               ),
             ],
             border: Border.all(
@@ -239,40 +258,46 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
               width: 1,
             ),
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: reference.color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  reference.icon,
-                  size: 28,
-                  color: reference.color,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Text(
-                  reference.title,
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xff1E2E52),
-                    height: 1.1,
+          child: Padding(
+            padding: const EdgeInsets.all(10.0), // Уменьшено для компактности
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 36,  // Уменьшено с 48 до 36
+                  height: 36, // Уменьшено с 48 до 36
+                  decoration: BoxDecoration(
+                    color: reference.color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(9), // Уменьшено с 12 до 9
+                  ),
+                  child: Icon(
+                    reference.icon,
+                    size: 20, // Уменьшено с 28 до 20
+                    color: reference.color,
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 6), // Уменьшено с 12 до 6
+                Flexible(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4), // Уменьшено с 8 до 4
+                    child: Text(
+                      reference.title,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12, // Уменьшено с 13 до 12
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xff1E2E52),
+                        height: 1.2, // Немного увеличили высоту строки
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -284,18 +309,42 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
       return const SizedBox.shrink();
     }
 
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 1.15,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-      ),
-      itemCount: _references.length,
-      itemBuilder: (context, index) {
-        return _buildReferenceCard(_references[index]);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final screenWidth = MediaQuery.of(context).size.width;
+        
+        int crossAxisCount;
+        double childAspectRatio;
+        
+        // Новая логика: 3 колонки по умолчанию, компактнее
+        if (screenWidth < 400) {
+          // Очень маленькие экраны - 2 колонки
+          crossAxisCount = 2;
+          childAspectRatio = 1.0;
+        } else if (screenWidth < 800) {
+          // Обычные телефоны и планшеты - 3 колонки (по умолчанию)
+          crossAxisCount = 3;
+          childAspectRatio = 0.95;
+        } else {
+          // Большие экраны - 4 колонки
+          crossAxisCount = 4;
+          childAspectRatio = 1.0;
+        }
+
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            childAspectRatio: childAspectRatio,
+            crossAxisSpacing: 8, // Уменьшено с 12 до 8
+            mainAxisSpacing: 8,  // Уменьшено с 12 до 8
+          ),
+          itemCount: _references.length,
+          itemBuilder: (context, index) {
+            return _buildReferenceCard(_references[index]);
+          },
+        );
       },
     );
   }
@@ -405,7 +454,11 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
                             ),
                           ),
                           const SizedBox(height: 20),
-                          _buildReferencesLayout(),
+                          Expanded(
+                            child: SingleChildScrollView(
+                              child: _buildReferencesLayout(),
+                            ),
+                          ),
                         ],
                       ),
                     ),
