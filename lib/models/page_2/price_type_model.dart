@@ -5,7 +5,7 @@ class PriceTypeModel {
   String name;
   int organizationId;
   DateTime? createdAt;
-  DateTime updatedAt;
+  DateTime? updatedAt;
   dynamic oneCId;
 
   PriceTypeModel({
@@ -28,7 +28,9 @@ class PriceTypeModel {
         createdAt: json["created_at"] == null
             ? null
             : DateTime.parse(json["created_at"]),
-        updatedAt: DateTime.parse(json["updated_at"]),
+        updatedAt: json["updated_at"] == null
+            ? null
+            : DateTime.parse(json["updated_at"]),
         oneCId: json["one_c_id"],
       );
 
@@ -37,7 +39,7 @@ class PriceTypeModel {
         "name": name,
         "organization_id": organizationId,
         "created_at": createdAt?.toIso8601String(),
-        "updated_at": updatedAt.toIso8601String(),
+        "updated_at": updatedAt?.toIso8601String(),
         "one_c_id": oneCId,
       };
 }
