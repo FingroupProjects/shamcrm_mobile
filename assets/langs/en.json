@@ -1702,6 +1702,11 @@
   "no_permission_to_approve": "No permission to approve document",
   "no_permission_to_unapprove": "No permission to cancel approval",
   "document_approval_canceled": "Document approval canceled",
-  "no_permission_to_restore": "No permission to restore"
-
+  "no_permission_to_restore": "No permission to restore",
+  "add_at_least_one_good": "Add at least one item",
+  "select_warehouse_first": "Select warehouse",
+  "select_supplier_first": "Select supplier",
+  "unit_pieces_short": "pcs",
+  "error_loading_document_details": "Error loading document",
+  "document_approved_successfully": "Document approved"
 }

@@ -1702,5 +1702,11 @@
   "no_permission_to_approve": "Hujjatni tasdiqlashga ruxsat yo'q",
   "no_permission_to_unapprove": "Tasdiqni bekor qilishga ruxsat yo'q",
   "document_approval_canceled": "Hujjat tasdig'i bekor qilindi",
-  "no_permission_to_restore": "Tiklashga ruxsat yo'q"
+  "no_permission_to_restore": "Tiklashga ruxsat yo'q",
+  "add_at_least_one_good": "Kamida bitta mahsulot qo'shing",
+  "select_warehouse_first": "Omborni tanlang",
+  "select_supplier_first": "Ta'minotchini tanlang",
+  "unit_pieces_short": "dona",
+  "error_loading_document_details": "Hujjatni yuklashda xato",
+  "document_approved_successfully": "Hujjat tasdiqlandi"
 }

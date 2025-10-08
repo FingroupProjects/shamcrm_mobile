@@ -20,7 +20,7 @@ class WareHouseDeletion extends StatelessWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                '${state.message}',
+                AppLocalizations.of(context)!.translate(state.message) ?? state.message,
                 style: const TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 16,

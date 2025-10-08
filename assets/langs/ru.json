@@ -1702,5 +1702,11 @@
   "no_permission_to_approve": "Нет прав на проведение документа",
   "no_permission_to_unapprove": "Нет прав на отмену проведения",
   "document_approval_canceled": "Проведение документа отменено",
-  "no_permission_to_restore": "Нет прав на восстановление"
+  "no_permission_to_restore": "Нет прав на восстановление",
+  "add_at_least_one_good": "Добавьте хотя бы один товар",
+  "select_warehouse_first": "Выберите склад",
+  "select_supplier_first": "Выберите поставщика",
+  "unit_pieces_short": "шт",
+  "error_loading_document_details": "Ошибка загрузки документа",
+  "document_approved_successfully": "Документ проведен"
 }
