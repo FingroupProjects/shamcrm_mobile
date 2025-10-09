@@ -488,7 +488,7 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
         title: CustomAppBarPage2(
           title: isClickAvatarIcon
               ? localizations.translate('appbar_settings') ?? 'Настройки'
-              : localizations.translate('warehouse_accounting') ?? 'Учет склада',
+              : localizations.translate('warehouse_accounting') ?? 'Учет торговли',
           onClickProfileAvatar: () {
             setState(() {
               isClickAvatarIcon = !isClickAvatarIcon;
@@ -523,27 +523,6 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                localizations.translate('warehouse_documents') ?? 'Документы склада',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xff1E2E52),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                localizations.translate('select_document_type') ??
-                    'Выберите тип документа для работы со складом',
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w400,
-                  color: Color(0xff99A4BA),
-                ),
-              ),
-              const SizedBox(height: 20),
               if (_documents.isNotEmpty) _buildDocumentGrid(),
               if (_showReferences) ...[
                 const SizedBox(height: 16),
