@@ -93,7 +93,7 @@ class _AddSupplierScreenState extends State<AddSupplierScreen> {
               SnackBar(
                 content: Text(
                   AppLocalizations.of(context)!
-                          .translate('supplier_created_successfully') ??
+                      .translate('supplier_created_successfully') ??
                       'Поставщик успешно создан',
                   style: const TextStyle(
                     fontFamily: 'Gilroy',
@@ -110,7 +110,7 @@ class _AddSupplierScreenState extends State<AddSupplierScreen> {
                 backgroundColor: Colors.green,
                 elevation: 3,
                 padding:
-                    const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 duration: const Duration(seconds: 3),
               ),
             );
@@ -134,15 +134,15 @@ class _AddSupplierScreenState extends State<AddSupplierScreen> {
                         CustomTextField(
                           controller: nameController,
                           hintText: AppLocalizations.of(context)!
-                                  .translate('enter_supplier_name') ??
+                              .translate('enter_supplier_name') ??
                               'Введите название поставщика',
                           label:
-                              AppLocalizations.of(context)!.translate('name') ??
-                                  'Название',
+                          AppLocalizations.of(context)!.translate('name') ??
+                              'Название',
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return AppLocalizations.of(context)!
-                                      .translate('field_required') ??
+                                  .translate('field_required') ??
                                   'Поле обязательно';
                             }
                             return null;
@@ -156,46 +156,30 @@ class _AddSupplierScreenState extends State<AddSupplierScreen> {
                               selectedDialCode = number;
                             });
                           },
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return AppLocalizations.of(context)!
-                                      .translate('field_required') ??
-                                  'Поле обязательно';
-                            }
-                            return null;
-                          },
                           label: AppLocalizations.of(context)!
-                                  .translate('phone') ??
+                              .translate('phone') ??
                               'Телефон',
                         ),
                         const SizedBox(height: 16),
                         CustomTextField(
                           controller: innController,
                           hintText: AppLocalizations.of(context)!
-                                  .translate('enter_inn') ??
+                              .translate('enter_inn') ??
                               'Введите ИНН',
                           label:
-                              AppLocalizations.of(context)!.translate('inn') ??
-                                  'ИНН',
+                          AppLocalizations.of(context)!.translate('inn') ??
+                              'ИНН',
                           keyboardType: TextInputType.number,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return AppLocalizations.of(context)!
-                                      .translate('field_required') ??
-                                  'Поле обязательно';
-                            }
-                            return null;
-                          },
                         ),
                         const SizedBox(height: 16),
                         CustomTextField(
                           controller: noteController,
                           hintText: AppLocalizations.of(context)!
-                                  .translate('enter_note') ??
+                              .translate('enter_note') ??
                               'Введите примечание',
                           label:
-                              AppLocalizations.of(context)!.translate('note') ??
-                                  'Примечание',
+                          AppLocalizations.of(context)!.translate('note') ??
+                              'Примечание',
                         ),
                       ],
                     ),
@@ -204,14 +188,14 @@ class _AddSupplierScreenState extends State<AddSupplierScreen> {
               ),
               Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
                 child: Row(
                   children: [
                     Expanded(
                       child: CustomButton(
                         buttonText:
-                            AppLocalizations.of(context)!.translate('close') ??
-                                'Отмена',
+                        AppLocalizations.of(context)!.translate('close') ??
+                            'Отмена',
                         buttonColor: const Color(0xffF4F7FD),
                         textColor: Colors.black,
                         onPressed: () {
@@ -232,17 +216,21 @@ class _AddSupplierScreenState extends State<AddSupplierScreen> {
                           } else {
                             return CustomButton(
                               buttonText: AppLocalizations.of(context)!
-                                      .translate('save') ??
+                                  .translate('save') ??
                                   'Сохранить',
                               buttonColor: const Color(0xff4759FF),
                               textColor: Colors.white,
                               onPressed: () {
                                 if (_formKey.currentState!.validate()) {
                                   final supplier = Supplier(
-                                    id: 0, // ID will be set by the backend
+                                    id: 0,
                                     name: nameController.text,
-                                    phone: selectedDialCode,
-                                    inn: int.parse(innController.text),
+                                    phone: phoneController.text.isNotEmpty
+                                        ? selectedDialCode
+                                        : null,
+                                    inn: innController.text.isNotEmpty
+                                        ? int.tryParse(innController.text)
+                                        : null,
                                     note: noteController.text.isNotEmpty
                                         ? noteController.text
                                         : null,

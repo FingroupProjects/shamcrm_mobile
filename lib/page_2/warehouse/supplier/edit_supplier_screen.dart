@@ -4,6 +4,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/supplier_bloc/supplier_state.d
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_phone_number_input.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
+import 'package:crm_task_manager/custom_widget/country_data_list.dart';
 import 'package:crm_task_manager/models/page_2/supplier_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -27,13 +28,39 @@ class _EditSupplierScreenState extends State<EditSupplierScreen> {
   late TextEditingController noteController;
 
   String selectedDialCode = '';
+  Country? initialCountry;
 
   @override
   void initState() {
     super.initState();
     nameController = TextEditingController(text: widget.supplier.name);
-    phoneController = TextEditingController(text: widget.supplier.phone);
-    innController = TextEditingController(text: widget.supplier.inn.toString());
+
+    // Extract phone number without dial code and find the country
+    String? phoneNumber = widget.supplier.phone;
+    String dialCode = '';
+
+    if (phoneNumber?.isNotEmpty ?? false) {
+      // Find matching dial code from the phone number
+      for (var code in countryCodes) {
+        if (phoneNumber!.startsWith(code)) {
+          dialCode = code;
+          phoneNumber = phoneNumber.substring(code.length);
+          // Find the country that matches this dial code
+          try {
+            initialCountry = countries.firstWhere(
+                  (country) => country.dialCode == code,
+            );
+          } catch (e) {
+            // If not found, use default
+            initialCountry = null;
+          }
+          break;
+        }
+      }
+    }
+
+    phoneController = TextEditingController(text: phoneNumber);
+    innController = TextEditingController(text: widget.supplier.inn?.toString() ?? '');
     noteController = TextEditingController(text: widget.supplier.note);
     selectedDialCode = widget.supplier.phone ?? '';
   }
@@ -93,7 +120,7 @@ class _EditSupplierScreenState extends State<EditSupplierScreen> {
             color: Color(0xff1E2E52),
           ),
         ),
-        
+
       ),
       body: BlocListener<SupplierBloc, SupplierState>(
         listener: (context, state) {
@@ -107,7 +134,7 @@ class _EditSupplierScreenState extends State<EditSupplierScreen> {
               SnackBar(
                 content: Text(
                   AppLocalizations.of(context)!
-                          .translate('supplier_updated_successfully') ??
+                      .translate('supplier_updated_successfully') ??
                       'Поставщик успешно обновлен',
                   style: const TextStyle(
                     fontFamily: 'Gilroy',
@@ -124,7 +151,7 @@ class _EditSupplierScreenState extends State<EditSupplierScreen> {
                 backgroundColor: Colors.green,
                 elevation: 3,
                 padding:
-                    const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 duration: const Duration(seconds: 3),
               ),
             );
@@ -148,15 +175,15 @@ class _EditSupplierScreenState extends State<EditSupplierScreen> {
                         CustomTextField(
                           controller: nameController,
                           hintText: AppLocalizations.of(context)!
-                                  .translate('enter_supplier_name') ??
+                              .translate('enter_supplier_name') ??
                               'Введите название поставщика',
                           label:
-                              AppLocalizations.of(context)!.translate('name') ??
-                                  'Название',
+                          AppLocalizations.of(context)!.translate('name') ??
+                              'Название',
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return AppLocalizations.of(context)!
-                                      .translate('field_required') ??
+                                  .translate('field_required') ??
                                   'Поле обязательно';
                             }
                             return null;
@@ -165,51 +192,36 @@ class _EditSupplierScreenState extends State<EditSupplierScreen> {
                         const SizedBox(height: 16),
                         CustomPhoneNumberInput(
                           controller: phoneController,
+                          initialCountry: initialCountry,
                           onInputChanged: (String number) {
                             setState(() {
                               selectedDialCode = number;
                             });
                           },
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return AppLocalizations.of(context)!
-                                      .translate('field_required') ??
-                                  'Поле обязательно';
-                            }
-                            return null;
-                          },
                           label: AppLocalizations.of(context)!
-                                  .translate('phone') ??
+                              .translate('phone') ??
                               'Телефон',
                         ),
                         const SizedBox(height: 16),
                         CustomTextField(
                           controller: innController,
                           hintText: AppLocalizations.of(context)!
-                                  .translate('enter_inn') ??
+                              .translate('enter_inn') ??
                               'Введите ИНН',
                           label:
-                              AppLocalizations.of(context)!.translate('inn') ??
-                                  'ИНН',
+                          AppLocalizations.of(context)!.translate('inn') ??
+                              'ИНН',
                           keyboardType: TextInputType.number,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return AppLocalizations.of(context)!
-                                      .translate('field_required') ??
-                                  'Поле обязательно';
-                            }
-                            return null;
-                          },
                         ),
                         const SizedBox(height: 16),
                         CustomTextField(
                           controller: noteController,
                           hintText: AppLocalizations.of(context)!
-                                  .translate('enter_note') ??
+                              .translate('enter_note') ??
                               'Введите примечание',
                           label:
-                              AppLocalizations.of(context)!.translate('note') ??
-                                  'Примечание',
+                          AppLocalizations.of(context)!.translate('note') ??
+                              'Примечание',
                         ),
                       ],
                     ),
@@ -218,14 +230,14 @@ class _EditSupplierScreenState extends State<EditSupplierScreen> {
               ),
               Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
                 child: Row(
                   children: [
                     Expanded(
                       child: CustomButton(
                         buttonText:
-                            AppLocalizations.of(context)!.translate('close') ??
-                                'Отмена',
+                        AppLocalizations.of(context)!.translate('close') ??
+                            'Отмена',
                         buttonColor: const Color(0xffF4F7FD),
                         textColor: Colors.black,
                         onPressed: () {
@@ -246,7 +258,7 @@ class _EditSupplierScreenState extends State<EditSupplierScreen> {
                           } else {
                             return CustomButton(
                               buttonText: AppLocalizations.of(context)!
-                                      .translate('save') ??
+                                  .translate('save') ??
                                   'Сохранить',
                               buttonColor: const Color(0xff4759FF),
                               textColor: Colors.white,
@@ -255,8 +267,12 @@ class _EditSupplierScreenState extends State<EditSupplierScreen> {
                                   final supplier = Supplier(
                                     id: widget.supplier.id,
                                     name: nameController.text,
-                                    phone: selectedDialCode,
-                                    inn: int.parse(innController.text),
+                                    phone: selectedDialCode.isNotEmpty && phoneController.text.isNotEmpty
+                                        ? selectedDialCode
+                                        : null,
+                                    inn: innController.text.isNotEmpty
+                                        ? int.tryParse(innController.text)
+                                        : null,
                                     note: noteController.text.isNotEmpty
                                         ? noteController.text
                                         : null,

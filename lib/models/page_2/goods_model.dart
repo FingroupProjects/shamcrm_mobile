@@ -324,7 +324,8 @@ class GoodsVariant {
   final int goodId;
   final bool isActive;
   final List<AttributeValue> attributeValues;
-  final VariantPrice? variantPrice;
+  // final VariantPrice? variantPrice; // instead of price NEW price String
+  final String price; // NEW price String
   final List<GoodsFile>? files;
 
   GoodsVariant({
@@ -332,14 +333,34 @@ class GoodsVariant {
     required this.goodId,
     required this.isActive,
     required this.attributeValues,
-    this.variantPrice,
+    // this.variantPrice,
+    required this.price,
     this.files,
   });
 
-factory GoodsVariant.fromJson(Map<String, dynamic> json) {
-  final attributeValues =
-      (json['attribute_values'] as List<dynamic>?)?.map((v) {
-            return AttributeValue.fromJson(v as Map<String, dynamic>);
+  factory GoodsVariant.fromJson(Map<String, dynamic> json) {
+    final attributeValues =
+        (json['attributes'] as List<dynamic>?)?.map((v) {
+              return AttributeValue.fromJson(v as Map<String, dynamic>);
+            }).toList() ??
+            [];
+
+    return GoodsVariant(
+      id: json['id'] as int? ?? 0,
+      goodId: json['good_id'] as int? ?? 0,
+      isActive: json['is_active'] == 1,
+      attributeValues: attributeValues,
+      // variantPrice:
+      //     json['price'] != null ? VariantPrice.fromJson(json['price']) : null,
+      price: json['price'] != null
+          ? (json['price'] is String
+              ? json['price'] as String
+              : (json['price'] is num
+                  ? (json['price'] as num).toString()
+                  : '0'))
+          : '0',
+      files: (json['files'] as List<dynamic>?)?.map((f) {
+            return GoodsFile.fromJson(f as Map<String, dynamic>);
           }).toList() ??
           [];
 

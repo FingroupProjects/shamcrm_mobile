@@ -5,6 +5,7 @@ enum ErrorDialogEnum {
   goodsIncomingUnapprove,
   goodsIncomingApprove,
   goodsIncomingRestore,
+  clientReturnApprove,
   nothing;
 }
 
@@ -31,6 +32,9 @@ class ErrorDialog extends StatelessWidget {
 
   // Простой и эффективный метод для красивого отображения ошибки
   Widget _buildFormattedError(String message) {
+    debugPrint("🔍 [ErrorDialog] _buildFormattedError вызван");
+    debugPrint("🔍 [ErrorDialog] errorDialogEnum: $errorDialogEnum");
+    debugPrint("🔍 [ErrorDialog] message: $message");
 
     if (errorDialogEnum == ErrorDialogEnum.goodsIncomingDelete) {
       return _buildGoodsIncomingDeleteError(message);
@@ -48,6 +52,11 @@ class ErrorDialog extends StatelessWidget {
     if (errorDialogEnum == ErrorDialogEnum.goodsIncomingRestore) {
       debugPrint("[ERROR] ErrorDialog.Restore: $message");
       return _buildGoodsIncomingRestoreError(message);
+    }
+
+    if (errorDialogEnum == ErrorDialogEnum.clientReturnApprove) {
+      debugPrint("[ERROR] ErrorDialog.ClientReturnApprove: $message");
+      return _buildClientReturnApproveError(message);
     }
 
     // Проверяем, есть ли в сообщении информация о товарах
@@ -820,6 +829,237 @@ class ErrorDialog extends StatelessWidget {
                         color: Color(0xff64748B),
                         height: 1.5,
                       ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildClientReturnApproveError(String message) {
+    // Невозможно провести возврат. Количество возвращаемого товара превышает проданное:
+    // Товар "123": попытка вернуть 132 шт., доступно для возврата 0 шт.
+    // Парсим сообщение формата: Товар "123": попытка вернуть 132 шт., доступно для возврата 0 шт
+    debugPrint("🔍 [ClientReturnApprove] Полученное сообщение: $message");
+
+    RegExp returnRegex = RegExp(r'Товар "([^"]+)".*вернуть (\d+) шт.*возврата (\d+) шт');
+    Match? match = returnRegex.firstMatch(message);
+
+    debugPrint("🔍 [ClientReturnApprove] Match найден: ${match != null}");
+    if (match != null) {
+      debugPrint("🔍 [ClientReturnApprove] Group 1 (название): ${match.group(1)}");
+      debugPrint("🔍 [ClientReturnApprove] Group 2 (попытка вернуть): ${match.group(2)}");
+      debugPrint("🔍 [ClientReturnApprove] Group 3 (доступно): ${match.group(3)}");
+    }
+
+    String productName = match?.group(1) ?? 'Неизвестный товар';
+    String attemptedReturn = match?.group(2) ?? '0';
+    String availableForReturn = match?.group(3) ?? '0';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Заголовок ошибки
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Color(0xffFFF5F5),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Color(0xffFECDD3),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Невозможно провести возврат',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xffDC2626),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        SizedBox(height: 16),
+
+        // Информация о товаре
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Color(0xffE2E8F0),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Color(0xff1E2E52).withOpacity(0.08),
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Заголовок товара
+              Container(
+                width: double.infinity,
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Color(0xffF8FAFC),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    topRight: Radius.circular(12),
+                  ),
+                  border: Border(
+                    left: BorderSide(
+                      width: 4,
+                      color: Color(0xffDC2626),
+                    ),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Color(0xffDC2626).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Icon(
+                        Icons.assignment_return_outlined,
+                        size: 16,
+                        color: Color(0xffDC2626),
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        productName,
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xff1E2E52),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Информация о количествах
+              Padding(
+                padding: EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Количество превышает доступное для возврата:',
+                      style: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff64748B),
+                      ),
+                    ),
+                    SizedBox(height: 12),
+                    Row(
+                      children: [
+                        // Попытка вернуть
+                        Expanded(
+                          child: Container(
+                            padding: EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Color(0xffFEF2F2),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: Color(0xffFECDD3),
+                                width: 1,
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Попытка вернуть:',
+                                  style: TextStyle(
+                                    fontFamily: 'Gilroy',
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                    color: Color(0xff991B1B),
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  _formatNumber(attemptedReturn),
+                                  style: TextStyle(
+                                    fontFamily: 'Gilroy',
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xffDC2626),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        SizedBox(width: 12),
+
+                        // Доступно для возврата
+                        Expanded(
+                          child: Container(
+                            padding: EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Color(0xffF0F9FF),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: Color(0xffBAE6FD),
+                                width: 1,
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Доступно:',
+                                  style: TextStyle(
+                                    fontFamily: 'Gilroy',
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                    color: Color(0xff0369A1),
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  _formatNumber(availableForReturn),
+                                  style: TextStyle(
+                                    fontFamily: 'Gilroy',
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xff0284C7),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),

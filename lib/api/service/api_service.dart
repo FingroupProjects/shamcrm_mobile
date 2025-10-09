@@ -11406,7 +11406,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
   //update measure units
   Future<PriceTypeModel> updateUnit(
       {required MeasureUnitModel supplier, required int id}) async {
-    final path = await _appendQueryParams('/unit/$id');
+    final path = await _appendQueryParams('/priceType/$id');
     if (kDebugMode) {
       //print('ApiService: updateSupplier - Generated path: $path');
     }
@@ -11438,7 +11438,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/priceType');
     if (kDebugMode) {
-      //print('ApiService: getSuppliers - Generated path: $path');
+      //print('ApiService: getPriceTypes - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -11452,17 +11452,18 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         return [];
       }
     } else {
-      throw Exception('Ошибка создания поставщика: ${response.body}');
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(message ?? 'Ошибка загрузки типов цен', response.statusCode);
     }
   }
 
 
   Future<void> createPriceType(
-    PriceTypeModel unit,
-  ) async {
+      PriceTypeModel unit,
+      ) async {
     final path = await _appendQueryParams('/priceType');
     if (kDebugMode) {
-      //print('ApiService: createSupplier - Generated path: $path');
+      print('ApiService: createPriceType - Generated path: $path');
     }
     final organizationId = await getSelectedOrganization() ?? '';
     final salesFunnelId = await getSelectedSalesFunnel() ?? '';
@@ -11475,42 +11476,28 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     final response = await _postRequest(path, body);
 
     if (response.statusCode == 200 || response.statusCode == 201) {
+      if (kDebugMode) {
+        print('createPriceType success: ${response.body}');
+      }
       return;
     } else {
-      throw Exception('Ошибка создания поставщика: ${response.body}');
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(message ?? 'Ошибка создания типа цены', response.statusCode);
     }
   }
 
-
-  Future<void> deletePriceType(int supplierId) async {
-    final organizationId = await getSelectedOrganization() ?? '';
-    final salesFunnelId = await getSelectedSalesFunnel() ?? '';
-    final path = await _appendQueryParams('/priceType/$supplierId');
-    if (kDebugMode) {
-      //print('ApiService: deleteSupplier - Generated path: $path');
-    }
-
-    final response = await _deleteRequestWithBody(path,
-        {"organization_id": organizationId, "sales_funnel_id": salesFunnelId});
-
-    if (response.statusCode == 200 || response.statusCode == 204) {
-      return;
-    } else {
-      throw Exception('Ошибка удаления поставщика: ${response.body}');
-    }
-  }
-
-
-  Future<PriceTypeModel> updatePriceType(
-      {required PriceTypeModel supplier, required int id}) async {
+  Future<void> updatePriceType({
+    required PriceTypeModel priceType,
+    required int id
+  }) async {
     final path = await _appendQueryParams('/priceType/$id');
     if (kDebugMode) {
-      //print('ApiService: updateSupplier - Generated path: $path');
+      print('ApiService: updatePriceType - Generated path: $path');
     }
     final organizationId = await getSelectedOrganization() ?? '';
     final salesFunnelId = await getSelectedSalesFunnel() ?? '';
     final body = {
-      'name': supplier.name,
+      'name': priceType.name,
       'organization_id': organizationId,
       'sales_funnel_id': salesFunnelId,
     };
@@ -11518,19 +11505,51 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     final response = await _patchRequest(path, body);
 
     if (response.statusCode == 200 || response.statusCode == 201) {
-      if (response.body.isNotEmpty) {
-        return PriceTypeModel.fromJson(json.decode(response.body)['result']);
-      } else {
-        throw Exception('Ошибка обновления поставщика: ${response.body}');
+      if (kDebugMode) {
+        print('updatePriceType success: ${response.body}');
       }
+      return;
     } else {
-      throw Exception('Ошибка обновления поставщика: ${response.body}');
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+          message ?? 'Ошибка обновления типа цены',
+          response.statusCode
+      );
     }
   }
 
+  Future<void> deletePriceType(int priceTypeId) async {
+    final organizationId = await getSelectedOrganization() ?? '';
+    final salesFunnelId = await getSelectedSalesFunnel() ?? '';
+    final path = await _appendQueryParams('/priceType/$priceTypeId');
+    if (kDebugMode) {
+      print('ApiService: deletePriceType - Generated path: $path');
+    }
+
+    final response = await _deleteRequestWithBody(
+        path,
+        {
+          "organization_id": organizationId,
+          "sales_funnel_id": salesFunnelId
+        }
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      if (kDebugMode) {
+        print('deletePriceType success: ${response.body}');
+      }
+      return;
+    } else {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+          message ?? 'Ошибка удаления типа цены',
+          response.statusCode
+      );
+    }
+  }
 //----------------------------------------------SUPPLIER----------------------------------
   //createSupplier
-  Future<Supplier> createSupplier(
+  Future<void> createSupplier(
       Supplier supplier,
       String organizationId, String salesFunnelId) async {
     final path = await _appendQueryParams('/suppliers');
@@ -11551,7 +11570,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       if (response.body.isNotEmpty) {
-        return Supplier.fromJson(json.decode(response.body)['result']);
+        return ; //Supplier.fromJson(json.decode(response.body)['result']);
       } else {
         throw Exception('Ошибка создания поставщика: ${response.body}');
       }
@@ -11561,7 +11580,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
   }
 
   //updateSupplier
-  Future<PriceTypeModel> updateSupplier(
+  Future<void> updateSupplier(
       {required Supplier supplier, required int id}) async {
     final path = await _appendQueryParams('/suppliers/$id');
     if (kDebugMode) {
@@ -11579,14 +11598,16 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     };
 
     final response = await _patchRequest(path, body);
-
+    debugPrint('Response body: ${response.body}');
     if (response.statusCode == 200 || response.statusCode == 201) {
       if (response.body.isNotEmpty) {
-        return PriceTypeModel.fromJson(json.decode(response.body)['result']);
+        return;
       } else {
+        debugPrint("Ошибка: Пустой ответ при обновлении поставщика");
         throw Exception('Ошибка обновления поставщика: ${response.body}');
       }
     } else {
+      debugPrint("Ошибка: ${response.body}");
       throw Exception('Ошибка обновления поставщика: ${response.body}');
     }
   }

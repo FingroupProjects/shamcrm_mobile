@@ -42,6 +42,7 @@ class _HomeScreenState extends State<HomeScreen> {
   List<String> _inactiveIconsGroup2 = [];
 
   @override
+
   void initState() {
     super.initState();
     initializeScreensWithPermissions();

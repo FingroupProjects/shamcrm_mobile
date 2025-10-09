@@ -32,7 +32,7 @@ class _PriceTypeScreenState extends State<PriceTypeScreen> {
   void initState() {
     super.initState();
     _checkPermissions();
-    _priceTypeBloc = PriceTypeScreenBloc(_apiService)..add(FetchPriceType());
+    _priceTypeBloc = context.read<PriceTypeScreenBloc>()..add(FetchPriceType());
   }
 
   // НОВОЕ: Проверка прав доступа
@@ -146,7 +146,7 @@ class _PriceTypeScreenState extends State<PriceTypeScreen> {
                     final priceTypeItem = priceTypes[index];
                     // НОВОЕ: Передаём права в карточку
                     return PriceTypeCard(
-                      supplier: priceTypeItem,
+                      priceType: priceTypeItem,
                       hasUpdatePermission: _hasUpdatePermission,
                       hasDeletePermission: _hasDeletePermission,
                       onUpdate: () {

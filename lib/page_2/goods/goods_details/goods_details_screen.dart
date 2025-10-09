@@ -438,7 +438,7 @@ AppBar _buildAppBar(BuildContext context, String title) {
   }
 
   Widget _buildVariantCard(GoodsVariant variant, List<GoodsFile> goodsFiles) {
-    final price = variant.variantPrice?.price ?? 0.0;
+    final price = variant.price; // NEW PRICE instead of variantPrice
     Set<Map<String, String>> uniqueAttributes = {};
     if (variant.attributeValues.isNotEmpty) {
       for (var attrValue in variant.attributeValues) {
