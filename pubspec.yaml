@@ -143,6 +143,7 @@ flutter:
     - assets/audio/
     - assets/page_2/icons/
     - assets/audio/voice_operator.mp3
+    - assets/icons/MyNavBar/money_ON.png
 
   fonts:
     - family: Gilroy

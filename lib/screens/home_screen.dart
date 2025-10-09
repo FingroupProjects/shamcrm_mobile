@@ -128,11 +128,11 @@ class _HomeScreenState extends State<HomeScreen> {
       widgetsGroup1.add(WarehouseAccountingScreen());
       titleKeysGroup1.add('appbar_warehouse');
       navBarTitleKeysGroup1.add('appbar_warehouse');
-      activeIconsGroup1.add('assets/icons/MyNavBar/money_OON.png');
+      activeIconsGroup1.add('assets/icons/MyNavBar/money_on_.png');
       inactiveIconsGroup1.add('assets/icons/MyNavBar/google-docs (5).png');
       hasAvailableScreens = true;
 
-      // Добавляем OrderScreen во вторую группу, если есть доступ
+      // Добавляем OrderScreen во вторую группу, если естьдоступ
       if (hasOrderAccess) {
         widgetsGroup2.add(OrderScreen());
         titleKeysGroup2.add('appbar_orders'); // Используем ключ 'orders' для локализации

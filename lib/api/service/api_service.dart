@@ -954,40 +954,54 @@ Future<http.Response> _patchRequest(
     };
   }
 
-  Future<String> getStaticBaseUrl() async {
-    // Сначала пробуем новую логику с email
-    String? verifiedDomain = await getVerifiedDomain();
-    if (verifiedDomain != null && verifiedDomain.isNotEmpty) {
-      return 'https://$verifiedDomain/storage';
-    }
-
-    // Проверяем QR данные
-    Map<String, String?> qrData = await getQrData();
-    String? qrDomain = qrData['domain'];
-    String? qrMainDomain = qrData['mainDomain'];
-
-    if (qrDomain != null &&
-        qrDomain.isNotEmpty &&
-        qrMainDomain != null &&
-        qrMainDomain.isNotEmpty) {
-      return 'https://$qrDomain-back.$qrMainDomain/storage';
-    }
-
-    // Если нет, используем старую логику для обратной совместимости
-    Map<String, String?> domains = await getEnteredDomain();
-    String? mainDomain = domains['enteredMainDomain'];
-    String? domain = domains['enteredDomain'];
-
-    if (domain != null &&
-        domain.isNotEmpty &&
-        mainDomain != null &&
-        mainDomain.isNotEmpty) {
-      return 'https://$domain-back.$mainDomain/storage';
-    } else {
-      // Fallback на дефолтный домен, если ничего не найдено
-      return 'https://shamcrm.com/storage';
-    }
+Future<String> getStaticBaseUrl() async {
+  print('🔍 [ApiService] Начинаем получение StaticBaseUrl...');
+  
+  // Сначала пробуем новую логику с email
+  String? verifiedDomain = await getVerifiedDomain();
+  print('🔍 [ApiService] verifiedDomain: "$verifiedDomain"');
+  
+  if (verifiedDomain != null && verifiedDomain.isNotEmpty) {
+    final result = 'https://$verifiedDomain/storage';
+    print('✅ [ApiService] Используем verifiedDomain: "$result"');
+    return result;
   }
+
+  // Проверяем QR данные
+  Map<String, String?> qrData = await getQrData();
+  String? qrDomain = qrData['domain'];
+  String? qrMainDomain = qrData['mainDomain'];
+  print('🔍 [ApiService] qrDomain: "$qrDomain", qrMainDomain: "$qrMainDomain"');
+
+  if (qrDomain != null &&
+      qrDomain.isNotEmpty &&
+      qrMainDomain != null &&
+      qrMainDomain.isNotEmpty) {
+    final result = 'https://$qrDomain-back.$qrMainDomain/storage';
+    print('✅ [ApiService] Используем QR данные: "$result"');
+    return result;
+  }
+
+  // Если нет, используем старую логику для обратной совместимости
+  Map<String, String?> domains = await getEnteredDomain();
+  String? mainDomain = domains['enteredMainDomain'];
+  String? domain = domains['enteredDomain'];
+  print('🔍 [ApiService] enteredDomain: "$domain", enteredMainDomain: "$mainDomain"');
+
+  if (domain != null &&
+      domain.isNotEmpty &&
+      mainDomain != null &&
+      mainDomain.isNotEmpty) {
+    final result = 'https://$domain-back.$mainDomain/storage';
+    print('✅ [ApiService] Используем entered domains: "$result"');
+    return result;
+  } else {
+    // Fallback на дефолтный домен, если ничего не найдено
+    const result = 'https://shamcrm.com/storage';
+    print('⚠️ [ApiService] Используем fallback URL: "$result"');
+    return result;
+  }
+}
 
 // Метод для получения полного URL файла
   Future<String> getFileUrl(String filePath) async {

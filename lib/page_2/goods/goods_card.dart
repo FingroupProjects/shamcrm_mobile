@@ -39,21 +39,33 @@ class _GoodsCardState extends State<GoodsCard> {
   @override
   void initState() {
     super.initState();
+    print('🔵 [GoodsCard] initState для товара: ${widget.goodsName} (ID: ${widget.goodsId})');
+    print('🔵 [GoodsCard] Количество файлов: ${widget.goodsFiles.length}');
+    
+    // Выводим все файлы которые пришли от сервера
+    for (int i = 0; i < widget.goodsFiles.length; i++) {
+      final file = widget.goodsFiles[i];
+      print('🔵 [GoodsCard] Файл $i: path="${file.path}", isMain=${file.isMain}');
+    }
+    
     _initializeBaseUrl();
   }
 
   Future<void> _initializeBaseUrl() async {
+    print('⏳ [GoodsCard] Начинаем получение baseUrl...');
     try {
-      // Используем новый универсальный метод для получения base URL
       final staticBaseUrl = await _apiService.getStaticBaseUrl();
+      print('✅ [GoodsCard] Получен baseUrl: "$staticBaseUrl"');
       setState(() {
         baseUrl = staticBaseUrl;
       });
     } catch (error) {
+      print('❌ [GoodsCard] Ошибка получения baseUrl: $error');
       // Fallback на дефолтный URL в случае ошибки
       setState(() {
         baseUrl = 'https://shamcrm.com/storage';
       });
+      print('⚠️ [GoodsCard] Используем fallback baseUrl: "$baseUrl"');
     }
   }
 
@@ -68,17 +80,28 @@ class _GoodsCardState extends State<GoodsCard> {
 
   GoodsFile? _getMainImage() {
     if (widget.goodsFiles.isEmpty) {
+      print('⚠️ [GoodsCard] Нет файлов для товара ${widget.goodsName}');
       return null;
     }
-    return widget.goodsFiles.firstWhere(
+    
+    final mainImage = widget.goodsFiles.firstWhere(
       (file) => file.isMain,
       orElse: () => widget.goodsFiles.first,
     );
+    
+    print('🖼️ [GoodsCard] Выбрано главное изображение: path="${mainImage.path}", isMain=${mainImage.isMain}');
+    return mainImage;
   }
 
   Widget _buildImageWidget(GoodsFile file) {
     // Строим полный URL для изображения
+    print('🔧 [GoodsCard] Строим URL изображения...');
+    print('🔧 [GoodsCard] baseUrl: "$baseUrl"');
+    print('🔧 [GoodsCard] file.path: "${file.path}"');
+    
     final imageUrl = baseUrl != null ? '$baseUrl/${file.path}' : null;
+    
+    print('🌐 [GoodsCard] Финальный imageUrl: "$imageUrl"');
     
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
@@ -89,6 +112,8 @@ class _GoodsCardState extends State<GoodsCard> {
               height: 100,
               fit: BoxFit.cover,
               errorBuilder: (context, error, stackTrace) {
+                print('❌ [GoodsCard] Ошибка загрузки изображения: $error');
+                print('❌ [GoodsCard] URL с ошибкой: "$imageUrl"');
                 return Container(
                   width: 100,
                   height: 100,
@@ -97,7 +122,13 @@ class _GoodsCardState extends State<GoodsCard> {
                 );
               },
               loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) return child;
+                if (loadingProgress == null) {
+                  print('✅ [GoodsCard] Изображение успешно загружено: "$imageUrl"');
+                  return child;
+                }
+                final progress = loadingProgress.cumulativeBytesLoaded / 
+                    (loadingProgress.expectedTotalBytes ?? 1);
+                print('⏳ [GoodsCard] Загрузка изображения: ${(progress * 100).toStringAsFixed(0)}%');
                 return Container(
                   width: 100,
                   height: 100,
@@ -253,7 +284,7 @@ class _GoodsCardState extends State<GoodsCard> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${AppLocalizations.of(context)!.translate('subcategory_card')}: ${widget.goodsCategory}',
+                        '${AppLocalizations.of(context)!.translate('subcategory_card')}${widget.goodsCategory}',
                         style: TaskCardStyles.priorityStyle.copyWith(
                           fontSize: 14,
                           color: const Color(0xff1E2E52),
