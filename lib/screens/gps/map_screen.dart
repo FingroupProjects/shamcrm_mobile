@@ -303,7 +303,7 @@
 //             bottom: 90,
 //             right: 16,
 //             child: FloatingActionButton(
-//               heroTag: "center",
+  // heroTag: null,//               heroTag: "center",
 //               onPressed: _centerOnLocation,
 //               backgroundColor: Color(0xff1E2E52),
 //               child: Icon(
@@ -318,7 +318,7 @@
 //             bottom: 150,
 //             right: 16,
 //             child: FloatingActionButton(
-//               heroTag: "follow",
+  // heroTag: null,//               heroTag: "follow",
 //               onPressed: _toggleFollowUser,
 //               backgroundColor: _isFollowingUser ? Colors.blue : Color(0xff1E2E52),
 //               child: Icon(

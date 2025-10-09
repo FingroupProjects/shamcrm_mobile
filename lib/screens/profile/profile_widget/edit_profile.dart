@@ -392,9 +392,9 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
               child: GestureDetector(
                 onTap: _toggleUI, // Переключаем UI по нажатию
                 child: Hero(
-                  tag: 'avatar_hero', // Тег для Hero анимации
-                  child: _buildFullScreenImage(),
-                ),
+  tag: 'avatar_hero_${widget.userImage.hashCode}', // ✅ Уникальный тег
+  child: _buildFullScreenImage(),
+),
               ),
             ),
           ),
