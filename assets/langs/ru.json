@@ -864,6 +864,7 @@
   "goods_name_details": "Название",
   "goods_description_details": "Описание",
   "goods_price_details": "Цена",
+  "price_details": "Цена",
   "discount_price_details": "Скидка",
   "stock_quantity_details": "Количество",
   "category_details": "Категория",

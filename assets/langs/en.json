@@ -860,6 +860,7 @@
   "goods_name_details": "Name:",
   "goods_description_details": "Description:",
   "goods_price_details": "Price:",
+  "price_details": "Price:",
   "discount_price_details": "Discount:",
   "stock_quantity_details": "Quantity:",
   "category_details": "Category:",
