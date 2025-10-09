@@ -7,6 +7,8 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../custom_widget/dropdown_loading_state.dart';
+
 class LeadRadioGroupWidget extends StatefulWidget {
   final String? selectedLead;
   final Function(LeadData) onSelectLead;
@@ -131,17 +133,9 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
               },
               headerBuilder: (context, selectedItem, enabled) {
                 if (state is GetAllLeadLoading) {
-                  return Text(
-                    AppLocalizations.of(context)!.translate('select_lead'),
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
-                      color: Color(0xff1E2E52),
-                    ),
-                  );
+                  return const DropdownLoadingState();
                 }
-                
+
                 // ← В заголовке тоже показываем долг если есть
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
