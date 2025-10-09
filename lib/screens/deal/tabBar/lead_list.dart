@@ -12,13 +12,13 @@ import '../../../custom_widget/dropdown_loading_state.dart';
 class LeadRadioGroupWidget extends StatefulWidget {
   final String? selectedLead;
   final Function(LeadData) onSelectLead;
-  final bool showDebt; // ← Добавляем параметр
+  final bool showDebt;
 
   const LeadRadioGroupWidget({
     super.key,
     required this.onSelectLead,
     this.selectedLead,
-    this.showDebt = false, // ← По умолчанию не показываем
+    this.showDebt = false,
   });
 
   @override
@@ -40,7 +40,6 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
           _updateSelectedLeadData();
         }
         if (state is! GetAllLeadSuccess) {
-          // ← Передаём параметр showDebt
           context.read<GetAllLeadBloc>().add(GetAllLeadEv(showDebt: widget.showDebt));
         }
       }
@@ -76,6 +75,8 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
         const SizedBox(height: 4),
         BlocBuilder<GetAllLeadBloc, GetAllLeadState>(
           builder: (context, state) {
+            final isLoading = state is GetAllLeadLoading;
+            
             if (state is GetAllLeadSuccess) {
               leadsList = state.dataLead.result ?? [];
               _updateSelectedLeadData();
@@ -83,10 +84,10 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
 
             return CustomDropdown<LeadData>.search(
               closeDropDownOnClearFilterSearch: true,
-              items: leadsList,
+              items: isLoading ? [] : leadsList, // ← Пустой список при загрузке
               searchHintText: AppLocalizations.of(context)!.translate('search'),
               overlayHeight: 400,
-              enabled: true,
+              enabled: !isLoading, // ← Блокируем при загрузке
               decoration: CustomDropdownDecoration(
                 closedFillColor: const Color(0xffF4F7FD),
                 expandedFillColor: Colors.white,
@@ -102,7 +103,6 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                 expandedBorderRadius: BorderRadius.circular(12),
               ),
               listItemBuilder: (context, item, isSelected, onItemSelect) {
-                // ← Показываем долг если showDebt = true
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -115,7 +115,10 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                         fontFamily: 'Gilroy',
                       ),
                     ),
-                    if (widget.showDebt && item.debt != null && double.tryParse(item.debt!) != null && double.parse(item.debt!) != 0)
+                    if (widget.showDebt && 
+                        item.debt != null && 
+                        double.tryParse(item.debt!) != null && 
+                        double.parse(item.debt!) != 0)
                       Padding(
                         padding: const EdgeInsets.only(top: 2),
                         child: Text(
@@ -132,11 +135,20 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                 );
               },
               headerBuilder: (context, selectedItem, enabled) {
-                if (state is GetAllLeadLoading) {
-                  return const DropdownLoadingState();
+                // ← Показываем загрузку в закрытом состоянии
+                if (isLoading) {
+                  return const Center(
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                      ),
+                    ),
+                  );
                 }
 
-                // ← В заголовке тоже показываем долг если есть
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -149,7 +161,10 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                         color: Color(0xff1E2E52),
                       ),
                     ),
-                    if (widget.showDebt && selectedItem?.debt != null && double.tryParse(selectedItem!.debt!) != null && double.parse(selectedItem.debt!) != 0)
+                    if (widget.showDebt && 
+                        selectedItem?.debt != null && 
+                        double.tryParse(selectedItem!.debt!) != null && 
+                        double.parse(selectedItem.debt!) != 0)
                       Text(
                         'Долг: ${double.parse(selectedItem.debt!).toStringAsFixed(2)}',
                         style: TextStyle(
@@ -162,15 +177,58 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                   ],
                 );
               },
-              hintBuilder: (context, hint, enabled) => Text(
-                AppLocalizations.of(context)!.translate('select_lead'),
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
-                ),
-              ),
+              hintBuilder: (context, hint, enabled) {
+                // ← Показываем загрузку в hint (когда ничего не выбрано)
+                if (isLoading) {
+                  return const Center(
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                      ),
+                    ),
+                  );
+                }
+                
+                return Text(
+                  AppLocalizations.of(context)!.translate('select_lead'),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Gilroy',
+                    color: Color(0xff1E2E52),
+                  ),
+                );
+              },
+              // ← Для показа загрузки в открытом списке
+              noResultFoundBuilder: (context, text) {
+                if (isLoading) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(20.0),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                      ),
+                    ),
+                  );
+                }
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Text(
+                      AppLocalizations.of(context)!.translate('no_results'),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontFamily: 'Gilroy',
+                        color: Color(0xff1E2E52),
+                      ),
+                    ),
+                  ),
+                );
+              },
               excludeSelected: false,
               initialItem: leadsList.contains(selectedLeadData) ? selectedLeadData : null,
               validator: (value) {

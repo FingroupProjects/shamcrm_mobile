@@ -40,11 +40,15 @@ class CreateClienSalesDocumentScreenState
   bool _isLoading = false;
   final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
 
-  // Add controllers for price and quantity
+  // Контроллеры для редактирования полей товаров
   final Map<int, TextEditingController> _priceControllers = {};
   final Map<int, TextEditingController> _quantityControllers = {};
 
-  // Add error tracking for validation
+  // ✅ НОВОЕ: FocusNode для управления фокусом
+  final Map<int, FocusNode> _quantityFocusNodes = {};
+  final Map<int, FocusNode> _priceFocusNodes = {};
+
+  // Для отслеживания ошибок валидации
   final Map<int, bool> _priceErrors = {};
   final Map<int, bool> _quantityErrors = {};
 
@@ -55,65 +59,61 @@ class CreateClienSalesDocumentScreenState
     context.read<VariantBloc>().add(FetchVariants());
   }
 
-void _handleVariantSelection(Map<String, dynamic>? newItem) {
-  if (mounted && newItem != null) {
-    setState(() {
-      final existingIndex = _items.indexWhere((item) => item['variantId'] == newItem['variantId']);
+  void _handleVariantSelection(Map<String, dynamic>? newItem) {
+    if (mounted && newItem != null) {
+      setState(() {
+        final existingIndex = _items.indexWhere((item) => item['variantId'] == newItem['variantId']);
 
-      if (existingIndex == -1) {
-        // Добавляем новый товар
-        _items.add(newItem);
+        if (existingIndex == -1) {
+          _items.add(newItem);
 
-        final variantId = newItem['variantId'] as int;
+          final variantId = newItem['variantId'] as int;
 
-        // Устанавливаем начальную цену из данных варианта
-        final initialPrice = newItem['price'] ?? 0.0;
-        _priceControllers[variantId] = TextEditingController(
-          text: initialPrice > 0 ? initialPrice.toStringAsFixed(3) : ''
-        );
+          final initialPrice = newItem['price'] ?? 0.0;
+          _priceControllers[variantId] = TextEditingController(
+            text: initialPrice > 0 ? initialPrice.toStringAsFixed(3) : ''
+          );
 
-        // Устанавливаем quantity = 1
-        _quantityControllers[variantId] = TextEditingController(
-          text: '1'
-        );
+          _quantityControllers[variantId] = TextEditingController(text: '1');
 
-        // Инициализируем данные в item
-        _items.last['quantity'] = 1;
-        _items.last['price'] = initialPrice;
+          // ✅ НОВОЕ: Создаём FocusNode для полей
+          _quantityFocusNodes[variantId] = FocusNode();
+          _priceFocusNodes[variantId] = FocusNode();
 
-        // Вычисляем total
-        final amount = newItem['amount'] ?? 1;
-        _items.last['total'] = (1 * initialPrice * amount).round();
+          _items.last['quantity'] = 1;
+          _items.last['price'] = initialPrice;
 
-        // Инициализируем состояние ошибок
-        _priceErrors[variantId] = false;
-        _quantityErrors[variantId] = false;
+          final amount = newItem['amount'] ?? 1;
+          _items.last['total'] = (1 * initialPrice * amount).round();
 
-        // Убеждаемся что amount существует
-        if (!newItem.containsKey('amount')) {
-          _items.last['amount'] = 1;
-        }
+          _priceErrors[variantId] = false;
+          _quantityErrors[variantId] = false;
 
-        // Анимация добавления
-        _listKey.currentState?.insertItem(
-          _items.length - 1,
-          duration: const Duration(milliseconds: 300),
-        );
-
-        // Автоматическая прокрутка вниз
-        Future.delayed(const Duration(milliseconds: 350), () {
-          if (mounted && _scrollController.hasClients) {
-            _scrollController.animateTo(
-              _scrollController.position.maxScrollExtent,
-              duration: const Duration(milliseconds: 400),
-              curve: Curves.easeOut,
-            );
+          if (!newItem.containsKey('amount')) {
+            _items.last['amount'] = 1;
           }
-        });
-      }
-    });
+
+          _listKey.currentState?.insertItem(
+            _items.length - 1,
+            duration: const Duration(milliseconds: 300),
+          );
+
+          // ✅ НОВОЕ: Устанавливаем фокус на поле количества после добавления
+          Future.delayed(const Duration(milliseconds: 350), () {
+            if (mounted && _scrollController.hasClients) {
+              _scrollController.animateTo(
+                _scrollController.position.maxScrollExtent,
+                duration: const Duration(milliseconds: 400),
+                curve: Curves.easeOut,
+              );
+              
+              _quantityFocusNodes[variantId]?.requestFocus();
+            }
+          });
+        }
+      });
+    }
   }
-}
 
   void _removeItem(int index) {
     if (mounted) {
@@ -123,62 +123,64 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
       setState(() {
         _items.removeAt(index);
 
-        // Удаляем контроллеры
         _priceControllers[variantId]?.dispose();
         _priceControllers.remove(variantId);
         _quantityControllers[variantId]?.dispose();
         _quantityControllers.remove(variantId);
 
-        // Удаляем ошибки
+        // ✅ НОВОЕ: Удаляем FocusNode
+        _quantityFocusNodes[variantId]?.dispose();
+        _quantityFocusNodes.remove(variantId);
+        _priceFocusNodes[variantId]?.dispose();
+        _priceFocusNodes.remove(variantId);
+
         _priceErrors.remove(variantId);
         _quantityErrors.remove(variantId);
 
         _listKey.currentState?.removeItem(
           index,
-              (context, animation) => _buildSelectedItemCard(index, removedItem, animation),
+          (context, animation) => _buildSelectedItemCard(index, removedItem, animation),
           duration: const Duration(milliseconds: 300),
         );
       });
     }
   }
 
- void _openVariantSelection() async {
-  // Проверяем, выбраны ли лид и склад
-  if (_selectedLead == null) {
-    _showSnackBar(
-      AppLocalizations.of(context)!.translate('select_lead_first') ?? 'Сначала выберите лида',
-      false,
+  void _openVariantSelection() async {
+    if (_selectedLead == null) {
+      _showSnackBar(
+        AppLocalizations.of(context)!.translate('select_lead_first') ?? 'Сначала выберите лида',
+        false,
+      );
+      return;
+    }
+
+    if (_selectedStorage == null) {
+      _showSnackBar(
+        AppLocalizations.of(context)!.translate('select_storage_first') ?? 'Сначала выберите склад',
+        false,
+      );
+      return;
+    }
+
+    context.read<VariantBloc>().add(FilterVariants({
+      'counterparty_id': _selectedLead!.id,
+      'storage_id': int.parse(_selectedStorage!),
+    }));
+
+    final result = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => VariantSelectionBottomSheet(
+        existingItems: _items,
+      ),
     );
-    return;
+
+    if (result != null) {
+      _handleVariantSelection(result);
+    }
   }
-
-  if (_selectedStorage == null) {
-    _showSnackBar(
-      AppLocalizations.of(context)!.translate('select_storage_first') ?? 'Сначала выберите склад',
-      false,
-    );
-    return;
-  }
-
-  // Устанавливаем фильтры с counterparty_id и storage_id
-  context.read<VariantBloc>().add(FilterVariants({
-    'counterparty_id': _selectedLead!.id,
-    'storage_id': int.parse(_selectedStorage!),
-  }));
-
-  final result = await showModalBottomSheet<Map<String, dynamic>>(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (context) => VariantSelectionBottomSheet(
-      existingItems: _items,
-    ),
-  );
-
-  if (result != null) {
-    _handleVariantSelection(result);
-  }
-}
 
   void _updateItemQuantity(int variantId, String value) {
     final quantity = int.tryParse(value);
@@ -187,11 +189,9 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
         final index = _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
           _items[index]['quantity'] = quantity;
-          // Пересчитываем total с учётом amount
           final amount = _items[index]['amount'] ?? 1;
           _items[index]['total'] = (_items[index]['quantity'] * _items[index]['price'] * amount).round();
         }
-        // Убираем ошибку если поле заполнено корректно
         _quantityErrors[variantId] = false;
       });
     } else if (value.isEmpty) {
@@ -212,12 +212,10 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
         final index = _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
           _items[index]['price'] = price;
-          // Пересчитываем total с учётом amount
           final amount = _items[index]['amount'] ?? 1;
           final formattedPrice = double.parse(price.toStringAsFixed(3));
           _items[index]['total'] = (_items[index]['quantity'] * formattedPrice * amount).round();
         }
-        // Убираем ошибку если поле заполнено корректно
         _priceErrors[variantId] = false;
       });
     } else if (value.isEmpty) {
@@ -230,27 +228,47 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
       });
     }
   }
+
   void _updateItemUnit(int variantId, String newUnit, int? newUnitId) {
     setState(() {
       final index = _items.indexWhere((item) => item['variantId'] == variantId);
       if (index != -1) {
         _items[index]['selectedUnit'] = newUnit;
-        _items[index]['unit_id'] = newUnitId; // Может быть null
+        _items[index]['unit_id'] = newUnitId;
 
-        // Находим amount для выбранной единицы измерения
         final availableUnits = _items[index]['availableUnits'] as List<Unit>? ?? [];
         final selectedUnitObj = availableUnits.firstWhere(
-              (unit) => (unit.shortName ?? unit.name) == newUnit,
+          (unit) => (unit.shortName ?? unit.name) == newUnit,
           orElse: () => availableUnits.isNotEmpty ? availableUnits.first : Unit(id: 0, name: '', amount: 1),
         );
 
         _items[index]['amount'] = selectedUnitObj.amount ?? 1;
 
-        // Пересчитываем total с учётом нового amount
         final amount = _items[index]['amount'] ?? 1;
         _items[index]['total'] = (_items[index]['quantity'] * _items[index]['price'] * amount).round();
       }
     });
+  }
+
+  // ✅ НОВОЕ: Функция для перехода к следующему пустому полю
+  void _moveToNextEmptyField() {
+    for (var item in _items) {
+      final variantId = item['variantId'] as int;
+      final quantityController = _quantityControllers[variantId];
+      final priceController = _priceControllers[variantId];
+      
+      if (quantityController != null && quantityController.text.trim().isEmpty) {
+        _quantityFocusNodes[variantId]?.requestFocus();
+        return;
+      }
+      
+      if (priceController != null && priceController.text.trim().isEmpty) {
+        _priceFocusNodes[variantId]?.requestFocus();
+        return;
+      }
+    }
+    
+    FocusScope.of(context).unfocus();
   }
 
   void _createDocument({bool approve = false}) {
@@ -271,7 +289,6 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
       return;
     }
 
-    // Валидация всех товаров с подсветкой ошибок
     bool hasErrors = false;
     setState(() {
       _priceErrors.clear();
@@ -282,7 +299,6 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
         final quantityController = _quantityControllers[variantId];
         final priceController = _priceControllers[variantId];
 
-        // Проверка количества
         if (quantityController == null ||
             quantityController.text.trim().isEmpty ||
             (int.tryParse(quantityController.text) ?? 0) <= 0) {
@@ -290,7 +306,6 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
           hasErrors = true;
         }
 
-        // Проверка цены
         if (priceController == null ||
             priceController.text.trim().isEmpty ||
             (double.tryParse(priceController.text) ?? -1) < 0) {
@@ -299,14 +314,6 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
         }
       }
     });
-
-    if (hasErrors) {
-      _showSnackBar(
-        AppLocalizations.of(context)!.translate('fill_all_required_fields') ?? 'Заполните все обязательные поля',
-        false,
-      );
-      return;
-    }
 
     if (hasErrors) {
       _showSnackBar(
@@ -329,10 +336,10 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
         comment: _commentController.text.trim(),
         counterpartyId: _selectedLead!.id!,
         documentGoods: _items.map((item) => {
-          'good_id': item['d'],
+          'good_id': item['id'],
           'quantity': int.tryParse(item['quantity'].toString()),
           'price': item['price'].toString(),
-          'unit_id': item['unit_id'], // Может быть null'
+          'unit_id': item['unit_id'],
         }).toList(),
         organizationId: widget.organizationId ?? 1,
         salesFunnelId: 1,
@@ -369,69 +376,80 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
     );
   }
 
+  // ✅ НОВОЕ: Вычисляем общую сумму
+  double get _totalAmount {
+    return _items.fold<double>(0, (sum, item) => sum + (item['total'] ?? 0.0));
+  }
+
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
-    return KeyboardDismissible( // ← Обернули
-    child: Scaffold(
-      backgroundColor: Colors.white,
-      appBar: _buildAppBar(localizations),
-      body: BlocListener<ClientSaleBloc, ClientSaleState>(
-        listener: (context, state) {
-          setState(() => _isLoading = false);
+    return KeyboardDismissible(
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: _buildAppBar(localizations),
+        body: BlocListener<ClientSaleBloc, ClientSaleState>(
+          listener: (context, state) {
+            setState(() => _isLoading = false);
 
-          if (state is ClientSaleCreateSuccess && mounted) {
-            Navigator.pop(context, true);
-          } else if (state is ClientSaleCreateError && mounted) {
-            if (state.statusCode == 409) {
-              showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
-              return;
+            if (state is ClientSaleCreateSuccess && mounted) {
+              Navigator.pop(context, true);
+            } else if (state is ClientSaleCreateError && mounted) {
+              if (state.statusCode == 409) {
+                showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                return;
+              }
+              _showSnackBar(state.message, false);
             }
-            _showSnackBar(state.message, false);
-          }
-        },
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 8),
-                      _buildDateField(localizations),
-                      const SizedBox(height: 16),
-                      LeadRadioGroupWidget(
-                        selectedLead: _selectedLead?.id.toString(),
-                        onSelectLead: (lead) => setState(() => _selectedLead = lead),
-                        showDebt: true, // ← Показываем долг
-                      ),
-                      const SizedBox(height: 16),
-                      StorageWidget(
-                        selectedStorage: _selectedStorage,
-                        onChanged: (value) => setState(() => _selectedStorage = value),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildCommentField(localizations),
-                      const SizedBox(height: 16),
-                      _buildGoodsSection(localizations),
-                    ],
+          },
+          child: Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 8),
+                        _buildDateField(localizations),
+                        const SizedBox(height: 16),
+                        LeadRadioGroupWidget(
+                          selectedLead: _selectedLead?.id.toString(),
+                          onSelectLead: (lead) => setState(() => _selectedLead = lead),
+                          showDebt: true,
+                        ),
+                        const SizedBox(height: 16),
+                        StorageWidget(
+                          selectedStorage: _selectedStorage,
+                          onChanged: (value) => setState(() => _selectedStorage = value),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildCommentField(localizations),
+                        const SizedBox(height: 16),
+                        _buildGoodsSection(localizations),
+                        const SizedBox(height: 16),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              _buildActionButtons(localizations),
-            ],
+                _buildActionButtons(localizations),
+              ],
+            ),
           ),
         ),
       ),
-       ),   );
+    );
   }
 
   AppBar _buildAppBar(AppLocalizations localizations) {
+    // ✅ НОВОЕ: Показываем сумму в AppBar
+    final hasItems = _items.isNotEmpty;
+    final total = _totalAmount;
+
     return AppBar(
       backgroundColor: Colors.white,
       forceMaterialTransparency: true,
@@ -440,16 +458,50 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
         icon: const Icon(Icons.arrow_back_ios, color: Color(0xff1E2E52), size: 24),
         onPressed: () => Navigator.pop(context),
       ),
-      title: Text(
-        localizations.translate('create_client_sale') ?? 'Создать реализацию',
-        style: const TextStyle(
-          fontSize: 20,
-          fontFamily: 'Gilroy',
-          fontWeight: FontWeight.w600,
-          color: Color(0xff1E2E52),
-        ),
-      ),
+      title: hasItems
+          ? null // Убираем заголовок, когда показываем сумму
+          : Text(
+              localizations.translate('create_client_sale') ?? 'Создать реализацию',
+              style: const TextStyle(
+                fontSize: 20,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w600,
+                color: Color(0xff1E2E52),
+              ),
+            ),
       centerTitle: false,
+      actions: hasItems
+          ? [
+              Container(
+                margin: const EdgeInsets.only(right: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xff4CAF50).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.account_balance_wallet_outlined,
+                      color: Color(0xff4CAF50),
+                      size: 18,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      total.toStringAsFixed(0),
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xff4CAF50),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ]
+          : null,
     );
   }
 
@@ -492,7 +544,6 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
           ),
         ),
         const SizedBox(height: 8),
-        const SizedBox(height: 8),
         if (_items.isNotEmpty) ...[
           _buildSelectedItemsList(),
           const SizedBox(height: 12),
@@ -530,20 +581,11 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
   }
 
   Widget _buildSelectedItemsList() {
-    final total = _items.fold<double>(0, (sum, item) => sum + (item['total'] ?? 0.0));
+    final total = _totalAmount;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          AppLocalizations.of(context)!.translate('selected_goods') ?? 'Выбранные товары',
-          style: const TextStyle(
-            fontSize: 16,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
-          ),
-        ),
         const SizedBox(height: 8),
         AnimatedList(
           key: _listKey,
@@ -565,6 +607,8 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
     final variantId = item['variantId'] as int;
     final priceController = _priceControllers[variantId];
     final quantityController = _quantityControllers[variantId];
+    final quantityFocusNode = _quantityFocusNodes[variantId]; // ✅ НОВОЕ
+    final priceFocusNode = _priceFocusNodes[variantId]; // ✅ НОВОЕ
 
     return FadeTransition(
       opacity: animation,
@@ -589,7 +633,6 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Заголовок с названием и кнопкой удаления
               Row(
                 children: [
                   Container(
@@ -627,27 +670,25 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
                   ),
                 ],
               ),
-                    if (item['remainder'] != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 4, bottom: 4),
-                child: Text(
-                  '${AppLocalizations.of(context)!.translate('available') ?? 'Доступно'}: ${item['remainder']} ${item['selectedUnit'] ?? 'шт'}',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w400,
-                    color: Color(0xff4CAF50),
+              if (item['remainder'] != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4, bottom: 4),
+                  child: Text(
+                    '${AppLocalizations.of(context)!.translate('available') ?? 'Доступно'}: ${item['remainder']} ${item['selectedUnit'] ?? 'шт'}',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w400,
+                      color: Color(0xff4CAF50),
+                    ),
                   ),
                 ),
-              ),
               const SizedBox(height: 10),
               const Divider(height: 1, color: Color(0xFFE5E7EB)),
               const SizedBox(height: 10),
-              // Поля в одну строку (компактный вид)
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Единица измерения
                   if (availableUnits.isNotEmpty)
                     Expanded(
                       flex: 2,
@@ -695,7 +736,7 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
                                   onChanged: (String? newValue) {
                                     if (newValue != null) {
                                       final selectedUnit = availableUnits.firstWhere(
-                                            (unit) => (unit.shortName ?? unit.name) == newValue,
+                                        (unit) => (unit.shortName ?? unit.name) == newValue,
                                       );
                                       _updateItemUnit(variantId, newValue, selectedUnit.id);
                                     }
@@ -727,7 +768,6 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
                       ),
                     ),
                   if (availableUnits.isNotEmpty) const SizedBox(width: 8),
-                  // Количество
                   Expanded(
                     flex: 2,
                     child: Column(
@@ -744,27 +784,28 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
                         ),
                         const SizedBox(height: 4),
                         CompactTextField(
-  controller: quantityController!,
-  hintText: AppLocalizations.of(context)!.translate('quantity') ?? 'Количество',
-  keyboardType: TextInputType.number,
-  inputFormatters: [
-    FilteringTextInputFormatter.digitsOnly,
-  ],
-  textAlign: TextAlign.center,
-  style: const TextStyle(
-    fontSize: 13,
-    fontFamily: 'Gilroy',
-    fontWeight: FontWeight.w600,
-    color: Color(0xff1E2E52),
-  ),
-  hasError: _quantityErrors[variantId] == true,
-  onChanged: (value) => _updateItemQuantity(variantId, value),
-)
+                          controller: quantityController!,
+                          focusNode: quantityFocusNode, // ✅ НОВОЕ
+                          hintText: AppLocalizations.of(context)!.translate('quantity') ?? 'Количество',
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xff1E2E52),
+                          ),
+                          hasError: _quantityErrors[variantId] == true,
+                          onChanged: (value) => _updateItemQuantity(variantId, value),
+                          onDone: _moveToNextEmptyField, // ✅ НОВОЕ
+                        ),
                       ],
                     ),
                   ),
                   const SizedBox(width: 8),
-                  // Цена
                   Expanded(
                     flex: 3,
                     child: Column(
@@ -780,29 +821,30 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
                           ),
                         ),
                         const SizedBox(height: 4),
-                       CompactTextField(
-  controller: priceController!,
-  hintText: AppLocalizations.of(context)!.translate('price') ?? 'Цена',
-  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-  inputFormatters: [
-    FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,3}')),
-  ],
-  style: const TextStyle(
-    fontSize: 13,
-    fontFamily: 'Gilroy',
-    fontWeight: FontWeight.w600,
-    color: Color(0xff1E2E52),
-  ),
-  hasError: _priceErrors[variantId] == true,
-  onChanged: (value) => _updateItemPrice(variantId, value),
-)
+                        CompactTextField(
+                          controller: priceController!,
+                          focusNode: priceFocusNode, // ✅ НОВОЕ
+                          hintText: AppLocalizations.of(context)!.translate('price') ?? 'Цена',
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,3}')),
+                          ],
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xff1E2E52),
+                          ),
+                          hasError: _priceErrors[variantId] == true,
+                          onChanged: (value) => _updateItemPrice(variantId, value),
+                          onDone: _moveToNextEmptyField, // ✅ НОВОЕ
+                        ),
                       ],
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 10),
-              // Итоговая сумма (компактная)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 decoration: BoxDecoration(
@@ -900,8 +942,7 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
     );
   }
 
-
-  // Обновленный виджет кнопок действий ( + "Сохранить и провести")
+  // ✅ ИЗМЕНЕНО: Две кнопки в разных линиях
   Widget _buildActionButtons(AppLocalizations localizations) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -918,6 +959,7 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
       ),
       child: Column(
         children: [
+          // ✅ Первая кнопка "Сохранить и провести" - белый фон с зелёной границей
           Container(
             width: double.infinity,
             height: 48,
@@ -956,85 +998,83 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
               ),
             ),
           ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xffF4F7FD),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    elevation: 0,
-                  ),
-                  child: Text(
-                    localizations.translate('close') ?? 'Отмена',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black,
-                    ),
-                  ),
+          const SizedBox(height: 12),
+          // ✅ Вторая кнопка "Сохранить" - синяя
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton(
+              onPressed: _isLoading ? null : _saveDocument,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xff4759FF),
+                disabledBackgroundColor: const Color(0xffE5E7EB),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
+                elevation: 0,
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _saveDocument,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xff4759FF),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+              child: _isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.save_outlined, color: Colors.white, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          localizations.translate('save') ?? 'Сохранить',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
                     ),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    elevation: 0,
-                  ),
-                  child: _isLoading
-                      ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
-                      : Text(
-                    localizations.translate('save') ?? 'Сохранить',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  // Новый метод для сохранения и проведения
   void _createAndApproveDocument() {
     _createDocument(approve: true);
   }
 
-  // Обновленный метод для обычного сохранения
   void _saveDocument() {
     _createDocument(approve: false);
   }
-
 
   @override
   void dispose() {
     _dateController.dispose();
     _commentController.dispose();
+    _scrollController.dispose();
+    
+    // ✅ НОВОЕ: Освобождаем все FocusNode
+    for (var focusNode in _quantityFocusNodes.values) {
+      focusNode.dispose();
+    }
+    for (var focusNode in _priceFocusNodes.values) {
+      focusNode.dispose();
+    }
+    
+    // Освобождаем контроллеры
+    for (var controller in _priceControllers.values) {
+      controller.dispose();
+    }
+    for (var controller in _quantityControllers.values) {
+      controller.dispose();
+    }
+    
     super.dispose();
   }
 }

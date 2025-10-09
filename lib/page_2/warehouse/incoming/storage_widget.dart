@@ -57,6 +57,8 @@ class _StorageWidgetState extends State<StorageWidget> {
       },
       child: BlocBuilder<StorageBloc, StorageState>(
         builder: (context, state) {
+          final isLoading = state is StorageLoading;
+          
           // Обновляем данные при успешной загрузке
           if (state is StorageLoaded) {
             List<WareHouse> storageList = state.storageList;
@@ -93,7 +95,7 @@ class _StorageWidgetState extends State<StorageWidget> {
                   searchHintText:
                   AppLocalizations.of(context)!.translate('search'),
                   overlayHeight: 400,
-                  enabled: true, // Всегда enabled
+                  enabled: !isLoading, // ← Блокируем при загрузке
                   decoration: CustomDropdownDecoration(
                     closedFillColor: Color(0xffF4F7FD),
                     expandedFillColor: Colors.white,
@@ -122,22 +124,20 @@ class _StorageWidgetState extends State<StorageWidget> {
                     );
                   },
                   headerBuilder: (context, selectedItem, enabled) {
-                    if (state is StorageLoading) {
-                      return Row(
-                        children: [
-                          Text(
-                            AppLocalizations.of(context)!
-                                .translate('select_storage'),
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              fontFamily: 'Gilroy',
-                              color: Color(0xff1E2E52),
-                            ),
+                    // ← Показываем загрузку в центре
+                    if (isLoading) {
+                      return const Center(
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
                           ),
-                        ],
+                        ),
                       );
                     }
+                    
                     return Text(
                       selectedItem?.name ??
                           AppLocalizations.of(context)!
@@ -150,15 +150,58 @@ class _StorageWidgetState extends State<StorageWidget> {
                       ),
                     );
                   },
-                  hintBuilder: (context, hint, enabled) => Text(
-                    AppLocalizations.of(context)!.translate('select_storage'),
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
-                      color: Color(0xff1E2E52),
-                    ),
-                  ),
+                  hintBuilder: (context, hint, enabled) {
+                    // ← Загрузка когда ничего не выбрано
+                    if (isLoading) {
+                      return const Center(
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                          ),
+                        ),
+                      );
+                    }
+                    
+                    return Text(
+                      AppLocalizations.of(context)!.translate('select_storage'),
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: 'Gilroy',
+                        color: Color(0xff1E2E52),
+                      ),
+                    );
+                  },
+                  // ← Загрузка в открытом списке
+                  noResultFoundBuilder: (context, text) {
+                    if (isLoading) {
+                      return const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(20.0),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                          ),
+                        ),
+                      );
+                    }
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(20.0),
+                        child: Text(
+                          AppLocalizations.of(context)!.translate('no_results'),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontFamily: 'Gilroy',
+                            color: Color(0xff1E2E52),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
                   excludeSelected: false,
                   initialItem: (state is StorageLoaded &&
                       state.storageList.contains(selectedStorageData))
