@@ -20,6 +20,8 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'filter/page_2/incoming/filter_app_bar_incoming.dart';
+import 'filter/page_2/client_sale/filter_app_bar_client_sale.dart';
+import 'filter/page_2/client_return/filter_app_bar_client_return.dart';
 
 class CustomAppBarPage2 extends StatefulWidget {
   String title;
@@ -35,14 +37,20 @@ class CustomAppBarPage2 extends StatefulWidget {
   final bool showFilterOrderIcon;
   final bool showFilterIncomeIcon;
   final bool showFilterIncomingIcon;
+  final bool showFilterClientSaleIcon;
+  final bool showFilterClientReturnIcon;
 
   final Function(Map<String, dynamic>)? onFilterGoodsSelected;
   final Function(Map<String, dynamic>)? onFilterIncomeSelected; // money income
   final Function(Map<String, dynamic>)? onFilterIncomingSelected; // new filter for documents -> incoming screen
+  final Function(Map<String, dynamic>)? onFilterClientSaleSelected; // new filter for documents -> client sale screen
+  final Function(Map<String, dynamic>)? onFilterClientReturnSelected; // new filter for documents -> client return screen
 
   final VoidCallback? onGoodsResetFilters;
   final VoidCallback? onIncomeResetFilters; // money income
   final VoidCallback? onIncomingResetFilters; // new filter for documents -> incoming screen
+  final VoidCallback? onClientSaleResetFilters; // new filter for documents -> client sale screen
+  final VoidCallback? onClientReturnResetFilters; // new filter for documents -> client return screen
 
   final Map<String, dynamic> currentFilters;
   final List<String>? initialLabels;
@@ -61,14 +69,20 @@ class CustomAppBarPage2 extends StatefulWidget {
     this.showFilterOrderIcon = true,
     this.showFilterIncomeIcon = false,
     this.showFilterIncomingIcon = false,
+    this.showFilterClientSaleIcon = false,
+    this.showFilterClientReturnIcon = false,
 
     this.onFilterGoodsSelected,
     this.onFilterIncomeSelected,
     this.onFilterIncomingSelected,
+    this.onFilterClientSaleSelected,
+    this.onFilterClientReturnSelected,
 
     this.onGoodsResetFilters,
     this.onIncomeResetFilters,
     this.onIncomingResetFilters,
+    this.onClientSaleResetFilters,
+    this.onClientReturnResetFilters,
 
     required this.currentFilters,
     this.initialLabels,
@@ -104,6 +118,8 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
   bool _isOrdersFiltering = false; // Новая переменная для фильтров заказов
   bool _isIncomeFiltering = false; // Новая переменная для фильтров доходов
   bool _isIncomingFiltering = false; //
+  bool _isClientSaleFiltering = false; // Новая переменная для фильтров продажи клиентам
+  bool _isClientReturnFiltering = false; // Новая переменная для фильтров возврата от клиентов
   
 
   @override
@@ -649,6 +665,36 @@ Future<void> _scanBarcode() async {
               navigateToIncomingFilterScreen(context);
             },
           ),
+        if (widget.showFilterClientSaleIcon)
+          IconButton(
+            icon: Padding(
+              padding: const EdgeInsets.only(left: 0),
+              child: Image.asset(
+                'assets/icons/AppBar/filter.png',
+                width: 24,
+                height: 24,
+                color: _isClientSaleFiltering ? _iconColor : null,
+              ),
+            ),
+            onPressed: () {
+              navigateToClientSaleFilterScreen(context);
+            },
+          ),
+        if (widget.showFilterClientReturnIcon)
+          IconButton(
+            icon: Padding(
+              padding: const EdgeInsets.only(left: 0),
+              child: Image.asset(
+                'assets/icons/AppBar/filter.png',
+                width: 24,
+                height: 24,
+                color: _isClientReturnFiltering ? _iconColor : null,
+              ),
+            ),
+            onPressed: () {
+              navigateToClientReturnFilterScreen(context);
+            },
+          ),
         if (widget.showFilterIcon && _canCreateProduct)
         IconButton(
           icon: Padding(
@@ -965,6 +1011,136 @@ void navigateToOrderFilterScreen(BuildContext context) {
               widget.currentFilters.clear();
             });
             widget.onIncomingResetFilters?.call();
+          },
+          initialFromDate: initialFromDate,
+          initialToDate: initialToDate,
+          initialStatus: initialStatus,
+          initialAuthor: initialAuthor,
+          initialIsDeleted: initialIsDeleted,
+        ),
+      ),
+    );
+  }
+
+  void navigateToClientSaleFilterScreen(BuildContext context) {
+    if (kDebugMode) {
+      // print('CustomAppBarPage2: Переход к экрану фильтров продажи клиентам');
+      // print('CustomAppBarPage2: Текущие фильтры: ${widget.currentFilters}');
+    }
+
+    DateTime? initialFromDate = widget.currentFilters['date_from'];
+    DateTime? initialToDate = widget.currentFilters['date_to'];
+    String? initialStatus;
+    String? initialAuthor;
+    bool? initialIsDeleted;
+
+    if (widget.currentFilters.containsKey('status')) {
+      initialStatus = widget.currentFilters['status'].toString();
+    }
+
+    if (widget.currentFilters.containsKey('author_id')) {
+      initialAuthor = widget.currentFilters['author_id'].toString();
+    }
+
+    if (widget.currentFilters.containsKey('deleted')) {
+      final deletedValue = widget.currentFilters['deleted'];
+      if (deletedValue is String) {
+        initialIsDeleted = deletedValue  == '1';
+      }
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ClientSaleFilterScreen(
+          onSelectedDataFilter: (filters) {
+            if (kDebugMode) {
+              print('CustomAppBarPage2: Получены фильтры из ClientSaleFilterScreen: $filters');
+            }
+            setState(() {
+              _isClientSaleFiltering = filters.isNotEmpty ||
+                  filters['date_from'] != null ||
+                  filters['date_to'] != null ||
+                  filters['author_id'] != null;
+            });
+            debugPrint("_isClientSaleFiltering: $_isClientSaleFiltering");
+            debugPrint("filters: $filters");
+            widget.onFilterClientSaleSelected?.call(filters);
+          },
+          onResetFilters: () {
+            if (kDebugMode) {
+              print('CustomAppBarPage2: Сброс фильтров из ClientSaleFilterScreen');
+            }
+            setState(() {
+              _isClientSaleFiltering = false;
+              widget.currentFilters.clear();
+            });
+            widget.onClientSaleResetFilters?.call();
+          },
+          initialFromDate: initialFromDate,
+          initialToDate: initialToDate,
+          initialStatus: initialStatus,
+          initialAuthor: initialAuthor,
+          initialIsDeleted: initialIsDeleted,
+        ),
+      ),
+    );
+  }
+
+  void navigateToClientReturnFilterScreen(BuildContext context) {
+    if (kDebugMode) {
+      // print('CustomAppBarPage2: Переход к экрану фильтров возврата от клиентов');
+      // print('CustomAppBarPage2: Текущие фильтры: ${widget.currentFilters}');
+    }
+
+    DateTime? initialFromDate = widget.currentFilters['date_from'];
+    DateTime? initialToDate = widget.currentFilters['date_to'];
+    String? initialStatus;
+    String? initialAuthor;
+    bool? initialIsDeleted;
+
+    if (widget.currentFilters.containsKey('status')) {
+      initialStatus = widget.currentFilters['status'].toString();
+    }
+
+    if (widget.currentFilters.containsKey('author_id')) {
+      initialAuthor = widget.currentFilters['author_id'].toString();
+    }
+
+    if (widget.currentFilters.containsKey('deleted')) {
+      final deletedValue = widget.currentFilters['deleted'];
+      if (deletedValue is String) {
+        initialIsDeleted = deletedValue  == '1';
+      }
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ClientReturnFilterScreen(
+          onSelectedDataFilter: (filters) {
+            if (kDebugMode) {
+              print('CustomAppBarPage2: Получены фильтры из ClientReturnFilterScreen: $filters');
+            }
+            setState(() {
+              _isClientReturnFiltering = filters.isNotEmpty ||
+                  filters['date_from'] != null ||
+                  filters['date_to'] != null ||
+                  filters['author_id'] != null;
+            });
+            debugPrint("_isClientReturnFiltering: $_isClientReturnFiltering");
+            debugPrint("filters: $filters");
+            widget.onFilterClientReturnSelected?.call(filters);
+          },
+          onResetFilters: () {
+            if (kDebugMode) {
+              print('CustomAppBarPage2: Сброс фильтров из ClientReturnFilterScreen');
+            }
+            setState(() {
+              _isClientReturnFiltering = false;
+              widget.currentFilters.clear();
+            });
+            widget.onClientReturnResetFilters?.call();
           },
           initialFromDate: initialFromDate,
           initialToDate: initialToDate,
