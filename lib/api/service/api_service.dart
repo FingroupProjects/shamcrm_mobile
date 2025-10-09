@@ -10818,9 +10818,9 @@ Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
     int? cashRegisterId,
     int? supplierId,
     int? authorId,
+    int? storageId,
   }) async {
-    String url =
-        '/expense-documents'; // Предполагаемый endpoint; подкорректируй если нужно
+    String url = '/expense-documents'; // Предполагаемый endpoint; подкорректируй если нужно
     url += '?page=$page&per_page=$perPage';
     if (query != null && query.isNotEmpty) {
       url += '&search=$query';
@@ -10849,10 +10849,13 @@ Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
     if (authorId != null) {
       url += '&author_id=$authorId';
     }
+    if (storageId != null) {
+      url += '&storage_id=$storageId';
+    }
 
     final path = await _appendQueryParams(url);
     if (kDebugMode) {
-      print('ApiService: getIncomingDocuments - Generated path: $path');
+      print('ApiService: getClientSales - Generated path: $path');
     }
 
     try {

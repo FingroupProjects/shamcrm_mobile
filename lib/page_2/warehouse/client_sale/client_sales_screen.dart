@@ -254,7 +254,7 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
                   },
                 )
               : CustomAppBarPage2(
-                  title: localizations?.translate('appbar_client_sales') ?? 'Реализация клиент',
+                  title: localizations?.translate('appbar_client_sales') ?? 'Продажа',
                   showSearchIcon: true,
                   showFilterIcon: false,
                   showFilterOrderIcon: false,
