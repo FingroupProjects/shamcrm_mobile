@@ -186,8 +186,14 @@ Future<void> _onMassDeleteClientSaleDocuments(MassDeleteClientSaleDocuments even
         page: _currentPage,
         perPage: _perPage,
         query: _search,
-        fromDate: _filters?['fromDate'],
-        toDate: _filters?['toDate'],
+        dateFrom: _filters?['date_from'],
+        dateTo: _filters?['date_to'],
+        approved: _filters?['approved'],
+        deleted: _filters?['deleted'],
+        leadId: _filters?['lead_id'],
+        cashRegisterId: _filters?['cash_register_id'],
+        supplierId: _filters?['supplier_id'],
+        authorId: _filters?['author_id'],
       );
 
       final newData = response.data ?? [];
