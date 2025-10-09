@@ -188,12 +188,13 @@ Future<void> _onMassDeleteClientSaleDocuments(MassDeleteClientSaleDocuments even
         query: _search,
         dateFrom: _filters?['date_from'],
         dateTo: _filters?['date_to'],
-        approved: _filters?['approved'],
-        deleted: _filters?['deleted'],
-        leadId: _filters?['lead_id'],
-        cashRegisterId: _filters?['cash_register_id'],
-        supplierId: _filters?['supplier_id'],
-        authorId: _filters?['author_id'],
+        approved: _filters?['approved'] != null ? int.tryParse(_filters!['approved'].toString()) : null,
+        deleted: _filters?['deleted'] != null ? int.tryParse(_filters!['deleted'].toString()) : null,
+        leadId: _filters?['lead_id'] != null ? int.tryParse(_filters!['lead_id'].toString()) : null,
+        cashRegisterId: _filters?['cash_register_id'] != null ? int.tryParse(_filters!['cash_register_id'].toString()) : null,
+        supplierId: _filters?['supplier_id'] != null ? int.tryParse(_filters!['supplier_id'].toString()) : null,
+        authorId: _filters?['author_id'] != null ? int.tryParse(_filters!['author_id'].toString()) : null,
+        storageId: _filters?['storage_id'] != null ? int.tryParse(_filters!['storage_id'].toString()) : null,
       );
 
       final newData = response.data ?? [];

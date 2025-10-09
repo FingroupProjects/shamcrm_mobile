@@ -20,7 +20,7 @@ import '../../../../models/supplier_list_model.dart';
 import '../../../custom_textfield_deadline.dart';
 import '../../../dropdown_loading_state.dart';
 
-class IncomingFilterScreen extends StatefulWidget {
+class ClientReturnFilterScreen extends StatefulWidget {
   final Function(Map<String, dynamic>)? onSelectedDataFilter;
   final VoidCallback? onResetFilters;
   final DateTime? initialFromDate;
@@ -32,7 +32,7 @@ class IncomingFilterScreen extends StatefulWidget {
   final String? initialCashRegister;
   final bool? initialIsDeleted;
 
-  const IncomingFilterScreen({
+  const ClientReturnFilterScreen({
     Key? key,
     this.onSelectedDataFilter,
     this.onResetFilters,
@@ -47,10 +47,10 @@ class IncomingFilterScreen extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _IncomingFilterScreenState createState() => _IncomingFilterScreenState();
+  _ClientReturnFilterScreenState createState() => _ClientReturnFilterScreenState();
 }
 
-class _IncomingFilterScreenState extends State<IncomingFilterScreen> {
+class _ClientReturnFilterScreenState extends State<ClientReturnFilterScreen> {
   final TextEditingController _fromDateController = TextEditingController();
   final TextEditingController _toDateController = TextEditingController();
   DateTime? _fromDate;
@@ -141,8 +141,8 @@ class _IncomingFilterScreenState extends State<IncomingFilterScreen> {
       final prefs = await SharedPreferences.getInstance();
       if (mounted) {
         setState(() {
-          final fromDateMillis = prefs.getInt('incoming_new_from_date');
-          final toDateMillis = prefs.getInt('incoming_new_to_date');
+          final fromDateMillis = prefs.getInt('client_return_from_date');
+          final toDateMillis = prefs.getInt('client_return_to_date');
           if (fromDateMillis != null) {
             _fromDate = DateTime.fromMillisecondsSinceEpoch(fromDateMillis);
           }
@@ -150,32 +150,32 @@ class _IncomingFilterScreenState extends State<IncomingFilterScreen> {
             _toDate = DateTime.fromMillisecondsSinceEpoch(toDateMillis);
           }
 
-          final supplierName = prefs.getString('incoming_new_supplier');
-          final supplierId = prefs.getInt('incoming_new_supplier_id');
+          final supplierName = prefs.getString('client_return_supplier');
+          final supplierId = prefs.getInt('client_return_supplier_id');
           if (supplierName != null && supplierId != null) {
             _selectedSupplier = SupplierData(id: supplierId, name: supplierName);
           }
 
-          final cashRegisterName = prefs.getString('incoming_new_cash_register');
-          final cashRegisterId = prefs.getInt('incoming_new_cash_register_id');
+          final cashRegisterName = prefs.getString('client_return_cash_register');
+          final cashRegisterId = prefs.getInt('client_return_cash_register_id');
           if (cashRegisterName != null && cashRegisterId != null) {
             _selectedCashRegister = CashRegisterData(id: cashRegisterId, name: cashRegisterName);
           }
 
-          final leadName = prefs.getString('incoming_new_lead');
-          final leadId = prefs.getInt('incoming_new_lead_id');
+          final leadName = prefs.getString('client_return_lead');
+          final leadId = prefs.getInt('client_return_lead_id');
           if (leadName != null && leadId != null) {
             _selectedLead = LeadData(id: leadId, name: leadName);
           }
 
-          final authorName = prefs.getString('incoming_new_author');
-          final authorId = prefs.getInt('incoming_new_author_id');
+          final authorName = prefs.getString('client_return_author');
+          final authorId = prefs.getInt('client_return_author_id');
           if (authorName != null && authorId != null) {
             selectedAuthor = AuthorData(id: authorId, name: authorName, lastname: '');
           }
 
-          _selectedStatus = prefs.getString('money_incoming_new_status') ?? widget.initialStatus;
-          _isDeleted = prefs.getBool('incoming_new_is_deleted') ?? widget.initialIsDeleted;
+          _selectedStatus = prefs.getString('money_client_return_status') ?? widget.initialStatus;
+          _isDeleted = prefs.getBool('client_return_is_deleted') ?? widget.initialIsDeleted;
 
           _updateDateControllers();
         });
@@ -190,59 +190,59 @@ class _IncomingFilterScreenState extends State<IncomingFilterScreen> {
       final prefs = await SharedPreferences.getInstance();
 
       if (_fromDate != null) {
-        await prefs.setInt('incoming_new_from_date', _fromDate!.millisecondsSinceEpoch);
+        await prefs.setInt('client_return_from_date', _fromDate!.millisecondsSinceEpoch);
       } else {
-        await prefs.remove('incoming_new_from_date');
+        await prefs.remove('client_return_from_date');
       }
 
       if (_toDate != null) {
-        await prefs.setInt('incoming_new_to_date', _toDate!.millisecondsSinceEpoch);
+        await prefs.setInt('client_return_to_date', _toDate!.millisecondsSinceEpoch);
       } else {
-        await prefs.remove('incoming_new_to_date');
+        await prefs.remove('client_return_to_date');
       }
 
       if (_selectedSupplier != null) {
-        await prefs.setString('incoming_new_supplier', _selectedSupplier!.name);
-        await prefs.setInt('incoming_new_supplier_id', _selectedSupplier!.id);
+        await prefs.setString('client_return_supplier', _selectedSupplier!.name);
+        await prefs.setInt('client_return_supplier_id', _selectedSupplier!.id);
       } else {
-        await prefs.remove('incoming_new_supplier');
-        await prefs.remove('incoming_new_supplier_id');
+        await prefs.remove('client_return_supplier');
+        await prefs.remove('client_return_supplier_id');
       }
 
       if (_selectedCashRegister != null) {
-        await prefs.setString('incoming_new_cash_register', _selectedCashRegister!.name);
-        await prefs.setInt('incoming_new_cash_register_id', _selectedCashRegister!.id);
+        await prefs.setString('client_return_cash_register', _selectedCashRegister!.name);
+        await prefs.setInt('client_return_cash_register_id', _selectedCashRegister!.id);
       } else {
-        await prefs.remove('incoming_new_cash_register');
-        await prefs.remove('incoming_new_cash_register_id');
+        await prefs.remove('client_return_cash_register');
+        await prefs.remove('client_return_cash_register_id');
       }
 
       if (_selectedLead != null) {
-        await prefs.setString('incoming_new_lead', _selectedLead!.name);
-        await prefs.setInt('incoming_new_lead_id', _selectedLead!.id);
+        await prefs.setString('client_return_lead', _selectedLead!.name);
+        await prefs.setInt('client_return_lead_id', _selectedLead!.id);
       } else {
-        await prefs.remove('incoming_new_lead');
-        await prefs.remove('incoming_new_lead_id');
+        await prefs.remove('client_return_lead');
+        await prefs.remove('client_return_lead_id');
       }
 
       if (_selectedStatus != null) {
-        await prefs.setString('money_incoming_new_status', _selectedStatus!);
+        await prefs.setString('money_client_return_status', _selectedStatus!);
       } else {
-        await prefs.remove('money_incoming_new_status');
+        await prefs.remove('money_client_return_status');
       }
 
       if (selectedAuthor != null) {
-        await prefs.setString('incoming_new_author', selectedAuthor!.name);
-        await prefs.setInt('incoming_new_author_id', selectedAuthor!.id);
+        await prefs.setString('client_return_author', selectedAuthor!.name);
+        await prefs.setInt('client_return_author_id', selectedAuthor!.id);
       } else {
-        await prefs.remove('incoming_new_author');
-        await prefs.remove('incoming_new_author_id');
+        await prefs.remove('client_return_author');
+        await prefs.remove('client_return_author_id');
       }
 
       if (_isDeleted != null) {
-        await prefs.setBool('incoming_new_is_deleted', _isDeleted!);
+        await prefs.setBool('client_return_is_deleted', _isDeleted!);
       } else {
-        await prefs.remove('incoming_new_is_deleted');
+        await prefs.remove('client_return_is_deleted');
       }
     } catch (e) {
       debugPrint('Error saving filter state: $e');

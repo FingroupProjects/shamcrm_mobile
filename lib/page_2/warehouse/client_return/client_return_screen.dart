@@ -73,6 +73,38 @@ class _ClientReturnScreenState extends State<ClientReturnScreen> {
     super.dispose();
   }
 
+  void _onFilterSelected(Map<String, dynamic> filters) {
+    setState(() {
+      _currentFilters = Map.from(filters);
+      _hasReachedMax = false;
+      _isLoadingMore = false;
+      _isSearching = false;
+      _searchController.clear();
+      _search = null;
+    });
+
+    _clientReturnBloc.add(FetchClientReturns(
+      filters: filters,
+      forceRefresh: true,
+    ));
+  }
+
+  void _onResetFilters() {
+    setState(() {
+      _currentFilters.clear();
+      _hasReachedMax = false;
+      _isLoadingMore = false;
+      _isSearching = false;
+      _searchController.clear();
+      _search = null;
+    });
+
+    _clientReturnBloc.add(const FetchClientReturns(
+      filters: {},
+      forceRefresh: true,
+    ));
+  }
+
   void _onScroll() {
     if (_scrollController.position.pixels >=
             _scrollController.position.maxScrollExtent - 200 &&
@@ -168,8 +200,10 @@ class _ClientReturnScreenState extends State<ClientReturnScreen> {
                     ),
                   ).then((_) {
                     if (mounted) {
-                      _clientReturnBloc
-                          .add(const FetchClientReturns(forceRefresh: true));
+                      _clientReturnBloc.add(FetchClientReturns(
+                        forceRefresh: true,
+                        filters: _currentFilters,
+                      ));
                     }
                   });
                 },
@@ -186,6 +220,12 @@ class _ClientReturnScreenState extends State<ClientReturnScreen> {
             showSearchIcon: true,
             showFilterIcon: false,
             showFilterOrderIcon: false,
+            showFilterIncomeIcon: false,
+            showFilterIncomingIcon: false,
+            showFilterClientSaleIcon: false,
+            showFilterClientReturnIcon: true,
+            onFilterClientReturnSelected: _onFilterSelected,
+            onClientReturnResetFilters: _onResetFilters,
             onChangedSearchInput: _onSearch,
             textEditingController: _searchController,
             focusNode: _focusNode,
@@ -195,10 +235,11 @@ class _ClientReturnScreenState extends State<ClientReturnScreen> {
                   _isSearching = false;
                   _searchController.clear();
                   _search = null;
-                  _currentFilters.clear();
                 });
-                _clientReturnBloc
-                    .add(const FetchClientReturns(forceRefresh: true));
+                _clientReturnBloc.add(FetchClientReturns(
+                  forceRefresh: true,
+                  filters: _currentFilters,
+                ));
               }
             },
             onClickProfileAvatar: () {},
@@ -247,7 +288,10 @@ class _ClientReturnScreenState extends State<ClientReturnScreen> {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (mounted && context.mounted) {
                     _showSnackBar(state.message, true);
-                    _clientReturnBloc.add(const FetchClientReturns(forceRefresh: true));
+                    _clientReturnBloc.add(FetchClientReturns(
+                      forceRefresh: true,
+                      filters: _currentFilters,
+                    ));
                   }
                 });
               }
