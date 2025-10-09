@@ -125,7 +125,7 @@ class _SupplierWidgetState extends State<SupplierWidget> {
                           overflow: TextOverflow.ellipsis,
                         ),
                         Text(
-                          item.phone,
+                          item.phone ?? '',
                           style: TextStyle(
                             color: Color(0xff1E2E52).withOpacity(0.7),
                             fontSize: 12,

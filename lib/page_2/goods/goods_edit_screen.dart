@@ -252,7 +252,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
 
         if (selectedCategory!.hasPriceCharacteristics) {
           newRow['price'] = TextEditingController(
-            text: variant.variantPrice?.price?.toString() ?? '0.0',
+            text: variant.price.toString() ?? '0.0', // NEW FIELD for price instead of old variantPrice
           );
         }
 

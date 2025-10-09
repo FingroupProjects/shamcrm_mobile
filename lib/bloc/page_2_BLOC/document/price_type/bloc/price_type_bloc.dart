@@ -3,6 +3,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/price_type/bloc/price_type_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/price_type/bloc/price_type_state.dart';
 import 'package:crm_task_manager/models/page_2/price_type_model.dart';
+import 'package:flutter/cupertino.dart';
 
 class PriceTypeScreenBloc extends Bloc<PriceTypeEvent, PriceTypeState> {
   final ApiService apiService;
@@ -10,23 +11,23 @@ class PriceTypeScreenBloc extends Bloc<PriceTypeEvent, PriceTypeState> {
   PriceTypeScreenBloc(this.apiService) : super(PriceTypeInitial()) {
     on<FetchPriceType>(_onFetch);
     on<RefreshPriceType>(_onRefresh);
-    on<AddPriceType>(_onAddMeasureUnit);
-    on<EditPriceTypeEvent>(_onEditMeasureUnit);
-    on<DeletePriceType>(_onDeleteMeasureUnit);
+    on<AddPriceType>(_onAddPriceType);
+    on<EditPriceTypeEvent>(_onEditPriceType);
+    on<DeletePriceType>(_onDeletePriceType);
   }
 
   Future<void> _onFetch(
-    FetchPriceType event,
-    Emitter<PriceTypeState> emit,
-  ) async {
+      FetchPriceType event,
+      Emitter<PriceTypeState> emit,
+      ) async {
     emit(PriceTypeLoading());
     await _fetchAndEmit(emit);
   }
 
   Future<void> _onRefresh(
-    RefreshPriceType event,
-    Emitter<PriceTypeState> emit,
-  ) async {
+      RefreshPriceType event,
+      Emitter<PriceTypeState> emit,
+      ) async {
     // keep UI responsive; show loading during refresh
     emit(PriceTypeLoading());
     await _fetchAndEmit(emit);
@@ -35,12 +36,12 @@ class PriceTypeScreenBloc extends Bloc<PriceTypeEvent, PriceTypeState> {
   Future<void> _fetchAndEmit(Emitter<PriceTypeState> emit) async {
     try {
       final dynamic response = await apiService.getPriceTypes();
-      // attempt to normalize response into List<MeasureUnit>
+      // attempt to normalize response into List<PriceType>
       List<PriceTypeModel> units = [];
       if (response == null) {
         units = [];
       } else if (response is List) {
-        // assume list already contains MeasureUnit (or map that MeasureUnit.fromMap handles)
+        // assume list already contains PriceType (or map that PriceType.fromMap handles)
         units = response.cast<PriceTypeModel>();
       } else if (response is Map && response['result'] != null) {
         units = (response['result'] as List).cast<PriceTypeModel>();
@@ -51,6 +52,7 @@ class PriceTypeScreenBloc extends Bloc<PriceTypeEvent, PriceTypeState> {
               (response as dynamic).data ?? (response as dynamic).items ?? [];
           units = (list as List).cast<PriceTypeModel>();
         } catch (_) {
+          debugPrint("Failed to parse price types from response: $response");
           units = [];
         }
       }
@@ -65,40 +67,65 @@ class PriceTypeScreenBloc extends Bloc<PriceTypeEvent, PriceTypeState> {
     }
   }
 
-  Future<void> _onAddMeasureUnit(
-    AddPriceType event,
-    Emitter<PriceTypeState> emit,
-  ) async {
+  Future<void> _onAddPriceType(
+      AddPriceType event,
+      Emitter<PriceTypeState> emit,
+      ) async {
     try {
       emit(PriceTypeLoading());
       await apiService.createPriceType(event.priceType);
-      await _fetchAndEmit(emit); // Refresh the list after adding
+
+      // Emit success state
+      emit(PriceTypeSuccess("price_type_added_successfully"));
+
+      // Small delay to ensure the BlocListener catches the success state
+      await Future.delayed(const Duration(milliseconds: 150));
+
+      // Then refresh the list
+      await _fetchAndEmit(emit);
+    } catch (e) {
+      debugPrint("Error adding price type: $e");
+      emit(PriceTypeError(e.toString()));
+    }
+  }
+
+  Future<void> _onEditPriceType(
+      EditPriceTypeEvent event,
+      Emitter<PriceTypeState> emit,
+      ) async {
+    try {
+      emit(PriceTypeLoading());
+      await apiService.updatePriceType(id: event.id, priceType: event.priceType);
+
+      // Emit success state
+      emit(PriceTypeSuccess("price_type_updated_successfully"));
+
+      // Small delay to ensure the BlocListener catches the success state
+      await Future.delayed(const Duration(milliseconds: 150));
+
+      // Then refresh the list
+      await _fetchAndEmit(emit);
     } catch (e) {
       emit(PriceTypeError(e.toString()));
     }
   }
 
-  Future<void> _onEditMeasureUnit(
-    EditPriceTypeEvent event,
-    Emitter<PriceTypeState> emit,
-  ) async {
+  Future<void> _onDeletePriceType(
+      DeletePriceType event,
+      Emitter<PriceTypeState> emit,
+      ) async {
     try {
       emit(PriceTypeLoading());
-      await apiService.updatePriceType(id: event.id, supplier: event.priceType);
-      await _fetchAndEmit(emit); // Refresh the list after editing
-    } catch (e) {
-      emit(PriceTypeError(e.toString()));
-    }
-  }
+      await apiService.deletePriceType(event.id);
 
-  Future<void> _onDeleteMeasureUnit(
-    DeletePriceType event,
-    Emitter<PriceTypeState> emit,
-  ) async {
-    try {
-      emit(PriceTypeLoading());
-      await apiService.deleteMeasureUnit(event.id);
-      await _fetchAndEmit(emit); // Refresh the list after deletion
+      // Emit success state
+      emit(PriceTypeSuccess("price_type_deleted_successfully"));
+
+      // Small delay to ensure the BlocListener catches the success state
+      await Future.delayed(const Duration(milliseconds: 150));
+
+      // Then refresh the list
+      await _fetchAndEmit(emit);
     } catch (e) {
       emit(PriceTypeError(e.toString()));
     }

@@ -958,7 +958,7 @@ class TopPart extends StatelessWidget {
                 accentColor: Colors.orange,
                 title: localizations.translate('illiquid_goods') ?? 'ТОВАРЫ/НЕЛИКВИДНЫМИ ТОВАРЫ',
                 leading: const Icon(Icons.inventory_2, color: Colors.orange),
-                amountText: "${illiquidGoodsData.result?.liquidChange ?? 0}/${illiquidGoodsData.result?.nonLiquidGoods ?? 0}",
+                amountText: "${illiquidGoodsData.result?.liquidGoods ?? 0}/${illiquidGoodsData.result?.nonLiquidGoods ?? 0}",
                 showCurrencySymbol: false,
                 isUp: illiquidGoodsData.result?.liquidChangeFormatted.startsWith("+") ?? true,
                 trendText: "${illiquidGoodsData.result?.liquidChangeFormatted ?? '0.0%'}/${illiquidGoodsData.result?.nonLiquidChangeFormatted ?? '0.0%'}",

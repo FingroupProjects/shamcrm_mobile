@@ -145,9 +145,13 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
         final index = _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
           _items[index]['quantity'] = quantity;
+          // Получаем актуальную цену из контроллера
+          final priceText = _priceControllers[variantId]?.text ?? '';
+          final price = double.tryParse(priceText) ?? 0.0;
+          _items[index]['price'] = price;
           // Пересчитываем total с учётом amount
           final amount = _items[index]['amount'] ?? 1;
-          _items[index]['total'] = _items[index]['quantity'] * _items[index]['price'] * amount;
+          _items[index]['total'] = (_items[index]['quantity'] * price * amount).round();
         }
         // Убираем ошибку если поле заполнено корректно
         _quantityErrors[variantId] = false;

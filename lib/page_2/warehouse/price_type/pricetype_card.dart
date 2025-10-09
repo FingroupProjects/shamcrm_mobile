@@ -9,7 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 class PriceTypeCard extends StatefulWidget {
-  final PriceTypeModel supplier;
+  final PriceTypeModel priceType;
   final VoidCallback? onDelete;
   // НОВОЕ: Параметры прав доступа
   final bool hasUpdatePermission;
@@ -18,7 +18,7 @@ class PriceTypeCard extends StatefulWidget {
 
   const PriceTypeCard({
     Key? key,
-    required this.supplier,
+    required this.priceType,
     this.onDelete,
     this.hasUpdatePermission = false,
     this.hasDeletePermission = false,
@@ -53,7 +53,7 @@ class _PriceTypeCardState extends State<PriceTypeCard> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => EditPriceTypeScreen(supplier: widget.supplier),
+                  builder: (context) => EditPriceTypeScreen(priceType: widget.priceType),
                 ),
               ).then((_) {
                 if (widget.onUpdate != null) {
@@ -85,7 +85,7 @@ class _PriceTypeCardState extends State<PriceTypeCard> {
               children: [
                 Expanded(
                   child: Text(
-                    '${localization!.translate('empty_0') ?? 'Тип цены'} ${widget.supplier.name ?? 'N/A'}',
+                    '${localization!.translate('empty_0') ?? 'Тип цены'} ${widget.priceType.name ?? 'N/A'}',
                     style: const TextStyle(
                       fontSize: 18,
                       fontFamily: 'Gilroy',
@@ -109,7 +109,7 @@ class _PriceTypeCardState extends State<PriceTypeCard> {
                         context: context,
                         builder: (_) => BlocProvider.value(
                           value: context.read<PriceTypeScreenBloc>(),
-                          child: PriceTypesDeleteDialog(documentId: widget.supplier.id),
+                          child: PriceTypesDeleteDialog(documentId: widget.priceType.id),
                         ),
                       ).then((_) {
                         if (widget.onUpdate != null) {
@@ -121,16 +121,6 @@ class _PriceTypeCardState extends State<PriceTypeCard> {
                     },
                   ),
               ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '${localization.translate('created_at_details') ?? 'Дата создания'}: ${_formatDate(widget.supplier.createdAt?.toIso8601String())}',
-              style: const TextStyle(
-                fontSize: 14,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w400,
-                color: Color(0xff99A4BA),
-              ),
             ),
           ],
         ),

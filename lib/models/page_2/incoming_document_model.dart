@@ -44,6 +44,7 @@ class IncomingDocument extends Equatable {
   final String? comment;
   final Currency? currency;
   final List<DocumentGood>? documentGoods;
+  final Author? author;
   final Model? model;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -64,6 +65,7 @@ class IncomingDocument extends Equatable {
     this.comment,
     this.currency,
     this.documentGoods,
+    this.author,
     this.model,
     this.createdAt,
     this.updatedAt,
@@ -116,6 +118,7 @@ class IncomingDocument extends Equatable {
               .map((i) => DocumentGood.fromJson(i))
               .toList()
           : null,
+      author: json['author'] != null ? Author.fromJson(json['author']) : null,
       model: json['model'] != null ? Model.fromJson(json['model']) : null,
       createdAt: _parseDate(json['created_at']),
       updatedAt: _parseDate(json['updated_at']),
@@ -222,6 +225,118 @@ class IncomingDocument extends Equatable {
       print('Error parsing date $dateStr: $e');
       return null; // Возвращаем null в случае ошибки
     }
+  }
+}
+
+class Author {
+  final int? id;
+  final String? name;
+  final String? lastname;
+  final String? login;
+  final String? email;
+  final String? phone;
+  final String? telegramUserId;
+  final DateTime? emailVerifiedAt;
+  final String? image;
+  final DateTime? lastSeen;
+  final DateTime? deletedAt;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  final int? managerId;
+  final String? jobTitle;
+  final int? hasImage;
+  final int? isFirstLogin;
+  final String? internalNumber;
+  final int? departmentId;
+  final String? uniqueId;
+  final int? shiftId;
+  final int? weekendPatternId;
+  final int? workBreakId;
+  final String? oneCId;
+
+  Author({
+    this.id,
+    this.name,
+    this.lastname,
+    this.login,
+    this.email,
+    this.phone,
+    this.telegramUserId,
+    this.emailVerifiedAt,
+    this.image,
+    this.lastSeen,
+    this.deletedAt,
+    this.createdAt,
+    this.updatedAt,
+    this.managerId,
+    this.jobTitle,
+    this.hasImage,
+    this.isFirstLogin,
+    this.internalNumber,
+    this.departmentId,
+    this.uniqueId,
+    this.shiftId,
+    this.weekendPatternId,
+    this.workBreakId,
+    this.oneCId,
+  });
+
+  factory Author.fromJson(Map<String, dynamic> json) {
+    return Author(
+      id: IncomingDocument._parseInt(json['id']),
+      name: json['name'],
+      lastname: json['lastname'],
+      login: json['login'],
+      email: json['email'],
+      phone: json['phone'],
+      telegramUserId: json['telegram_user_id'],
+      emailVerifiedAt: IncomingDocument._parseDate(json['email_verified_at']),
+      image: json['image'],
+      lastSeen: IncomingDocument._parseDate(json['last_seen']),
+      deletedAt: IncomingDocument._parseDate(json['deleted_at']),
+      createdAt: IncomingDocument._parseDate(json['created_at']),
+      updatedAt: IncomingDocument._parseDate(json['updated_at']),
+      managerId: IncomingDocument._parseInt(json['manager_id']),
+      jobTitle: json['job_title'],
+      hasImage: IncomingDocument._parseInt(json['has_image']),
+      isFirstLogin: IncomingDocument._parseInt(json['is_first_login']),
+      internalNumber: json['internal_number'],
+      departmentId: IncomingDocument._parseInt(json['department_id']),
+      uniqueId: json['unique_id'],
+      shiftId: IncomingDocument._parseInt(json['shift_id']),
+      weekendPatternId: IncomingDocument._parseInt(json['weekend_pattern_id']),
+      workBreakId: IncomingDocument._parseInt(json['work_break_id']),
+      oneCId: json['one_c_id'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'lastname': lastname,
+      'login': login,
+      'email': email,
+      'phone': phone,
+      'telegram_user_id': telegramUserId,
+      'email_verified_at': emailVerifiedAt?.toIso8601String(),
+      'image': image,
+      'last_seen': lastSeen?.toIso8601String(),
+      'deleted_at': deletedAt?.toIso8601String(),
+      'created_at': createdAt?.toIso8601String(),
+      'updated_at': updatedAt?.toIso8601String(),
+      'manager_id': managerId,
+      'job_title': jobTitle,
+      'has_image': hasImage,
+      'is_first_login': isFirstLogin,
+      'internal_number': internalNumber,
+      'department_id': departmentId,
+      'unique_id': uniqueId,
+      'shift_id': shiftId,
+      'weekend_pattern_id': weekendPatternId,
+      'work_break_id': workBreakId,
+      'one_c_id': oneCId,
+    };
   }
 }
 
