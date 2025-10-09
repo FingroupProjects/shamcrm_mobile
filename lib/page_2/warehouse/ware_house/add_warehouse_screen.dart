@@ -162,7 +162,7 @@ class _AddWarehouseScreenState extends State<AddWarehouseScreen> {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          AppLocalizations.of(context)!.translate('warehouse_visibility') ?? 'Отображение склада',
+                          AppLocalizations.of(context)!.translate('warehouse_visibility') ?? 'Показывать склад в интернет магазине  как филиал',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
