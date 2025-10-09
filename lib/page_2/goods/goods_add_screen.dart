@@ -212,21 +212,21 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
       ),
       body: MultiBlocListener(
         listeners: [
-          BlocListener<BranchBloc, BranchState>(
-            listener: (context, state) {
-              if (state is BranchLoaded) {
-                setState(() {
-                  branches = state.branches;
-                });
-              } else if (state is BranchError) {
-                showCustomSnackBar(
-                  context: context,
-                  message: AppLocalizations.of(context)!.translate('error_loading_branches') + ': ${state.message}',
-                  isSuccess: false,
-                );
-              }
-            },
-          ),
+          // BlocListener<BranchBloc, BranchState>(
+          //   listener: (context, state) {
+          //     if (state is BranchLoaded) {
+          //       setState(() {
+          //         branches = state.branches;
+          //       });
+          //     } else if (state is BranchError) {
+          //       showCustomSnackBar(
+          //         context: context,
+          //         message: AppLocalizations.of(context)!.translate('error_loading_branches') + ': ${state.message}',
+          //         isSuccess: false,
+          //       );
+          //     }
+          //   },
+          // ),
           BlocListener<GoodsBloc, GoodsState>(
             listener: (context, state) {
               if (state is GoodsSuccess) {
@@ -312,18 +312,18 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                         });
                       },
                     ),
-                    const SizedBox(height: 8),
-                    BranchesDropdown(
-                      label: AppLocalizations.of(context)!.translate('branch'),
-                      selectedBranch: selectedBranch,
-                      branches: branches,
-                      onSelectBranch: (Branch branch) {
-                        setState(() {
-                          selectedBranch = branch;
-                          isBranchValid = true;
-                        });
-                      },
-                    ),
+                    // const SizedBox(height: 8),
+                    // BranchesDropdown(
+                    //   label: AppLocalizations.of(context)!.translate('branch'),
+                    //   selectedBranch: selectedBranch,
+                    //   branches: branches,
+                    //   onSelectBranch: (Branch branch) {
+                    //     setState(() {
+                    //       selectedBranch = branch;
+                    //       isBranchValid = true;
+                    //     });
+                    //   },
+                    // ),
                     const SizedBox(height: 8),
                     CategoryDropdownWidget(
                       selectedCategory: selectedCategory?.name,

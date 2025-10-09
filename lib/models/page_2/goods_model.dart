@@ -161,16 +161,11 @@ class Goods {
         }
       }
 
-      dynamic priceRaw = json['price'];
-      String? priceString;
-      double? discountPrice;
-      if (priceRaw is String) {
-        priceString = priceRaw;
-        discountPrice = double.tryParse(priceRaw);
-      } else if (priceRaw is num) {
-        priceString = priceRaw.toString();
-        discountPrice = priceRaw.toDouble();
-      }
+    String? priceString = json['price']?.toString();  // ИСПРАВЛЕННАЯ СТРОКА 164
+double? discountPrice;
+if (priceString != null) {
+  discountPrice = double.tryParse(priceString);
+}
 
       int? discountPercent;
       double? discountedPrice;
@@ -367,9 +362,45 @@ class GoodsVariant {
       files: (json['files'] as List<dynamic>?)?.map((f) {
             return GoodsFile.fromJson(f as Map<String, dynamic>);
           }).toList() ??
-          [],
-    );
+          [];
+
+  // Обработка price - может быть объектом, строкой или числом
+  VariantPrice? variantPrice;
+  if (json['price'] != null) {
+    if (json['price'] is Map<String, dynamic>) {
+      // Если price - это объект
+      variantPrice = VariantPrice.fromJson(json['price']);
+    } else {
+      // Если price - это строка или число, создаём простой объект
+      double priceValue = 0.0;
+      if (json['price'] is String) {
+        priceValue = double.tryParse(json['price']) ?? 0.0;
+      } else if (json['price'] is num) {
+        priceValue = (json['price'] as num).toDouble();
+      }
+      
+      variantPrice = VariantPrice(
+        id: 0,
+        variantId: json['id'] as int? ?? 0,
+        price: priceValue,
+        startDate: null,
+        endDate: null,
+      );
+    }
   }
+
+  return GoodsVariant(
+    id: json['id'] as int? ?? 0,
+    goodId: json['good_id'] as int? ?? 0,
+    isActive: json['is_active'] == 1,
+    attributeValues: attributeValues,
+    variantPrice: variantPrice,
+    files: (json['files'] as List<dynamic>?)?.map((f) {
+          return GoodsFile.fromJson(f as Map<String, dynamic>);
+        }).toList() ??
+        [],
+  );
+}
 }
 
 class AttributeValue {
