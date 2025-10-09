@@ -13,6 +13,7 @@ import 'package:crm_task_manager/page_2/warehouse/supplier/supplier_creen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/screens/lead/lead_screen.dart';
 
 class ReferencesScreen extends StatefulWidget {
   @override
@@ -36,6 +37,7 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
   bool _hasRkoArticle = false;
   bool _hasPkoArticle = false;
   bool _hasCategory = false; // Новое право для категорий
+  bool _hasLead = false; // TODO, проверка права для лидов
 
   @override
   void initState() {
@@ -67,6 +69,7 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
       _hasRkoArticle = await _apiService.hasPermission('rko_article.read');
       _hasPkoArticle = await _apiService.hasPermission('pko_article.read');
       _hasCategory = await _apiService.hasPermission('category.read'); // Проверка права для категорий
+      _hasLead = await _apiService.hasPermission('lead.read');
 
     } catch (e) {
       debugPrint('Ошибка при проверке прав доступа: $e');
@@ -79,6 +82,7 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
       _hasRkoArticle = false;
       _hasPkoArticle = false;
       _hasCategory = false;
+      _hasLead = false;
     } finally {
       setState(() {
         _isLoading = false;
@@ -182,6 +186,16 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
       );
     }
 
+    if (_hasLead) {
+      allReferences.add(
+        ReferenceItem(
+          title: AppLocalizations.of(context)!.translate('clients') ?? 'Клиенты',
+          icon: Icons.person_outline,
+          color: refColor,
+        ),
+      );
+    }
+
     setState(() {
       _references = allReferences;
     });
@@ -232,6 +246,11 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => IncomeScreen()),
+      );
+    } else if (reference.title == (AppLocalizations.of(context)!.translate('clients') ?? 'Клиенты')) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => LeadScreen()),
       );
     }
   }
