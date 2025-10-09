@@ -1,8 +1,10 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/write_off/write_off_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/variant_bloc/variant_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/variant_bloc/variant_event.dart';
+import 'package:crm_task_manager/custom_widget/compact_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
+import 'package:crm_task_manager/custom_widget/keyboard_dismissible.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/storage_widget.dart';
@@ -280,7 +282,8 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
-    return Scaffold(
+     return KeyboardDismissible( // ← Обернули
+    child: Scaffold(
       backgroundColor: Colors.white,
       appBar: _buildAppBar(localizations),
       body: BlocListener<WriteOffBloc, WriteOffState>(
@@ -328,7 +331,7 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
           ),
         ),
       ),
-    );
+      ), );
   }
 
   AppBar _buildAppBar(AppLocalizations localizations) {
@@ -610,57 +613,23 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
                           ),
                         ),
                         const SizedBox(height: 4),
-                        SizedBox(
-                          height: 36,
-                          child: TextField(
-                            controller: quantityController,
-                            keyboardType: TextInputType.number,
-                            inputFormatters: [
-                              FilteringTextInputFormatter.digitsOnly,
-                            ],
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xff1E2E52),
-                            ),
-                            decoration: InputDecoration(
-                              hintText: AppLocalizations.of(context)!.translate('quantity') ?? 'Количество',
-                              hintStyle: const TextStyle(
-                                fontSize: 12,
-                                fontFamily: 'Gilroy',
-                                fontWeight: FontWeight.w400,
-                                color: Color(0xff99A4BA),
-                              ),
-                              filled: true,
-                              fillColor: const Color(0xFFF4F7FD),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: BorderSide(
-                                  color: _quantityErrors[variantId] == true ? Colors.red : const Color(0xFFE5E7EB),
-                                  width: _quantityErrors[variantId] == true ? 2 : 1,
-                                ),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: BorderSide(
-                                  color: _quantityErrors[variantId] == true ? Colors.red : const Color(0xFFE5E7EB),
-                                  width: _quantityErrors[variantId] == true ? 2 : 1,
-                                ),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: BorderSide(
-                                  color: _quantityErrors[variantId] == true ? Colors.red : const Color(0xff4759FF),
-                                  width: _quantityErrors[variantId] == true ? 2 : 1.5,
-                                ),
-                              ),
-                            ),
-                            onChanged: (value) => _updateItemQuantity(variantId, value),
-                          ),
-                        ),
+                       CompactTextField(
+  controller: quantityController!,
+  hintText: AppLocalizations.of(context)!.translate('quantity') ?? 'Количество',
+  keyboardType: TextInputType.number,
+  inputFormatters: [
+    FilteringTextInputFormatter.digitsOnly,
+  ],
+  textAlign: TextAlign.center,
+  style: const TextStyle(
+    fontSize: 13,
+    fontFamily: 'Gilroy',
+    fontWeight: FontWeight.w600,
+    color: Color(0xff1E2E52),
+  ),
+  hasError: _quantityErrors[variantId] == true,
+  onChanged: (value) => _updateItemQuantity(variantId, value),
+)
                       ],
                     ),
                   ),

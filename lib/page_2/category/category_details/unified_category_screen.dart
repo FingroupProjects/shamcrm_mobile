@@ -48,7 +48,7 @@
 //       });
 //     } catch (error) {
 //       setState(() {
-//         baseUrl = 'https://shamcrm.com/storage/';
+//         baseUrl = 'https://shamcrm.com/storage';
 //       });
 //     }
 //   }
