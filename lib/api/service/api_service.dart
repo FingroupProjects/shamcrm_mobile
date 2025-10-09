@@ -10810,9 +10810,14 @@ Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
     int page = 1,
     int perPage = 20,
     String? query,
-    DateTime? fromDate,
-    DateTime? toDate,
-    int? approved, // Для будущего фильтра по статусу
+    DateTime? dateFrom,
+    DateTime? dateTo,
+    int? approved,
+    int? deleted,
+    int? leadId,
+    int? cashRegisterId,
+    int? supplierId,
+    int? authorId,
   }) async {
     String url =
         '/expense-documents'; // Предполагаемый endpoint; подкорректируй если нужно
@@ -10820,14 +10825,29 @@ Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
     if (query != null && query.isNotEmpty) {
       url += '&search=$query';
     }
-    if (fromDate != null) {
-      url += '&from=${fromDate.toIso8601String()}';
+    if (dateFrom != null) {
+      url += '&date_from=${dateFrom.toIso8601String()}';
     }
-    if (toDate != null) {
-      url += '&to=${toDate.toIso8601String()}';
+    if (dateTo != null) {
+      url += '&date_to=${dateTo.toIso8601String()}';
     }
     if (approved != null) {
       url += '&approved=$approved';
+    }
+    if (deleted != null) {
+      url += '&deleted=$deleted';
+    }
+    if (leadId != null) {
+      url += '&lead_id=$leadId';
+    }
+    if (cashRegisterId != null) {
+      url += '&cash_register_id=$cashRegisterId';
+    }
+    if (supplierId != null) {
+      url += '&supplier_id=$supplierId';
+    }
+    if (authorId != null) {
+      url += '&author_id=$authorId';
     }
 
     final path = await _appendQueryParams(url);
