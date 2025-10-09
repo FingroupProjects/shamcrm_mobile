@@ -8,12 +8,14 @@ class CustomPhoneNumberInput extends StatefulWidget {
   final Function(String)? onInputChanged;
   final String? Function(String?)? validator;
   final String label;
+  final Country? initialCountry; // Add this parameter
 
   CustomPhoneNumberInput({
     required this.controller,
     required this.label,
     this.onInputChanged,
     this.validator,
+    this.initialCountry, // Add this parameter
   });
 
   @override
@@ -28,8 +30,9 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
   @override
   void initState() {
     super.initState();
-    selectedCountry = countries.firstWhere(
-      (country) => country.name == "TJ",
+    // Use initialCountry if provided, otherwise default to TJ
+    selectedCountry = widget.initialCountry ?? countries.firstWhere(
+          (country) => country.name == "TJ",
       orElse: () => countries.first,
     );
     widget.controller.addListener(_onTextChanged);
@@ -50,7 +53,7 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
 
   TextInputFormatter _phoneNumberPasteFormatter() {
     return TextInputFormatter.withFunction((oldValue, newValue) {
-      
+
       bool isPaste = (newValue.text.length - oldValue.text.length).abs() > 1;
 
       int maxLength = phoneNumberLengths[selectedCountry?.dialCode] ?? 0;
@@ -67,7 +70,7 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
           if (checkText.startsWith(code) && (matchedDialCode == null || code.length > matchedDialCode.length)) {
             matchedDialCode = code;
             matchedCountry = countries.firstWhere(
-              (country) => country.dialCode == code,
+                  (country) => country.dialCode == code,
               orElse: () {
                 return Country(name: '', flag: '', dialCode: '');
               },
@@ -79,10 +82,10 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
 
           String phoneNumber = hasPlus
               ? newText.substring(matchedDialCode.length)
-              : newText.substring(matchedDialCode.length - 1); 
-        
+              : newText.substring(matchedDialCode.length - 1);
+
           if (RegExp(r'^\d*$').hasMatch(phoneNumber)) {
-         
+
             int newMaxLength = phoneNumberLengths[matchedDialCode] ?? 0;
             if (phoneNumber.length > newMaxLength) {
               phoneNumber = phoneNumber.substring(0, newMaxLength);
@@ -147,7 +150,7 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
       isScrollControlled: true,
       builder: (context) {
         return Container(
-          height: MediaQuery.of(context).size.height * 0.8, 
+          height: MediaQuery.of(context).size.height * 0.8,
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.only(
@@ -186,29 +189,29 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
                       child: ListView(
                         children: countries
                             .where((country) =>
-                                country.name.toLowerCase().contains(_searchQuery) ||
-                                country.fullname!.toLowerCase().contains(_searchQuery) ||
-                                country.dialCode.contains(_searchQuery))
+                        country.name.toLowerCase().contains(_searchQuery) ||
+                            country.fullname!.toLowerCase().contains(_searchQuery) ||
+                            country.dialCode.contains(_searchQuery))
                             .map((country) => ListTile(
-                                  leading: Text(country.flag, style: TextStyle(fontSize: 24)),
-                                  title: Text(
-                                    "${country.name} (${country.dialCode})",
-                                    style: TextStyle(
-                                        fontFamily: 'Gilroy',
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w500),
-                                  ),
-                                  onTap: () {
-                                    setState(() {
-                                      selectedCountry = country;
-                                      widget.controller.text = '';
-                                      if (widget.onInputChanged != null) {
-                                        widget.onInputChanged!(country.dialCode);
-                                      }
-                                    });
-                                    Navigator.pop(context);
-                                  },
-                                ))
+                          leading: Text(country.flag, style: TextStyle(fontSize: 24)),
+                          title: Text(
+                            "${country.name} (${country.dialCode})",
+                            style: TextStyle(
+                                fontFamily: 'Gilroy',
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500),
+                          ),
+                          onTap: () {
+                            setState(() {
+                              selectedCountry = country;
+                              widget.controller.text = '';
+                              if (widget.onInputChanged != null) {
+                                widget.onInputChanged!(country.dialCode);
+                              }
+                            });
+                            Navigator.pop(context);
+                          },
+                        ))
                             .toList(),
                       ),
                     ),

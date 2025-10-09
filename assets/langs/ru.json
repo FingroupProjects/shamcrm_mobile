@@ -1602,7 +1602,7 @@
   "error_creating_cash_register": "Ошибка при создании кассы",
   "warehouse_visible_off": "Показывать склад: Выкл",
   "warehouse_visible_on": "Показывать склад: Вкл",
-  "warehouse_visibility": "Отображение склада",
+  "warehouse_visibility": "Показывать склад в интернет магазине  как филиал",
   "delete_warehouse": "Удалить склад",
   "delete_warehouse_confirm": "Вы уверены, что хотите удалить этот склад?",
   "warehouse_created_successfully": "Склад успешно создан",

@@ -11549,7 +11549,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
   }
 //----------------------------------------------SUPPLIER----------------------------------
   //createSupplier
-  Future<Supplier> createSupplier(
+  Future<void> createSupplier(
       Supplier supplier,
       String organizationId, String salesFunnelId) async {
     final path = await _appendQueryParams('/suppliers');
@@ -11570,7 +11570,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       if (response.body.isNotEmpty) {
-        return Supplier.fromJson(json.decode(response.body)['result']);
+        return ; //Supplier.fromJson(json.decode(response.body)['result']);
       } else {
         throw Exception('Ошибка создания поставщика: ${response.body}');
       }
@@ -11580,7 +11580,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
   }
 
   //updateSupplier
-  Future<PriceTypeModel> updateSupplier(
+  Future<void> updateSupplier(
       {required Supplier supplier, required int id}) async {
     final path = await _appendQueryParams('/suppliers/$id');
     if (kDebugMode) {
@@ -11598,14 +11598,16 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     };
 
     final response = await _patchRequest(path, body);
-
+    debugPrint('Response body: ${response.body}');
     if (response.statusCode == 200 || response.statusCode == 201) {
       if (response.body.isNotEmpty) {
-        return PriceTypeModel.fromJson(json.decode(response.body)['result']);
+        return;
       } else {
+        debugPrint("Ошибка: Пустой ответ при обновлении поставщика");
         throw Exception('Ошибка обновления поставщика: ${response.body}');
       }
     } else {
+      debugPrint("Ошибка: ${response.body}");
       throw Exception('Ошибка обновления поставщика: ${response.body}');
     }
   }

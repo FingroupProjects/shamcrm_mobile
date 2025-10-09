@@ -1598,7 +1598,7 @@
   "error_deleting_income": "Error deleting income",
   "warehouse_visible_off": "Show warehouse: Off",
   "warehouse_visible_on": "Show warehouse: On",
-  "warehouse_visibility": "Warehouse visibility",
+  "warehouse_visibility": "Show warehouse in online store as a branch",
   "delete_warehouse": "Delete warehouse",
   "delete_warehouse_confirm": "Are you sure you want to delete this warehouse?",
   "warehouse_created_successfully": "Warehouse created successfully",
