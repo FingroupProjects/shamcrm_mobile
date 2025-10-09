@@ -13,6 +13,8 @@ class CompactTextField extends StatefulWidget {
   final TextStyle? style;
   final InputDecoration? decoration;
   final bool hasError;
+  final FocusNode? focusNode; // ✅ НОВОЕ: Поддержка внешнего FocusNode
+  final VoidCallback? onDone; // ✅ НОВОЕ: Callback при нажатии "Готово"
 
   const CompactTextField({
     required this.controller,
@@ -24,6 +26,8 @@ class CompactTextField extends StatefulWidget {
     this.style,
     this.decoration,
     this.hasError = false,
+    this.focusNode, // ✅ НОВОЕ
+    this.onDone, // ✅ НОВОЕ
     Key? key,
   }) : super(key: key);
 
@@ -32,19 +36,33 @@ class CompactTextField extends StatefulWidget {
 }
 
 class _CompactTextFieldState extends State<CompactTextField> {
-  final FocusNode _focusNode = FocusNode();
+  late FocusNode _internalFocusNode; // ✅ ИЗМЕНЕНО: Внутренний FocusNode
+  FocusNode get _effectiveFocusNode => widget.focusNode ?? _internalFocusNode; // ✅ НОВОЕ
   OverlayEntry? _overlayEntry;
 
   @override
   void initState() {
     super.initState();
+    // ✅ НОВОЕ: Создаём внутренний FocusNode только если не передан извне
+    _internalFocusNode = FocusNode();
+    
     if (Platform.isIOS) {
-      _focusNode.addListener(_handleFocusChange);
+      _effectiveFocusNode.addListener(_handleFocusChange);
+    }
+  }
+
+  @override
+  void didUpdateWidget(CompactTextField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // ✅ НОВОЕ: Если FocusNode изменился, переподписываемся
+    if (Platform.isIOS && oldWidget.focusNode != widget.focusNode) {
+      oldWidget.focusNode?.removeListener(_handleFocusChange);
+      _effectiveFocusNode.addListener(_handleFocusChange);
     }
   }
 
   void _handleFocusChange() {
-    if (_focusNode.hasFocus) {
+    if (_effectiveFocusNode.hasFocus) {
       _showKeyboardToolbar();
     } else {
       _removeKeyboardToolbar();
@@ -90,7 +108,13 @@ class _CompactTextFieldState extends State<CompactTextField> {
         children: [
           TextButton(
             onPressed: () {
-              _focusNode.unfocus();
+              // ✅ НОВОЕ: Вызываем callback onDone если он передан
+              if (widget.onDone != null) {
+                widget.onDone!();
+              } else {
+                // Иначе просто закрываем клавиатуру
+                _effectiveFocusNode.unfocus();
+              }
             },
             child: const Text(
               'Готово',
@@ -112,9 +136,12 @@ class _CompactTextFieldState extends State<CompactTextField> {
   void dispose() {
     _removeKeyboardToolbar();
     if (Platform.isIOS) {
-      _focusNode.removeListener(_handleFocusChange);
+      _effectiveFocusNode.removeListener(_handleFocusChange);
     }
-    _focusNode.dispose();
+    // ✅ НОВОЕ: Удаляем внутренний FocusNode только если не используется внешний
+    if (widget.focusNode == null) {
+      _internalFocusNode.dispose();
+    }
     super.dispose();
   }
 
@@ -122,7 +149,7 @@ class _CompactTextFieldState extends State<CompactTextField> {
   Widget build(BuildContext context) {
     return TextField(
       controller: widget.controller,
-      focusNode: _focusNode,
+      focusNode: _effectiveFocusNode, // ✅ ИЗМЕНЕНО: Используем эффективный FocusNode
       keyboardType: widget.keyboardType,
       inputFormatters: widget.inputFormatters,
       onChanged: widget.onChanged,

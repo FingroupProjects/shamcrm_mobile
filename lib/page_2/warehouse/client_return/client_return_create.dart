@@ -22,6 +22,8 @@ class CreateClientReturnDocumentScreen extends StatefulWidget {
 
   const CreateClientReturnDocumentScreen({this.organizationId, super.key});
 
+ 
+
   @override
   CreateClientReturnDocumentScreenState createState() =>
       CreateClientReturnDocumentScreenState();
@@ -42,6 +44,10 @@ class CreateClientReturnDocumentScreenState
   // Контроллеры для редактирования полей товаров
   final Map<int, TextEditingController> _priceControllers = {};
   final Map<int, TextEditingController> _quantityControllers = {};
+
+  // ✅ НОВОЕ: FocusNode для управления фокусом
+  final Map<int, FocusNode> _quantityFocusNodes = {};
+  final Map<int, FocusNode> _priceFocusNodes = {};
 
   // Для отслеживания ошибок валидации
   final Map<int, bool> _priceErrors = {};
@@ -71,6 +77,10 @@ class CreateClientReturnDocumentScreenState
           _priceControllers[variantId] = TextEditingController();
           _quantityControllers[variantId] = TextEditingController();
 
+          // ✅ НОВОЕ: Создаём FocusNode для полей количества и цены
+          _quantityFocusNodes[variantId] = FocusNode();
+          _priceFocusNodes[variantId] = FocusNode();
+
           // Инициализируем состояние ошибок
           _priceErrors[variantId] = false;
           _quantityErrors[variantId] = false;
@@ -86,7 +96,7 @@ class CreateClientReturnDocumentScreenState
             duration: const Duration(milliseconds: 300),
           );
 
-          // Автоматическая прокрутка вниз после добавления товара
+          // ✅ НОВОЕ: После добавления товара устанавливаем фокус на поле количества
           Future.delayed(const Duration(milliseconds: 350), () {
             if (mounted && _scrollController.hasClients) {
               _scrollController.animateTo(
@@ -94,6 +104,9 @@ class CreateClientReturnDocumentScreenState
                 duration: const Duration(milliseconds: 400),
                 curve: Curves.easeOut,
               );
+              
+              // Устанавливаем фокус на поле количества только что добавленного товара
+              _quantityFocusNodes[variantId]?.requestFocus();
             }
           });
         }
@@ -114,6 +127,12 @@ class CreateClientReturnDocumentScreenState
         _priceControllers.remove(variantId);
         _quantityControllers[variantId]?.dispose();
         _quantityControllers.remove(variantId);
+
+        // ✅ НОВОЕ: Удаляем FocusNode для обоих полей
+        _quantityFocusNodes[variantId]?.dispose();
+        _quantityFocusNodes.remove(variantId);
+        _priceFocusNodes[variantId]?.dispose();
+        _priceFocusNodes.remove(variantId);
 
         // Удаляем ошибки
         _priceErrors.remove(variantId);
@@ -207,9 +226,8 @@ class CreateClientReturnDocumentScreenState
       final index = _items.indexWhere((item) => item['variantId'] == variantId);
       if (index != -1) {
         _items[index]['selectedUnit'] = newUnit;
-        _items[index]['unit_id'] = newUnitId; // Может быть null
+        _items[index]['unit_id'] = newUnitId;
 
-        // Находим amount для выбранной единицы измерения
         final availableUnits =
             _items[index]['availableUnits'] as List<Unit>? ?? [];
         final selectedUnitObj = availableUnits.firstWhere(
@@ -221,7 +239,6 @@ class CreateClientReturnDocumentScreenState
 
         _items[index]['amount'] = selectedUnitObj.amount ?? 1;
 
-        // Пересчитываем total с учётом нового amount
         final amount = _items[index]['amount'] ?? 1;
         _items[index]['total'] =
             (_items[index]['quantity'] * _items[index]['price'] * amount)
@@ -229,7 +246,30 @@ class CreateClientReturnDocumentScreenState
       }
     });
   }
-
+ // ✅ НОВОЕ: Функция для перехода к следующему пустому полю
+  void _moveToNextEmptyField() {
+    // Собираем все поля в правильном порядке
+    for (var item in _items) {
+      final variantId = item['variantId'] as int;
+      final quantityController = _quantityControllers[variantId];
+      final priceController = _priceControllers[variantId];
+      
+      // Проверяем поле количества
+      if (quantityController != null && quantityController.text.trim().isEmpty) {
+        _quantityFocusNodes[variantId]?.requestFocus();
+        return;
+      }
+      
+      // Проверяем поле цены
+      if (priceController != null && priceController.text.trim().isEmpty) {
+        _priceFocusNodes[variantId]?.requestFocus();
+        return;
+      }
+    }
+    
+    // Если все поля заполнены - закрываем клавиатуру
+    FocusScope.of(context).unfocus();
+  }
   void _createDocument({bool approve = false}) {
     if (!_formKey.currentState!.validate()) return;
 
@@ -259,7 +299,6 @@ class CreateClientReturnDocumentScreenState
         final quantityController = _quantityControllers[variantId];
         final priceController = _priceControllers[variantId];
 
-        // Проверка количества
         if (quantityController == null ||
             quantityController.text.trim().isEmpty ||
             (int.tryParse(quantityController.text) ?? 0) <= 0) {
@@ -267,7 +306,6 @@ class CreateClientReturnDocumentScreenState
           hasErrors = true;
         }
 
-        // Проверка цены
         if (priceController == null ||
             priceController.text.trim().isEmpty ||
             (double.tryParse(priceController.text) ?? -1) < 0) {
@@ -310,7 +348,7 @@ class CreateClientReturnDocumentScreenState
             .toList(),
         organizationId: widget.organizationId ?? 1,
         salesFunnelId: 1,
-        approve: approve, // Передаем параметр approve
+        approve: approve,
       ));
     } catch (e) {
       setState(() => _isLoading = false);
@@ -345,6 +383,11 @@ class CreateClientReturnDocumentScreenState
         duration: const Duration(seconds: 3),
       ),
     );
+  }
+
+  // ✅ НОВОЕ: Вычисляем общую сумму
+  double get _totalAmount {
+    return _items.fold<double>(0, (sum, item) => sum + (item['total'] ?? 0.0));
   }
 
   @override
@@ -388,7 +431,7 @@ class CreateClientReturnDocumentScreenState
                         selectedLead: _selectedLead?.id?.toString(),
                         onSelectLead: (lead) =>
                             setState(() => _selectedLead = lead),
-                        showDebt: true, // ← Показываем долг
+                        showDebt: true,
                       ),
                       const SizedBox(height: 16),
                       StorageWidget(
@@ -414,6 +457,10 @@ class CreateClientReturnDocumentScreenState
   }
 
   AppBar _buildAppBar(AppLocalizations localizations) {
+    // ✅ НОВОЕ: Показываем сумму в AppBar, если есть товары
+    final hasItems = _items.isNotEmpty;
+    final total = _totalAmount;
+
     return AppBar(
       backgroundColor: Colors.white,
       forceMaterialTransparency: true,
@@ -423,17 +470,52 @@ class CreateClientReturnDocumentScreenState
             color: Color(0xff1E2E52), size: 24),
         onPressed: () => Navigator.pop(context),
       ),
-      title: Text(
-        localizations.translate('create_client_return') ??
-            'Создать возврат от клиента',
-        style: const TextStyle(
-          fontSize: 20,
-          fontFamily: 'Gilroy',
-          fontWeight: FontWeight.w600,
-          color: Color(0xff1E2E52),
-        ),
-      ),
+      title: hasItems
+          ? null // Убираем заголовок, когда показываем сумму
+          : Text(
+              localizations.translate('create_client_return') ??
+                  'Создать возврат от клиента',
+              style: const TextStyle(
+                fontSize: 20,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w600,
+                color: Color(0xff1E2E52),
+              ),
+            ),
       centerTitle: false,
+      actions: hasItems
+          ? [
+              // ✅ НОВОЕ: Показываем общую сумму справа
+              Container(
+                margin: const EdgeInsets.only(right: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xff4CAF50).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.account_balance_wallet_outlined,
+                      color: Color(0xff4CAF50),
+                      size: 18,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      total.toStringAsFixed(0),
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xff4CAF50),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ]
+          : null,
     );
   }
 
@@ -514,20 +596,10 @@ class CreateClientReturnDocumentScreenState
   }
 
   Widget _buildSelectedItemsList() {
-    final total =
-        _items.fold<double>(0, (sum, item) => sum + (item['total'] ?? 0.0));
+    final total = _totalAmount;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Text(
-        //   AppLocalizations.of(context)!.translate('added_goods') ?? 'Добавленные товары',
-        //   style: const TextStyle(
-        //     fontSize: 16,
-        //     fontFamily: 'Gilroy',
-        //     fontWeight: FontWeight.w600,
-        //     color: Color(0xff1E2E52),
-        //   ),
-        // ),
         const SizedBox(height: 8),
         AnimatedList(
           key: _listKey,
@@ -550,6 +622,8 @@ class CreateClientReturnDocumentScreenState
     final variantId = item['variantId'] as int;
     final priceController = _priceControllers[variantId];
     final quantityController = _quantityControllers[variantId];
+    final quantityFocusNode = _quantityFocusNodes[variantId];
+    final priceFocusNode = _priceFocusNodes[variantId]; // ✅ НОВОЕ
 
     return FadeTransition(
       opacity: animation,
@@ -574,7 +648,6 @@ class CreateClientReturnDocumentScreenState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Заголовок с названием и кнопкой удаления
               Row(
                 children: [
                   Container(
@@ -616,11 +689,9 @@ class CreateClientReturnDocumentScreenState
               const SizedBox(height: 10),
               const Divider(height: 1, color: Color(0xFFE5E7EB)),
               const SizedBox(height: 10),
-              // Поля в одну строку (компактный вид)
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Единица измерения
                   if (availableUnits.isNotEmpty)
                     Expanded(
                       flex: 2,
@@ -710,7 +781,6 @@ class CreateClientReturnDocumentScreenState
                       ),
                     ),
                   if (availableUnits.isNotEmpty) const SizedBox(width: 8),
-                  // Количество
                   Expanded(
                     flex: 2,
                     child: Column(
@@ -728,6 +798,7 @@ class CreateClientReturnDocumentScreenState
                         ),
                         CompactTextField(
                           controller: quantityController!,
+                          focusNode: quantityFocusNode, // ✅ НОВОЕ: Привязываем FocusNode
                           hintText: AppLocalizations.of(context)!
                                   .translate('quantity') ??
                               'Количество',
@@ -745,36 +816,55 @@ class CreateClientReturnDocumentScreenState
                           hasError: _quantityErrors[variantId] == true,
                           onChanged: (value) =>
                               _updateItemQuantity(variantId, value),
+                          onDone: _moveToNextEmptyField, // ✅ НОВОЕ: Переход к следующему полю
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(width: 8),
-                  // Цена
-                  CompactTextField(
-                    controller: priceController!,
-                    hintText:
-                        AppLocalizations.of(context)!.translate('price') ??
-                            'Цена',
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
-                    inputFormatters: [
-                      FilteringTextInputFormatter.allow(
-                          RegExp(r'^\d*\.?\d{0,3}')),
-                    ],
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xff1E2E52),
+                  Expanded(
+                    flex: 3,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          AppLocalizations.of(context)!.translate('price') ??
+                              'Цена',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w400,
+                            color: Color(0xff99A4BA),
+                          ),
+                        ),
+                        CompactTextField(
+                          controller: priceController!,
+                          focusNode: priceFocusNode, // ✅ НОВОЕ: Привязываем FocusNode
+                          hintText:
+                              AppLocalizations.of(context)!.translate('price') ??
+                                  'Цена',
+                          keyboardType:
+                              const TextInputType.numberWithOptions(decimal: true),
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(
+                                RegExp(r'^\d*\.?\d{0,3}')),
+                          ],
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xff1E2E52),
+                          ),
+                          hasError: _priceErrors[variantId] == true,
+                          onChanged: (value) => _updateItemPrice(variantId, value),
+                          onDone: _moveToNextEmptyField, // ✅ НОВОЕ: Переход к следующему полю
+                        ),
+                      ],
                     ),
-                    hasError: _priceErrors[variantId] == true,
-                    onChanged: (value) => _updateItemPrice(variantId, value),
                   ),
                 ],
               ),
               const SizedBox(height: 10),
-              // Итоговая сумма (компактная)
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -875,6 +965,7 @@ class CreateClientReturnDocumentScreenState
     );
   }
 
+  // ✅ ИЗМЕНЕНО: Две кнопки в РАЗНЫХ линиях, первая с белым фоном и зелёной границей
   Widget _buildActionButtons(AppLocalizations localizations) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -891,6 +982,7 @@ class CreateClientReturnDocumentScreenState
       ),
       child: Column(
         children: [
+          // ✅ НОВОЕ: Первая кнопка "Сохранить и провести" - белый фон с зелёной границей
           Container(
             width: double.infinity,
             height: 48,
@@ -934,65 +1026,48 @@ class CreateClientReturnDocumentScreenState
               ),
             ),
           ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xffF4F7FD),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    elevation: 0,
-                  ),
-                  child: Text(
-                    localizations.translate('close') ?? 'Отмена',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black,
-                    ),
-                  ),
+          const SizedBox(height: 12),
+          // ✅ НОВОЕ: Вторая кнопка "Сохранить" - синяя, на всю ширину
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton(
+              onPressed: _isLoading ? null : _saveDocument,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xff4759FF),
+                disabledBackgroundColor: const Color(0xffE5E7EB),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
+                elevation: 0,
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _saveDocument,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xff4759FF),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    elevation: 0,
-                  ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : Text(
+              child: _isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.save_outlined,
+                            color: Colors.white, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
                           localizations.translate('save') ?? 'Сохранить',
                           style: const TextStyle(
                             fontSize: 16,
                             fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
+                            fontWeight: FontWeight.w600,
                             color: Colors.white,
                           ),
                         ),
-                ),
-              ),
-            ],
+                      ],
+                    ),
+            ),
           ),
         ],
       ),
@@ -1011,6 +1086,24 @@ class CreateClientReturnDocumentScreenState
   void dispose() {
     _dateController.dispose();
     _commentController.dispose();
+    _scrollController.dispose();
+    
+    // ✅ НОВОЕ: Освобождаем все FocusNode для количества и цены
+    for (var focusNode in _quantityFocusNodes.values) {
+      focusNode.dispose();
+    }
+    for (var focusNode in _priceFocusNodes.values) {
+      focusNode.dispose();
+    }
+    
+    // Освобождаем контроллеры
+    for (var controller in _priceControllers.values) {
+      controller.dispose();
+    }
+    for (var controller in _quantityControllers.values) {
+      controller.dispose();
+    }
+    
     super.dispose();
   }
 }
