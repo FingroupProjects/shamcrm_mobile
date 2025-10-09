@@ -42,142 +42,143 @@ class _HomeScreenState extends State<HomeScreen> {
   List<String> _inactiveIconsGroup2 = [];
 
   @override
+
   void initState() {
     super.initState();
     initializeScreensWithPermissions();
   }
 
   Future<void> initializeScreensWithPermissions() async {
-  List<Widget> widgetsGroup1 = [];
-  List<Widget> widgetsGroup2 = [];
-  List<String> titleKeysGroup1 = [];
-  List<String> titleKeysGroup2 = [];
-  List<String> navBarTitleKeysGroup1 = [];
-  List<String> navBarTitleKeysGroup2 = [];
-  List<String> activeIconsGroup1 = [];
-  List<String> activeIconsGroup2 = [];
-  List<String> inactiveIconsGroup1 = [];
-  List<String> inactiveIconsGroup2 = [];
+    List<Widget> widgetsGroup1 = [];
+    List<Widget> widgetsGroup2 = [];
+    List<String> titleKeysGroup1 = [];
+    List<String> titleKeysGroup2 = [];
+    List<String> navBarTitleKeysGroup1 = [];
+    List<String> navBarTitleKeysGroup2 = [];
+    List<String> activeIconsGroup1 = [];
+    List<String> activeIconsGroup2 = [];
+    List<String> inactiveIconsGroup1 = [];
+    List<String> inactiveIconsGroup2 = [];
 
-  bool hasAvailableScreens = false;
+    bool hasAvailableScreens = false;
 
-  // Дашборд
-  if (await _apiService.hasPermission('section.dashboard')) {
-    widgetsGroup1.add(DashboardScreen());
-    titleKeysGroup1.add('appbar_dashboard');
-    navBarTitleKeysGroup1.add('appbar_dashboard');
-    activeIconsGroup1.add('assets/icons/MyNavBar/dashboard_ON.png');
-    inactiveIconsGroup1.add('assets/icons/MyNavBar/dashboard_OFF.png');
-    hasAvailableScreens = true;
-  }
-
-  // Задачи
-  if (await _apiService.hasPermission('task.read')) {
-    widgetsGroup1.add(TaskScreen());
-    titleKeysGroup1.add('appbar_tasks');
-    navBarTitleKeysGroup1.add('appbar_tasks');
-    activeIconsGroup1.add('assets/icons/MyNavBar/tasks_ON.png');
-    inactiveIconsGroup1.add('assets/icons/MyNavBar/tasks_OFF.png');
-    hasAvailableScreens = true;
-  }
-
-  // Лиды
-  if (await _apiService.hasPermission('lead.read')) {
-    widgetsGroup1.add(LeadScreen());
-    titleKeysGroup1.add('appbar_leads');
-    navBarTitleKeysGroup1.add('appbar_leads');
-    activeIconsGroup1.add('assets/icons/MyNavBar/clients_ON.png');
-    inactiveIconsGroup1.add('assets/icons/MyNavBar/clients_OFF.png');
-    hasAvailableScreens = true;
-  }
-
-  // Сделки
-  if (await _apiService.hasPermission('deal.read')) {
-    widgetsGroup1.add(DealScreen());
-    titleKeysGroup1.add('appbar_deals');
-    navBarTitleKeysGroup1.add('appbar_deals');
-    activeIconsGroup1.add('assets/icons/MyNavBar/deal_ON.png');
-    inactiveIconsGroup1.add('assets/icons/MyNavBar/deal_OFF.png');
-    hasAvailableScreens = true;
-  }
-
-  // Чаты
-  widgetsGroup1.add(ChatsScreen());
-  titleKeysGroup1.add('appbar_chats');
-  navBarTitleKeysGroup1.add('appbar_chats');
-  activeIconsGroup1.add('assets/icons/MyNavBar/chats_ON.png');
-  inactiveIconsGroup1.add('assets/icons/MyNavBar/chats_OFF.png');
-  hasAvailableScreens = true;
-
-  // ========== КЛЮЧЕВАЯ ЛОГИКА ==========
-  
-  // Проверяем доступ к складскому учёту
-  bool hasWarehouseAccess = false;
-  if (await _apiService.hasPermission('accounting_of_goods') || 
-      await _apiService.hasPermission('accounting_money')) {
-    hasWarehouseAccess = true;
-  }
-
-  // Проверяем доступ к заказам
-  bool hasOrderAccess = await _apiService.hasPermission('order.read');
-
-  // ЛОГИКА ВЗАИМОИСКЛЮЧЕНИЯ:
-  if (hasWarehouseAccess) {
-    // Если есть складской учёт → добавляем WarehouseAccountingScreen и OrderScreen (если есть доступ)
-    widgetsGroup1.add(WarehouseAccountingScreen());
-    titleKeysGroup1.add('appbar_warehouse');
-    navBarTitleKeysGroup1.add('appbar_warehouse');
-    activeIconsGroup1.add('assets/icons/MyNavBar/money_ON.png');
-    inactiveIconsGroup1.add('assets/icons/MyNavBar/google-docs (5).png');
-    hasAvailableScreens = true;
-
-    // Добавляем OrderScreen во вторую группу, если есть доступ
-    if (hasOrderAccess) {
-      widgetsGroup2.add(OrderScreen());
-      titleKeysGroup2.add('appbar_orders'); // Используем ключ 'orders' для локализации
-      navBarTitleKeysGroup2.add('appbar_orders');
-      activeIconsGroup2.add('assets/icons/MyNavBar/orderon.png'); // Убедитесь, что иконка существует
-      inactiveIconsGroup2.add('assets/icons/MyNavBar/order_OFF.png');
+    // Дашборд
+    if (await _apiService.hasPermission('section.dashboard')) {
+      widgetsGroup1.add(DashboardScreen());
+      titleKeysGroup1.add('appbar_dashboard');
+      navBarTitleKeysGroup1.add('appbar_dashboard');
+      activeIconsGroup1.add('assets/icons/MyNavBar/dashboard_ON.png');
+      inactiveIconsGroup1.add('assets/icons/MyNavBar/dashboard_OFF.png');
       hasAvailableScreens = true;
     }
-    
-    // НЕ добавляем OnlineStoreScreen!
-    
-  } else {
-    // Если НЕТ складского учёта → добавляем OnlineStoreScreen
-    // (внутри него уже есть заказы)
-    widgetsGroup2.add(OnlineStoreScreen());
-    titleKeysGroup2.add('appbar_online_store');
-    navBarTitleKeysGroup2.add('appbar_online_store');
-    activeIconsGroup2.add('assets/icons/MyNavBar/category_ON.png');
-    inactiveIconsGroup2.add('assets/icons/MyNavBar/category_OFF.png');
-    hasAvailableScreens = true;
-    
-    // НЕ добавляем OrderScreen отдельно!
-  }
 
-  if (mounted) {
-    setState(() {
-      _widgetOptionsGroup1 = widgetsGroup1;
-      _widgetOptionsGroup2 = widgetsGroup2;
-      _titleKeysGroup1 = titleKeysGroup1;
-      _titleKeysGroup2 = titleKeysGroup2;
-      _navBarTitleKeysGroup1 = navBarTitleKeysGroup1;
-      _navBarTitleKeysGroup2 = navBarTitleKeysGroup2;
-      _activeIconsGroup1 = activeIconsGroup1;
-      _activeIconsGroup2 = activeIconsGroup2;
-      _inactiveIconsGroup1 = inactiveIconsGroup1;
-      _inactiveIconsGroup2 = inactiveIconsGroup2;
-      
-      // Если текущий пользователь находится во второй группе, но она пуста,
-      // переключаем на первую группу
-      if (_selectedIndexGroup2 != -1 && widgetsGroup2.isEmpty) {
-        _selectedIndexGroup1 = 0;
-        _selectedIndexGroup2 = -1;
+    // Задачи
+    if (await _apiService.hasPermission('task.read')) {
+      widgetsGroup1.add(TaskScreen());
+      titleKeysGroup1.add('appbar_tasks');
+      navBarTitleKeysGroup1.add('appbar_tasks');
+      activeIconsGroup1.add('assets/icons/MyNavBar/tasks_ON.png');
+      inactiveIconsGroup1.add('assets/icons/MyNavBar/tasks_OFF.png');
+      hasAvailableScreens = true;
+    }
+
+    // Лиды
+    if (await _apiService.hasPermission('lead.read')) {
+      widgetsGroup1.add(LeadScreen());
+      titleKeysGroup1.add('appbar_leads');
+      navBarTitleKeysGroup1.add('appbar_leads');
+      activeIconsGroup1.add('assets/icons/MyNavBar/clients_ON.png');
+      inactiveIconsGroup1.add('assets/icons/MyNavBar/clients_OFF.png');
+      hasAvailableScreens = true;
+    }
+
+    // Сделки
+    if (await _apiService.hasPermission('deal.read')) {
+      widgetsGroup1.add(DealScreen());
+      titleKeysGroup1.add('appbar_deals');
+      navBarTitleKeysGroup1.add('appbar_deals');
+      activeIconsGroup1.add('assets/icons/MyNavBar/deal_ON.png');
+      inactiveIconsGroup1.add('assets/icons/MyNavBar/deal_OFF.png');
+      hasAvailableScreens = true;
+    }
+
+    // Чаты
+    widgetsGroup1.add(ChatsScreen());
+    titleKeysGroup1.add('appbar_chats');
+    navBarTitleKeysGroup1.add('appbar_chats');
+    activeIconsGroup1.add('assets/icons/MyNavBar/chats_ON.png');
+    inactiveIconsGroup1.add('assets/icons/MyNavBar/chats_OFF.png');
+    hasAvailableScreens = true;
+
+    // ========== КЛЮЧЕВАЯ ЛОГИКА ==========
+    
+    // Проверяем доступ к складскому учёту
+    bool hasWarehouseAccess = false;
+    if (await _apiService.hasPermission('accounting_of_goods') || 
+        await _apiService.hasPermission('accounting_money')) {
+      hasWarehouseAccess = true;
+    }
+
+    // Проверяем доступ к заказам
+    bool hasOrderAccess = await _apiService.hasPermission('order.read');
+
+    // ЛОГИКА ВЗАИМОИСКЛЮЧЕНИЯ:
+    if (hasWarehouseAccess) {
+      // Если есть складской учёт → добавляем WarehouseAccountingScreen и OrderScreen (если есть доступ)
+      widgetsGroup1.add(WarehouseAccountingScreen());
+      titleKeysGroup1.add('appbar_warehouse');
+      navBarTitleKeysGroup1.add('appbar_warehouse');
+      activeIconsGroup1.add('assets/icons/MyNavBar/money_on.png');
+      inactiveIconsGroup1.add('assets/icons/MyNavBar/google-docs (5).png');
+      hasAvailableScreens = true;
+
+      // Добавляем OrderScreen во вторую группу, если есть доступ
+      if (hasOrderAccess) {
+        widgetsGroup2.add(OrderScreen());
+        titleKeysGroup2.add('appbar_orders'); // Используем ключ 'orders' для локализации
+        navBarTitleKeysGroup2.add('appbar_orders');
+        activeIconsGroup2.add('assets/icons/MyNavBar/orderon.png'); // Убедитесь, что иконка существует
+        inactiveIconsGroup2.add('assets/icons/MyNavBar/order_OFF.png');
+        hasAvailableScreens = true;
       }
-    });
+      
+      // НЕ добавляем OnlineStoreScreen!
+      
+    } else {
+      // Если НЕТ складского учёта → добавляем OnlineStoreScreen
+      // (внутри него уже есть заказы)
+      widgetsGroup2.add(OnlineStoreScreen());
+      titleKeysGroup2.add('appbar_online_store');
+      navBarTitleKeysGroup2.add('appbar_online_store');
+      activeIconsGroup2.add('assets/icons/MyNavBar/category_ON.png');
+      inactiveIconsGroup2.add('assets/icons/MyNavBar/category_OFF.png');
+      hasAvailableScreens = true;
+      
+      // НЕ добавляем OrderScreen отдельно!
+    }
+
+    if (mounted) {
+      setState(() {
+        _widgetOptionsGroup1 = widgetsGroup1;
+        _widgetOptionsGroup2 = widgetsGroup2;
+        _titleKeysGroup1 = titleKeysGroup1;
+        _titleKeysGroup2 = titleKeysGroup2;
+        _navBarTitleKeysGroup1 = navBarTitleKeysGroup1;
+        _navBarTitleKeysGroup2 = navBarTitleKeysGroup2;
+        _activeIconsGroup1 = activeIconsGroup1;
+        _activeIconsGroup2 = activeIconsGroup2;
+        _inactiveIconsGroup1 = inactiveIconsGroup1;
+        _inactiveIconsGroup2 = inactiveIconsGroup2;
+        
+        // Если текущий пользователь находится во второй группе, но она пуста,
+        // переключаем на первую группу
+        if (_selectedIndexGroup2 != -1 && widgetsGroup2.isEmpty) {
+          _selectedIndexGroup1 = 0;
+          _selectedIndexGroup2 = -1;
+        }
+      });
+    }
   }
-}
 
   @override
   void didChangeDependencies() {
@@ -205,48 +206,55 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
- @override
-Widget build(BuildContext context) {
-  Widget currentWidget;
-  
-  // Определяем, какой экран показывать
-  if (_selectedIndexGroup1 != -1 && _selectedIndexGroup1 < _widgetOptionsGroup1.length) {
-    currentWidget = _widgetOptionsGroup1[_selectedIndexGroup1];
-  } else if (_selectedIndexGroup2 != -1 && _selectedIndexGroup2 < _widgetOptionsGroup2.length) {
-    currentWidget = _widgetOptionsGroup2[_selectedIndexGroup2];
-  } else {
-    currentWidget = EmptyScreen();
+  @override
+  Widget build(BuildContext context) {
+    Widget currentWidget;
+    
+    // Определяем, какой экран показывать
+    if (_selectedIndexGroup1 != -1 && _selectedIndexGroup1 < _widgetOptionsGroup1.length) {
+      currentWidget = _widgetOptionsGroup1[_selectedIndexGroup1];
+    } else if (_selectedIndexGroup2 != -1 && _selectedIndexGroup2 < _widgetOptionsGroup2.length) {
+      currentWidget = _widgetOptionsGroup2[_selectedIndexGroup2];
+    } else {
+      currentWidget = EmptyScreen();
+    }
+    
+    // ИСПРАВЛЕНИЕ: Оборачиваем currentWidget в SafeArea для bottom padding на iOS
+    // Это предотвратит перекрытие кнопок/элементов внизу body nav bar'ом
+    Widget safeBody = SafeArea(
+      bottom: true,  // Только bottom, чтобы не влиять на top (appBar уже есть)
+      child: currentWidget,
+    );
+    
+    return Scaffold(
+      body: safeBody,  // Используем safeBody вместо currentWidget
+      backgroundColor: Colors.white,
+      bottomNavigationBar: MyNavBar(
+        currentIndexGroup1: _selectedIndexGroup1,
+        currentIndexGroup2: _selectedIndexGroup2,
+        onItemSelected: (groupIndex, itemIndex) {
+          setState(() {
+            if (groupIndex == 1) {
+              _selectedIndexGroup1 = itemIndex;
+              _selectedIndexGroup2 = -1;
+            } else if (groupIndex == 2) {
+              _selectedIndexGroup2 = itemIndex;
+              _selectedIndexGroup1 = -1;
+            }
+            _isSearching = false;
+          });
+        },
+        navBarTitlesGroup1: _navBarTitleKeysGroup1
+            .map((key) => AppLocalizations.of(context)!.translate(key))
+            .toList(),
+        navBarTitlesGroup2: _navBarTitleKeysGroup2
+            .map((key) => AppLocalizations.of(context)!.translate(key))
+            .toList(),
+        activeIconsGroup1: _activeIconsGroup1,
+        activeIconsGroup2: _activeIconsGroup2,
+        inactiveIconsGroup1: _inactiveIconsGroup1,
+        inactiveIconsGroup2: _inactiveIconsGroup2,
+      ),
+    );
   }
-  
-  return Scaffold(
-    body: currentWidget,
-    backgroundColor: Colors.white,
-    bottomNavigationBar: MyNavBar(
-      currentIndexGroup1: _selectedIndexGroup1,
-      currentIndexGroup2: _selectedIndexGroup2,
-      onItemSelected: (groupIndex, itemIndex) {
-        setState(() {
-          if (groupIndex == 1) {
-            _selectedIndexGroup1 = itemIndex;
-            _selectedIndexGroup2 = -1;
-          } else if (groupIndex == 2) {
-            _selectedIndexGroup2 = itemIndex;
-            _selectedIndexGroup1 = -1;
-          }
-          _isSearching = false;
-        });
-      },
-      navBarTitlesGroup1: _navBarTitleKeysGroup1
-          .map((key) => AppLocalizations.of(context)!.translate(key))
-          .toList(),
-      navBarTitlesGroup2: _navBarTitleKeysGroup2
-          .map((key) => AppLocalizations.of(context)!.translate(key))
-          .toList(),
-      activeIconsGroup1: _activeIconsGroup1,
-      activeIconsGroup2: _activeIconsGroup2,
-      inactiveIconsGroup1: _inactiveIconsGroup1,
-      inactiveIconsGroup2: _inactiveIconsGroup2,
-    ),
-  );
 }
-} 
