@@ -284,7 +284,7 @@ class _EditMovementDocumentScreenState extends State<EditMovementDocumentScreen>
           final unitId = item['unit_id'];
           return {
             'good_id': item['id'],
-            'quantity': item['quantity'].toString(),
+            'quantity': int.tryParse(item['quantity'].toString()),
             'unit_id': unitId,
           };
         }).toList(),

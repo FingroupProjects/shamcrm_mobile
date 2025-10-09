@@ -330,7 +330,7 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
         counterpartyId: _selectedLead!.id!,
         documentGoods: _items.map((item) => {
           'good_id': item['d'],
-          'quantity': item['quantity'].toString(),
+          'quantity': int.tryParse(item['quantity'].toString()),
           'price': item['price'].toString(),
           'unit_id': item['unit_id'], // Может быть null'
         }).toList(),

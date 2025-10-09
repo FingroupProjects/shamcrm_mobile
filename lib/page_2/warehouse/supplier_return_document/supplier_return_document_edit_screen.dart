@@ -291,7 +291,7 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
         counterpartyId: int.parse(_selectedSupplier!),
         documentGoods: _items.map((item) => {
               'good_id': item['id'],
-              'quantity': item['quantity'].toString(),
+              'quantity': int.tryParse(item['quantity'].toString()),
               'price': item['price'].toString(),
             }).toList(),
         organizationId: widget.document.organizationId ?? 1,

@@ -349,7 +349,7 @@ class CreateClientReturnDocumentScreenState extends State<CreateClientReturnDocu
         documentGoods: _items
             .map((item) => {
                   'good_id': item['id'],
-                  'quantity': item['quantity'].toString(),
+                  'quantity': int.tryParse(item['quantity'].toString()),
                   'price': item['price'].toString(),
                   "unit_id": item["unit_id"]
                 })

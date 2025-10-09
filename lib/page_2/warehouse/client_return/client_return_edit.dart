@@ -307,10 +307,10 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
         date: isoDate,
         storageId: int.parse(_selectedStorage!),
         comment: _commentController.text.trim(),
-        counterpartyId: _selectedLead!.id!,
+        counterpartyId: _selectedLead!.id,
         documentGoods: _items.map((item) => {
               'good_id': item['id'],
-              'quantity': item['quantity'].toString(),
+              'quantity': int.tryParse(item['quantity'].toString()),
               'price': item['price'].toString(),
                "unit_id": item["unit_id"]
             }).toList(),

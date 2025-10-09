@@ -238,7 +238,7 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
         documentGoods: _items.map((item) {
           return {
             'good_id': item['id'],
-            'quantity': item['quantity'].toString(),
+            'quantity': int.tryParse(item['quantity'].toString()),
             'unit_id': item['unit_id'],
           };
         }).toList(),
