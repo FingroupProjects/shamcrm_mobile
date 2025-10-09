@@ -124,6 +124,7 @@ class _ClientReturnScreenState extends State<ClientReturnScreen> {
   }
 
   void _showSnackBar(String message, bool isSuccess) {
+    debugPrint("SHOW _showSnackBar: $message");
     if (!mounted || !context.mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -232,7 +233,9 @@ class _ClientReturnScreenState extends State<ClientReturnScreen> {
                       showSimpleErrorDialog(
                           context,
                           localizations?.translate('error') ?? 'Ошибка',
-                          state.message);
+                          state.message,
+                        errorDialogEnum: ErrorDialogEnum.clientReturnApprove,
+                      );
                       return;
                     }
                     _showSnackBar(state.message, false);
@@ -256,7 +259,10 @@ class _ClientReturnScreenState extends State<ClientReturnScreen> {
                       showSimpleErrorDialog(
                           context,
                           localizations?.translate('error') ?? 'Ошибка',
-                          state.message);
+                          state.message,
+                        errorDialogEnum: ErrorDialogEnum.clientReturnApprove,
+
+                      );
                       return;
                     }
                     _showSnackBar(state.message, false);
@@ -281,7 +287,9 @@ class _ClientReturnScreenState extends State<ClientReturnScreen> {
                       showSimpleErrorDialog(
                           context,
                           localizations?.translate('error') ?? 'Ошибка',
-                          state.message);
+                          state.message,
+                        errorDialogEnum: ErrorDialogEnum.clientReturnApprove,
+                      );
                       return;
                     }
                     _showSnackBar(state.message, false);
@@ -309,7 +317,9 @@ class _ClientReturnScreenState extends State<ClientReturnScreen> {
                       showSimpleErrorDialog(
                           context,
                           localizations?.translate('error') ?? 'Ошибка',
-                          state.message);
+                          state.message,
+                        errorDialogEnum: ErrorDialogEnum.clientReturnApprove,
+                      );
                       _clientReturnBloc.add(FetchClientReturns(
                           forceRefresh: true, filters: _currentFilters));
                       return;
@@ -364,109 +374,106 @@ class _ClientReturnScreenState extends State<ClientReturnScreen> {
                     if (index >= currentData.length) {
                       return _isLoadingMore
                           ? Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Center(
-                                child: PlayStoreImageLoading(
-                                  size: 80.0,
-                                  duration: const Duration(milliseconds: 1000),
-                                ),
-                              ),
-                            )
+                        padding: const EdgeInsets.all(16.0),
+                        child: Center(
+                          child: PlayStoreImageLoading(
+                            size: 80.0,
+                            duration: const Duration(milliseconds: 1000),
+                          ),
+                        ),
+                      )
                           : const SizedBox.shrink();
                     }
 
-                    // ИЗМЕНЕНО: Dismissible только с delete-правом
-                    return _hasDeletePermission
+                    Widget item = _hasDeletePermission
                         ? Dismissible(
-                            key: Key(currentData[index].id.toString()),
-                            direction: DismissDirection.endToStart,
-                            background: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
-                              margin: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: Colors.red,
-                                borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.05),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              alignment: Alignment.centerRight,
-                              child: const Icon(Icons.delete,
-                                  color: Colors.white, size: 24),
+                      key: Key(currentData[index].id.toString()),
+                      direction: DismissDirection.endToStart,
+                      background: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
                             ),
-                            confirmDismiss: (direction) async {
-                              return currentData[index].deletedAt == null;
-                            },
-                            onDismissed: (direction) {
-                              debugPrint(
-                                  "🗑️ [UI] Удаление документа ID: ${currentData[index].id}");
-                              _clientReturnBloc.add(DeleteClientReturnDocument(
-                                currentData[index].id!,
-                                shouldReload: true,
-                              ));
-                            },
-                            child: ClientReturnCard(
-                              document: currentData[index],
-                              onTap: () { // НОВОЕ: Добавь onTap в Card widget если нет
-                                if (!mounted) return;
-
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (ctx) => BlocProvider.value(
-                                      value: _clientReturnBloc,
-                                      child: ClientReturnDocumentDetailsScreen(
-                                        documentId: currentData[index].id!,
-                                        docNumber: currentData[index].docNumber ?? 'N/A',
-                                        hasUpdatePermission: _hasUpdatePermission,
-                                        hasDeletePermission: _hasDeletePermission,
-                                        onDocumentUpdated: () {
-                                          _clientReturnBloc.add(FetchClientReturns(
-                                            forceRefresh: true,
-                                            filters: _currentFilters,
-                                            // search: _search,
-                                          ));
-                                        },
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          )
-                        : ClientReturnCard(
-                            document: currentData[index],
-                            onTap: () { // НОВОЕ: Без dismiss — только tap
-                              if (!mounted) return;
-
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (ctx) => BlocProvider.value(
-                                    value: _clientReturnBloc,
-                                    child: ClientReturnDocumentDetailsScreen(
-                                      documentId: currentData[index].id!,
-                                      docNumber: currentData[index].docNumber ?? 'N/A',
-                                      hasUpdatePermission: _hasUpdatePermission,
-                                      hasDeletePermission: _hasDeletePermission,
-                                      onDocumentUpdated: () {
-                                        _clientReturnBloc.add(FetchClientReturns(
-                                          forceRefresh: true,
-                                          filters: _currentFilters,
-                                          // search: _search,
-                                        ));
-                                      },
-                                    ),
-                                  ),
+                          ],
+                        ),
+                        alignment: Alignment.centerRight,
+                        child: const Icon(Icons.delete, color: Colors.white, size: 24),
+                      ),
+                      confirmDismiss: (direction) async {
+                        return currentData[index].deletedAt == null;
+                      },
+                      onDismissed: (direction) {
+                        debugPrint("🗑️ [UI] Удаление документа ID: ${currentData[index].id}");
+                        _clientReturnBloc.add(DeleteClientReturnDocument(
+                          currentData[index].id!,
+                          shouldReload: true,
+                        ));
+                      },
+                      child: ClientReturnCard(
+                        document: currentData[index],
+                        onTap: () {
+                          if (!mounted) return;
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (ctx) => BlocProvider.value(
+                                value: _clientReturnBloc,
+                                child: ClientReturnDocumentDetailsScreen(
+                                  documentId: currentData[index].id!,
+                                  docNumber: currentData[index].docNumber ?? 'N/A',
+                                  hasUpdatePermission: _hasUpdatePermission,
+                                  hasDeletePermission: _hasDeletePermission,
+                                  onDocumentUpdated: () {
+                                    _clientReturnBloc.add(FetchClientReturns(
+                                      forceRefresh: true,
+                                      filters: _currentFilters,
+                                    ));
+                                  },
                                 ),
-                              );
-                            },
+                              ),
+                            ),
                           );
+                        },
+                      ),
+                    )
+                        : ClientReturnCard(
+                      document: currentData[index],
+                      onTap: () {
+                        if (!mounted) return;
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (ctx) => BlocProvider.value(
+                              value: _clientReturnBloc,
+                              child: ClientReturnDocumentDetailsScreen(
+                                documentId: currentData[index].id!,
+                                docNumber: currentData[index].docNumber ?? 'N/A',
+                                hasUpdatePermission: _hasUpdatePermission,
+                                hasDeletePermission: _hasDeletePermission,
+                                onDocumentUpdated: () {
+                                  _clientReturnBloc.add(FetchClientReturns(
+                                    forceRefresh: true,
+                                    filters: _currentFilters,
+                                  ));
+                                },
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    );
+
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                      child: item,
+                    );
                   },
                 ),
               );

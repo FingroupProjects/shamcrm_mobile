@@ -11,6 +11,7 @@ import 'package:intl/intl.dart';
 class SupplierCard extends StatefulWidget {
   final Supplier supplier;
   final VoidCallback? onDelete;
+
   // НОВОЕ: Параметры прав доступа
   final bool hasUpdatePermission;
   final bool hasDeletePermission;
@@ -45,7 +46,7 @@ class _SupplierCardState extends State<SupplierCard> {
   @override
   Widget build(BuildContext context) {
     final localization = AppLocalizations.of(context);
-    
+
     return GestureDetector(
       // ИЗМЕНЕНО: Открываем редактирование только если есть право
       onTap: widget.hasUpdatePermission
@@ -119,26 +120,31 @@ class _SupplierCardState extends State<SupplierCard> {
                   ),
               ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              '${localization.translate('phone') ?? 'Телефон'}: ${widget.supplier.phone ?? 'N/A'}',
-              style: const TextStyle(
-                fontSize: 14,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w400,
-                color: Color(0xff99A4BA),
+            if (widget.supplier.phone != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                '${localization.translate('phone') ?? 'Телефон'}: ${widget.supplier.phone ?? 'N/A'}',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w400,
+                  color: Color(0xff99A4BA),
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '${localization.translate('inn') ?? 'ИНН'}: ${widget.supplier.inn.toString()}',
-              style: const TextStyle(
-                fontSize: 14,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w400,
-                color: Color(0xff99A4BA),
+            ],
+
+            if (widget.supplier.inn != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                '${localization.translate('inn') ?? 'ИНН'}: ${widget.supplier.inn ?? 'N/A'}',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w400,
+                  color: Color(0xff99A4BA),
+                ),
               ),
-            ),
+            ]
             // if (widget.supplier.note != null && widget.supplier.note!.isNotEmpty)
             //   Padding(
             //     padding: const EdgeInsets.only(top: 8),

@@ -53,7 +53,7 @@ class _VariantDetailsScreenState extends State<VariantDetailsScreen> {
     details = [
       {
         'label': AppLocalizations.of(context)!.translate('goods_price_details'),
-        'value': variant.variantPrice?.price.toString() ?? '0',
+        'value': variant.price.toString() ?? '0', // NEW FIELD for price instead of old variantPrice
       },
       // {
       //   'label': AppLocalizations.of(context)!.translate('start_date'),
