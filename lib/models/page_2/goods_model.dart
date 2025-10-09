@@ -38,13 +38,13 @@ class Discount {
 }
 
 class Unit {
-  final int id;
+  final int? id;
   final String name;
   final String? shortName;
   final int? amount; // Добавлено поле amount
 
   Unit({
-    required this.id,
+    this.id,
     required this.name,
     this.shortName,
     this.amount,
@@ -52,7 +52,7 @@ class Unit {
 
   factory Unit.fromJson(Map<String, dynamic> json) {
     return Unit(
-      id: json['id'] as int? ?? 0,
+      id: json['id'] as int?,
       name: json['name'] as String? ?? '',
       shortName: json['short_name'] as String?,
       amount: json['amount'] as int?,

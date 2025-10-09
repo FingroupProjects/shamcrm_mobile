@@ -79,7 +79,7 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
         final selectedUnitId = good.unitId;
         final selectedUnitObj = availableUnits.firstWhere(
               (unit) => unit.id == selectedUnitId,
-          orElse: () => availableUnits.isNotEmpty ? availableUnits.first : Unit(id: 23, name: 'шт'),
+          orElse: () => availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: 'шт'),
         );
 
         final amount = selectedUnitObj.amount ?? 1;
@@ -238,7 +238,7 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
         final availableUnits = _items[index]['availableUnits'] as List<Unit>? ?? [];
         final selectedUnitObj = availableUnits.firstWhere(
               (unit) => (unit.shortName ?? unit.name) == newUnit,
-          orElse: () => availableUnits.isNotEmpty ? availableUnits.first : Unit(id: 0, name: '', amount: 1),
+          orElse: () => availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: '', amount: 1),
         );
 
         _items[index]['amount'] = selectedUnitObj.amount ?? 1;

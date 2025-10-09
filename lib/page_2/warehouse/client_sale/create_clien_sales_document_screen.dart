@@ -332,7 +332,7 @@ void _handleVariantSelection(Map<String, dynamic>? newItem) {
           'good_id': item['d'],
           'quantity': item['quantity'].toString(),
           'price': item['price'].toString(),
-          'unit_id': item['unit_id'].toString(), // Может быть null'
+          'unit_id': item['unit_id'], // Может быть null'
         }).toList(),
         organizationId: widget.organizationId ?? 1,
         salesFunnelId: 1,

@@ -152,7 +152,7 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
         final availableUnits = _items[index]['availableUnits'] as List<Unit>? ?? [];
         final selectedUnitObj = availableUnits.firstWhere(
           (unit) => (unit.shortName ?? unit.name) == newUnit,
-          orElse: () => availableUnits.isNotEmpty ? availableUnits.first : Unit(id: 0, name: '', amount: 1),
+          orElse: () => availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: '', amount: 1),
         );
         
         _items[index]['amount'] = selectedUnitObj.amount ?? 1;
@@ -238,7 +238,7 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
           return {
             'good_id': item['id'],
             'quantity': item['quantity'].toString(),
-            'unit_id': unitId ?? 23,
+            'unit_id': unitId,
           };
         }).toList(),
         organizationId: widget.organizationId ?? 1,

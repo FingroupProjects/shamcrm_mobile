@@ -29,8 +29,7 @@ class CreateClientReturnDocumentScreen extends StatefulWidget {
       CreateClientReturnDocumentScreenState();
 }
 
-class CreateClientReturnDocumentScreenState
-    extends State<CreateClientReturnDocumentScreen> {
+class CreateClientReturnDocumentScreenState extends State<CreateClientReturnDocumentScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _dateController = TextEditingController();
   final TextEditingController _commentController = TextEditingController();
@@ -96,18 +95,27 @@ class CreateClientReturnDocumentScreenState
             duration: const Duration(milliseconds: 300),
           );
 
-          // ✅ НОВОЕ: После добавления товара устанавливаем фокус на поле количества
-          Future.delayed(const Duration(milliseconds: 350), () {
-            if (mounted && _scrollController.hasClients) {
-              _scrollController.animateTo(
-                _scrollController.position.maxScrollExtent,
-                duration: const Duration(milliseconds: 400),
-                curve: Curves.easeOut,
-              );
-              
-              // Устанавливаем фокус на поле количества только что добавленного товара
-              _quantityFocusNodes[variantId]?.requestFocus();
-            }
+          // ✅ ИСПРАВЛЕНО: Правильная последовательность фокусировки
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            Future.delayed(const Duration(milliseconds: 400), () {
+              if (mounted) {
+                // Сначала скроллим к новому элементу
+                if (_scrollController.hasClients) {
+                  _scrollController.animateTo(
+                    _scrollController.position.maxScrollExtent,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeOut,
+                  );
+                }
+
+                // Затем устанавливаем фокус на поле количества
+                Future.delayed(const Duration(milliseconds: 350), () {
+                  if (mounted) {
+                    _quantityFocusNodes[variantId]?.requestFocus();
+                  }
+                });
+              }
+            });
           });
         }
       });
@@ -343,7 +351,7 @@ class CreateClientReturnDocumentScreenState
                   'good_id': item['id'],
                   'quantity': item['quantity'].toString(),
                   'price': item['price'].toString(),
-                  "unit_id": item["unit_id"].toString()
+                  "unit_id": item["unit_id"]
                 })
             .toList(),
         organizationId: widget.organizationId ?? 1,

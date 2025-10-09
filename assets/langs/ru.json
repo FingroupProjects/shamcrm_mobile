@@ -1718,5 +1718,6 @@
   "select_supplier_first": "Выберите поставщика",
   "unit_pieces_short": "шт",
   "error_loading_document_details": "Ошибка загрузки документа",
-  "document_approved_successfully": "Документ проведен"
+  "document_approved_successfully": "Документ проведен",
+  "all_variants_added": "Все варианты уже добавлены"
 }
