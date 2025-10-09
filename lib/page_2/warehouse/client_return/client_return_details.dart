@@ -98,7 +98,12 @@ class _ClientReturnDocumentDetailsScreenState
       });
       if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
-        showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
+        showSimpleErrorDialog(
+          context, 
+          localizations.translate('error') ?? 'Ошибка', 
+          e.message,
+          errorDialogEnum: ErrorDialogEnum.clientReturnApprove,
+        );
         return;
       }
       _showSnackBar('Ошибка загрузки документа: $e', false);
@@ -226,7 +231,12 @@ class _ClientReturnDocumentDetailsScreenState
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
-        showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
+        showSimpleErrorDialog(
+          context, 
+          localizations.translate('error') ?? 'Ошибка', 
+          e.message,
+          errorDialogEnum: ErrorDialogEnum.clientReturnApprove,
+        );
         return;
       }
       _showSnackBar('Ошибка при проведении документа: $e', false);
@@ -259,7 +269,12 @@ class _ClientReturnDocumentDetailsScreenState
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
-        showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
+        showSimpleErrorDialog(
+          context, 
+          localizations.translate('error') ?? 'Ошибка', 
+          e.message,
+          errorDialogEnum: ErrorDialogEnum.clientReturnApprove,
+        );
         return;
       }
       _showSnackBar('Ошибка при отмене проведения документа: $e', false);
@@ -282,17 +297,23 @@ class _ClientReturnDocumentDetailsScreenState
     });
     try {
       await _apiService.restoreClientReturnDocument(widget.documentId);
+      // ИСПРАВЛЕНО: Перезагружаем документ с сервера вместо локального обновления
+      await _fetchDocumentDetails();
       setState(() {
-        currentDocument = currentDocument!.copyWith(deletedAt: null);
         _documentUpdated = true;
       });
-      _updateStatusOnly();
+
       _showSnackBar('Документ восстановлен', true);
       context.read<ClientReturnBloc>().add(const FetchClientReturns(forceRefresh: true));
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
-        showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
+        showSimpleErrorDialog(
+          context,
+          localizations.translate('error') ?? 'Ошибка',
+          e.message,
+          errorDialogEnum: ErrorDialogEnum.clientReturnApprove,
+        );
         return;
       }
       _showSnackBar('Ошибка при восстановлении документа: $e', false);

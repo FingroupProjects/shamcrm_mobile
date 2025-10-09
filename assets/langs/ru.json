@@ -1466,7 +1466,7 @@
   "pieces": "шт",
   "storages_must_be_different": "Склад-отправитель и склад-получатель должны быть разными",
   "owed_to_us": "Нам должны",
-  "illiquid_goods": "Неликвидные товары",
+  "illiquid_goods": "Товары/Неликвидными товары",
   "cash_balance": "Остаток кассы",
   "our_debts": "Наши долги",
   "error_toggling_approval": "Ошибка изменения статуса проведения",
