@@ -42,6 +42,11 @@ class _HomeScreenState extends State<HomeScreen> {
   List<String> _inactiveIconsGroup2 = [];
 
   @override
+/*************  ✨ Windsurf Command ⭐  *************/
+/// Initializes the state of the widget and calls the
+/// [initializeScreensWithPermissions] method to initialize the
+/// screens with the necessary permissions.
+/*******  d7c12766-68b7-42da-bc32-3cb904f83a0b  *******/
   void initState() {
     super.initState();
     initializeScreensWithPermissions();
