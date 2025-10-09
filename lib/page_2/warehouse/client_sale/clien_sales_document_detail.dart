@@ -49,9 +49,6 @@ class _ClientSalesDocumentDetailsScreenState
   String? baseUrl;
   bool _documentUpdated = false;
   bool _goodMeasurementEnabled = true;
-  final Map<int, String> _unitMap = {
-    23: 'шт',
-  };
 
   @override
   void initState() {

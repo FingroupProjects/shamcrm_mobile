@@ -74,7 +74,7 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
       : 1;
 
   // Формируем результат с ценой и остатком
-  final result = {
+  final Map<String, dynamic> result = {
     'id': variant.goodId,
     'variantId': variant.id,
     'name': variant.fullName ?? variant.good?.name ?? 'Неизвестный товар',
@@ -88,12 +88,16 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
 
   // Добавляем unit-поля только если good_measurement включен
   if (_goodMeasurementEnabled) {
+    int? unit_id;
+    try {
+      unit_id = variant.availableUnits.first.id;
+    } catch (e) {
+      unit_id = null;
+    };
     result['selectedUnit'] = (variant.availableUnits.isNotEmpty
         ? (variant.availableUnits.first.shortName ?? variant.availableUnits.first.name)
         : '');
-    result['unit_id'] = variant.availableUnits.isNotEmpty 
-        ? variant.availableUnits.first.id 
-        : 2;
+    result['unit_id'] = unit_id;
   }
 
   Navigator.pop(context, result);

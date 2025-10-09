@@ -1718,5 +1718,6 @@
   "select_supplier_first": "Ta'minotchini tanlang",
   "unit_pieces_short": "dona",
   "error_loading_document_details": "Hujjatni yuklashda xato",
-  "document_approved_successfully": "Hujjat tasdiqlandi"
+  "document_approved_successfully": "Hujjat tasdiqlandi",
+  "all_variants_added": "Barcha variantlar qo'shilgan"
 }

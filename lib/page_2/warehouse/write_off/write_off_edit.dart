@@ -64,7 +64,7 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
         final selectedUnitId = good.unitId;
         final selectedUnitObj = availableUnits.firstWhere(
           (unit) => unit.id == selectedUnitId,
-          orElse: () => availableUnits.isNotEmpty ? availableUnits.first : Unit(id: 23, name: 'шт', shortName: 'шт'),
+          orElse: () => availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: 'шт', shortName: 'шт'),
         );
         
         _items.add({
@@ -238,8 +238,8 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
         documentGoods: _items.map((item) {
           return {
             'good_id': item['id'],
-            'quantity': item['quantity'].toString(),
-            'unit_id': item['unit_id'] ?? 23,
+            'quantity': int.tryParse(item['quantity'].toString()),
+            'unit_id': item['unit_id'],
           };
         }).toList(),
         organizationId: widget.document.organizationId ?? 1,

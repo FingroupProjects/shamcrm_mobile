@@ -204,7 +204,7 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
         final availableUnits = _items[index]['availableUnits'] as List<Unit>? ?? [];
         final selectedUnitObj = availableUnits.firstWhere(
           (unit) => (unit.shortName ?? unit.name) == newUnit,
-          orElse: () => availableUnits.isNotEmpty ? availableUnits.first : Unit(id: 0, name: '', amount: 1),
+          orElse: () => availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: '', amount: 1),
         );
         
         _items[index]['amount'] = selectedUnitObj.amount ?? 1;
@@ -296,7 +296,7 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
               final unitId = item['unit_id'];
               return {
                 'good_id': item['id'],
-                'quantity': item['quantity'].toString(),
+                'quantity': int.tryParse(item['quantity'].toString()),
                 'price': item['price'].toString(),
                 'unit_id': unitId, // Может быть null
               };

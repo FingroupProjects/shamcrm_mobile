@@ -1718,5 +1718,6 @@
   "select_supplier_first": "Select supplier",
   "unit_pieces_short": "pcs",
   "error_loading_document_details": "Error loading document",
-  "document_approved_successfully": "Document approved"
+  "document_approved_successfully": "Document approved",
+  "all_variants_added": "All variants already added"
 }
