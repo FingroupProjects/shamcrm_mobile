@@ -3,6 +3,7 @@ import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
 import 'package:crm_task_manager/page_2/money/money_income/money_income_screen.dart';
 import 'package:crm_task_manager/page_2/money/money_outcome/money_outcome_screen.dart';
+import 'package:crm_task_manager/page_2/order/order_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_return/client_return_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_sale/client_sales_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/incoming_screen.dart';
@@ -36,6 +37,7 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
   bool _hasSupplierReturnDocument = false;
   bool _hasMoneyIncome = false;
   bool _hasMoneyOutcome = false;
+  bool _hasOrder = false; // Новое право для заказов
   bool _showReferences = false;
 
   @override
@@ -67,6 +69,7 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
       _hasSupplierReturnDocument = await _apiService.hasPermission('supplier_return_document.read');
       _hasMoneyIncome = await _apiService.hasPermission('checking_account_pko.read');
       _hasMoneyOutcome = await _apiService.hasPermission('checking_account_rko.read');
+      // _hasOrder = await _apiService.hasPermission('order.read'); // Проверка права для заказов
 
       // Проверяем права для справочников
       final hasStorage = await _apiService.hasPermission('storage.read');
@@ -85,6 +88,7 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
           _hasSupplierReturnDocument ||
           _hasMoneyIncome ||
           _hasMoneyOutcome ||
+          _hasOrder ||
           hasStorage ||
           hasUnit ||
           hasSupplier ||
@@ -102,6 +106,7 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
       _hasSupplierReturnDocument = false;
       _hasMoneyIncome = false;
       _hasMoneyOutcome = false;
+      _hasOrder = false;
       _showReferences = false;
     } finally {
       setState(() {
@@ -114,6 +119,10 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
   void _initializeDocuments() {
     final Color docColor = const Color(0xff1E2E52);
     List<WarehouseDocument> allDocuments = [];
+
+    // Добавляем заказы первыми
+
+
     if (_hasExpenseDocument) {
       allDocuments.add(
         WarehouseDocument(
@@ -123,7 +132,6 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
         ),
       );
     }
-
 
     if (_hasClientReturnDocument) {
       allDocuments.add(
@@ -166,9 +174,6 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
       );
     }
 
-
-
-
     if (_hasSupplierReturnDocument) {
       allDocuments.add(
         WarehouseDocument(
@@ -198,6 +203,16 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
         ),
       );
     }
+    //
+    // if (_showReferences) {
+    //   allDocuments.add(
+    //     WarehouseDocument(
+    //       title: AppLocalizations.of(context)!.translate('references') ?? 'Справочники',
+    //       icon: Icons.library_books_outlined,
+    //       color: docColor,
+    //     ),
+    //   );
+    // }
 
     setState(() {
       _documents = allDocuments;
@@ -253,14 +268,13 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
         context,
         MaterialPageRoute(builder: (context) => MoneyOutcomeScreen()),
       );
+    } else if (document.title == AppLocalizations.of(context)!.translate('references') ||
+        document.title == 'Справочники') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => ReferencesScreen()),
+      );
     }
-  }
-
-  void _navigateToReferences() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => ReferencesScreen()),
-    );
   }
 
   Widget _buildDocumentGrid() {
@@ -374,6 +388,110 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
     );
   }
 
+  Widget _buildNoPermissionsWidget() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.lock_outline,
+              size: 80,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 24),
+            Text(
+              AppLocalizations.of(context)!.translate('no_permissions') ?? 'Нет доступа',
+              style: const TextStyle(
+                fontSize: 20,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w600,
+                color: Color(0xff1E2E52),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              AppLocalizations.of(context)!.translate('no_permissions_description') ??
+                  'У вас нет прав доступа к данному разделу. Обратитесь к администратору.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 14,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w400,
+                color: Color(0xff99A4BA),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+
+    return Scaffold(
+      appBar: AppBar(
+        forceMaterialTransparency: true,
+        title: CustomAppBarPage2(
+          title: isClickAvatarIcon
+              ? localizations.translate('appbar_settings') ?? 'Настройки'
+              : localizations.translate('warehouse_accounting') ?? 'Учет склада',
+          onClickProfileAvatar: () {
+            setState(() {
+              isClickAvatarIcon = !isClickAvatarIcon;
+            });
+          },
+          clearButtonClickFiltr: (isSearching) {},
+          showSearchIcon: false,
+          showFilterIcon: false,
+          showFilterOrderIcon: false,
+          onChangedSearchInput: (input) {},
+          textEditingController: TextEditingController(),
+          focusNode: FocusNode(),
+          clearButtonClick: (isSearching) {},
+          currentFilters: {},
+        ),
+      ),
+      body: isClickAvatarIcon
+          ? ProfileScreen()
+          : _isLoading
+          ? const Center(
+        child: PlayStoreImageLoading(
+          size: 80.0,
+          duration: Duration(milliseconds: 1000),
+        ),
+      )
+          : _documents.isEmpty
+          ? _buildNoPermissionsWidget()
+          : Container(
+        color: const Color(0xffF8F9FB),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (_documents.isNotEmpty) _buildDocumentGrid(),
+              if (_showReferences) ...[
+                const SizedBox(height: 16),
+                _buildReferencesButton(),
+              ],const SizedBox(height: 20),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _navigateToReferences() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => ReferencesScreen()),
+    );
+  }
+
   Widget _buildReferencesButton() {
     return Material(
       color: Colors.transparent,
@@ -431,104 +549,6 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
                 color: Color(0xff99A4BA),
               ),
               const SizedBox(width: 20),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNoPermissionsWidget() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.lock_outline,
-              size: 80,
-              color: Colors.grey[400],
-            ),
-            const SizedBox(height: 24),
-            Text(
-              AppLocalizations.of(context)!.translate('no_permissions') ?? 'Нет доступа',
-              style: const TextStyle(
-                fontSize: 20,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w600,
-                color: Color(0xff1E2E52),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              AppLocalizations.of(context)!.translate('no_permissions_description') ??
-                  'У вас нет прав доступа к данному разделу. Обратитесь к администратору.',
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 14,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w400,
-                color: Color(0xff99A4BA),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
-    return Scaffold(
-      appBar: AppBar(
-        forceMaterialTransparency: true,
-        title: CustomAppBarPage2(
-          title: isClickAvatarIcon
-              ? localizations.translate('appbar_settings') ?? 'Настройки'
-              : localizations.translate('warehouse_accounting') ?? 'Учет торговли',
-          onClickProfileAvatar: () {
-            setState(() {
-              isClickAvatarIcon = !isClickAvatarIcon;
-            });
-          },
-          clearButtonClickFiltr: (isSearching) {},
-          showSearchIcon: false,
-          showFilterIcon: false,
-          showFilterOrderIcon: false,
-          onChangedSearchInput: (input) {},
-          textEditingController: TextEditingController(),
-          focusNode: FocusNode(),
-          clearButtonClick: (isSearching) {},
-          currentFilters: {},
-        ),
-      ),
-      body: isClickAvatarIcon
-          ? ProfileScreen()
-          : _isLoading
-          ? const Center(
-        child: PlayStoreImageLoading(
-          size: 80.0,
-          duration: Duration(milliseconds: 1000),
-        ),
-      )
-          : _documents.isEmpty && !_showReferences
-          ? _buildNoPermissionsWidget()
-          : Container(
-        color: const Color(0xffF8F9FB),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (_documents.isNotEmpty) _buildDocumentGrid(),
-              if (_showReferences) ...[
-                const SizedBox(height: 16),
-                _buildReferencesButton(),
-              ],
-              const SizedBox(height: 20),
             ],
           ),
         ),

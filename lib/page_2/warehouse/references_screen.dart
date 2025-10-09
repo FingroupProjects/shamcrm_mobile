@@ -67,7 +67,7 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
       _hasRkoArticle = await _apiService.hasPermission('rko_article.read');
       _hasPkoArticle = await _apiService.hasPermission('pko_article.read');
       _hasCategory = await _apiService.hasPermission('category.read'); // Проверка права для категорий
-      
+
     } catch (e) {
       debugPrint('Ошибка при проверке прав доступа: $e');
       _hasStorage = false;
@@ -243,14 +243,15 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
         borderRadius: BorderRadius.circular(12),
         onTap: () => _navigateToReference(reference),
         child: Container(
+          height: 72,
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05), // Немного уменьшили тень
-                blurRadius: 6, // Уменьшено с 8 до 6
-                offset: const Offset(0, 2), // Уменьшено с 3 до 2
+                color: Colors.black.withOpacity(0.06),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
               ),
             ],
             border: Border.all(
@@ -259,39 +260,38 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
             ),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(10.0), // Уменьшено для компактности
+            padding: const EdgeInsets.all(12.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  width: 36,  // Уменьшено с 48 до 36
-                  height: 36, // Уменьшено с 48 до 36
+                  width: 48,
+                  height: 48,
                   decoration: BoxDecoration(
                     color: reference.color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(9), // Уменьшено с 12 до 9
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
                     reference.icon,
-                    size: 20, // Уменьшено с 28 до 20
+                    size: 28,
                     color: reference.color,
                   ),
                 ),
-                const SizedBox(height: 6), // Уменьшено с 12 до 6
+                const SizedBox(height: 12),
                 Flexible(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4), // Уменьшено с 8 до 4
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: Text(
                       reference.title,
                       textAlign: TextAlign.center,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 12, // Уменьшено с 13 до 12
+                        fontSize: 13,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w600,
                         color: Color(0xff1E2E52),
-                        height: 1.2, // Немного увеличили высоту строки
                       ),
                     ),
                   ),
@@ -312,35 +312,40 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final screenWidth = MediaQuery.of(context).size.width;
-        
+
         int crossAxisCount;
         double childAspectRatio;
-        
-        // Новая логика: 3 колонки по умолчанию, компактнее
-        if (screenWidth < 400) {
-          // Очень маленькие экраны - 2 колонки
+
+        if (screenWidth < 350) {
+          crossAxisCount = 2;
+          childAspectRatio = 0.9;
+        } else if (screenWidth < 400) {
           crossAxisCount = 2;
           childAspectRatio = 1.0;
-        } else if (screenWidth < 800) {
-          // Обычные телефоны и планшеты - 3 колонки (по умолчанию)
+        } else if (screenWidth < 500) {
+          crossAxisCount = 2;
+          childAspectRatio = 1.1;
+        } else if (screenWidth < 600) {
+          crossAxisCount = 2;
+          childAspectRatio = 1.2;
+        } else if (screenWidth < 900) {
           crossAxisCount = 3;
-          childAspectRatio = 0.95;
+          childAspectRatio = 1.1;
         } else {
-          // Большие экраны - 4 колонки
           crossAxisCount = 4;
           childAspectRatio = 1.0;
         }
 
-        return GridView.builder(
+        return  GridView.builder(
           shrinkWrap: true,
-          padding: const EdgeInsets.only(top: 16, bottom: 16),
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: crossAxisCount,
             childAspectRatio: childAspectRatio,
-            crossAxisSpacing: 8, // Уменьшено с 12 до 8
-            mainAxisSpacing: 8,  // Уменьшено с 12 до 8
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
           ),
+          padding: const EdgeInsets.all(16),
           itemCount: _references.length,
           itemBuilder: (context, index) {
             return _buildReferenceCard(_references[index]);
@@ -374,7 +379,7 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              AppLocalizations.of(context)!.translate('no_permissions_description') ?? 
+              AppLocalizations.of(context)!.translate('no_permissions_description') ??
                   'У вас нет прав доступа к справочникам. Обратитесь к администратору.',
               textAlign: TextAlign.center,
               style: const TextStyle(
@@ -420,28 +425,27 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
       body: isClickAvatarIcon
           ? ProfileScreen()
           : _isLoading
-              ? const Center(
-                  child: PlayStoreImageLoading(
-                    size: 80.0,
-                    duration: Duration(milliseconds: 1000),
-                  ),
-                )
-              : _references.isEmpty
-                  ? _buildNoPermissionsWidget()
-                  : Container(
-                      color: const Color(0xffF8F9FB),
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: SingleChildScrollView(
-                              child: _buildReferencesLayout(),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+          ? const Center(
+        child: PlayStoreImageLoading(
+          size: 80.0,
+          duration: Duration(milliseconds: 1000),
+        ),
+      )
+          : _references.isEmpty
+          ? _buildNoPermissionsWidget()
+          : Container(
+        color: const Color(0xffF8F9FB),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                child: _buildReferencesLayout(),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
