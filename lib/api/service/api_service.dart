@@ -11715,9 +11715,15 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
   }
 
   //getSupplier
-  Future<List<Supplier>> getSupplier() async {
+  Future<List<Supplier>> getSupplier({String? search}) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/suppliers');
+    String path = await _appendQueryParams('/suppliers');
+    
+    // Добавляем параметр поиска, если он передан
+    if (search != null && search.isNotEmpty) {
+      path = path.contains('?') ? '$path&search=$search' : '$path?search=$search';
+    }
+    
     if (kDebugMode) {
       //print('ApiService: getSupplier - Generated path: $path');
     }

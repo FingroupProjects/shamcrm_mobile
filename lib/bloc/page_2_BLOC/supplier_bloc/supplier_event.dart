@@ -2,7 +2,11 @@ import 'package:crm_task_manager/models/page_2/supplier_model.dart';
 
 abstract class SupplierEvent {}
 
-class FetchSupplier extends SupplierEvent {}
+class FetchSupplier extends SupplierEvent {
+  final String? query;
+  
+  FetchSupplier({this.query});
+}
 
 class AddSupplier extends SupplierEvent {
   final Supplier supplier;
