@@ -11268,12 +11268,16 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
   }
 
   //get storage
-  Future<List<WareHouse>> getWareHouses() async {
+  Future<List<WareHouse>> getWareHouses({
+    String? search,
+  }) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/storage');
+    var path = await _appendQueryParams('/storage');
     if (kDebugMode) {
       //print('ApiService: getStorage - Generated path: $path');
     }
+
+    path += search != null && search.isNotEmpty ? '&search=$search' : '';
 
     final response = await _getRequest(path);
 

@@ -18,7 +18,9 @@ class WareHouseBloc extends Bloc<WareHouseEvent, WareHouseState> {
       FetchWareHouse event, Emitter<WareHouseState> emit) async {
     emit(WareHouseLoading());
     try {
-      final storages = await apiService.getWareHouses();
+      final storages = await apiService.getWareHouses(
+        search: event.query,
+      );
       emit(WareHouseLoaded(storages));
     } catch (e) {
       emit(WareHouseError("error_loading_storages"));
