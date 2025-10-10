@@ -18,7 +18,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
-import '../../money/widgets/error_dialog.dart';
+import '../../money/widgets/error_dialog.dart'; // ✅ НОВОЕ: Импорт для диалога ошибки
 
 class IncomingDocumentEditScreen extends StatefulWidget {
   final IncomingDocument document;
@@ -46,6 +46,10 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
   // Контроллеры для редактирования полей товаров
   final Map<int, TextEditingController> _priceControllers = {};
   final Map<int, TextEditingController> _quantityControllers = {};
+  
+  // ✅ НОВОЕ: FocusNode для управления фокусом
+  final Map<int, FocusNode> _quantityFocusNodes = {};
+  final Map<int, FocusNode> _priceFocusNodes = {};
   
   // Для отслеживания ошибок валидации
   final Map<int, bool> _priceErrors = {};
@@ -100,6 +104,11 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
         // Создаем контроллеры с существующими значениями
         _priceControllers[variantId] = TextEditingController(text: price.toStringAsFixed(3));
         _quantityControllers[variantId] = TextEditingController(text: quantity.toString());
+        
+        // ✅ НОВОЕ: Создаём FocusNode для существующих товаров
+        _quantityFocusNodes[variantId] = FocusNode();
+        _priceFocusNodes[variantId] = FocusNode();
+        
         _priceErrors[variantId] = false;
         _quantityErrors[variantId] = false;
       }
@@ -115,8 +124,24 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
           _items.add(newItem);
           
           final variantId = newItem['variantId'] as int;
-          _priceControllers[variantId] = TextEditingController();
-          _quantityControllers[variantId] = TextEditingController();
+          final initialPrice = newItem['price'] ?? 0.0;
+          
+          // ✅ НОВОЕ: Устанавливаем начальные значения как в примере
+          _priceControllers[variantId] = TextEditingController(
+            text: initialPrice > 0 ? initialPrice.toStringAsFixed(3) : ''
+          );
+          _quantityControllers[variantId] = TextEditingController(text: '1');
+
+          // ✅ НОВОЕ: Создаём FocusNode для новых товаров
+          _quantityFocusNodes[variantId] = FocusNode();
+          _priceFocusNodes[variantId] = FocusNode();
+
+          _items.last['quantity'] = 1;
+          _items.last['price'] = initialPrice;
+          
+          final amount = newItem['amount'] ?? 1;
+          _items.last['total'] = (initialPrice * amount).round();
+
           _priceErrors[variantId] = false;
           _quantityErrors[variantId] = false;
           
@@ -129,6 +154,7 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
             duration: const Duration(milliseconds: 300),
           );
           
+          // ✅ НОВОЕ: Устанавливаем фокус на поле количества после добавления
           Future.delayed(const Duration(milliseconds: 350), () {
             if (mounted && _scrollController.hasClients) {
               _scrollController.animateTo(
@@ -136,6 +162,8 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
                 duration: const Duration(milliseconds: 400),
                 curve: Curves.easeOut,
               );
+              
+              _quantityFocusNodes[variantId]?.requestFocus();
             }
           });
         }
@@ -155,6 +183,13 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
         _priceControllers.remove(variantId);
         _quantityControllers[variantId]?.dispose();
         _quantityControllers.remove(variantId);
+        
+        // ✅ НОВОЕ: Удаляем FocusNode
+        _quantityFocusNodes[variantId]?.dispose();
+        _quantityFocusNodes.remove(variantId);
+        _priceFocusNodes[variantId]?.dispose();
+        _priceFocusNodes.remove(variantId);
+        
         _priceErrors.remove(variantId);
         _quantityErrors.remove(variantId);
         
@@ -248,6 +283,27 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
         _items[index]['total'] = _items[index]['quantity'] * _items[index]['price'] * amount;
       }
     });
+  }
+
+  // ✅ НОВОЕ: Функция для перехода к следующему пустому полю
+  void _moveToNextEmptyField() {
+    for (var item in _items) {
+      final variantId = item['variantId'] as int;
+      final quantityController = _quantityControllers[variantId];
+      final priceController = _priceControllers[variantId];
+      
+      if (quantityController != null && quantityController.text.trim().isEmpty) {
+        _quantityFocusNodes[variantId]?.requestFocus();
+        return;
+      }
+      
+      if (priceController != null && priceController.text.trim().isEmpty) {
+        _priceFocusNodes[variantId]?.requestFocus();
+        return;
+      }
+    }
+    
+    FocusScope.of(context).unfocus();
   }
 
   void _updateDocument() async {
@@ -371,68 +427,80 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
     );
   }
 
+  // ✅ НОВОЕ: Вычисляем общую сумму
+  double get _totalAmount {
+    return _items.fold<double>(0, (sum, item) => sum + (item['total'] ?? 0.0));
+  }
+
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
-     return KeyboardDismissible( // ← Обернули
-    child: Scaffold(
-      backgroundColor: Colors.white,
-      appBar: _buildAppBar(localizations),
-      body: BlocListener<IncomingBloc, IncomingState>(
-        listener: (context, state) {
-          setState(() => _isLoading = false);
+    return KeyboardDismissible(
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: _buildAppBar(localizations),
+        body: BlocListener<IncomingBloc, IncomingState>(
+          listener: (context, state) {
+            setState(() => _isLoading = false);
 
-          if (state is IncomingUpdateSuccess && mounted) {
-            Navigator.pop(context, true);
-          } else if (state is IncomingUpdateError && mounted) {
-            if (state.statusCode == 409) {
-              showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
-              return;
+            if (state is IncomingUpdateSuccess && mounted) {
+              Navigator.pop(context, true);
+            } else if (state is IncomingUpdateError && mounted) {
+              // ✅ НОВОЕ: Обработка 409 как в примере
+              if (state.statusCode == 409) {
+                showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                return;
+              }
+              _showSnackBar(state.message, false);
             }
-            _showSnackBar(state.message, false);
-          }
-        },
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 8),
-                      _buildDateField(localizations),
-                      const SizedBox(height: 16),
-                      SupplierWidget(
-                        selectedSupplier: _selectedSupplier,
-                        onChanged: (value) => setState(() => _selectedSupplier = value),
-                      ),
-                      const SizedBox(height: 16),
-                      StorageWidget(
-                        selectedStorage: _selectedStorage,
-                        onChanged: (value) => setState(() => _selectedStorage = value),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildCommentField(localizations),
-                      const SizedBox(height: 16),
-                      _buildGoodsSection(localizations),
-                    ],
+          },
+          child: Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 8),
+                        _buildDateField(localizations),
+                        const SizedBox(height: 16),
+                        SupplierWidget(
+                          selectedSupplier: _selectedSupplier,
+                          onChanged: (value) => setState(() => _selectedSupplier = value),
+                        ),
+                        const SizedBox(height: 16),
+                        StorageWidget(
+                          selectedStorage: _selectedStorage,
+                          onChanged: (value) => setState(() => _selectedStorage = value),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildCommentField(localizations),
+                        const SizedBox(height: 16),
+                        _buildGoodsSection(localizations),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              _buildActionButtons(localizations),
-            ],
+                _buildActionButtons(localizations),
+              ],
+            ),
           ),
         ),
       ),
-      ), );
+    );
   }
 
+  // ✅ ИЗМЕНЕНО: Добавлена сумма в AppBar с скрытием заголовка
   AppBar _buildAppBar(AppLocalizations localizations) {
+    // ✅ НОВОЕ: Показываем сумму в AppBar
+    final hasItems = _items.isNotEmpty;
+    final total = _totalAmount;
+
     return AppBar(
       backgroundColor: Colors.white,
       forceMaterialTransparency: true,
@@ -441,16 +509,50 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
         icon: const Icon(Icons.arrow_back_ios, color: Color(0xff1E2E52), size: 24),
         onPressed: () => Navigator.pop(context),
       ),
-      title: Text(
-        '${localizations.translate('edit_incoming_document') ?? 'Редактировать приход'} №${widget.document.docNumber}',
-        style: const TextStyle(
-          fontSize: 20,
-          fontFamily: 'Gilroy',
-          fontWeight: FontWeight.w600,
-          color: Color(0xff1E2E52),
-        ),
-      ),
+      title: hasItems
+          ? null // Убираем заголовок, когда показываем сумму
+          : Text(
+              '${localizations.translate('edit_incoming_document') ?? 'Редактировать приход'} №${widget.document.docNumber}',
+              style: const TextStyle(
+                fontSize: 20,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w600,
+                color: Color(0xff1E2E52),
+              ),
+            ),
       centerTitle: false,
+      actions: hasItems
+          ? [
+              Container(
+                margin: const EdgeInsets.only(right: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xff4CAF50).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.account_balance_wallet_outlined,
+                      color: Color(0xff4CAF50),
+                      size: 18,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      total.toStringAsFixed(0),
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xff4CAF50),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ]
+          : null,
     );
   }
 
@@ -530,19 +632,10 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
   }
 
   Widget _buildSelectedItemsList() {
-    final total = _items.fold<double>(0, (sum, item) => sum + (item['total'] ?? 0.0));
+    final total = _totalAmount; // ✅ НОВОЕ: Используем геттер
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Text(
-        //   AppLocalizations.of(context)!.translate('added_goods') ?? 'Добавленные товары',
-        //   style: const TextStyle(
-        //     fontSize: 16,
-        //     fontFamily: 'Gilroy',
-        //     fontWeight: FontWeight.w600,
-        //     color: Color(0xff1E2E52),
-        //   ),
-        // ),
         const SizedBox(height: 8),
         AnimatedList(
           key: _listKey,
@@ -564,6 +657,10 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
     final variantId = item['variantId'] as int;
     final priceController = _priceControllers[variantId];
     final quantityController = _quantityControllers[variantId];
+    
+    // ✅ НОВОЕ: Получаем FocusNode
+    final quantityFocusNode = _quantityFocusNodes[variantId];
+    final priceFocusNode = _priceFocusNodes[variantId];
 
     return FadeTransition(
       opacity: animation,
@@ -725,23 +822,25 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
                           ),
                         ),
                         const SizedBox(height: 4),
-                     CompactTextField(
-  controller: quantityController!,
-  hintText: AppLocalizations.of(context)!.translate('quantity') ?? 'Количество',
-  keyboardType: TextInputType.number,
-  inputFormatters: [
-    FilteringTextInputFormatter.digitsOnly,
-  ],
-  textAlign: TextAlign.center,
-  style: const TextStyle(
-    fontSize: 13,
-    fontFamily: 'Gilroy',
-    fontWeight: FontWeight.w600,
-    color: Color(0xff1E2E52),
-  ),
-  hasError: _quantityErrors[variantId] == true,
-  onChanged: (value) => _updateItemQuantity(variantId, value),
-)
+                        CompactTextField(
+                          controller: quantityController!,
+                          focusNode: quantityFocusNode, // ✅ НОВОЕ
+                          hintText: AppLocalizations.of(context)!.translate('quantity') ?? 'Количество',
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xff1E2E52),
+                          ),
+                          hasError: _quantityErrors[variantId] == true,
+                          onChanged: (value) => _updateItemQuantity(variantId, value),
+                          onDone: _moveToNextEmptyField, // ✅ НОВОЕ
+                        )
                       ],
                     ),
                   ),
@@ -762,21 +861,23 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
                         ),
                         const SizedBox(height: 4),
                         CompactTextField(
-  controller: priceController!,
-  hintText: AppLocalizations.of(context)!.translate('price') ?? 'Цена',
-  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-  inputFormatters: [
-    FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,3}')),
-  ],
-  style: const TextStyle(
-    fontSize: 13,
-    fontFamily: 'Gilroy',
-    fontWeight: FontWeight.w600,
-    color: Color(0xff1E2E52),
-  ),
-  hasError: _priceErrors[variantId] == true,
-  onChanged: (value) => _updateItemPrice(variantId, value),
-)
+                          controller: priceController!,
+                          focusNode: priceFocusNode, // ✅ НОВОЕ
+                          hintText: AppLocalizations.of(context)!.translate('price') ?? 'Цена',
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,3}')),
+                          ],
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xff1E2E52),
+                          ),
+                          hasError: _priceErrors[variantId] == true,
+                          onChanged: (value) => _updateItemPrice(variantId, value),
+                          onDone: _moveToNextEmptyField, // ✅ НОВОЕ
+                        )
                       ],
                     ),
                   ),
@@ -880,6 +981,7 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
     );
   }
 
+  // ✅ ИЗМЕНЕНО: Одна кнопка "Обновить" на всю ширину
   Widget _buildActionButtons(AppLocalizations localizations) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -894,63 +996,45 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
           ),
         ],
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: ElevatedButton(
-              onPressed: _isLoading ? null : () => Navigator.pop(context),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xffF4F7FD),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                elevation: 0,
-              ),
-              child: Text(
-                localizations.translate('close') ?? 'Отмена',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black,
-                ),
-              ),
+      child: SizedBox(
+        width: double.infinity,
+        height: 48,
+        child: ElevatedButton(
+          onPressed: _isLoading ? null : _updateDocument,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xff4759FF),
+            disabledBackgroundColor: const Color(0xffE5E7EB),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
             ),
+            elevation: 0,
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: ElevatedButton(
-              onPressed: _isLoading ? null : _updateDocument,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xff4759FF),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                elevation: 0,
-              ),
-              child: _isLoading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                  : Text(
+          child: _isLoading
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.save_outlined, color: Colors.white, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
                       localizations.translate('save') ?? 'Обновить',
                       style: const TextStyle(
                         fontSize: 16,
                         fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w600,
                         color: Colors.white,
                       ),
                     ),
-            ),
-          ),
-        ],
+                  ],
+                ),
+        ),
       ),
     );
   }
@@ -960,6 +1044,16 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
     _dateController.dispose();
     _commentController.dispose();
     _scrollController.dispose();
+    
+    // ✅ НОВОЕ: Освобождаем все FocusNode
+    for (var focusNode in _quantityFocusNodes.values) {
+      focusNode.dispose();
+    }
+    for (var focusNode in _priceFocusNodes.values) {
+      focusNode.dispose();
+    }
+    
+    // Освобождаем контроллеры
     for (var controller in _priceControllers.values) {
       controller.dispose();
     }

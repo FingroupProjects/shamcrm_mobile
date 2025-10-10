@@ -9,6 +9,7 @@ import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/custom_widget/keyboard_dismissible.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/variant_selection_bottom_sheet.dart';
+import 'package:crm_task_manager/page_2/widgets/document_action_buttons.dart';
 import 'package:crm_task_manager/page_2/widgets/dual_storage_widget.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -41,6 +42,9 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
   // Контроллеры для редактирования полей товаров
   final Map<int, TextEditingController> _quantityControllers = {};
   
+  // ✅ НОВОЕ: FocusNode для quantity
+  final Map<int, FocusNode> _quantityFocusNodes = {};
+  
   // Для отслеживания ошибок валидации
   final Map<int, bool> _quantityErrors = {};
 
@@ -60,18 +64,24 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
           _items.add(newItem);
           
           final variantId = newItem['variantId'] as int;
-          _quantityControllers[variantId] = TextEditingController();
+          _quantityControllers[variantId] = TextEditingController(text: '1'); // ✅ НОВОЕ: Устанавливаем 1 по умолчанию для UX
+          
+          // ✅ НОВОЕ: Создаём FocusNode
+          _quantityFocusNodes[variantId] = FocusNode();
+          
           _quantityErrors[variantId] = false;
           
           if (!newItem.containsKey('amount')) {
             _items.last['amount'] = 1;
           }
+          _items.last['quantity'] = 1; // ✅ НОВОЕ: Синхронизируем с контроллером
           
           _listKey.currentState?.insertItem(
             _items.length - 1,
             duration: const Duration(milliseconds: 300),
           );
           
+          // ✅ НОВОЕ: Автофокус и скролл
           Future.delayed(const Duration(milliseconds: 350), () {
             if (mounted && _scrollController.hasClients) {
               _scrollController.animateTo(
@@ -79,6 +89,8 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
                 duration: const Duration(milliseconds: 400),
                 curve: Curves.easeOut,
               );
+              
+              _quantityFocusNodes[variantId]?.requestFocus();
             }
           });
         }
@@ -96,6 +108,11 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
         
         _quantityControllers[variantId]?.dispose();
         _quantityControllers.remove(variantId);
+        
+        // ✅ НОВОЕ: Освобождаем FocusNode
+        _quantityFocusNodes[variantId]?.dispose();
+        _quantityFocusNodes.remove(variantId);
+        
         _quantityErrors.remove(variantId);
         
         _listKey.currentState?.removeItem(
@@ -129,6 +146,7 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
         final index = _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
           _items[index]['quantity'] = quantity;
+          // Нет total — просто обновляем
         }
         _quantityErrors[variantId] = false;
       });
@@ -156,8 +174,24 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
         );
         
         _items[index]['amount'] = selectedUnitObj.amount ?? 1;
+        // Нет total — просто обновляем
       }
     });
+  }
+
+  // ✅ НОВОЕ: Переход к следующему пустому полю quantity
+  void _moveToNextEmptyField() {
+    for (var item in _items) {
+      final variantId = item['variantId'] as int;
+      final quantityController = _quantityControllers[variantId];
+      
+      if (quantityController != null && quantityController.text.trim().isEmpty) {
+        _quantityFocusNodes[variantId]?.requestFocus();
+        return;
+      }
+    }
+    
+    FocusScope.of(context).unfocus();
   }
 
   void _createDocument({bool approve = false}) async {
@@ -280,60 +314,68 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-     return KeyboardDismissible( // ← Обернули
-    child: Scaffold(
-      backgroundColor: Colors.white,
-      appBar: _buildAppBar(localizations),
-      body: BlocListener<MovementBloc, MovementState>(
-        listener: (context, state) {
-          setState(() => _isLoading = false);
-          if (state is MovementCreateSuccess && mounted) {
-            Navigator.pop(context, true);
-          } else if (state is MovementCreateError && mounted) {
-            if (state.statusCode == 409) {
-              showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
-              return;
+    return KeyboardDismissible(
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: _buildAppBar(localizations),
+        body: BlocListener<MovementBloc, MovementState>(
+          listener: (context, state) {
+            setState(() => _isLoading = false);
+            if (state is MovementCreateSuccess && mounted) {
+              Navigator.pop(context, true);
+            } else if (state is MovementCreateError && mounted) {
+              if (state.statusCode == 409) {
+                showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                return;
+              }
+              _showSnackBar(state.message, false);
             }
-            _showSnackBar(state.message, false);
-          }
-        },
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 8),
-                      _buildDateField(localizations),
-                      const SizedBox(height: 16),
-                      DualStorageWidget(
-                        selectedSenderStorage: _selectedSenderStorage,
-                        selectedRecipientStorage: _selectedRecipientStorage,
-                        onSenderChanged: (value) => setState(() => _selectedSenderStorage = value),
-                        onRecipientChanged: (value) => setState(() => _selectedRecipientStorage = value),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildCommentField(localizations),
-                      const SizedBox(height: 16),
-                      _buildGoodsSection(localizations),
-                    ],
+          },
+          child: Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 8),
+                        _buildDateField(localizations),
+                        const SizedBox(height: 16),
+                        DualStorageWidget(
+                          selectedSenderStorage: _selectedSenderStorage,
+                          selectedRecipientStorage: _selectedRecipientStorage,
+                          onSenderChanged: (value) => setState(() => _selectedSenderStorage = value),
+                          onRecipientChanged: (value) => setState(() => _selectedRecipientStorage = value),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildCommentField(localizations),
+                        const SizedBox(height: 16),
+                        _buildGoodsSection(localizations),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              _buildActionButtons(localizations),
-            ],
+                // ✅ ИЗМЕНЕНО: Используем переиспользуемый виджет кнопок
+                DocumentActionButtons(
+                  mode: DocumentActionMode.create,
+                  isLoading: _isLoading,
+                  onSave: () => _createDocument(approve: false),
+                  onSaveAndApprove: () => _createDocument(approve: true),
+                ),
+              ],
+            ),
           ),
         ),
       ),
-      ), );
+    );
   }
 
   AppBar _buildAppBar(AppLocalizations localizations) {
+    // Нет total — title всегда виден
     return AppBar(
       backgroundColor: Colors.white,
       forceMaterialTransparency: true,
@@ -434,15 +476,6 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Text(
-        //   AppLocalizations.of(context)!.translate('added_goods') ?? 'Добавленные товары',
-        //   style: const TextStyle(
-        //     fontSize: 16,
-        //     fontFamily: 'Gilroy',
-        //     fontWeight: FontWeight.w600,
-        //     color: Color(0xff1E2E52),
-        //   ),
-        // ),
         const SizedBox(height: 8),
         AnimatedList(
           key: _listKey,
@@ -461,6 +494,9 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
     final availableUnits = item['availableUnits'] as List<Unit>? ?? [];
     final variantId = item['variantId'] as int;
     final quantityController = _quantityControllers[variantId];
+    
+    // ✅ НОВОЕ: FocusNode для quantity
+    final quantityFocusNode = _quantityFocusNodes[variantId];
 
     return FadeTransition(
       opacity: animation,
@@ -622,23 +658,25 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
                           ),
                         ),
                         const SizedBox(height: 4),
-                       CompactTextField(
-  controller: quantityController!,
-  hintText: AppLocalizations.of(context)!.translate('quantity') ?? 'Количество',
-  keyboardType: TextInputType.number,
-  inputFormatters: [
-    FilteringTextInputFormatter.digitsOnly,
-  ],
-  textAlign: TextAlign.center,
-  style: const TextStyle(
-    fontSize: 13,
-    fontFamily: 'Gilroy',
-    fontWeight: FontWeight.w600,
-    color: Color(0xff1E2E52),
-  ),
-  hasError: _quantityErrors[variantId] == true,
-  onChanged: (value) => _updateItemQuantity(variantId, value),
-)
+                        CompactTextField(
+                          controller: quantityController!,
+                          focusNode: quantityFocusNode, // ✅ НОВОЕ
+                          hintText: AppLocalizations.of(context)!.translate('quantity') ?? 'Количество',
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xff1E2E52),
+                          ),
+                          hasError: _quantityErrors[variantId] == true,
+                          onChanged: (value) => _updateItemQuantity(variantId, value),
+                          onDone: _moveToNextEmptyField, // ✅ НОВОЕ
+                        )
                       ],
                     ),
                   ),
@@ -651,137 +689,17 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
     );
   }
 
-  Widget _buildActionButtons(AppLocalizations localizations) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 3,
-            offset: const Offset(0, -1),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Container(
-            width: double.infinity,
-            height: 48,
-            decoration: BoxDecoration(
-              border: Border.all(color: const Color(0xff4CAF50), width: 1.5),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(12),
-                onTap: _isLoading ? null : _createAndApproveDocument,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.check_circle_outline,
-                        size: 20,
-                        color: _isLoading ? const Color(0xff99A4BA) : const Color(0xff4CAF50),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        localizations.translate('save_and_approve') ?? 'Сохранить и провести',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w600,
-                          color: _isLoading ? const Color(0xff99A4BA) : const Color(0xff4CAF50),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xffF4F7FD),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    elevation: 0,
-                  ),
-                  child: Text(
-                    localizations.translate('close') ?? 'Отмена',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _saveDocument,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xff4759FF),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    elevation: 0,
-                  ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : Text(
-                          localizations.translate('save') ?? 'Сохранить',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                            color: Colors.white,
-                          ),
-                        ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _createAndApproveDocument() {
-    _createDocument(approve: true);
-  }
-
-  void _saveDocument() {
-    _createDocument(approve: false);
-  }
-
   @override
   void dispose() {
     _dateController.dispose();
     _commentController.dispose();
     _scrollController.dispose();
+    
+    // ✅ НОВОЕ: Освобождаем FocusNode
+    for (var focusNode in _quantityFocusNodes.values) {
+      focusNode.dispose();
+    }
+    
     for (var controller in _quantityControllers.values) {
       controller.dispose();
     }

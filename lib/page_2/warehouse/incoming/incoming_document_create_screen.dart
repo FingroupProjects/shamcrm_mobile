@@ -40,6 +40,10 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
   final Map<int, TextEditingController> _priceControllers = {};
   final Map<int, TextEditingController> _quantityControllers = {};
   
+  // ✅ НОВОЕ: FocusNode для управления фокусом
+  final Map<int, FocusNode> _quantityFocusNodes = {};
+  final Map<int, FocusNode> _priceFocusNodes = {};
+  
   // Для отслеживания ошибок валидации
   final Map<int, bool> _priceErrors = {};
   final Map<int, bool> _quantityErrors = {};
@@ -54,34 +58,32 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
   void _handleVariantSelection(Map<String, dynamic>? newItem) {
     if (mounted && newItem != null) {
       setState(() {
-        // Проверяем, не добавлен ли уже этот товар
         final existingIndex = _items.indexWhere((item) => item['variantId'] == newItem['variantId']);
         
         if (existingIndex == -1) {
-          // Добавляем новый товар
           _items.add(newItem);
           
-          // Создаем контроллеры для нового товара БЕЗ начальных значений
           final variantId = newItem['variantId'] as int;
           _priceControllers[variantId] = TextEditingController();
           _quantityControllers[variantId] = TextEditingController();
           
-          // Инициализируем состояние ошибок
+          // ✅ НОВОЕ: Создаём FocusNode для полей
+          _quantityFocusNodes[variantId] = FocusNode();
+          _priceFocusNodes[variantId] = FocusNode();
+          
           _priceErrors[variantId] = false;
           _quantityErrors[variantId] = false;
           
-          // Убеждаемся что amount существует
           if (!newItem.containsKey('amount')) {
             _items.last['amount'] = 1;
           }
           
-          // Анимация добавления
           _listKey.currentState?.insertItem(
             _items.length - 1,
             duration: const Duration(milliseconds: 300),
           );
           
-          // Автоматическая прокрутка вниз после добавления товара
+          // ✅ НОВОЕ: Устанавливаем фокус на поле количества после добавления
           Future.delayed(const Duration(milliseconds: 350), () {
             if (mounted && _scrollController.hasClients) {
               _scrollController.animateTo(
@@ -89,6 +91,8 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
                 duration: const Duration(milliseconds: 400),
                 curve: Curves.easeOut,
               );
+              
+              _quantityFocusNodes[variantId]?.requestFocus();
             }
           });
         }
@@ -104,13 +108,17 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
       setState(() {
         _items.removeAt(index);
         
-        // Удаляем контроллеры
         _priceControllers[variantId]?.dispose();
         _priceControllers.remove(variantId);
         _quantityControllers[variantId]?.dispose();
         _quantityControllers.remove(variantId);
         
-        // Удаляем ошибки
+        // ✅ НОВОЕ: Удаляем FocusNode
+        _quantityFocusNodes[variantId]?.dispose();
+        _quantityFocusNodes.remove(variantId);
+        _priceFocusNodes[variantId]?.dispose();
+        _priceFocusNodes.remove(variantId);
+        
         _priceErrors.remove(variantId);
         _quantityErrors.remove(variantId);
         
@@ -124,7 +132,7 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
   }
 
   void _openVariantSelection() async {
-      final result = await showModalBottomSheet<Map<String, dynamic>>(
+    final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -145,15 +153,12 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
         final index = _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
           _items[index]['quantity'] = quantity;
-          // Получаем актуальную цену из контроллера
           final priceText = _priceControllers[variantId]?.text ?? '';
           final price = double.tryParse(priceText) ?? 0.0;
           _items[index]['price'] = price;
-          // Пересчитываем total с учётом amount
           final amount = _items[index]['amount'] ?? 1;
           _items[index]['total'] = (_items[index]['quantity'] * price * amount).round();
         }
-        // Убираем ошибку если поле заполнено корректно
         _quantityErrors[variantId] = false;
       });
     } else if (value.isEmpty) {
@@ -174,12 +179,10 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
         final index = _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
           _items[index]['price'] = price;
-          // Пересчитываем total с учётом amount
           final amount = _items[index]['amount'] ?? 1;
           final num total = _items[index]['quantity'] * _items[index]['price'] * amount;
-          _items[index]['total'] = total.round().toInt(); // Округляем до целого
+          _items[index]['total'] = total.round().toInt();
         }
-        // Убираем ошибку если поле заполнено корректно
         _priceErrors[variantId] = false;
       });
     } else if (value.isEmpty) {
@@ -198,9 +201,8 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
       final index = _items.indexWhere((item) => item['variantId'] == variantId);
       if (index != -1) {
         _items[index]['selectedUnit'] = newUnit;
-        _items[index]['unit_id'] = newUnitId; // Может быть null
+        _items[index]['unit_id'] = newUnitId;
         
-        // Находим amount для выбранной единицы измерения
         final availableUnits = _items[index]['availableUnits'] as List<Unit>? ?? [];
         final selectedUnitObj = availableUnits.firstWhere(
           (unit) => (unit.shortName ?? unit.name) == newUnit,
@@ -209,11 +211,31 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
         
         _items[index]['amount'] = selectedUnitObj.amount ?? 1;
         
-        // Пересчитываем total с учётом нового amount
         final amount = _items[index]['amount'] ?? 1;
         _items[index]['total'] = (_items[index]['quantity'] * _items[index]['price'] * amount).round();
       }
     });
+  }
+
+  // ✅ НОВОЕ: Функция для перехода к следующему пустому полю
+  void _moveToNextEmptyField() {
+    for (var item in _items) {
+      final variantId = item['variantId'] as int;
+      final quantityController = _quantityControllers[variantId];
+      final priceController = _priceControllers[variantId];
+      
+      if (quantityController != null && quantityController.text.trim().isEmpty) {
+        _quantityFocusNodes[variantId]?.requestFocus();
+        return;
+      }
+      
+      if (priceController != null && priceController.text.trim().isEmpty) {
+        _priceFocusNodes[variantId]?.requestFocus();
+        return;
+      }
+    }
+    
+    FocusScope.of(context).unfocus();
   }
 
   void _createDocument({bool approve = false}) async {
@@ -243,7 +265,6 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
       return;
     }
 
-    // Валидация всех товаров с подсветкой ошибок
     bool hasErrors = false;
     setState(() {
       _priceErrors.clear();
@@ -254,7 +275,6 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
         final quantityController = _quantityControllers[variantId];
         final priceController = _priceControllers[variantId];
         
-        // Проверка количества
         if (quantityController == null || 
             quantityController.text.trim().isEmpty || 
             (int.tryParse(quantityController.text) ?? 0) <= 0) {
@@ -262,7 +282,6 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
           hasErrors = true;
         }
         
-        // Проверка цены
         if (priceController == null || 
             priceController.text.trim().isEmpty || 
             (double.tryParse(priceController.text) ?? -1) < 0) {
@@ -293,14 +312,14 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
         comment: _commentController.text.trim(),
         counterpartyId: int.parse(_selectedSupplier!),
         documentGoods: _items.map((item) {
-              final unitId = item['unit_id'];
-              return {
-                'good_id': item['id'],
-                'quantity': int.tryParse(item['quantity'].toString()),
-                'price': item['price'].toString(),
-                'unit_id': unitId, // Может быть null
-              };
-            }).toList(),
+          final unitId = item['unit_id'];
+          return {
+            'good_id': item['id'],
+            'quantity': int.tryParse(item['quantity'].toString()),
+            'price': item['price'].toString(),
+            'unit_id': unitId,
+          };
+        }).toList(),
         organizationId: widget.organizationId ?? 1,
         salesFunnelId: 1,
         approve: approve,
@@ -338,6 +357,11 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
     );
   }
 
+  // ✅ НОВОЕ: Вычисляем общую сумму
+  double get _totalAmount {
+    return _items.fold<double>(0, (sum, item) => sum + (item['total'] ?? 0.0));
+  }
+
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
@@ -345,60 +369,65 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: _buildAppBar(localizations),
-      body: BlocListener<IncomingBloc, IncomingState>(
-        listener: (context, state) {
-          setState(() => _isLoading = false);
-          if (state is IncomingCreateSuccess && mounted) {
-            Navigator.pop(context, true);
-          } else if (state is IncomingCreateError && mounted) {
-            if (state.statusCode == 409) {
-              showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
-              return;
+        body: BlocListener<IncomingBloc, IncomingState>(
+          listener: (context, state) {
+            setState(() => _isLoading = false);
+            if (state is IncomingCreateSuccess && mounted) {
+              Navigator.pop(context, true);
+            } else if (state is IncomingCreateError && mounted) {
+              if (state.statusCode == 409) {
+                showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                return;
+              }
+              _showSnackBar(state.message, false);
             }
-            _showSnackBar(state.message, false);
-          }
-        },
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 8),
-                      _buildDateField(localizations),
-                      const SizedBox(height: 16),
-                      SupplierWidget(
-                        selectedSupplier: _selectedSupplier,
-                        onChanged: (value) => setState(() => _selectedSupplier = value),
-                      ),
-                      const SizedBox(height: 16),
-                      StorageWidget(
-                        selectedStorage: _selectedStorage,
-                        onChanged: (value) => setState(() => _selectedStorage = value),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildCommentField(localizations),
-                      const SizedBox(height: 16),
-                      _buildGoodsSection(localizations),
-                    ],
+          },
+          child: Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 8),
+                        _buildDateField(localizations),
+                        const SizedBox(height: 16),
+                        SupplierWidget(
+                          selectedSupplier: _selectedSupplier,
+                          onChanged: (value) => setState(() => _selectedSupplier = value),
+                        ),
+                        const SizedBox(height: 16),
+                        StorageWidget(
+                          selectedStorage: _selectedStorage,
+                          onChanged: (value) => setState(() => _selectedStorage = value),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildCommentField(localizations),
+                        const SizedBox(height: 16),
+                        _buildGoodsSection(localizations),
+                        const SizedBox(height: 16),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              _buildActionButtons(localizations),
-            ],
+                _buildActionButtons(localizations),
+              ],
+            ),
           ),
         ),
       ),
-    ),
-      ); 
+    ); 
   }
 
   AppBar _buildAppBar(AppLocalizations localizations) {
+    // ✅ НОВОЕ: Показываем сумму в AppBar
+    final hasItems = _items.isNotEmpty;
+    final total = _totalAmount;
+
     return AppBar(
       backgroundColor: Colors.white,
       forceMaterialTransparency: true,
@@ -407,16 +436,50 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
         icon: const Icon(Icons.arrow_back_ios, color: Color(0xff1E2E52), size: 24),
         onPressed: () => Navigator.pop(context),
       ),
-      title: Text(
-        localizations.translate('create_incoming_document') ?? 'Создать приход',
-        style: const TextStyle(
-          fontSize: 20,
-          fontFamily: 'Gilroy',
-          fontWeight: FontWeight.w600,
-          color: Color(0xff1E2E52),
-        ),
-      ),
+      title: hasItems
+          ? null // Убираем заголовок, когда показываем сумму
+          : Text(
+              localizations.translate('create_incoming_document') ?? 'Создать приход',
+              style: const TextStyle(
+                fontSize: 20,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w600,
+                color: Color(0xff1E2E52),
+              ),
+            ),
       centerTitle: false,
+      actions: hasItems
+          ? [
+              Container(
+                margin: const EdgeInsets.only(right: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xff4CAF50).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.account_balance_wallet_outlined,
+                      color: Color(0xff4CAF50),
+                      size: 18,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      total.toStringAsFixed(0),
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xff4CAF50),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ]
+          : null,
     );
   }
 
@@ -496,19 +559,10 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
   }
 
   Widget _buildSelectedItemsList() {
-    final total = _items.fold<double>(0, (sum, item) => sum + (item['total'] ?? 0.0));
+    final total = _totalAmount;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Text(
-        //   AppLocalizations.of(context)!.translate('added_goods') ?? 'Добавленные товары',
-        //   style: const TextStyle(
-        //     fontSize: 16,
-        //     fontFamily: 'Gilroy',
-        //     fontWeight: FontWeight.w600,
-        //     color: Color(0xff1E2E52),
-        //   ),
-        // ),
         const SizedBox(height: 8),
         AnimatedList(
           key: _listKey,
@@ -530,6 +584,8 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
     final variantId = item['variantId'] as int;
     final priceController = _priceControllers[variantId];
     final quantityController = _quantityControllers[variantId];
+    final quantityFocusNode = _quantityFocusNodes[variantId]; // ✅ НОВОЕ
+    final priceFocusNode = _priceFocusNodes[variantId]; // ✅ НОВОЕ
 
     return FadeTransition(
       opacity: animation,
@@ -554,7 +610,6 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Заголовок с названием и кнопкой удаления
               Row(
                 children: [
                   Container(
@@ -595,11 +650,9 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
               const SizedBox(height: 10),
               const Divider(height: 1, color: Color(0xFFE5E7EB)),
               const SizedBox(height: 10),
-              // Поля в одну строку (компактный вид)
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Единица измерения
                   if (availableUnits.isNotEmpty)
                     Expanded(
                       flex: 2,
@@ -678,45 +731,7 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
                         ],
                       ),
                     ),
-                  if (availableUnits.isNotEmpty) const SizedBox(width: 8),
-                  // Количество
-                  Expanded(
-                    flex: 2,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          AppLocalizations.of(context)!.translate('quantity') ?? 'Кол-во',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w400,
-                            color: Color(0xff99A4BA),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                       CompactTextField(
-  controller: quantityController!,
-  hintText: AppLocalizations.of(context)!.translate('quantity') ?? 'Количество',
-  keyboardType: TextInputType.number,
-  inputFormatters: [
-    FilteringTextInputFormatter.digitsOnly,
-  ],
-  textAlign: TextAlign.center,
-  style: const TextStyle(
-    fontSize: 13,
-    fontFamily: 'Gilroy',
-    fontWeight: FontWeight.w600,
-    color: Color(0xff1E2E52),
-  ),
-  hasError: _quantityErrors[variantId] == true,
-  onChanged: (value) => _updateItemQuantity(variantId, value),
-)
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  // Цена
+                  if (availableUnits.isNotEmpty)                   const SizedBox(width: 8),
                   Expanded(
                     flex: 3,
                     child: Column(
@@ -732,29 +747,30 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
                           ),
                         ),
                         const SizedBox(height: 4),
-                    CompactTextField(
-  controller: priceController!,
-  hintText: AppLocalizations.of(context)!.translate('price') ?? 'Цена',
-  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-  inputFormatters: [
-    FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,3}')),
-  ],
-  style: const TextStyle(
-    fontSize: 13,
-    fontFamily: 'Gilroy',
-    fontWeight: FontWeight.w600,
-    color: Color(0xff1E2E52),
-  ),
-  hasError: _priceErrors[variantId] == true,
-  onChanged: (value) => _updateItemPrice(variantId, value),
-)
+                        CompactTextField(
+                          controller: priceController!,
+                          focusNode: priceFocusNode, // ✅ НОВОЕ
+                          hintText: AppLocalizations.of(context)!.translate('price') ?? 'Цена',
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,3}')),
+                          ],
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xff1E2E52),
+                          ),
+                          hasError: _priceErrors[variantId] == true,
+                          onChanged: (value) => _updateItemPrice(variantId, value),
+                          onDone: _moveToNextEmptyField, // ✅ НОВОЕ
+                        ),
                       ],
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 10),
-              // Итоговая сумма (компактная)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 decoration: BoxDecoration(
@@ -852,6 +868,7 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
     );
   }
 
+  // ✅ ИЗМЕНЕНО: Две кнопки в разных линиях
   Widget _buildActionButtons(AppLocalizations localizations) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -868,6 +885,7 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
       ),
       child: Column(
         children: [
+          // ✅ Первая кнопка "Сохранить и провести" - белый фон с зелёной границей
           Container(
             width: double.infinity,
             height: 48,
@@ -906,64 +924,47 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
               ),
             ),
           ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xffF4F7FD),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    elevation: 0,
-                  ),
-                  child: Text(
-                    localizations.translate('close') ?? 'Отмена',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black,
-                    ),
-                  ),
+          const SizedBox(height: 12),
+          // ✅ Вторая кнопка "Сохранить" - синяя
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton(
+              onPressed: _isLoading ? null : _saveDocument,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xff4759FF),
+                disabledBackgroundColor: const Color(0xffE5E7EB),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
+                elevation: 0,
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _saveDocument,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xff4759FF),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    elevation: 0,
-                  ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : Text(
+              child: _isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.save_outlined, color: Colors.white, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
                           localizations.translate('save') ?? 'Сохранить',
                           style: const TextStyle(
                             fontSize: 16,
                             fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
+                            fontWeight: FontWeight.w600,
                             color: Colors.white,
                           ),
                         ),
-                ),
-              ),
-            ],
+                      ],
+                    ),
+            ),
           ),
         ],
       ),
@@ -983,6 +984,15 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
     _dateController.dispose();
     _commentController.dispose();
     _scrollController.dispose();
+    
+    // ✅ НОВОЕ: Освобождаем все FocusNode
+    for (var focusNode in _quantityFocusNodes.values) {
+      focusNode.dispose();
+    }
+    for (var focusNode in _priceFocusNodes.values) {
+      focusNode.dispose();
+    }
+    
     for (var controller in _priceControllers.values) {
       controller.dispose();
     }
