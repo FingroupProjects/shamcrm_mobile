@@ -11297,7 +11297,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
   ) async {
     final path = await _appendQueryParams('/storage');
     if (kDebugMode) {
-      //print('ApiService: createSupplier - Generated path: $path');
+      print('ApiService: createStorage - Generated path: $path');
     }
     final organizationId = await getSelectedOrganization() ?? '';
     final salesFunnelId = await getSelectedSalesFunnel() ?? '';
@@ -11314,20 +11314,23 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     if (response.statusCode == 200 || response.statusCode == 201) {
       return true;
     } else {
-      throw Exception('Ошибка создания поставщика: ${response.body}');
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(message ?? 'Ошибка создания склада', response.statusCode);
     }
   }
 
   //updateStorage
-  Future<PriceTypeModel> updateStorage(
+  Future<void> updateStorage(
       {required WareHouse storage,
       required int id,
       required List<int> ids,
       }) async {
     final path = await _appendQueryParams('/storage/$id');
+
     if (kDebugMode) {
-      //print('ApiService: updateSupplier - Generated path: $path');
+      print('ApiService: updateStorage - Generated path: $path');
     }
+
     final organizationId = await getSelectedOrganization() ?? '';
     final salesFunnelId = await getSelectedSalesFunnel() ?? '';
     final body = {
@@ -11342,12 +11345,17 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       if (response.body.isNotEmpty) {
-        return PriceTypeModel.fromJson(json.decode(response.body)['result']);
+        debugPrint("Склад обновлен успешно");
+        return;
       } else {
-        throw Exception('Ошибка обновления поставщика: ${response.body}');
+       final message = _extractErrorMessageFromResponse(response);
+       debugPrint('Ошибка обновления склада: $message');
+        throw ApiException(message ?? 'Ошибка обновления', response.statusCode);
       }
     } else {
-      throw Exception('Ошибка обновления поставщика: ${response.body}');
+      final message = _extractErrorMessageFromResponse(response);
+      debugPrint('Ошибка обновления склада2: $message');
+      throw ApiException(message ?? 'Ошибка обновления', response.statusCode);
     }
   }
 

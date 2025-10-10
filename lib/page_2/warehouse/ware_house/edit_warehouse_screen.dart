@@ -38,12 +38,18 @@ class _EditWarehouseScreenState extends State<EditWarehouseScreen> {
     super.initState();
     nameController.text = widget.warehouse.name ?? '';
     _isWarehouseVisible = widget.warehouse.showToOnlineStore ?? true;
-    // FIXED: Pass user IDs as strings for proper matching
+    // Initialize selected users for WarehouseMultiUser widget
     users = widget.userIds.map((id) => id.toString()).toList();
     ids = List.from(widget.userIds);
   }
 
-  Future<void> _toggleWarehouseVisibility(bool value) async {
+  @override
+  void dispose() {
+    nameController.dispose();
+    super.dispose();
+  }
+
+  void _toggleWarehouseVisibility(bool value) {
     setState(() {
       _isWarehouseVisible = value;
     });
@@ -77,14 +83,15 @@ class _EditWarehouseScreenState extends State<EditWarehouseScreen> {
           if (state is WareHouseError) {
             _showSnack(
                 context,
-                AppLocalizations.of(context)!.translate(state.message) ?? state.message,isError: true);
-         
-          } else if (state is WareHouseLoaded) {
+                AppLocalizations.of(context)!.translate(state.message) ?? state.message, 
+                isError: true);
+          }
+          if (state is WareHouseSuccess) {
             _showSnack(
               context,
-              AppLocalizations.of(context)!
-                  .translate('warehouse_updated_successfully') ??
+              AppLocalizations.of(context)!.translate('warehouse_updated_successfully') ?? 
                   'Склад успешно обновлен',
+              isError: false,
             );
             Navigator.pop(context, true);
           }
@@ -227,8 +234,13 @@ class _EditWarehouseScreenState extends State<EditWarehouseScreen> {
                                   createdAt: widget.warehouse.createdAt,
                                   updatedAt: DateTime.now().toIso8601String(),
                                 );
+                                // Update warehouse with new data and assigned users
                                 context.read<WareHouseBloc>().add(
-                                  UpdateWareHouse(updatedWarehouse, ids, widget.warehouse.id),
+                                  UpdateWareHouse(
+                                    updatedWarehouse,
+                                    ids, // List of user IDs to assign
+                                    widget.warehouse.id,
+                                  ),
                                 );
                               }
                             },

@@ -20,11 +20,8 @@ class AddWarehouseScreen extends StatefulWidget {
 class _AddWarehouseScreenState extends State<AddWarehouseScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController nameController = TextEditingController();
-  final TextEditingController shortNameController = TextEditingController();
 
   bool _isWarehouseVisible = true;
-
-  List<String> users = [];
   List<int> ids = [];
 
   Future<void> _toggleWarehouseVisibility(bool value) async {
@@ -114,8 +111,7 @@ class _AddWarehouseScreenState extends State<AddWarehouseScreen> {
                 ),
                 backgroundColor: Colors.green,
                 elevation: 3,
-                padding:
-                const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 duration: const Duration(seconds: 3),
               ),
             );
@@ -140,8 +136,7 @@ class _AddWarehouseScreenState extends State<AddWarehouseScreen> {
                           controller: nameController,
                           hintText: AppLocalizations.of(context)!
                               .translate('enter_warehouse_name') ?? 'Введите название склада',
-                          label:
-                          AppLocalizations.of(context)!.translate('name') ?? 'Название',
+                          label: AppLocalizations.of(context)!.translate('name') ?? 'Название',
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return AppLocalizations.of(context)!
@@ -152,22 +147,21 @@ class _AddWarehouseScreenState extends State<AddWarehouseScreen> {
                         ),
                         const SizedBox(height: 16),
                         WarehouseMultiUser(
-                          selectedUsers: users,
-                          onSelectUsers: (p0) {
+                          selectedUsers: const [],
+                          onSelectUsers: (selectedUsers) {
                             setState(() {
-                              users = p0.map((e) => e.name).toList();
-                              ids = p0.map((e) => e.id).toList();
+                              ids = selectedUsers.map((e) => e.id).toList();
                             });
                           },
                         ),
                         const SizedBox(height: 16),
                         Text(
                           AppLocalizations.of(context)!.translate('warehouse_visibility') ?? 'Показывать склад в интернет магазине  как филиал',
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
                             fontFamily: 'Gilroy',
-                            color: const Color(0xff1E2E52),
+                            color: Color(0xff1E2E52),
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -177,42 +171,32 @@ class _AddWarehouseScreenState extends State<AddWarehouseScreen> {
                             color: const Color(0xFFF4F7FD),
                             borderRadius: BorderRadius.circular(16),
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          child: Row(
                             children: [
-
-                              Row(
-                                children: [
-                                  Transform.scale(
-                                    scale: 0.9, // Adjust switch size
-                                    child: Switch(
-                                      value: _isWarehouseVisible,
-                                      onChanged: _toggleWarehouseVisibility,
-                                      activeColor: Colors.white,
-                                      inactiveThumbColor: Colors.white,
-                                      activeTrackColor: ChatSmsStyles.messageBubbleSenderColor,
-                                      inactiveTrackColor: Colors.grey.withOpacity(0.5),
-                                    ),
+                              Transform.scale(
+                                scale: 0.9,
+                                child: Switch(
+                                  value: _isWarehouseVisible,
+                                  onChanged: _toggleWarehouseVisibility,
+                                  activeColor: Colors.white,
+                                  inactiveThumbColor: Colors.white,
+                                  activeTrackColor: ChatSmsStyles.messageBubbleSenderColor,
+                                  inactiveTrackColor: Colors.grey.withOpacity(0.5),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  _isWarehouseVisible
+                                      ? AppLocalizations.of(context)!.translate('warehouse_visible_on') ?? 'Показывать склад: Вкл'
+                                      : AppLocalizations.of(context)!.translate('warehouse_visible_off') ?? 'Показывать склад: Выкл',
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w500,
+                                    fontFamily: 'Gilroy',
+                                    color: Color(0xFF1E1E1E),
                                   ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Text(
-                                      _isWarehouseVisible
-                                          ? AppLocalizations.of(context)!
-                                          .translate('warehouse_visible_on') ??
-                                          'Показывать склад: Вкл'
-                                          : AppLocalizations.of(context)!
-                                          .translate('warehouse_visible_off') ??
-                                          'Показывать склад: Выкл',
-                                      style: const TextStyle(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w500,
-                                        fontFamily: 'Gilroy',
-                                        color: Color(0xFF1E1E1E),
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                                ),
                               ),
                             ],
                           ),
@@ -223,14 +207,12 @@ class _AddWarehouseScreenState extends State<AddWarehouseScreen> {
                 ),
               ),
               Container(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
                 child: Row(
                   children: [
                     Expanded(
                       child: CustomButton(
-                        buttonText:
-                        AppLocalizations.of(context)!.translate('close') ?? 'Отмена',
+                        buttonText: AppLocalizations.of(context)!.translate('close') ?? 'Отмена',
                         buttonColor: const Color(0xffF4F7FD),
                         textColor: Colors.black,
                         onPressed: () {
@@ -248,25 +230,24 @@ class _AddWarehouseScreenState extends State<AddWarehouseScreen> {
                                 color: Color(0xff1E2E52),
                               ),
                             );
-                          } else {
-                            return CustomButton(
-                              buttonText: AppLocalizations.of(context)!.translate('save') ?? 'Сохранить',
-                              buttonColor: const Color(0xff4759FF),
-                              textColor: Colors.white,
-                              onPressed: () {
-                                if (_formKey.currentState!.validate()) {
-                                  final measureUnit = WareHouse(
-                                    id: 0,
-                                    name: nameController.text,
-                                    showToOnlineStore: _isWarehouseVisible,
-                                    createdAt: DateTime.now().toIso8601String(),
-                                    updatedAt: DateTime.now().toIso8601String(),
-                                  );
-                                  context.read<WareHouseBloc>().add(CreateWareHouse(measureUnit, ids));
-                                }
-                              },
-                            );
                           }
+                          return CustomButton(
+                            buttonText: AppLocalizations.of(context)!.translate('save') ?? 'Сохранить',
+                            buttonColor: const Color(0xff4759FF),
+                            textColor: Colors.white,
+                            onPressed: () {
+                              if (_formKey.currentState!.validate()) {
+                                final warehouse = WareHouse(
+                                  id: 0,
+                                  name: nameController.text,
+                                  showToOnlineStore: _isWarehouseVisible,
+                                  createdAt: DateTime.now().toIso8601String(),
+                                  updatedAt: DateTime.now().toIso8601String(),
+                                );
+                                context.read<WareHouseBloc>().add(CreateWareHouse(warehouse, ids));
+                              }
+                            },
+                          );
                         },
                       ),
                     ),
