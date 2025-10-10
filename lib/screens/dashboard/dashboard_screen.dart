@@ -24,9 +24,6 @@ import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/task_chart/ta
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/task_chart/task_chart_event.dart';
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/user_task/user_task_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/user_task/user_task_event.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/creditors/sales_dashboard_creditors_bloc.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/debtors/sales_dashboard_debtors_bloc.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/goods/sales_dashboard_goods_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/sales_dashboard_bloc.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
@@ -57,7 +54,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
-import '../../bloc/page_2_BLOC/dashboard/cash_balance/sales_dashboard_cash_balance_bloc.dart';
 import '../../models/page_2/dashboard/dashboard_top.dart';
 import '../../models/page_2/dashboard/expense_structure.dart';
 import '../../models/page_2/dashboard/illiquids_model.dart';
@@ -622,7 +618,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               .read<ProcessSpeedBlocManager>()
               .add(LoadProcessSpeedDataManager());
         } else {
-        context.read<SalesDashboardBloc>().add(LoadInitialData());
+          context.read<SalesDashboardBloc>().add(ReloadInitialData());
         }
       }
     } catch (e) {
@@ -638,25 +634,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
     
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider(
-          create: (context) => SalesDashboardBloc(),
-        ),
-        BlocProvider(
-          create: (context) => SalesDashboardGoodsBloc(),
-        ),
-        BlocProvider(
-          create: (context) => SalesDashboardCashBalanceBloc(),
-        ),
-        BlocProvider(
-          create: (context) => SalesDashboardCreditorsBloc(),
-        ),
-        BlocProvider(
-          create: (context) => SalesDashboardDebtorsBloc(),
-        ),
-      ],
-      child: Scaffold(
+    return Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
           forceMaterialTransparency: true,
@@ -735,7 +713,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                 ],
               ),
-      ),
     );
   }
 
@@ -819,10 +796,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(height: 16),
               ],
             );
-          } else {
+          } else if (state is SalesDashboardError) {
             return Center(
               child: Text(AppLocalizations.of(context)!.translate('error_loading') ?? 'Ошибка загрузки'),
             );
+          } else {
+            return Center();
           }
         },
       ),
