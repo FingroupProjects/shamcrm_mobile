@@ -11391,7 +11391,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         return [];
       }
     } else {
-      throw Exception('Ошибка создания поставщика: ${response.body}');
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(message ?? 'Ошибка загрузки единиц измерения', response.statusCode);
     }
   }
 
@@ -11417,7 +11418,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     if (response.statusCode == 200 || response.statusCode == 201) {
       return;
     } else {
-      throw Exception('Ошибка создания поставщика: ${response.body}');
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(message ?? 'Ошибка создания поставщика', response.statusCode);
     }
   }
 
@@ -11436,14 +11438,15 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     if (response.statusCode == 200 || response.statusCode == 204) {
       return;
     } else {
-      throw Exception('Ошибка удаления поставщика: ${response.body}');
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(message ?? 'Ошибка удаления поставщика', response.statusCode);
     }
   }
 
   //update measure units
-  Future<PriceTypeModel> updateUnit(
+  Future<void> updateUnit(
       {required MeasureUnitModel supplier, required int id}) async {
-    final path = await _appendQueryParams('/priceType/$id');
+    final path = await _appendQueryParams('/unit/$id');
     if (kDebugMode) {
       //print('ApiService: updateSupplier - Generated path: $path');
     }
@@ -11460,12 +11463,14 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       if (response.body.isNotEmpty) {
-        return PriceTypeModel.fromJson(json.decode(response.body)['result']);
+        return;
       } else {
-        throw Exception('Ошибка обновления поставщика: ${response.body}');
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(message ?? 'Ошибка обновления', response.statusCode);
       }
     } else {
-      throw Exception('Ошибка обновления поставщика: ${response.body}');
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(message ?? 'Ошибка обновления', response.statusCode);
     }
   }
 
