@@ -336,7 +336,7 @@ class CreateClienSalesDocumentScreenState
         comment: _commentController.text.trim(),
         counterpartyId: _selectedLead!.id!,
         documentGoods: _items.map((item) => {
-          'good_id': item['id'],
+          'good_id': item['variantId'],
           'quantity': int.tryParse(item['quantity'].toString()),
           'price': item['price'].toString(),
           'unit_id': item['unit_id'],
@@ -730,7 +730,7 @@ class CreateClienSalesDocumentScreenState
                                   items: availableUnits.map((unit) {
                                     return DropdownMenuItem<String>(
                                       value: unit.shortName ?? unit.name,
-                                      child: Text(unit.shortName ?? unit.name),
+                                      child: Text(unit.shortName ?? unit.name ?? ''),
                                     );
                                   }).toList(),
                                   onChanged: (String? newValue) {

@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/models/page_2/dashboard/net_profit_model.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/order_dashboard_model.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 
@@ -20,6 +21,7 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
 
   SalesDashboardBloc() : super(SalesDashboardInitial()) {
     on<LoadInitialData>((event, emit) async {
+      debugPrint("Loading initial sales dashboard data...");
       emit(SalesDashboardLoading());
 
       final results = await Future.wait([
@@ -52,6 +54,12 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
         topSellingData: topSellingData,
         illiquidGoodsData: illiquidGoodsData,
       ));
+    });
+
+    on<ReloadInitialData>((event, emit) {
+      debugPrint("Reloading sales dashboard data...");
+      emit(SalesDashboardLoading());
+      add(LoadInitialData());
     });
 
     add(LoadInitialData());

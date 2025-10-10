@@ -9,3 +9,7 @@ class LoadInitialData extends SalesDashboardEvent {
   List<Object> get props => [];
 }
 
+class ReloadInitialData extends SalesDashboardEvent {
+  @override
+  List<Object> get props => [];
+}

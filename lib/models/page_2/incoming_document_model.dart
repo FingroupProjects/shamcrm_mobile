@@ -1,7 +1,8 @@
-import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/storage_model.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
+
+import 'goods_model.dart';
 
 class IncomingResponse {
   final List<IncomingDocument>? data;
@@ -38,8 +39,12 @@ class IncomingDocument extends Equatable {
   final int? counterpartyAgreementId;
   final int? organizationId;
   final WareHouse? storage;
-    final WareHouse? sender_storage_id;
+  final WareHouse? sender_storage_id;
   final WareHouse? recipient_storage_id;
+  final String? type;
+  final int? storageId;
+  final int? currencyId;
+  final int? authorId;
 
   final String? comment;
   final Currency? currency;
@@ -72,6 +77,10 @@ class IncomingDocument extends Equatable {
     this.deletedAt,
     this.docNumber,
     this.approved,
+    this.type,
+    this.storageId,
+    this.currencyId,
+    this.authorId,
   });
 
   @override
@@ -125,6 +134,10 @@ class IncomingDocument extends Equatable {
       deletedAt: _parseDate(json['deleted_at']),
       docNumber: json['doc_number'],
       approved: _parseInt(json['approved']),
+      type: json['type'],
+      storageId: _parseInt(json['storage_id']),
+      currencyId: _parseInt(json['currency_id']),
+      authorId: _parseInt(json['author_id']),
     );
   }
 
@@ -146,6 +159,13 @@ class IncomingDocument extends Equatable {
       'deleted_at': deletedAt?.toIso8601String(),
       'doc_number': docNumber,
       'approved': approved,
+      'author': author?.toJson(),
+      'type': type,
+      'storage_id': storageId,
+      'currency_id': currencyId,
+      'author_id': authorId,
+      'sender_storage_id': sender_storage_id?.toJson(),
+      'recipient_storage_id': recipient_storage_id?.toJson(),
     };
   }
 
@@ -195,6 +215,12 @@ class IncomingDocument extends Equatable {
     String? docNumber,
     int? approved,
     bool clearDeletedAt = false, // Специальный флаг для очистки deletedAt
+    String? type,
+    int? storageId,
+    int? currencyId,
+    int? authorId,
+    WareHouse? sender_storage_id,
+    WareHouse? recipient_storage_id,
   }) {
     return IncomingDocument(
       id: id ?? this.id,
@@ -213,6 +239,12 @@ class IncomingDocument extends Equatable {
       deletedAt: clearDeletedAt ? null : (deletedAt ?? this.deletedAt),
       docNumber: docNumber ?? this.docNumber,
       approved: approved ?? this.approved,
+      type: type ?? this.type,
+      storageId: storageId ?? this.storageId,
+      currencyId: currencyId ?? this.currencyId,
+      authorId: authorId ?? this.authorId,
+      sender_storage_id: sender_storage_id ?? this.sender_storage_id,
+      recipient_storage_id: recipient_storage_id ?? this.recipient_storage_id,
     );
   }
 
@@ -427,6 +459,10 @@ class Currency {
   final List<Attribute>? attributes;
   final String? fullName;
   final int? unitId; // ИЗМЕНЕНО: int? вместо Unit?
+  final int? goodVariantId;
+  final String? sum;
+  final Unit? unit;
+  final GoodVariant? goodVariant;
 
   DocumentGood({
     this.id,
@@ -440,6 +476,10 @@ class Currency {
     this.attributes,
     this.fullName,
     this.unitId,
+    this.goodVariantId,
+    this.sum,
+    this.unit,
+    this.goodVariant,
   });
 
   factory DocumentGood.fromJson(Map<String, dynamic> json) {
@@ -459,6 +499,12 @@ class Currency {
           : null,
       fullName: json['full_name'] as String?,
       unitId: IncomingDocument._parseInt(json['unit_id']), // Правильно
+      goodVariant: json['good_variant'] != null
+          ? GoodVariant.fromJson(json['good_variant'])
+          : null,
+      goodVariantId: IncomingDocument._parseInt(json['good_variant_id']),
+      sum: json['sum'] as String?,
+      unit: json['unit'] != null ? Unit.fromJson(json['unit']) : null,
     );
   }
 
@@ -478,6 +524,7 @@ class Currency {
     };
   }
 }
+
 class Good {
   final int? id;
   final String? oneCId;
@@ -485,7 +532,7 @@ class Good {
   final int? categoryId;
   final String? description;
   final String? price;
-  final int? unitId; // ИЗМЕНЕНО: int? вместо Unit?
+  final int? unitId;
   final int? quantity;
   final DateTime? deletedAt;
   final DateTime? createdAt;
@@ -497,7 +544,10 @@ class Good {
   final String? cip;
   final String? packageCode;
   final List<GoodFile>? files;
-  final List<Unit>? units; // ДОБАВЬТЕ это поле для списка единиц измерения
+  final List<Unit>? units;
+  final List<dynamic>? measurements;
+  final dynamic category;
+  final Unit? unit;
 
   Good({
     this.id,
@@ -518,40 +568,40 @@ class Good {
     this.cip,
     this.packageCode,
     this.files,
-    this.units, // ДОБАВЬТЕ
+    this.units,
+    this.measurements,
+    this.category,
+    this.unit,
   });
 
   factory Good.fromJson(Map<String, dynamic> json) {
     return Good(
-      id: IncomingDocument._parseInt(json['id']),
+      id: _parseInt(json['id']),
       oneCId: json['one_c_id'],
       name: json['name'],
-      categoryId: IncomingDocument._parseInt(json['category_id']),
+      categoryId: _parseInt(json['category_id']),
       description: json['description'],
       price: json['price'],
-      unitId: IncomingDocument._parseInt(json['unit_id']), // Правильно
-      quantity: IncomingDocument._parseInt(json['quantity']),
-      deletedAt: json['deleted_at'] != null
-          ? DateTime.parse(json['deleted_at'])
-          : null,
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'])
-          : null,
-      updatedAt: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'])
-          : null,
+      unitId: _parseInt(json['unit_id']),
+      quantity: _parseInt(json['quantity']),
+      deletedAt: _parseDate(json['deleted_at']),
+      createdAt: _parseDate(json['created_at']),
+      updatedAt: _parseDate(json['updated_at']),
       isActive: json['is_active'],
       article: json['article'],
-      labelId: IncomingDocument._parseInt(json['label_id']),
+      labelId: _parseInt(json['label_id']),
       getImage: json['get_image'],
       cip: json['cip'],
       packageCode: json['package_code'],
       files: json['files'] != null
           ? (json['files'] as List).map((i) => GoodFile.fromJson(i)).toList()
           : null,
-      units: json['units'] != null // ДОБАВЬТЕ
+      units: json['units'] != null
           ? (json['units'] as List).map((i) => Unit.fromJson(i)).toList()
           : null,
+      measurements: json['measurements'] as List<dynamic>?,
+      category: json['category'],
+      unit: json['unit'] != null ? Unit.fromJson(json['unit']) : null,
     );
   }
 
@@ -575,10 +625,38 @@ class Good {
       'cip': cip,
       'package_code': packageCode,
       'files': files?.map((e) => e.toJson()).toList(),
-      'units': units?.map,
+      'units': units?.map((e) => e.toJson()).toList(),
+      'measurements': measurements,
+      'category': category,
+      'unit': unit?.toJson(),
     };
   }
+
+  static int? _parseInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is String) {
+      try {
+        return int.parse(value);
+      } catch (e) {
+        print('Error parsing int from string "$value": $e');
+        return null;
+      }
+    }
+    return null;
+  }
+
+  static DateTime? _parseDate(dynamic dateStr) {
+    if (dateStr == null || dateStr == '' || dateStr is! String) return null;
+    try {
+      return DateTime.parse(dateStr);
+    } catch (e) {
+      print('Error parsing date $dateStr: $e');
+      return null;
+    }
+  }
 }
+
 class GoodFile {
   final int? id;
   final String? path;
@@ -596,15 +674,11 @@ class GoodFile {
 
   factory GoodFile.fromJson(Map<String, dynamic> json) {
     return GoodFile(
-      id: IncomingDocument._parseInt(json['id']),
+      id: Good._parseInt(json['id']),
       path: json['path'],
       type: json['type'],
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'])
-          : null,
-      updatedAt: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'])
-          : null,
+      createdAt: Good._parseDate(json['created_at']),
+      updatedAt: Good._parseDate(json['updated_at']),
     );
   }
 
@@ -616,6 +690,93 @@ class GoodFile {
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
     };
+  }
+}
+
+class GoodVariant {
+  final int? id;
+  final int? goodId;
+  final bool? isActive;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  final String? oneCUid;
+  final String? barcode;
+  final String? fullName;
+  final Good? good;
+  final List<AttributeValue>? attributeValues;
+
+  GoodVariant({
+    this.id,
+    this.goodId,
+    this.isActive,
+    this.createdAt,
+    this.updatedAt,
+    this.oneCUid,
+    this.barcode,
+    this.fullName,
+    this.good,
+    this.attributeValues,
+  });
+
+  factory GoodVariant.fromJson(Map<String, dynamic> json) {
+    return GoodVariant(
+      id: _parseInt(json['id']),
+      goodId: _parseInt(json['good_id']),
+      isActive: json['is_active'] is int
+          ? json['is_active'] == 1
+          : json['is_active'] as bool?,
+      createdAt: _parseDate(json['created_at']),
+      updatedAt: _parseDate(json['updated_at']),
+      oneCUid: json['one_c_uid'],
+      barcode: json['barcode'],
+      fullName: json['full_name'],
+      good: json['good'] != null ? Good.fromJson(json['good']) : null,
+      attributeValues: json['attribute_values'] != null
+          ? (json['attribute_values'] as List)
+          .map((i) => AttributeValue.fromJson(i))
+          .toList()
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'good_id': goodId,
+      'is_active': isActive == true ? 1 : (isActive == false ? 0 : null),
+      'created_at': createdAt?.toIso8601String(),
+      'updated_at': updatedAt?.toIso8601String(),
+      'one_c_uid': oneCUid,
+      'barcode': barcode,
+      'full_name': fullName,
+      'good': good?.toJson(),
+      'attribute_values': attributeValues?.map((e) => e.toJson()).toList(),
+    };
+  }
+
+  static int? _parseInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is String) {
+      try {
+        return int.parse(value);
+      } catch (e) {
+        print('Error parsing int from string "$value": $e');
+        return null;
+      }
+    }
+    print('Unexpected type for int parsing: ${value.runtimeType}');
+    return null;
+  }
+
+  static DateTime? _parseDate(dynamic dateStr) {
+    if (dateStr == null || dateStr == '' || dateStr is! String) return null;
+    try {
+      return DateTime.parse(dateStr);
+    } catch (e) {
+      print('Error parsing date $dateStr: $e');
+      return null;
+    }
   }
 }
 
@@ -841,6 +1002,60 @@ class Pagination {
       'per_page': perPage,
       'current_page': currentPage,
       'total_pages': totalPages,
+    };
+  }
+}
+
+class AttributeValue {
+  final int? id;
+  final int? categoryAttributeId;
+  final String? value;
+  final int? unitId;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  final int? variantAttributeId;
+  final int? variantId;
+  final CategoryAttribute? categoryAttribute;
+
+  AttributeValue({
+    this.id,
+    this.categoryAttributeId,
+    this.value,
+    this.unitId,
+    this.createdAt,
+    this.updatedAt,
+    this.variantAttributeId,
+    this.variantId,
+    this.categoryAttribute,
+  });
+
+  factory AttributeValue.fromJson(Map<String, dynamic> json) {
+    return AttributeValue(
+      id: GoodVariant._parseInt(json['id']),
+      categoryAttributeId: GoodVariant._parseInt(json['category_attribute_id']),
+      value: json['value'],
+      unitId: GoodVariant._parseInt(json['unit_id']),
+      createdAt: GoodVariant._parseDate(json['created_at']),
+      updatedAt: GoodVariant._parseDate(json['updated_at']),
+      variantAttributeId: GoodVariant._parseInt(json['variant_attribute_id']),
+      variantId: GoodVariant._parseInt(json['variant_id']),
+      categoryAttribute: json['category_attribute'] != null
+          ? CategoryAttribute.fromJson(json['category_attribute'])
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'category_attribute_id': categoryAttributeId,
+      'value': value,
+      'unit_id': unitId,
+      'created_at': createdAt?.toIso8601String(),
+      'updated_at': updatedAt?.toIso8601String(),
+      'variant_attribute_id': variantAttributeId,
+      'variant_id': variantId,
+      'category_attribute': categoryAttribute?.toJson(),
     };
   }
 }

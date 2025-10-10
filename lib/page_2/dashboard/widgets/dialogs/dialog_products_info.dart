@@ -95,6 +95,8 @@ class _InfoDialogState extends State<InfoDialog> {
               ),
             ),
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Icon(
                   Icons.inventory_2_outlined,
@@ -102,9 +104,9 @@ class _InfoDialogState extends State<InfoDialog> {
                   color: Color(0xff64748B),
                 ),
                 SizedBox(height: 12),
-                Builder(
-                  builder: (context) => Text(
+                Text(
                     AppLocalizations.of(context)!.translate('no_data_to_display'),
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 16,
@@ -112,7 +114,6 @@ class _InfoDialogState extends State<InfoDialog> {
                       color: Color(0xff475569),
                     ),
                   ),
-                ),
               ],
             ),
           )
@@ -447,14 +448,18 @@ class _InfoDialogState extends State<InfoDialog> {
                         ),
                       ),
                       SizedBox(width: 12),
-                      Text(
-                        AppLocalizations.of(context)!.translate('illiquid_goods'),
-                        style: TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                          letterSpacing: 0.3,
+                      Expanded(
+                        child: Text(
+                          AppLocalizations.of(context)!.translate('illiquid_goods'),
+                          style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                            letterSpacing: 0.3,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
