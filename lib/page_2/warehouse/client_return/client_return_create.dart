@@ -156,20 +156,29 @@ class CreateClientReturnDocumentScreenState extends State<CreateClientReturnDocu
     }
   }
 
-  void _openVariantSelection() async {
-    final result = await showModalBottomSheet<Map<String, dynamic>>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => VariantSelectionBottomSheet(
-        existingItems: _items,
-      ),
-    );
+ void _openVariantSelection() async {
+  // Сбрасываем фокус перед открытием окна
+  FocusScope.of(context).unfocus();
 
-    if (result != null) {
-      _handleVariantSelection(result);
+  final result = await showModalBottomSheet<Map<String, dynamic>>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (context) => VariantSelectionBottomSheet(
+      existingItems: _items,
+    ),
+  );
+
+  // Если результат null, сбрасываем фокус с небольшой задержкой
+  if (result == null) {
+    await Future.delayed(const Duration(milliseconds: 100));
+    if (mounted) {
+      FocusScope.of(context).unfocus();
     }
+  } else {
+    _handleVariantSelection(result);
   }
+}
 
   void _updateItemQuantity(int variantId, String value) {
     final quantity = int.tryParse(value);
@@ -618,8 +627,6 @@ class CreateClientReturnDocumentScreenState extends State<CreateClientReturnDocu
             return _buildSelectedItemCard(index, _items[index], animation);
           },
         ),
-        const SizedBox(height: 16),
-        _buildTotalCard(total),
       ],
     );
   }
@@ -719,7 +726,7 @@ class CreateClientReturnDocumentScreenState extends State<CreateClientReturnDocu
                           const SizedBox(height: 4),
                           if (availableUnits.length > 1)
                             Container(
-                              height: 36,
+                              height: 48,
                               padding:
                                   const EdgeInsets.symmetric(horizontal: 8),
                               decoration: BoxDecoration(
@@ -765,7 +772,7 @@ class CreateClientReturnDocumentScreenState extends State<CreateClientReturnDocu
                             )
                           else
                             Container(
-                              height: 36,
+                              height: 48,
                               padding:
                                   const EdgeInsets.symmetric(horizontal: 8),
                               decoration: BoxDecoration(

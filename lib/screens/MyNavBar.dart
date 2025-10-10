@@ -33,7 +33,7 @@ class MyNavBar extends StatefulWidget {
 
 class _MyNavBarState extends State<MyNavBar> {
   final ScrollController _scrollController = ScrollController();
-  static final double _navBarHeight = Platform.isIOS ? 60 : 60;
+  static final double _navBarHeight = 60;
   List<NavBarItemData>? _orderedItems;
   bool _isReordering = false;
   int _lastItemCount = 0;
@@ -372,14 +372,20 @@ class _MyNavBarState extends State<MyNavBar> {
       ),
     );
 
-    if (Platform.isAndroid) {
+    // ИСПРАВЛЕННАЯ ЛОГИКА ДЛЯ iOS
+    if (Platform.isIOS) {
       return SafeArea(
-        top: false,
+        top: false,    // Не трогаем верх
+        bottom: true,  // Добавляем отступ снизу для home indicator
         child: navBarContent,
       );
     }
 
-    return navBarContent;
+    // Для Android оставляем как было
+    return SafeArea(
+      top: false,
+      child: navBarContent,
+    );
   }
 
   @override

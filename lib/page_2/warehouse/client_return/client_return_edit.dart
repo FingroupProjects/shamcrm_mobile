@@ -8,6 +8,7 @@ import 'package:crm_task_manager/custom_widget/keyboard_dismissible.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
+import 'package:crm_task_manager/page_2/widgets/confirm_exit_dialog.dart';
 import 'package:crm_task_manager/page_2/widgets/goods_Selection_Bottom_Sheet.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/storage_widget.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
@@ -208,20 +209,26 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
     }
   }
 
-  void _openVariantSelection() async {
-    final result = await showModalBottomSheet<Map<String, dynamic>>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => VariantSelectionBottomSheet(
-        existingItems: _items,
-      ),
-    );
+ void _openVariantSelection() async {
+  // Сбрасываем фокус перед открытием окна
+  FocusScope.of(context).unfocus();
 
-    if (result != null) {
-      _handleVariantSelection(result);
-    }
+  final result = await showModalBottomSheet<Map<String, dynamic>>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (context) => VariantSelectionBottomSheet(
+      existingItems: _items,
+    ),
+  );
+
+  // Если результат null (пользователь закрыл окно без выбора), убеждаемся, что фокус сброшен
+  if (result == null) {
+    FocusScope.of(context).unfocus();
+  } else {
+    _handleVariantSelection(result);
   }
+}
 
   void _updateItemQuantity(int variantId, String value) {
     final quantity = int.tryParse(value);
@@ -394,7 +401,18 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
-    return KeyboardDismissible(
+      return WillPopScope(
+    onWillPop: () async {
+      // Если есть товары в списке, показываем диалог подтверждения
+      if (_items.isNotEmpty) {
+        final shouldExit = await ConfirmExitDialog.show(context);
+        return shouldExit;
+      }
+      // Если товаров нет, разрешаем выход
+      return true;
+    },
+    child: KeyboardDismissible(
+
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: _buildAppBar(localizations),
@@ -450,7 +468,7 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
           ),
         ),
       ),
-    );
+       ), );
   }
 
   AppBar _buildAppBar(AppLocalizations localizations) {
@@ -462,10 +480,21 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
       backgroundColor: Colors.white,
       forceMaterialTransparency: true,
       elevation: 0,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios, color: Color(0xff1E2E52), size: 24),
-        onPressed: () => Navigator.pop(context),
-      ),
+        leading: IconButton(
+      icon: const Icon(Icons.arrow_back_ios, color: Color(0xff1E2E52), size: 24),
+      onPressed: () async {
+        // Если есть товары, показываем диалог
+        if (_items.isNotEmpty) {
+          final shouldExit = await ConfirmExitDialog.show(context);
+          if (shouldExit && mounted) {
+            Navigator.pop(context);
+          }
+        } else {
+          // Если товаров нет, просто выходим
+          Navigator.pop(context);
+        }
+      },
+    ),
       title: hasItems
           ? null // ✅ НОВОЕ: Убираем заголовок, когда показываем сумму
           : Text(
@@ -605,7 +634,7 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
           },
         ),
         const SizedBox(height: 16),
-        _buildTotalCard(total),
+     //   _buildTotalCard(total),
       ],
     );
   }
@@ -702,7 +731,7 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
                           const SizedBox(height: 4),
                           if (availableUnits.length > 1)
                             Container(
-                              height: 36,
+                              height: 48,
                               padding: const EdgeInsets.symmetric(horizontal: 8),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFF4F7FD),
@@ -741,7 +770,7 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
                             )
                           else
                             Container(
-                              height: 36,
+                              height: 48,
                               padding: const EdgeInsets.symmetric(horizontal: 8),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFF4F7FD),

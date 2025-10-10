@@ -7,6 +7,7 @@ import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/storage_widget.dart';
+import 'package:crm_task_manager/page_2/widgets/confirm_exit_dialog.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -238,6 +239,13 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
     if (result != null) {
       _handleVariantSelection(result);
     }
+    // Если результат null, сбрасываем фокус с небольшой задержкой
+// Если результат null (пользователь закрыл окно без выбора), убеждаемся, что фокус сброшен
+  if (result == null) {
+    FocusScope.of(context).unfocus();
+  } else {
+    _handleVariantSelection(result);
+  }
   }
 
   void _updateItemQuantity(int variantId, String value) {
@@ -444,7 +452,17 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
-    return KeyboardDismissible(
+     return WillPopScope(
+    onWillPop: () async {
+      // Если есть товары в списке, показываем диалог подтверждения
+      if (_items.isNotEmpty) {
+        final shouldExit = await ConfirmExitDialog.show(context);
+        return shouldExit;
+      }
+      // Если товаров нет, разрешаем выход
+      return true;
+    },
+    child: KeyboardDismissible(
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: _buildAppBar(localizations),
@@ -500,7 +518,7 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
           ),
         ),
       ),
-    );
+       ),  );
   }
 
   AppBar _buildAppBar(AppLocalizations localizations) {
@@ -513,9 +531,20 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
       forceMaterialTransparency: true,
       elevation: 0,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios, color: Color(0xff1E2E52), size: 24),
-        onPressed: () => Navigator.pop(context),
-      ),
+      icon: const Icon(Icons.arrow_back_ios, color: Color(0xff1E2E52), size: 24),
+      onPressed: () async {
+        // Если есть товары, показываем диалог
+        if (_items.isNotEmpty) {
+          final shouldExit = await ConfirmExitDialog.show(context);
+          if (shouldExit && mounted) {
+            Navigator.pop(context);
+          }
+        } else {
+          // Если товаров нет, просто выходим
+          Navigator.pop(context);
+        }
+      },
+    ),
       title: hasItems
           ? null // Убираем заголовок, когда показываем сумму
           : Text(
@@ -654,7 +683,7 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
           },
         ),
         const SizedBox(height: 16),
-        _buildTotalCard(total),
+     //   _buildTotalCard(total),
       ],
     );
   }
@@ -764,7 +793,7 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
                           const SizedBox(height: 4),
                           if (availableUnits.length > 1)
                             Container(
-                              height: 36,
+                              height: 48,
                               padding: const EdgeInsets.symmetric(horizontal: 8),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFF4F7FD),
@@ -803,7 +832,7 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
                             )
                           else
                             Container(
-                              height: 36,
+                              height: 48,
                               padding: const EdgeInsets.symmetric(horizontal: 8),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFF4F7FD),

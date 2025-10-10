@@ -227,36 +227,40 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
     );
   }
 
-  Widget _buildHeader(AppLocalizations localizations) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: const Color(0xFFE5E7EB).withOpacity(0.5),
-          ),
+Widget _buildHeader(AppLocalizations localizations) {
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    decoration: BoxDecoration(
+      border: Border(
+        bottom: BorderSide(
+          color: const Color(0xFFE5E7EB).withOpacity(0.5),
         ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            localizations.translate('select_variant') ?? 'Выбор товара',
-            style: const TextStyle(
-              fontSize: 18,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
-            ),
+    ),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          localizations.translate('select_variant') ?? 'Выбор товара',
+          style: const TextStyle(
+            fontSize: 18,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w600,
+            color: Color(0xff1E2E52),
           ),
-          IconButton(
-            icon: const Icon(Icons.close, color: Color(0xff99A4BA)),
-            onPressed: () => Navigator.pop(context),
-          ),
-        ],
-      ),
-    );
-  }
+        ),
+        IconButton(
+          icon: const Icon(Icons.close, color: Color(0xff99A4BA)),
+          onPressed: () {
+            // Сбрасываем фокус перед закрытием
+            FocusScope.of(context).unfocus();
+            Navigator.pop(context);
+          },
+        ),
+      ],
+    ),
+  );
+}
 
   Widget _buildSearchField(AppLocalizations localizations) {
     return Padding(
