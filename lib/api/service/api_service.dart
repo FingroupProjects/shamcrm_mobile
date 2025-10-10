@@ -11494,9 +11494,15 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
 //--------------------------PRICE TYPE---------------------------------------------
 
-  Future<List<PriceTypeModel>> getPriceTypes() async {
+  Future<List<PriceTypeModel>> getPriceTypes({String? search}) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/priceType');
+    String path = await _appendQueryParams('/priceType');
+    
+    // Добавляем параметр поиска, если он передан
+    if (search != null && search.isNotEmpty) {
+      path = path.contains('?') ? '$path&search=$search' : '$path?search=$search';
+    }
+    
     if (kDebugMode) {
       //print('ApiService: getPriceTypes - Generated path: $path');
     }

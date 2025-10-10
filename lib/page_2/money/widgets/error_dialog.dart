@@ -5,7 +5,12 @@ enum ErrorDialogEnum {
   goodsIncomingUnapprove,
   goodsIncomingApprove,
   goodsIncomingRestore,
+
   clientReturnApprove,
+  
+  goodsMovementApprove,
+  goodsMovementUnapprove,
+
   nothing;
 }
 
@@ -57,6 +62,16 @@ class ErrorDialog extends StatelessWidget {
     if (errorDialogEnum == ErrorDialogEnum.clientReturnApprove) {
       debugPrint("[ERROR] ErrorDialog.ClientReturnApprove: $message");
       return _buildClientReturnApproveError(message);
+    }
+
+    if (errorDialogEnum == ErrorDialogEnum.goodsMovementApprove) {
+      debugPrint("[ERROR] ErrorDialog.GoodsMovementApprove: $message");
+      return _buildGoodsMovementApproveError(message);
+    }
+
+    if (errorDialogEnum == ErrorDialogEnum.goodsMovementUnapprove) {
+      debugPrint("[ERROR] ErrorDialog.GoodsMovementUnapprove: $message");
+      return _buildGoodsMovementUnapproveError(message);
     }
 
     // Проверяем, есть ли в сообщении информация о товарах
@@ -145,10 +160,12 @@ class ErrorDialog extends StatelessWidget {
                   'Невозможно удалить документ',
                   style: TextStyle(
                     fontFamily: 'Gilroy',
-                    fontSize: 14,
+                    fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: Color(0xffDC2626),
                   ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               ),
             ],
@@ -219,6 +236,8 @@ class ErrorDialog extends StatelessWidget {
                           fontWeight: FontWeight.w600,
                           color: Color(0xff1E2E52),
                         ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
                     ),
                   ],
@@ -235,10 +254,12 @@ class ErrorDialog extends StatelessWidget {
                       'После удаления документа остаток станет:',
                       style: TextStyle(
                         fontFamily: 'Gilroy',
-                        fontSize: 13,
+                        fontSize: 12,
                         fontWeight: FontWeight.w500,
                         color: Color(0xff64748B),
                       ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
                     ),
                     SizedBox(height: 12),
                     Container(
@@ -307,10 +328,12 @@ class ErrorDialog extends StatelessWidget {
                   'Нельзя отменить проведение',
                   style: TextStyle(
                     fontFamily: 'Gilroy',
-                    fontSize: 16,
+                    fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: Color(0xffDC2626),
                   ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               ),
             ],
@@ -381,6 +404,8 @@ class ErrorDialog extends StatelessWidget {
                           fontWeight: FontWeight.w600,
                           color: Color(0xff1E2E52),
                         ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
                     ),
                   ],
@@ -397,10 +422,12 @@ class ErrorDialog extends StatelessWidget {
                       'После отмены проведения остаток станет:',
                       style: TextStyle(
                         fontFamily: 'Gilroy',
-                        fontSize: 13,
+                        fontSize: 12,
                         fontWeight: FontWeight.w500,
                         color: Color(0xff64748B),
                       ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
                     ),
                     SizedBox(height: 12),
                     Container(
@@ -471,10 +498,12 @@ class ErrorDialog extends StatelessWidget {
                   'Невозможно провести документ',
                   style: TextStyle(
                     fontFamily: 'Gilroy',
-                    fontSize: 16,
+                    fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: Color(0xffDC2626),
                   ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               ),
             ],
@@ -545,6 +574,8 @@ class ErrorDialog extends StatelessWidget {
                           fontWeight: FontWeight.w600,
                           color: Color(0xff1E2E52),
                         ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
                     ),
                   ],
@@ -561,10 +592,12 @@ class ErrorDialog extends StatelessWidget {
                       'Недостаточно товара на складе:',
                       style: TextStyle(
                         fontFamily: 'Gilroy',
-                        fontSize: 13,
+                        fontSize: 12,
                         fontWeight: FontWeight.w500,
                         color: Color(0xff64748B),
                       ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
                     ),
                     SizedBox(height: 12),
                     Row(
@@ -588,10 +621,12 @@ class ErrorDialog extends StatelessWidget {
                                   'Требуется:',
                                   style: TextStyle(
                                     fontFamily: 'Gilroy',
-                                    fontSize: 11,
+                                    fontSize: 10,
                                     fontWeight: FontWeight.w500,
                                     color: Color(0xff991B1B),
                                   ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
                                 ),
                                 SizedBox(height: 4),
                                 Text(
@@ -629,10 +664,12 @@ class ErrorDialog extends StatelessWidget {
                                   'Доступно:',
                                   style: TextStyle(
                                     fontFamily: 'Gilroy',
-                                    fontSize: 11,
+                                    fontSize: 10,
                                     fontWeight: FontWeight.w500,
                                     color: Color(0xff0369A1),
                                   ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
                                 ),
                                 SizedBox(height: 4),
                                 Text(
@@ -700,10 +737,12 @@ class ErrorDialog extends StatelessWidget {
                   'Невозможно восстановить документ',
                   style: TextStyle(
                     fontFamily: 'Gilroy',
-                    fontSize: 16,
+                    fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: Color(0xffEA580C),
                   ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               ),
             ],
@@ -774,6 +813,8 @@ class ErrorDialog extends StatelessWidget {
                           fontWeight: FontWeight.w600,
                           color: Color(0xff1E2E52),
                         ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
                     ),
                   ],
@@ -810,10 +851,12 @@ class ErrorDialog extends StatelessWidget {
                               reasonText,
                               style: TextStyle(
                                 fontFamily: 'Gilroy',
-                                fontSize: 14,
+                                fontSize: 13,
                                 fontWeight: FontWeight.w600,
                                 color: Color(0xff92400E),
                               ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 2,
                             ),
                           ),
                         ],
@@ -882,10 +925,12 @@ class ErrorDialog extends StatelessWidget {
                   'Невозможно провести возврат',
                   style: TextStyle(
                     fontFamily: 'Gilroy',
-                    fontSize: 16,
+                    fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: Color(0xffDC2626),
                   ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               ),
             ],
@@ -956,6 +1001,8 @@ class ErrorDialog extends StatelessWidget {
                           fontWeight: FontWeight.w600,
                           color: Color(0xff1E2E52),
                         ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
                     ),
                   ],
@@ -972,10 +1019,12 @@ class ErrorDialog extends StatelessWidget {
                       'Количество превышает доступное для возврата:',
                       style: TextStyle(
                         fontFamily: 'Gilroy',
-                        fontSize: 13,
+                        fontSize: 12,
                         fontWeight: FontWeight.w500,
                         color: Color(0xff64748B),
                       ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
                     ),
                     SizedBox(height: 12),
                     Row(
@@ -999,10 +1048,12 @@ class ErrorDialog extends StatelessWidget {
                                   'Попытка вернуть:',
                                   style: TextStyle(
                                     fontFamily: 'Gilroy',
-                                    fontSize: 11,
+                                    fontSize: 10,
                                     fontWeight: FontWeight.w500,
                                     color: Color(0xff991B1B),
                                   ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
                                 ),
                                 SizedBox(height: 4),
                                 Text(
@@ -1040,10 +1091,12 @@ class ErrorDialog extends StatelessWidget {
                                   'Доступно:',
                                   style: TextStyle(
                                     fontFamily: 'Gilroy',
-                                    fontSize: 11,
+                                    fontSize: 10,
                                     fontWeight: FontWeight.w500,
                                     color: Color(0xff0369A1),
                                   ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
                                 ),
                                 SizedBox(height: 4),
                                 Text(
@@ -1065,6 +1118,370 @@ class ErrorDialog extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGoodsMovementApproveError(String message) {
+    // Парсим сообщение формата: "Недостаточно остатков для следующих товаров: - Товар: иии требуется 1, доступно 0"
+    debugPrint("🔍 [GoodsMovementApprove] Полученное сообщение: $message");
+
+    // Парсим все товары с помощью регулярного выражения
+    RegExp movementRegex = RegExp(r'- Товар: ([^\s]+) требуется (\d+), доступно (\d+)');
+    Iterable<Match> matches = movementRegex.allMatches(message);
+
+    debugPrint("🔍 [GoodsMovementApprove] Найдено совпадений: ${matches.length}");
+
+    List<Widget> widgets = [];
+
+    // Заголовок ошибки
+    widgets.add(
+      Container(
+        width: double.infinity,
+        padding: EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Color(0xffFFF5F5),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Color(0xffFECDD3),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Недостаточно остатков для проведения',
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xffDC2626),
+                ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    widgets.add(SizedBox(height: 16));
+
+    if (matches.isNotEmpty) {
+      // Информация о количестве товаров
+      widgets.add(
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(12),
+          margin: EdgeInsets.only(bottom: 16),
+          decoration: BoxDecoration(
+            color: Color(0xffF1F5F9),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: Color(0xffCBD5E1),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.inventory_2_outlined,
+                size: 16,
+                color: Color(0xff475569),
+              ),
+              SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  'Найдено ${matches.length} ${matches.length == 1 ? 'товар' : matches.length < 5 ? 'товара' : 'товаров'} с недостатком',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff475569),
+                  ),
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 2,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      // Добавляем каждый товар
+      for (int index = 0; index < matches.length; index++) {
+        Match match = matches.elementAt(index);
+        String productName = match.group(1)?.trim() ?? 'Неизвестный товар';
+        String required = match.group(2) ?? '0';
+        String available = match.group(3) ?? '0';
+
+        debugPrint("🔍 [GoodsMovementApprove] Товар #${index + 1}: $productName, требуется: $required, доступно: $available");
+
+        // Контейнер для товара
+        widgets.add(
+          Container(
+            width: double.infinity,
+            margin: EdgeInsets.only(bottom: index < matches.length - 1 ? 16 : 0),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Color(0xffE2E8F0),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Color(0xff1E2E52).withOpacity(0.08),
+                  blurRadius: 8,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Заголовок товара
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Color(0xffF8FAFC),
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(12),
+                      topRight: Radius.circular(12),
+                    ),
+                    border: Border(
+                      left: BorderSide(
+                        width: 4,
+                        color: Color(0xffDC2626),
+                      ),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Color(0xffDC2626).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          '${index + 1}',
+                          style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xffDC2626),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          productName,
+                          style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xff1E2E52),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Количества
+                Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      // Требуется
+                      Expanded(
+                        child: Container(
+                          padding: EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Color(0xffFEF2F2),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Color(0xffFECDD3),
+                              width: 1,
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Требуется:',
+                                style: TextStyle(
+                                  fontFamily: 'Gilroy',
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xff991B1B),
+                                ),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                _formatNumber(required),
+                                style: TextStyle(
+                                  fontFamily: 'Gilroy',
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xffDC2626),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      SizedBox(width: 12),
+
+                      // Доступно
+                      Expanded(
+                        child: Container(
+                          padding: EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Color(0xffF0F9FF),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Color(0xffBAE6FD),
+                              width: 1,
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Доступно:',
+                                style: TextStyle(
+                                  fontFamily: 'Gilroy',
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xff0369A1),
+                                ),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                _formatNumber(available),
+                                style: TextStyle(
+                                  fontFamily: 'Gilroy',
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xff0284C7),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+    } else {
+      // Если не удалось распарсить, показываем простое сообщение
+      widgets.add(
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Color(0xffFEF2F2),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Color(0xffFECDD3),
+              width: 1,
+            ),
+          ),
+          child: Text(
+            message,
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 14,
+              color: Color(0xff1F2937),
+              height: 1.5,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: widgets,
+    );
+  }
+
+  Widget _buildGoodsMovementUnapproveError(String message) {
+    // Парсим сообщение формата похожего на approve
+    debugPrint("🔍 [GoodsMovementUnapprove] Полученное сообщение: $message");
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Заголовок ошибки
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Color(0xffFFF5F5),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Color(0xffFECDD3),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            children: [
+            Expanded(
+              child: Text(
+                'Невозможно отменить проведение',
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xffDC2626),
+                ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
+            ),
+            ],
+          ),
+        ),
+
+        SizedBox(height: 16),
+
+        // Показываем простое сообщение
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Color(0xffFEF2F2),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Color(0xffFECDD3),
+              width: 1,
+            ),
+          ),
+          child: Text(
+            message,
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 14,
+              color: Color(0xff1F2937),
+              height: 1.5,
+            ),
           ),
         ),
       ],
@@ -1182,6 +1599,8 @@ class ErrorDialog extends StatelessWidget {
                           fontWeight: FontWeight.w600,
                           color: Color(0xff1E2E52),
                         ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
                     ),
                   ],

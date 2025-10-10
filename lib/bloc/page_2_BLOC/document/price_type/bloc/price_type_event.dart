@@ -9,11 +9,21 @@ abstract class PriceTypeEvent extends Equatable {
 }
 
 class FetchPriceType extends PriceTypeEvent {
-  const FetchPriceType();
+  final String? query;
+  
+  const FetchPriceType({this.query});
+  
+  @override
+  List<Object?> get props => [query];
 }
 
 class RefreshPriceType extends PriceTypeEvent {
-  const RefreshPriceType();
+  final String? query;
+  
+  const RefreshPriceType({this.query});
+  
+  @override
+  List<Object?> get props => [query];
 }
 
 class AddPriceType extends PriceTypeEvent {

@@ -7,6 +7,7 @@ import 'package:flutter/cupertino.dart';
 
 class PriceTypeScreenBloc extends Bloc<PriceTypeEvent, PriceTypeState> {
   final ApiService apiService;
+  String? _currentQuery; // Сохраняем текущий поисковый запрос
 
   PriceTypeScreenBloc(this.apiService) : super(PriceTypeInitial()) {
     on<FetchPriceType>(_onFetch);
@@ -21,7 +22,9 @@ class PriceTypeScreenBloc extends Bloc<PriceTypeEvent, PriceTypeState> {
       Emitter<PriceTypeState> emit,
       ) async {
     emit(PriceTypeLoading());
-    await _fetchAndEmit(emit);
+    // Сохраняем текущий query
+    _currentQuery = event.query;
+    await _fetchAndEmit(emit, search: event.query);
   }
 
   Future<void> _onRefresh(
@@ -30,12 +33,14 @@ class PriceTypeScreenBloc extends Bloc<PriceTypeEvent, PriceTypeState> {
       ) async {
     // keep UI responsive; show loading during refresh
     emit(PriceTypeLoading());
-    await _fetchAndEmit(emit);
+    // Сохраняем текущий query
+    _currentQuery = event.query;
+    await _fetchAndEmit(emit, search: event.query);
   }
 
-  Future<void> _fetchAndEmit(Emitter<PriceTypeState> emit) async {
+  Future<void> _fetchAndEmit(Emitter<PriceTypeState> emit, {String? search}) async {
     try {
-      final dynamic response = await apiService.getPriceTypes();
+      final dynamic response = await apiService.getPriceTypes(search: search);
       // attempt to normalize response into List<PriceType>
       List<PriceTypeModel> units = [];
       if (response == null) {
@@ -81,8 +86,8 @@ class PriceTypeScreenBloc extends Bloc<PriceTypeEvent, PriceTypeState> {
       // Small delay to ensure the BlocListener catches the success state
       await Future.delayed(const Duration(milliseconds: 150));
 
-      // Then refresh the list
-      await _fetchAndEmit(emit);
+      // Then refresh the list with saved query
+      await _fetchAndEmit(emit, search: _currentQuery);
     } catch (e) {
       debugPrint("Error adding price type: $e");
       emit(PriceTypeError(e.toString()));
@@ -103,8 +108,8 @@ class PriceTypeScreenBloc extends Bloc<PriceTypeEvent, PriceTypeState> {
       // Small delay to ensure the BlocListener catches the success state
       await Future.delayed(const Duration(milliseconds: 150));
 
-      // Then refresh the list
-      await _fetchAndEmit(emit);
+      // Then refresh the list with saved query
+      await _fetchAndEmit(emit, search: _currentQuery);
     } catch (e) {
       emit(PriceTypeError(e.toString()));
     }
@@ -124,8 +129,8 @@ class PriceTypeScreenBloc extends Bloc<PriceTypeEvent, PriceTypeState> {
       // Small delay to ensure the BlocListener catches the success state
       await Future.delayed(const Duration(milliseconds: 150));
 
-      // Then refresh the list
-      await _fetchAndEmit(emit);
+      // Then refresh the list with saved query
+      await _fetchAndEmit(emit, search: _currentQuery);
     } catch (e) {
       emit(PriceTypeError(e.toString()));
     }

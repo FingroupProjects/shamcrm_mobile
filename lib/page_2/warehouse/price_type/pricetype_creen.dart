@@ -22,6 +22,8 @@ class _PriceTypeScreenState extends State<PriceTypeScreen> {
   late PriceTypeScreenBloc _priceTypeBloc;
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
+  bool _isSearching = false;
+  Map<String, dynamic> _currentFilters = {};
 
   // НОВОЕ: Флаги прав доступа
   bool _hasCreatePermission = false;
@@ -32,7 +34,7 @@ class _PriceTypeScreenState extends State<PriceTypeScreen> {
   void initState() {
     super.initState();
     _checkPermissions();
-    _priceTypeBloc = context.read<PriceTypeScreenBloc>()..add(FetchPriceType());
+    _priceTypeBloc = context.read<PriceTypeScreenBloc>()..add(const FetchPriceType(query: null));
   }
 
   // НОВОЕ: Проверка прав доступа
@@ -61,6 +63,16 @@ class _PriceTypeScreenState extends State<PriceTypeScreen> {
     super.dispose();
   }
 
+  void _onSearch(String query) {
+    debugPrint('PriceTypeScreen: Поиск типов цен с запросом: $query');
+    
+    setState(() {
+      _isSearching = query.isNotEmpty;
+    });
+    _currentFilters['query'] = query;
+    _priceTypeBloc.add(FetchPriceType(query: query.isNotEmpty ? query : null));
+  }
+
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
@@ -76,12 +88,19 @@ class _PriceTypeScreenState extends State<PriceTypeScreen> {
             showSearchIcon: true,
             showFilterIcon: false,
             showFilterOrderIcon: false,
-            onChangedSearchInput: (String value) {
-              // Здесь можно добавить логику поиска
-            },
+            onChangedSearchInput: _onSearch,
             textEditingController: _searchController,
             focusNode: _focusNode,
-            clearButtonClick: (value) {},
+            clearButtonClick: (value) {
+              if (!value) {
+                setState(() {
+                  _isSearching = false;
+                  _searchController.clear();
+                  _currentFilters.remove('query');
+                });
+                _priceTypeBloc.add(const FetchPriceType(query: null));
+              }
+            },
             onClickProfileAvatar: () {},
             clearButtonClickFiltr: (bool p1) {},
             currentFilters: {},
@@ -98,7 +117,8 @@ class _PriceTypeScreenState extends State<PriceTypeScreen> {
                         builder: (context) => AddPriceTypeScreen(),
                       ),
                     ).then((_) {
-                      _priceTypeBloc.add(FetchPriceType());
+                      final query = _currentFilters['query'] as String?;
+                      _priceTypeBloc.add(FetchPriceType(query: query));
                     });
                   }
                 },
@@ -121,7 +141,9 @@ class _PriceTypeScreenState extends State<PriceTypeScreen> {
               if (priceTypes.isEmpty) {
                 return Center(
                   child: Text(
-                    localizations.translate('no_price_types') ?? 'Нет типов цен',
+                    _isSearching
+                        ? (localizations.translate('nothing_found') ?? 'Ничего не найдено')
+                        : (localizations.translate('no_price_types') ?? 'Нет типов цен'),
                     style: const TextStyle(
                       fontSize: 18,
                       fontFamily: 'Gilroy',
@@ -136,7 +158,8 @@ class _PriceTypeScreenState extends State<PriceTypeScreen> {
                 color: const Color(0xff1E2E52),
                 backgroundColor: Colors.white,
                 onRefresh: () {
-                  _priceTypeBloc.add(FetchPriceType());
+                  final query = _currentFilters['query'] as String?;
+                  _priceTypeBloc.add(FetchPriceType(query: query));
                   return Future.value();
                 },
                 child: ListView.builder(
@@ -150,7 +173,8 @@ class _PriceTypeScreenState extends State<PriceTypeScreen> {
                       hasUpdatePermission: _hasUpdatePermission,
                       hasDeletePermission: _hasDeletePermission,
                       onUpdate: () {
-                        _priceTypeBloc.add(FetchPriceType());
+                        final query = _currentFilters['query'] as String?;
+                        _priceTypeBloc.add(FetchPriceType(query: query));
                       },
                     );
                   },
@@ -176,7 +200,8 @@ class _PriceTypeScreenState extends State<PriceTypeScreen> {
                       const SizedBox(height: 12),
                       ElevatedButton(
                         onPressed: () {
-                          _priceTypeBloc.add(FetchPriceType());
+                          final query = _currentFilters['query'] as String?;
+                          _priceTypeBloc.add(FetchPriceType(query: query));
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xff1E2E52),
