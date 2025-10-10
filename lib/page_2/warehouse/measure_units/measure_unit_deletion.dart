@@ -91,7 +91,7 @@ class MeasureUnitDeleteDialog extends StatelessWidget {
                     context
                         .read<MeasureUnitsBloc>()
                         .add(DeleteMeasureUnitEvent(measureUnitId));
-                    context.read<MeasureUnitsBloc>().add(FetchMeasureUnits());
+                    // BLoC сам обновит список с сохранением поискового запроса
                     Navigator.of(context).pop(true);
                   },
                   buttonColor: const Color(0xff1E2E52),

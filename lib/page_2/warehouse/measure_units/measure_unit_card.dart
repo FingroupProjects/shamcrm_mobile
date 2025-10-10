@@ -114,10 +114,9 @@ class _MeasureUnitCardState extends State<MeasureUnitCard> {
                         builder: (context) => MeasureUnitDeleteDialog(measureUnitId: widget.supplier.id),
                       ).then((result) {
                         if (result == true) {
+                          // BLoC сам обновляет список после удаления с сохранением query
                           if (widget.onUpdate != null) {
                             widget.onUpdate!();
-                          } else {
-                            context.read<MeasureUnitsBloc>().add(const FetchMeasureUnits());
                           }
                         }
                       });

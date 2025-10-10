@@ -117,10 +117,9 @@ class _WareHouseCardState extends State<WareHouseCard> {
                         builder: (context) =>
                             WareHouseDeletion(wareHouseId: widget.warehouse.id),
                       ).then((_) {
+                        // BLoC сам обновляет список после удаления с сохранением query
                         if (widget.onUpdate != null) {
                           widget.onUpdate!();
-                        } else {
-                          context.read<WareHouseBloc>().add(FetchWareHouse());
                         }
                       });
                     },

@@ -6,6 +6,7 @@ import 'storage_state.dart';
 
 class WareHouseBloc extends Bloc<WareHouseEvent, WareHouseState> {
   final ApiService apiService;
+  String? _currentQuery; // Сохраняем текущий поисковый запрос
 
   WareHouseBloc(this.apiService) : super(WareHouseInitial()) {
     on<FetchWareHouse>(_onFetch);
@@ -18,6 +19,9 @@ class WareHouseBloc extends Bloc<WareHouseEvent, WareHouseState> {
       FetchWareHouse event, Emitter<WareHouseState> emit) async {
     emit(WareHouseLoading());
     try {
+      // Сохраняем текущий query
+      _currentQuery = event.query;
+      
       final storages = await apiService.getWareHouses(
         search: event.query,
       );
@@ -53,7 +57,8 @@ class WareHouseBloc extends Bloc<WareHouseEvent, WareHouseState> {
       DeleteWareHouse event, Emitter<WareHouseState> emit) async {
     try {
       await apiService.deleteStorage(event.id);
-      add(FetchWareHouse());
+      // Используем сохраненный query при обновлении списка
+      add(FetchWareHouse(query: _currentQuery));
     } catch (e) {
       emit(WareHouseError("error_loading_storages"));
     }

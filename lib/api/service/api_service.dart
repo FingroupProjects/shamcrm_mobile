@@ -11385,11 +11385,17 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 //--------------------------------MEASURE UNITS-------------------------------------------------
 
   //get measure units
-  Future<List<MeasureUnitModel>> getMeasureUnits() async {
+  Future<List<MeasureUnitModel>> getMeasureUnits({String? search}) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/unit');
+    String path = await _appendQueryParams('/unit');
+    
+    // Добавляем параметр поиска, если он передан
+    if (search != null && search.isNotEmpty) {
+      path = path.contains('?') ? '$path&search=$search' : '$path?search=$search';
+    }
+    
     if (kDebugMode) {
-      //print('ApiService: getSuppliers - Generated path: $path');
+      //print('ApiService: getMeasureUnits - Generated path: $path');
     }
 
     final response = await _getRequest(path);
