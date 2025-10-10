@@ -188,7 +188,9 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
       ),
     );
 
+    debugPrint("📝 [UI] Возврат из экрана редактирования с результатом: $result");
     if (result == true && mounted) {
+      debugPrint("📝 [UI] Возврат из экрана редактирования с результатом true, обновляем список...");
       _moneyIncomeBloc.add(const FetchMoneyIncome(forceRefresh: true));
     }
   }
@@ -378,6 +380,10 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
               } else if (state is MoneyIncomeUpdateThenToggleOneApproveSuccess) {
                 showCustomSnackBar(context: context, message: state.message, isSuccess: true);
                 _moneyIncomeBloc.add(const FetchMoneyIncome(forceRefresh: true));
+              } else if (state is MoneyIncomeToggleOneApproveSuccess) {
+                _moneyIncomeBloc.add(const FetchMoneyIncome(forceRefresh: true));
+                // Просто игнорируем это состояние, чтобы не показывать лишние сообщения
+                return;
               }
             },
             child: BlocBuilder<MoneyIncomeBloc, MoneyIncomeState>(
