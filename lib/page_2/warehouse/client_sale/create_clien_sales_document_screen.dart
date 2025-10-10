@@ -7,6 +7,7 @@ import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/variant_selection_bottom_sheet.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/storage_widget.dart';
+import 'package:crm_task_manager/page_2/widgets/confirm_exit_dialog.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -180,6 +181,12 @@ class CreateClienSalesDocumentScreenState
     if (result != null) {
       _handleVariantSelection(result);
     }
+ // Если результат null (пользователь закрыл окно без выбора), убеждаемся, что фокус сброшен
+  if (result == null) {
+    FocusScope.of(context).unfocus();
+  } else {
+    _handleVariantSelection(result);
+  }
   }
 
   void _updateItemQuantity(int variantId, String value) {
@@ -336,7 +343,7 @@ class CreateClienSalesDocumentScreenState
         comment: _commentController.text.trim(),
         counterpartyId: _selectedLead!.id!,
         documentGoods: _items.map((item) => {
-          'good_id': item['id'],
+          'good_id': item['variantId'],
           'quantity': int.tryParse(item['quantity'].toString()),
           'price': item['price'].toString(),
           'unit_id': item['unit_id'],
@@ -385,7 +392,17 @@ class CreateClienSalesDocumentScreenState
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
-    return KeyboardDismissible(
+      return WillPopScope(
+    onWillPop: () async {
+      // Если есть товары в списке, показываем диалог подтверждения
+      if (_items.isNotEmpty) {
+        final shouldExit = await ConfirmExitDialog.show(context);
+        return shouldExit;
+      }
+      // Если товаров нет, разрешаем выход
+      return true;
+    },
+    child: KeyboardDismissible(
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: _buildAppBar(localizations),
@@ -442,7 +459,7 @@ class CreateClienSalesDocumentScreenState
           ),
         ),
       ),
-    );
+      ),);
   }
 
   AppBar _buildAppBar(AppLocalizations localizations) {
@@ -454,10 +471,21 @@ class CreateClienSalesDocumentScreenState
       backgroundColor: Colors.white,
       forceMaterialTransparency: true,
       elevation: 0,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios, color: Color(0xff1E2E52), size: 24),
-        onPressed: () => Navigator.pop(context),
-      ),
+       leading: IconButton(
+      icon: const Icon(Icons.arrow_back_ios, color: Color(0xff1E2E52), size: 24),
+      onPressed: () async {
+        // Если есть товары, показываем диалог
+        if (_items.isNotEmpty) {
+          final shouldExit = await ConfirmExitDialog.show(context);
+          if (shouldExit && mounted) {
+            Navigator.pop(context);
+          }
+        } else {
+          // Если товаров нет, просто выходим
+          Navigator.pop(context);
+        }
+      },
+    ),
       title: hasItems
           ? null // Убираем заголовок, когда показываем сумму
           : Text(
@@ -597,7 +625,7 @@ class CreateClienSalesDocumentScreenState
           },
         ),
         const SizedBox(height: 16),
-        _buildTotalCard(total),
+     //   _buildTotalCard(total),
       ],
     );
   }
@@ -707,7 +735,7 @@ class CreateClienSalesDocumentScreenState
                           const SizedBox(height: 4),
                           if (availableUnits.length > 1)
                             Container(
-                              height: 36,
+                              height: 48,
                               padding: const EdgeInsets.symmetric(horizontal: 8),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFF4F7FD),
@@ -746,7 +774,7 @@ class CreateClienSalesDocumentScreenState
                             )
                           else
                             Container(
-                              height: 36,
+                              height: 48,
                               padding: const EdgeInsets.symmetric(horizontal: 8),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFF4F7FD),
@@ -942,27 +970,26 @@ class CreateClienSalesDocumentScreenState
     );
   }
 
-  // ✅ ИЗМЕНЕНО: Две кнопки в разных линиях
-  Widget _buildActionButtons(AppLocalizations localizations) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 3,
-            offset: const Offset(0, -1),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          // ✅ Первая кнопка "Сохранить и провести" - белый фон с зелёной границей
-          Container(
-            width: double.infinity,
-            height: 48,
+Widget _buildActionButtons(AppLocalizations localizations) {
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      boxShadow: [
+        BoxShadow(
+          color: Colors.grey.withOpacity(0.1),
+          spreadRadius: 1,
+          blurRadius: 3,
+          offset: const Offset(0, -1),
+        ),
+      ],
+    ),
+    child: Row(
+      children: [
+        // Первая кнопка "Сохранить и провести" - белый фон с зелёной границей
+        Expanded(
+          child: Container(
+            height: 48, // Уменьшено с 48 до 40 для компактности
             decoration: BoxDecoration(
               border: Border.all(color: const Color(0xff4CAF50), width: 1.5),
               borderRadius: BorderRadius.circular(12),
@@ -973,20 +1000,20 @@ class CreateClienSalesDocumentScreenState
                 borderRadius: BorderRadius.circular(12),
                 onTap: _isLoading ? null : _createAndApproveDocument,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 8), // Уменьшено с 16 до 8
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
                         Icons.check_circle_outline,
-                        size: 20,
+                        size: 18, // Уменьшено с 20 до 18
                         color: _isLoading ? const Color(0xff99A4BA) : const Color(0xff4CAF50),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6), // Уменьшено с 8 до 6
                       Text(
                         localizations.translate('save_and_approve') ?? 'Сохранить и провести',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 14, // Уменьшено с 16 до 14
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w600,
                           color: _isLoading ? const Color(0xff99A4BA) : const Color(0xff4CAF50),
@@ -998,11 +1025,12 @@ class CreateClienSalesDocumentScreenState
               ),
             ),
           ),
-          const SizedBox(height: 12),
-          // ✅ Вторая кнопка "Сохранить" - синяя
-          SizedBox(
-            width: double.infinity,
-            height: 48,
+        ),
+        const SizedBox(width: 12), // Пространство между кнопками
+        // Вторая кнопка "Сохранить" - синяя
+        Expanded(
+          child: SizedBox(
+            height: 48, // Уменьшено с 48 до 40 для компактности
             child: ElevatedButton(
               onPressed: _isLoading ? null : _saveDocument,
               style: ElevatedButton.styleFrom(
@@ -1015,8 +1043,8 @@ class CreateClienSalesDocumentScreenState
               ),
               child: _isLoading
                   ? const SizedBox(
-                      width: 20,
-                      height: 20,
+                      width: 18, // Уменьшено с 20 до 18
+                      height: 18,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
                         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
@@ -1025,12 +1053,12 @@ class CreateClienSalesDocumentScreenState
                   : Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.save_outlined, color: Colors.white, size: 20),
-                        const SizedBox(width: 8),
+                        const Icon(Icons.save_outlined, color: Colors.white, size: 18), // Уменьшено с 20 до 18
+                        const SizedBox(width: 6), // Уменьшено с 8 до 6
                         Text(
                           localizations.translate('save') ?? 'Сохранить',
                           style: const TextStyle(
-                            fontSize: 16,
+                            fontSize: 14, // Уменьшено с 16 до 14
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w600,
                             color: Colors.white,
@@ -1040,10 +1068,11 @@ class CreateClienSalesDocumentScreenState
                     ),
             ),
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
 
   void _createAndApproveDocument() {
     _createDocument(approve: true);
