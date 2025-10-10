@@ -97,7 +97,7 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
       });
       if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
-        showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
+        showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message, errorDialogEnum: ErrorDialogEnum.goodsIncomingDelete);
         return;
       }
       _showSnackBar(
@@ -408,7 +408,7 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
           debugPrint("[ERROR] IncomingDeleteError:::::: ${state.message}, enumType: ${ErrorDialogEnum.goodsIncomingDelete}");
           if (state.statusCode == 409) {
             showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message,
-                errorDialogEnum: ErrorDialogEnum.goodsIncomingUnapprove);
+                errorDialogEnum: ErrorDialogEnum.goodsIncomingDelete);
             return;
           }
           showCustomSnackBar(context: context, message: state.message, isSuccess: false);

@@ -396,12 +396,6 @@ class CreateClienSalesDocumentScreenState
 
             if (state is ClientSaleCreateSuccess && mounted) {
               Navigator.pop(context, true);
-            } else if (state is ClientSaleCreateError && mounted) {
-              if (state.statusCode == 409) {
-                showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
-                return;
-              }
-              _showSnackBar(state.message, false);
             }
           },
           child: Form(
