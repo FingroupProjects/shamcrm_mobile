@@ -39,24 +39,69 @@ class Discount {
 
 class Unit {
   final int? id;
-  final String name;
+  final String? name;
   final String? shortName;
-  final int? amount; // Добавлено поле amount
+  final bool? isBase;
+  final int? amount;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
 
   Unit({
     this.id,
-    required this.name,
+    this.name,
     this.shortName,
+    this.isBase,
     this.amount,
+    this.createdAt,
+    this.updatedAt,
   });
 
   factory Unit.fromJson(Map<String, dynamic> json) {
     return Unit(
-      id: json['id'] as int?,
-      name: json['name'] as String? ?? '',
-      shortName: json['short_name'] as String?,
-      amount: json['amount'] as int?,
+      id: _parseInt(json['id']),
+      name: json['name'],
+      shortName: json['short_name'],
+      isBase: json['is_base'],
+      amount: _parseInt(json['amount']),
+      createdAt: _parseDate(json['created_at']),
+      updatedAt: _parseDate(json['updated_at']),
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'short_name': shortName,
+      'is_base': isBase,
+      'amount': amount,
+      'created_at': createdAt?.toIso8601String(),
+      'updated_at': updatedAt?.toIso8601String(),
+    };
+  }
+
+  static int? _parseInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is String) {
+      try {
+        return int.parse(value);
+      } catch (e) {
+        print('Error parsing int from string "$value": $e');
+        return null;
+      }
+    }
+    return null;
+  }
+
+  static DateTime? _parseDate(dynamic dateStr) {
+    if (dateStr == null || dateStr == '' || dateStr is! String) return null;
+    try {
+      return DateTime.parse(dateStr);
+    } catch (e) {
+      print('Error parsing date $dateStr: $e');
+      return null;
+    }
   }
 }
 

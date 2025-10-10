@@ -237,7 +237,7 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
         comment: _commentController.text.trim(),
         documentGoods: _items.map((item) {
           return {
-            'good_id': item['id'],
+            'good_id': item['variantId'],
             'quantity': int.tryParse(item['quantity'].toString()),
             'unit_id': item['unit_id'],
           };
@@ -560,7 +560,7 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
                                   items: availableUnits.map((unit) {
                                     return DropdownMenuItem<String>(
                                       value: unit.shortName ?? unit.name,
-                                      child: Text(unit.shortName ?? unit.name),
+                                      child: Text(unit.shortName ?? unit.name ?? ''),
                                     );
                                   }).toList(),
                                   onChanged: (String? newValue) {
