@@ -91,6 +91,7 @@ class CreateClienSalesDocumentScreenState
 
           if (!newItem.containsKey('amount')) {
             _items.last['amount'] = 1;
+            _items.last['price'] = initialPrice;
           }
 
           _listKey.currentState?.insertItem(

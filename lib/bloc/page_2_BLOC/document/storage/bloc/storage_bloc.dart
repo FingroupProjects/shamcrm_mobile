@@ -40,9 +40,8 @@ class WareHouseBloc extends Bloc<WareHouseEvent, WareHouseState> {
   Future<void> _onUpdate(
       UpdateWareHouse event, Emitter<WareHouseState> emit) async {
     try {
-      await apiService.updateStorage(
-          storage: event.storage, ids: event.ids, id: event.id);
-      add(FetchWareHouse());
+      final result = await apiService.updateStorage(storage: event.storage, ids: event.ids, id: event.id);
+      emit(WareHouseSuccess());
     } catch (e) {
       emit(WareHouseError("error_loading_storages"));
     }

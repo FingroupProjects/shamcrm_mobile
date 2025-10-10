@@ -108,7 +108,7 @@ class _AddMeasureUnitScreenState extends State<AddMeasureUnitScreen> {
                 duration: const Duration(seconds: 3),
               ),
             );
-            Navigator.pop(context);
+            Navigator.pop(context, true);
           }
         },
         child: Form(

@@ -190,7 +190,7 @@ class _EditMeasureUnitScreenState extends State<EditMeasureUnitScreen> {
                 duration: const Duration(seconds: 3),
               ),
             );
-            Navigator.pop(context);
+            Navigator.pop(context, true);
           }
         },
         child: Form(

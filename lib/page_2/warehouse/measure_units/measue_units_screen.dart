@@ -39,7 +39,7 @@ class _MeasureUnitsScreenState extends State<MeasureUnitsScreen> {
   void initState() {
     super.initState();
     _checkPermissions();
-    _measureUnitsBloc = MeasureUnitsBloc(ApiService())..add(const FetchMeasureUnits());
+    _measureUnitsBloc = context.read<MeasureUnitsBloc>()..add(const FetchMeasureUnits());
     _scrollController.addListener(_onScroll);
   }
 
@@ -106,8 +106,8 @@ class _MeasureUnitsScreenState extends State<MeasureUnitsScreen> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
 
-    return BlocProvider(
-      create: (_) => MeasureUnitsBloc(ApiService())..add(const FetchMeasureUnits()),
+    return BlocProvider.value(
+      value: _measureUnitsBloc,
       child: Scaffold(
         appBar: AppBar(
           forceMaterialTransparency: true,
@@ -136,16 +136,18 @@ class _MeasureUnitsScreenState extends State<MeasureUnitsScreen> {
         // ИЗМЕНЕНО: Показываем FAB только если есть право на создание
         floatingActionButton: _hasCreatePermission
             ? FloatingActionButton(
-                onPressed: () {
+                onPressed: () async {
                   if (mounted) {
-                    Navigator.push(
+                    final result = await Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => AddMeasureUnitScreen(),
                       ),
-                    ).then((_) {
+                    );
+
+                    if (result == true) {
                       _measureUnitsBloc.add(const FetchMeasureUnits());
-                    });
+                    }
                   }
                 },
                 backgroundColor: const Color(0xff1E2E52),
