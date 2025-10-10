@@ -9,6 +9,7 @@ import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/storage_widget.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/variant_selection_bottom_sheet.dart';
+import 'package:crm_task_manager/page_2/widgets/document_action_buttons.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -39,6 +40,10 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
   bool _isLoading = false;
   final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
   final Map<int, TextEditingController> _quantityControllers = {};
+  
+  // ✅ НОВОЕ: FocusNode для quantity
+  final Map<int, FocusNode> _quantityFocusNodes = {};
+  
   final Map<int, bool> _quantityErrors = {};
 
   @override
@@ -78,6 +83,10 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
         });
         
         _quantityControllers[variantId] = TextEditingController(text: quantity.toString());
+        
+        // ✅ НОВОЕ: Создаём FocusNode для существующих товаров
+        _quantityFocusNodes[variantId] = FocusNode();
+        
         _quantityErrors[variantId] = false;
       }
     }
@@ -92,7 +101,11 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
           _items.add(newItem);
           
           final variantId = newItem['variantId'] as int;
-          _quantityControllers[variantId] = TextEditingController();
+          _quantityControllers[variantId] = TextEditingController(text: '1'); // ✅ НОВОЕ: Устанавливаем 1 по умолчанию
+          
+          // ✅ НОВОЕ: Создаём FocusNode
+          _quantityFocusNodes[variantId] = FocusNode();
+          
           _quantityErrors[variantId] = false;
           
           _listKey.currentState?.insertItem(
@@ -100,6 +113,7 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
             duration: const Duration(milliseconds: 300),
           );
           
+          // ✅ НОВОЕ: Автофокус и скролл
           Future.delayed(const Duration(milliseconds: 350), () {
             if (mounted && _scrollController.hasClients) {
               _scrollController.animateTo(
@@ -107,6 +121,8 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
                 duration: const Duration(milliseconds: 400),
                 curve: Curves.easeOut,
               );
+              
+              _quantityFocusNodes[variantId]?.requestFocus();
             }
           });
         }
@@ -124,6 +140,11 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
         
         _quantityControllers[variantId]?.dispose();
         _quantityControllers.remove(variantId);
+        
+        // ✅ НОВОЕ: Освобождаем FocusNode
+        _quantityFocusNodes[variantId]?.dispose();
+        _quantityFocusNodes.remove(variantId);
+        
         _quantityErrors.remove(variantId);
         
         _listKey.currentState?.removeItem(
@@ -176,8 +197,31 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
       if (index != -1) {
         _items[index]['selectedUnit'] = newUnit;
         _items[index]['unit_id'] = newUnitId;
+        
+        // ✅ ФИКС: Добавляем amount для consistency
+        final availableUnits = _items[index]['availableUnits'] as List<Unit>? ?? [];
+        final selectedUnitObj = availableUnits.firstWhere(
+          (unit) => (unit.shortName ?? unit.name) == newUnit,
+          orElse: () => availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: '', amount: 1),
+        );
+        _items[index]['amount'] = selectedUnitObj.amount ?? 1;
       }
     });
+  }
+
+  // ✅ НОВОЕ: Переход к следующему пустому полю quantity
+  void _moveToNextEmptyField() {
+    for (var item in _items) {
+      final variantId = item['variantId'] as int;
+      final quantityController = _quantityControllers[variantId];
+      
+      if (quantityController != null && quantityController.text.trim().isEmpty) {
+        _quantityFocusNodes[variantId]?.requestFocus();
+        return;
+      }
+    }
+    
+    FocusScope.of(context).unfocus();
   }
 
   void _updateDocument() async {
@@ -227,8 +271,8 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
     setState(() => _isLoading = true);
 
     try {
-      DateTime parsedDate = DateFormat('dd/MM/yyyy HH:mm').parse(_dateController.text);
-      String isoDate = DateFormat("yyyy-MM-ddTHH:mm:ss.SSS'Z'").format(parsedDate);
+      DateTime? parsedDate = DateFormat('dd/MM/yyyy HH:mm').parse(_dateController.text); // ✅ ФИКС: Добавлен ?
+      String isoDate = DateFormat("yyyy-MM-ddTHH:mm:ss.SSS'Z'").format(parsedDate!);
 
       context.read<WriteOffBloc>().add(UpdateWriteOffDocument(
         documentId: widget.document.id!,
@@ -282,59 +326,66 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
-     return KeyboardDismissible( // ← Обернули
-    child: Scaffold(
-      backgroundColor: Colors.white,
-      appBar: _buildAppBar(localizations),
-      body: BlocListener<WriteOffBloc, WriteOffState>(
-        listener: (context, state) {
-          setState(() => _isLoading = false);
+    return KeyboardDismissible(
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: _buildAppBar(localizations),
+        body: BlocListener<WriteOffBloc, WriteOffState>(
+          listener: (context, state) {
+            setState(() => _isLoading = false);
 
-          if (state is WriteOffUpdateSuccess && mounted) {
-            Navigator.pop(context, true);
-          } else if (state is WriteOffUpdateError && mounted) {
-            if (state.statusCode == 409) {
-              showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
-              return;
+            if (state is WriteOffUpdateSuccess && mounted) {
+              Navigator.pop(context, true);
+            } else if (state is WriteOffUpdateError && mounted) {
+              if (state.statusCode == 409) {
+                showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                return;
+              }
+              _showSnackBar(state.message, false);
             }
-            _showSnackBar(state.message, false);
-          }
-        },
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 8),
-                      _buildDateField(localizations),
-                      const SizedBox(height: 16),
-                      StorageWidget(
-                        selectedStorage: _selectedStorage,
-                        onChanged: (value) => setState(() => _selectedStorage = value),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildCommentField(localizations),
-                      const SizedBox(height: 16),
-                      _buildGoodsSection(localizations),
-                    ],
+          },
+          child: Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 8),
+                        _buildDateField(localizations),
+                        const SizedBox(height: 16),
+                        StorageWidget(
+                          selectedStorage: _selectedStorage,
+                          onChanged: (value) => setState(() => _selectedStorage = value),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildCommentField(localizations),
+                        const SizedBox(height: 16),
+                        _buildGoodsSection(localizations),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              _buildActionButtons(localizations),
-            ],
+                // ✅ ИЗМЕНЕНО: Используем переиспользуемый виджет кнопок (edit mode)
+                DocumentActionButtons(
+                  mode: DocumentActionMode.edit,
+                  isLoading: _isLoading,
+                  onSave: _updateDocument,
+                ),
+              ],
+            ),
           ),
         ),
       ),
-      ), );
+    );
   }
 
   AppBar _buildAppBar(AppLocalizations localizations) {
+    // Нет total — title всегда с номером
     return AppBar(
       backgroundColor: Colors.white,
       forceMaterialTransparency: true,
@@ -435,6 +486,7 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        const SizedBox(height: 8),
         AnimatedList(
           key: _listKey,
           shrinkWrap: true,
@@ -452,6 +504,9 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
     final availableUnits = item['availableUnits'] as List<Unit>? ?? [];
     final variantId = item['variantId'] as int;
     final quantityController = _quantityControllers[variantId];
+    
+    // ✅ НОВОЕ: FocusNode для quantity
+    final quantityFocusNode = _quantityFocusNodes[variantId];
 
     return FadeTransition(
       opacity: animation,
@@ -613,23 +668,25 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
                           ),
                         ),
                         const SizedBox(height: 4),
-                       CompactTextField(
-  controller: quantityController!,
-  hintText: AppLocalizations.of(context)!.translate('quantity') ?? 'Количество',
-  keyboardType: TextInputType.number,
-  inputFormatters: [
-    FilteringTextInputFormatter.digitsOnly,
-  ],
-  textAlign: TextAlign.center,
-  style: const TextStyle(
-    fontSize: 13,
-    fontFamily: 'Gilroy',
-    fontWeight: FontWeight.w600,
-    color: Color(0xff1E2E52),
-  ),
-  hasError: _quantityErrors[variantId] == true,
-  onChanged: (value) => _updateItemQuantity(variantId, value),
-)
+                        CompactTextField(
+                          controller: quantityController!,
+                          focusNode: quantityFocusNode, // ✅ НОВОЕ
+                          hintText: AppLocalizations.of(context)!.translate('quantity') ?? 'Количество',
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xff1E2E52),
+                          ),
+                          hasError: _quantityErrors[variantId] == true,
+                          onChanged: (value) => _updateItemQuantity(variantId, value),
+                          onDone: _moveToNextEmptyField, // ✅ НОВОЕ
+                        )
                       ],
                     ),
                   ),
@@ -642,86 +699,17 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
     );
   }
 
-  Widget _buildActionButtons(AppLocalizations localizations) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 3,
-            offset: const Offset(0, -1),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: ElevatedButton(
-              onPressed: _isLoading ? null : () => Navigator.pop(context),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xffF4F7FD),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                elevation: 0,
-              ),
-              child: Text(
-                localizations.translate('close') ?? 'Отмена',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: ElevatedButton(
-              onPressed: _isLoading ? null : _updateDocument,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xff4759FF),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                elevation: 0,
-              ),
-              child: _isLoading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                  : Text(
-                      localizations.translate('save') ?? 'Обновить',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white,
-                      ),
-                    ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   void dispose() {
     _dateController.dispose();
     _commentController.dispose();
     _scrollController.dispose();
+    
+    // ✅ НОВОЕ: Освобождаем FocusNode
+    for (var focusNode in _quantityFocusNodes.values) {
+      focusNode.dispose();
+    }
+    
     for (var controller in _quantityControllers.values) {
       controller.dispose();
     }

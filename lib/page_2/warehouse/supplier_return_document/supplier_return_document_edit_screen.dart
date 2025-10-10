@@ -1,6 +1,8 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/supplier_return/supplier_return_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/supplier_return/supplier_return_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/supplier_return/supplier_return_state.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/variant_bloc/variant_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/variant_bloc/variant_event.dart';
 import 'package:crm_task_manager/custom_widget/compact_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
@@ -9,16 +11,14 @@ import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/storage_widget.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/supplier_widget.dart';
+import 'package:crm_task_manager/page_2/warehouse/incoming/variant_selection_bottom_sheet.dart';
+import 'package:crm_task_manager/page_2/widgets/document_action_buttons.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-
-import '../../../bloc/page_2_BLOC/variant_bloc/variant_bloc.dart';
-import '../../../bloc/page_2_BLOC/variant_bloc/variant_event.dart';
 import '../../money/widgets/error_dialog.dart';
-import '../incoming/variant_selection_bottom_sheet.dart';
 
 class SupplierReturnDocumentEditScreen extends StatefulWidget {
   final IncomingDocument document;
@@ -43,11 +43,10 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
   bool _isLoading = false;
   final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
 
-  // Контроллеры для редактирования полей товаров
   final Map<int, TextEditingController> _priceControllers = {};
   final Map<int, TextEditingController> _quantityControllers = {};
-
-  // Для отслеживания ошибок валидации
+  final Map<int, FocusNode> _quantityFocusNodes = {};
+  final Map<int, FocusNode> _priceFocusNodes = {};
   final Map<int, bool> _priceErrors = {};
   final Map<int, bool> _quantityErrors = {};
 
@@ -67,21 +66,17 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
     _selectedStorage = widget.document.storage?.id?.toString();
     _selectedSupplier = widget.document.model?.id?.toString();
 
-    // Преобразуем существующие товары
     if (widget.document.documentGoods != null) {
       for (var good in widget.document.documentGoods!) {
         final variantId = good.variantId ?? good.good?.id ?? 0;
         final quantity = good.quantity ?? 0;
         final price = double.tryParse(good.price ?? '0') ?? 0.0;
-
-        // Получаем единицы измерения из товара
-        final availableUnits =  good.good?.units ?? [];
+        final availableUnits = good.good?.units ?? [];
         final selectedUnitId = good.unitId;
         final selectedUnitObj = availableUnits.firstWhere(
-              (unit) => unit.id == selectedUnitId,
-          orElse: () => availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: 'шт'),
+          (unit) => unit.id == selectedUnitId,
+          orElse: () => availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: 'шт', shortName: 'шт'),
         );
-
         final amount = selectedUnitObj.amount ?? 1;
 
         _items.add({
@@ -90,16 +85,17 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
           'name': good.fullName ?? good.good?.name ?? '',
           'quantity': quantity,
           'price': price,
-          'total': quantity * price * amount,
+          'total': (quantity * price * amount).round(),
           'selectedUnit': selectedUnitObj.shortName ?? selectedUnitObj.name,
           'unit_id': selectedUnitObj.id,
           'amount': amount,
           'availableUnits': availableUnits,
         });
 
-        // Создаем контроллеры с существующими значениями
-        _priceControllers[variantId] = TextEditingController(text: price.toStringAsFixed(3));
+        _priceControllers[variantId] = TextEditingController(text: price > 0 ? price.toStringAsFixed(3) : '');
         _quantityControllers[variantId] = TextEditingController(text: quantity.toString());
+        _quantityFocusNodes[variantId] = FocusNode();
+        _priceFocusNodes[variantId] = FocusNode();
         _priceErrors[variantId] = false;
         _quantityErrors[variantId] = false;
       }
@@ -110,16 +106,23 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
     if (mounted && newItem != null) {
       setState(() {
         final existingIndex = _items.indexWhere((item) => item['variantId'] == newItem['variantId']);
-
         if (existingIndex == -1) {
           _items.add(newItem);
-
           final variantId = newItem['variantId'] as int;
-          _priceControllers[variantId] = TextEditingController();
-          _quantityControllers[variantId] = TextEditingController();
+          final initialPrice = newItem['price'] ?? 0.0;
+          _priceControllers[variantId] = TextEditingController(
+            text: initialPrice > 0 ? initialPrice.toStringAsFixed(3) : '',
+          );
+          _quantityControllers[variantId] = TextEditingController(text: '1');
+          _quantityFocusNodes[variantId] = FocusNode();
+          _priceFocusNodes[variantId] = FocusNode();
           _priceErrors[variantId] = false;
           _quantityErrors[variantId] = false;
 
+          _items.last['quantity'] = 1;
+          _items.last['price'] = initialPrice;
+          final amount = newItem['amount'] ?? 1;
+          _items.last['total'] = (initialPrice * amount).round();
           if (!newItem.containsKey('amount')) {
             _items.last['amount'] = 1;
           }
@@ -136,6 +139,7 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
                 duration: const Duration(milliseconds: 400),
                 curve: Curves.easeOut,
               );
+              _quantityFocusNodes[variantId]?.requestFocus();
             }
           });
         }
@@ -150,17 +154,20 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
 
       setState(() {
         _items.removeAt(index);
-
         _priceControllers[variantId]?.dispose();
         _priceControllers.remove(variantId);
         _quantityControllers[variantId]?.dispose();
         _quantityControllers.remove(variantId);
+        _quantityFocusNodes[variantId]?.dispose();
+        _quantityFocusNodes.remove(variantId);
+        _priceFocusNodes[variantId]?.dispose();
+        _priceFocusNodes.remove(variantId);
         _priceErrors.remove(variantId);
         _quantityErrors.remove(variantId);
 
         _listKey.currentState?.removeItem(
           index,
-              (context, animation) => _buildSelectedItemCard(index, removedItem, animation),
+          (context, animation) => _buildSelectedItemCard(index, removedItem, animation),
           duration: const Duration(milliseconds: 300),
         );
       });
@@ -168,6 +175,25 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
   }
 
   void _openVariantSelection() async {
+    if (_selectedSupplier == null) {
+      _showSnackBar(
+        AppLocalizations.of(context)!.translate('select_supplier_first') ?? 'Сначала выберите поставщика',
+        false,
+      );
+      return;
+    }
+    if (_selectedStorage == null) {
+      _showSnackBar(
+        AppLocalizations.of(context)!.translate('select_warehouse_first') ?? 'Сначала выберите склад',
+        false,
+      );
+      return;
+    }
+    context.read<VariantBloc>().add(FilterVariants({
+      'counterparty_id': int.parse(_selectedSupplier!),
+      'storage_id': int.parse(_selectedStorage!),
+    }));
+
     final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
@@ -176,7 +202,6 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
         existingItems: _items,
       ),
     );
-
     if (result != null) {
       _handleVariantSelection(result);
     }
@@ -234,24 +259,37 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
       if (index != -1) {
         _items[index]['selectedUnit'] = newUnit;
         _items[index]['unit_id'] = newUnitId;
-
         final availableUnits = _items[index]['availableUnits'] as List<Unit>? ?? [];
         final selectedUnitObj = availableUnits.firstWhere(
-              (unit) => (unit.shortName ?? unit.name) == newUnit,
+          (unit) => (unit.shortName ?? unit.name) == newUnit,
           orElse: () => availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: '', amount: 1),
         );
-
         _items[index]['amount'] = selectedUnitObj.amount ?? 1;
-
         final amount = _items[index]['amount'] ?? 1;
         _items[index]['total'] = (_items[index]['quantity'] * _items[index]['price'] * amount).round();
       }
     });
   }
 
+  void _moveToNextEmptyField() {
+    for (var item in _items) {
+      final variantId = item['variantId'] as int;
+      final quantityController = _quantityControllers[variantId];
+      final priceController = _priceControllers[variantId];
+      if (quantityController != null && quantityController.text.trim().isEmpty) {
+        _quantityFocusNodes[variantId]?.requestFocus();
+        return;
+      }
+      if (priceController != null && priceController.text.trim().isEmpty) {
+        _priceFocusNodes[variantId]?.requestFocus();
+        return;
+      }
+    }
+    FocusScope.of(context).unfocus();
+  }
+
   void _updateDocument() async {
     if (!_formKey.currentState!.validate()) return;
-
     if (_items.isEmpty) {
       _showSnackBar(
         AppLocalizations.of(context)!.translate('add_at_least_one_good') ?? 'Добавьте хотя бы один товар',
@@ -259,7 +297,6 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
       );
       return;
     }
-
     if (_selectedStorage == null) {
       _showSnackBar(
         AppLocalizations.of(context)!.translate('select_warehouse_first') ?? 'Выберите склад',
@@ -267,10 +304,40 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
       );
       return;
     }
-
     if (_selectedSupplier == null) {
       _showSnackBar(
         AppLocalizations.of(context)!.translate('select_supplier_first') ?? 'Выберите поставщика',
+        false,
+      );
+      return;
+    }
+
+    bool hasErrors = false;
+    setState(() {
+      _priceErrors.clear();
+      _quantityErrors.clear();
+      for (var item in _items) {
+        final variantId = item['variantId'] as int;
+        final quantityController = _quantityControllers[variantId];
+        final priceController = _priceControllers[variantId];
+        if (quantityController == null ||
+            quantityController.text.trim().isEmpty ||
+            (int.tryParse(quantityController.text) ?? 0) <= 0) {
+          _quantityErrors[variantId] = true;
+          hasErrors = true;
+        }
+        if (priceController == null ||
+            priceController.text.trim().isEmpty ||
+            (double.tryParse(priceController.text) ?? -1) < 0) {
+          _priceErrors[variantId] = true;
+          hasErrors = true;
+        }
+      }
+    });
+
+    if (hasErrors) {
+      _showSnackBar(
+        AppLocalizations.of(context)!.translate('fill_all_required_fields') ?? 'Заполните все обязательные поля',
         false,
       );
       return;
@@ -280,7 +347,7 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
 
     try {
       DateTime? parsedDate = DateFormat('dd/MM/yyyy HH:mm').parse(_dateController.text);
-      String isoDate = DateFormat("yyyy-MM-ddTHH:mm:ss.SSS'Z'").format(parsedDate);
+      String isoDate = DateFormat("yyyy-MM-ddTHH:mm:ss.SSS'Z'").format(parsedDate!);
 
       final bloc = context.read<SupplierReturnBloc>();
       bloc.add(UpdateSupplierReturn(
@@ -293,6 +360,7 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
               'good_id': item['id'],
               'quantity': int.tryParse(item['quantity'].toString()),
               'price': item['price'].toString(),
+              'unit_id': item['unit_id'],
             }).toList(),
         organizationId: widget.document.organizationId ?? 1,
         salesFunnelId: 1,
@@ -308,7 +376,6 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
 
   void _showSnackBar(String message, bool isSuccess) {
     if (!mounted) return;
-
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -331,69 +398,79 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
     );
   }
 
+  double get _totalAmount {
+    return _items.fold<double>(0, (sum, item) => sum + (item['total'] ?? 0.0));
+  }
+
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final total = _totalAmount;
+    final hasItems = _items.isNotEmpty;
 
-     return KeyboardDismissible( // ← Обернули
-    child: Scaffold(
-      backgroundColor: Colors.white,
-      appBar: _buildAppBar(localizations),
-      body: BlocListener<SupplierReturnBloc, SupplierReturnState>(
-        listener: (context, state) {
-          setState(() => _isLoading = false);
-
-          if (state is SupplierReturnUpdateSuccess && mounted) {
-            Navigator.pop(context, true);
-          } else if (state is SupplierReturnUpdateError && mounted) {
-            if (state.statusCode  == 409) {
-              final localizations = AppLocalizations.of(context)!;
-              showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
-              return;
+    return KeyboardDismissible(
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: _buildAppBar(localizations, total, hasItems),
+        body: BlocListener<SupplierReturnBloc, SupplierReturnState>(
+          listener: (context, state) {
+            setState(() => _isLoading = false);
+            if (state is SupplierReturnUpdateSuccess && mounted) {
+              Navigator.pop(context, true);
+            } else if (state is SupplierReturnUpdateError && mounted) {
+              if (state.statusCode == 409) {
+                final localizations = AppLocalizations.of(context)!;
+                showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                return;
+              }
+              _showSnackBar(state.message, false);
             }
-            _showSnackBar(state.message, false);
-          }
-        },
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 8),
-                      _buildDateField(localizations),
-                      const SizedBox(height: 16),
-                      SupplierWidget(
-                        selectedSupplier: _selectedSupplier,
-                        onChanged: (value) => setState(() => _selectedSupplier = value),
-                      ),
-                      const SizedBox(height: 16),
-                      StorageWidget(
-                        selectedStorage: _selectedStorage,
-                        onChanged: (value) => setState(() => _selectedStorage = value),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildCommentField(localizations),
-                      const SizedBox(height: 16),
-                      _buildGoodsSection(localizations),
-                    ],
+          },
+          child: Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 8),
+                        _buildDateField(localizations),
+                        const SizedBox(height: 16),
+                        SupplierWidget(
+                          selectedSupplier: _selectedSupplier,
+                          onChanged: (value) => setState(() => _selectedSupplier = value),
+                        ),
+                        const SizedBox(height: 16),
+                        StorageWidget(
+                          selectedStorage: _selectedStorage,
+                          onChanged: (value) => setState(() => _selectedStorage = value),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildCommentField(localizations),
+                        const SizedBox(height: 16),
+                        _buildGoodsSection(localizations),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              _buildActionButtons(localizations),
-            ],
+                DocumentActionButtons(
+                  mode: DocumentActionMode.edit,
+                  isLoading: _isLoading,
+                  onSave: _updateDocument,
+                ),
+              ],
+            ),
           ),
         ),
       ),
-       ),  );
+    );
   }
 
-  AppBar _buildAppBar(AppLocalizations localizations) {
+  AppBar _buildAppBar(AppLocalizations localizations, double total, bool hasItems) {
     return AppBar(
       backgroundColor: Colors.white,
       forceMaterialTransparency: true,
@@ -402,16 +479,50 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
         icon: const Icon(Icons.arrow_back_ios, color: Color(0xff1E2E52), size: 24),
         onPressed: () => Navigator.pop(context),
       ),
-      title: Text(
-        '${localizations.translate('edit_supplier_return_document') ?? 'Редактировать возврат поставщику'} №${widget.document.docNumber}',
-        style: const TextStyle(
-          fontSize: 20,
-          fontFamily: 'Gilroy',
-          fontWeight: FontWeight.w600,
-          color: Color(0xff1E2E52),
-        ),
-      ),
+      title: hasItems
+          ? null
+          : Text(
+              '${localizations.translate('edit_supplier_return_document') ?? 'Редактировать возврат поставщику'} №${widget.document.docNumber}',
+              style: const TextStyle(
+                fontSize: 20,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w600,
+                color: Color(0xff1E2E52),
+              ),
+            ),
       centerTitle: false,
+      actions: hasItems
+          ? [
+              Container(
+                margin: const EdgeInsets.only(right: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xff4CAF50).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.account_balance_wallet_outlined,
+                      color: Color(0xff4CAF50),
+                      size: 18,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      total.toStringAsFixed(0),
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xff4CAF50),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ]
+          : null,
     );
   }
 
@@ -491,19 +602,10 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
   }
 
   Widget _buildSelectedItemsList() {
-    final total = _items.fold<double>(0, (sum, item) => sum + (item['total'] ?? 0.0));
+    final total = _totalAmount;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Text(
-        //   AppLocalizations.of(context)!.translate('added_goods') ?? 'Добавленные товары',
-        //   style: const TextStyle(
-        //     fontSize: 16,
-        //     fontFamily: 'Gilroy',
-        //     fontWeight: FontWeight.w600,
-        //     color: Color(0xff1E2E52),
-        //   ),
-        // ),
         const SizedBox(height: 8),
         AnimatedList(
           key: _listKey,
@@ -525,6 +627,8 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
     final variantId = item['variantId'] as int;
     final priceController = _priceControllers[variantId];
     final quantityController = _quantityControllers[variantId];
+    final quantityFocusNode = _quantityFocusNodes[variantId];
+    final priceFocusNode = _priceFocusNodes[variantId];
 
     return FadeTransition(
       opacity: animation,
@@ -639,7 +743,7 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
                                   onChanged: (String? newValue) {
                                     if (newValue != null) {
                                       final selectedUnit = availableUnits.firstWhere(
-                                            (unit) => (unit.shortName ?? unit.name) == newValue,
+                                        (unit) => (unit.shortName ?? unit.name) == newValue,
                                       );
                                       _updateItemUnit(variantId, newValue, selectedUnit.id);
                                     }
@@ -686,23 +790,25 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
                           ),
                         ),
                         const SizedBox(height: 4),
-                       CompactTextField(
-  controller: quantityController!,
-  hintText: AppLocalizations.of(context)!.translate('quantity') ?? 'Количество',
-  keyboardType: TextInputType.number,
-  inputFormatters: [
-    FilteringTextInputFormatter.digitsOnly,
-  ],
-  textAlign: TextAlign.center,
-  style: const TextStyle(
-    fontSize: 13,
-    fontFamily: 'Gilroy',
-    fontWeight: FontWeight.w600,
-    color: Color(0xff1E2E52),
-  ),
-  hasError: _quantityErrors[variantId] == true,
-  onChanged: (value) => _updateItemQuantity(variantId, value),
-)
+                        CompactTextField(
+                          controller: quantityController!,
+                          focusNode: quantityFocusNode,
+                          hintText: AppLocalizations.of(context)!.translate('quantity') ?? 'Количество',
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xff1E2E52),
+                          ),
+                          hasError: _quantityErrors[variantId] == true,
+                          onChanged: (value) => _updateItemQuantity(variantId, value),
+                          onDone: _moveToNextEmptyField,
+                        )
                       ],
                     ),
                   ),
@@ -722,22 +828,24 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
                           ),
                         ),
                         const SizedBox(height: 4),
-                       CompactTextField(
-  controller: priceController!,
-  hintText: AppLocalizations.of(context)!.translate('price') ?? 'Цена',
-  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-  inputFormatters: [
-    FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,3}')),
-  ],
-  style: const TextStyle(
-    fontSize: 13,
-    fontFamily: 'Gilroy',
-    fontWeight: FontWeight.w600,
-    color: Color(0xff1E2E52),
-  ),
-  hasError: _priceErrors[variantId] == true,
-  onChanged: (value) => _updateItemPrice(variantId, value),
-)
+                        CompactTextField(
+                          controller: priceController!,
+                          focusNode: priceFocusNode,
+                          hintText: AppLocalizations.of(context)!.translate('price') ?? 'Цена',
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,3}')),
+                          ],
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xff1E2E52),
+                          ),
+                          hasError: _priceErrors[variantId] == true,
+                          onChanged: (value) => _updateItemPrice(variantId, value),
+                          onDone: _moveToNextEmptyField,
+                        )
                       ],
                     ),
                   ),
@@ -841,86 +949,17 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
     );
   }
 
-  Widget _buildActionButtons(AppLocalizations localizations) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 3,
-            offset: const Offset(0, -1),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: ElevatedButton(
-              onPressed: _isLoading ? null : () => Navigator.pop(context),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xffF4F7FD),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                elevation: 0,
-              ),
-              child: Text(
-                localizations.translate('close') ?? 'Отмена',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: ElevatedButton(
-              onPressed: _isLoading ? null : _updateDocument,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xff4759FF),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                elevation: 0,
-              ),
-              child: _isLoading
-                  ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
-                  : Text(
-                localizations.translate('save') ?? 'Обновить',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   void dispose() {
     _dateController.dispose();
     _commentController.dispose();
     _scrollController.dispose();
+    for (var focusNode in _quantityFocusNodes.values) {
+      focusNode.dispose();
+    }
+    for (var focusNode in _priceFocusNodes.values) {
+      focusNode.dispose();
+    }
     for (var controller in _priceControllers.values) {
       controller.dispose();
     }
