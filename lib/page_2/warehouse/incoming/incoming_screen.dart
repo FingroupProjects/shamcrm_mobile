@@ -304,7 +304,8 @@ class _IncomingScreenState extends State<IncomingScreen> {
                 showSimpleErrorDialog(
                     context,
                     localizations?.translate('error') ?? 'Ошибка',
-                    state.message);
+                    state.message,
+                    errorDialogEnum: ErrorDialogEnum.goodsIncomingDelete);
                 return;
               }
               _showSnackBar(state.message, false);
@@ -315,7 +316,8 @@ class _IncomingScreenState extends State<IncomingScreen> {
                 showSimpleErrorDialog(
                     context,
                     localizations?.translate('error') ?? 'Ошибка',
-                    state.message);
+                    state.message,
+                    errorDialogEnum: ErrorDialogEnum.goodsIncomingDelete);
                 return;
               }
               _showSnackBar(state.message, false);
@@ -331,7 +333,8 @@ class _IncomingScreenState extends State<IncomingScreen> {
                 showSimpleErrorDialog(
                     context,
                     localizations?.translate('error') ?? 'Ошибка',
-                    state.message);
+                    state.message,
+                    errorDialogEnum: ErrorDialogEnum.goodsIncomingApprove);
                 return;
               }
               showCustomSnackBar(
@@ -420,7 +423,8 @@ class _IncomingScreenState extends State<IncomingScreen> {
                 showSimpleErrorDialog(
                     context,
                     localizations?.translate('error') ?? 'Ошибка',
-                    state.message);
+                    state.message,
+                    errorDialogEnum: ErrorDialogEnum.goodsIncomingRestore);
                 return;
               }
               showCustomSnackBar(

@@ -84,7 +84,7 @@ class SupplierDeleteDialog extends StatelessWidget {
                     context
                         .read<SupplierBloc>()
                         .add(DeleteSupplier(documentId));
-                    context.read<SupplierBloc>().add(FetchSupplier());
+                    // BLoC сам обновит список с сохранением поискового запроса
                     Navigator.of(context).pop(true);
                   },
                   buttonColor: Color(0xff1E2E52),

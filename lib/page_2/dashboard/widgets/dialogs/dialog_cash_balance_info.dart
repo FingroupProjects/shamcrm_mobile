@@ -220,6 +220,7 @@ class _CashBalanceDialogState extends State<CashBalanceDialog> {
                 ),
                 SizedBox(height: 12),
                 Text(
+                  textAlign: TextAlign.center,
                   AppLocalizations.of(context)!.translate('no_movements_today'),
                   style: TextStyle(
                     fontFamily: 'Gilroy',

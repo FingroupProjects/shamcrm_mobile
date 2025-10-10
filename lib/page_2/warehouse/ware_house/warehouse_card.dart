@@ -1,7 +1,7 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/storage/bloc/storage_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/storage/bloc/storage_event.dart';
 import 'package:crm_task_manager/models/page_2/storage_model.dart';
-import 'package:crm_task_manager/page_2/warehouse/ware_house/edit_storage_screen.dart';
+import 'package:crm_task_manager/page_2/warehouse/ware_house/edit_warehouse_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/ware_house/warehaouse_deletion.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -117,10 +117,9 @@ class _WareHouseCardState extends State<WareHouseCard> {
                         builder: (context) =>
                             WareHouseDeletion(wareHouseId: widget.warehouse.id),
                       ).then((_) {
+                        // BLoC сам обновляет список после удаления с сохранением query
                         if (widget.onUpdate != null) {
                           widget.onUpdate!();
-                        } else {
-                          context.read<WareHouseBloc>().add(FetchWareHouse());
                         }
                       });
                     },

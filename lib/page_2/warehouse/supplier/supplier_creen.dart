@@ -22,6 +22,8 @@ class _SupplierCreenState extends State<SupplierCreen> {
   late SupplierBloc _supplierBloc;
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
+  bool _isSearching = false;
+  Map<String, dynamic> _currentFilters = {};
 
   // НОВОЕ: Флаги прав доступа
   bool _hasCreatePermission = false;
@@ -32,7 +34,7 @@ class _SupplierCreenState extends State<SupplierCreen> {
   void initState() {
     super.initState();
     _checkPermissions();
-    _supplierBloc = context.read<SupplierBloc>()..add(FetchSupplier());
+    _supplierBloc = context.read<SupplierBloc>()..add(FetchSupplier(query: null));
   }
 
   // НОВОЕ: Проверка прав доступа
@@ -61,6 +63,16 @@ class _SupplierCreenState extends State<SupplierCreen> {
     super.dispose();
   }
 
+  void _onSearch(String query) {
+    debugPrint('SupplierCreen: Поиск поставщиков с запросом: $query');
+    
+    setState(() {
+      _isSearching = query.isNotEmpty;
+    });
+    _currentFilters['query'] = query;
+    _supplierBloc.add(FetchSupplier(query: query.isNotEmpty ? query : null));
+  }
+
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
@@ -76,12 +88,19 @@ class _SupplierCreenState extends State<SupplierCreen> {
             showSearchIcon: true,
             showFilterIcon: false,
             showFilterOrderIcon: false,
-            onChangedSearchInput: (String value) {
-              // Здесь можно добавить логику поиска
-            },
+            onChangedSearchInput: _onSearch,
             textEditingController: _searchController,
             focusNode: _focusNode,
-            clearButtonClick: (value) {},
+            clearButtonClick: (value) {
+              if (!value) {
+                setState(() {
+                  _isSearching = false;
+                  _searchController.clear();
+                  _currentFilters.remove('query');
+                });
+                _supplierBloc.add(FetchSupplier(query: null));
+              }
+            },
             onClickProfileAvatar: () {},
             clearButtonClickFiltr: (bool p1) {},
             currentFilters: {},
@@ -98,7 +117,8 @@ class _SupplierCreenState extends State<SupplierCreen> {
                         builder: (context) => AddSupplierScreen(),
                       ),
                     ).then((_) {
-                      _supplierBloc.add(FetchSupplier());
+                      final query = _currentFilters['query'] as String?;
+                      _supplierBloc.add(FetchSupplier(query: query));
                     });
                   }
                 },
@@ -121,7 +141,9 @@ class _SupplierCreenState extends State<SupplierCreen> {
               if (suppliers.isEmpty) {
                 return Center(
                   child: Text(
-                    localizations?.translate('no_suppliers') ?? 'Нет поставщиков',
+                    _isSearching
+                        ? (localizations?.translate('nothing_found') ?? 'Ничего не найдено')
+                        : (localizations?.translate('no_suppliers') ?? 'Нет поставщиков'),
                     style: const TextStyle(
                       fontSize: 18,
                       fontFamily: 'Gilroy',
@@ -136,7 +158,8 @@ class _SupplierCreenState extends State<SupplierCreen> {
                 color: const Color(0xff1E2E52),
                 backgroundColor: Colors.white,
                 onRefresh: () {
-                  _supplierBloc.add(FetchSupplier());
+                  final query = _currentFilters['query'] as String?;
+                  _supplierBloc.add(FetchSupplier(query: query));
                   return Future.value();
                 },
                 child: ListView.builder(
@@ -150,7 +173,8 @@ class _SupplierCreenState extends State<SupplierCreen> {
                       hasUpdatePermission: _hasUpdatePermission,
                       hasDeletePermission: _hasDeletePermission,
                       onUpdate: () {
-                        _supplierBloc.add(FetchSupplier());
+                        final query = _currentFilters['query'] as String?;
+                        _supplierBloc.add(FetchSupplier(query: query));
                       },
                     );
                   },
@@ -176,7 +200,8 @@ class _SupplierCreenState extends State<SupplierCreen> {
                       const SizedBox(height: 12),
                       ElevatedButton(
                         onPressed: () {
-                          _supplierBloc.add(FetchSupplier());
+                          final query = _currentFilters['query'] as String?;
+                          _supplierBloc.add(FetchSupplier(query: query));
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xff1E2E52),

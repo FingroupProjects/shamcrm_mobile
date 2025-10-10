@@ -11268,12 +11268,16 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
   }
 
   //get storage
-  Future<List<WareHouse>> getWareHouses() async {
+  Future<List<WareHouse>> getWareHouses({
+    String? search,
+  }) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/storage');
+    var path = await _appendQueryParams('/storage');
     if (kDebugMode) {
       //print('ApiService: getStorage - Generated path: $path');
     }
+
+    path += search != null && search.isNotEmpty ? '&search=$search' : '';
 
     final response = await _getRequest(path);
 
@@ -11297,7 +11301,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
   ) async {
     final path = await _appendQueryParams('/storage');
     if (kDebugMode) {
-      //print('ApiService: createSupplier - Generated path: $path');
+      print('ApiService: createStorage - Generated path: $path');
     }
     final organizationId = await getSelectedOrganization() ?? '';
     final salesFunnelId = await getSelectedSalesFunnel() ?? '';
@@ -11314,20 +11318,23 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     if (response.statusCode == 200 || response.statusCode == 201) {
       return true;
     } else {
-      throw Exception('Ошибка создания поставщика: ${response.body}');
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(message ?? 'Ошибка создания склада', response.statusCode);
     }
   }
 
   //updateStorage
-  Future<PriceTypeModel> updateStorage(
+  Future<void> updateStorage(
       {required WareHouse storage,
       required int id,
       required List<int> ids,
       }) async {
     final path = await _appendQueryParams('/storage/$id');
+
     if (kDebugMode) {
-      //print('ApiService: updateSupplier - Generated path: $path');
+      print('ApiService: updateStorage - Generated path: $path');
     }
+
     final organizationId = await getSelectedOrganization() ?? '';
     final salesFunnelId = await getSelectedSalesFunnel() ?? '';
     final body = {
@@ -11342,12 +11349,17 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       if (response.body.isNotEmpty) {
-        return PriceTypeModel.fromJson(json.decode(response.body)['result']);
+        debugPrint("Склад обновлен успешно");
+        return;
       } else {
-        throw Exception('Ошибка обновления поставщика: ${response.body}');
+       final message = _extractErrorMessageFromResponse(response);
+       debugPrint('Ошибка обновления склада: $message');
+        throw ApiException(message ?? 'Ошибка обновления', response.statusCode);
       }
     } else {
-      throw Exception('Ошибка обновления поставщика: ${response.body}');
+      final message = _extractErrorMessageFromResponse(response);
+      debugPrint('Ошибка обновления склада2: $message');
+      throw ApiException(message ?? 'Ошибка обновления', response.statusCode);
     }
   }
 
@@ -11373,11 +11385,17 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 //--------------------------------MEASURE UNITS-------------------------------------------------
 
   //get measure units
-  Future<List<MeasureUnitModel>> getMeasureUnits() async {
+  Future<List<MeasureUnitModel>> getMeasureUnits({String? search}) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/unit');
+    String path = await _appendQueryParams('/unit');
+    
+    // Добавляем параметр поиска, если он передан
+    if (search != null && search.isNotEmpty) {
+      path = path.contains('?') ? '$path&search=$search' : '$path?search=$search';
+    }
+    
     if (kDebugMode) {
-      //print('ApiService: getSuppliers - Generated path: $path');
+      //print('ApiService: getMeasureUnits - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -11391,7 +11409,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         return [];
       }
     } else {
-      throw Exception('Ошибка создания поставщика: ${response.body}');
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(message ?? 'Ошибка загрузки единиц измерения', response.statusCode);
     }
   }
 
@@ -11417,7 +11436,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     if (response.statusCode == 200 || response.statusCode == 201) {
       return;
     } else {
-      throw Exception('Ошибка создания поставщика: ${response.body}');
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(message ?? 'Ошибка создания поставщика', response.statusCode);
     }
   }
 
@@ -11436,14 +11456,15 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     if (response.statusCode == 200 || response.statusCode == 204) {
       return;
     } else {
-      throw Exception('Ошибка удаления поставщика: ${response.body}');
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(message ?? 'Ошибка удаления поставщика', response.statusCode);
     }
   }
 
   //update measure units
-  Future<PriceTypeModel> updateUnit(
+  Future<void> updateUnit(
       {required MeasureUnitModel supplier, required int id}) async {
-    final path = await _appendQueryParams('/priceType/$id');
+    final path = await _appendQueryParams('/unit/$id');
     if (kDebugMode) {
       //print('ApiService: updateSupplier - Generated path: $path');
     }
@@ -11460,20 +11481,28 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       if (response.body.isNotEmpty) {
-        return PriceTypeModel.fromJson(json.decode(response.body)['result']);
+        return;
       } else {
-        throw Exception('Ошибка обновления поставщика: ${response.body}');
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(message ?? 'Ошибка обновления', response.statusCode);
       }
     } else {
-      throw Exception('Ошибка обновления поставщика: ${response.body}');
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(message ?? 'Ошибка обновления', response.statusCode);
     }
   }
 
 //--------------------------PRICE TYPE---------------------------------------------
 
-  Future<List<PriceTypeModel>> getPriceTypes() async {
+  Future<List<PriceTypeModel>> getPriceTypes({String? search}) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/priceType');
+    String path = await _appendQueryParams('/priceType');
+    
+    // Добавляем параметр поиска, если он передан
+    if (search != null && search.isNotEmpty) {
+      path = path.contains('?') ? '$path&search=$search' : '$path?search=$search';
+    }
+    
     if (kDebugMode) {
       //print('ApiService: getPriceTypes - Generated path: $path');
     }
@@ -11692,9 +11721,15 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
   }
 
   //getSupplier
-  Future<List<Supplier>> getSupplier() async {
+  Future<List<Supplier>> getSupplier({String? search}) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/suppliers');
+    String path = await _appendQueryParams('/suppliers');
+    
+    // Добавляем параметр поиска, если он передан
+    if (search != null && search.isNotEmpty) {
+      path = path.contains('?') ? '$path&search=$search' : '$path?search=$search';
+    }
+    
     if (kDebugMode) {
       //print('ApiService: getSupplier - Generated path: $path');
     }

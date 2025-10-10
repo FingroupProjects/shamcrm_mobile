@@ -104,6 +104,7 @@ class _DebtorsDialogState extends State<DebtorsDialog> {
                 SizedBox(height: 12),
                 Builder(
                   builder: (context) => Text(
+                    textAlign: TextAlign.center,
                     AppLocalizations.of(context)!.translate('no_data_to_display'),
                     style: TextStyle(
                       fontFamily: 'Gilroy',

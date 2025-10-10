@@ -56,11 +56,13 @@ class _MeasureUnitCardState extends State<MeasureUnitCard> {
                   MaterialPageRoute(
                     builder: (context) => EditMeasureUnitScreen(measureUnit: widget.supplier),
                   ),
-                ).then((_) {
-                  if (widget.onUpdate != null) {
-                    widget.onUpdate!();
-                  } else {
-                    context.read<MeasureUnitsBloc>().add(const FetchMeasureUnits());
+                ).then((result) {
+                  if (result == true) {
+                    if (widget.onUpdate != null) {
+                      widget.onUpdate!();
+                    } else {
+                      context.read<MeasureUnitsBloc>().add(const FetchMeasureUnits());
+                    }
                   }
                 });
               }
@@ -110,11 +112,12 @@ class _MeasureUnitCardState extends State<MeasureUnitCard> {
                       showDialog(
                         context: context,
                         builder: (context) => MeasureUnitDeleteDialog(measureUnitId: widget.supplier.id),
-                      ).then((value) {
-                        if (widget.onUpdate != null) {
-                          widget.onUpdate!();
-                        } else {
-                          context.read<MeasureUnitsBloc>().add(const FetchMeasureUnits());
+                      ).then((result) {
+                        if (result == true) {
+                          // BLoC сам обновляет список после удаления с сохранением query
+                          if (widget.onUpdate != null) {
+                            widget.onUpdate!();
+                          }
                         }
                       });
                     },

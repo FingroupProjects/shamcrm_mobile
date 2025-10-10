@@ -9,8 +9,13 @@ abstract class WareHouseEvent extends Equatable {
 }
 
 class FetchWareHouse extends WareHouseEvent {
+
+  final String? query;
+
+  const FetchWareHouse({this.query});
+
   @override
-  List<Object?> get props => [];
+  List<Object?> get props => [query];
 }
 
 class CreateWareHouse extends WareHouseEvent {

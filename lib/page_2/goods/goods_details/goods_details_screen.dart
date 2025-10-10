@@ -326,11 +326,7 @@ AppBar _buildAppBar(BuildContext context, String title) {
           'value': '${goods.discountPercent}%'
         },
       ...goods.attributes
-          .where((attr) =>
-              attr.name.isNotEmpty &&
-              attr.name !=
-                  AppLocalizations.of(context)!
-                      .translate('unknown_characteristic'))
+          .where((attr) => attr.name.isNotEmpty && attr.name != (AppLocalizations.of(context)!.translate('unknown_characteristic') ?? 'Неизвестная характеристика'))
           .map((attr) => {'label': attr.name, 'value': attr.value}),
       {
         'label': AppLocalizations.of(context)!.translate('goods_finished'),

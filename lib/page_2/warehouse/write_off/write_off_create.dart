@@ -611,7 +611,7 @@ class CreateWriteOffDocumentScreenState
                                   items: availableUnits.map((unit) {
                                     return DropdownMenuItem<String>(
                                       value: unit.shortName ?? unit.name,
-                                      child: Text(unit.shortName ?? unit.name),
+                                      child: Text(unit.shortName ?? unit.name ?? ''),
                                     );
                                   }).toList(),
                                   onChanged: (String? newValue) {

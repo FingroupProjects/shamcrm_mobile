@@ -322,7 +322,7 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
         documentGoods: _items.map((item) {
           final unitId = item['unit_id'];
           return {
-            'good_id': item['variantId'],
+            'good_id': item['variant_id'],
             'quantity': int.tryParse(item['quantity'].toString()),
             'price': item['price'].toString(),
             'unit_id': unitId,
@@ -723,7 +723,7 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
                                   items: availableUnits.map((unit) {
                                     return DropdownMenuItem<String>(
                                       value: unit.shortName ?? unit.name,
-                                      child: Text(unit.shortName ?? unit.name),
+                                      child: Text(unit.shortName ?? unit.name ?? ''),
                                     );
                                   }).toList(),
                                   onChanged: (String? newValue) {

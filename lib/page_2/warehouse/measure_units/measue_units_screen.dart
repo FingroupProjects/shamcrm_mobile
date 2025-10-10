@@ -39,7 +39,7 @@ class _MeasureUnitsScreenState extends State<MeasureUnitsScreen> {
   void initState() {
     super.initState();
     _checkPermissions();
-    _measureUnitsBloc = MeasureUnitsBloc(ApiService())..add(const FetchMeasureUnits());
+    _measureUnitsBloc = context.read<MeasureUnitsBloc>()..add(const FetchMeasureUnits(query: null));
     _scrollController.addListener(_onScroll);
   }
 
@@ -78,7 +78,8 @@ class _MeasureUnitsScreenState extends State<MeasureUnitsScreen> {
       setState(() {
         _isLoadingMore = true;
       });
-      _measureUnitsBloc.add(const FetchMeasureUnits());
+      final query = _currentFilters['query'] as String?;
+      _measureUnitsBloc.add(FetchMeasureUnits(query: query));
     }
   }
 
@@ -87,7 +88,7 @@ class _MeasureUnitsScreenState extends State<MeasureUnitsScreen> {
       _isSearching = query.isNotEmpty;
     });
     _currentFilters['query'] = query;
-    _measureUnitsBloc.add(const FetchMeasureUnits());
+    _measureUnitsBloc.add(FetchMeasureUnits(query: query.isNotEmpty ? query : null));
   }
 
   Future<void> _onRefresh() async {
@@ -98,7 +99,7 @@ class _MeasureUnitsScreenState extends State<MeasureUnitsScreen> {
       _isInitialLoad = true;
       _hasReachedMax = false;
     });
-    _measureUnitsBloc.add(const FetchMeasureUnits());
+    _measureUnitsBloc.add(const FetchMeasureUnits(query: null));
     await Future.delayed(const Duration(milliseconds: 500));
   }
 
@@ -106,8 +107,8 @@ class _MeasureUnitsScreenState extends State<MeasureUnitsScreen> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
 
-    return BlocProvider(
-      create: (_) => MeasureUnitsBloc(ApiService())..add(const FetchMeasureUnits()),
+    return BlocProvider.value(
+      value: _measureUnitsBloc,
       child: Scaffold(
         appBar: AppBar(
           forceMaterialTransparency: true,
@@ -124,8 +125,9 @@ class _MeasureUnitsScreenState extends State<MeasureUnitsScreen> {
                 setState(() {
                   _isSearching = false;
                   _searchController.clear();
+                  _currentFilters.remove('query');
                 });
-                _measureUnitsBloc.add(const FetchMeasureUnits());
+                _measureUnitsBloc.add(const FetchMeasureUnits(query: null));
               }
             },
             onClickProfileAvatar: () {},
@@ -136,16 +138,19 @@ class _MeasureUnitsScreenState extends State<MeasureUnitsScreen> {
         // ИЗМЕНЕНО: Показываем FAB только если есть право на создание
         floatingActionButton: _hasCreatePermission
             ? FloatingActionButton(
-                onPressed: () {
+                onPressed: () async {
                   if (mounted) {
-                    Navigator.push(
+                    final result = await Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => AddMeasureUnitScreen(),
                       ),
-                    ).then((_) {
-                      _measureUnitsBloc.add(const FetchMeasureUnits());
-                    });
+                    );
+
+                    if (result == true) {
+                      final query = _currentFilters['query'] as String?;
+                      _measureUnitsBloc.add(FetchMeasureUnits(query: query));
+                    }
                   }
                 },
                 backgroundColor: const Color(0xff1E2E52),
@@ -182,7 +187,8 @@ class _MeasureUnitsScreenState extends State<MeasureUnitsScreen> {
                 color: const Color(0xff1E2E52),
                 backgroundColor: Colors.white,
                 onRefresh: () async {
-                  context.read<MeasureUnitsBloc>().add(const RefreshMeasureUnits());
+                  final query = _currentFilters['query'] as String?;
+                  context.read<MeasureUnitsBloc>().add(RefreshMeasureUnits(query: query));
                 },
                 child: ListView.builder(
                   controller: _scrollController,
@@ -197,7 +203,8 @@ class _MeasureUnitsScreenState extends State<MeasureUnitsScreen> {
                       hasUpdatePermission: _hasUpdatePermission,
                       hasDeletePermission: _hasDeletePermission,
                       onUpdate: () {
-                        _measureUnitsBloc.add(const FetchMeasureUnits());
+                        final query = _currentFilters['query'] as String?;
+                        _measureUnitsBloc.add(FetchMeasureUnits(query: query));
                       },
                     );
                   },
@@ -208,7 +215,8 @@ class _MeasureUnitsScreenState extends State<MeasureUnitsScreen> {
                 color: const Color(0xff1E2E52),
                 backgroundColor: Colors.white,
                 onRefresh: () async {
-                  context.read<MeasureUnitsBloc>().add(const RefreshMeasureUnits());
+                  final query = _currentFilters['query'] as String?;
+                  context.read<MeasureUnitsBloc>().add(RefreshMeasureUnits(query: query));
                 },
                 child: ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
@@ -248,7 +256,8 @@ class _MeasureUnitsScreenState extends State<MeasureUnitsScreen> {
                       const SizedBox(height: 12),
                       ElevatedButton(
                         onPressed: () {
-                          context.read<MeasureUnitsBloc>().add(const FetchMeasureUnits());
+                          final query = _currentFilters['query'] as String?;
+                          context.read<MeasureUnitsBloc>().add(FetchMeasureUnits(query: query));
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xff1E2E52),

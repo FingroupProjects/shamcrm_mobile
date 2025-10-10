@@ -35,6 +35,7 @@ class _EditMoneyIncomeAnotherCashRegisterState extends State<EditMoneyIncomeAnot
   bool _isLoading = false;
   bool _isApproveLoading = false; // НОВОЕ: отдельный индикатор для кнопки проведения
   late bool _isApproved;
+  bool _isStatusChanged = false; // Для отслеживания изменений
 
   @override
   void initState() {
@@ -99,6 +100,7 @@ class _EditMoneyIncomeAnotherCashRegisterState extends State<EditMoneyIncomeAnot
       widget.document.id!,
       newApprovalState,
     ));
+    _isStatusChanged = true; // Отмечаем, что были изменения
   }
 
   // ИЗМЕНЕННЫЙ МЕТОД: Теперь только для сохранения данных документа
@@ -167,7 +169,7 @@ class _EditMoneyIncomeAnotherCashRegisterState extends State<EditMoneyIncomeAnot
       if (mounted) {
         setState(() => _isLoading = false);
       }
-      Navigator.pop(context);
+      Navigator.pop(context, _isStatusChanged); // Возвращаем флаг изменений в родительский экран
     }
   }
 
@@ -235,6 +237,7 @@ class _EditMoneyIncomeAnotherCashRegisterState extends State<EditMoneyIncomeAnot
                 if (state is MoneyIncomeToggleOneApproveSuccess) {
                   // Обновляем состояние
                   final newApprovalState = !_isApproved;
+                  _isStatusChanged = true; // Отмечаем, что были изменения
                   setState(() {
                     _isApproveLoading = false;
                     _isApproved = newApprovalState;
@@ -333,7 +336,7 @@ class _EditMoneyIncomeAnotherCashRegisterState extends State<EditMoneyIncomeAnot
       elevation: 0,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_ios, color: Color(0xff1E2E52), size: 24),
-        onPressed: () => Navigator.pop(context),
+        onPressed: () => Navigator.pop(context, _isStatusChanged),
       ),
       title: Text(
         AppLocalizations.of(context)!.translate('edit_incoming_document') ?? 'Редактировать доход',
@@ -462,7 +465,7 @@ class _EditMoneyIncomeAnotherCashRegisterState extends State<EditMoneyIncomeAnot
           Expanded(
             child: ElevatedButton(
               onPressed: _isLoading ? null : () {
-                if (mounted) Navigator.pop(context);
+                if (mounted) Navigator.pop(context, _isStatusChanged);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xffF4F7FD),

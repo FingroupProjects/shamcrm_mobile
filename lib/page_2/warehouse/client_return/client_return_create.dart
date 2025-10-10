@@ -354,7 +354,7 @@ class CreateClientReturnDocumentScreenState extends State<CreateClientReturnDocu
         date: isoDate,
         storageId: int.parse(_selectedStorage!),
         comment: _commentController.text.trim(),
-        counterpartyId: _selectedLead!.id!,
+        counterpartyId: _selectedLead!.id,
         documentGoods: _items
             .map((item) => {
                   'good_id': item['variantId'],
@@ -752,7 +752,7 @@ class CreateClientReturnDocumentScreenState extends State<CreateClientReturnDocu
                                   items: availableUnits.map((unit) {
                                     return DropdownMenuItem<String>(
                                       value: unit.shortName ?? unit.name,
-                                      child: Text(unit.shortName ?? unit.name),
+                                      child: Text(unit.shortName ?? unit.name ?? ''),
                                     );
                                   }).toList(),
                                   onChanged: (String? newValue) {

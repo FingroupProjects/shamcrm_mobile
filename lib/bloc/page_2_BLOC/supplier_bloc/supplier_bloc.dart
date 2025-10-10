@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart';
 class SupplierBloc extends Bloc<SupplierEvent, SupplierState> {
   final ApiService apiService;
   bool allSupplierFetched = false;
+  String? _currentQuery; // Сохраняем текущий поисковый запрос
 
   SupplierBloc(this.apiService) : super(SupplierInitial()) {
     on<FetchSupplier>(_fetchSupplier);
@@ -23,7 +24,10 @@ class SupplierBloc extends Bloc<SupplierEvent, SupplierState> {
 
     if (await _checkInternetConnection()) {
       try {
-        final supplierList = await apiService.getSupplier();
+        // Сохраняем текущий query
+        _currentQuery = event.query;
+        
+        final supplierList = await apiService.getSupplier(search: event.query);
         allSupplierFetched = supplierList.isEmpty;
         emit(SupplierLoaded(supplierList));
       } catch (e) {
@@ -66,7 +70,8 @@ class SupplierBloc extends Bloc<SupplierEvent, SupplierState> {
     if (await _checkInternetConnection()) {
       try {
         await apiService.deleteSupplier(event.supplierId);
-        final supplierList = await apiService.getSupplier();
+        // Используем сохраненный query при обновлении списка
+        final supplierList = await apiService.getSupplier(search: _currentQuery);
         emit(SupplierLoaded(supplierList));
       } catch (e) {
         if (kDebugMode) {
@@ -85,7 +90,8 @@ class SupplierBloc extends Bloc<SupplierEvent, SupplierState> {
     if (await _checkInternetConnection()) {
       try {
         await apiService.updateSupplier(id: event.id, supplier: event.supplier);
-        final supplierList = await apiService.getSupplier();
+        // Используем сохраненный query при обновлении списка
+        final supplierList = await apiService.getSupplier(search: _currentQuery);
         emit(SupplierLoaded(supplierList));
       } catch (e) {
         if (kDebugMode) {
