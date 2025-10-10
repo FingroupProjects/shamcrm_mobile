@@ -91,7 +91,7 @@ class WareHouseDeletion extends StatelessWidget {
                     context
                         .read<WareHouseBloc>()
                         .add(DeleteWareHouse(wareHouseId));
-                    context.read<WareHouseBloc>().add(FetchWareHouse());
+                    // BLoC сам обновит список с сохранением поискового запроса
                     Navigator.of(context).pop(true);
                   },
                   buttonColor: const Color(0xff1E2E52),

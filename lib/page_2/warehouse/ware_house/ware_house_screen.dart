@@ -39,7 +39,7 @@ class _WareHouseScreenState extends State<WareHouseScreen> {
   void initState() {
     super.initState();
     _checkPermissions();
-    _warehousebloc = context.read<WareHouseBloc>()..add(FetchWareHouse());
+    _warehousebloc = context.read<WareHouseBloc>()..add(FetchWareHouse(query: null));
     _scrollController.addListener(_onScroll);
   }
 
@@ -78,16 +78,19 @@ class _WareHouseScreenState extends State<WareHouseScreen> {
       setState(() {
         _isLoadingMore = true;
       });
-      _warehousebloc.add(FetchWareHouse());
+      final query = _currentFilters['query'] as String?;
+      _warehousebloc.add(FetchWareHouse(query: query));
     }
   }
 
   void _onSearch(String query) {
+    debugPrint('WareHouseScreen: Поиск складов с запросом: $query');
+    
     setState(() {
       _isSearching = query.isNotEmpty;
     });
     _currentFilters['query'] = query;
-    _warehousebloc.add(FetchWareHouse());
+    _warehousebloc.add(FetchWareHouse(query: query.isNotEmpty ? query : null));
   }
 
   Future<void> _onRefresh() async {
@@ -98,7 +101,7 @@ class _WareHouseScreenState extends State<WareHouseScreen> {
       _isInitialLoad = true;
       _hasReachedMax = false;
     });
-    _warehousebloc.add(FetchWareHouse());
+    _warehousebloc.add(FetchWareHouse(query: null));
   }
 
   @override
@@ -121,8 +124,9 @@ class _WareHouseScreenState extends State<WareHouseScreen> {
               setState(() {
                 _isSearching = false;
                 _searchController.clear();
+                _currentFilters.remove('query');
               });
-              _warehousebloc.add(FetchWareHouse());
+              _warehousebloc.add(FetchWareHouse(query: null));
             }
           },
           onClickProfileAvatar: () {},
@@ -140,7 +144,8 @@ class _WareHouseScreenState extends State<WareHouseScreen> {
                     builder: (context) => AddWarehouseScreen(),
                   ),
                 ).then((value) {
-                  context.read<WareHouseBloc>().add(FetchWareHouse());
+                  final query = _currentFilters['query'] as String?;
+                  context.read<WareHouseBloc>().add(FetchWareHouse(query: query));
                 });
               },
               backgroundColor: const Color(0xff1E2E52),
@@ -177,7 +182,8 @@ class _WareHouseScreenState extends State<WareHouseScreen> {
               color: const Color(0xff1E2E52),
               backgroundColor: Colors.white,
               onRefresh: () async {
-                context.read<WareHouseBloc>().add(FetchWareHouse());
+                final query = _currentFilters['query'] as String?;
+                context.read<WareHouseBloc>().add(FetchWareHouse(query: query));
               },
               child: ListView.builder(
                 controller: _scrollController,
@@ -192,7 +198,8 @@ class _WareHouseScreenState extends State<WareHouseScreen> {
                     hasUpdatePermission: _hasUpdatePermission,
                     hasDeletePermission: _hasDeletePermission,
                     onUpdate: () {
-                      context.read<WareHouseBloc>().add(FetchWareHouse());
+                      final query = _currentFilters['query'] as String?;
+                      context.read<WareHouseBloc>().add(FetchWareHouse(query: query));
                     },
                   );
                 },
@@ -218,7 +225,8 @@ class _WareHouseScreenState extends State<WareHouseScreen> {
                     const SizedBox(height: 12),
                     ElevatedButton(
                       onPressed: () {
-                        context.read<WareHouseBloc>().add(FetchWareHouse());
+                        final query = _currentFilters['query'] as String?;
+                        context.read<WareHouseBloc>().add(FetchWareHouse(query: query));
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xff1E2E52),

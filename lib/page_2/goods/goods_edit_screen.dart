@@ -106,6 +106,10 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
 
   Future<void> _loadAllDataSequentially() async {
     setState(() => isLoading = true);
+    
+    // Сохраняем ScaffoldMessenger до асинхронных операций
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    
     try {
       await _initializeBaseUrl();
       if (mounted && widget.sortedFiles.isNotEmpty) {
@@ -127,8 +131,9 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
 
       _initializeFieldsWithData();
     } catch (e) {
+      print('❌ Error in _loadAllDataSequentially: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        scaffoldMessenger.showSnackBar(
           SnackBar(
               content: Text(AppLocalizations.of(context)!
                   .translate('error_loading_data'))),
@@ -143,13 +148,16 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
 
   Future<void> fetchBranches() async {
     try {
+      print('🔍 Fetching branches...');
       final fetchedBranches = await _apiService.getBranches();
+      print('✅ Branches fetched successfully: ${fetchedBranches.length} branches');
       if (mounted) {
         setState(() {
           branches = fetchedBranches;
         });
       }
     } catch (e) {
+      print('❌ Error fetching branches: $e');
       throw e;
     }
   }
@@ -268,13 +276,16 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
 
   Future<void> fetchSubCategories() async {
     try {
+      print('🔍 Fetching subcategories...');
       final categories = await _apiService.getSubCategoryAttributes();
+      print('✅ Subcategories fetched successfully: ${categories.length} categories');
       if (mounted) {
         setState(() {
           subCategories = categories;
         });
       }
     } catch (e) {
+      print('❌ Error fetching subcategories: $e');
       throw e;
     }
   }

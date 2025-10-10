@@ -102,7 +102,7 @@ class _ClientReturnDocumentDetailsScreenState
           context, 
           localizations.translate('error') ?? 'Ошибка', 
           e.message,
-          errorDialogEnum: ErrorDialogEnum.clientReturnApprove,
+          errorDialogEnum: ErrorDialogEnum.clientReturnDelete,
         );
         return;
       }
@@ -273,7 +273,7 @@ class _ClientReturnDocumentDetailsScreenState
           context, 
           localizations.translate('error') ?? 'Ошибка', 
           e.message,
-          errorDialogEnum: ErrorDialogEnum.clientReturnApprove,
+          errorDialogEnum: ErrorDialogEnum.clientReturnUnapprove,
         );
         return;
       }
@@ -312,7 +312,7 @@ class _ClientReturnDocumentDetailsScreenState
           context,
           localizations.translate('error') ?? 'Ошибка',
           e.message,
-          errorDialogEnum: ErrorDialogEnum.clientReturnApprove,
+          errorDialogEnum: ErrorDialogEnum.clientReturnRestore,
         );
         return;
       }

@@ -59,7 +59,8 @@ class _PriceTypeCardState extends State<PriceTypeCard> {
                 if (widget.onUpdate != null) {
                   widget.onUpdate!();
                 } else {
-                  context.read<PriceTypeScreenBloc>().add(FetchPriceType());
+                  // BLoC использует сохраненный query
+                  context.read<PriceTypeScreenBloc>().add(const FetchPriceType());
                 }
               });
             }
@@ -112,10 +113,9 @@ class _PriceTypeCardState extends State<PriceTypeCard> {
                           child: PriceTypesDeleteDialog(documentId: widget.priceType.id),
                         ),
                       ).then((_) {
+                        // BLoC сам обновляет список после удаления с сохранением query
                         if (widget.onUpdate != null) {
                           widget.onUpdate!();
-                        } else {
-                          context.read<PriceTypeScreenBloc>().add(FetchPriceType());
                         }
                       });
                     },

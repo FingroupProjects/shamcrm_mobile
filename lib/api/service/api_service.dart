@@ -11268,12 +11268,16 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
   }
 
   //get storage
-  Future<List<WareHouse>> getWareHouses() async {
+  Future<List<WareHouse>> getWareHouses({
+    String? search,
+  }) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/storage');
+    var path = await _appendQueryParams('/storage');
     if (kDebugMode) {
       //print('ApiService: getStorage - Generated path: $path');
     }
+
+    path += search != null && search.isNotEmpty ? '&search=$search' : '';
 
     final response = await _getRequest(path);
 
@@ -11381,11 +11385,17 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 //--------------------------------MEASURE UNITS-------------------------------------------------
 
   //get measure units
-  Future<List<MeasureUnitModel>> getMeasureUnits() async {
+  Future<List<MeasureUnitModel>> getMeasureUnits({String? search}) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/unit');
+    String path = await _appendQueryParams('/unit');
+    
+    // Добавляем параметр поиска, если он передан
+    if (search != null && search.isNotEmpty) {
+      path = path.contains('?') ? '$path&search=$search' : '$path?search=$search';
+    }
+    
     if (kDebugMode) {
-      //print('ApiService: getSuppliers - Generated path: $path');
+      //print('ApiService: getMeasureUnits - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -11484,9 +11494,15 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
 //--------------------------PRICE TYPE---------------------------------------------
 
-  Future<List<PriceTypeModel>> getPriceTypes() async {
+  Future<List<PriceTypeModel>> getPriceTypes({String? search}) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/priceType');
+    String path = await _appendQueryParams('/priceType');
+    
+    // Добавляем параметр поиска, если он передан
+    if (search != null && search.isNotEmpty) {
+      path = path.contains('?') ? '$path&search=$search' : '$path?search=$search';
+    }
+    
     if (kDebugMode) {
       //print('ApiService: getPriceTypes - Generated path: $path');
     }
@@ -11705,9 +11721,15 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
   }
 
   //getSupplier
-  Future<List<Supplier>> getSupplier() async {
+  Future<List<Supplier>> getSupplier({String? search}) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/suppliers');
+    String path = await _appendQueryParams('/suppliers');
+    
+    // Добавляем параметр поиска, если он передан
+    if (search != null && search.isNotEmpty) {
+      path = path.contains('?') ? '$path&search=$search' : '$path?search=$search';
+    }
+    
     if (kDebugMode) {
       //print('ApiService: getSupplier - Generated path: $path');
     }

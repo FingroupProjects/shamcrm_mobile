@@ -98,7 +98,7 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
       });
       if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
-        showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
+        showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message, errorDialogEnum: ErrorDialogEnum.goodsMovementDelete);
         return;
       }
       final localizations = AppLocalizations.of(context)!;
@@ -209,7 +209,7 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
-        showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
+        showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message, errorDialogEnum: ErrorDialogEnum.goodsMovementApprove);
         return;
       }
       final localizations = AppLocalizations.of(context)!;
@@ -237,7 +237,7 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
-        showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
+        showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message, errorDialogEnum: ErrorDialogEnum.goodsMovementUnapprove);
         return;
       }
       final localizations = AppLocalizations.of(context)!;
@@ -265,7 +265,7 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
-        showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
+        showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message, errorDialogEnum: ErrorDialogEnum.goodsMovementRestore);
         return;
       }
       final localizations = AppLocalizations.of(context)!;

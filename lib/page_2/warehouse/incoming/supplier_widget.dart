@@ -23,7 +23,7 @@ class _SupplierWidgetState extends State<SupplierWidget> {
   @override
   void initState() {
     super.initState();
-    context.read<SupplierBloc>().add(FetchSupplier());
+    context.read<SupplierBloc>().add(FetchSupplier(query: null));
   }
 
   @override

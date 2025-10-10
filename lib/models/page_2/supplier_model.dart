@@ -1,7 +1,7 @@
 class Supplier {
   final int id;
   final String name;
-  final String? phone;
+  final String? phone; // Changed to nullable
   final int? inn; // Changed to nullable
   final String? note;
   final String createdAt;

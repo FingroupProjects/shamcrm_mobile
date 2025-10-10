@@ -6,6 +6,7 @@ import 'measure_units_state.dart';
 
 class MeasureUnitsBloc extends Bloc<MeasureUnitsEvent, MeasureUnitsState> {
   final ApiService apiService;
+  String? _currentQuery; // Сохраняем текущий поисковый запрос
 
   MeasureUnitsBloc(this.apiService) : super(MeasureUnitsInitial()) {
     on<FetchMeasureUnits>(_onFetch);
@@ -20,7 +21,9 @@ class MeasureUnitsBloc extends Bloc<MeasureUnitsEvent, MeasureUnitsState> {
     Emitter<MeasureUnitsState> emit,
   ) async {
     emit(MeasureUnitsLoading());
-    await _fetchAndEmit(emit);
+    // Сохраняем текущий query
+    _currentQuery = event.query;
+    await _fetchAndEmit(emit, search: event.query);
   }
 
   Future<void> _onRefresh(
@@ -29,12 +32,14 @@ class MeasureUnitsBloc extends Bloc<MeasureUnitsEvent, MeasureUnitsState> {
   ) async {
     // keep UI responsive; show loading during refresh
     emit(MeasureUnitsLoading());
-    await _fetchAndEmit(emit);
+    // Сохраняем текущий query
+    _currentQuery = event.query;
+    await _fetchAndEmit(emit, search: event.query);
   }
 
-  Future<void> _fetchAndEmit(Emitter<MeasureUnitsState> emit) async {
+  Future<void> _fetchAndEmit(Emitter<MeasureUnitsState> emit, {String? search}) async {
     try {
-      final dynamic response = await apiService.getMeasureUnits();
+      final dynamic response = await apiService.getMeasureUnits(search: search);
       // attempt to normalize response into List<MeasureUnit>
       List<MeasureUnitModel> units = [];
       if (response == null) {
@@ -99,7 +104,8 @@ class MeasureUnitsBloc extends Bloc<MeasureUnitsEvent, MeasureUnitsState> {
     try {
       emit(MeasureUnitsLoading());
       await apiService.deleteMeasureUnit(event.id);
-      await _fetchAndEmit(emit); // Refresh the list after deletion
+      // Используем сохраненный query при обновлении списка
+      await _fetchAndEmit(emit, search: _currentQuery);
     } catch (e) {
       emit(MeasureUnitsError(e.toString()));
     }

@@ -60,6 +60,7 @@ class _SupplierCardState extends State<SupplierCard> {
                 if (widget.onUpdate != null) {
                   widget.onUpdate!();
                 } else {
+                  // BLoC использует сохраненный query
                   context.read<SupplierBloc>().add(FetchSupplier());
                 }
               });
@@ -110,10 +111,9 @@ class _SupplierCardState extends State<SupplierCard> {
                         context: context,
                         builder: (context) => SupplierDeleteDialog(documentId: widget.supplier.id),
                       ).then((value) {
+                        // BLoC сам обновляет список после удаления с сохранением query
                         if (widget.onUpdate != null) {
                           widget.onUpdate!();
-                        } else {
-                          context.read<SupplierBloc>().add(FetchSupplier());
                         }
                       });
                     },

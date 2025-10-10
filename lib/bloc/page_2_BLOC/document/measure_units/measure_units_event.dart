@@ -9,11 +9,21 @@ abstract class MeasureUnitsEvent extends Equatable {
 }
 
 class FetchMeasureUnits extends MeasureUnitsEvent {
-  const FetchMeasureUnits();
+  final String? query;
+  
+  const FetchMeasureUnits({this.query});
+  
+  @override
+  List<Object?> get props => [query];
 }
 
 class RefreshMeasureUnits extends MeasureUnitsEvent {
-  const RefreshMeasureUnits();
+  final String? query;
+  
+  const RefreshMeasureUnits({this.query});
+  
+  @override
+  List<Object?> get props => [query];
 }
 
 class AddMeasureUnitEvent extends MeasureUnitsEvent {
