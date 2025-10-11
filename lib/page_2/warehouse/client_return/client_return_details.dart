@@ -123,7 +123,7 @@ class _ClientReturnDocumentDetailsScreenState
       },
       {
         'label': '${AppLocalizations.of(context)!.translate('date') ?? 'Дата'}:',
-        'value': document.date != null ? DateFormat('dd.MM.yyyy').format(document.date!) : '',
+        'value': document.date != null ? DateFormat('dd.MM.yyyy HH:mm').format(document.date!) : '',
       },
       {
         'label': '${AppLocalizations.of(context)!.translate('storage') ?? 'Склад'}:',

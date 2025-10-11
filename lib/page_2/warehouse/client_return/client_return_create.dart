@@ -429,44 +429,45 @@ class CreateClientReturnDocumentScreenState extends State<CreateClientReturnDocu
             _showSnackBar(state.message, false);
           }
         },
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  controller: _scrollController,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 8),
-                      _buildDateField(localizations),
-                      const SizedBox(height: 16),
-                      LeadRadioGroupWidget(
-                        selectedLead: _selectedLead?.id?.toString(),
-                        onSelectLead: (lead) =>
-                            setState(() => _selectedLead = lead),
-                        showDebt: true,
-                      ),
-                      const SizedBox(height: 16),
-                      StorageWidget(
-                        selectedStorage: _selectedStorage,
-                        onChanged: (value) =>
-                            setState(() => _selectedStorage = value),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildCommentField(localizations),
-                      const SizedBox(height: 16),
-                      _buildGoodsSection(localizations),
-                      const SizedBox(height: 16),
-                    ],
+        child: SafeArea(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    controller: _scrollController,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 8),
+                        _buildDateField(localizations),
+                        const SizedBox(height: 16),
+                        LeadRadioGroupWidget(
+                          selectedLead: _selectedLead?.id?.toString(),
+                          onSelectLead: (lead) =>
+                              setState(() => _selectedLead = lead),
+                          showDebt: true,
+                        ),
+                        const SizedBox(height: 16),
+                        StorageWidget(
+                          selectedStorage: _selectedStorage,
+                          onChanged: (value) =>
+                              setState(() => _selectedStorage = value),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildCommentField(localizations),
+                        const SizedBox(height: 16),
+                        _buildGoodsSection(localizations),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              _buildActionButtons(localizations),
-            ],
+                _buildActionButtons(localizations),
+              ],
+            ),
           ),
         ),
       ),
@@ -474,7 +475,6 @@ class CreateClientReturnDocumentScreenState extends State<CreateClientReturnDocu
   }
 
   AppBar _buildAppBar(AppLocalizations localizations) {
-    // ✅ НОВОЕ: Показываем сумму в AppBar, если есть товары
     final hasItems = _items.isNotEmpty;
     final total = _totalAmount;
 
@@ -483,15 +483,18 @@ class CreateClientReturnDocumentScreenState extends State<CreateClientReturnDocu
       forceMaterialTransparency: true,
       elevation: 0,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios,
-            color: Color(0xff1E2E52), size: 24),
+        icon: const Icon(Icons.arrow_back_ios, color: Color(0xff1E2E52), size: 24),
         onPressed: () => Navigator.pop(context),
       ),
-      title: hasItems
-          ? null // Убираем заголовок, когда показываем сумму
-          : Text(
+      title: Row(
+        children: [
+          // Заголовок — всегда виден, но усекается при нехватке места
+          Flexible(
+            child: Text(
               localizations.translate('create_client_return') ??
                   'Создать возврат от клиента',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis, // ← вот ключевое!
               style: const TextStyle(
                 fontSize: 20,
                 fontFamily: 'Gilroy',
@@ -499,40 +502,42 @@ class CreateClientReturnDocumentScreenState extends State<CreateClientReturnDocu
                 color: Color(0xff1E2E52),
               ),
             ),
-      centerTitle: false,
-      actions: hasItems
-          ? [
-              // ✅ НОВОЕ: Показываем общую сумму справа
-              Container(
-                margin: const EdgeInsets.only(right: 16),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: const Color(0xff4CAF50).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.account_balance_wallet_outlined,
-                      color: Color(0xff4CAF50),
-                      size: 18,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      total.toStringAsFixed(0),
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xff4CAF50),
-                      ),
-                    ),
-                  ],
-                ),
+          ),
+          if (hasItems) ...[
+            const SizedBox(width: 8), // небольшой отступ
+            Container(
+              margin: const EdgeInsets.only(right: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xff4CAF50).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
               ),
-            ]
-          : null,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.account_balance_wallet_outlined,
+                    color: Color(0xff4CAF50),
+                    size: 18,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    total.toStringAsFixed(0),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xff4CAF50),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+      centerTitle: false,
+      actions: [], // ← теперь actions пустой, всё в title
     );
   }
 
@@ -631,25 +636,24 @@ class CreateClientReturnDocumentScreenState extends State<CreateClientReturnDocu
     );
   }
 
-  Widget _buildSelectedItemCard(
-      int index, Map<String, dynamic> item, Animation<double> animation) {
+  Widget _buildSelectedItemCard(int index, Map<String, dynamic> item, Animation<double> animation) {
     final availableUnits = item['availableUnits'] as List<Unit>? ?? [];
     final variantId = item['variantId'] as int;
     final priceController = _priceControllers[variantId];
     final quantityController = _quantityControllers[variantId];
     final quantityFocusNode = _quantityFocusNodes[variantId];
-    final priceFocusNode = _priceFocusNodes[variantId]; // ✅ НОВОЕ
+    final priceFocusNode = _priceFocusNodes[variantId];
 
     return FadeTransition(
       opacity: animation,
       child: SizeTransition(
         sizeFactor: animation,
         child: Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.all(12),
+          margin: const EdgeInsets.only(bottom: 6),
+          padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(color: const Color(0xffF4F7FD)),
             boxShadow: [
               BoxShadow(
@@ -665,20 +669,6 @@ class CreateClientReturnDocumentScreenState extends State<CreateClientReturnDocu
             children: [
               Row(
                 children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: const Color(0xffF4F7FD),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.shopping_cart_outlined,
-                      color: Color(0xff4759FF),
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       item['name'] ?? '',
@@ -692,18 +682,15 @@ class CreateClientReturnDocumentScreenState extends State<CreateClientReturnDocu
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close,
-                        color: Color(0xff99A4BA), size: 18),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    onPressed: () => _removeItem(index),
+                  GestureDetector(
+                    onTap: () => _removeItem(index),
+                    child: const Icon(Icons.close, color: Color(0xff99A4BA), size: 18),
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 4),
               const Divider(height: 1, color: Color(0xFFE5E7EB)),
-              const SizedBox(height: 10),
+              const SizedBox(height: 4),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -714,8 +701,7 @@ class CreateClientReturnDocumentScreenState extends State<CreateClientReturnDocu
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            AppLocalizations.of(context)!.translate('unit') ??
-                                'Ед.',
+                            AppLocalizations.of(context)!.translate('unit') ?? 'Ед.',
                             style: const TextStyle(
                               fontSize: 11,
                               fontFamily: 'Gilroy',
@@ -724,86 +710,58 @@ class CreateClientReturnDocumentScreenState extends State<CreateClientReturnDocu
                             ),
                           ),
                           const SizedBox(height: 4),
-                          if (availableUnits.length > 1)
-                            Container(
-                              height: 48,
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 8),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF4F7FD),
-                                borderRadius: BorderRadius.circular(8),
-                                border:
-                                    Border.all(color: const Color(0xFFE5E7EB)),
-                              ),
-                              child: DropdownButtonHideUnderline(
-                                child: DropdownButton<String>(
-                                  value: item['selectedUnit'],
-                                  isDense: true,
-                                  isExpanded: true,
-                                  dropdownColor: Colors.white,
-                                  icon: const Icon(Icons.arrow_drop_down,
-                                      size: 16, color: Color(0xff4759FF)),
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontFamily: 'Gilroy',
-                                    fontWeight: FontWeight.w500,
-                                    color: Color(0xff1E2E52),
-                                  ),
-                                  items: availableUnits.map((unit) {
-                                    return DropdownMenuItem<String>(
-                                      value: unit.shortName ?? unit.name,
-                                      child: Text(unit.shortName ?? unit.name ?? ''),
-                                    );
-                                  }).toList(),
-                                  onChanged: (String? newValue) {
-                                    if (newValue != null) {
-                                      final selectedUnit =
-                                          availableUnits.firstWhere(
-                                        (unit) =>
-                                            (unit.shortName ?? unit.name) ==
-                                            newValue,
-                                      );
-                                      _updateItemUnit(
-                                          variantId, newValue, selectedUnit.id);
-                                    }
-                                  },
-                                ),
-                              ),
-                            )
-                          else
-                            Container(
-                              height: 48,
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 8),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF4F7FD),
-                                borderRadius: BorderRadius.circular(8),
-                                border:
-                                    Border.all(color: const Color(0xFFE5E7EB)),
-                              ),
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                item['selectedUnit'] ?? 'шт',
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF4F7FD),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: const Color(0xFFE5E7EB)),
+                            ),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                value: item['selectedUnit'],
+                                isDense: true,
+                                isExpanded: true,
+                                dropdownColor: Colors.white,
+                                icon: availableUnits.length > 1
+                                    ? const Icon(Icons.arrow_drop_down, size: 16, color: Color(0xff4759FF))
+                                    : const SizedBox.shrink(), // ✅ Скрываем стрелку если один элемент
                                 style: const TextStyle(
                                   fontSize: 12,
                                   fontFamily: 'Gilroy',
                                   fontWeight: FontWeight.w500,
                                   color: Color(0xff1E2E52),
                                 ),
+                                items: availableUnits.map((unit) {
+                                  return DropdownMenuItem<String>(
+                                    value: unit.shortName ?? unit.name,
+                                    child: Text(unit.shortName ?? unit.name ?? ''),
+                                  );
+                                }).toList(),
+                                onChanged: availableUnits.length > 1
+                                    ? (String? newValue) {
+                                  if (newValue != null) {
+                                    final selectedUnit = availableUnits.firstWhere(
+                                          (unit) => (unit.shortName ?? unit.name) == newValue,
+                                    );
+                                    _updateItemUnit(variantId, newValue, selectedUnit.id);
+                                  }
+                                }
+                                    : null, // ✅ Делаем неактивным если один элемент
                               ),
                             ),
+                          ),
                         ],
                       ),
                     ),
-                  if (availableUnits.isNotEmpty) const SizedBox(width: 8),
+                  if (availableUnits.isNotEmpty) const SizedBox(width: 6),
                   Expanded(
                     flex: 2,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          AppLocalizations.of(context)!.translate('quantity') ??
-                              'Кол-во',
+                          AppLocalizations.of(context)!.translate('quantity') ?? 'Кол-во',
                           style: const TextStyle(
                             fontSize: 11,
                             fontFamily: 'Gilroy',
@@ -811,40 +769,39 @@ class CreateClientReturnDocumentScreenState extends State<CreateClientReturnDocu
                             color: Color(0xff99A4BA),
                           ),
                         ),
+                        const SizedBox(height: 4),
                         CompactTextField(
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                           controller: quantityController!,
-                          focusNode: quantityFocusNode, // ✅ НОВОЕ: Привязываем FocusNode
-                          hintText: AppLocalizations.of(context)!
-                                  .translate('quantity') ??
-                              'Количество',
+                          focusNode: quantityFocusNode,
+                          hintText: AppLocalizations.of(context)!.translate('quantity') ?? 'Количество',
                           keyboardType: TextInputType.number,
                           inputFormatters: [
                             FilteringTextInputFormatter.digitsOnly,
                           ],
                           textAlign: TextAlign.center,
                           style: const TextStyle(
-                            fontSize: 13,
+                            fontSize: 12, // ✅ ИЗМЕНЕНО: 13 -> 12 для соответствия
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w600,
                             color: Color(0xff1E2E52),
                           ),
                           hasError: _quantityErrors[variantId] == true,
-                          onChanged: (value) =>
-                              _updateItemQuantity(variantId, value),
-                          onDone: _moveToNextEmptyField, // ✅ НОВОЕ: Переход к следующему полю
+                          onChanged: (value) => _updateItemQuantity(variantId, value),
+                          onDone: _moveToNextEmptyField,
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 6),
                   Expanded(
                     flex: 3,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          AppLocalizations.of(context)!.translate('price') ??
-                              'Цена',
+                          AppLocalizations.of(context)!.translate('price') ?? 'Цена',
                           style: const TextStyle(
                             fontSize: 11,
                             fontFamily: 'Gilroy',
@@ -852,37 +809,35 @@ class CreateClientReturnDocumentScreenState extends State<CreateClientReturnDocu
                             color: Color(0xff99A4BA),
                           ),
                         ),
+                        const SizedBox(height: 4),
                         CompactTextField(
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                           controller: priceController!,
-                          focusNode: priceFocusNode, // ✅ НОВОЕ: Привязываем FocusNode
-                          hintText:
-                              AppLocalizations.of(context)!.translate('price') ??
-                                  'Цена',
-                          keyboardType:
-                              const TextInputType.numberWithOptions(decimal: true),
+                          focusNode: priceFocusNode,
+                          hintText: AppLocalizations.of(context)!.translate('price') ?? 'Цена',
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           inputFormatters: [
-                            FilteringTextInputFormatter.allow(
-                                RegExp(r'^\d*\.?\d{0,3}')),
+                            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,3}')),
                           ],
                           style: const TextStyle(
-                            fontSize: 13,
+                            fontSize: 12, // ✅ ИЗМЕНЕНО: 13 -> 12 для соответствия
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w600,
                             color: Color(0xff1E2E52),
                           ),
                           hasError: _priceErrors[variantId] == true,
                           onChanged: (value) => _updateItemPrice(variantId, value),
-                          onDone: _moveToNextEmptyField, // ✅ НОВОЕ: Переход к следующему полю
+                          onDone: _moveToNextEmptyField,
                         ),
                       ],
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF4F7FD),
                   borderRadius: BorderRadius.circular(8),
@@ -894,8 +849,7 @@ class CreateClientReturnDocumentScreenState extends State<CreateClientReturnDocu
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          AppLocalizations.of(context)!.translate('total') ??
-                              'Сумма',
+                          AppLocalizations.of(context)!.translate('total') ?? 'Сумма',
                           style: const TextStyle(
                             fontSize: 12,
                             fontFamily: 'Gilroy',
@@ -980,7 +934,6 @@ class CreateClientReturnDocumentScreenState extends State<CreateClientReturnDocu
     );
   }
 
-  // ✅ ИЗМЕНЕНО: Две кнопки в РАЗНЫХ линиях, первая с белым фоном и зелёной границей
   Widget _buildActionButtons(AppLocalizations localizations) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -995,99 +948,96 @@ class CreateClientReturnDocumentScreenState extends State<CreateClientReturnDocu
           ),
         ],
       ),
-      child: Column(
+      child: Row(
         children: [
-          // ✅ НОВОЕ: Первая кнопка "Сохранить и провести" - белый фон с зелёной границей
-          Container(
-            width: double.infinity,
-            height: 48,
-            decoration: BoxDecoration(
-              border: Border.all(color: const Color(0xff4CAF50), width: 1.5),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
+          // Первая кнопка "Сохранить и провести" - белый фон с зелёной границей
+          Expanded(
+            child: Container(
+              height: 48, // Уменьшено с 48 до 40 для компактности
+              decoration: BoxDecoration(
+                border: Border.all(color: const Color(0xff4CAF50), width: 1.5),
                 borderRadius: BorderRadius.circular(12),
-                onTap: _isLoading ? null : _createAndApproveDocument,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.check_circle_outline,
-                        size: 20,
-                        color: _isLoading
-                            ? const Color(0xff99A4BA)
-                            : const Color(0xff4CAF50),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        localizations.translate('save_and_approve') ??
-                            'Сохранить и провести',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w600,
-                          color: _isLoading
-                              ? const Color(0xff99A4BA)
-                              : const Color(0xff4CAF50),
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: _isLoading ? null : _createAndApproveDocument,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8), // Уменьшено с 16 до 8
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.check_circle_outline,
+                          size: 18, // Уменьшено с 20 до 18
+                          color: _isLoading ? const Color(0xff99A4BA) : const Color(0xff4CAF50),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 6), // Уменьшено с 8 до 6
+                        Text(
+                          localizations.translate('save_and_approve') ?? 'Сохранить и провести',
+                          style: TextStyle(
+                            fontSize: 14, // Уменьшено с 16 до 14
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w600,
+                            color: _isLoading ? const Color(0xff99A4BA) : const Color(0xff4CAF50),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 12),
-          // ✅ НОВОЕ: Вторая кнопка "Сохранить" - синяя, на всю ширину
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: ElevatedButton(
-              onPressed: _isLoading ? null : _saveDocument,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xff4759FF),
-                disabledBackgroundColor: const Color(0xffE5E7EB),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+          const SizedBox(width: 12), // Пространство между кнопками
+          // Вторая кнопка "Сохранить" - синяя
+          Expanded(
+            child: SizedBox(
+              height: 48, // Уменьшено с 48 до 40 для компактности
+              child: ElevatedButton(
+                onPressed: _isLoading ? null : _saveDocument,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xff4759FF),
+                  disabledBackgroundColor: const Color(0xffE5E7EB),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
                 ),
-                elevation: 0,
-              ),
-              child: _isLoading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                child: _isLoading
+                    ? const SizedBox(
+                  width: 18, // Уменьшено с 20 до 18
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+                    : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.save_outlined, color: Colors.white, size: 18), // Уменьшено с 20 до 18
+                    const SizedBox(width: 6), // Уменьшено с 8 до 6
+                    Text(
+                      localizations.translate('save') ?? 'Сохранить',
+                      style: const TextStyle(
+                        fontSize: 14, // Уменьшено с 16 до 14
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
                       ),
-                    )
-                  : Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.save_outlined,
-                            color: Colors.white, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          localizations.translate('save') ?? 'Сохранить',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
                     ),
+                  ],
+                ),
+              ),
             ),
           ),
         ],
       ),
     );
   }
+
 
   void _createAndApproveDocument() {
     _createDocument(approve: true);
