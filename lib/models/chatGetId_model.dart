@@ -1,4 +1,3 @@
-
 import 'package:crm_task_manager/models/chats_model.dart';
 
 class ChatsGetId {
@@ -8,7 +7,8 @@ class ChatsGetId {
   final String? type;
   final List<ChatUser> chatUsers;
   final Group? group;
-  final String channelName; // Добавлено для channel.name (telegram_account и т.д.)
+  final String channelName;
+  final String? referralBody; // Добавлено: referral_body из JSON
 
   ChatsGetId({
     required this.id,
@@ -18,16 +18,15 @@ class ChatsGetId {
     required this.chatUsers,
     this.group,
     required this.channelName,
+    this.referralBody,
   });
 
   factory ChatsGetId.fromJson(Map<String, dynamic> json) {
-    // Теперь json уже есть 'result' внутри, но в методе getChatById мы передаём json['result']
-    final data = json; // Предполагаем, что json - это уже result
+    final data = json;
     if (data == null) {
       throw Exception("Ответ не содержит данных");
     }
 
-    // Парсинг chatUsers: если есть user, создаём ChatUser с type 'user', иначе пустой список
     List<ChatUser> chatUsersList = [];
     if (data['user'] != null) {
       final userJson = data['user'];
@@ -49,12 +48,11 @@ class ChatsGetId {
       ];
     }
 
-    // Имя: для lead из integration.name или channel.name, иначе пусто
     String name = '';
     String channelName = '';
     if (data['type'] == 'lead') {
-      channelName = data['channel']?['name'] ?? 'telegram_account'; // По умолчанию из примера
-      name = data['integration']?['name'] ?? channelName; // Fallback, но integration может быть неполным
+      channelName = data['channel']?['name'] ?? 'telegram_account';
+      name = data['integration']?['name'] ?? channelName;
     }
 
     return ChatsGetId(
@@ -65,6 +63,7 @@ class ChatsGetId {
       chatUsers: chatUsersList,
       group: data['group'] != null ? Group.fromJson(data['group']) : null,
       channelName: channelName,
+      referralBody: data['referral_body'], // Парсим как есть
     );
   }
 }
