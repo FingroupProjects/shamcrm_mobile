@@ -87,6 +87,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   String? channelName; // Новое поле для хранения channel.name
   bool _hasMarkedMessagesAsRead = false;
   bool _isRecordingInProgress = false; // Флаг для отслеживания состояния записи
+  String? referralBody; // Новое поле для хранения referral_body всего чата
   
 
   void _onSearchChanged(String query) {
@@ -419,11 +420,15 @@ Future<void> _fetchIntegration() async {
   try {
     debugPrint('ChatSmsScreen: Fetching integration data for chatId: ${widget.chatId}');
     
-    // Сначала пытаемся получить данные чата
     final chatData = await widget.apiService.getChatById(widget.chatId);
     debugPrint('ChatSmsScreen: Chat data received');
     
-    // Пытаемся получить интеграцию отдельным запросом
+    // Сохраняем referralBody из chatData
+    setState(() {
+      referralBody = chatData.referralBody;
+      prefs.setString('referral_body_${widget.chatId}', referralBody ?? '');
+    });
+    
     IntegrationForLead? integration;
     try {
       integration = await widget.apiService.getIntegrationForLead(widget.chatId);
@@ -434,22 +439,17 @@ Future<void> _fetchIntegration() async {
     }
     
     setState(() {
-      // Используем данные интеграции, если они есть
       if (integration != null) {
         integrationUsername = integration.username ?? 
             AppLocalizations.of(context)!.translate('unknown_channel');
-        
-        // Пытаемся определить тип канала из данных интеграции
-        channelName = _determineChannelType(integration) ?? 'unknown';
+        channelName = _determineChannelType(integration) ?? chatData.channelName;
       } else {
-        // Fallback к данным чата, если они доступны
         integrationUsername = chatData.name.isNotEmpty 
             ? chatData.name 
             : AppLocalizations.of(context)!.translate('unknown_channel');
-        channelName = 'chat'; // По умолчанию для обычного чата
+        channelName = chatData.channelName;
       }
       
-      // Сохраняем в SharedPreferences для быстрого доступа
       prefs.setString('integration_username_${widget.chatId}', integrationUsername!);
       prefs.setString('channel_name_${widget.chatId}', channelName!);
     });
@@ -459,11 +459,11 @@ Future<void> _fetchIntegration() async {
   } catch (e) {
     debugPrint('ChatSmsScreen: Error fetching integration data: $e');
     
-    // Пытаемся загрузить из кеша
     setState(() {
       integrationUsername = prefs.getString('integration_username_${widget.chatId}') ?? 
           AppLocalizations.of(context)!.translate('unknown_channel');
       channelName = prefs.getString('channel_name_${widget.chatId}') ?? 'unknown';
+      referralBody = prefs.getString('referral_body_${widget.chatId}');
     });
     
     debugPrint('ChatSmsScreen: Using cached integration data');
@@ -1340,6 +1340,7 @@ Widget messageListUi() {
                         focusNode: _focusNode,
                         isRead: message.isRead,
                         isFirstMessage: isFirstMessage,
+                        referralBody: referralBody, // Передаем
                       ),
                     );
                     return Column(
@@ -1850,6 +1851,7 @@ class MessageItemWidget extends StatelessWidget {
   final FocusNode focusNode;
   final bool isRead;
   final bool isFirstMessage;
+  final String? referralBody; // Новый параметр: referral_body чата
 
   MessageItemWidget({
     super.key,
@@ -1864,6 +1866,7 @@ class MessageItemWidget extends StatelessWidget {
     required this.focusNode,
     required this.isRead,
     required this.isFirstMessage,
+    this.referralBody,
   });
 
   @override
@@ -1893,16 +1896,14 @@ class MessageItemWidget extends StatelessWidget {
   }
 
   Widget _buildMessageContent(BuildContext context) {
-    String? replyMessageText;
-    if (isFirstMessage &&
-        message.referralBody != null &&
-        message.referralBody!.isNotEmpty) {
-      replyMessageText = '${message.referralBody}';
-    } else if (message.forwardedMessage != null) {
-      replyMessageText = message.forwardedMessage!.type == 'voice'
-          ? "Голосовое сообщение"
-          : message.forwardedMessage!.text;
-    }
+   String? replyMessageText;
+  if (isFirstMessage && referralBody != null && referralBody!.isNotEmpty) {
+    replyMessageText = referralBody; // Выводим как есть из чата
+  } else if (message.forwardedMessage != null) {
+    replyMessageText = message.forwardedMessage!.type == 'voice'
+        ? "Голосовое сообщение"
+        : message.forwardedMessage!.text;
+  }
 
     switch (message.type) {
       case 'text':

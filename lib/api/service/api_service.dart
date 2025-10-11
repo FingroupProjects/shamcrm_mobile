@@ -5474,42 +5474,43 @@ Future<String> getDynamicBaseUrlFixed() async {
   // Если кеша нет, используем старую логику
   return await getDynamicBaseUrl();
 }
-  Future<ChatsGetId> getChatById(int chatId) async {
-    final token = await getToken();
-    String path = '/v2/chat/$chatId';
-    path = await _appendQueryParams(path);
+Future<ChatsGetId> getChatById(int chatId) async {
+  final token = await getToken();
+  String path = '/v2/chat/$chatId';
+  path = await _appendQueryParams(path);
 
-    if (kDebugMode) {
-      //print('ApiService.getChatById: Generated path: $path');
-    }
-
-    final response = await http.get(
-      Uri.parse('$baseUrl$path'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'User-Agent': 'FlutterApp/1.0',
-        'Cache-Control': 'no-cache',
-      },
-    );
-
-    if (kDebugMode) {
-      //print('ApiService.getChatById: Response status: ${response.statusCode}');
-      //print('ApiService.getChatById: Response body: ${response.body}');
-    }
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['result'] != null) {
-        return ChatsGetId.fromJson(data['result']);
-      } else {
-        throw Exception('Результат отсутствует в ответе');
-      }
-    } else {
-      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
-    }
+  if (kDebugMode) {
+    //print('ApiService.getChatById: Generated path: $path');
   }
+
+  final response = await http.get(
+    Uri.parse('$baseUrl$path'),
+    headers: {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'User-Agent': 'FlutterApp/1.0',
+      'Cache-Control': 'no-cache',
+    },
+  );
+
+  if (kDebugMode) {
+    //print('ApiService.getChatById: Response status: ${response.statusCode}');
+    //print('ApiService.getChatById: Response body: ${response.body}');
+  }
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['result'] != null) {
+      // Передаём именно result в fromJson
+      return ChatsGetId.fromJson(data['result']);
+    } else {
+      throw Exception('Результат отсутствует в ответе');
+    }
+  } else {
+    throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+  }
+}
 
   Future<String> sendMessages(List<int> messageIds) async {
     final token = await getToken();
