@@ -1,3 +1,4 @@
+
 import 'package:crm_task_manager/models/chats_model.dart';
 
 class ChatsGetId {
@@ -6,7 +7,8 @@ class ChatsGetId {
   final bool canSendMessage;
   final String? type;
   final List<ChatUser> chatUsers;
-  final Group? group; // Добавляем поле group
+  final Group? group;
+  final String channelName; // Добавлено для channel.name (telegram_account и т.д.)
 
   ChatsGetId({
     required this.id,
@@ -15,30 +17,57 @@ class ChatsGetId {
     this.type,
     required this.chatUsers,
     this.group,
+    required this.channelName,
   });
 
   factory ChatsGetId.fromJson(Map<String, dynamic> json) {
-    final data = json['result'];
+    // Теперь json уже есть 'result' внутри, но в методе getChatById мы передаём json['result']
+    final data = json; // Предполагаем, что json - это уже result
     if (data == null) {
-      throw Exception("Ответ не содержит поля 'result'");
+      throw Exception("Ответ не содержит данных");
     }
-    var chatUsersList = (data['chatUsers'] as List)
-        .map((chatUserJson) => ChatUser.fromJson(chatUserJson))
-        .toList();
+
+    // Парсинг chatUsers: если есть user, создаём ChatUser с type 'user', иначе пустой список
+    List<ChatUser> chatUsersList = [];
+    if (data['user'] != null) {
+      final userJson = data['user'];
+      final participant = Participant(
+        id: userJson['id'] ?? 0,
+        name: userJson['name'] ?? '',
+        login: userJson['login'] ?? '',
+        email: userJson['email'] ?? '',
+        phone: userJson['phone'] ?? '',
+        image: userJson['image'] ?? '',
+        lastSeen: userJson['last_seen'],
+        deletedAt: userJson['deleted_at'],
+      );
+      chatUsersList = [
+        ChatUser(
+          type: 'user',
+          participant: participant,
+        )
+      ];
+    }
+
+    // Имя: для lead из integration.name или channel.name, иначе пусто
+    String name = '';
+    String channelName = '';
+    if (data['type'] == 'lead') {
+      channelName = data['channel']?['name'] ?? 'telegram_account'; // По умолчанию из примера
+      name = data['integration']?['name'] ?? channelName; // Fallback, но integration может быть неполным
+    }
 
     return ChatsGetId(
       id: data['id'] ?? 0,
-      name: data['lead'] != null
-          ? data['lead']['name'] ?? 'Без имени'
-          : '',
+      name: name,
       canSendMessage: data["can_send_message"] ?? false,
       type: data['type'],
       chatUsers: chatUsersList,
-      group: data['group'] != null ? Group.fromJson(data['group']) : null, // Парсинг group
+      group: data['group'] != null ? Group.fromJson(data['group']) : null,
+      channelName: channelName,
     );
   }
 }
-
 
 class ChatUser {
   final String type;

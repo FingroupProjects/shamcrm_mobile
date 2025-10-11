@@ -332,7 +332,7 @@ class Author {
       jobTitle: json['job_title'],
       hasImage: IncomingDocument._parseInt(json['has_image']),
       isFirstLogin: IncomingDocument._parseInt(json['is_first_login']),
-      internalNumber: json['internal_number'],
+      internalNumber: json['internal_number']?.toString(),  // ← Добавлена конвертация
       departmentId: IncomingDocument._parseInt(json['department_id']),
       uniqueId: json['unique_id'],
       shiftId: IncomingDocument._parseInt(json['shift_id']),
