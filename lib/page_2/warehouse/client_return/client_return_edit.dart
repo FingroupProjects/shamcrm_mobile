@@ -430,40 +430,42 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
               _showSnackBar(state.message, false);
             }
           },
-          child: Form(
-            key: _formKey,
-            child: Column(
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 8),
-                        _buildDateField(localizations),
-                        const SizedBox(height: 16),
-                        LeadRadioGroupWidget(
-                          selectedLead: _selectedLead?.id?.toString(),
-                          onSelectLead: (lead) => setState(() => _selectedLead = lead),
-                          showDebt: true,
-                        ),
-                        const SizedBox(height: 16),
-                        StorageWidget(
-                          selectedStorage: _selectedStorage,
-                          onChanged: (value) => setState(() => _selectedStorage = value),
-                        ),
-                        const SizedBox(height: 16),
-                        _buildCommentField(localizations),
-                        const SizedBox(height: 16),
-                        _buildGoodsSection(localizations),
-                      ],
+          child: SafeArea(
+            child: Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 8),
+                          _buildDateField(localizations),
+                          const SizedBox(height: 16),
+                          LeadRadioGroupWidget(
+                            selectedLead: _selectedLead?.id?.toString(),
+                            onSelectLead: (lead) => setState(() => _selectedLead = lead),
+                            showDebt: true,
+                          ),
+                          const SizedBox(height: 16),
+                          StorageWidget(
+                            selectedStorage: _selectedStorage,
+                            onChanged: (value) => setState(() => _selectedStorage = value),
+                          ),
+                          const SizedBox(height: 16),
+                          _buildCommentField(localizations),
+                          const SizedBox(height: 16),
+                          _buildGoodsSection(localizations),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                _buildActionButtons(localizations),
-              ],
+                  _buildActionButtons(localizations),
+                ],
+              ),
             ),
           ),
         ),

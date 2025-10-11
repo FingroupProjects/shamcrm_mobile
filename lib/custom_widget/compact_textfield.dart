@@ -15,6 +15,8 @@ class CompactTextField extends StatefulWidget {
   final bool hasError;
   final FocusNode? focusNode; // ✅ НОВОЕ: Поддержка внешнего FocusNode
   final VoidCallback? onDone; // ✅ НОВОЕ: Callback при нажатии "Готово"
+  final EdgeInsets? contentPadding; // ✅ НОВОЕ: Параметр для контроля padding
+  final bool? isDense; // ✅ НОВОЕ: Параметр для контроля плотности
 
   const CompactTextField({
     required this.controller,
@@ -28,8 +30,10 @@ class CompactTextField extends StatefulWidget {
     this.hasError = false,
     this.focusNode, // ✅ НОВОЕ
     this.onDone, // ✅ НОВОЕ
-    Key? key,
-  }) : super(key: key);
+    this.contentPadding, // ✅ НОВОЕ
+    this.isDense, // ✅ НОВОЕ
+    super.key,
+  });
 
   @override
   State<CompactTextField> createState() => _CompactTextFieldState();
@@ -45,7 +49,7 @@ class _CompactTextFieldState extends State<CompactTextField> {
     super.initState();
     // ✅ НОВОЕ: Создаём внутренний FocusNode только если не передан извне
     _internalFocusNode = FocusNode();
-    
+
     if (Platform.isIOS) {
       _effectiveFocusNode.addListener(_handleFocusChange);
     }
@@ -165,8 +169,10 @@ class _CompactTextFieldState extends State<CompactTextField> {
               color: Color(0xff99A4BA),
             ),
             filled: true,
+            isDense: widget.isDense, // ✅ НОВОЕ: Используем переданный isDense
             fillColor: const Color(0xFFF4F7FD),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            contentPadding: widget.contentPadding ?? // ✅ НОВОЕ: Используем переданный padding или дефолтный уменьшенный
+                const EdgeInsets.symmetric(horizontal: 8, vertical: 6), // ✅ ИЗМЕНЕНО: 8 -> 6
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide(
