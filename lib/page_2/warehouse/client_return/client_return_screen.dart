@@ -6,7 +6,8 @@ import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/page_2/money/widgets/error_dialog.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_return/client_return_card.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_return/client_return_create.dart';
-import 'package:crm_task_manager/page_2/warehouse/client_return/client_return_details.dart'; // Добавь импорт Details
+import 'package:crm_task_manager/page_2/warehouse/client_return/client_return_details.dart';
+import 'package:crm_task_manager/page_2/warehouse/client_sale/client_sale_confirm_dialog.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -372,11 +373,45 @@ class _ClientReturnScreenState extends State<ClientReturnScreen> {
                   }
                 });
               }
+            } else if (state is ClientReturnRestoreSuccess) {
+              debugPrint("ClientReturnScreen.Bloc.State.ClientReturnRestoreSuccess: ${_clientReturnBloc.state}");
+              if (mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && context.mounted) {
+                    _showSnackBar(state.message, true);
+                    setState(() {
+                      _isRefreshing = true;
+                    });
+                    _clientReturnBloc.add(FetchClientReturns(
+                        forceRefresh: true, filters: _currentFilters));
+                  }
+                });
+              }
+            } else if (state is ClientReturnRestoreError) {
+              if (mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && context.mounted) {
+                    if (state.statusCode == 409) {
+                      showSimpleErrorDialog(
+                          context,
+                          localizations?.translate('error') ?? 'Ошибка',
+                          state.message,
+                        errorDialogEnum: ErrorDialogEnum.clientReturnApprove,
+                      );
+                      _clientReturnBloc.add(FetchClientReturns(
+                          forceRefresh: true, filters: _currentFilters));
+                      return;
+                    }
+                    _showSnackBar(state.message, false);
+                  }
+                });
+              }
             }
           },
           child: BlocBuilder<ClientReturnBloc, ClientReturnState>(
             builder: (context, state) {
-              if (state is ClientReturnLoading || state is ClientReturnDeleteLoading) {
+              if (_isInitialLoad || state is ClientReturnLoading || state is ClientReturnDeleteLoading ||
+                  state is ClientReturnRestoreLoading || _isRefreshing) {
                 return Center(
                   child: PlayStoreImageLoading(
                     size: 80.0,
@@ -410,7 +445,9 @@ class _ClientReturnScreenState extends State<ClientReturnScreen> {
                 color: const Color(0xff1E2E52),
                 backgroundColor: Colors.white,
                 onRefresh: _onRefresh,
-                child: ListView.builder(
+                child: ListView.separated(
+                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                  separatorBuilder: (context, index) => const SizedBox(height: 10),
                   controller: _scrollController,
                   physics: const AlwaysScrollableScrollPhysics(),
                   itemCount: currentData.length + (_hasReachedMax ? 0 : 1),
@@ -429,15 +466,17 @@ class _ClientReturnScreenState extends State<ClientReturnScreen> {
                           : const SizedBox.shrink();
                     }
 
-                    Widget item = _hasDeletePermission
+                    return _hasDeletePermission
                         ? Dismissible(
                       key: Key(currentData[index].id.toString()),
+                      // Свайп только справа налево для обоих действий
                       direction: DismissDirection.endToStart,
+
                       background: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         decoration: BoxDecoration(
-                          color: Colors.red,
+                          color: currentData[index].deletedAt == null ? Colors.red : const Color(0xFF2196F3),
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
@@ -448,18 +487,84 @@ class _ClientReturnScreenState extends State<ClientReturnScreen> {
                           ],
                         ),
                         alignment: Alignment.centerRight,
-                        child: const Icon(Icons.delete, color: Colors.white, size: 24),
+                        child: Icon(
+                          currentData[index].deletedAt == null 
+                              ? Icons.delete 
+                              : Icons.restore_from_trash,
+                          color: Colors.white,
+                          size: 24,
+                        ),
                       ),
+
                       confirmDismiss: (direction) async {
-                        return currentData[index].deletedAt == null;
+                        final isDeleted = currentData[index].deletedAt != null;
+                        final docNumber = currentData[index].docNumber ?? 'N/A';
+
+                        if (isDeleted) {
+                          return await DocumentConfirmDialog.showRestoreConfirmation(
+                            context,
+                            docNumber,
+                          );
+                        } else {
+                          return await DocumentConfirmDialog.showDeleteConfirmation(
+                            context,
+                            docNumber,
+                          );
+                        }
                       },
                       onDismissed: (direction) {
-                        debugPrint("🗑️ [UI] Удаление документа ID: ${currentData[index].id}");
-                        _clientReturnBloc.add(DeleteClientReturnDocument(
-                          currentData[index].id!,
-                          shouldReload: true,
-                        ));
+                        final isDeleted = currentData[index].deletedAt != null;
+                        
+                        if (isDeleted) {
+                          // RESTORE - для удалённых документов
+                          debugPrint("♻️ [UI] Восстановление документа ID: ${currentData[index].id}");
+                          _clientReturnBloc.add(RestoreClientReturnDocument(
+                            currentData[index].id!,
+                            localizations!,
+                          ));
+                        } else {
+                          // DELETE - для активных документов
+                          debugPrint("🗑️ [UI] Удаление документа ID: ${currentData[index].id}");
+                          _clientReturnBloc.add(DeleteClientReturnDocument(
+                            currentData[index].id!,
+                            localizations!,
+                            shouldReload: true,
+                          ));
+                        }
                       },
+                      
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: ClientReturnCard(
+                          document: currentData[index],
+                          onTap: () {
+                            if (!mounted) return;
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (ctx) => BlocProvider.value(
+                                  value: _clientReturnBloc,
+                                  child: ClientReturnDocumentDetailsScreen(
+                                    documentId: currentData[index].id!,
+                                    docNumber: currentData[index].docNumber ?? 'N/A',
+                                    hasUpdatePermission: _hasUpdatePermission,
+                                    hasDeletePermission: _hasDeletePermission,
+                                    onDocumentUpdated: () {
+                                      _clientReturnBloc.add(FetchClientReturns(
+                                        forceRefresh: true,
+                                        filters: _currentFilters,
+                                      ));
+                                    },
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    )
+                        : ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
                       child: ClientReturnCard(
                         document: currentData[index],
                         onTap: () {
@@ -486,37 +591,6 @@ class _ClientReturnScreenState extends State<ClientReturnScreen> {
                           );
                         },
                       ),
-                    )
-                        : ClientReturnCard(
-                      document: currentData[index],
-                      onTap: () {
-                        if (!mounted) return;
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (ctx) => BlocProvider.value(
-                              value: _clientReturnBloc,
-                              child: ClientReturnDocumentDetailsScreen(
-                                documentId: currentData[index].id!,
-                                docNumber: currentData[index].docNumber ?? 'N/A',
-                                hasUpdatePermission: _hasUpdatePermission,
-                                hasDeletePermission: _hasDeletePermission,
-                                onDocumentUpdated: () {
-                                  _clientReturnBloc.add(FetchClientReturns(
-                                    forceRefresh: true,
-                                    filters: _currentFilters,
-                                  ));
-                                },
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    );
-
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                      child: item,
                     );
                   },
                 ),

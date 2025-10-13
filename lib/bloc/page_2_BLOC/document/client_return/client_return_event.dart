@@ -24,12 +24,13 @@ class FetchClientReturns extends ClientReturnEvent {
 
 class DeleteClientReturnDocument extends ClientReturnEvent {
   final int documentId;
+  final AppLocalizations localizations;
   final bool shouldReload;
 
-  const DeleteClientReturnDocument(this.documentId, {this.shouldReload = true});
+  const DeleteClientReturnDocument(this.documentId, this.localizations, {this.shouldReload = true});
 
   @override
-  List<Object> get props => [documentId, shouldReload];
+  List<Object> get props => [documentId, localizations, shouldReload];
 }
 
 class CreateClientReturnDocument extends ClientReturnEvent {
@@ -98,4 +99,14 @@ class UpdateClientReturnDocument extends ClientReturnEvent {
         organizationId,
         salesFunnelId
       ];
+}
+
+class RestoreClientReturnDocument extends ClientReturnEvent {
+  final int documentId;
+  final AppLocalizations localizations;
+
+  const RestoreClientReturnDocument(this.documentId, this.localizations);
+
+  @override
+  List<Object> get props => [documentId, localizations];
 }

@@ -4,6 +4,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../models/api_exception_model.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
 part 'client_return_event.dart';
 part 'client_return_state.dart';
@@ -20,7 +21,7 @@ class ClientReturnBloc extends Bloc<ClientReturnEvent, ClientReturnState> {
     on<CreateClientReturnDocument>(_onCreateClientReturnDocument);
     on<DeleteClientReturnDocument>(_delete);
     on<UpdateClientReturnDocument>(_onUpdateClientReturnDocument);
-
+    on<RestoreClientReturnDocument>(_onRestoreClientReturnDocument);
   }
 
   _onFetchData(FetchClientReturns event, Emitter<ClientReturnState> emit) async {
@@ -105,15 +106,19 @@ _delete(DeleteClientReturnDocument event, Emitter<ClientReturnState> emit) async
   }
 
   try {
-    await apiService.deleteClientReturnDocument(event.documentId);
+    final result = await apiService.deleteClientReturnDocument(event.documentId);
     
-    _allData.removeWhere((doc) => doc.id == event.documentId);
-    
-    await Future.delayed(const Duration(milliseconds: 100));
-    emit(ClientReturnDeleteSuccess(
-      'Документ успешно удален',
-      shouldReload: event.shouldReload || isLastElement
-    ));
+    if (result['result'] == 'Success') {
+      _allData.removeWhere((doc) => doc.id == event.documentId);
+      
+      await Future.delayed(const Duration(milliseconds: 100));
+      emit(ClientReturnDeleteSuccess(
+        'Документ успешно удален',
+        shouldReload: event.shouldReload || isLastElement
+      ));
+    } else {
+      emit(const ClientReturnDeleteError('Не удалось удалить документ'));
+    }
   } catch (e) {
     if (e is ApiException) {
       emit(ClientReturnDeleteError(
@@ -132,6 +137,30 @@ _delete(DeleteClientReturnDocument event, Emitter<ClientReturnState> emit) async
     ));
   }
 }
+
+  _onRestoreClientReturnDocument(
+      RestoreClientReturnDocument event, Emitter<ClientReturnState> emit) async {
+    emit(ClientReturnRestoreLoading());
+    
+    try {
+      final result = await apiService.restoreClientReturnDocument(event.documentId);
+      if (result['result'] == 'Success') {
+        await Future.delayed(const Duration(milliseconds: 100));
+        emit(const ClientReturnRestoreSuccess('Документ успешно восстановлен'));
+      } else {
+        emit(const ClientReturnRestoreError('Не удалось восстановить документ'));
+      }
+    } catch (e) {
+      if (e is ApiException) {
+        emit(ClientReturnRestoreError(
+          'Ошибка при восстановлении документа: ${e.toString()}',
+          statusCode: e.statusCode
+        ));
+      } else {
+        emit(ClientReturnRestoreError('Ошибка при восстановлении документа: ${e.toString()}'));
+      }
+    }
+  }
 
   _onUpdateClientReturnDocument(
       UpdateClientReturnDocument event, Emitter<ClientReturnState> emit) async {

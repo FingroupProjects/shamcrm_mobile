@@ -43,11 +43,20 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
           print('🟢 LeadWidget: postFrameCallback - state=${state.runtimeType}');
         }
 
-        // ВСЕГДА загружаем свежие данные при открытии виджета
-        if (kDebugMode) {
-          print('🟢 LeadWidget: Force refresh - Dispatching RefreshAllLeadEv(showDebt=${widget.showDebt})');
+        if (state is GetAllLeadSuccess) {
+          leadsList = state.dataLead.result ?? [];
+          if (kDebugMode) {
+            print('🟢 LeadWidget: Found cached data - ${leadsList.length} leads');
+          }
+          _updateSelectedLeadData();
         }
-        context.read<GetAllLeadBloc>().add(RefreshAllLeadEv(showDebt: widget.showDebt));
+
+        if (state is! GetAllLeadSuccess) {
+          if (kDebugMode) {
+            print('🟢 LeadWidget: Dispatching GetAllLeadEv(showDebt=${widget.showDebt})');
+          }
+          context.read<GetAllLeadBloc>().add(GetAllLeadEv(showDebt: widget.showDebt));
+        }
       }
     });
   }
