@@ -15,6 +15,9 @@ import '../../money/widgets/error_dialog.dart';
 import 'incoming_document_create_screen.dart';
 import 'incoming_document_details_screen.dart';
 
+import 'package:crm_task_manager/page_2/warehouse/client_sale/client_sale_confirm_dialog.dart';
+
+
 class IncomingScreen extends StatefulWidget {
   final int? organizationId;
 
@@ -32,9 +35,11 @@ class _IncomingScreenState extends State<IncomingScreen> {
   Map<String, dynamic> _currentFilters = {};
   String? _search;
   late IncomingBloc _incomingBloc;
+  bool _isInitialLoad = true; // НОВОЕ: Как в client_sales
   bool _isLoadingMore = false;
   bool _hasReachedMax = false;
   bool _selectionMode = false;
+  bool _isRefreshing = false; // НОВОЕ: Для consistency
 
   // НОВОЕ: Флаги прав доступа
   bool _hasCreatePermission = false;
@@ -82,10 +87,10 @@ class _IncomingScreenState extends State<IncomingScreen> {
       _currentFilters = Map.from(filters);
       _hasReachedMax = false;
       _isLoadingMore = false;
+      _isSearching = false;
+      _searchController.clear();
+      _search = null;
     });
-
-    _searchController.clear();
-    _search = null;
 
     _incomingBloc.add(FetchIncoming(
       filters: filters,
@@ -99,6 +104,7 @@ class _IncomingScreenState extends State<IncomingScreen> {
       _currentFilters.clear();
       _hasReachedMax = false;
       _isLoadingMore = false;
+      _isSearching = false;
       _searchController.clear();
       _search = null;
     });
@@ -141,11 +147,15 @@ class _IncomingScreenState extends State<IncomingScreen> {
   Future<void> _onRefresh() async {
     setState(() {
       _hasReachedMax = false;
+      _isSearching = false;
+      _searchController.clear();
+      _search = null;
     });
+
     _incomingBloc.add(FetchIncoming(
       forceRefresh: true,
       filters: _currentFilters,
-      search: _search,
+      search: null,
     ));
     await Future.delayed(const Duration(milliseconds: 500));
   }
@@ -288,152 +298,265 @@ class _IncomingScreenState extends State<IncomingScreen> {
             if (!mounted) return;
 
             if (state is IncomingLoaded) {
-              setState(() {
-                _hasReachedMax = state.hasReachedMax;
-                _isLoadingMore = false;
-              });
-            } else if (state is IncomingError) {
-              setState(() {
-                _isLoadingMore = false;
-              });
-              _showSnackBar(state.message, false);
-            } else if (state is IncomingCreateSuccess) {
-              _showSnackBar(state.message, true);
-            } else if (state is IncomingCreateError) {
-              if (state.statusCode == 409) {
-                showSimpleErrorDialog(
-                    context,
-                    localizations?.translate('error') ?? 'Ошибка',
-                    state.message,
-                    errorDialogEnum: ErrorDialogEnum.goodsIncomingDelete);
-                return;
-              }
-              _showSnackBar(state.message, false);
-            } else if (state is IncomingUpdateSuccess) {
-              _showSnackBar(state.message, true);
-            } else if (state is IncomingUpdateError) {
-              if (state.statusCode == 409) {
-                showSimpleErrorDialog(
-                    context,
-                    localizations?.translate('error') ?? 'Ошибка',
-                    state.message,
-                    errorDialogEnum: ErrorDialogEnum.goodsIncomingDelete);
-                return;
-              }
-              _showSnackBar(state.message, false);
-            } else if (state is IncomingApproveMassSuccess) {
-              showCustomSnackBar(
-                  context: context, message: state.message, isSuccess: true);
-              _incomingBloc.add(FetchIncoming(
-                  forceRefresh: true,
-                  filters: _currentFilters,
-                  search: _search));
-            } else if (state is IncomingApproveMassError) {
-              if (state.statusCode == 409) {
-                showSimpleErrorDialog(
-                    context,
-                    localizations?.translate('error') ?? 'Ошибка',
-                    state.message,
-                    errorDialogEnum: ErrorDialogEnum.goodsIncomingApprove);
-                return;
-              }
-              showCustomSnackBar(
-                  context: context, message: state.message, isSuccess: false);
-            } else if (state is IncomingDisapproveMassSuccess) {
-              showCustomSnackBar(
-                  context: context, message: state.message, isSuccess: true);
-              _incomingBloc.add(FetchIncoming(
-                  forceRefresh: true,
-                  filters: _currentFilters,
-                  search: _search));
-            } else if (state is IncomingDisapproveMassError) {
-              debugPrint(
-                  "[ERROR] IncomingDisapproveMassError: ${state.message}, enumType: ${ErrorDialogEnum.goodsIncomingUnapprove}");
-              if (state.statusCode == 409) {
-                showSimpleErrorDialog(
-                    context,
-                    localizations?.translate('error') ?? 'Ошибка',
-                    state.message,
-                    errorDialogEnum: ErrorDialogEnum.goodsIncomingUnapprove);
-                return;
-              }
-              showCustomSnackBar(
-                  context: context, message: state.message, isSuccess: false);
-            } else if (state is IncomingDeleteSuccess) {
-              _showSnackBar(state.message, true);
-              if (state.shouldReload) {
+              if (mounted) {
                 setState(() {
-                  _hasReachedMax = false;
+                  _hasReachedMax = state.hasReachedMax;
+                  _isInitialLoad = false;
+                  _isLoadingMore = false;
+                  _isRefreshing = false;
                 });
-                _incomingBloc.add(FetchIncoming(
-                    forceRefresh: true,
-                    filters: _currentFilters,
-                    search: _search));
+              }
+            } else if (state is IncomingError) {
+              if (mounted) {
+                setState(() {
+                  _isInitialLoad = false;
+                  _isLoadingMore = false;
+                  _isRefreshing = false;
+                });
+
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && context.mounted) {
+                    _showSnackBar(state.message, false);
+                  }
+                });
+              }
+            } else if (state is IncomingCreateSuccess) {
+              if (mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && context.mounted) {
+                    showCustomSnackBar(context: context, message: state.message, isSuccess: true);
+                    _incomingBloc.add(const FetchIncoming(forceRefresh: true));
+                  }
+                });
+              }
+            } else if (state is IncomingCreateError) {
+              if (mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && context.mounted) {
+                    if (state.statusCode == 409) {
+                      showSimpleErrorDialog(
+                          context,
+                          localizations?.translate('error') ?? 'Ошибка',
+                          state.message,
+                          errorDialogEnum: ErrorDialogEnum.goodsIncomingDelete);
+                      return;
+                    }
+                    showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+                  }
+                });
+              }
+            } else if (state is IncomingUpdateSuccess) { // ИЗМЕНЕНО: С addPostFrameCallback
+              if (mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && context.mounted) {
+                    showCustomSnackBar(context: context, message: state.message, isSuccess: true);
+                    _incomingBloc.add(FetchIncoming(
+                        forceRefresh: true,
+                        filters: _currentFilters,
+                        search: _search));
+                  }
+                });
+              }
+            } else if (state is IncomingUpdateError) {
+              if (mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && context.mounted) {
+                    if (state.statusCode == 409) {
+                      showSimpleErrorDialog(
+                          context,
+                          localizations?.translate('error') ?? 'Ошибка',
+                          state.message,
+                          errorDialogEnum: ErrorDialogEnum.goodsIncomingDelete);
+                      return;
+                    }
+                    showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+                  }
+                });
+              }
+            } else if (state is IncomingApproveMassSuccess) {
+              if (mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && context.mounted) {
+                    showCustomSnackBar(context: context, message: state.message, isSuccess: true);
+                    _incomingBloc.add(FetchIncoming(forceRefresh: true, filters: _currentFilters, search: _search));
+                  }
+                });
+              }
+            } else if (state is IncomingApproveMassError) {
+              if (mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && context.mounted) {
+                    if (state.statusCode == 409) {
+                      showSimpleErrorDialog(
+                          context,
+                          localizations?.translate('error') ?? 'Ошибка',
+                          state.message,
+                          errorDialogEnum: ErrorDialogEnum.goodsIncomingApprove);
+                      return;
+                    }
+                    showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+                  }
+                });
+              }
+            } else if (state is IncomingDisapproveMassSuccess) {
+              if (mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && context.mounted) {
+                    showCustomSnackBar(context: context, message: state.message, isSuccess: true);
+                    _incomingBloc.add(FetchIncoming(forceRefresh: true, filters: _currentFilters, search: _search));
+                  }
+                });
+              }
+            } else if (state is IncomingDisapproveMassError) {
+              if (mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && context.mounted) {
+                    debugPrint(
+                        "[ERROR] IncomingDisapproveMassError: ${state.message}, enumType: ${ErrorDialogEnum.goodsIncomingUnapprove}");
+                    if (state.statusCode == 409) {
+                      showSimpleErrorDialog(
+                          context,
+                          localizations?.translate('error') ?? 'Ошибка',
+                          state.message,
+                          errorDialogEnum: ErrorDialogEnum.goodsIncomingUnapprove);
+                      return;
+                    }
+                    showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+                  }
+                });
+              }
+            } else if (state is IncomingDeleteSuccess) {
+              debugPrint("IncomingScreen.Bloc.State.IncomingDeleteSuccess: ${_incomingBloc.state}");
+              if (mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && context.mounted) {
+                    showCustomSnackBar(context: context, message: state.message, isSuccess: true);
+                    setState(() {
+                      _isRefreshing = true; // ИЗМЕНЕНО: Как в client_sales
+                    });
+                    _incomingBloc.add(FetchIncoming(
+                        forceRefresh: true,
+                        filters: _currentFilters,
+                        search: _search));
+                  }
+                });
               }
             } else if (state is IncomingDeleteError) {
-              if (state.statusCode == 409) {
-                debugPrint(
-                    "[ERROR] IncomingDeleteError: ${state.message} enumType: ${ErrorDialogEnum.goodsIncomingDelete}");
-                showSimpleErrorDialog(
-                    context,
-                    localizations?.translate('error') ?? 'Ошибка',
-                    state.message,
-                    errorDialogEnum: ErrorDialogEnum.goodsIncomingDelete);
-                _incomingBloc.add(FetchIncoming(
-                    forceRefresh: true,
-                    filters: _currentFilters,
-                    search: _search));
-                return;
+              if (mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && context.mounted) {
+                    if (state.statusCode == 409) {
+                      showSimpleErrorDialog(
+                          context,
+                          localizations?.translate('error') ?? 'Ошибка',
+                          state.message,
+                          errorDialogEnum: ErrorDialogEnum.goodsIncomingDelete);
+                      _incomingBloc.add(FetchIncoming(forceRefresh: true, filters: _currentFilters, search: _search));
+                      return;
+                    }
+                    showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+                  }
+                });
               }
-              showCustomSnackBar(
-                  context: context, message: state.message, isSuccess: false);
+            } else if (state is IncomingRestoreSuccess) {
+              debugPrint("IncomingScreen.Bloc.State.IncomingRestoreSuccess: ${_incomingBloc.state}");
+              if (mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && context.mounted) {
+                    showCustomSnackBar(context: context, message: state.message, isSuccess: true);
+                    setState(() {
+                      _isRefreshing = true; // ИЗМЕНЕНО: Как в client_sales
+                    });
+                    _incomingBloc.add(FetchIncoming(
+                        forceRefresh: true,
+                        filters: _currentFilters,
+                        search: _search));
+                  }
+                });
+              }
+            } else if (state is IncomingRestoreError) {
+              if (mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && context.mounted) {
+                    if (state.statusCode == 409) {
+                      showSimpleErrorDialog(
+                          context,
+                          localizations?.translate('error') ?? 'Ошибка',
+                          state.message,
+                          errorDialogEnum: ErrorDialogEnum.goodsIncomingRestore);
+                      _incomingBloc.add(FetchIncoming(forceRefresh: true, filters: _currentFilters, search: _search));
+                      return;
+                    }
+                    showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+                  }
+                });
+              }
             } else if (state is IncomingDeleteMassSuccess) {
-              showCustomSnackBar(
-                  context: context, message: state.message, isSuccess: true);
-              _incomingBloc.add(FetchIncoming(
-                  forceRefresh: true,
-                  filters: _currentFilters,
-                  search: _search));
+              if (mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && context.mounted) {
+                    showCustomSnackBar(context: context, message: state.message, isSuccess: true);
+                    _incomingBloc.add(FetchIncoming(forceRefresh: true, filters: _currentFilters, search: _search));
+                  }
+                });
+              }
             } else if (state is IncomingDeleteMassError) {
-              if (state.statusCode == 409) {
-                debugPrint(
-                    "[ERROR] IncomingMassDeleteError: ${state.message} enumType: ${ErrorDialogEnum.goodsIncomingDelete}");
-                showSimpleErrorDialog(
-                    context,
-                    localizations?.translate('error') ?? 'Ошибка',
-                    state.message,
-                    errorDialogEnum: ErrorDialogEnum.goodsIncomingDelete);
-                _incomingBloc.add(FetchIncoming(
-                    forceRefresh: true,
-                    filters: _currentFilters,
-                    search: _search));
-                return;
+              if (mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && context.mounted) {
+                    if (state.statusCode == 409) {
+                      debugPrint(
+                          "[ERROR] IncomingMassDeleteError: ${state.message} enumType: ${ErrorDialogEnum.goodsIncomingDelete}");
+                      showSimpleErrorDialog(
+                          context,
+                          localizations?.translate('error') ?? 'Ошибка',
+                          state.message,
+                          errorDialogEnum: ErrorDialogEnum.goodsIncomingDelete);
+                      _incomingBloc.add(FetchIncoming(forceRefresh: true, filters: _currentFilters, search: _search));
+                      return;
+                    }
+                    showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+                  }
+                });
               }
-              showCustomSnackBar(
-                  context: context, message: state.message, isSuccess: false);
             } else if (state is IncomingRestoreMassSuccess) {
-              showCustomSnackBar(
-                  context: context, message: state.message, isSuccess: true);
-              _incomingBloc.add(FetchIncoming(
-                  forceRefresh: true,
-                  filters: _currentFilters,
-                  search: _search));
-            } else if (state is IncomingRestoreMassError) {
-              if (state.statusCode == 409) {
-                showSimpleErrorDialog(
-                    context,
-                    localizations?.translate('error') ?? 'Ошибка',
-                    state.message,
-                    errorDialogEnum: ErrorDialogEnum.goodsIncomingRestore);
-                return;
+              if (mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && context.mounted) {
+                    showCustomSnackBar(context: context, message: state.message, isSuccess: true);
+                    _incomingBloc.add(FetchIncoming(forceRefresh: true, filters: _currentFilters, search: _search));
+                  }
+                });
               }
-              showCustomSnackBar(
-                  context: context, message: state.message, isSuccess: false);
+            } else if (state is IncomingRestoreMassError) {
+              if (mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && context.mounted) {
+                    if (state.statusCode == 409) {
+                      showSimpleErrorDialog(
+                          context,
+                          localizations?.translate('error') ?? 'Ошибка',
+                          state.message,
+                          errorDialogEnum: ErrorDialogEnum.goodsIncomingRestore);
+                      return;
+                    }
+                    showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+                  }
+                });
+              }
             }
           },
           child: BlocBuilder<IncomingBloc, IncomingState>(
             builder: (context, state) {
-              if (state is IncomingLoading || state is IncomingDeleteLoading) {
+
+              debugPrint("IncomingScreen.Bloc.State.Build: ${_incomingBloc.state}");
+
+              // ИЗМЕНЕНО: Loading с _isInitialLoad
+              if (_isInitialLoad || state is IncomingLoading || state is IncomingDeleteLoading ||
+                  state is IncomingRestoreLoading || state is IncomingCreateLoading ||
+                  state is IncomingApproveMassLoading || state is IncomingDisapproveMassLoading ||
+                  state is IncomingDeleteMassLoading || state is IncomingRestoreMassLoading ||
+              _isRefreshing) {
                 return Center(
                   child: PlayStoreImageLoading(
                     size: 80.0,
@@ -489,43 +612,83 @@ class _IncomingScreenState extends State<IncomingScreen> {
                             )
                           : const SizedBox.shrink();
                     }
-                    // ИЗМЕНЕНО: Показываем Dismissible только если есть право на удаление
+                    // НОВОЕ: Dismissible только влево - delete или restore в зависимости от состояния
                     return _hasDeletePermission
                         ? Dismissible(
-                            key: Key(currentData[index].id.toString()),
-                            direction: DismissDirection.endToStart,
-                            background: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.red,
-                                borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.05),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              alignment: Alignment.centerRight,
-                              child: const Icon(Icons.delete,
-                                  color: Colors.white, size: 24),
+                      key: Key(currentData[index].id.toString()),
+                      // Свайп только справа налево для обоих действий
+                      direction: DismissDirection.endToStart,
+
+                      background: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: currentData[index].deletedAt == null ? Colors.red : const Color(0xFF2196F3),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
                             ),
-                            confirmDismiss: (direction) async {
-                              return currentData[index].deletedAt == null;
-                            },
-                            onDismissed: (direction) {
-                              print(
-                                  "🗑️ [UI] Удаление документа ID: ${currentData[index].id}");
-                              _incomingBloc.add(DeleteIncoming(
-                                currentData[index].id!,
-                                localizations!,
-                                shouldReload: true,
-                              ));
-                            },
-                            child: _buildIncomingCard(currentData, index, state),
-                          )
-                        : _buildIncomingCard(currentData, index, state);
+                          ],
+                        ),
+                        alignment: Alignment.centerRight,
+                        child: Icon(
+                          currentData[index].deletedAt == null 
+                              ? Icons.delete 
+                              : Icons.restore_from_trash,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+
+                      confirmDismiss: (direction) async {
+                        final isDeleted = currentData[index].deletedAt != null;
+                        final docNumber = currentData[index].docNumber ?? 'N/A';
+
+                        if (isDeleted) {
+                          return await DocumentConfirmDialog.showRestoreConfirmation(
+                            context,
+                            docNumber,
+                          );
+                        } else {
+                          return await DocumentConfirmDialog.showDeleteConfirmation(
+                            context,
+                            docNumber,
+                          );
+                        }
+                      },
+                      onDismissed: (direction) {
+                        final isDeleted = currentData[index].deletedAt != null;
+                        
+                        if (isDeleted) {
+                          // RESTORE - для удалённых документов
+                          debugPrint("♻️ [UI] Восстановление документа ID: ${currentData[index].id}");
+                          _incomingBloc.add(RestoreIncoming(
+                            currentData[index].id!,
+                            localizations!,
+                          ));
+                        } else {
+                          // DELETE - для активных документов
+                          debugPrint("🗑️ [UI] Удаление документа ID: ${currentData[index].id}");
+                          _incomingBloc.add(DeleteIncoming(
+                            currentData[index].id!,
+                            localizations!,
+                            shouldReload: true,
+                          ));
+                        }
+                      },
+
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: _buildIncomingCard(currentData, index, state),
+                      ),
+                    )
+                        : ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: _buildIncomingCard(currentData, index, state),
+                    );
                   },
                 ),
               );
@@ -565,62 +728,57 @@ class _IncomingScreenState extends State<IncomingScreen> {
   }
 
   Widget _buildIncomingCard(List<IncomingDocument> currentData, int index, IncomingState state) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: IncomingCard(
-        onTap: () {
-          if (_selectionMode) {
-            _incomingBloc.add(SelectDocument(currentData[index]));
+    return IncomingCard(
+      onTap: () {
+        if (_selectionMode) {
+          _incomingBloc.add(SelectDocument(currentData[index]));
 
-            final currentState = context.read<IncomingBloc>().state;
+          final currentState = context.read<IncomingBloc>().state;
 
-            if (currentState is IncomingLoaded) {
-              final selectedCount = currentState.selectedData?.length ?? 0;
-              if (selectedCount <= 1 &&
-                  currentState.selectedData?.contains(currentData[index]) == true) {
-                setState(() {
-                  _selectionMode = false;
-                });
-              }
+          if (currentState is IncomingLoaded) {
+            final selectedCount = currentState.selectedData?.length ?? 0;
+            if (selectedCount <= 1 &&
+                currentState.selectedData?.contains(currentData[index]) == true) {
+              setState(() {
+                _selectionMode = false;
+              });
             }
-            return;
           }
+          return;
+        }
 
-          if (currentData[index].deletedAt != null) return;
-
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => IncomingDocumentDetailsScreen(
-                documentId: currentData[index].id!,
-                docNumber: currentData[index].docNumber ?? 'N/A',
-                hasUpdatePermission: _hasUpdatePermission,
-                hasDeletePermission: _hasDeletePermission,
-                onDocumentUpdated: () {
-                  _incomingBloc.add(FetchIncoming(
-                    forceRefresh: true,
-                    filters: _currentFilters,
-                    search: _search,
-                  ));
-                },
-              ),
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => IncomingDocumentDetailsScreen(
+              documentId: currentData[index].id!,
+              docNumber: currentData[index].docNumber ?? 'N/A',
+              hasUpdatePermission: _hasUpdatePermission,
+              hasDeletePermission: _hasDeletePermission,
+              onDocumentUpdated: () {
+                _incomingBloc.add(FetchIncoming(
+                  forceRefresh: true,
+                  filters: _currentFilters,
+                  search: _search,
+                ));
+              },
             ),
-          );
-        },
-        isSelectionMode: _selectionMode,
-        isSelected: (state as IncomingLoaded).selectedData?.contains(currentData[index]) ?? false,
-        // ИЗМЕНЕНО: Разрешаем долгое нажатие только если есть право на удаление
-        onLongPress: _hasDeletePermission
-            ? () {
-                if (_selectionMode) return;
-                setState(() {
-                  _selectionMode = true;
-                });
-                _incomingBloc.add(SelectDocument(currentData[index]));
-              }
-            : () {},
-        document: currentData[index],
-      ),
+          ),
+        );
+      },
+      isSelectionMode: _selectionMode,
+      isSelected: (state as IncomingLoaded).selectedData?.contains(currentData[index]) ?? false,
+      // ИЗМЕНЕНО: Разрешаем долгое нажатие только если есть право на удаление
+      onLongPress: _hasDeletePermission
+          ? () {
+              if (_selectionMode) return;
+              setState(() {
+                _selectionMode = true;
+              });
+              _incomingBloc.add(SelectDocument(currentData[index]));
+            }
+          : () {},
+      document: currentData[index],
     );
   }
 } 
