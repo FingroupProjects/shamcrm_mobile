@@ -7,11 +7,10 @@ import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/page_2/money/widgets/error_dialog.dart';
 import 'package:crm_task_manager/page_2/warehouse/supplier_return_document/supplier_return_document_card_screen.dart';
-import 'package:crm_task_manager/page_2/warehouse/supplier_return_document/supplier_return_document_details_screen.dart'; // НОВОЕ: Импорт Details
+import 'package:crm_task_manager/page_2/warehouse/client_sale/client_sale_confirm_dialog.dart'; // НОВОЕ: Импорт диалога подтверждения
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:uuid/uuid.dart';
 import 'supplier_return_document_create_screen.dart';
 
 class SupplierReturnScreen extends StatefulWidget {
@@ -30,13 +29,11 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
   bool _isSearching = false;
   Map<String, dynamic> _currentFilters = {};
   late SupplierReturnBloc _supplierReturnBloc;
-  bool _isInitialLoad = true;
   bool _isLoadingMore = false;
   bool _hasReachedMax = false;
 
   // НОВОЕ: Флаги прав доступа
   bool _hasCreatePermission = false;
-  bool _hasUpdatePermission = false;
   bool _hasDeletePermission = false;
   final ApiService _apiService = ApiService();
 
@@ -52,13 +49,11 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
   Future<void> _checkPermissions() async {
     try {
       final create = await _apiService.hasPermission('supplier_return_document.create');
-      final update = await _apiService.hasPermission('supplier_return_document.update');
       final delete = await _apiService.hasPermission('supplier_return_document.delete');
 
       if (mounted) {
         setState(() {
           _hasCreatePermission = create;
-          _hasUpdatePermission = update;
           _hasDeletePermission = delete;
         });
       }
@@ -105,7 +100,6 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
       _isSearching = false;
       _searchController.clear();
       _currentFilters = {};
-      _isInitialLoad = true;
       _hasReachedMax = false;
     });
     _supplierReturnBloc.add(const FetchSupplierReturn(forceRefresh: true));
@@ -137,7 +131,7 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context);
+    final localizations = AppLocalizations.of(context)!;
     return BlocProvider.value(
       value: _supplierReturnBloc,
       child: Scaffold(
@@ -145,7 +139,7 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
         appBar: AppBar(
           forceMaterialTransparency: true,
           title: CustomAppBarPage2(
-            title: localizations!.translate('appbar_supplier_return') ?? 'Возврат поставщику',
+            title: localizations.translate('appbar_supplier_return') ?? 'Возврат поставщику',
             showSearchIcon: true,
             showFilterIcon: false,
             showFilterOrderIcon: false,
@@ -173,12 +167,10 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
             if (state is SupplierReturnLoaded) {
               setState(() {
                 _hasReachedMax = state.hasReachedMax;
-                _isInitialLoad = false;
                 _isLoadingMore = false;
               });
             } else if (state is SupplierReturnError) {
               setState(() {
-                _isInitialLoad = false;
                 _isLoadingMore = false;
               });
               WidgetsBinding.instance.addPostFrameCallback((_) { // НОВОЕ: postFrame
@@ -226,30 +218,51 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
                   _showSnackBar(state.message, false);
                 }
               });
-            }else if (state is SupplierReturnDeleteSuccess) {
+            } else if (state is SupplierReturnDeleteSuccess) {
               WidgetsBinding.instance.addPostFrameCallback((_) { // НОВОЕ: postFrame
                 if (mounted && context.mounted) {
                   _showSnackBar(state.message, true);
                   _supplierReturnBloc.add(FetchSupplierReturn(forceRefresh: true, filters: _currentFilters));
                 }
               });
-} else if (state is SupplierReturnDeleteError) {
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    if (mounted && context.mounted) {
-      if (state.statusCode == 409) {
-        final localizations = AppLocalizations.of(context)!;
-        showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
-        _supplierReturnBloc.add(FetchSupplierReturn(forceRefresh: true, filters: _currentFilters));
-        return;
-      }
-      _showSnackBar(state.message, false);
-    }
-  });
-}
+            } else if (state is SupplierReturnDeleteError) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted && context.mounted) {
+                  if (state.statusCode == 409) {
+                    final localizations = AppLocalizations.of(context)!;
+                    showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                    _supplierReturnBloc.add(FetchSupplierReturn(forceRefresh: true, filters: _currentFilters));
+                    return;
+                  }
+                  _showSnackBar(state.message, false);
+                }
+              });
+            } else if (state is SupplierReturnRestoreSuccess) { // НОВОЕ: Обработка restore
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted && context.mounted) {
+                  _showSnackBar(state.message, true);
+                  _supplierReturnBloc.add(FetchSupplierReturn(forceRefresh: true, filters: _currentFilters));
+                }
+              });
+            } else if (state is SupplierReturnRestoreError) { // НОВОЕ
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted && context.mounted) {
+                  if (state.statusCode == 409) {
+                    final localizations = AppLocalizations.of(context)!;
+                    showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                    _supplierReturnBloc.add(FetchSupplierReturn(forceRefresh: true, filters: _currentFilters));
+                    return;
+                  }
+                  _showSnackBar(state.message, false);
+                }
+              });
+            }
           },
          child: BlocBuilder<SupplierReturnBloc, SupplierReturnState>(
   builder: (context, state) {
-    if (state is SupplierReturnLoading || state is SupplierReturnDeleteLoading) {
+    if (state is SupplierReturnLoading || 
+        state is SupplierReturnDeleteLoading || 
+        state is SupplierReturnRestoreLoading) {
       return Center(
         child: PlayStoreImageLoading(
           size: 80.0,
@@ -264,8 +277,8 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
       return Center(
         child: Text(
           _isSearching
-              ? localizations!.translate('nothing_found') ?? 'Ничего не найдено'
-              : localizations!.translate('no_supplier_return') ?? 'Нет возвратов поставщику',
+              ? localizations.translate('nothing_found') ?? 'Ничего не найдено'
+              : localizations.translate('no_supplier_return') ?? 'Нет возвратов поставщику',
           style: const TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',
@@ -299,16 +312,18 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
                 : const SizedBox.shrink();
           }
           
-          // ИЗМЕНЕНО: Dismissible только с delete-правом
+          // НОВОЕ: Dismissible только влево - delete или restore в зависимости от состояния
           return _hasDeletePermission
               ? Dismissible(
                   key: Key(currentData[index].id.toString()),
+                  // Свайп только справа налево для обоих действий
                   direction: DismissDirection.endToStart,
+
                   background: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
-                      color: Colors.red,
+                      color: currentData[index].deletedAt == null ? Colors.red : const Color(0xFF2196F3),
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
@@ -319,18 +334,51 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
                       ],
                     ),
                     alignment: Alignment.centerRight,
-                    child: const Icon(Icons.delete, color: Colors.white, size: 24),
+                    child: Icon(
+                      currentData[index].deletedAt == null 
+                          ? Icons.delete 
+                          : Icons.restore_from_trash,
+                      color: Colors.white,
+                      size: 24,
+                    ),
                   ),
+
                   confirmDismiss: (direction) async {
-                    return currentData[index].deletedAt == null;
+                    final isDeleted = currentData[index].deletedAt != null;
+                    final docNumber = currentData[index].docNumber ?? 'N/A';
+
+                    if (isDeleted) {
+                      return await DocumentConfirmDialog.showRestoreConfirmation(
+                        context,
+                        docNumber,
+                      );
+                    } else {
+                      return await DocumentConfirmDialog.showDeleteConfirmation(
+                        context,
+                        docNumber,
+                      );
+                    }
                   },
-                 onDismissed: (direction) {
-      debugPrint("🗑️ [UI] Удаление документа ID: ${currentData[index].id}"); // ИЗМЕНЕНО: debugPrint
-      _supplierReturnBloc.add(DeleteSupplierReturn(
-        currentData[index].id!,
-        shouldReload: true,
-      ));
-  },
+                  onDismissed: (direction) {
+                    final isDeleted = currentData[index].deletedAt != null;
+                    
+                    if (isDeleted) {
+                      // RESTORE - для удалённых документов
+                      debugPrint("♻️ [UI] Восстановление документа ID: ${currentData[index].id}");
+                      _supplierReturnBloc.add(RestoreSupplierReturn(
+                        currentData[index].id!,
+                        localizations,
+                      ));
+                    } else {
+                      // DELETE - для активных документов
+                      debugPrint("🗑️ [UI] Удаление документа ID: ${currentData[index].id}");
+                      _supplierReturnBloc.add(DeleteSupplierReturn(
+                        currentData[index].id!,
+                        shouldReload: true,
+                      ));
+                    }
+                  },
+
                   child: SupplierReturnCard(
                     document: currentData[index],
                     onUpdate: () {
