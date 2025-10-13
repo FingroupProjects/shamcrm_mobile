@@ -14,6 +14,7 @@ import '../../../models/page_2/incoming_document_model.dart';
 import '../../../widgets/snackbar_widget.dart';
 import '../../money/widgets/error_dialog.dart';
 import 'movement_details.dart';
+import 'package:crm_task_manager/page_2/warehouse/client_sale/client_sale_confirm_dialog.dart';
 
 class MovementScreen extends StatefulWidget {
   const MovementScreen({super.key, this.organizationId});
@@ -371,17 +372,60 @@ class _MovementScreenState extends State<MovementScreen> {
                   if (mounted) {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       if (mounted && context.mounted) {
-                        _showSnackBar(state.message, true);
+                        showCustomSnackBar(context: context, message: state.message, isSuccess: true);
                         _movementBloc
                             .add(const FetchMovements(forceRefresh: true));
                       }
                     });
                   }
-                } else if (state is MovementDeleteSuccess) {
+                } else if (state is MovementCreateError) {
                   if (mounted) {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       if (mounted && context.mounted) {
-                        _showSnackBar(state.message, true);
+                        if (state.statusCode == 409) {
+                          showSimpleErrorDialog(
+                              context,
+                              localizations?.translate('error') ?? 'Ошибка',
+                              state.message);
+                          return;
+                        }
+                        showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+                      }
+                    });
+                  }
+                } else if (state is MovementUpdateSuccess) {
+                  if (mounted) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted && context.mounted) {
+                        showCustomSnackBar(context: context, message: state.message, isSuccess: true);
+                        _movementBloc.add(FetchMovements(
+                            forceRefresh: true,
+                            filters: _currentFilters,
+                            search: _search));
+                      }
+                    });
+                  }
+                } else if (state is MovementUpdateError) {
+                  if (mounted) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted && context.mounted) {
+                        if (state.statusCode == 409) {
+                          showSimpleErrorDialog(
+                              context,
+                              localizations?.translate('error') ?? 'Ошибка',
+                              state.message);
+                          return;
+                        }
+                        showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+                      }
+                    });
+                  }
+                } else if (state is MovementDeleteSuccess) {
+                  debugPrint("MovementScreen.Bloc.State.MovementDeleteSuccess: ${_movementBloc.state}");
+                  if (mounted) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted && context.mounted) {
+                        showCustomSnackBar(context: context, message: state.message, isSuccess: true);
                         setState(() {
                           _isRefreshing = true;
                         });
@@ -392,13 +436,51 @@ class _MovementScreenState extends State<MovementScreen> {
                       }
                     });
                   }
-                } else if (state is MovementRestoreSuccess) {
+                } else if (state is MovementDeleteError) {
                   if (mounted) {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       if (mounted && context.mounted) {
-                        _showSnackBar(state.message, true);
-                        _movementBloc
-                            .add(const FetchMovements(forceRefresh: true));
+                        if (state.statusCode == 409) {
+                          showSimpleErrorDialog(
+                              context,
+                              localizations?.translate('error') ?? 'Ошибка',
+                              state.message);
+                          _movementBloc.add(FetchMovements(forceRefresh: true, filters: _currentFilters, search: _search));
+                          return;
+                        }
+                        showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+                      }
+                    });
+                  }
+                } else if (state is MovementRestoreSuccess) {
+                  debugPrint("MovementScreen.Bloc.State.MovementRestoreSuccess: ${_movementBloc.state}");
+                  if (mounted) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted && context.mounted) {
+                        showCustomSnackBar(context: context, message: state.message, isSuccess: true);
+                        setState(() {
+                          _isRefreshing = true;
+                        });
+                        _movementBloc.add(FetchMovements(
+                            forceRefresh: true,
+                            filters: _currentFilters,
+                            search: _search));
+                      }
+                    });
+                  }
+                } else if (state is MovementRestoreError) {
+                  if (mounted) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted && context.mounted) {
+                        if (state.statusCode == 409) {
+                          showSimpleErrorDialog(
+                              context,
+                              localizations?.translate('error') ?? 'Ошибка',
+                              state.message);
+                          _movementBloc.add(FetchMovements(forceRefresh: true, filters: _currentFilters, search: _search));
+                          return;
+                        }
+                        showCustomSnackBar(context: context, message: state.message, isSuccess: false);
                       }
                     });
                   }
@@ -540,7 +622,15 @@ class _MovementScreenState extends State<MovementScreen> {
           ],
           child: BlocBuilder<MovementBloc, MovementState>(
             builder: (context, state) {
-              if (state is MovementLoading || state is MovementDeleteLoading) {
+              
+              debugPrint("MovementScreen.Bloc.State.Build: ${_movementBloc.state}");
+              
+              // ИЗМЕНЕНО: Loading з _isInitialLoad
+              if (_isInitialLoad || state is MovementLoading || state is MovementDeleteLoading ||
+                  state is MovementRestoreLoading || state is MovementCreateLoading ||
+                  state is MovementApproveMassLoading || state is MovementDisapproveMassLoading ||
+                  state is MovementDeleteMassLoading || state is MovementRestoreMassLoading ||
+              _isRefreshing) {
                 return Center(
                   child: PlayStoreImageLoading(
                     size: 80.0,
@@ -593,46 +683,83 @@ class _MovementScreenState extends State<MovementScreen> {
                           : const SizedBox.shrink();
                     }
 
-                    // ИЗМЕНЕНО: Показываем Dismissible только если есть право на удаление
+                    // НОВОЕ: Dismissible только влево - delete або restore в зависимости от состояния
                     return _hasDeletePermission
                         ? Dismissible(
-                            key: Key(currentData[index].id.toString()),
-                            direction: DismissDirection.endToStart,
-                            background: Container(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 16),
-                              margin: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: Colors.red,
-                                borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.05),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              alignment: Alignment.centerRight,
-                              child: const Icon(Icons.delete,
-                                  color: Colors.white, size: 24),
+                      key: Key(currentData[index].id.toString()),
+                      // Свайп только справа налево для обоих действий
+                      direction: DismissDirection.endToStart,
+
+                      background: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: currentData[index].deletedAt == null ? Colors.red : const Color(0xFF2196F3),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
                             ),
-                            confirmDismiss: (direction) async {
-                              return currentData[index].deletedAt == null;
-                            },
-                            onDismissed: (direction) {
-                              print(
-                                  "🗑️ [UI] Удаление документа ID: ${currentData[index].id}");
-                              _movementBloc.add(DeleteMovementDocument(
-                                currentData[index].id!,
-                                localizations!,
-                                shouldReload: true,
-                              ));
-                            },
-                            child: _buildMovementCard(currentData, index, state),
-                          )
-                        : _buildMovementCard(currentData, index, state);
+                          ],
+                        ),
+                        alignment: Alignment.centerRight,
+                        child: Icon(
+                          currentData[index].deletedAt == null 
+                              ? Icons.delete 
+                              : Icons.restore_from_trash,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+
+                      confirmDismiss: (direction) async {
+                        final isDeleted = currentData[index].deletedAt != null;
+                        final docNumber = currentData[index].docNumber ?? 'N/A';
+
+                        if (isDeleted) {
+                          return await DocumentConfirmDialog.showRestoreConfirmation(
+                            context,
+                            docNumber,
+                          );
+                        } else {
+                          return await DocumentConfirmDialog.showDeleteConfirmation(
+                            context,
+                            docNumber,
+                          );
+                        }
+                      },
+                      onDismissed: (direction) {
+                        final isDeleted = currentData[index].deletedAt != null;
+                        
+                        if (isDeleted) {
+                          // RESTORE - для удалённых документов
+                          debugPrint("♻️ [UI] Восстановление документа ID: ${currentData[index].id}");
+                          _movementBloc.add(RestoreMovementDocument(
+                            currentData[index].id!,
+                            localizations!,
+                          ));
+                        } else {
+                          // DELETE - для активных документов
+                          debugPrint("🗑️ [UI] Удаление документа ID: ${currentData[index].id}");
+                          _movementBloc.add(DeleteMovementDocument(
+                            currentData[index].id!,
+                            localizations!,
+                            shouldReload: true,
+                          ));
+                        }
+                      },
+
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: _buildMovementCard(currentData, index, state),
+                      ),
+                    )
+                        : ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: _buildMovementCard(currentData, index, state),
+                    );
                   },
                 ),
               );

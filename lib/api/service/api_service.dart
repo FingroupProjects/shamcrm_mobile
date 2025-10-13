@@ -12504,37 +12504,37 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     }
   }
 
-  // Future<Map<String, dynamic>> restoreMoneyIncomeDocument(
-  //     int documentId) async {
-  //   final token = await getToken();
-  //   if (token == null) throw Exception('Токен не найден');
-  //
-  //   final pathWithParams = await _appendQueryParams('/checking-account/restore');
-  //   final uri = Uri.parse('$baseUrl$pathWithParams');
-  //
-  //   final body = jsonEncode({
-  //     'ids': [documentId],
-  //   });
-  //
-  //   final response = await http.post(
-  //     uri,
-  //     headers: {
-  //       'Authorization': 'Bearer $token',
-  //       'Accept': 'application/json',
-  //       'Content-Type': 'application/json',
-  //       'Device': 'mobile',
-  //     },
-  //     body: body,
-  //   );
-  //
-  //   if (response.statusCode == 200 || response.statusCode == 201) {
-  //     return {'result': 'Success'};
-  //   } else {
-  //     final jsonResponse = jsonDecode(response.body);
-  //     throw Exception(
-  //         jsonResponse['message'] ?? 'Ошибка при восстановлении документа');
-  //   }
-  // }
+  Future<Map<String, dynamic>> restoreMoneyIncomeDocument(
+      int documentId) async {
+    final token = await getToken();
+    if (token == null) throw Exception('Токен не найден');
+
+    final pathWithParams = await _appendQueryParams('/checking-account/restore');
+    final uri = Uri.parse('$baseUrl$pathWithParams');
+
+    final body = jsonEncode({
+      'ids': [documentId],
+    });
+
+    final response = await http.post(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Device': 'mobile',
+      },
+      body: body,
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {'result': 'Success'};
+    } else {
+      final jsonResponse = jsonDecode(response.body);
+      throw Exception(
+          jsonResponse['message'] ?? 'Ошибка при восстановлении документа');
+    }
+  }
 
   Future<void> updateMoneyIncomeDocument({
     required int documentId,
@@ -12855,37 +12855,27 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     }
   }
 
-  // Future<Map<String, dynamic>> restoreMoneyOutcomeDocument(
-  //     int documentId) async {
-  //   final token = await getToken();
-  //   if (token == null) throw Exception('Токен не найден');
-  //
-  //   final pathWithParams = await _appendQueryParams('/checking-account/restore');
-  //   final uri = Uri.parse('$baseUrl$pathWithParams');
-  //
-  //   final body = jsonEncode({
-  //     'ids': [documentId],
-  //   });
-  //
-  //   final response = await http.post(
-  //     uri,
-  //     headers: {
-  //       'Authorization': 'Bearer $token',
-  //       'Accept': 'application/json',
-  //       'Content-Type': 'application/json',
-  //       'Device': 'mobile',
-  //     },
-  //     body: body,
-  //   );
-  //
-  //   if (response.statusCode == 200 || response.statusCode == 201) {
-  //     return {'result': 'Success'};
-  //   } else {
-  //     final jsonResponse = jsonDecode(response.body);
-  //     throw Exception(
-  //         jsonResponse['message'] ?? 'Ошибка при восстановлении документа');
-  //   }
-  // }
+  Future<bool> restoreMoneyOutcomeDocument(int documentId) async {
+    final path = await _appendQueryParams('/checking-account/mass-restore');
+
+    try {
+      final response = await _postRequest(path, {
+        'ids': [documentId],
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return true;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при восстановлении документа расхода!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
 
   Future<void> updateMoneyOutcomeDocument({
     required int documentId,

@@ -7,6 +7,7 @@ import 'package:crm_task_manager/page_2/money/widgets/error_dialog.dart';
 import 'package:crm_task_manager/page_2/warehouse/write_off/write_off_card.dart';
 import 'package:crm_task_manager/page_2/warehouse/write_off/write_off_create.dart';
 import 'package:crm_task_manager/page_2/warehouse/write_off/write_off_details.dart';
+import 'package:crm_task_manager/page_2/warehouse/client_sale/client_sale_confirm_dialog.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
@@ -334,7 +335,7 @@ class _WriteOffScreenState extends State<WriteOffScreen> {
                       final localizations = AppLocalizations.of(context)!;
                       showSimpleErrorDialog(
                           context,
-                          localizations.translate('error') ?? 'Ошибка',
+                          localizations.translate('error'),
                           state.message);
                       return;
                     }
@@ -359,7 +360,7 @@ class _WriteOffScreenState extends State<WriteOffScreen> {
                       final localizations = AppLocalizations.of(context)!;
                       showSimpleErrorDialog(
                           context,
-                          localizations.translate('error') ?? 'Ошибка',
+                          localizations.translate('error'),
                           state.message);
                       return;
                     }
@@ -387,7 +388,7 @@ class _WriteOffScreenState extends State<WriteOffScreen> {
                       final localizations = AppLocalizations.of(context)!;
                       showSimpleErrorDialog(
                           context,
-                          localizations.translate('error') ?? 'Ошибка',
+                          localizations.translate('error'),
                           state.message);
                       return;
                     }
@@ -412,6 +413,38 @@ class _WriteOffScreenState extends State<WriteOffScreen> {
                 });
               }
             } else if (state is WriteOffDeleteError) {
+              if (mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && context.mounted) {
+                    if (state.statusCode == 409) {
+                      showSimpleErrorDialog(
+                          context,
+                          localizations?.translate('error') ?? 'Ошибка',
+                          state.message);
+                      _writeOffBloc.add(FetchWriteOffs(forceRefresh: true, filters: _currentFilters, search: _search));
+                      return;
+                    }
+                    _showSnackBar(state.message, false);
+                  }
+                });
+              }
+            } else if (state is WriteOffRestoreSuccess) {
+              debugPrint("WriteOffScreen.Bloc.State.WriteOffRestoreSuccess: ${_writeOffBloc.state}");
+              if (mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && context.mounted) {
+                    _showSnackBar(state.message, true);
+                    setState(() {
+                      _isRefreshing = true;
+                    });
+                    _writeOffBloc.add(FetchWriteOffs(
+                        forceRefresh: true,
+                        filters: _currentFilters,
+                        search: _search));
+                  }
+                });
+              }
+            } else if (state is WriteOffRestoreError) {
               if (mounted) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (mounted && context.mounted) {
@@ -564,7 +597,12 @@ class _WriteOffScreenState extends State<WriteOffScreen> {
           },
           child: BlocBuilder<WriteOffBloc, WriteOffState>(
             builder: (context, state) {
-              if (state is WriteOffLoading || state is WriteOffDeleteLoading) {
+              // ИЗМЕНЕНО: Loading с _isInitialLoad и всеми состояниями загрузки
+              if (_isInitialLoad || state is WriteOffLoading || state is WriteOffDeleteLoading ||
+                  state is WriteOffRestoreLoading || state is WriteOffCreateLoading ||
+                  state is WriteOffApproveMassLoading || state is WriteOffDisapproveMassLoading ||
+                  state is WriteOffDeleteMassLoading || state is WriteOffRestoreMassLoading ||
+              _isRefreshing) {
                 return Center(
                   child: PlayStoreImageLoading(
                     size: 80.0,
@@ -616,15 +654,18 @@ class _WriteOffScreenState extends State<WriteOffScreen> {
                           : const SizedBox.shrink();
                     }
 
-                    // ИЗМЕНЕНО: Dismissible только с delete-правом
+                    // НОВОЕ: Dismissible только влево - delete или restore в зависимости от состояния
                     return _hasDeletePermission
                         ? Dismissible(
                             key: Key(currentData[index].id.toString()),
+                            // Свайп только справа налево для обоих действий
                             direction: DismissDirection.endToStart,
+
                             background: Container(
-                              padding: const EdgeInsets.all(8),
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                               decoration: BoxDecoration(
-                                color: Colors.red,
+                                color: currentData[index].deletedAt == null ? Colors.red : const Color(0xFF2196F3),
                                 borderRadius: BorderRadius.circular(12),
                                 boxShadow: [
                                   BoxShadow(
@@ -635,18 +676,50 @@ class _WriteOffScreenState extends State<WriteOffScreen> {
                                 ],
                               ),
                               alignment: Alignment.centerRight,
-                              child: const Icon(Icons.delete, color: Colors.white, size: 24),
+                              child: Icon(
+                                currentData[index].deletedAt == null 
+                                    ? Icons.delete 
+                                    : Icons.restore_from_trash,
+                                color: Colors.white,
+                                size: 24,
+                              ),
                             ),
+
                             confirmDismiss: (direction) async {
-                              return currentData[index].deletedAt == null;
+                              final isDeleted = currentData[index].deletedAt != null;
+                              final docNumber = currentData[index].docNumber ?? 'N/A';
+
+                              if (isDeleted) {
+                                return await DocumentConfirmDialog.showRestoreConfirmation(
+                                  context,
+                                  docNumber,
+                                );
+                              } else {
+                                return await DocumentConfirmDialog.showDeleteConfirmation(
+                                  context,
+                                  docNumber,
+                                );
+                              }
                             },
                             onDismissed: (direction) {
-                              debugPrint("🗑️ [UI] Удаление документа ID: ${currentData[index].id}");
-                              _writeOffBloc.add(DeleteWriteOffDocument(
-                                currentData[index].id!,
-                                localizations!,
-                                shouldReload: true,
-                              ));
+                              final isDeleted = currentData[index].deletedAt != null;
+                              
+                              if (isDeleted) {
+                                // RESTORE - для удалённых документов
+                                debugPrint("♻️ [UI] Восстановление документа ID: ${currentData[index].id}");
+                                _writeOffBloc.add(RestoreWriteOff(
+                                  currentData[index].id!,
+                                  localizations!,
+                                ));
+                              } else {
+                                // DELETE - для активных документов
+                                debugPrint("🗑️ [UI] Удаление документа ID: ${currentData[index].id}");
+                                _writeOffBloc.add(DeleteWriteOffDocument(
+                                  currentData[index].id!,
+                                  localizations!,
+                                  shouldReload: true,
+                                ));
+                              }
                             },
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(12),
