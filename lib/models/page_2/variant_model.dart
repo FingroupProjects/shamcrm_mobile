@@ -84,7 +84,9 @@ class Variant {
       quantitySelected: 1,
       selectedUnit: units.isNotEmpty ? units.first.shortName ?? units.first.name : null,
       availableUnits: units, // Always non-null
-            remainder: json['remainder'] as int?, // ← ДОБАВЛЯЕМ парсинг
+      remainder: json['remainder'] != null
+          ? int.tryParse(json['remainder'].toString())
+          : null,
 
     );
   }
@@ -112,7 +114,7 @@ class AttributeValue {
       id: json['id'] as int? ?? 0,
       categoryAttributeId: json['category_attribute_id'] as int? ?? 0,
       value: json['value'] as String? ?? '',
-      unitId: json['unit_id'] as int?,
+      unitId: json['unit_id'] as int?, // ← Can fail if API sends "123" as string
       files: (json['files'] as List<dynamic>?)?.cast<String>(),
       categoryAttribute: json['category_attribute'] != null
           ? CategoryAttribute.fromJson(
