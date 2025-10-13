@@ -146,11 +146,8 @@ void main() async {
     WidgetsFlutterBinding.ensureInitialized();
     print("====================== MAIN START ======================");
 
-    // ШАГ 1: Инициализация Firebase с гарантией готовности
+    // ШАГ 1: Безопасная инициализация Firebase
     await _initializeFirebase();
-    
-    // КРИТИЧНО: Даём Firebase время полностью инициализироваться
-    await Future.delayed(const Duration(milliseconds: 500));
 
     // ШАГ 2: Инициализация сервисов
     final apiService = ApiService();
@@ -173,20 +170,30 @@ void main() async {
         await apiService.initialize();
       }
     } else {
-      // При невалидной сессии очищаем все данные
       print('main: Invalid session detected, clearing all data');
       await _clearAllApplicationData(apiService, authService);
     }
 
     // ШАГ 5: App Tracking Transparency
     await AppTrackingTransparency.requestTrackingAuthorization();
-    
-    // ШАГ 6: Firebase Messaging инициализация (ПОСЛЕ базовой инициализации)
-    // Добавляем небольшую задержку для гарантии готовности Firebase
-    await Future.delayed(const Duration(milliseconds: 300));
+
+    // ШАГ 6: Firebase Messaging инициализация
     await _initializeFirebaseMessaging(apiService);
 
-    // ШАГ 7: UI настройки
+    // ШАГ 7: Получение initial message (только если Firebase готов)
+    RemoteMessage? initialMessage;
+    try {
+      if (Firebase.apps.isNotEmpty) {
+        initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+        if (initialMessage != null) {
+          print('main: Initial message получено: ${initialMessage.messageId}');
+        }
+      }
+    } catch (e) {
+      print('main: Ошибка получения initial message: $e');
+    }
+
+    // ШАГ 8: UI настройки
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -195,13 +202,13 @@ void main() async {
       ),
     );
 
-    // ШАГ 8: Языковые настройки
+    // ШАГ 9: Языковые настройки
     final String? savedLanguageCode = await LanguageManager.getLanguage();
     final Locale savedLocale = savedLanguageCode != null
         ? Locale(savedLanguageCode)
         : const Locale('ru');
 
-    // ШАГ 9: Запуск приложения
+    // ШАГ 10: Запуск приложения
     runApp(MyApp(
       apiService: apiService,
       authService: authService,
@@ -209,7 +216,7 @@ void main() async {
       token: sessionValidation.isValid ? token : null,
       pin: sessionValidation.isValid ? pin : null,
       initialLocale: savedLocale,
-      initialMessage: null,
+      initialMessage: initialMessage,
       sessionValid: sessionValidation.isValid,
     ));
   } catch (e, stackTrace) {
@@ -221,7 +228,263 @@ void main() async {
   }
 }
 
-// Экран ошибки для критических сбоев
+// =============================================================================
+// БЕЗОПАСНАЯ ИНИЦИАЛИЗАЦИЯ FIREBASE
+// =============================================================================
+
+Future<void> _initializeFirebase() async {
+  try {
+    print('Firebase: Проверка состояния инициализации');
+    
+    // Проверка 1: Проверяем список приложений
+    if (Firebase.apps.isEmpty) {
+      print('Firebase: Начинаем первичную инициализацию');
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      print('Firebase: Первичная инициализация завершена успешно');
+      
+      // Даём время полностью инициализироваться
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+    } else {
+      print('Firebase: Приложение уже существует (apps.length = ${Firebase.apps.length})');
+      
+      // Проверка 2: Убеждаемся что default app доступен
+      try {
+        final app = Firebase.app();
+        print('Firebase: Default app доступен и готов (name: ${app.name})');
+      } catch (e) {
+        print('Firebase: Default app существует но недоступен: $e');
+        // Даём время на инициализацию
+        await Future.delayed(const Duration(milliseconds: 500));
+      }
+    }
+    
+    // Финальная проверка готовности
+    try {
+      final app = Firebase.app();
+      print('Firebase: Финальная проверка пройдена (name: ${app.name})');
+    } catch (e) {
+      print('Firebase: Предупреждение - default app может быть не готов: $e');
+    }
+    
+  } catch (e) {
+    final errorString = e.toString();
+    
+    // Обрабатываем специфичные ошибки
+    if (errorString.contains('already exists') || 
+        errorString.contains('duplicate app')) {
+      print('Firebase: Приложение уже было инициализировано (это нормально)');
+      
+      // Даём время на полную инициализацию
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      // Проверяем доступность
+      try {
+        Firebase.app();
+        print('Firebase: После ошибки "already exists" - app доступен');
+      } catch (checkError) {
+        print('Firebase: После ошибки "already exists" - app НЕ доступен: $checkError');
+      }
+      
+    } else {
+      // Это реальная критическая ошибка
+      print('Firebase: КРИТИЧЕСКАЯ ОШИБКА инициализации: $e');
+      // НЕ пробрасываем ошибку - даём приложению запуститься без Firebase
+    }
+  }
+}
+
+// =============================================================================
+// БЕЗОПАСНАЯ ИНИЦИАЛИЗАЦИЯ FIREBASE MESSAGING
+// =============================================================================
+
+Future<void> _initializeFirebaseMessaging(ApiService apiService) async {
+  try {
+    print('Firebase Messaging: Начало инициализации');
+    
+    // Проверка 1: Firebase инициализирован?
+    if (Firebase.apps.isEmpty) {
+      print('Firebase Messaging: Firebase не инициализирован, пропуск');
+      return;
+    }
+
+    // Проверка 2: Default app доступен?
+    try {
+      final app = Firebase.app();
+      print('Firebase Messaging: Default app доступен (${app.name})');
+    } catch (e) {
+      print('Firebase Messaging: Default app недоступен: $e');
+      return;
+    }
+
+    // Проверка 3: Дополнительное время на готовность
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    // Запрос разрешений
+    print('Firebase Messaging: Запрос разрешений');
+    final settings = await FirebaseMessaging.instance.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+    print('Firebase Messaging: Разрешения получены (status: ${settings.authorizationStatus})');
+
+    // Получение FCM токена
+    await getFCMTokens(apiService);
+
+    // Инициализация FirebaseApi
+    try {
+      FirebaseApi firebaseApi = FirebaseApi();
+      await firebaseApi.initNotifications();
+      print('Firebase Messaging: FirebaseApi инициализирован успешно');
+    } catch (e) {
+      print('Firebase Messaging: Ошибка инициализации FirebaseApi: $e');
+    }
+
+    print('Firebase Messaging: Инициализация завершена успешно');
+    
+  } catch (e) {
+    final errorString = e.toString();
+    
+    if (errorString.contains('already exists') || 
+        errorString.contains('duplicate')) {
+      print('Firebase Messaging: Сервис уже инициализирован (нормально)');
+    } else {
+      print('Firebase Messaging: Ошибка инициализации: $e');
+    }
+    // НЕ пробрасываем ошибку - приложение должно работать
+  }
+}
+
+// =============================================================================
+// ПОЛУЧЕНИЕ FCM ТОКЕНА
+// =============================================================================
+
+Future<void> getFCMTokens(ApiService apiService) async {
+  try {
+    print('FCM Token: Начало получения');
+    
+    // Проверка Firebase
+    if (Firebase.apps.isEmpty) {
+      print('FCM Token: Firebase не инициализирован');
+      return;
+    }
+
+    // Проверка доступности
+    try {
+      Firebase.app();
+    } catch (e) {
+      print('FCM Token: Default app недоступен: $e');
+      return;
+    }
+
+    // Получение токена
+    final String? fcmToken = await FirebaseMessaging.instance.getToken();
+    
+    if (fcmToken != null && fcmToken.isNotEmpty) {
+      print('FCM Token: Успешно получен (${fcmToken.substring(0, 20)}...)');
+      
+      // Можно отправить на сервер если нужно
+      // await apiService.saveFCMToken(fcmToken);
+      
+    } else {
+      print('FCM Token: Токен не получен (null или пустой)');
+    }
+    
+  } catch (e) {
+    print('FCM Token: Ошибка получения: $e');
+    // НЕ критично - продолжаем без токена
+  }
+}
+
+// =============================================================================
+// ВАЛИДАЦИЯ СЕССИИ
+// =============================================================================
+
+class SessionValidationResult {
+  final bool isValid;
+  final String? errorMessage;
+
+  SessionValidationResult({required this.isValid, this.errorMessage});
+}
+
+Future<SessionValidationResult> _validateApplicationSession(
+    ApiService apiService) async {
+  try {
+    print('main: Validating application session');
+
+    final token = await apiService.getToken();
+    if (token == null || token.isEmpty) {
+      print('main: No token found');
+      return SessionValidationResult(isValid: false, errorMessage: 'No token');
+    }
+
+    String? domain = await apiService.getVerifiedDomain();
+    if (domain == null || domain.isEmpty) {
+      Map<String, String?> qrData = await apiService.getQrData();
+      String? qrDomain = qrData['domain'];
+      String? qrMainDomain = qrData['mainDomain'];
+
+      if (qrDomain == null ||
+          qrDomain.isEmpty ||
+          qrMainDomain == null ||
+          qrMainDomain.isEmpty) {
+        Map<String, String?> domains = await apiService.getEnteredDomain();
+        String? enteredDomain = domains['enteredDomain'];
+        String? enteredMainDomain = domains['enteredMainDomain'];
+
+        if (enteredDomain == null ||
+            enteredDomain.isEmpty ||
+            enteredMainDomain == null ||
+            enteredMainDomain.isEmpty) {
+          print('main: No valid domain configuration found');
+          return SessionValidationResult(
+              isValid: false, errorMessage: 'No domain');
+        }
+      }
+    }
+
+    final organizationId = await apiService.getSelectedOrganization();
+    if (organizationId == null || organizationId.isEmpty) {
+      print('main: No organization selected');
+    }
+
+    print('main: Session validation successful');
+    return SessionValidationResult(isValid: true);
+  } catch (e) {
+    print('main: Error validating session: $e');
+    return SessionValidationResult(isValid: false, errorMessage: e.toString());
+  }
+}
+
+// =============================================================================
+// ОЧИСТКА ДАННЫХ
+// =============================================================================
+
+Future<void> _clearAllApplicationData(
+    ApiService apiService, AuthService authService) async {
+  try {
+    print('main: Clearing all application data');
+
+    await apiService.logout();
+    await apiService.reset();
+    await authService.clearPin();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+
+    print('main: All application data cleared');
+  } catch (e) {
+    print('main: Error clearing application data: $e');
+  }
+}
+
+// =============================================================================
+// ЭКРАН ОШИБКИ
+// =============================================================================
+
 class ErrorApp extends StatelessWidget {
   final String error;
 
@@ -276,155 +539,10 @@ class ErrorApp extends StatelessWidget {
   }
 }
 
-// Класс для результата валидации сессии
-class SessionValidationResult {
-  final bool isValid;
-  final String? errorMessage;
+// =============================================================================
+// MYAPP
+// =============================================================================
 
-  SessionValidationResult({required this.isValid, this.errorMessage});
-}
-
-// Функция для валидации сессии приложения
-Future<SessionValidationResult> _validateApplicationSession(
-    ApiService apiService) async {
-  try {
-    print('main: Validating application session');
-
-    final token = await apiService.getToken();
-    if (token == null || token.isEmpty) {
-      print('main: No token found');
-      return SessionValidationResult(isValid: false, errorMessage: 'No token');
-    }
-
-    String? domain = await apiService.getVerifiedDomain();
-    if (domain == null || domain.isEmpty) {
-      Map<String, String?> qrData = await apiService.getQrData();
-      String? qrDomain = qrData['domain'];
-      String? qrMainDomain = qrData['mainDomain'];
-
-      if (qrDomain == null ||
-          qrDomain.isEmpty ||
-          qrMainDomain == null ||
-          qrMainDomain.isEmpty) {
-        Map<String, String?> domains = await apiService.getEnteredDomain();
-        String? enteredDomain = domains['enteredDomain'];
-        String? enteredMainDomain = domains['enteredMainDomain'];
-
-        if (enteredDomain == null ||
-            enteredDomain.isEmpty ||
-            enteredMainDomain == null ||
-            enteredMainDomain.isEmpty) {
-          print('main: No valid domain configuration found');
-          return SessionValidationResult(
-              isValid: false, errorMessage: 'No domain');
-        }
-      }
-    }
-
-    final organizationId = await apiService.getSelectedOrganization();
-    if (organizationId == null || organizationId.isEmpty) {
-      print('main: No organization selected');
-    }
-
-    print('main: Session validation successful');
-    return SessionValidationResult(isValid: true);
-  } catch (e) {
-    print('main: Error validating session: $e');
-    return SessionValidationResult(isValid: false, errorMessage: e.toString());
-  }
-}
-
-// Функция для полной очистки данных приложения
-Future<void> _clearAllApplicationData(
-    ApiService apiService, AuthService authService) async {
-  try {
-    print('main: Clearing all application data');
-
-    await apiService.logout();
-    await apiService.reset();
-    await authService.clearPin();
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
-
-    print('main: All application data cleared');
-  } catch (e) {
-    print('main: Error clearing application data: $e');
-  }
-}
-
-// Безопасная инициализация Firebase с проверкой готовности
-Future<void> _initializeFirebase() async {
-  try {
-    if (Firebase.apps.isEmpty) {
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-      print('Firebase успешно инициализирован');
-      
-      // КРИТИЧНО: Даём Firebase время полностью инициализироваться
-      await Future.delayed(const Duration(milliseconds: 500));
-    } else {
-      print('Firebase уже инициализирован');
-    }
-  } catch (e) {
-    print('Ошибка инициализации Firebase: $e');
-    // Не пробрасываем ошибку дальше, чтобы приложение не крашилось
-  }
-}
-
-// Безопасная инициализация Firebase Messaging с дополнительными проверками
-Future<void> _initializeFirebaseMessaging(ApiService apiService) async {
-  try {
-    // ВАЖНО: Двойная проверка наличия Firebase
-    if (Firebase.apps.isEmpty) {
-      print('Firebase Messaging: Firebase не инициализирован, пропускаем');
-      return;
-    }
-
-    // ВАЖНО: Проверяем, что Firebase.app доступен
-    try {
-      Firebase.app(); // Попытка получить default app
-    } catch (e) {
-      print('Firebase Messaging: Default app недоступен: $e');
-      return;
-    }
-
-    // Теперь безопасно работаем с Firebase Messaging
-    await FirebaseMessaging.instance.requestPermission();
-    await getFCMTokens(apiService);
-
-    FirebaseApi firebaseApi = FirebaseApi();
-    await firebaseApi.initNotifications();
-    
-    print('Firebase Messaging успешно инициализирован');
-  } catch (e) {
-    print('Ошибка инициализации Firebase Messaging: $e');
-    // Не пробрасываем ошибку, чтобы приложение продолжало работать
-  }
-}
-
-// Получение FCM токена с обработкой ошибок
-Future<void> getFCMTokens(ApiService apiService) async {
-  try {
-    // Дополнительная проверка перед получением токена
-    if (Firebase.apps.isEmpty) {
-      print('getFCMTokens: Firebase не инициализирован');
-      return;
-    }
-
-    final String? fcmToken = await FirebaseMessaging.instance.getToken();
-    if (fcmToken != null) {
-      print('FCM Token получен: ${fcmToken.substring(0, 20)}...');
-    } else {
-      print('FCM Token не получен');
-    }
-  } catch (e) {
-    print('Ошибка получения FCM токена: $e');
-  }
-}
-
-// MyApp класс
 class MyApp extends StatefulWidget {
   final ApiService apiService;
   final AuthService authService;
@@ -464,26 +582,50 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     _locale = widget.initialLocale;
+    _initialMessage = widget.initialMessage;
     _initializeApp();
   }
 
   Future<void> _initializeApp() async {
     try {
-      // Безопасная проверка Firebase перед использованием
-      if (Firebase.apps.isNotEmpty) {
-        try {
-          FirebaseApi firebaseApi = FirebaseApi();
-          _initialMessage = firebaseApi.getInitialMessage();
-        } catch (e) {
-          print('Ошибка получения initial message: $e');
+      print('MyApp: Инициализация приложения');
+      
+      // Если initial message уже был передан из main, используем его
+      if (_initialMessage != null) {
+        print('MyApp: Initial message уже получено из main');
+      } else {
+        // Пытаемся получить initial message если Firebase готов
+        if (Firebase.apps.isNotEmpty) {
+          try {
+            Firebase.app(); // Проверка доступности
+            
+            // Небольшая задержка для готовности
+            await Future.delayed(const Duration(milliseconds: 300));
+            
+            FirebaseApi firebaseApi = FirebaseApi();
+            _initialMessage = firebaseApi.getInitialMessage();
+            
+            if (_initialMessage != null) {
+              print('MyApp: Initial message получено в MyApp');
+            } else {
+              print('MyApp: Initial message отсутствует');
+            }
+          } catch (e) {
+            print('MyApp: Ошибка получения initial message: $e');
+          }
+        } else {
+          print('MyApp: Firebase не инициализирован, пропуск initial message');
         }
       }
 
       setState(() {
         _isInitialized = true;
       });
+      
+      print('MyApp: Инициализация завершена успешно');
+      
     } catch (e) {
-      print('Ошибка инициализации приложения: $e');
+      print('MyApp: Ошибка инициализации: $e');
       setState(() {
         _isInitialized = true;
       });
@@ -510,8 +652,8 @@ class _MyAppState extends State<MyApp> {
                   size: 80.0,
                   duration: Duration(milliseconds: 1000),
                 ),
-                SizedBox(height: 20),
-                Text('Инициализация...'),
+                // SizedBox(height: 20),
+                // Text('Инициализация...'),
               ],
             ),
           ),
@@ -680,7 +822,7 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => SalesDashboardCashBalanceBloc()),
         BlocProvider(create: (context) => SalesDashboardCreditorsBloc()),
         BlocProvider(create: (context) => SalesDashboardDebtorsBloc()),
-      ],
+     ],
       child: MaterialApp(
         locale: _locale ?? const Locale('ru'),
         color: Colors.white,

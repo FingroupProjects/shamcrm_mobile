@@ -174,36 +174,40 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
     }
   }
 
-  void _removeItem(int index) {
-    if (mounted) {
-      final removedItem = _items[index];
-      final variantId = removedItem['variantId'] as int;
+ void _removeItem(int index) {
+  if (!mounted) return;
+  
+  final removedItem = _items[index];
+  final variantId = removedItem['variantId'] as int;
 
-      setState(() {
-        _items.removeAt(index);
+  // ✅ Удаляем из AnimatedList ДО setState
+  _listKey.currentState?.removeItem(
+    index,
+    (context, animation) => _buildSelectedItemCard(index, removedItem, animation),
+    duration: const Duration(milliseconds: 300),
+  );
 
-        _priceControllers[variantId]?.dispose();
-        _priceControllers.remove(variantId);
-        _quantityControllers[variantId]?.dispose();
-        _quantityControllers.remove(variantId);
-        
-        // ✅ НОВОЕ: Удаляем FocusNode
-        _quantityFocusNodes[variantId]?.dispose();
-        _quantityFocusNodes.remove(variantId);
-        _priceFocusNodes[variantId]?.dispose();
-        _priceFocusNodes.remove(variantId);
-        
-        _priceErrors.remove(variantId);
-        _quantityErrors.remove(variantId);
+  // ✅ Затем обновляем состояние
+  setState(() {
+    _items.removeAt(index);
 
-        _listKey.currentState?.removeItem(
-          index,
-          (context, animation) => _buildSelectedItemCard(index, removedItem, animation),
-          duration: const Duration(milliseconds: 300),
-        );
-      });
-    }
-  }
+    // ✅ Безопасно dispose контроллеров
+    _priceControllers[variantId]?.dispose();
+    _priceControllers.remove(variantId);
+    _quantityControllers[variantId]?.dispose();
+    _quantityControllers.remove(variantId);
+
+    // ✅ Безопасно dispose FocusNode
+    _quantityFocusNodes[variantId]?.dispose();
+    _quantityFocusNodes.remove(variantId);
+    _priceFocusNodes[variantId]?.dispose();
+    _priceFocusNodes.remove(variantId);
+
+    // ✅ Очищаем ошибки
+    _priceErrors.remove(variantId);
+    _quantityErrors.remove(variantId);
+  });
+}
 
   void _openVariantSelection() async {
     if (_selectedLead == null) {
@@ -695,7 +699,10 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
     final quantityController = _quantityControllers[variantId];
     final quantityFocusNode = _quantityFocusNodes[variantId]; // ✅ НОВОЕ
     final priceFocusNode = _priceFocusNodes[variantId]; // ✅ НОВОЕ
-
+  // ✅ ДОБАВЬТЕ ПРОВЕРКУ
+  if (priceController == null || quantityController == null) {
+    return const SizedBox.shrink();
+  }
     return FadeTransition(
       opacity: animation,
       child: SizeTransition(

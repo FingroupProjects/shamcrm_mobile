@@ -657,7 +657,10 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
     final quantityController = _quantityControllers[variantId];
     final quantityFocusNode = _quantityFocusNodes[variantId];
     final priceFocusNode = _priceFocusNodes[variantId];
-
+  // ✅ ДОБАВЬТЕ ПРОВЕРКУ
+  if (priceController == null || quantityController == null) {
+    return const SizedBox.shrink();
+  }
     return FadeTransition(
       opacity: animation,
       child: SizeTransition(
