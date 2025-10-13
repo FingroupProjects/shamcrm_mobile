@@ -109,7 +109,7 @@ class Measurement {
   final int id;
   final int goodId;
   final int unitId;
-  final double amount;
+  final String? amount; // Изменено на nullable String было double
   final Unit? unit; // Изменено на nullable
 
   Measurement({
@@ -125,7 +125,7 @@ class Measurement {
       id: json['id'] as int? ?? 0,
       goodId: json['good_id'] as int? ?? 0,
       unitId: json['unit_id'] as int? ?? 0,
-      amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
+      amount: json['amount'] as String?,
       unit: json['unit'] != null ? Unit.fromJson(json['unit'] as Map<String, dynamic>) : null,
     );
   }
