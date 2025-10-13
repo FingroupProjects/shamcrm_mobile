@@ -4,7 +4,7 @@ class LeadData {
   final int id;
   final String name;
   final int? managerId;
-  final String? debt; // ← Добавляем поле долга
+  final num? debt; // ← Добавляем поле долга
 
   LeadData({
     required this.id,
@@ -33,6 +33,43 @@ class LeadData {
   }
 }
 
+class Pagination {
+  final int? total;
+  final int? count;
+  final int? perPage;
+  final int? currentPage;
+  final int? totalPages;
+
+  Pagination({
+    this.total,
+    this.count,
+    this.perPage,
+    this.currentPage,
+    this.totalPages,
+  });
+
+  factory Pagination.fromJson(Map<String, dynamic> json) => Pagination(
+    total: json["total"],
+    count: json["count"],
+    perPage: json["per_page"],
+    currentPage: json["current_page"],
+    totalPages: json["total_pages"],
+  );
+
+  Map<String, dynamic> toJson() => {
+    "total": total,
+    "count": count,
+    "per_page": perPage,
+    "current_page": currentPage,
+    "total_pages": totalPages,
+  };
+
+  @override
+  String toString() {
+    return 'Pagination{total: $total, count: $count, perPage: $perPage, currentPage: $currentPage, totalPages: $totalPages}';
+  }
+}
+
 
 LeadsDataResponse leadsDataResponseFromJson(String str) => LeadsDataResponse.fromJson(json.decode(str));
 
@@ -41,10 +78,12 @@ String leadsDataResponseToJson(LeadsDataResponse data) => json.encode(data.toJso
 class LeadsDataResponse {
   List<LeadData>? result;
   dynamic errors;
+  final Pagination? pagination;
 
   LeadsDataResponse({
     this.result,
     this.errors,
+    this.pagination,
   });
 
   factory LeadsDataResponse.fromJson(Map<String, dynamic> json) {
@@ -55,12 +94,16 @@ class LeadsDataResponse {
             )
           : [],
       errors: json["errors"],
+      pagination: json["result"] != null && json["result"]["pagination"] != null
+          ? Pagination.fromJson(json["result"]["pagination"])
+          : null,
     );
   }
 
   Map<String, dynamic> toJson() => {
     "result": result == null ? [] : List<dynamic>.from(result!.map((x) => x.toJson())),
     "errors": errors,
+    "pagination": pagination?.toJson(),
   };
 }
 
