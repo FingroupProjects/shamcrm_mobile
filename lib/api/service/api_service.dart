@@ -2318,85 +2318,60 @@ Future<String> getStaticBaseUrl() async {
     return dataLead;
   }
 
-//Метод для получения лида
-// В ApiService добавьте параметр showDebt
-Future<LeadsDataResponse> getAllLeadWithAllPages({bool showDebt = false}) async {
-  List<LeadData> allLeads = [];
-  int currentPage = 1;
-  bool hasMorePages = true;
-
-  while (hasMorePages) {
+// Метод для получения Лидов с Пагинацией
+  Future<LeadsDataResponse> getLeadPage(int page, {bool showDebt = false}) async {
     try {
-      // Формируем путь с параметром show_debt если нужно
-      String basePath = '/lead?page=$currentPage';
+      // Формируем путь с параметром страницы
+      String basePath = '/lead?page=$page';
+
+      // Добавляем параметр show_debt если нужно
       if (showDebt) {
         basePath += '&show_debt=1';
       }
-      
+
+      // Добавляем остальные query параметры (язык, токен и т.д.)
       final path = await _appendQueryParams(basePath);
 
       if (kDebugMode) {
-        print('ApiService: getAllLeadWithAllPages - Loading page $currentPage, path: $path');
+        print('ApiService: getLeadPage - Loading page $page, path: $path');
       }
 
+      // Выполняем GET запрос
       final response = await _getRequest(path);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
 
         if (data['result'] != null) {
+          // Парсим ответ в модель LeadsDataResponse
           final pageResponse = LeadsDataResponse.fromJson(data);
 
-          if (pageResponse.result != null && pageResponse.result!.isNotEmpty) {
-            allLeads.addAll(pageResponse.result!);
-
-            if (pageResponse.result!.length < 20) {
-              hasMorePages = false;
-            } else {
-              currentPage++;
+          if (kDebugMode) {
+            print('ApiService: Page $page loaded successfully with ${pageResponse.result?.length ?? 0} items');
+            if (pageResponse.pagination != null) {
+              print('ApiService: Pagination - current: ${pageResponse.pagination!.currentPage}, total pages: ${pageResponse.pagination!.totalPages}');
             }
-
-            if (kDebugMode) {
-              print('ApiService: Loaded page $currentPage, items: ${pageResponse.result!.length}, total collected: ${allLeads.length}');
-            }
-          } else {
-            hasMorePages = false;
           }
+
+          return pageResponse;
         } else {
-          hasMorePages = false;
+          // Если result пустой, возвращаем пустой response
+          return LeadsDataResponse(
+              result: [],
+              errors: null,
+              pagination: null
+          );
         }
       } else {
-        throw Exception('Ошибка при получении данных со страницы $currentPage!');
+        throw Exception('Ошибка при получении данных со страницы $page! Статус: ${response.statusCode}');
       }
-
-      if (hasMorePages) {
-        await Future.delayed(const Duration(milliseconds: 100));
-      }
-
     } catch (e) {
       if (kDebugMode) {
-        print('ApiService: Error loading page $currentPage: $e');
+        print('ApiService: Error loading page $page: $e');
       }
-      if (currentPage == 1) {
-        rethrow;
-      }
-      hasMorePages = false;
+      rethrow;
     }
   }
-
-  if (kDebugMode) {
-    print('ApiService: Total leads loaded: ${allLeads.length}');
-  }
-
-  return LeadsDataResponse(
-    result: allLeads,
-    errors: null,
-  );
-}
-
-Future<LeadsDataResponse> getAllLead({bool showDebt = false}) async {
-  return await getAllLeadWithAllPages(showDebt: showDebt);
-}
 
 // Метод для Удаления Статуса Лида
   Future<Map<String, dynamic>> deleteLeadStatuses(int leadStatusId) async {

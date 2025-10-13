@@ -6,8 +6,7 @@ import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
-import '../../../custom_widget/dropdown_loading_state.dart';
+import 'package:flutter/foundation.dart';
 
 class LeadRadioGroupWidget extends StatefulWidget {
   final String? selectedLead;
@@ -32,16 +31,23 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
   @override
   void initState() {
     super.initState();
+    if (kDebugMode) {
+      print('🟢 LeadWidget: initState - showDebt=${widget.showDebt}');
+    }
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         final state = context.read<GetAllLeadBloc>().state;
-        if (state is GetAllLeadSuccess) {
-          leadsList = state.dataLead.result ?? [];
-          _updateSelectedLeadData();
+
+        if (kDebugMode) {
+          print('🟢 LeadWidget: postFrameCallback - state=${state.runtimeType}');
         }
-        if (state is! GetAllLeadSuccess) {
-          context.read<GetAllLeadBloc>().add(GetAllLeadEv(showDebt: widget.showDebt));
+
+        // ВСЕГДА загружаем свежие данные при открытии виджета
+        if (kDebugMode) {
+          print('🟢 LeadWidget: Force refresh - Dispatching RefreshAllLeadEv(showDebt=${widget.showDebt})');
         }
+        context.read<GetAllLeadBloc>().add(RefreshAllLeadEv(showDebt: widget.showDebt));
       }
     });
   }
@@ -50,16 +56,25 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
     if (widget.selectedLead != null && leadsList.isNotEmpty) {
       try {
         selectedLeadData = leadsList.firstWhere(
-          (lead) => lead.id.toString() == widget.selectedLead,
+              (lead) => lead.id.toString() == widget.selectedLead,
         );
+        if (kDebugMode) {
+          print('🟢 LeadWidget: Selected lead found - ${selectedLeadData?.name}');
+        }
       } catch (e) {
-        // selectedLeadData остается null если не найден
+        if (kDebugMode) {
+          print('🔴 LeadWidget: Selected lead NOT found - searching for ${widget.selectedLead}');
+        }
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (kDebugMode) {
+      print('🟡 LeadWidget: build() called');
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -75,19 +90,39 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
         const SizedBox(height: 4),
         BlocBuilder<GetAllLeadBloc, GetAllLeadState>(
           builder: (context, state) {
+            if (kDebugMode) {
+              print('🔵 LeadWidget BlocBuilder: state=${state.runtimeType}');
+            }
+
             final isLoading = state is GetAllLeadLoading;
-            
+
             if (state is GetAllLeadSuccess) {
               leadsList = state.dataLead.result ?? [];
+              if (kDebugMode) {
+                print('🔵 LeadWidget BlocBuilder: SUCCESS - ${leadsList.length} leads loaded');
+                if (leadsList.isNotEmpty) {
+                  print('🔵 LeadWidget BlocBuilder: First lead = ${leadsList.first.name}, debt=${leadsList.first.debt}');
+                }
+              }
               _updateSelectedLeadData();
+            }
+
+            if (state is GetAllLeadError) {
+              if (kDebugMode) {
+                print('🔴 LeadWidget BlocBuilder: ERROR - ${state.message}');
+              }
+            }
+
+            if (kDebugMode) {
+              print('🔵 LeadWidget BlocBuilder: Rendering dropdown - items=${leadsList.length}, isLoading=$isLoading');
             }
 
             return CustomDropdown<LeadData>.search(
               closeDropDownOnClearFilterSearch: true,
-              items: isLoading ? [] : leadsList, // ← Пустой список при загрузке
+              items: isLoading ? [] : leadsList,
               searchHintText: AppLocalizations.of(context)!.translate('search'),
               overlayHeight: 400,
-              enabled: !isLoading, // ← Блокируем при загрузке
+              enabled: !isLoading,
               decoration: CustomDropdownDecoration(
                 closedFillColor: const Color(0xffF4F7FD),
                 expandedFillColor: Colors.white,
@@ -103,6 +138,10 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                 expandedBorderRadius: BorderRadius.circular(12),
               ),
               listItemBuilder: (context, item, isSelected, onItemSelect) {
+                if (kDebugMode) {
+                  print('🟣 LeadWidget: listItemBuilder called for ${item.name}');
+                }
+
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -115,16 +154,13 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                         fontFamily: 'Gilroy',
                       ),
                     ),
-                    if (widget.showDebt && 
-                        item.debt != null && 
-                        double.tryParse(item.debt!) != null && 
-                        double.parse(item.debt!) != 0)
+                    if (widget.showDebt && item.debt != null && item.debt != 0)
                       Padding(
                         padding: const EdgeInsets.only(top: 2),
                         child: Text(
-                          'Долг: ${double.parse(item.debt!).toStringAsFixed(2)}',
+                          'Долг: ${item.debt!.toStringAsFixed(2)}',
                           style: TextStyle(
-                            color: double.parse(item.debt!) > 0 ? Colors.red : Colors.green,
+                            color: item.debt! > 0 ? Colors.red : Colors.green,
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
                             fontFamily: 'Gilroy',
@@ -135,7 +171,10 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                 );
               },
               headerBuilder: (context, selectedItem, enabled) {
-                // ← Показываем загрузку в закрытом состоянии
+                if (kDebugMode) {
+                  print('🟣 LeadWidget: headerBuilder called - isLoading=$isLoading, selected=${selectedItem?.name}');
+                }
+
                 if (isLoading) {
                   return const Center(
                     child: SizedBox(
@@ -161,14 +200,13 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                         color: Color(0xff1E2E52),
                       ),
                     ),
-                    if (widget.showDebt && 
-                        selectedItem?.debt != null && 
-                        double.tryParse(selectedItem!.debt!) != null && 
-                        double.parse(selectedItem.debt!) != 0)
+                    if (widget.showDebt &&
+                        selectedItem?.debt != null &&
+                        selectedItem!.debt! != 0)
                       Text(
-                        'Долг: ${double.parse(selectedItem.debt!).toStringAsFixed(2)}',
+                        'Долг: ${selectedItem.debt!.toStringAsFixed(2)}',
                         style: TextStyle(
-                          color: double.parse(selectedItem.debt!) > 0 ? Colors.red : Colors.green,
+                          color: selectedItem.debt! > 0 ? Colors.red : Colors.green,
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
                           fontFamily: 'Gilroy',
@@ -178,7 +216,10 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                 );
               },
               hintBuilder: (context, hint, enabled) {
-                // ← Показываем загрузку в hint (когда ничего не выбрано)
+                if (kDebugMode) {
+                  print('🟣 LeadWidget: hintBuilder called - isLoading=$isLoading');
+                }
+
                 if (isLoading) {
                   return const Center(
                     child: SizedBox(
@@ -191,7 +232,7 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                     ),
                   );
                 }
-                
+
                 return Text(
                   AppLocalizations.of(context)!.translate('select_lead'),
                   style: const TextStyle(
@@ -202,8 +243,11 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                   ),
                 );
               },
-              // ← Для показа загрузки в открытом списке
               noResultFoundBuilder: (context, text) {
+                if (kDebugMode) {
+                  print('🟣 LeadWidget: noResultFoundBuilder called - isLoading=$isLoading, text=$text');
+                }
+
                 if (isLoading) {
                   return const Center(
                     child: Padding(
@@ -238,6 +282,10 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                 return null;
               },
               onChanged: (value) {
+                if (kDebugMode) {
+                  print('🟢 LeadWidget: onChanged - selected ${value?.name}');
+                }
+
                 if (value != null) {
                   widget.onSelectLead(value);
                   setState(() {
