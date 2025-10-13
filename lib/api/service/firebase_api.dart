@@ -23,6 +23,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   try {
     if (Firebase.apps.isEmpty) {
+      debugPrint("Firebase не инициализирован, инициализируем... FirebaseApi.Line.26");
       await Firebase.initializeApp();
     }
     

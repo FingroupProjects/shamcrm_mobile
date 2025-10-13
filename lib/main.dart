@@ -144,6 +144,7 @@ final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
 void main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
+    print("====================== MAIN START ======================");
 
     // ШАГ 1: Инициализация Firebase с гарантией готовности
     await _initializeFirebase();

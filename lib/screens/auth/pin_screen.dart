@@ -54,7 +54,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
   String _storeName = '';
   Map<String, dynamic>? tutorialProgress;
   final ApiService _apiService = ApiService();
-  final FirebaseApi _firebaseApi = FirebaseApi();
+  late final FirebaseApi _firebaseApi; // Инициализируем позже, после Firebase.initializeApp()
 
   @override
   void initState() {
@@ -84,6 +84,9 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
   Future<void> _initializeWithInternetCheck() async {
     try {
       print('PinScreen: Initializing with internet check');
+      
+      // Инициализируем FirebaseApi после того как Firebase уже инициализирован
+      _firebaseApi = FirebaseApi();
       
       // Показываем индикатор загрузки
       setState(() {

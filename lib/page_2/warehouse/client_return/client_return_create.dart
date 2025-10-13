@@ -22,7 +22,7 @@ class CreateClientReturnDocumentScreen extends StatefulWidget {
 
   const CreateClientReturnDocumentScreen({this.organizationId, super.key});
 
- 
+
 
   @override
   CreateClientReturnDocumentScreenState createState() =>
@@ -270,20 +270,20 @@ class CreateClientReturnDocumentScreenState extends State<CreateClientReturnDocu
       final variantId = item['variantId'] as int;
       final quantityController = _quantityControllers[variantId];
       final priceController = _priceControllers[variantId];
-      
+
       // Проверяем поле количества
       if (quantityController != null && quantityController.text.trim().isEmpty) {
         _quantityFocusNodes[variantId]?.requestFocus();
         return;
       }
-      
+
       // Проверяем поле цены
       if (priceController != null && priceController.text.trim().isEmpty) {
         _priceFocusNodes[variantId]?.requestFocus();
         return;
       }
     }
-    
+
     // Если все поля заполнены - закрываем клавиатуру
     FocusScope.of(context).unfocus();
   }
@@ -688,6 +688,19 @@ class CreateClientReturnDocumentScreenState extends State<CreateClientReturnDocu
                   ),
                 ],
               ),
+              if (item['remainder'] != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4, bottom: 4),
+                  child: Text(
+                    '${AppLocalizations.of(context)!.translate('available') ?? 'Доступно'}: ${item['remainder']} ${item['selectedUnit'] ?? 'шт'}',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w400,
+                      color: Color(0xff4CAF50),
+                    ),
+                  ),
+                ),
               const SizedBox(height: 4),
               const Divider(height: 1, color: Color(0xFFE5E7EB)),
               const SizedBox(height: 4),
@@ -1052,7 +1065,7 @@ class CreateClientReturnDocumentScreenState extends State<CreateClientReturnDocu
     _dateController.dispose();
     _commentController.dispose();
     _scrollController.dispose();
-    
+
     // ✅ НОВОЕ: Освобождаем все FocusNode для количества и цены
     for (var focusNode in _quantityFocusNodes.values) {
       focusNode.dispose();
@@ -1060,7 +1073,7 @@ class CreateClientReturnDocumentScreenState extends State<CreateClientReturnDocu
     for (var focusNode in _priceFocusNodes.values) {
       focusNode.dispose();
     }
-    
+
     // Освобождаем контроллеры
     for (var controller in _priceControllers.values) {
       controller.dispose();
@@ -1068,7 +1081,7 @@ class CreateClientReturnDocumentScreenState extends State<CreateClientReturnDocu
     for (var controller in _quantityControllers.values) {
       controller.dispose();
     }
-    
+
     super.dispose();
   }
 }
