@@ -73,7 +73,10 @@ class CreateClientReturnDocumentScreenState extends State<CreateClientReturnDocu
 
           // Создаем контроллеры для нового товара БЕЗ начальных значений
           final variantId = newItem['variantId'] as int;
-          _priceControllers[variantId] = TextEditingController();
+          final initialPrice = newItem['price'] ?? 0.0;
+          _priceControllers[variantId] = TextEditingController(
+              text: initialPrice > 0 ? initialPrice.toStringAsFixed(3) : ''
+          );
           _quantityControllers[variantId] = TextEditingController();
 
           // ✅ НОВОЕ: Создаём FocusNode для полей количества и цены
