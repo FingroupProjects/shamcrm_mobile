@@ -97,3 +97,24 @@ class ClientReturnDeleteError extends ClientReturnState {
   @override
   List<Object> get props => [message, statusCode ?? -1];
 }
+
+class ClientReturnRestoreLoading extends ClientReturnState {}
+
+class ClientReturnRestoreSuccess extends ClientReturnState {
+  final String message;
+
+  const ClientReturnRestoreSuccess(this.message);
+
+  @override
+  List<Object> get props => [message];
+}
+
+class ClientReturnRestoreError extends ClientReturnState {
+  final String message;
+  final int? statusCode;
+
+  const ClientReturnRestoreError(this.message, {this.statusCode});
+
+  @override
+  List<Object> get props => [message, statusCode ?? -1];
+}

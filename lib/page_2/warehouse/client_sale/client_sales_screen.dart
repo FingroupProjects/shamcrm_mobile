@@ -13,6 +13,7 @@ import '../../../models/page_2/incoming_document_model.dart';
 import '../../../widgets/snackbar_widget.dart';
 import '../../money/widgets/error_dialog.dart';
 import 'clien_sales_document_detail.dart';
+import 'client_sale_confirm_dialog.dart';
 
 class ClientSaleScreen extends StatefulWidget {
   const ClientSaleScreen({super.key, this.organizationId});
@@ -449,6 +450,38 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
                   }
                 });
               }
+            } else if (state is ClientSaleRestoreSuccess) {
+              debugPrint("ClientSaleScreen.Bloc.State.ClientSaleRestoreSuccess: ${_clientSaleBloc.state}");
+              if (mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && context.mounted) {
+                    showCustomSnackBar(context: context, message: state.message, isSuccess: true);
+                    setState(() {
+                      _isRefreshing = true; // ИЗМЕНЕНО: Как в примере
+                    });
+                    _clientSaleBloc.add(FetchClientSales(
+                        forceRefresh: true,
+                        filters: _currentFilters,
+                        search: _search));
+                  }
+                });
+              }
+            } else if (state is ClientSaleRestoreError) {
+              if (mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && context.mounted) {
+                    if (state.statusCode == 409) {
+                      showSimpleErrorDialog(
+                          context,
+                          localizations?.translate('error') ?? 'Ошибка',
+                          state.message);
+                      _clientSaleBloc.add(FetchClientSales(forceRefresh: true, filters: _currentFilters, search: _search));
+                      return;
+                    }
+                    showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+                  }
+                });
+              }
             } else if (state is ClientSaleDeleteMassSuccess) {
               if (mounted) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -507,8 +540,9 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
 
               // ИЗМЕНЕНО: Loading с _isInitialLoad
               if (_isInitialLoad || state is ClientSaleLoading || state is ClientSaleDeleteLoading ||
-              state is ClientSaleCreateLoading || state is ClientSaleApproveMassLoading ||
-              state is ClientSaleDisapproveMassLoading || state is ClientSaleDeleteMassLoading || state is ClientSaleRestoreMassLoading ||
+                  state is ClientSaleRestoreLoading || state is ClientSaleCreateLoading ||
+                  state is ClientSaleApproveMassLoading || state is ClientSaleDisapproveMassLoading ||
+                  state is ClientSaleDeleteMassLoading || state is ClientSaleRestoreMassLoading ||
               _isRefreshing) {
                 return Center(
                   child: PlayStoreImageLoading(
@@ -562,126 +596,160 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
                           : const SizedBox.shrink();
                     }
 
-                    // ИЗМЕНЕНО: Dismissible только с delete-правом
+                    // НОВОЕ: Dismissible только влево - delete или restore в зависимости от состояния
                     return _hasDeletePermission
                         ? Dismissible(
-                            key: Key(currentData[index].id.toString()),
-                            direction: DismissDirection.endToStart,
-                            background: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.red,
-                                borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.05),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 4),
+                      key: Key(currentData[index].id.toString()),
+                      // Свайп только справа налево для обоих действий
+                      direction: DismissDirection.endToStart,
+
+                      background: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: currentData[index].deletedAt == null ? Colors.red : const Color(0xFF2196F3),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        alignment: Alignment.centerRight,
+                        child: Icon(
+                          currentData[index].deletedAt == null 
+                              ? Icons.delete 
+                              : Icons.restore_from_trash,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+
+                      confirmDismiss: (direction) async {
+                        final isDeleted = currentData[index].deletedAt != null;
+                        final docNumber = currentData[index].docNumber ?? 'N/A';
+
+                        if (isDeleted) {
+                          return await DocumentConfirmDialog.showRestoreConfirmation(
+                            context,
+                            docNumber,
+                          );
+                        } else {
+                          return await DocumentConfirmDialog.showDeleteConfirmation(
+                            context,
+                            docNumber,
+                          );
+                        }
+                      },
+                      onDismissed: (direction) {
+                        final isDeleted = currentData[index].deletedAt != null;
+                        
+                        if (isDeleted) {
+                          // RESTORE - для удалённых документов
+                          debugPrint("♻️ [UI] Восстановление документа ID: ${currentData[index].id}");
+                          _clientSaleBloc.add(RestoreClientSale(
+                            currentData[index].id!,
+                            localizations!,
+                          ));
+                        } else {
+                          // DELETE - для активных документов
+                          debugPrint("🗑️ [UI] Удаление документа ID: ${currentData[index].id}");
+                          _clientSaleBloc.add(DeleteClientSale(
+                            currentData[index].id!,
+                            localizations!,
+                            shouldReload: true,
+                          ));
+                        }
+                      },
+
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: ClientSalesCard(
+                          document: currentData[index],
+                          onTap: () {
+                            if (_selectionMode) {
+                              _clientSaleBloc.add(SelectDocument(currentData[index]));
+
+                              final currentState = context.read<ClientSaleBloc>().state;
+
+                              if (currentState is ClientSaleLoaded) {
+                                final selectedCount = currentState.selectedData?.length ?? 0;
+                                if (selectedCount <= 1 && currentState.selectedData?.contains(currentData[index]) == true) {
+                                  setState(() {
+                                    _selectionMode = false;
+                                  });
+                                }
+                              }
+                              return;
+                            }
+
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (ctx) => BlocProvider.value(
+                                  value: _clientSaleBloc,
+                                  child: ClientSalesDocumentDetailsScreen(
+                                    documentId: currentData[index].id!,
+                                    docNumber: currentData[index].docNumber ?? 'N/A',
+                                    hasUpdatePermission: _hasUpdatePermission,
+                                    hasDeletePermission: _hasDeletePermission,
+                                    onDocumentUpdated: () {
+                                      _clientSaleBloc.add(FetchClientSales(
+                                        forceRefresh: true,
+                                        filters: _currentFilters,
+                                        search: _search,
+                                      ));
+                                    },
                                   ),
-                                ],
+                                ),
                               ),
-                              alignment: Alignment.centerRight,
-                              child: const Icon(Icons.delete, color: Colors.white, size: 24),
-                            ),
-                            confirmDismiss: (direction) async {
-                              return currentData[index].deletedAt == null;
-                            },
-                            onDismissed: (direction) {
-                              debugPrint("🗑️ [UI] Удаление документа ID: ${currentData[index].id}");
-                              _clientSaleBloc.add(DeleteClientSale(
-                                currentData[index].id!,
-                                localizations!,
-                                shouldReload: true,
-                              ));
-                            },
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: ClientSalesCard(
-                                document: currentData[index],
-                                onTap: () {
-                                  if (_selectionMode) {
-                                    _clientSaleBloc.add(SelectDocument(currentData[index]));
-
-                                    final currentState = context.read<ClientSaleBloc>().state;
-
-                                    if (currentState is ClientSaleLoaded) {
-                                      final selectedCount = currentState.selectedData?.length ?? 0;
-                                      if (selectedCount <= 1 && currentState.selectedData?.contains(currentData[index]) == true) {
-                                        setState(() {
-                                          _selectionMode = false;
-                                        });
-                                      }
-                                    }
-                                    return;
-                                  }
-
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (ctx) => BlocProvider.value(
-                                        value: _clientSaleBloc,
-                                        child: ClientSalesDocumentDetailsScreen(
-                                          documentId: currentData[index].id!,
-                                          docNumber: currentData[index].docNumber ?? 'N/A',
-                                        // ИЗМЕНЕНО: Передаём права
-                                        hasUpdatePermission: _hasUpdatePermission,
-                                        hasDeletePermission: _hasDeletePermission,
-                                        onDocumentUpdated: () {
-                                          _clientSaleBloc.add(FetchClientSales(
-                                            forceRefresh: true,
-                                            filters: _currentFilters,
-                                            search: _search,
-                                          ));
-                                        },
-                                      ),
-                                      ),
-                                    ),
-                                  );
-                                },
-                                isSelectionMode: _selectionMode,
-                                isSelected: (state as ClientSaleLoaded).selectedData?.contains(currentData[index]) ?? false,
-                                // ИЗМЕНЕНО: onLongPress только с delete-правом
-                                onLongPress: _hasDeletePermission
-                                    ? () {
-                                        if (_selectionMode) return;
-                                        setState(() {
-                                          _selectionMode = true;
-                                        });
-                                        _clientSaleBloc.add(SelectDocument(currentData[index]));
-                                      }
-                                    : () {},
-                              ),
-                            ),
-                          )
+                            );
+                          },
+                          isSelectionMode: _selectionMode,
+                          isSelected: (state as ClientSaleLoaded).selectedData?.contains(currentData[index]) ?? false,
+                          onLongPress: _hasDeletePermission
+                              ? () {
+                            if (_selectionMode) return;
+                            setState(() {
+                              _selectionMode = true;
+                            });
+                            _clientSaleBloc.add(SelectDocument(currentData[index]));
+                          }
+                              : () {},
+                        ),
+                      ),
+                    )
                         : ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: ClientSalesCard(
-                              document: currentData[index],
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (ctx) => ClientSalesDocumentDetailsScreen(
-                                      documentId: currentData[index].id!,
-                                      docNumber: currentData[index].docNumber ?? 'N/A',
-                                      hasUpdatePermission: _hasUpdatePermission,
-                                      hasDeletePermission: _hasDeletePermission,
-                                      onDocumentUpdated: () {
-                                        _clientSaleBloc.add(FetchClientSales(
-                                          forceRefresh: true,
-                                          filters: _currentFilters,
-                                          search: _search,
-                                        ));
-                                      },
-                                    ),
-                                  ),
-                                );
-                              },
-                              isSelectionMode: _selectionMode,
-                              isSelected: (state as ClientSaleLoaded).selectedData?.contains(currentData[index]) ?? false,
-                              onLongPress: () {}, // Без delete — ничего
+                      borderRadius: BorderRadius.circular(12),
+                      child: ClientSalesCard(
+                        document: currentData[index],
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (ctx) => ClientSalesDocumentDetailsScreen(
+                                documentId: currentData[index].id!,
+                                docNumber: currentData[index].docNumber ?? 'N/A',
+                                hasUpdatePermission: _hasUpdatePermission,
+                                hasDeletePermission: _hasDeletePermission,
+                                onDocumentUpdated: () {
+                                  _clientSaleBloc.add(FetchClientSales(
+                                    forceRefresh: true,
+                                    filters: _currentFilters,
+                                    search: _search,
+                                  ));
+                                },
+                              ),
                             ),
                           );
+                        },
+                        isSelectionMode: _selectionMode,
+                        isSelected: (state as ClientSaleLoaded).selectedData?.contains(currentData[index]) ?? false,
+                        onLongPress: () {},
+                      ),
+                    );
                   },
                 ),
               );
