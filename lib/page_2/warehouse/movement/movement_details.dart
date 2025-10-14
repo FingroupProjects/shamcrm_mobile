@@ -645,9 +645,9 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
     final availableUnits = good.good?.units ?? [];
     final selectedUnit = availableUnits.firstWhere(
       (unit) => unit.id == good.unitId,
-      orElse: () => Unit(id: 23, name: 'шт', shortName: 'шт'),
+      orElse: () => Unit(id: 23, name: 'шт'),
     );
-    final unitShortName = selectedUnit.shortName ?? selectedUnit.name ?? 'шт';
+    final unitShortName = selectedUnit.name ?? 'шт';
 
     return GestureDetector(
       onTap: () {

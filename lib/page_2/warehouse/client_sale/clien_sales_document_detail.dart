@@ -670,9 +670,9 @@ class _ClientSalesDocumentDetailsScreenState
     final availableUnits = good.good?.units ?? [];
     final selectedUnit = availableUnits.firstWhere(
       (unit) => unit.id == good.unitId,
-      orElse: () => Unit(id: null, name: 'шт', shortName: 'шт'),
+      orElse: () => Unit(id: null, name: 'шт'),
     );
-    final unitShortName = selectedUnit.shortName ?? selectedUnit.name ?? 'шт';
+    final unitShortName = selectedUnit.name ?? 'шт';
 
     return GestureDetector(
       onTap: () {

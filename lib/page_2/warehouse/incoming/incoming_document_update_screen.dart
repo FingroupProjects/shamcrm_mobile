@@ -79,13 +79,13 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
         final quantity = good.quantity ?? 0;
         final price = double.tryParse(good.price ?? '0') ?? 0.0;
         
-        // Получаем единицы измерения из товара
-        final availableUnits =  good.good?.units ?? [];
-        final selectedUnitId = good.unitId;
-        final selectedUnitObj = availableUnits.firstWhere(
-          (unit) => unit.id == selectedUnitId,
-          orElse: () => availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: 'шт'),
-        );
+        // ✅ NEW: Try multiple sources for units
+        final availableUnits = good.good?.units ?? 
+                              (good.unit != null ? [good.unit!] : []);
+        
+        // ✅ NEW: Get selected unit from document_goods level first
+        final selectedUnitObj = good.unit ?? 
+                               (availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: 'шт'));
         
         final amount = selectedUnitObj.amount ?? 1;
         

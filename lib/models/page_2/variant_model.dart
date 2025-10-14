@@ -63,14 +63,14 @@ class Variant {
       units.addAll(good.units!);
     }
     
-    // Добавляем единицы из good.measurements
-    if (good?.measurements != null && good!.measurements!.isNotEmpty) {
-      for (var measurement in good.measurements!) {
-        if (measurement.unit != null) { // Проверяем, что unit не null
-          units.add(measurement.unit!);
-        }
-      }
-    }
+    //  ""НЕ"" Добавляем единицы из good.measurements
+    // if (good?.measurements != null && good!.measurements!.isNotEmpty) {
+    //   for (var measurement in good.measurements!) {
+    //     if (measurement.unit != null) { // Проверяем, что unit не null
+    //       units.add(measurement.unit!);
+    //     }
+    //   }
+    // }
 
     return Variant(
       id: json['id'] as int? ?? 0,

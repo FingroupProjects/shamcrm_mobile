@@ -77,12 +77,13 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
         final variantId = good.variantId ?? good.good?.id ?? 0;
         final quantity = good.quantity ?? 0;
         final price = double.tryParse(good.price ?? '0') ?? 0.0;
-        final availableUnits = good.good?.units ?? [];
-        final selectedUnitId = good.unitId;
-        final selectedUnitObj = availableUnits.firstWhere(
-          (unit) => unit.id == selectedUnitId,
-          orElse: () => availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: 'шт', shortName: 'шт'),
-        );
+        // ✅ NEW: Try multiple sources for units
+        final availableUnits = good.good?.units ?? 
+                              (good.unit != null ? [good.unit!] : []);
+        
+        // ✅ NEW: Get selected unit from document_goods level first
+        final selectedUnitObj = good.unit ?? 
+                               (availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: 'шт'));
         final amount = selectedUnitObj.amount ?? 1;
 
         _items.add({
@@ -92,7 +93,7 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
           'quantity': quantity,
           'price': price,
           'total': (quantity * price * amount).round(),
-          'selectedUnit': selectedUnitObj.shortName ?? selectedUnitObj.name,
+          'selectedUnit': selectedUnitObj.name,
           'unit_id': selectedUnitObj.id,
           'amount': amount,
           'availableUnits': availableUnits,
@@ -268,7 +269,7 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
 
         final availableUnits = _items[index]['availableUnits'] as List<Unit>? ?? [];
         final selectedUnitObj = availableUnits.firstWhere(
-              (unit) => (unit.shortName ?? unit.name) == newUnit,
+              (unit) => (unit.name) == newUnit,
           orElse: () => availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: '', amount: 1),
         );
 
@@ -805,14 +806,14 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
                                     ),
                                     items: availableUnits.map((unit) {
                                       return DropdownMenuItem<String>(
-                                        value: unit.shortName ?? unit.name,
-                                        child: Text(unit.shortName ?? unit.name ?? ''),
+                                        value: unit.name,
+                                        child: Text(unit.name ?? ''),
                                       );
                                     }).toList(),
                                     onChanged: (String? newValue) {
                                       if (newValue != null) {
                                         final selectedUnit = availableUnits.firstWhere(
-                                              (unit) => (unit.shortName ?? unit.name) == newValue,
+                                              (unit) => (unit.name) == newValue,
                                         );
                                         _updateItemUnit(variantId, newValue, selectedUnit.id);
                                       }
