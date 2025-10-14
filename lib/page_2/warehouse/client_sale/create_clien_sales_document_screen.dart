@@ -25,12 +25,10 @@ class CreateClienSalesDocumentScreen extends StatefulWidget {
   const CreateClienSalesDocumentScreen({this.organizationId, super.key});
 
   @override
-  CreateClienSalesDocumentScreenState createState() =>
-      CreateClienSalesDocumentScreenState();
+  CreateClienSalesDocumentScreenState createState() => CreateClienSalesDocumentScreenState();
 }
 
-class CreateClienSalesDocumentScreenState
-    extends State<CreateClienSalesDocumentScreen> {
+class CreateClienSalesDocumentScreenState extends State<CreateClienSalesDocumentScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _dateController = TextEditingController();
   final TextEditingController _commentController = TextEditingController();
@@ -40,8 +38,6 @@ class CreateClienSalesDocumentScreenState
   List<Map<String, dynamic>> _items = [];
   bool _isLoading = false;
   final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
-
-  // Контроллеры для редактирования полей товаров
   final Map<int, TextEditingController> _priceControllers = {};
   final Map<int, TextEditingController> _quantityControllers = {};
 
@@ -71,21 +67,17 @@ class CreateClienSalesDocumentScreenState
           final variantId = newItem['variantId'] as int;
 
           final initialPrice = newItem['price'] ?? 0.0;
-          _priceControllers[variantId] = TextEditingController(
-            text: initialPrice > 0 ? initialPrice.toStringAsFixed(3) : ''
-          );
+          _priceControllers[variantId] = TextEditingController(text: initialPrice > 0 ? initialPrice.toStringAsFixed(3) : '');
 
-          _quantityControllers[variantId] = TextEditingController(text: '1');
+          _quantityControllers[variantId] = TextEditingController(text: '');
 
           // ✅ НОВОЕ: Создаём FocusNode для полей
           _quantityFocusNodes[variantId] = FocusNode();
           _priceFocusNodes[variantId] = FocusNode();
 
-          _items.last['quantity'] = 1;
           _items.last['price'] = initialPrice;
 
           final amount = newItem['amount'] ?? 1;
-          _items.last['total'] = (1 * initialPrice * amount).round();
 
           _priceErrors[variantId] = false;
           _quantityErrors[variantId] = false;
@@ -108,7 +100,7 @@ class CreateClienSalesDocumentScreenState
                 duration: const Duration(milliseconds: 400),
                 curve: Curves.easeOut,
               );
-              
+
               _quantityFocusNodes[variantId]?.requestFocus();
             }
           });
@@ -117,18 +109,11 @@ class CreateClienSalesDocumentScreenState
     }
   }
 
-void _removeItem(int index) {
-  if (!mounted) return;
-  
-  final removedItem = _items[index];
-  final variantId = removedItem['variantId'] as int;
-
-  // ✅ Удаляем из AnimatedList ДО setState
-  _listKey.currentState?.removeItem(
-    index,
-    (context, animation) => _buildSelectedItemCard(index, removedItem, animation),
-    duration: const Duration(milliseconds: 300),
-  );
+  void _removeItem(int index) {
+    if (mounted) {
+      final removedItem = _items[index];
+      final variantId = removedItem['variantId'] as int;
+      _collapsedItems[variantId] = false;
 
   // ✅ Затем обновляем состояние
   setState(() {
@@ -170,9 +155,9 @@ void _removeItem(int index) {
     }
 
     context.read<VariantBloc>().add(FilterVariants({
-      'counterparty_id': _selectedLead!.id,
-      'storage_id': int.parse(_selectedStorage!),
-    }));
+          'counterparty_id': _selectedLead!.id,
+          'storage_id': int.parse(_selectedStorage!),
+        }));
 
     final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
@@ -186,12 +171,12 @@ void _removeItem(int index) {
     if (result != null) {
       _handleVariantSelection(result);
     }
- // Если результат null (пользователь закрыл окно без выбора), убеждаемся, что фокус сброшен
-  if (result == null) {
-    FocusScope.of(context).unfocus();
-  } else {
-    _handleVariantSelection(result);
-  }
+    // Если результат null (пользователь закрыл окно без выбора), убеждаемся, что фокус сброшен
+    if (result == null) {
+      FocusScope.of(context).unfocus();
+    } else {
+      _handleVariantSelection(result);
+    }
   }
 
   void _updateItemQuantity(int variantId, String value) {
@@ -268,18 +253,18 @@ void _removeItem(int index) {
       final variantId = item['variantId'] as int;
       final quantityController = _quantityControllers[variantId];
       final priceController = _priceControllers[variantId];
-      
+
       if (quantityController != null && quantityController.text.trim().isEmpty) {
         _quantityFocusNodes[variantId]?.requestFocus();
         return;
       }
-      
+
       if (priceController != null && priceController.text.trim().isEmpty) {
         _priceFocusNodes[variantId]?.requestFocus();
         return;
       }
     }
-    
+
     FocusScope.of(context).unfocus();
   }
 
@@ -318,9 +303,7 @@ void _removeItem(int index) {
           hasErrors = true;
         }
 
-        if (priceController == null ||
-            priceController.text.trim().isEmpty ||
-            (double.tryParse(priceController.text) ?? -1) < 0) {
+        if (priceController == null || priceController.text.trim().isEmpty || (double.tryParse(priceController.text) ?? -1) < 0) {
           _priceErrors[variantId] = true;
           hasErrors = true;
         }
@@ -347,12 +330,14 @@ void _removeItem(int index) {
         storageId: int.parse(_selectedStorage!),
         comment: _commentController.text.trim(),
         counterpartyId: _selectedLead!.id!,
-        documentGoods: _items.map((item) => {
-          'good_id': item['variantId'],
-          'quantity': int.tryParse(item['quantity'].toString()),
-          'price': item['price'].toString(),
-          'unit_id': item['unit_id'],
-        }).toList(),
+        documentGoods: _items
+            .map((item) => {
+                  'good_id': item['variantId'],
+                  'quantity': int.tryParse(item['quantity'].toString()),
+                  'price': item['price'].toString(),
+                  'unit_id': item['unit_id'],
+                })
+            .toList(),
         organizationId: widget.organizationId ?? 1,
         salesFunnelId: 1,
         approve: approve,
@@ -397,68 +382,69 @@ void _removeItem(int index) {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
-      return WillPopScope(
-    onWillPop: () async {
-      // Если есть товары в списке, показываем диалог подтверждения
-      if (_items.isNotEmpty) {
-        final shouldExit = await ConfirmExitDialog.show(context);
-        return shouldExit;
-      }
-      // Если товаров нет, разрешаем выход
-      return true;
-    },
-    child: KeyboardDismissible(
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        appBar: _buildAppBar(localizations),
-        body: BlocListener<ClientSaleBloc, ClientSaleState>(
-          listener: (context, state) {
-            setState(() => _isLoading = false);
+    return WillPopScope(
+      onWillPop: () async {
+        // Если есть товары в списке, показываем диалог подтверждения
+        if (_items.isNotEmpty) {
+          final shouldExit = await ConfirmExitDialog.show(context);
+          return shouldExit;
+        }
+        // Если товаров нет, разрешаем выход
+        return true;
+      },
+      child: KeyboardDismissible(
+        child: Scaffold(
+          backgroundColor: Colors.white,
+          appBar: _buildAppBar(localizations),
+          body: BlocListener<ClientSaleBloc, ClientSaleState>(
+            listener: (context, state) {
+              setState(() => _isLoading = false);
 
-            if (state is ClientSaleCreateSuccess && mounted) {
-              Navigator.pop(context, true);
-            }
-          },
-          child: Form(
-            key: _formKey,
-            child: Column(
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 8),
-                        _buildDateField(localizations),
-                        const SizedBox(height: 16),
-                        LeadRadioGroupWidget(
-                          selectedLead: _selectedLead?.id.toString(),
-                          onSelectLead: (lead) => setState(() => _selectedLead = lead),
-                          showDebt: true,
-                        ),
-                        const SizedBox(height: 16),
-                        StorageWidget(
-                          selectedStorage: _selectedStorage,
-                          onChanged: (value) => setState(() => _selectedStorage = value),
-                        ),
-                        const SizedBox(height: 16),
-                        _buildCommentField(localizations),
-                        const SizedBox(height: 16),
-                        _buildGoodsSection(localizations),
-                        const SizedBox(height: 16),
-                      ],
+              if (state is ClientSaleCreateSuccess && mounted) {
+                Navigator.pop(context, true);
+              }
+            },
+            child: Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 8),
+                          _buildDateField(localizations),
+                          const SizedBox(height: 16),
+                          LeadRadioGroupWidget(
+                            selectedLead: _selectedLead?.id.toString(),
+                            onSelectLead: (lead) => setState(() => _selectedLead = lead),
+                            showDebt: true,
+                          ),
+                          const SizedBox(height: 16),
+                          StorageWidget(
+                            selectedStorage: _selectedStorage,
+                            onChanged: (value) => setState(() => _selectedStorage = value),
+                          ),
+                          const SizedBox(height: 16),
+                          _buildCommentField(localizations),
+                          const SizedBox(height: 16),
+                          _buildGoodsSection(localizations),
+                          const SizedBox(height: 16),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                _buildActionButtons(localizations),
-              ],
+                  _buildActionButtons(localizations),
+                ],
+              ),
             ),
           ),
         ),
       ),
-      ),);
+    );
   }
 
   AppBar _buildAppBar(AppLocalizations localizations) {
@@ -470,21 +456,21 @@ void _removeItem(int index) {
       backgroundColor: Colors.white,
       forceMaterialTransparency: true,
       elevation: 0,
-       leading: IconButton(
-      icon: const Icon(Icons.arrow_back_ios, color: Color(0xff1E2E52), size: 24),
-      onPressed: () async {
-        // Если есть товары, показываем диалог
-        if (_items.isNotEmpty) {
-          final shouldExit = await ConfirmExitDialog.show(context);
-          if (shouldExit && mounted) {
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back_ios, color: Color(0xff1E2E52), size: 24),
+        onPressed: () async {
+          // Если есть товары, показываем диалог
+          if (_items.isNotEmpty) {
+            final shouldExit = await ConfirmExitDialog.show(context);
+            if (shouldExit && mounted) {
+              Navigator.pop(context);
+            }
+          } else {
+            // Если товаров нет, просто выходим
             Navigator.pop(context);
           }
-        } else {
-          // Если товаров нет, просто выходим
-          Navigator.pop(context);
-        }
-      },
-    ),
+        },
+      ),
       title: hasItems
           ? null // Убираем заголовок, когда показываем сумму
           : Text(
@@ -624,22 +610,23 @@ void _removeItem(int index) {
           },
         ),
         const SizedBox(height: 16),
-     //   _buildTotalCard(total),
+        //   _buildTotalCard(total),
       ],
     );
   }
 
+  final Map<int, bool> _collapsedItems = {}; // Для управления состоянием свернутых элементов
+
+  // Контроллеры для редактирования полей товаров
   Widget _buildSelectedItemCard(int index, Map<String, dynamic> item, Animation<double> animation) {
     final availableUnits = item['availableUnits'] as List<Unit>? ?? [];
     final variantId = item['variantId'] as int;
     final priceController = _priceControllers[variantId];
     final quantityController = _quantityControllers[variantId];
-    final quantityFocusNode = _quantityFocusNodes[variantId]; // ✅ НОВОЕ
-    final priceFocusNode = _priceFocusNodes[variantId]; // ✅ НОВОЕ
-// ✅ ДОБАВЬТЕ ПРОВЕРКУ
-  if (priceController == null || quantityController == null) {
-    return const SizedBox.shrink();
-  }
+    final quantityFocusNode = _quantityFocusNodes[variantId];
+    final priceFocusNode = _priceFocusNodes[variantId];
+    final isCollapsed = _collapsedItems[variantId] ?? false;
+
     return FadeTransition(
       opacity: animation,
       child: SizeTransition(
@@ -663,70 +650,160 @@ void _removeItem(int index) {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: const Color(0xffF4F7FD),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.shopping_cart_outlined,
-                      color: Color(0xff4759FF),
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      item['name'] ?? '',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xff1E2E52),
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _collapsedItems[variantId] = !isCollapsed;
+                  });
+                },
+                child: Row(
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: const Color(0xffF4F7FD),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                      child: const Icon(
+                        Icons.shopping_cart_outlined,
+                        color: Color(0xff4759FF),
+                        size: 20,
+                      ),
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close, color: Color(0xff99A4BA), size: 18),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    onPressed: () => _removeItem(index),
-                  ),
-                ],
-              ),
-              if (item['remainder'] != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4, bottom: 4),
-                  child: Text(
-                    '${AppLocalizations.of(context)!.translate('available') ?? 'Доступно'}: ${item['remainder']} ${item['selectedUnit'] ?? 'шт'}',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w400,
-                      color: Color(0xff4CAF50),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        item['name'] ?? '',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xff1E2E52),
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  ),
+                    Icon(
+                      isCollapsed ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_up,
+                      color: const Color(0xff99A4BA),
+                      size: 18,
+                    ),
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: () => _removeItem(index),
+                      child: const Icon(Icons.close, color: Color(0xff99A4BA), size: 18),
+                    ),
+                  ],
                 ),
-              const SizedBox(height: 10),
-              const Divider(height: 1, color: Color(0xFFE5E7EB)),
-              const SizedBox(height: 10),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (availableUnits.isNotEmpty)
+              ),
+              if (!isCollapsed) ...[
+                if (item['remainder'] != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4, bottom: 4),
+                    child: Text(
+                      '${AppLocalizations.of(context)!.translate('available') ?? 'Доступно'}: ${item['remainder']} ${item['selectedUnit'] ?? 'шт'}',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w400,
+                        color: Color(0xff4CAF50),
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: 10),
+                const Divider(height: 1, color: Color(0xFFE5E7EB)),
+                const SizedBox(height: 10),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (availableUnits.isNotEmpty)
+                      Expanded(
+                        flex: 2,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              AppLocalizations.of(context)!.translate('unit') ?? 'Ед.',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w400,
+                                color: Color(0xff99A4BA),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            if (availableUnits.length > 1)
+                              Container(
+                                height: 48,
+                                padding: const EdgeInsets.symmetric(horizontal: 8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF4F7FD),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                                ),
+                                child: DropdownButtonHideUnderline(
+                                  child: DropdownButton<String>(
+                                    value: item['selectedUnit'],
+                                    isDense: true,
+                                    isExpanded: true,
+                                    dropdownColor: Colors.white,
+                                    icon: const Icon(Icons.arrow_drop_down, size: 16, color: Color(0xff4759FF)),
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontFamily: 'Gilroy',
+                                      fontWeight: FontWeight.w500,
+                                      color: Color(0xff1E2E52),
+                                    ),
+                                    items: availableUnits.map((unit) {
+                                      return DropdownMenuItem<String>(
+                                        value: unit.shortName ?? unit.name,
+                                        child: Text(unit.shortName ?? unit.name ?? ''),
+                                      );
+                                    }).toList(),
+                                    onChanged: (String? newValue) {
+                                      if (newValue != null) {
+                                        final selectedUnit = availableUnits.firstWhere(
+                                          (unit) => (unit.shortName ?? unit.name) == newValue,
+                                        );
+                                        _updateItemUnit(variantId, newValue, selectedUnit.id);
+                                      }
+                                    },
+                                  ),
+                                ),
+                              )
+                            else
+                              Container(
+                                height: 48,
+                                padding: const EdgeInsets.symmetric(horizontal: 8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF4F7FD),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                                ),
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  item['selectedUnit'] ?? 'шт',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontFamily: 'Gilroy',
+                                    fontWeight: FontWeight.w500,
+                                    color: Color(0xff1E2E52),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    if (availableUnits.isNotEmpty) const SizedBox(width: 8),
                     Expanded(
                       flex: 2,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            AppLocalizations.of(context)!.translate('unit') ?? 'Ед.',
+                            AppLocalizations.of(context)!.translate('quantity') ?? 'Кол-во',
                             style: const TextStyle(
                               fontSize: 11,
                               fontFamily: 'Gilroy',
@@ -735,145 +812,68 @@ void _removeItem(int index) {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          if (availableUnits.length > 1)
-                            Container(
-                              height: 48,
-                              padding: const EdgeInsets.symmetric(horizontal: 8),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF4F7FD),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: const Color(0xFFE5E7EB)),
-                              ),
-                              child: DropdownButtonHideUnderline(
-                                child: DropdownButton<String>(
-                                  value: item['selectedUnit'],
-                                  isDense: true,
-                                  isExpanded: true,
-                                  dropdownColor: Colors.white,
-                                  icon: const Icon(Icons.arrow_drop_down, size: 16, color: Color(0xff4759FF)),
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontFamily: 'Gilroy',
-                                    fontWeight: FontWeight.w500,
-                                    color: Color(0xff1E2E52),
-                                  ),
-                                  items: availableUnits.map((unit) {
-                                    return DropdownMenuItem<String>(
-                                      value: unit.shortName ?? unit.name,
-                                      child: Text(unit.shortName ?? unit.name ?? ''),
-                                    );
-                                  }).toList(),
-                                  onChanged: (String? newValue) {
-                                    if (newValue != null) {
-                                      final selectedUnit = availableUnits.firstWhere(
-                                        (unit) => (unit.shortName ?? unit.name) == newValue,
-                                      );
-                                      _updateItemUnit(variantId, newValue, selectedUnit.id);
-                                    }
-                                  },
-                                ),
-                              ),
-                            )
-                          else
-                            Container(
-                              height: 48,
-                              padding: const EdgeInsets.symmetric(horizontal: 8),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF4F7FD),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: const Color(0xFFE5E7EB)),
-                              ),
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                item['selectedUnit'] ?? 'шт',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontFamily: 'Gilroy',
-                                  fontWeight: FontWeight.w500,
-                                  color: Color(0xff1E2E52),
-                                ),
-                              ),
+                          CompactTextField(
+                            controller: quantityController ?? TextEditingController(),
+                            focusNode: quantityFocusNode,
+                            hintText: AppLocalizations.of(context)!.translate('quantity') ?? 'Количество',
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                            ],
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xff1E2E52),
                             ),
+                            hasError: _quantityErrors[variantId] == true,
+                            onChanged: (value) => _updateItemQuantity(variantId, value),
+                            onDone: _moveToNextEmptyField,
+                          ),
                         ],
                       ),
                     ),
-                  if (availableUnits.isNotEmpty) const SizedBox(width: 8),
-                  Expanded(
-                    flex: 2,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          AppLocalizations.of(context)!.translate('quantity') ?? 'Кол-во',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w400,
-                            color: Color(0xff99A4BA),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      flex: 3,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            AppLocalizations.of(context)!.translate('price') ?? 'Цена',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w400,
+                              color: Color(0xff99A4BA),
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        CompactTextField(
-                          controller: quantityController!,
-                          focusNode: quantityFocusNode, // ✅ НОВОЕ
-                          hintText: AppLocalizations.of(context)!.translate('quantity') ?? 'Количество',
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                          ],
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xff1E2E52),
+                          const SizedBox(height: 4),
+                          CompactTextField(
+                            controller: priceController ?? TextEditingController(),
+                            focusNode: priceFocusNode,
+                            hintText: AppLocalizations.of(context)!.translate('price') ?? 'Цена',
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            inputFormatters: [
+                              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,3}')),
+                            ],
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xff1E2E52),
+                            ),
+                            hasError: _priceErrors[variantId] == true,
+                            onChanged: (value) => _updateItemPrice(variantId, value),
+                            onDone: _moveToNextEmptyField,
                           ),
-                          hasError: _quantityErrors[variantId] == true,
-                          onChanged: (value) => _updateItemQuantity(variantId, value),
-                          onDone: _moveToNextEmptyField, // ✅ НОВОЕ
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    flex: 3,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          AppLocalizations.of(context)!.translate('price') ?? 'Цена',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w400,
-                            color: Color(0xff99A4BA),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        CompactTextField(
-                          controller: priceController!,
-                          focusNode: priceFocusNode, // ✅ НОВОЕ
-                          hintText: AppLocalizations.of(context)!.translate('price') ?? 'Цена',
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          inputFormatters: [
-                            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,3}')),
-                          ],
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xff1E2E52),
-                          ),
-                          hasError: _priceErrors[variantId] == true,
-                          onChanged: (value) => _updateItemPrice(variantId, value),
-                          onDone: _moveToNextEmptyField, // ✅ НОВОЕ
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 10),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -972,109 +972,109 @@ void _removeItem(int index) {
     );
   }
 
-Widget _buildActionButtons(AppLocalizations localizations) {
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      boxShadow: [
-        BoxShadow(
-          color: Colors.grey.withOpacity(0.1),
-          spreadRadius: 1,
-          blurRadius: 3,
-          offset: const Offset(0, -1),
-        ),
-      ],
-    ),
-    child: Row(
-      children: [
-        // Первая кнопка "Сохранить и провести" - белый фон с зелёной границей
-        Expanded(
-          child: Container(
-            height: 48, // Уменьшено с 48 до 40 для компактности
-            decoration: BoxDecoration(
-              border: Border.all(color: const Color(0xff4CAF50), width: 1.5),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
+  Widget _buildActionButtons(AppLocalizations localizations) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 3,
+            offset: const Offset(0, -1),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Первая кнопка "Сохранить и провести" - белый фон с зелёной границей
+          Expanded(
+            child: Container(
+              height: 48, // Уменьшено с 48 до 40 для компактности
+              decoration: BoxDecoration(
+                border: Border.all(color: const Color(0xff4CAF50), width: 1.5),
                 borderRadius: BorderRadius.circular(12),
-                onTap: _isLoading ? null : _createAndApproveDocument,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8), // Уменьшено с 16 до 8
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.check_circle_outline,
-                        size: 18, // Уменьшено с 20 до 18
-                        color: _isLoading ? const Color(0xff99A4BA) : const Color(0xff4CAF50),
-                      ),
-                      const SizedBox(width: 6), // Уменьшено с 8 до 6
-                      Text(
-                        localizations.translate('save_and_approve') ?? 'Сохранить и провести',
-                        style: TextStyle(
-                          fontSize: 14, // Уменьшено с 16 до 14
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w600,
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: _isLoading ? null : _createAndApproveDocument,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8), // Уменьшено с 16 до 8
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.check_circle_outline,
+                          size: 18, // Уменьшено с 20 до 18
                           color: _isLoading ? const Color(0xff99A4BA) : const Color(0xff4CAF50),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 6), // Уменьшено с 8 до 6
+                        Text(
+                          localizations.translate('save_and_approve') ?? 'Сохранить и провести',
+                          style: TextStyle(
+                            fontSize: 14, // Уменьшено с 16 до 14
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w600,
+                            color: _isLoading ? const Color(0xff99A4BA) : const Color(0xff4CAF50),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
-        const SizedBox(width: 12), // Пространство между кнопками
-        // Вторая кнопка "Сохранить" - синяя
-        Expanded(
-          child: SizedBox(
-            height: 48, // Уменьшено с 48 до 40 для компактности
-            child: ElevatedButton(
-              onPressed: _isLoading ? null : _saveDocument,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xff4759FF),
-                disabledBackgroundColor: const Color(0xffE5E7EB),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+          const SizedBox(width: 12), // Пространство между кнопками
+          // Вторая кнопка "Сохранить" - синяя
+          Expanded(
+            child: SizedBox(
+              height: 48, // Уменьшено с 48 до 40 для компактности
+              child: ElevatedButton(
+                onPressed: _isLoading ? null : _saveDocument,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xff4759FF),
+                  disabledBackgroundColor: const Color(0xffE5E7EB),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
                 ),
-                elevation: 0,
-              ),
-              child: _isLoading
-                  ? const SizedBox(
-                      width: 18, // Уменьшено с 20 до 18
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                  : Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.save_outlined, color: Colors.white, size: 18), // Уменьшено с 20 до 18
-                        const SizedBox(width: 6), // Уменьшено с 8 до 6
-                        Text(
-                          localizations.translate('save') ?? 'Сохранить',
-                          style: const TextStyle(
-                            fontSize: 14, // Уменьшено с 16 до 14
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
+                child: _isLoading
+                    ? const SizedBox(
+                        width: 18, // Уменьшено с 20 до 18
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                         ),
-                      ],
-                    ),
+                      )
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.save_outlined, color: Colors.white, size: 18), // Уменьшено с 20 до 18
+                          const SizedBox(width: 6), // Уменьшено с 8 до 6
+                          Text(
+                            localizations.translate('save') ?? 'Сохранить',
+                            style: const TextStyle(
+                              fontSize: 14, // Уменьшено с 16 до 14
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+              ),
             ),
           ),
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
 
   void _createAndApproveDocument() {
     _createDocument(approve: true);
@@ -1089,7 +1089,7 @@ Widget _buildActionButtons(AppLocalizations localizations) {
     _dateController.dispose();
     _commentController.dispose();
     _scrollController.dispose();
-    
+
     // ✅ НОВОЕ: Освобождаем все FocusNode
     for (var focusNode in _quantityFocusNodes.values) {
       focusNode.dispose();
@@ -1097,7 +1097,7 @@ Widget _buildActionButtons(AppLocalizations localizations) {
     for (var focusNode in _priceFocusNodes.values) {
       focusNode.dispose();
     }
-    
+
     // Освобождаем контроллеры
     for (var controller in _priceControllers.values) {
       controller.dispose();
@@ -1105,7 +1105,7 @@ Widget _buildActionButtons(AppLocalizations localizations) {
     for (var controller in _quantityControllers.values) {
       controller.dispose();
     }
-    
+
     super.dispose();
   }
 }
