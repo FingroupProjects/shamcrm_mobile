@@ -219,7 +219,7 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
 
         final availableUnits = _items[index]['availableUnits'] as List<Unit>? ?? [];
         final selectedUnitObj = availableUnits.firstWhere(
-              (unit) => (unit.shortName ?? unit.name) == newUnit,
+              (unit) => (unit.name) == newUnit,
           orElse: () => availableUnits.isNotEmpty ? availableUnits.first : Unit(id: 0, name: '', amount: 1),
         );
 
@@ -443,36 +443,78 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
   }
 
   AppBar _buildAppBar(AppLocalizations localizations) {
-    // Нет total — title всегда виден
+    final hasItems = _items.isNotEmpty;
+    final total = _items.fold<double>(0, (sum, item) => sum + (item['total'] ?? 0.0));
+
     return AppBar(
       backgroundColor: Colors.white,
       forceMaterialTransparency: true,
       elevation: 0,
-       leading: IconButton(
-      icon: const Icon(Icons.arrow_back_ios, color: Color(0xff1E2E52), size: 24),
-      onPressed: () async {
-        // Если есть товары, показываем диалог
-        if (_items.isNotEmpty) {
-          final shouldExit = await ConfirmExitDialog.show(context);
-          if (shouldExit && mounted) {
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back_ios, color: Color(0xff1E2E52), size: 24),
+        onPressed: () async {
+          // Если есть товары, показываем диалог
+          if (_items.isNotEmpty) {
+            final shouldExit = await ConfirmExitDialog.show(context);
+            if (shouldExit && mounted) {
+              Navigator.pop(context);
+            }
+          } else {
+            // Если товаров нет, просто выходим
             Navigator.pop(context);
           }
-        } else {
-          // Если товаров нет, просто выходим
-          Navigator.pop(context);
-        }
-      },
-    ),
-      title: Text(
-        localizations.translate('create_movement') ?? 'Создать перемещение',
-        style: const TextStyle(
-          fontSize: 20,
-          fontFamily: 'Gilroy',
-          fontWeight: FontWeight.w600,
-          color: Color(0xff1E2E52),
-        ),
+        },
+      ),
+      title: Row(
+        children: [
+          // Заголовок — всегда виден, но усекается при нехватке места
+          Expanded(
+            child: Text(
+              localizations.translate('create_movement') ?? 'Создать перемещение',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 20,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w600,
+                color: Color(0xff1E2E52),
+              ),
+            ),
+          ),
+          if (hasItems) ...[
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xff4CAF50).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.account_balance_wallet_outlined,
+                    color: Color(0xff4CAF50),
+                    size: 18,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    total.toStringAsFixed(0),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xff4CAF50),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
       ),
       centerTitle: false,
+      actions: [],
     );
   }
 
@@ -712,14 +754,14 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
                                     ),
                                     items: availableUnits.map((unit) {
                                       return DropdownMenuItem<String>(
-                                        value: unit.shortName ?? unit.name,
-                                        child: Text(unit.shortName ?? unit.name ?? ''),
+                                        value: unit.name,
+                                        child: Text(unit.name ?? ''),
                                       );
                                     }).toList(),
                                     onChanged: (String? newValue) {
                                       if (newValue != null) {
                                         final selectedUnit = availableUnits.firstWhere(
-                                              (unit) => (unit.shortName ?? unit.name) == newValue,
+                                              (unit) => (unit.name) == newValue,
                                         );
                                         _updateItemUnit(variantId, newValue, selectedUnit.id);
                                       }

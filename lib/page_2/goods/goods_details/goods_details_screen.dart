@@ -309,7 +309,7 @@ AppBar _buildAppBar(BuildContext context, String title) {
         'value': goods.label?.name ?? ''
       },
       {
-        'label': AppLocalizations.of(context)!.translate('branch_details'),
+        'label': AppLocalizations.of(context)!.translate('storage'),
         'value': goods.branches != null && goods.branches!.isNotEmpty
             ? goods.branches!.map((branch) => branch.name).join(', ')
             : '',
@@ -768,7 +768,7 @@ AppBar _buildAppBar(BuildContext context, String title) {
               },
               {
                 'label':
-                    AppLocalizations.of(context)!.translate('branch_details'),
+                    AppLocalizations.of(context)!.translate('storage'),
                 'value': goods.branches != null && goods.branches!.isNotEmpty
                     ? goods.branches!.map((branch) => branch.name).join(', ')
                     : '',

@@ -8633,7 +8633,7 @@ Future<String> _appendQueryParams(String path) async {
     required List<File> images,
     required bool isActive,
     double? discountPrice,
-    int? branch,
+    int? storageId,
     double? price,
     int? mainImageIndex,
     int? labelId, // Parameter for label ID
@@ -8674,8 +8674,9 @@ Future<String> _appendQueryParams(String path) async {
         request.fields['discount_price'] = discountPrice.toString();
       }
 
-      if (branch != null) {
-        request.fields['branches[0][branch_id]'] = branch.toString();
+      if (storageId != null) {
+        request.fields['storage_id'] = storageId.toString();
+        request.fields['branch_id'] = storageId.toString();
       }
 
       for (int i = 0; i < attributes.length; i++) {
@@ -8761,7 +8762,7 @@ Future<String> _appendQueryParams(String path) async {
     required List<File> images,
     required bool isActive,
     double? discountPrice,
-    int? branch,
+    required int? storageId,
     String? comments,
     int? mainImageIndex,
     int? labelId, // Добавляем параметр для ID метки
@@ -8798,8 +8799,9 @@ Future<String> _appendQueryParams(String path) async {
       request.fields['label_id'] =
           labelId != null ? labelId.toString() : ''; // Add label fields
 
-      if (branch != null) {
-        request.fields['branches[0][branch_id]'] = branch.toString();
+      if (storageId != null) {
+        request.fields['branch_id'] = storageId.toString();
+        request.fields['storage_id'] = storageId.toString();
         ////print('ApiService: Added branch: $branch');
       }
       if (comments != null && comments.isNotEmpty) {
@@ -9594,7 +9596,7 @@ Future<String> _appendQueryParams(String path) async {
 
   Future<List<Branch>> getBranches() async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/branch');
+    final path = await _appendQueryParams('/storage');
     if (kDebugMode) {
       //print('ApiService: getBranches - Generated path: $path');
     }

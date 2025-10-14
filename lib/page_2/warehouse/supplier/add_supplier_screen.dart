@@ -159,6 +159,14 @@ class _AddSupplierScreenState extends State<AddSupplierScreen> {
                           label: AppLocalizations.of(context)!
                               .translate('phone') ??
                               'Телефон',
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return AppLocalizations.of(context)!
+                                  .translate('field_required') ??
+                                  'Поле обязательно';
+                            }
+                            return null;
+                          },
                         ),
                         const SizedBox(height: 16),
                         CustomTextField(

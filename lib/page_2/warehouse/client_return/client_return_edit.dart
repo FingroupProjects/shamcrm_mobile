@@ -36,12 +36,14 @@ class EditClientReturnDocumentScreen extends StatefulWidget {
 }
 
 class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumentScreen> {
+  String? _selectedStorage;
+  LeadData? _selectedLead;
+
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _dateController = TextEditingController();
   final TextEditingController _commentController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  String? _selectedStorage;
-  LeadData? _selectedLead;
+
   List<Map<String, dynamic>> _items = [];
   bool _isLoading = false;
   final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
@@ -71,8 +73,7 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
         : DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
 
     _commentController.text = widget.document.comment ?? '';
-    _selectedStorage = widget.document.storage?.id?.toString();
-
+    _selectedStorage = widget.document.storage?.id.toString();
     if (widget.document.model?.id != null) {
       _selectedLead = LeadData(
         id: widget.document.model!.id ?? 0,
@@ -86,12 +87,13 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
         final quantity = good.quantity ?? 0;
         final price = double.tryParse(good.price ?? '0') ?? 0.0;
 
-        final availableUnits = good.good?.units ?? [];
-        final selectedUnitId = good.unitId;
-        final selectedUnitObj = availableUnits.firstWhere(
-          (unit) => unit.id == selectedUnitId,
-          orElse: () => availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: 'шт'),
-        );
+        // ✅ NEW: Try multiple sources for units
+        final availableUnits = good.good?.units ?? 
+                              (good.unit != null ? [good.unit!] : []);
+        
+        // ✅ NEW: Get selected unit from document_goods level first
+        final selectedUnitObj = good.unit ?? 
+                               (availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: 'шт'));
 
         final amount = selectedUnitObj.amount ?? 1;
 
@@ -102,17 +104,16 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
           'quantity': quantity,
           'price': price,
           'total': quantity * price * amount,
-          'selectedUnit': selectedUnitObj.shortName ?? selectedUnitObj.name,
+          'selectedUnit': selectedUnitObj.name,
           'unit_id': selectedUnitObj.id,
           'amount': amount,
           'availableUnits': availableUnits,
         });
 
-        // Создаем контроллеры с существующими значениями
         _priceControllers[variantId] = TextEditingController(text: price.toStringAsFixed(3));
         _quantityControllers[variantId] = TextEditingController(text: quantity.toString());
 
-        // ✅ НОВОЕ: Создаём FocusNode для полей
+        // ✅ НОВОЕ: Создаём FocusNode для существующих товаров
         _quantityFocusNodes[variantId] = FocusNode();
         _priceFocusNodes[variantId] = FocusNode();
 
@@ -134,12 +135,12 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
 
           final initialPrice = newItem['price'] ?? 0.0;
           _priceControllers[variantId] = TextEditingController(
-            text: initialPrice > 0 ? initialPrice.toStringAsFixed(3) : ''
+              text: initialPrice > 0 ? initialPrice.toStringAsFixed(3) : ''
           );
 
           _quantityControllers[variantId] = TextEditingController(text: '1');
 
-          // ✅ НОВОЕ: Создаём FocusNode для новых полей
+          // ✅ НОВОЕ: Создаём FocusNode для новых товаров
           _quantityFocusNodes[variantId] = FocusNode();
           _priceFocusNodes[variantId] = FocusNode();
 
@@ -147,7 +148,7 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
           _items.last['price'] = initialPrice;
 
           final amount = newItem['amount'] ?? 1;
-          _items.last['total'] = 1 * initialPrice * amount;
+          _items.last['total'] = (initialPrice * amount).round();
 
           _priceErrors[variantId] = false;
           _quantityErrors[variantId] = false;
@@ -178,62 +179,84 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
     }
   }
 
-void _removeItem(int index) {
-  if (!mounted) return;
+  void _removeItem(int index) {
+    if (!mounted) return;
 
-  final removedItem = _items[index];
-  final variantId = removedItem['variantId'] as int;
-  _collapsedItems[variantId] = false; // Убираем состояние свертывания
+    final removedItem = _items[index];
+    final variantId = removedItem['variantId'] as int;
+    _collapsedItems[variantId] = false; // Убираем состояние свертывания
 
-  // ✅ Удаляем из AnimatedList ДО setState
-  _listKey.currentState?.removeItem(
-    index,
-    (context, animation) => _buildSelectedItemCard(index, removedItem, animation),
-    duration: const Duration(milliseconds: 300),
-  );
+    // ✅ Удаляем из AnimatedList ДО setState
+    _listKey.currentState?.removeItem(
+      index,
+          (context, animation) => _buildSelectedItemCard(index, removedItem, animation),
+      duration: const Duration(milliseconds: 300),
+    );
 
-  // ✅ Затем обновляем состояние
-  setState(() {
-    _items.removeAt(index);
+    // ✅ Затем обновляем состояние
+    setState(() {
+      _items.removeAt(index);
 
-    // ✅ Безопасно dispose контроллеров
-    _priceControllers[variantId]?.dispose();
-    _priceControllers.remove(variantId);
-    _quantityControllers[variantId]?.dispose();
-    _quantityControllers.remove(variantId);
+      // ✅ Безопасно dispose контроллеров
+      _priceControllers[variantId]?.dispose();
+      _priceControllers.remove(variantId);
+      _quantityControllers[variantId]?.dispose();
+      _quantityControllers.remove(variantId);
 
-    // ✅ Безопасно dispose FocusNode
-    _quantityFocusNodes[variantId]?.dispose();
-    _quantityFocusNodes.remove(variantId);
-    _priceFocusNodes[variantId]?.dispose();
-    _priceFocusNodes.remove(variantId);
+      // ✅ Безопасно dispose FocusNode
+      _quantityFocusNodes[variantId]?.dispose();
+      _quantityFocusNodes.remove(variantId);
+      _priceFocusNodes[variantId]?.dispose();
+      _priceFocusNodes.remove(variantId);
 
-    // ✅ Очищаем ошибки
-    _priceErrors.remove(variantId);
-    _quantityErrors.remove(variantId);
-  });
-}
-
- void _openVariantSelection() async {
-  // Сбрасываем фокус перед открытием окна
-  FocusScope.of(context).unfocus();
-
-  final result = await showModalBottomSheet<Map<String, dynamic>>(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (context) => VariantSelectionBottomSheet(
-      existingItems: _items,
-    ),
-  );
-
-  // Если результат null (пользователь закрыл окно без выбора), убеждаемся, что фокус сброшен
-  if (result == null) {
-    FocusScope.of(context).unfocus();
-  } else {
-    _handleVariantSelection(result);
+      // ✅ Очищаем ошибки
+      _priceErrors.remove(variantId);
+      _quantityErrors.remove(variantId);
+    });
   }
-}
+
+  void _openVariantSelection() async {
+    if (_selectedLead == null) {
+      _showSnackBar(
+        AppLocalizations.of(context)!.translate('select_lead_first') ?? 'Сначала выберите лида',
+        false,
+      );
+      return;
+    }
+
+    if (_selectedStorage == null) {
+      _showSnackBar(
+        AppLocalizations.of(context)!.translate('select_storage_first') ?? 'Сначала выберите склад',
+        false,
+      );
+      return;
+    }
+
+    context.read<VariantBloc>().add(FilterVariants({
+      'counterparty_id': _selectedLead!.id,
+      'storage_id': int.parse(_selectedStorage!),
+    }));
+
+    final result = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => VariantSelectionBottomSheet(
+        existingItems: _items,
+      ),
+    );
+
+    if (result != null) {
+      _handleVariantSelection(result);
+    }
+    // Если результат null, сбрасываем фокус с небольшой задержкой
+// Если результат null (пользователь закрыл окно без выбора), убеждаемся, что фокус сброшен
+    if (result == null) {
+      FocusScope.of(context).unfocus();
+    } else {
+      _handleVariantSelection(result);
+    }
+  }
 
   void _updateItemQuantity(int variantId, String value) {
     final quantity = int.tryParse(value);
@@ -243,7 +266,7 @@ void _removeItem(int index) {
         if (index != -1) {
           _items[index]['quantity'] = quantity;
           final amount = _items[index]['amount'] ?? 1;
-          _items[index]['total'] = _items[index]['quantity'] * _items[index]['price'] * amount;
+          _items[index]['total'] = (_items[index]['quantity'] * _items[index]['price'] * amount).round();
         }
         _quantityErrors[variantId] = false;
       });
@@ -266,7 +289,7 @@ void _removeItem(int index) {
         if (index != -1) {
           _items[index]['price'] = price;
           final amount = _items[index]['amount'] ?? 1;
-          _items[index]['total'] = _items[index]['quantity'] * _items[index]['price'] * amount;
+          _items[index]['total'] = (_items[index]['quantity'] * _items[index]['price'] * amount).round();
         }
         _priceErrors[variantId] = false;
       });
@@ -290,14 +313,14 @@ void _removeItem(int index) {
 
         final availableUnits = _items[index]['availableUnits'] as List<Unit>? ?? [];
         final selectedUnitObj = availableUnits.firstWhere(
-          (unit) => (unit.shortName ?? unit.name) == newUnit,
+              (unit) => (unit.name) == newUnit,
           orElse: () => availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: '', amount: 1),
         );
 
         _items[index]['amount'] = selectedUnitObj.amount ?? 1;
 
         final amount = _items[index]['amount'] ?? 1;
-        _items[index]['total'] = _items[index]['quantity'] * _items[index]['price'] * amount;
+        _items[index]['total'] = (_items[index]['quantity'] * _items[index]['price'] * amount).round();
       }
     });
   }
@@ -321,6 +344,16 @@ void _removeItem(int index) {
     }
 
     FocusScope.of(context).unfocus();
+  }
+
+  // Функция для парсинга цены: возвращает int если целое, double если дробное
+  num _parsePriceAsNumber(dynamic price) {
+    final double parsedPrice = price is String ? (double.tryParse(price) ?? 0.0) : (price as num).toDouble();
+    // Проверяем, является ли число целым
+    if (parsedPrice == parsedPrice.truncateToDouble()) {
+      return parsedPrice.toInt();
+    }
+    return parsedPrice;
   }
 
   void _updateDocument() async {
@@ -357,7 +390,7 @@ void _removeItem(int index) {
         documentGoods: _items.map((item) => {
           'good_id': item['variantId'],
           'quantity': int.tryParse(item['quantity'].toString()),
-          'price': item['price'].toString(),
+          'price': _parsePriceAsNumber(item['price']),
           "unit_id": item["unit_id"]
         }).toList(),
         organizationId: widget.document.organizationId ?? 1,
@@ -479,7 +512,6 @@ void _removeItem(int index) {
   }
 
   AppBar _buildAppBar(AppLocalizations localizations) {
-    // ✅ НОВОЕ: Показываем сумму в AppBar
     final hasItems = _items.isNotEmpty;
     final total = _totalAmount;
 
@@ -487,25 +519,18 @@ void _removeItem(int index) {
       backgroundColor: Colors.white,
       forceMaterialTransparency: true,
       elevation: 0,
-        leading: IconButton(
-      icon: const Icon(Icons.arrow_back_ios, color: Color(0xff1E2E52), size: 24),
-      onPressed: () async {
-        // Если есть товары, показываем диалог
-        if (_items.isNotEmpty) {
-          final shouldExit = await ConfirmExitDialog.show(context);
-          if (shouldExit && mounted) {
-            Navigator.pop(context);
-          }
-        } else {
-          // Если товаров нет, просто выходим
-          Navigator.pop(context);
-        }
-      },
-    ),
-      title: hasItems
-          ? null // ✅ НОВОЕ: Убираем заголовок, когда показываем сумму
-          : Text(
-              '${localizations.translate('edit_client_return') ?? 'Редактировать возврат'} №${widget.document.docNumber}',
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back_ios, color: Color(0xff1E2E52), size: 24),
+        onPressed: () => Navigator.pop(context),
+      ),
+      title: Row(
+        children: [
+          // Заголовок — всегда виден, но усекается при нехватке места
+          Expanded(
+            child: Text(
+              localizations.translate('edit_client_return') ?? 'Редактировать возврат от клиента',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis, // ← вот ключевое!
               style: const TextStyle(
                 fontSize: 20,
                 fontFamily: 'Gilroy',
@@ -513,40 +538,41 @@ void _removeItem(int index) {
                 color: Color(0xff1E2E52),
               ),
             ),
-      centerTitle: false,
-      actions: hasItems
-          ? [
-              // ✅ НОВОЕ: Показываем общую сумму справа
-              Container(
-                margin: const EdgeInsets.only(right: 16),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: const Color(0xff4CAF50).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.account_balance_wallet_outlined,
-                      color: Color(0xff4CAF50),
-                      size: 18,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      total.toStringAsFixed(0),
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xff4CAF50),
-                      ),
-                    ),
-                  ],
-                ),
+          ),
+          if (hasItems) ...[
+            const SizedBox(width: 8), // небольшой отступ
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xff4CAF50).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
               ),
-            ]
-          : null,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.account_balance_wallet_outlined,
+                    color: Color(0xff4CAF50),
+                    size: 18,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    total.toStringAsFixed(0),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xff4CAF50),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+      centerTitle: false,
+      actions: [], // ← теперь actions пустой, всё в title
     );
   }
 
@@ -789,14 +815,14 @@ void _removeItem(int index) {
                                     ),
                                     items: availableUnits.map((unit) {
                                       return DropdownMenuItem<String>(
-                                        value: unit.shortName ?? unit.name,
-                                        child: Text(unit.shortName ?? unit.name ?? ''),
+                                        value: unit.name,
+                                        child: Text(unit.name ?? ''),
                                       );
                                     }).toList(),
                                     onChanged: (String? newValue) {
                                       if (newValue != null) {
                                         final selectedUnit = availableUnits.firstWhere(
-                                              (unit) => (unit.shortName ?? unit.name) == newValue,
+                                              (unit) => (unit.name) == newValue,
                                         );
                                         _updateItemUnit(variantId, newValue, selectedUnit.id);
                                       }

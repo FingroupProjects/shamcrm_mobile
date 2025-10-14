@@ -33,13 +33,14 @@ class EditClientSalesDocumentScreen extends StatefulWidget {
 }
 
 class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentScreen> {
+  String? _selectedStorage;
+  LeadData? _selectedLead;
+
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _dateController = TextEditingController();
   final TextEditingController _commentController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  String? _selectedStorage;
-  LeadData? _selectedLead;
   List<Map<String, dynamic>> _items = [];
   bool _isLoading = false;
   final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
@@ -83,12 +84,13 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
         final quantity = good.quantity ?? 0;
         final price = double.tryParse(good.price ?? '0') ?? 0.0;
 
-        final availableUnits = good.good?.units ?? [];
-        final selectedUnitId = good.unitId;
-        final selectedUnitObj = availableUnits.firstWhere(
-          (unit) => unit.id == selectedUnitId,
-          orElse: () => availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: 'шт'),
-        );
+        // ✅ NEW: Try multiple sources for units
+        final availableUnits = good.good?.units ??
+                              (good.unit != null ? [good.unit!] : []);
+
+        // ✅ NEW: Get selected unit from document_goods level first
+        final selectedUnitObj = good.unit ??
+                               (availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: 'шт'));
 
         final amount = selectedUnitObj.amount ?? 1;
 
@@ -99,7 +101,7 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
           'quantity': quantity,
           'price': price,
           'total': quantity * price * amount,
-          'selectedUnit': selectedUnitObj.shortName ?? selectedUnitObj.name,
+          'selectedUnit': selectedUnitObj.name,
           'unit_id': selectedUnitObj.id,
           'amount': amount,
           'availableUnits': availableUnits,
@@ -308,7 +310,7 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
 
         final availableUnits = _items[index]['availableUnits'] as List<Unit>? ?? [];
         final selectedUnitObj = availableUnits.firstWhere(
-          (unit) => (unit.shortName ?? unit.name) == newUnit,
+          (unit) => (unit.name) == newUnit,
           orElse: () => availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: '', amount: 1),
         );
 
@@ -339,6 +341,16 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
     }
     
     FocusScope.of(context).unfocus();
+  }
+
+  // Функция для парсинга цены: возвращает int если целое, double если дробное
+  num _parsePriceAsNumber(dynamic price) {
+    final double parsedPrice = price is String ? (double.tryParse(price) ?? 0.0) : (price as num).toDouble();
+    // Проверяем, является ли число целым
+    if (parsedPrice == parsedPrice.truncateToDouble()) {
+      return parsedPrice.toInt();
+    }
+    return parsedPrice;
   }
 
   void _updateDocument() async {
@@ -411,7 +423,7 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
           return {
             'good_id': item['variantId'],
             'quantity': int.tryParse(item['quantity'].toString()),
-            'price': item['price'].toString(),
+            'price': _parsePriceAsNumber(item['price']),
             'unit_id': unitId,
           };
         }).toList(),
@@ -527,7 +539,6 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
   }
 
   AppBar _buildAppBar(AppLocalizations localizations) {
-    // ✅ НОВОЕ: Показываем сумму в AppBar
     final hasItems = _items.isNotEmpty;
     final total = _totalAmount;
 
@@ -536,24 +547,28 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
       forceMaterialTransparency: true,
       elevation: 0,
       leading: IconButton(
-      icon: const Icon(Icons.arrow_back_ios, color: Color(0xff1E2E52), size: 24),
-      onPressed: () async {
-        // Если есть товары, показываем диалог
-        if (_items.isNotEmpty) {
-          final shouldExit = await ConfirmExitDialog.show(context);
-          if (shouldExit && mounted) {
+        icon: const Icon(Icons.arrow_back_ios, color: Color(0xff1E2E52), size: 24),
+        onPressed: () async {
+          // Если есть товары, показываем диалог
+          if (_items.isNotEmpty) {
+            final shouldExit = await ConfirmExitDialog.show(context);
+            if (shouldExit && mounted) {
+              Navigator.pop(context);
+            }
+          } else {
+            // Если товаров нет, просто выходим
             Navigator.pop(context);
           }
-        } else {
-          // Если товаров нет, просто выходим
-          Navigator.pop(context);
-        }
-      },
-    ),
-      title: hasItems
-          ? null // Убираем заголовок, когда показываем сумму
-          : Text(
+        },
+      ),
+      title: Row(
+        children: [
+          // Заголовок — всегда виден, но усекается при нехватке места
+          Expanded(
+            child: Text(
               '${localizations.translate('edit_client_sale') ?? 'Редактировать реализацию'} №${widget.document.docNumber}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 fontSize: 20,
                 fontFamily: 'Gilroy',
@@ -561,39 +576,41 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
                 color: Color(0xff1E2E52),
               ),
             ),
-      centerTitle: false,
-      actions: hasItems
-          ? [
-              Container(
-                margin: const EdgeInsets.only(right: 16),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: const Color(0xff4CAF50).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.account_balance_wallet_outlined,
-                      color: Color(0xff4CAF50),
-                      size: 18,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      total.toStringAsFixed(0),
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xff4CAF50),
-                      ),
-                    ),
-                  ],
-                ),
+          ),
+          if (hasItems) ...[
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xff4CAF50).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
               ),
-            ]
-          : null,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.account_balance_wallet_outlined,
+                    color: Color(0xff4CAF50),
+                    size: 18,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    total.toStringAsFixed(0),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xff4CAF50),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+      centerTitle: false,
+      actions: [],
     );
   }
 
@@ -836,14 +853,14 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
                                     ),
                                     items: availableUnits.map((unit) {
                                       return DropdownMenuItem<String>(
-                                        value: unit.shortName ?? unit.name,
-                                        child: Text(unit.shortName ?? unit.name ?? ''),
+                                        value: unit.name,
+                                        child: Text(unit.name ?? ''),
                                       );
                                     }).toList(),
                                     onChanged: (String? newValue) {
                                       if (newValue != null) {
                                         final selectedUnit = availableUnits.firstWhere(
-                                              (unit) => (unit.shortName ?? unit.name) == newValue,
+                                              (unit) => (unit.name) == newValue,
                                         );
                                         _updateItemUnit(variantId, newValue, selectedUnit.id);
                                       }

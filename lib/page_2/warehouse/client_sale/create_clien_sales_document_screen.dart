@@ -236,7 +236,7 @@ class CreateClienSalesDocumentScreenState extends State<CreateClienSalesDocument
 
         final availableUnits = _items[index]['availableUnits'] as List<Unit>? ?? [];
         final selectedUnitObj = availableUnits.firstWhere(
-          (unit) => (unit.shortName ?? unit.name) == newUnit,
+          (unit) => (unit.name) == newUnit,
           orElse: () => availableUnits.isNotEmpty ? availableUnits.first : Unit(id: 0, name: '', amount: 1),
         );
 
@@ -267,6 +267,16 @@ class CreateClienSalesDocumentScreenState extends State<CreateClienSalesDocument
     }
 
     FocusScope.of(context).unfocus();
+  }
+
+  // Функция для парсинга цены: возвращает int если целое, double если дробное
+  num _parsePriceAsNumber(dynamic price) {
+    final double parsedPrice = price is String ? (double.tryParse(price) ?? 0.0) : (price as num).toDouble();
+    // Проверяем, является ли число целым
+    if (parsedPrice == parsedPrice.truncateToDouble()) {
+      return parsedPrice.toInt();
+    }
+    return parsedPrice;
   }
 
   void _createDocument({bool approve = false}) {
@@ -335,7 +345,7 @@ class CreateClienSalesDocumentScreenState extends State<CreateClienSalesDocument
             .map((item) => {
                   'good_id': item['variantId'],
                   'quantity': int.tryParse(item['quantity'].toString()),
-                  'price': item['price'].toString(),
+                  'price': _parsePriceAsNumber(item['price']),
                   'unit_id': item['unit_id'],
                 })
             .toList(),
@@ -449,13 +459,13 @@ class CreateClienSalesDocumentScreenState extends State<CreateClienSalesDocument
   }
 
   AppBar _buildAppBar(AppLocalizations localizations) {
-    // ✅ НОВОЕ: Показываем сумму в AppBar
     final hasItems = _items.isNotEmpty;
     final total = _totalAmount;
 
     return AppBar(
       backgroundColor: Colors.white,
       forceMaterialTransparency: true,
+      leadingWidth: 56,
       elevation: 0,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_ios, color: Color(0xff1E2E52), size: 24),
@@ -472,10 +482,14 @@ class CreateClienSalesDocumentScreenState extends State<CreateClienSalesDocument
           }
         },
       ),
-      title: hasItems
-          ? null // Убираем заголовок, когда показываем сумму
-          : Text(
+      title: Row(
+        children: [
+          // Заголовок — всегда виден, но усекается при нехватке места
+          Expanded(
+            child: Text(
               localizations.translate('create_client_sale') ?? 'Создать реализацию',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 fontSize: 20,
                 fontFamily: 'Gilroy',
@@ -483,39 +497,40 @@ class CreateClienSalesDocumentScreenState extends State<CreateClienSalesDocument
                 color: Color(0xff1E2E52),
               ),
             ),
-      centerTitle: false,
-      actions: hasItems
-          ? [
-              Container(
-                margin: const EdgeInsets.only(right: 16),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: const Color(0xff4CAF50).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.account_balance_wallet_outlined,
-                      color: Color(0xff4CAF50),
-                      size: 18,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      total.toStringAsFixed(0),
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xff4CAF50),
-                      ),
-                    ),
-                  ],
-                ),
+          ),
+          if (hasItems) ...[
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xff4CAF50).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
               ),
-            ]
-          : null,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.account_balance_wallet_outlined,
+                    color: Color(0xff4CAF50),
+                    size: 18,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    total.toStringAsFixed(0),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xff4CAF50),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+      centerTitle: false,
     );
   }
 
@@ -759,14 +774,14 @@ class CreateClienSalesDocumentScreenState extends State<CreateClienSalesDocument
                                     ),
                                     items: availableUnits.map((unit) {
                                       return DropdownMenuItem<String>(
-                                        value: unit.shortName ?? unit.name,
-                                        child: Text(unit.shortName ?? unit.name ?? ''),
+                                        value: unit.name,
+                                        child: Text(unit.name ?? ''),
                                       );
                                     }).toList(),
                                     onChanged: (String? newValue) {
                                       if (newValue != null) {
                                         final selectedUnit = availableUnits.firstWhere(
-                                          (unit) => (unit.shortName ?? unit.name) == newValue,
+                                          (unit) => (unit.name) == newValue,
                                         );
                                         _updateItemUnit(variantId, newValue, selectedUnit.id);
                                       }

@@ -243,7 +243,7 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
 
         final availableUnits = _items[index]['availableUnits'] as List<Unit>? ?? [];
         final selectedUnitObj = availableUnits.firstWhere(
-              (unit) => (unit.shortName ?? unit.name) == newUnit,
+              (unit) => (unit.name) == newUnit,
           orElse: () => availableUnits.isNotEmpty ? availableUnits.first : Unit(id: 0, name: '', amount: 1),
         );
 
@@ -357,7 +357,7 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
           return {
             'good_id': item['variantId'],
             'quantity': int.tryParse(item['quantity'].toString()),
-            'price': item['price'].toString(),
+            'price': _parsePriceAsNumber(item['price']),
             'unit_id': unitId, // Может быть null
           };
         }).toList(),
@@ -372,6 +372,16 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
         false,
       );
     }
+  }
+
+  // Функция для парсинга цены: возвращает int если целое, double если дробное
+  num _parsePriceAsNumber(dynamic price) {
+    final double parsedPrice = price is String ? (double.tryParse(price) ?? 0.0) : (price as num).toDouble();
+    // Проверяем, является ли число целым
+    if (parsedPrice == parsedPrice.truncateToDouble()) {
+      return parsedPrice.toInt();
+    }
+    return parsedPrice;
   }
 
   void _showSnackBar(String message, bool isSuccess) {
@@ -483,9 +493,7 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
      ), );
   }
 
-  // ✅ ИЗМЕНЕНО: Добавлена сумма в AppBar с скрытием заголовка
   AppBar _buildAppBar(AppLocalizations localizations) {
-    // ✅ НОВОЕ: Показываем сумму в AppBar
     final hasItems = _items.isNotEmpty;
     final total = _totalAmount;
 
@@ -493,25 +501,29 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
       backgroundColor: Colors.white,
       forceMaterialTransparency: true,
       elevation: 0,
-        leading: IconButton(
-      icon: const Icon(Icons.arrow_back_ios, color: Color(0xff1E2E52), size: 24),
-      onPressed: () async {
-        // Если есть товары, показываем диалог
-        if (_items.isNotEmpty) {
-          final shouldExit = await ConfirmExitDialog.show(context);
-          if (shouldExit && mounted) {
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back_ios, color: Color(0xff1E2E52), size: 24),
+        onPressed: () async {
+          // Если есть товары, показываем диалог
+          if (_items.isNotEmpty) {
+            final shouldExit = await ConfirmExitDialog.show(context);
+            if (shouldExit && mounted) {
+              Navigator.pop(context);
+            }
+          } else {
+            // Если товаров нет, просто выходим
             Navigator.pop(context);
           }
-        } else {
-          // Если товаров нет, просто выходим
-          Navigator.pop(context);
-        }
-      },
-    ),
-      title: hasItems
-          ? null // Убираем заголовок, когда показываем сумму
-          : Text(
+        },
+      ),
+      title: Row(
+        children: [
+          // Заголовок — всегда виден, но усекается при нехватке места
+          Expanded(
+            child: Text(
               localizations.translate('create_supplier_return_document') ?? 'Создать возврат поставщику',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 fontSize: 20,
                 fontFamily: 'Gilroy',
@@ -519,39 +531,41 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
                 color: Color(0xff1E2E52),
               ),
             ),
-      centerTitle: false,
-      actions: hasItems
-          ? [
-              Container(
-                margin: const EdgeInsets.only(right: 16),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: const Color(0xff4CAF50).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.account_balance_wallet_outlined,
-                      color: Color(0xff4CAF50),
-                      size: 18,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      total.toStringAsFixed(0),
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xff4CAF50),
-                      ),
-                    ),
-                  ],
-                ),
+          ),
+          if (hasItems) ...[
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xff4CAF50).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
               ),
-            ]
-          : null,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.account_balance_wallet_outlined,
+                    color: Color(0xff4CAF50),
+                    size: 18,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    total.toStringAsFixed(0),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xff4CAF50),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+      centerTitle: false,
+      actions: [],
     );
   }
 
@@ -794,14 +808,14 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
                                     ),
                                     items: availableUnits.map((unit) {
                                       return DropdownMenuItem<String>(
-                                        value: unit.shortName ?? unit.name,
-                                        child: Text(unit.shortName ?? unit.name ?? ''),
+                                        value: unit.name,
+                                        child: Text(unit.name ?? ''),
                                       );
                                     }).toList(),
                                     onChanged: (String? newValue) {
                                       if (newValue != null) {
                                         final selectedUnit = availableUnits.firstWhere(
-                                              (unit) => (unit.shortName ?? unit.name) == newValue,
+                                              (unit) => (unit.name) == newValue,
                                         );
                                         _updateItemUnit(variantId, newValue, selectedUnit.id);
                                       }

@@ -291,6 +291,16 @@ void _removeItem(int index) {
     // Если все поля заполнены - закрываем клавиатуру
     FocusScope.of(context).unfocus();
   }
+  // Функция для парсинга цены: возвращает int если целое, double если дробное
+  num _parsePriceAsNumber(dynamic price) {
+    final double parsedPrice = price is String ? (double.tryParse(price) ?? 0.0) : (price as num).toDouble();
+    // Проверяем, является ли число целым
+    if (parsedPrice == parsedPrice.truncateToDouble()) {
+      return parsedPrice.toInt();
+    }
+    return parsedPrice;
+  }
+
   void _createDocument({bool approve = false}) {
     if (!_formKey.currentState!.validate()) return;
 
@@ -363,7 +373,7 @@ void _removeItem(int index) {
             .map((item) => {
                   'good_id': item['variantId'],
                   'quantity': int.tryParse(item['quantity'].toString()),
-                  'price': item['price'].toString(),
+                  'price': _parsePriceAsNumber(item['price']),
                   "unit_id": item["unit_id"]
                 })
             .toList(),
@@ -493,10 +503,9 @@ void _removeItem(int index) {
       title: Row(
         children: [
           // Заголовок — всегда виден, но усекается при нехватке места
-          Flexible(
+          Expanded(
             child: Text(
-              localizations.translate('create_client_return') ??
-                  'Создать возврат от клиента',
+              localizations.translate('create_client_return') ?? 'Создать возврат от клиента',
               maxLines: 1,
               overflow: TextOverflow.ellipsis, // ← вот ключевое!
               style: const TextStyle(
@@ -510,7 +519,6 @@ void _removeItem(int index) {
           if (hasItems) ...[
             const SizedBox(width: 8), // небольшой отступ
             Container(
-              margin: const EdgeInsets.only(right: 16),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: const Color(0xff4CAF50).withOpacity(0.1),

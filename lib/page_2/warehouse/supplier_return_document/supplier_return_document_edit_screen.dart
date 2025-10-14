@@ -77,12 +77,13 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
         final variantId = good.variantId ?? good.good?.id ?? 0;
         final quantity = good.quantity ?? 0;
         final price = double.tryParse(good.price ?? '0') ?? 0.0;
-        final availableUnits = good.good?.units ?? [];
-        final selectedUnitId = good.unitId;
-        final selectedUnitObj = availableUnits.firstWhere(
-          (unit) => unit.id == selectedUnitId,
-          orElse: () => availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: 'шт', shortName: 'шт'),
-        );
+        // ✅ NEW: Try multiple sources for units
+        final availableUnits = good.good?.units ?? 
+                              (good.unit != null ? [good.unit!] : []);
+        
+        // ✅ NEW: Get selected unit from document_goods level first
+        final selectedUnitObj = good.unit ?? 
+                               (availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: 'шт'));
         final amount = selectedUnitObj.amount ?? 1;
 
         _items.add({
@@ -92,7 +93,7 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
           'quantity': quantity,
           'price': price,
           'total': (quantity * price * amount).round(),
-          'selectedUnit': selectedUnitObj.shortName ?? selectedUnitObj.name,
+          'selectedUnit': selectedUnitObj.name,
           'unit_id': selectedUnitObj.id,
           'amount': amount,
           'availableUnits': availableUnits,
@@ -268,7 +269,7 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
 
         final availableUnits = _items[index]['availableUnits'] as List<Unit>? ?? [];
         final selectedUnitObj = availableUnits.firstWhere(
-              (unit) => (unit.shortName ?? unit.name) == newUnit,
+              (unit) => (unit.name) == newUnit,
           orElse: () => availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: '', amount: 1),
         );
 
@@ -372,7 +373,7 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
         documentGoods: _items.map((item) => {
               'good_id': item['variantId'],
               'quantity': int.tryParse(item['quantity'].toString()),
-              'price': item['price'].toString(),
+              'price': _parsePriceAsNumber(item['price']),
               'unit_id': item['unit_id'],
             }).toList(),
         organizationId: widget.document.organizationId ?? 1,
@@ -385,6 +386,16 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
         false,
       );
     }
+  }
+
+  // Функция для парсинга цены: возвращает int если целое, double если дробное
+  num _parsePriceAsNumber(dynamic price) {
+    final double parsedPrice = price is String ? (double.tryParse(price) ?? 0.0) : (price as num).toDouble();
+    // Проверяем, является ли число целым
+    if (parsedPrice == parsedPrice.truncateToDouble()) {
+      return parsedPrice.toInt();
+    }
+    return parsedPrice;
   }
 
   void _showSnackBar(String message, bool isSuccess) {
@@ -498,25 +509,29 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
       backgroundColor: Colors.white,
       forceMaterialTransparency: true,
       elevation: 0,
-       leading: IconButton(
-      icon: const Icon(Icons.arrow_back_ios, color: Color(0xff1E2E52), size: 24),
-      onPressed: () async {
-        // Если есть товары, показываем диалог
-        if (_items.isNotEmpty) {
-          final shouldExit = await ConfirmExitDialog.show(context);
-          if (shouldExit && mounted) {
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back_ios, color: Color(0xff1E2E52), size: 24),
+        onPressed: () async {
+          // Если есть товары, показываем диалог
+          if (_items.isNotEmpty) {
+            final shouldExit = await ConfirmExitDialog.show(context);
+            if (shouldExit && mounted) {
+              Navigator.pop(context);
+            }
+          } else {
+            // Если товаров нет, просто выходим
             Navigator.pop(context);
           }
-        } else {
-          // Если товаров нет, просто выходим
-          Navigator.pop(context);
-        }
-      },
-    ),
-      title: hasItems
-          ? null
-          : Text(
+        },
+      ),
+      title: Row(
+        children: [
+          // Заголовок — всегда виден, но усекается при нехватке места
+          Expanded(
+            child: Text(
               '${localizations.translate('edit_supplier_return_document') ?? 'Редактировать возврат поставщику'} №${widget.document.docNumber}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 fontSize: 20,
                 fontFamily: 'Gilroy',
@@ -524,39 +539,41 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
                 color: Color(0xff1E2E52),
               ),
             ),
-      centerTitle: false,
-      actions: hasItems
-          ? [
-              Container(
-                margin: const EdgeInsets.only(right: 16),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: const Color(0xff4CAF50).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.account_balance_wallet_outlined,
-                      color: Color(0xff4CAF50),
-                      size: 18,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      total.toStringAsFixed(0),
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xff4CAF50),
-                      ),
-                    ),
-                  ],
-                ),
+          ),
+          if (hasItems) ...[
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xff4CAF50).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
               ),
-            ]
-          : null,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.account_balance_wallet_outlined,
+                    color: Color(0xff4CAF50),
+                    size: 18,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    total.toStringAsFixed(0),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xff4CAF50),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+      centerTitle: false,
+      actions: [],
     );
   }
 
@@ -799,14 +816,14 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
                                     ),
                                     items: availableUnits.map((unit) {
                                       return DropdownMenuItem<String>(
-                                        value: unit.shortName ?? unit.name,
-                                        child: Text(unit.shortName ?? unit.name ?? ''),
+                                        value: unit.name,
+                                        child: Text(unit.name ?? ''),
                                       );
                                     }).toList(),
                                     onChanged: (String? newValue) {
                                       if (newValue != null) {
                                         final selectedUnit = availableUnits.firstWhere(
-                                              (unit) => (unit.shortName ?? unit.name) == newValue,
+                                              (unit) => (unit.name) == newValue,
                                         );
                                         _updateItemUnit(variantId, newValue, selectedUnit.id);
                                       }
