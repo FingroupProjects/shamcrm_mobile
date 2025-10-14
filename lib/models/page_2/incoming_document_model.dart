@@ -107,6 +107,36 @@ class IncomingDocument extends Equatable {
     return null;
   }
 
+  static num? _parseNum(dynamic value) {
+    if (value == null) return null;
+    if (value is num) {
+      if (value is int) return value;
+      if (value is double) {
+        if (value == value.toInt()) {
+          return value.toInt();
+        }
+        return value;
+      }
+      return value;
+    }
+    if (value is String) {
+      if (value.isEmpty) return null;
+      try {
+        double parsed = double.parse(value.replaceAll(',', '.'));
+
+        if (parsed == parsed.toInt()) {
+          return parsed.toInt(); // Return as int (1, 2, 3, etc.)
+        }
+        return parsed; // Return as double (1.23, 2.5, etc.)
+      } catch (e) {
+        print('Error parsing num from string "$value": $e');
+        return null;
+      }
+    }
+    print('Unexpected type for num parsing: ${value.runtimeType}');
+    return null;
+  }
+
   factory IncomingDocument.fromJson(Map<String, dynamic> json) {
     return IncomingDocument(
       id: _parseInt(json['id']),
@@ -180,7 +210,7 @@ class IncomingDocument extends Equatable {
 
   int get totalQuantity {
     if (documentGoods == null || documentGoods!.isEmpty) return 0;
-    return documentGoods!.fold(0, (sum, good) => sum + (good.quantity ?? 0));
+     return documentGoods!.fold(0, (sum, good) => sum + (good.quantity?.toInt() ?? 0));
   }
 
   String get statusText {
@@ -452,7 +482,7 @@ class Currency {
   final int? documentId;
   final int? variantId;
   final Good? good;
-  final int? quantity;
+  final num? quantity;
   final String? price;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -488,7 +518,7 @@ class Currency {
       documentId: IncomingDocument._parseInt(json['document_id']),
       variantId: IncomingDocument._parseInt(json['variant_id']),
       good: json['good'] != null ? Good.fromJson(json['good']) : null,
-      quantity: IncomingDocument._parseInt(json['quantity']),
+      quantity: IncomingDocument._parseNum(json['quantity']), // Используем num для поддержки int и double
       price: json['price'],
       createdAt: IncomingDocument._parseDate(json['created_at']),
       updatedAt: IncomingDocument._parseDate(json['updated_at']),
