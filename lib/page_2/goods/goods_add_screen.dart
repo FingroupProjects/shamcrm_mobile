@@ -43,7 +43,6 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
 
   List<SubCategoryAttributesData> subCategories = [];
   bool isCategoryValid = true;
-  bool isImagesValid = true;
   bool isBranchValid = true;
   int? mainImageIndex;
   String? selectlabel;
@@ -80,7 +79,6 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
   void validateForm() {
     setState(() {
       isCategoryValid = selectedCategory != null;
-      isImagesValid = _imagePaths.isNotEmpty;
     });
   }
 
@@ -627,7 +625,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                           color: const Color(0xffF4F7FD),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: isImagesValid ? const Color(0xffF4F7FD) : Colors.red,
+                            color: const Color(0xffF4F7FD),
                             width: 1.5,
                           ),
                         ),
@@ -788,18 +786,6 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                               ),
                       ),
                     ),
-                    if (!isImagesValid)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Text(
-                          '    ${AppLocalizations.of(context)!.translate('please_select_image')}',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.red,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                      ),
                     const SizedBox(height: 8),
                     Row(
                       children: [
@@ -901,7 +887,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                       textColor: Colors.white,
                       onPressed: () {
                         validateForm();
-                        if (formKey.currentState!.validate() && isCategoryValid && isImagesValid) {
+                        if (formKey.currentState!.validate() && isCategoryValid) {
                           _createProduct();
                         } else {
                           showCustomSnackBar(
@@ -974,7 +960,6 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
     if (pickedFile != null) {
       setState(() {
         _imagePaths.add(pickedFile.path);
-        isImagesValid = true;
       });
     }
   }
@@ -984,7 +969,6 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
     if (pickedFiles != null) {
       setState(() {
         _imagePaths.addAll(pickedFiles.map((file) => file.path));
-        isImagesValid = true;
       });
     }
   }
@@ -993,7 +977,6 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
     setState(() {
       int removedIndex = _imagePaths.indexOf(imagePath);
       _imagePaths.remove(imagePath);
-      isImagesValid = _imagePaths.isNotEmpty;
       if (_imagePaths.isEmpty) {
         mainImageIndex = null;
       } else if (mainImageIndex != null && removedIndex <= mainImageIndex!) {
@@ -1004,7 +987,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
 
   void _createProduct() async {
     validateForm();
-    if (formKey.currentState!.validate() && isCategoryValid && isImagesValid) {
+    if (formKey.currentState!.validate() && isCategoryValid) {
       bool isPriceValid = true;
       if (selectedCategory!.hasPriceCharacteristics) {
         for (var row in tableAttributes) {
