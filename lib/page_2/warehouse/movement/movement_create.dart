@@ -468,7 +468,7 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
       title: Row(
         children: [
           // Заголовок — всегда виден, но усекается при нехватке места
-          Flexible(
+          Expanded(
             child: Text(
               localizations.translate('create_movement') ?? 'Создать перемещение',
               maxLines: 1,

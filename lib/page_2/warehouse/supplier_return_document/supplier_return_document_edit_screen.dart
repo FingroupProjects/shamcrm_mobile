@@ -517,7 +517,7 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
       title: Row(
         children: [
           // Заголовок — всегда виден, но усекается при нехватке места
-          Flexible(
+          Expanded(
             child: Text(
               '${localizations.translate('edit_supplier_return_document') ?? 'Редактировать возврат поставщику'} №${widget.document.docNumber}',
               maxLines: 1,

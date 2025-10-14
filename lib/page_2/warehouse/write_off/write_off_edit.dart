@@ -490,7 +490,7 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
       title: Row(
         children: [
           // Заголовок — всегда виден, но усекается при нехватке места
-          Flexible(
+          Expanded(
             child: Text(
               '${localizations.translate('edit_write_off') ?? 'Редактировать списание'} №${widget.document.docNumber}',
               maxLines: 1,

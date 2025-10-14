@@ -509,7 +509,7 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
       title: Row(
         children: [
           // Заголовок — всегда виден, но усекается при нехватке места
-          Flexible(
+          Expanded(
             child: Text(
               localizations.translate('create_supplier_return_document') ?? 'Создать возврат поставщику',
               maxLines: 1,

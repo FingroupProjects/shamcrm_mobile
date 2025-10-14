@@ -493,7 +493,7 @@ void _removeItem(int index) {
       title: Row(
         children: [
           // Заголовок — всегда виден, но усекается при нехватке места
-          Flexible(
+          Expanded(
             child: Text(
               localizations.translate('create_client_return') ?? 'Создать возврат от клиента',
               maxLines: 1,

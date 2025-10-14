@@ -516,7 +516,7 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
       title: Row(
         children: [
           // Заголовок — всегда виден, но усекается при нехватке места
-          Flexible(
+          Expanded(
             child: Text(
               localizations.translate('edit_client_return') ?? 'Редактировать возврат от клиента',
               maxLines: 1,

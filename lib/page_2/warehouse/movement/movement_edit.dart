@@ -528,7 +528,7 @@ class _EditMovementDocumentScreenState extends State<EditMovementDocumentScreen>
       title: Row(
         children: [
           // Заголовок — всегда виден, но усекается при нехватке места
-          Flexible(
+          Expanded(
             child: Text(
               '${localizations.translate('edit_movement') ?? 'Редактировать перемещение'} №${widget.document.docNumber}',
               maxLines: 1,

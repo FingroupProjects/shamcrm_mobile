@@ -452,7 +452,7 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
       title: Row(
         children: [
           // Заголовок — всегда виден, но усекается при нехватке места
-          Flexible(
+          Expanded(
             child: Text(
               localizations.translate('create_write_off') ?? 'Создать списание',
               maxLines: 1,

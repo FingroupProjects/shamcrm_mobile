@@ -455,6 +455,7 @@ class CreateClienSalesDocumentScreenState extends State<CreateClienSalesDocument
     return AppBar(
       backgroundColor: Colors.white,
       forceMaterialTransparency: true,
+      leadingWidth: 56,
       elevation: 0,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_ios, color: Color(0xff1E2E52), size: 24),
@@ -474,7 +475,7 @@ class CreateClienSalesDocumentScreenState extends State<CreateClienSalesDocument
       title: Row(
         children: [
           // Заголовок — всегда виден, но усекается при нехватке места
-          Flexible(
+          Expanded(
             child: Text(
               localizations.translate('create_client_sale') ?? 'Создать реализацию',
               maxLines: 1,
@@ -520,7 +521,6 @@ class CreateClienSalesDocumentScreenState extends State<CreateClienSalesDocument
         ],
       ),
       centerTitle: false,
-      actions: [],
     );
   }
 

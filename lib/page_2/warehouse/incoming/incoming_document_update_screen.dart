@@ -543,7 +543,7 @@ void _removeItem(int index) {
       title: Row(
         children: [
           // Заголовок — всегда виден, но усекается при нехватке места
-          Flexible(
+          Expanded(
             child: Text(
               '${localizations.translate('edit_incoming_document') ?? 'Редактировать приход'} №${widget.document.docNumber}',
               maxLines: 1,

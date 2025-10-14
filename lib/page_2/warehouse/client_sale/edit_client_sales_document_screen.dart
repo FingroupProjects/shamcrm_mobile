@@ -554,7 +554,7 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
       title: Row(
         children: [
           // Заголовок — всегда виден, но усекается при нехватке места
-          Flexible(
+          Expanded(
             child: Text(
               '${localizations.translate('edit_client_sale') ?? 'Редактировать реализацию'} №${widget.document.docNumber}',
               maxLines: 1,
