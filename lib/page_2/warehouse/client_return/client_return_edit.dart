@@ -849,7 +849,7 @@ void _removeItem(int index) {
                             hintText: AppLocalizations.of(context)!.translate('quantity') ?? 'Количество',
                             keyboardType: TextInputType.number,
                             inputFormatters: [
-                              FilteringTextInputFormatter.digitsOnly,
+                              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,3}')),
                             ],
                             textAlign: TextAlign.center,
                             style: const TextStyle(
