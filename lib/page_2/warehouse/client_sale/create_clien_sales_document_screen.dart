@@ -115,27 +115,28 @@ class CreateClienSalesDocumentScreenState extends State<CreateClienSalesDocument
       final variantId = removedItem['variantId'] as int;
       _collapsedItems[variantId] = false;
 
-  // ✅ Затем обновляем состояние
-  setState(() {
-    _items.removeAt(index);
+      // ✅ Затем обновляем состояние
+      setState(() {
+        _items.removeAt(index);
 
-    // ✅ Безопасно dispose контроллеров
-    _priceControllers[variantId]?.dispose();
-    _priceControllers.remove(variantId);
-    _quantityControllers[variantId]?.dispose();
-    _quantityControllers.remove(variantId);
+        // ✅ Безопасно dispose контроллеров
+        _priceControllers[variantId]?.dispose();
+        _priceControllers.remove(variantId);
+        _quantityControllers[variantId]?.dispose();
+        _quantityControllers.remove(variantId);
 
-    // ✅ Безопасно dispose FocusNode
-    _quantityFocusNodes[variantId]?.dispose();
-    _quantityFocusNodes.remove(variantId);
-    _priceFocusNodes[variantId]?.dispose();
-    _priceFocusNodes.remove(variantId);
+        // ✅ Безопасно dispose FocusNode
+        _quantityFocusNodes[variantId]?.dispose();
+        _quantityFocusNodes.remove(variantId);
+        _priceFocusNodes[variantId]?.dispose();
+        _priceFocusNodes.remove(variantId);
 
-    // ✅ Очищаем ошибки
-    _priceErrors.remove(variantId);
-    _quantityErrors.remove(variantId);
-  });
-}
+        // ✅ Очищаем ошибки
+        _priceErrors.remove(variantId);
+        _quantityErrors.remove(variantId);
+      });
+    }
+  }
 
   void _openVariantSelection() async {
     if (_selectedLead == null) {
