@@ -109,24 +109,36 @@ class Measurement {
   final int id;
   final int goodId;
   final int unitId;
-  final String? amount; // Изменено на nullable String было double
-  final Unit? unit; // Изменено на nullable
+  final num? amount; // Оставляем тип num?
+  final Unit? unit;
 
   Measurement({
     required this.id,
     required this.goodId,
     required this.unitId,
-    required this.amount,
-    this.unit, // Может быть null
+    this.amount,
+    this.unit,
   });
 
   factory Measurement.fromJson(Map<String, dynamic> json) {
+    // ИСПРАВЛЕНО: Безопасное преобразование amount из String в num
+    num? parsedAmount;
+    if (json['amount'] != null) {
+      if (json['amount'] is num) {
+        parsedAmount = json['amount'] as num;
+      } else if (json['amount'] is String) {
+        parsedAmount = num.tryParse(json['amount'] as String);
+      }
+    }
+
     return Measurement(
       id: json['id'] as int? ?? 0,
       goodId: json['good_id'] as int? ?? 0,
       unitId: json['unit_id'] as int? ?? 0,
-      amount: json['amount'] as String?,
-      unit: json['unit'] != null ? Unit.fromJson(json['unit'] as Map<String, dynamic>) : null,
+      amount: parsedAmount, // ИСПРАВЛЕНО: используем безопасно распарсенное значение
+      unit: json['unit'] != null 
+          ? Unit.fromJson(json['unit'] as Map<String, dynamic>) 
+          : null,
     );
   }
 }
