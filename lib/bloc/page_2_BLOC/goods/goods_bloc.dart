@@ -385,7 +385,7 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
         images: event.images ?? [],
         isActive: event.isActive,
         discountPrice: event.discountPrice,
-        branch: event.branch,
+        storageId: event.storageId,
         mainImageIndex: event.mainImageIndex,
        labelId: event.labelId, // Передаем ID метки
       );
@@ -435,7 +435,7 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
         images: event.images ?? [],
         isActive: event.isActive,
         discountPrice: event.discountPrice,
-        branch: event.branch,
+        storageId: event.storageId,
         comments: event.comments, // Передаём комментарии
         mainImageIndex: event.mainImageIndex, // Передаём индекс главного изображения
         labelId: event.labelId, // Передаем ID метки

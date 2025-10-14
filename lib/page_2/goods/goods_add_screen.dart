@@ -1,18 +1,16 @@
 
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_bloc.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_event.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_state.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/storage_bloc/storage_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/storage_bloc/storage_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_character.dart';
-import 'package:crm_task_manager/models/page_2/branch_model.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/image_list_poput.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/label_list.dart';
-import 'package:crm_task_manager/page_2/order/order_details/branch_method_dropdown.dart';
+import 'package:crm_task_manager/page_2/warehouse/incoming/storage_widget.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
@@ -37,13 +35,11 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
   final TextEditingController stockQuantityController = TextEditingController();
   final TextEditingController unitIdController = TextEditingController();
   SubCategoryAttributesData? selectedCategory;
-  Branch? selectedBranch;
   bool isActive = true;
-  List<Branch>? branches = [];
 
   List<SubCategoryAttributesData> subCategories = [];
   bool isCategoryValid = true;
-  bool isBranchValid = true;
+  String? selectedStorage;
   int? mainImageIndex;
   String? selectlabel;
 
@@ -58,7 +54,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
   void initState() {
     super.initState();
     fetchSubCategories();
-    context.read<BranchBloc>().add(FetchBranches());
+    context.read<StorageBloc>().add(FetchStorage());
     mainImageIndex = 0;
   }
 
@@ -210,21 +206,6 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
       ),
       body: MultiBlocListener(
         listeners: [
-          // BlocListener<BranchBloc, BranchState>(
-          //   listener: (context, state) {
-          //     if (state is BranchLoaded) {
-          //       setState(() {
-          //         branches = state.branches;
-          //       });
-          //     } else if (state is BranchError) {
-          //       showCustomSnackBar(
-          //         context: context,
-          //         message: AppLocalizations.of(context)!.translate('error_loading_branches') + ': ${state.message}',
-          //         isSuccess: false,
-          //       );
-          //     }
-          //   },
-          // ),
           BlocListener<GoodsBloc, GoodsState>(
             listener: (context, state) {
               if (state is GoodsSuccess) {
@@ -310,18 +291,15 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                         });
                       },
                     ),
-                    // const SizedBox(height: 8),
-                    // BranchesDropdown(
-                    //   label: AppLocalizations.of(context)!.translate('branch'),
-                    //   selectedBranch: selectedBranch,
-                    //   branches: branches,
-                    //   onSelectBranch: (Branch branch) {
-                    //     setState(() {
-                    //       selectedBranch = branch;
-                    //       isBranchValid = true;
-                    //     });
-                    //   },
-                    // ),
+                    const SizedBox(height: 8),
+                    StorageWidget(
+                      selectedStorage: selectedStorage,
+                      onChanged: (value) {
+                        setState(() {
+                          selectedStorage = value;
+                        });
+                      },
+                    ),
                     const SizedBox(height: 8),
                     CategoryDropdownWidget(
                       selectedCategory: selectedCategory?.name,
@@ -1097,14 +1075,13 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                 discountPrice: selectedCategory!.hasPriceCharacteristics
                     ? null
                     : (double.tryParse(discountPriceController.text.trim()) ?? 0.0),
-                branch: selectedBranch?.id,
+                storageId: selectedStorage != null ? int.tryParse(selectedStorage!) : null,
                 mainImageIndex: mainImageIndex,
                 labelId: labelId,
               ),
             );
-      } catch (e, stackTrace) {
+      } catch (e) {
         //print('GoodsAddScreen: Error creating product - $e');
-        //print(stackTrace);
         setState(() => isLoading = false);
         showCustomSnackBar(
           context: context,
