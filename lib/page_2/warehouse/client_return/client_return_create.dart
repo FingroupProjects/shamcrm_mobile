@@ -495,8 +495,7 @@ void _removeItem(int index) {
           // Заголовок — всегда виден, но усекается при нехватке места
           Flexible(
             child: Text(
-              localizations.translate('create_client_return') ??
-                  'Создать возврат от клиента',
+              localizations.translate('create_client_return') ?? 'Создать возврат от клиента',
               maxLines: 1,
               overflow: TextOverflow.ellipsis, // ← вот ключевое!
               style: const TextStyle(
@@ -510,7 +509,6 @@ void _removeItem(int index) {
           if (hasItems) ...[
             const SizedBox(width: 8), // небольшой отступ
             Container(
-              margin: const EdgeInsets.only(right: 16),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: const Color(0xff4CAF50).withOpacity(0.1),
