@@ -357,7 +357,7 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
           return {
             'good_id': item['variantId'],
             'quantity': int.tryParse(item['quantity'].toString()),
-            'price': item['price'].toString(),
+            'price': _parsePriceAsNumber(item['price']),
             'unit_id': unitId, // Может быть null
           };
         }).toList(),
@@ -372,6 +372,16 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
         false,
       );
     }
+  }
+
+  // Функция для парсинга цены: возвращает int если целое, double если дробное
+  num _parsePriceAsNumber(dynamic price) {
+    final double parsedPrice = price is String ? (double.tryParse(price) ?? 0.0) : (price as num).toDouble();
+    // Проверяем, является ли число целым
+    if (parsedPrice == parsedPrice.truncateToDouble()) {
+      return parsedPrice.toInt();
+    }
+    return parsedPrice;
   }
 
   void _showSnackBar(String message, bool isSuccess) {

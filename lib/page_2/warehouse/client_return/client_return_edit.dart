@@ -346,6 +346,16 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
     FocusScope.of(context).unfocus();
   }
 
+  // Функция для парсинга цены: возвращает int если целое, double если дробное
+  num _parsePriceAsNumber(dynamic price) {
+    final double parsedPrice = price is String ? (double.tryParse(price) ?? 0.0) : (price as num).toDouble();
+    // Проверяем, является ли число целым
+    if (parsedPrice == parsedPrice.truncateToDouble()) {
+      return parsedPrice.toInt();
+    }
+    return parsedPrice;
+  }
+
   void _updateDocument() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -380,7 +390,7 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
         documentGoods: _items.map((item) => {
           'good_id': item['variantId'],
           'quantity': int.tryParse(item['quantity'].toString()),
-          'price': item['price'].toString(),
+          'price': _parsePriceAsNumber(item['price']),
           "unit_id": item["unit_id"]
         }).toList(),
         organizationId: widget.document.organizationId ?? 1,

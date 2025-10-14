@@ -250,6 +250,16 @@ void _removeItem(int index) {
     FocusScope.of(context).unfocus();
   }
 
+  // Функция для парсинга цены: возвращает int если целое, double если дробное
+  num _parsePriceAsNumber(dynamic price) {
+    final double parsedPrice = price is String ? (double.tryParse(price) ?? 0.0) : (price as num).toDouble();
+    // Проверяем, является ли число целым
+    if (parsedPrice == parsedPrice.truncateToDouble()) {
+      return parsedPrice.toInt();
+    }
+    return parsedPrice;
+  }
+
   void _createDocument({bool approve = false}) async {
     if (!_formKey.currentState!.validate()) return;
     
@@ -328,7 +338,7 @@ void _removeItem(int index) {
           return {
             'good_id': item['variant_id'],
             'quantity': int.tryParse(item['quantity'].toString()),
-            'price': item['price'].toString(),
+            'price': _parsePriceAsNumber(item['price']),
             'unit_id': unitId,
           };
         }).toList(),

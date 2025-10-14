@@ -656,11 +656,20 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
   }
 
   Widget _buildGoodsItem(DocumentGood good) {
-    final availableUnits = good.good?.units ?? [];
-    final selectedUnit = availableUnits.firstWhere(
-      (unit) => unit.id == good.unitId,
-      orElse: () => Unit(id: 23, name: 'шт'),
-    );
+    // ✅ FIXED: Try multiple sources for units (same as client sales)
+    final availableUnits = good.good?.units ?? 
+                          (good.unit != null ? [good.unit!] : []);
+    print("Available units: $availableUnits");
+    
+    // ✅ FIXED: Get selected unit from document_goods level first
+    final selectedUnit = good.unit ?? 
+                        (availableUnits.isNotEmpty 
+                          ? availableUnits.firstWhere(
+                              (unit) => unit.id == good.unitId,
+                              orElse: () => availableUnits.first,
+                            )
+                          : Unit(id: null, name: 'шт'));
+    print("Selected unit: $selectedUnit");
     final unitShortName = selectedUnit.name ?? 'шт';
 
     return GestureDetector(
