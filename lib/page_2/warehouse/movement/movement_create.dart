@@ -39,14 +39,15 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
   List<Map<String, dynamic>> _items = [];
   bool _isLoading = false;
   final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
-
-  // Контроллеры для редактирования полей товаров
+  final Map<int, TextEditingController> _priceControllers = {};
   final Map<int, TextEditingController> _quantityControllers = {};
-  
-  // ✅ НОВОЕ: FocusNode для quantity
+
+  // ✅ НОВОЕ: FocusNode для управления фокусом
   final Map<int, FocusNode> _quantityFocusNodes = {};
-  
+  final Map<int, FocusNode> _priceFocusNodes = {};
+
   // Для отслеживания ошибок валидации
+  final Map<int, bool> _priceErrors = {};
   final Map<int, bool> _quantityErrors = {};
 
   @override
@@ -60,29 +61,39 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
     if (mounted && newItem != null) {
       setState(() {
         final existingIndex = _items.indexWhere((item) => item['variantId'] == newItem['variantId']);
-        
+
         if (existingIndex == -1) {
           _items.add(newItem);
-          
+
           final variantId = newItem['variantId'] as int;
-          _quantityControllers[variantId] = TextEditingController(text: '1'); // ✅ НОВОЕ: Устанавливаем 1 по умолчанию для UX
-          
-          // ✅ НОВОЕ: Создаём FocusNode
+
+          final initialPrice = newItem['price'] ?? 0.0;
+          _priceControllers[variantId] = TextEditingController(text: initialPrice > 0 ? initialPrice.toStringAsFixed(3) : '');
+
+          _quantityControllers[variantId] = TextEditingController(text: '');
+
+          // ✅ НОВОЕ: Создаём FocusNode для полей
           _quantityFocusNodes[variantId] = FocusNode();
-          
+          _priceFocusNodes[variantId] = FocusNode();
+
+          _items.last['price'] = initialPrice;
+
+          final amount = newItem['amount'] ?? 1;
+
+          _priceErrors[variantId] = false;
           _quantityErrors[variantId] = false;
-          
+
           if (!newItem.containsKey('amount')) {
             _items.last['amount'] = 1;
+            _items.last['price'] = initialPrice;
           }
-          _items.last['quantity'] = 1; // ✅ НОВОЕ: Синхронизируем с контроллером
-          
+
           _listKey.currentState?.insertItem(
             _items.length - 1,
             duration: const Duration(milliseconds: 300),
           );
-          
-          // ✅ НОВОЕ: Автофокус и скролл
+
+          // ✅ НОВОЕ: Устанавливаем фокус на поле количества после добавления
           Future.delayed(const Duration(milliseconds: 350), () {
             if (mounted && _scrollController.hasClients) {
               _scrollController.animateTo(
@@ -90,7 +101,7 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
                 duration: const Duration(milliseconds: 400),
                 curve: Curves.easeOut,
               );
-              
+
               _quantityFocusNodes[variantId]?.requestFocus();
             }
           });
@@ -103,22 +114,28 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
     if (mounted) {
       final removedItem = _items[index];
       final variantId = removedItem['variantId'] as int;
-      
+      _collapsedItems[variantId] = false;
+
       setState(() {
         _items.removeAt(index);
-        
+
+        _priceControllers[variantId]?.dispose();
+        _priceControllers.remove(variantId);
         _quantityControllers[variantId]?.dispose();
         _quantityControllers.remove(variantId);
-        
-        // ✅ НОВОЕ: Освобождаем FocusNode
+
+        // ✅ НОВОЕ: Удаляем FocusNode
         _quantityFocusNodes[variantId]?.dispose();
         _quantityFocusNodes.remove(variantId);
-        
+        _priceFocusNodes[variantId]?.dispose();
+        _priceFocusNodes.remove(variantId);
+
+        _priceErrors.remove(variantId);
         _quantityErrors.remove(variantId);
-        
+
         _listKey.currentState?.removeItem(
           index,
-          (context, animation) => _buildSelectedItemCard(index, removedItem, animation),
+              (context, animation) => _buildSelectedItemCard(index, removedItem, animation),
           duration: const Duration(milliseconds: 300),
         );
       });
@@ -153,7 +170,8 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
         final index = _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
           _items[index]['quantity'] = quantity;
-          // Нет total — просто обновляем
+          final amount = _items[index]['amount'] ?? 1;
+          _items[index]['total'] = (_items[index]['quantity'] * _items[index]['price'] * amount).round();
         }
         _quantityErrors[variantId] = false;
       });
@@ -162,6 +180,31 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
         final index = _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
           _items[index]['quantity'] = 0;
+          _items[index]['total'] = 0;
+        }
+      });
+    }
+  }
+
+  void _updateItemPrice(int variantId, String value) {
+    final price = double.tryParse(value);
+    if (price != null && price >= 0) {
+      setState(() {
+        final index = _items.indexWhere((item) => item['variantId'] == variantId);
+        if (index != -1) {
+          _items[index]['price'] = price;
+          final amount = _items[index]['amount'] ?? 1;
+          final formattedPrice = double.parse(price.toStringAsFixed(3));
+          _items[index]['total'] = (_items[index]['quantity'] * formattedPrice * amount).round();
+        }
+        _priceErrors[variantId] = false;
+      });
+    } else if (value.isEmpty) {
+      setState(() {
+        final index = _items.indexWhere((item) => item['variantId'] == variantId);
+        if (index != -1) {
+          _items[index]['price'] = 0.0;
+          _items[index]['total'] = 0.0;
         }
       });
     }
@@ -173,31 +216,39 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
       if (index != -1) {
         _items[index]['selectedUnit'] = newUnit;
         _items[index]['unit_id'] = newUnitId;
-        
+
         final availableUnits = _items[index]['availableUnits'] as List<Unit>? ?? [];
         final selectedUnitObj = availableUnits.firstWhere(
-          (unit) => (unit.shortName ?? unit.name) == newUnit,
-          orElse: () => availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: '', amount: 1),
+              (unit) => (unit.shortName ?? unit.name) == newUnit,
+          orElse: () => availableUnits.isNotEmpty ? availableUnits.first : Unit(id: 0, name: '', amount: 1),
         );
-        
+
         _items[index]['amount'] = selectedUnitObj.amount ?? 1;
-        // Нет total — просто обновляем
+
+        final amount = _items[index]['amount'] ?? 1;
+        _items[index]['total'] = (_items[index]['quantity'] * _items[index]['price'] * amount).round();
       }
     });
   }
 
-  // ✅ НОВОЕ: Переход к следующему пустому полю quantity
+  // ✅ НОВОЕ: Функция для перехода к следующему пустому полю
   void _moveToNextEmptyField() {
     for (var item in _items) {
       final variantId = item['variantId'] as int;
       final quantityController = _quantityControllers[variantId];
-      
+      final priceController = _priceControllers[variantId];
+
       if (quantityController != null && quantityController.text.trim().isEmpty) {
         _quantityFocusNodes[variantId]?.requestFocus();
         return;
       }
+
+      if (priceController != null && priceController.text.trim().isEmpty) {
+        _priceFocusNodes[variantId]?.requestFocus();
+        return;
+      }
     }
-    
+
     FocusScope.of(context).unfocus();
   }
 
@@ -518,13 +569,17 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
     );
   }
 
+  final Map<int, bool> _collapsedItems = {}; // Для управления состоянием свернутых элементов
+
+  // Контроллеры для редактирования полей товаров
   Widget _buildSelectedItemCard(int index, Map<String, dynamic> item, Animation<double> animation) {
     final availableUnits = item['availableUnits'] as List<Unit>? ?? [];
     final variantId = item['variantId'] as int;
+    final priceController = _priceControllers[variantId];
     final quantityController = _quantityControllers[variantId];
-    
-    // ✅ НОВОЕ: FocusNode для quantity
     final quantityFocusNode = _quantityFocusNodes[variantId];
+    final priceFocusNode = _priceFocusNodes[variantId];
+    final isCollapsed = _collapsedItems[variantId] ?? false;
 
     return FadeTransition(
       opacity: animation,
@@ -549,57 +604,160 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: const Color(0xffF4F7FD),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.swap_horiz,
-                      color: Color(0xff4759FF),
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      item['name'] ?? '',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xff1E2E52),
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _collapsedItems[variantId] = !isCollapsed;
+                  });
+                },
+                child: Row(
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: const Color(0xffF4F7FD),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                      child: const Icon(
+                        Icons.shopping_cart_outlined,
+                        color: Color(0xff4759FF),
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        item['name'] ?? '',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xff1E2E52),
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Icon(
+                      isCollapsed ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_up,
+                      color: const Color(0xff99A4BA),
+                      size: 18,
+                    ),
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: () => _removeItem(index),
+                      child: const Icon(Icons.close, color: Color(0xff99A4BA), size: 18),
+                    ),
+                  ],
+                ),
+              ),
+              if (!isCollapsed) ...[
+                if (item['remainder'] != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4, bottom: 4),
+                    child: Text(
+                      '${AppLocalizations.of(context)!.translate('available') ?? 'Доступно'}: ${item['remainder']} ${item['selectedUnit'] ?? 'шт'}',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w400,
+                        color: Color(0xff4CAF50),
+                      ),
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close, color: Color(0xff99A4BA), size: 18),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    onPressed: () => _removeItem(index),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              const Divider(height: 1, color: Color(0xFFE5E7EB)),
-              const SizedBox(height: 10),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (availableUnits.isNotEmpty)
+                const SizedBox(height: 10),
+                const Divider(height: 1, color: Color(0xFFE5E7EB)),
+                const SizedBox(height: 10),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (availableUnits.isNotEmpty)
+                      Expanded(
+                        flex: 2,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              AppLocalizations.of(context)!.translate('unit') ?? 'Ед.',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w400,
+                                color: Color(0xff99A4BA),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            if (availableUnits.length > 1)
+                              Container(
+                                height: 48,
+                                padding: const EdgeInsets.symmetric(horizontal: 8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF4F7FD),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                                ),
+                                child: DropdownButtonHideUnderline(
+                                  child: DropdownButton<String>(
+                                    value: item['selectedUnit'],
+                                    isDense: true,
+                                    isExpanded: true,
+                                    dropdownColor: Colors.white,
+                                    icon: const Icon(Icons.arrow_drop_down, size: 16, color: Color(0xff4759FF)),
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontFamily: 'Gilroy',
+                                      fontWeight: FontWeight.w500,
+                                      color: Color(0xff1E2E52),
+                                    ),
+                                    items: availableUnits.map((unit) {
+                                      return DropdownMenuItem<String>(
+                                        value: unit.shortName ?? unit.name,
+                                        child: Text(unit.shortName ?? unit.name ?? ''),
+                                      );
+                                    }).toList(),
+                                    onChanged: (String? newValue) {
+                                      if (newValue != null) {
+                                        final selectedUnit = availableUnits.firstWhere(
+                                              (unit) => (unit.shortName ?? unit.name) == newValue,
+                                        );
+                                        _updateItemUnit(variantId, newValue, selectedUnit.id);
+                                      }
+                                    },
+                                  ),
+                                ),
+                              )
+                            else
+                              Container(
+                                height: 48,
+                                padding: const EdgeInsets.symmetric(horizontal: 8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF4F7FD),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                                ),
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  item['selectedUnit'] ?? 'шт',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontFamily: 'Gilroy',
+                                    fontWeight: FontWeight.w500,
+                                    color: Color(0xff1E2E52),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    if (availableUnits.isNotEmpty) const SizedBox(width: 8),
                     Expanded(
                       flex: 2,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            AppLocalizations.of(context)!.translate('unit') ?? 'Ед.',
+                            AppLocalizations.of(context)!.translate('quantity') ?? 'Кол-во',
                             style: const TextStyle(
                               fontSize: 11,
                               fontFamily: 'Gilroy',
@@ -608,107 +766,113 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
                             ),
                           ),
                           const SizedBox(height: 4),
-                          if (availableUnits.length > 1)
-                            Container(
-                              height: 48,
-                              padding: const EdgeInsets.symmetric(horizontal: 8),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF4F7FD),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: const Color(0xFFE5E7EB)),
-                              ),
-                              child: DropdownButtonHideUnderline(
-                                child: DropdownButton<String>(
-                                  value: item['selectedUnit'],
-                                  isDense: true,
-                                  isExpanded: true,
-                                  dropdownColor: Colors.white,
-                                  icon: const Icon(Icons.arrow_drop_down, size: 16, color: Color(0xff4759FF)),
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontFamily: 'Gilroy',
-                                    fontWeight: FontWeight.w500,
-                                    color: Color(0xff1E2E52),
-                                  ),
-                                  items: availableUnits.map((unit) {
-                                    return DropdownMenuItem<String>(
-                                      value: unit.shortName ?? unit.name,
-                                      child: Text(unit.shortName ?? unit.name ?? ''),
-                                    );
-                                  }).toList(),
-                                  onChanged: (String? newValue) {
-                                    if (newValue != null) {
-                                      final selectedUnit = availableUnits.firstWhere(
-                                        (unit) => (unit.shortName ?? unit.name) == newValue,
-                                      );
-                                      _updateItemUnit(variantId, newValue, selectedUnit.id);
-                                    }
-                                  },
-                                ),
-                              ),
-                            )
-                          else
-                            Container(
-                              height: 48,
-                              padding: const EdgeInsets.symmetric(horizontal: 8),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF4F7FD),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: const Color(0xFFE5E7EB)),
-                              ),
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                item['selectedUnit'] ?? 'шт',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontFamily: 'Gilroy',
-                                  fontWeight: FontWeight.w500,
-                                  color: Color(0xff1E2E52),
-                                ),
-                              ),
+                          CompactTextField(
+                            controller: quantityController ?? TextEditingController(),
+                            focusNode: quantityFocusNode,
+                            hintText: AppLocalizations.of(context)!.translate('quantity') ?? 'Количество',
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                            ],
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xff1E2E52),
                             ),
+                            hasError: _quantityErrors[variantId] == true,
+                            onChanged: (value) => _updateItemQuantity(variantId, value),
+                            onDone: _moveToNextEmptyField,
+                          ),
                         ],
                       ),
                     ),
-                  if (availableUnits.isNotEmpty) const SizedBox(width: 8),
-                  Expanded(
-                    flex: 3,
-                    child: Column(
+                    const SizedBox(width: 8),
+                    Expanded(
+                      flex: 3,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            AppLocalizations.of(context)!.translate('price') ?? 'Цена',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w400,
+                              color: Color(0xff99A4BA),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          CompactTextField(
+                            controller: priceController ?? TextEditingController(),
+                            focusNode: priceFocusNode,
+                            hintText: AppLocalizations.of(context)!.translate('price') ?? 'Цена',
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            inputFormatters: [
+                              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,3}')),
+                            ],
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xff1E2E52),
+                            ),
+                            hasError: _priceErrors[variantId] == true,
+                            onChanged: (value) => _updateItemPrice(variantId, value),
+                            onDone: _moveToNextEmptyField,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF4F7FD),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          AppLocalizations.of(context)!.translate('quantity') ?? 'Кол-во',
+                          AppLocalizations.of(context)!.translate('total') ?? 'Сумма',
                           style: const TextStyle(
-                            fontSize: 11,
+                            fontSize: 12,
                             fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w400,
-                            color: Color(0xff99A4BA),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        CompactTextField(
-                          controller: quantityController!,
-                          focusNode: quantityFocusNode, // ✅ НОВОЕ
-                          hintText: AppLocalizations.of(context)!.translate('quantity') ?? 'Количество',
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                          ],
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w500,
                             color: Color(0xff1E2E52),
                           ),
-                          hasError: _quantityErrors[variantId] == true,
-                          onChanged: (value) => _updateItemQuantity(variantId, value),
-                          onDone: _moveToNextEmptyField, // ✅ НОВОЕ
-                        )
+                        ),
+                        if ((item['amount'] ?? 1) > 1)
+                          Text(
+                            '(×${item['amount']} ${AppLocalizations.of(context)!.translate('pieces') ?? 'шт'})',
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w400,
+                              color: Color(0xff99A4BA),
+                            ),
+                          ),
                       ],
                     ),
-                  ),
-                ],
+                    Text(
+                      (item['total'] ?? 0.0).toStringAsFixed(0),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xff4759FF),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

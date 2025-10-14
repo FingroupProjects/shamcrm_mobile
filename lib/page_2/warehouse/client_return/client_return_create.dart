@@ -639,6 +639,9 @@ class CreateClientReturnDocumentScreenState extends State<CreateClientReturnDocu
     );
   }
 
+  final Map<int, bool> _collapsedItems = {}; // Для управления состоянием свернутых элементов
+
+  // Контроллеры для редактирования полей товаров
   Widget _buildSelectedItemCard(int index, Map<String, dynamic> item, Animation<double> animation) {
     final availableUnits = item['availableUnits'] as List<Unit>? ?? [];
     final variantId = item['variantId'] as int;
@@ -646,17 +649,18 @@ class CreateClientReturnDocumentScreenState extends State<CreateClientReturnDocu
     final quantityController = _quantityControllers[variantId];
     final quantityFocusNode = _quantityFocusNodes[variantId];
     final priceFocusNode = _priceFocusNodes[variantId];
+    final isCollapsed = _collapsedItems[variantId] ?? false;
 
     return FadeTransition(
       opacity: animation,
       child: SizeTransition(
         sizeFactor: animation,
         child: Container(
-          margin: const EdgeInsets.only(bottom: 6),
-          padding: const EdgeInsets.all(8),
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: const Color(0xffF4F7FD)),
             boxShadow: [
               BoxShadow(
@@ -670,54 +674,160 @@ class CreateClientReturnDocumentScreenState extends State<CreateClientReturnDocu
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      item['name'] ?? '',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xff1E2E52),
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _collapsedItems[variantId] = !isCollapsed;
+                  });
+                },
+                child: Row(
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: const Color(0xffF4F7FD),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                      child: const Icon(
+                        Icons.shopping_cart_outlined,
+                        color: Color(0xff4759FF),
+                        size: 20,
+                      ),
                     ),
-                  ),
-                  GestureDetector(
-                    onTap: () => _removeItem(index),
-                    child: const Icon(Icons.close, color: Color(0xff99A4BA), size: 18),
-                  ),
-                ],
-              ),
-              if (item['remainder'] != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4, bottom: 4),
-                  child: Text(
-                    '${AppLocalizations.of(context)!.translate('available') ?? 'Доступно'}: ${item['remainder']} ${item['selectedUnit'] ?? 'шт'}',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w400,
-                      color: Color(0xff4CAF50),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        item['name'] ?? '',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xff1E2E52),
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  ),
+                    Icon(
+                      isCollapsed ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_up,
+                      color: const Color(0xff99A4BA),
+                      size: 18,
+                    ),
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: () => _removeItem(index),
+                      child: const Icon(Icons.close, color: Color(0xff99A4BA), size: 18),
+                    ),
+                  ],
                 ),
-              const SizedBox(height: 4),
-              const Divider(height: 1, color: Color(0xFFE5E7EB)),
-              const SizedBox(height: 4),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (availableUnits.isNotEmpty)
+              ),
+              if (!isCollapsed) ...[
+                if (item['remainder'] != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4, bottom: 4),
+                    child: Text(
+                      '${AppLocalizations.of(context)!.translate('available') ?? 'Доступно'}: ${item['remainder']} ${item['selectedUnit'] ?? 'шт'}',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w400,
+                        color: Color(0xff4CAF50),
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: 10),
+                const Divider(height: 1, color: Color(0xFFE5E7EB)),
+                const SizedBox(height: 10),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (availableUnits.isNotEmpty)
+                      Expanded(
+                        flex: 2,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              AppLocalizations.of(context)!.translate('unit') ?? 'Ед.',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w400,
+                                color: Color(0xff99A4BA),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            if (availableUnits.length > 1)
+                              Container(
+                                height: 48,
+                                padding: const EdgeInsets.symmetric(horizontal: 8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF4F7FD),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                                ),
+                                child: DropdownButtonHideUnderline(
+                                  child: DropdownButton<String>(
+                                    value: item['selectedUnit'],
+                                    isDense: true,
+                                    isExpanded: true,
+                                    dropdownColor: Colors.white,
+                                    icon: const Icon(Icons.arrow_drop_down, size: 16, color: Color(0xff4759FF)),
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontFamily: 'Gilroy',
+                                      fontWeight: FontWeight.w500,
+                                      color: Color(0xff1E2E52),
+                                    ),
+                                    items: availableUnits.map((unit) {
+                                      return DropdownMenuItem<String>(
+                                        value: unit.shortName ?? unit.name,
+                                        child: Text(unit.shortName ?? unit.name ?? ''),
+                                      );
+                                    }).toList(),
+                                    onChanged: (String? newValue) {
+                                      if (newValue != null) {
+                                        final selectedUnit = availableUnits.firstWhere(
+                                              (unit) => (unit.shortName ?? unit.name) == newValue,
+                                        );
+                                        _updateItemUnit(variantId, newValue, selectedUnit.id);
+                                      }
+                                    },
+                                  ),
+                                ),
+                              )
+                            else
+                              Container(
+                                height: 48,
+                                padding: const EdgeInsets.symmetric(horizontal: 8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF4F7FD),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                                ),
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  item['selectedUnit'] ?? 'шт',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontFamily: 'Gilroy',
+                                    fontWeight: FontWeight.w500,
+                                    color: Color(0xff1E2E52),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    if (availableUnits.isNotEmpty) const SizedBox(width: 8),
                     Expanded(
                       flex: 2,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            AppLocalizations.of(context)!.translate('unit') ?? 'Ед.',
+                            AppLocalizations.of(context)!.translate('quantity') ?? 'Кол-во',
                             style: const TextStyle(
                               fontSize: 11,
                               fontFamily: 'Gilroy',
@@ -726,134 +836,71 @@ class CreateClientReturnDocumentScreenState extends State<CreateClientReturnDocu
                             ),
                           ),
                           const SizedBox(height: 4),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF4F7FD),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: const Color(0xFFE5E7EB)),
+                          CompactTextField(
+                            controller: quantityController ?? TextEditingController(),
+                            focusNode: quantityFocusNode,
+                            hintText: AppLocalizations.of(context)!.translate('quantity') ?? 'Количество',
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                            ],
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xff1E2E52),
                             ),
-                            child: DropdownButtonHideUnderline(
-                              child: DropdownButton<String>(
-                                value: item['selectedUnit'],
-                                isDense: true,
-                                isExpanded: true,
-                                dropdownColor: Colors.white,
-                                icon: availableUnits.length > 1
-                                    ? const Icon(Icons.arrow_drop_down, size: 16, color: Color(0xff4759FF))
-                                    : const SizedBox.shrink(), // ✅ Скрываем стрелку если один элемент
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontFamily: 'Gilroy',
-                                  fontWeight: FontWeight.w500,
-                                  color: Color(0xff1E2E52),
-                                ),
-                                items: availableUnits.map((unit) {
-                                  return DropdownMenuItem<String>(
-                                    value: unit.shortName ?? unit.name,
-                                    child: Text(unit.shortName ?? unit.name ?? ''),
-                                  );
-                                }).toList(),
-                                onChanged: availableUnits.length > 1
-                                    ? (String? newValue) {
-                                  if (newValue != null) {
-                                    final selectedUnit = availableUnits.firstWhere(
-                                          (unit) => (unit.shortName ?? unit.name) == newValue,
-                                    );
-                                    _updateItemUnit(variantId, newValue, selectedUnit.id);
-                                  }
-                                }
-                                    : null, // ✅ Делаем неактивным если один элемент
-                              ),
-                            ),
+                            hasError: _quantityErrors[variantId] == true,
+                            onChanged: (value) => _updateItemQuantity(variantId, value),
+                            onDone: _moveToNextEmptyField,
                           ),
                         ],
                       ),
                     ),
-                  if (availableUnits.isNotEmpty) const SizedBox(width: 6),
-                  Expanded(
-                    flex: 2,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          AppLocalizations.of(context)!.translate('quantity') ?? 'Кол-во',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w400,
-                            color: Color(0xff99A4BA),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      flex: 3,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            AppLocalizations.of(context)!.translate('price') ?? 'Цена',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w400,
+                              color: Color(0xff99A4BA),
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        CompactTextField(
-                          isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                          controller: quantityController!,
-                          focusNode: quantityFocusNode,
-                          hintText: AppLocalizations.of(context)!.translate('quantity') ?? 'Количество',
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                          ],
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 12, // ✅ ИЗМЕНЕНО: 13 -> 12 для соответствия
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xff1E2E52),
+                          const SizedBox(height: 4),
+                          CompactTextField(
+                            controller: priceController ?? TextEditingController(),
+                            focusNode: priceFocusNode,
+                            hintText: AppLocalizations.of(context)!.translate('price') ?? 'Цена',
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            inputFormatters: [
+                              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,3}')),
+                            ],
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xff1E2E52),
+                            ),
+                            hasError: _priceErrors[variantId] == true,
+                            onChanged: (value) => _updateItemPrice(variantId, value),
+                            onDone: _moveToNextEmptyField,
                           ),
-                          hasError: _quantityErrors[variantId] == true,
-                          onChanged: (value) => _updateItemQuantity(variantId, value),
-                          onDone: _moveToNextEmptyField,
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    flex: 3,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          AppLocalizations.of(context)!.translate('price') ?? 'Цена',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w400,
-                            color: Color(0xff99A4BA),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        CompactTextField(
-                          isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                          controller: priceController!,
-                          focusNode: priceFocusNode,
-                          hintText: AppLocalizations.of(context)!.translate('price') ?? 'Цена',
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          inputFormatters: [
-                            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,3}')),
-                          ],
-                          style: const TextStyle(
-                            fontSize: 12, // ✅ ИЗМЕНЕНО: 13 -> 12 для соответствия
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xff1E2E52),
-                          ),
-                          hasError: _priceErrors[variantId] == true,
-                          onChanged: (value) => _updateItemPrice(variantId, value),
-                          onDone: _moveToNextEmptyField,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
+                  ],
+                ),
+              ],
+              const SizedBox(height: 10),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF4F7FD),
                   borderRadius: BorderRadius.circular(8),
