@@ -41,6 +41,7 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
   }
  // Добавляем метод загрузки настройки
   Future<void> _loadGoodMeasurementSetting() async {
+    if (!mounted) return; // Проверяем, что виджет всё ещё в дереве
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _goodMeasurementEnabled = prefs.getBool('good_measurement') ?? true;
