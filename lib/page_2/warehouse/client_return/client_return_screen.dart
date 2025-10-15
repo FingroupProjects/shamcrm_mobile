@@ -493,7 +493,12 @@ class _ClientReturnScreenState extends State<ClientReturnScreen> {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (mounted && context.mounted) {
                     if (state.statusCode == 409) {
-                      showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message);
+                      showSimpleErrorDialog(
+                          context, 
+                          localizations?.translate('error') ?? 'Ошибка', 
+                          state.message,
+                        errorDialogEnum: ErrorDialogEnum.clientReturnApprove,
+                      );
                       return;
                     }
                     showCustomSnackBar(context: context, message: state.message, isSuccess: false);
@@ -514,7 +519,12 @@ class _ClientReturnScreenState extends State<ClientReturnScreen> {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (mounted && context.mounted) {
                     if (state.statusCode == 409) {
-                      showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message);
+                      showSimpleErrorDialog(
+                          context, 
+                          localizations?.translate('error') ?? 'Ошибка', 
+                          state.message,
+                        errorDialogEnum: ErrorDialogEnum.clientReturnUnapprove,
+                      );
                       return;
                     }
                     showCustomSnackBar(context: context, message: state.message, isSuccess: false);
