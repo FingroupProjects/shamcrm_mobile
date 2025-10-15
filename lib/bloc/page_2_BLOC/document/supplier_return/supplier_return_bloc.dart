@@ -11,6 +11,7 @@ class SupplierReturnBloc extends Bloc<SupplierReturnEvent, SupplierReturnState> 
   final int _perPage = 20;
   Map<String, dynamic> _filters = {};
   List<IncomingDocument> _allData = [];
+  List<IncomingDocument> _selectedDocuments = [];
 
   SupplierReturnBloc(this.apiService) : super(SupplierReturnInitial()) {
     on<FetchSupplierReturn>(_onFetchSupplierReturn);
@@ -18,6 +19,14 @@ class SupplierReturnBloc extends Bloc<SupplierReturnEvent, SupplierReturnState> 
     on<UpdateSupplierReturn>(_onUpdateSupplierReturn);
     on<DeleteSupplierReturn>(_onDeleteSupplierReturn);
     on<RestoreSupplierReturn>(_onRestoreSupplierReturn);
+
+    on<MassApproveSupplierReturnDocuments>(_onMassApproveSupplierReturnDocuments);
+    on<MassDisapproveSupplierReturnDocuments>(_onMassDisapproveSupplierReturnDocuments);
+    on<MassDeleteSupplierReturnDocuments>(_onMassDeleteSupplierReturnDocuments);
+    on<MassRestoreSupplierReturnDocuments>(_onMassRestoreSupplierReturnDocuments);
+
+    on<SelectSupplierReturnDocument>(_onSelectDocument);
+    on<UnselectAllSupplierReturnDocuments>(_onUnselectAllDocuments);
   }
 
   Future<void> _onRestoreSupplierReturn(RestoreSupplierReturn event, Emitter<SupplierReturnState> emit) async {
@@ -67,10 +76,13 @@ class SupplierReturnBloc extends Bloc<SupplierReturnEvent, SupplierReturnState> 
         _currentPage++;
       }
 
+      final selectedDocuments = _allData.where((doc) => _selectedDocuments.contains(doc)).toList();
+
       emit(SupplierReturnLoaded(
         data: _allData,
         pagination: response.pagination,
         hasReachedMax: hasReachedMax,
+        selectedData: selectedDocuments,
       ));
     } catch (e) {
       if (e is ApiException) {
@@ -164,10 +176,166 @@ class SupplierReturnBloc extends Bloc<SupplierReturnEvent, SupplierReturnState> 
   }
   
   if (_allData.isNotEmpty) {
+    final selectedDocuments = _allData.where((doc) => _selectedDocuments.contains(doc)).toList();
     emit(SupplierReturnLoaded(
       data: List.from(_allData),
       hasReachedMax: state is SupplierReturnLoaded ? (state as SupplierReturnLoaded).hasReachedMax : false,
+      selectedData: selectedDocuments,
     ));
   }
 }
+
+  // Массовые операции (используем последовательные вызовы single-методов)
+  Future<void> _onMassApproveSupplierReturnDocuments(
+      MassApproveSupplierReturnDocuments event, Emitter<SupplierReturnState> emit) async {
+    final ls = _selectedDocuments.where((e) => e.approved == 0 && e.deletedAt == null).map((e) => e.id!).toList();
+    add(UnselectAllSupplierReturnDocuments());
+
+    if (ls.isEmpty) {
+      emit(const SupplierReturnApproveMassSuccess("Нет документов для одобрения"));
+      return;
+    }
+
+    try {
+      // Последовательное одобрение каждого документа
+      for (final id in ls) {
+        await apiService.approveSupplierReturnDocument(id);
+      }
+      emit(const SupplierReturnApproveMassSuccess("mass_approve_success_message"));
+    } catch (e) {
+      if (e is ApiException && e.statusCode == 409) {
+        emit(SupplierReturnApproveMassError(e.toString(), statusCode: e.statusCode));
+      } else {
+        emit(SupplierReturnApproveMassError(e.toString()));
+      }
+      add(FetchSupplierReturn(forceRefresh: true));
+    }
+
+    emit(SupplierReturnLoaded(data: _allData));
+  }
+
+  Future<void> _onMassDisapproveSupplierReturnDocuments(
+      MassDisapproveSupplierReturnDocuments event, Emitter<SupplierReturnState> emit) async {
+    final ls = _selectedDocuments.where((e) => e.approved == 1 && e.deletedAt == null).map((e) => e.id!).toList();
+    add(UnselectAllSupplierReturnDocuments());
+
+    if (ls.isEmpty) {
+      emit(const SupplierReturnDisapproveMassSuccess("Нет документов для отмены одобрения"));
+      return;
+    }
+
+    try {
+      // Последовательная отмена одобрения каждого документа
+      for (final id in ls) {
+        await apiService.unApproveSupplierReturnDocument(id);
+      }
+      emit(const SupplierReturnDisapproveMassSuccess("mass_disapprove_success_message"));
+    } catch (e) {
+      if (e is ApiException && e.statusCode == 409) {
+        emit(SupplierReturnDisapproveMassError(e.toString(), statusCode: e.statusCode));
+      } else {
+        emit(SupplierReturnDisapproveMassError(e.toString()));
+      }
+      add(FetchSupplierReturn(forceRefresh: true));
+    }
+
+    emit(SupplierReturnLoaded(data: _allData));
+  }
+
+  Future<void> _onMassDeleteSupplierReturnDocuments(
+      MassDeleteSupplierReturnDocuments event, Emitter<SupplierReturnState> emit) async {
+    final ls = _selectedDocuments.where((e) => e.deletedAt == null).map((e) => e.id!).toList();
+    add(UnselectAllSupplierReturnDocuments());
+
+    if (ls.isEmpty) {
+      emit(const SupplierReturnDeleteMassSuccess("Нет документов для удаления"));
+      return;
+    }
+
+    try {
+      // Последовательное удаление каждого документа
+      for (final id in ls) {
+        await apiService.deleteSupplierReturnDocument(id);
+      }
+      
+      _allData.removeWhere((doc) => ls.contains(doc.id));
+      
+      emit(const SupplierReturnDeleteMassSuccess("mass_delete_success_message"));
+    } catch (e) {
+      if (e is ApiException && e.statusCode == 409) {
+        emit(SupplierReturnDeleteMassError(e.toString(), statusCode: e.statusCode));
+      } else {
+        emit(SupplierReturnDeleteMassError(e.toString()));
+      }
+      add(FetchSupplierReturn(forceRefresh: true));
+    }
+
+    emit(SupplierReturnLoaded(data: List.from(_allData), selectedData: List.from(_selectedDocuments)));
+  }
+
+  Future<void> _onMassRestoreSupplierReturnDocuments(
+      MassRestoreSupplierReturnDocuments event, Emitter<SupplierReturnState> emit) async {
+    final ls = _selectedDocuments.where((e) => e.deletedAt != null).map((e) => e.id!).toList();
+    add(UnselectAllSupplierReturnDocuments());
+
+    if (ls.isEmpty) {
+      emit(const SupplierReturnRestoreMassSuccess("Нет документов для восстановления"));
+      return;
+    }
+
+    try {
+      // Последовательное восстановление каждого документа
+      for (final id in ls) {
+        await apiService.restoreSupplierReturnDocument(id);
+      }
+      emit(const SupplierReturnRestoreMassSuccess("mass_restore_success_message"));
+    } catch (e) {
+      if (e is ApiException && e.statusCode == 409) {
+        emit(SupplierReturnRestoreMassError(e.toString(), statusCode: e.statusCode));
+      } else {
+        emit(SupplierReturnRestoreMassError(e.toString()));
+      }
+      add(FetchSupplierReturn(forceRefresh: true));
+    }
+
+    emit(SupplierReturnLoaded(data: _allData));
+  }
+
+  // Выбор документов
+  Future<void> _onSelectDocument(
+      SelectSupplierReturnDocument event, Emitter<SupplierReturnState> emit) async {
+    if (state is SupplierReturnLoaded) {
+      final currentState = state as SupplierReturnLoaded;
+
+      if (_selectedDocuments.contains(event.document)) {
+        _selectedDocuments.remove(event.document);
+      } else {
+        _selectedDocuments.add(event.document);
+      }
+
+      final selectedDocuments = currentState.data.where((doc) => _selectedDocuments.contains(doc)).toList();
+
+      emit(SupplierReturnLoaded(
+        data: currentState.data,
+        pagination: currentState.pagination,
+        hasReachedMax: currentState.hasReachedMax,
+        selectedData: selectedDocuments,
+      ));
+    }
+  }
+
+  Future<void> _onUnselectAllDocuments(
+      UnselectAllSupplierReturnDocuments event, Emitter<SupplierReturnState> emit) async {
+    _selectedDocuments = [];
+
+    if (state is SupplierReturnLoaded) {
+      final currentState = state as SupplierReturnLoaded;
+      emit(SupplierReturnLoaded(
+        data: currentState.data,
+        pagination: currentState.pagination,
+        hasReachedMax: currentState.hasReachedMax,
+        selectedData: [],
+      ));
+    }
+  }
 }

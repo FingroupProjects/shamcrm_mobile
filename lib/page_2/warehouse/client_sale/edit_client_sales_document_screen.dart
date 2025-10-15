@@ -33,13 +33,14 @@ class EditClientSalesDocumentScreen extends StatefulWidget {
 }
 
 class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentScreen> {
+  String? _selectedStorage;
+  LeadData? _selectedLead;
+
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _dateController = TextEditingController();
   final TextEditingController _commentController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  String? _selectedStorage;
-  LeadData? _selectedLead;
   List<Map<String, dynamic>> _items = [];
   bool _isLoading = false;
   final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
@@ -83,12 +84,13 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
         final quantity = good.quantity ?? 0;
         final price = double.tryParse(good.price ?? '0') ?? 0.0;
 
-        final availableUnits = good.good?.units ?? [];
-        final selectedUnitId = good.unitId;
-        final selectedUnitObj = availableUnits.firstWhere(
-          (unit) => unit.id == selectedUnitId,
-          orElse: () => availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: 'шт'),
-        );
+        // ✅ NEW: Try multiple sources for units
+        final availableUnits = good.good?.units ??
+                              (good.unit != null ? [good.unit!] : []);
+
+        // ✅ NEW: Get selected unit from document_goods level first
+        final selectedUnitObj = good.unit ??
+                               (availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: 'шт'));
 
         final amount = selectedUnitObj.amount ?? 1;
 
@@ -99,7 +101,7 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
           'quantity': quantity,
           'price': price,
           'total': quantity * price * amount,
-          'selectedUnit': selectedUnitObj.shortName ?? selectedUnitObj.name,
+          'selectedUnit': selectedUnitObj.name,
           'unit_id': selectedUnitObj.id,
           'amount': amount,
           'availableUnits': availableUnits,
@@ -133,13 +135,12 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
             text: initialPrice > 0 ? initialPrice.toStringAsFixed(3) : ''
           );
           
-          _quantityControllers[variantId] = TextEditingController(text: '1');
+          _quantityControllers[variantId] = TextEditingController(text: '');
 
           // ✅ НОВОЕ: Создаём FocusNode для новых товаров
           _quantityFocusNodes[variantId] = FocusNode();
           _priceFocusNodes[variantId] = FocusNode();
 
-          _items.last['quantity'] = 1;
           _items.last['price'] = initialPrice;
           
           final amount = newItem['amount'] ?? 1;
@@ -176,11 +177,10 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
 
  void _removeItem(int index) {
   if (!mounted) return;
-  
+
   final removedItem = _items[index];
   final variantId = removedItem['variantId'] as int;
-
-  // ✅ Удаляем из AnimatedList ДО setState
+  // // ✅ Удаляем из AnimatedList ДО setState
   _listKey.currentState?.removeItem(
     index,
     (context, animation) => _buildSelectedItemCard(index, removedItem, animation),
@@ -307,7 +307,7 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
 
         final availableUnits = _items[index]['availableUnits'] as List<Unit>? ?? [];
         final selectedUnitObj = availableUnits.firstWhere(
-          (unit) => (unit.shortName ?? unit.name) == newUnit,
+          (unit) => (unit.name) == newUnit,
           orElse: () => availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: '', amount: 1),
         );
 
@@ -338,6 +338,16 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
     }
     
     FocusScope.of(context).unfocus();
+  }
+
+  // Функция для парсинга цены: возвращает int если целое, double если дробное
+  num _parsePriceAsNumber(dynamic price) {
+    final double parsedPrice = price is String ? (double.tryParse(price) ?? 0.0) : (price as num).toDouble();
+    // Проверяем, является ли число целым
+    if (parsedPrice == parsedPrice.truncateToDouble()) {
+      return parsedPrice.toInt();
+    }
+    return parsedPrice;
   }
 
   void _updateDocument() async {
@@ -410,7 +420,7 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
           return {
             'good_id': item['variantId'],
             'quantity': int.tryParse(item['quantity'].toString()),
-            'price': item['price'].toString(),
+            'price': _parsePriceAsNumber(item['price']),
             'unit_id': unitId,
           };
         }).toList(),
@@ -526,7 +536,6 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
   }
 
   AppBar _buildAppBar(AppLocalizations localizations) {
-    // ✅ НОВОЕ: Показываем сумму в AppBar
     final hasItems = _items.isNotEmpty;
     final total = _totalAmount;
 
@@ -535,24 +544,28 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
       forceMaterialTransparency: true,
       elevation: 0,
       leading: IconButton(
-      icon: const Icon(Icons.arrow_back_ios, color: Color(0xff1E2E52), size: 24),
-      onPressed: () async {
-        // Если есть товары, показываем диалог
-        if (_items.isNotEmpty) {
-          final shouldExit = await ConfirmExitDialog.show(context);
-          if (shouldExit && mounted) {
+        icon: const Icon(Icons.arrow_back_ios, color: Color(0xff1E2E52), size: 24),
+        onPressed: () async {
+          // Если есть товары, показываем диалог
+          if (_items.isNotEmpty) {
+            final shouldExit = await ConfirmExitDialog.show(context);
+            if (shouldExit && mounted) {
+              Navigator.pop(context);
+            }
+          } else {
+            // Если товаров нет, просто выходим
             Navigator.pop(context);
           }
-        } else {
-          // Если товаров нет, просто выходим
-          Navigator.pop(context);
-        }
-      },
-    ),
-      title: hasItems
-          ? null // Убираем заголовок, когда показываем сумму
-          : Text(
+        },
+      ),
+      title: Row(
+        children: [
+          // Заголовок — всегда виден, но усекается при нехватке места
+          Expanded(
+            child: Text(
               '${localizations.translate('edit_client_sale') ?? 'Редактировать реализацию'} №${widget.document.docNumber}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 fontSize: 20,
                 fontFamily: 'Gilroy',
@@ -560,39 +573,41 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
                 color: Color(0xff1E2E52),
               ),
             ),
-      centerTitle: false,
-      actions: hasItems
-          ? [
-              Container(
-                margin: const EdgeInsets.only(right: 16),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: const Color(0xff4CAF50).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.account_balance_wallet_outlined,
-                      color: Color(0xff4CAF50),
-                      size: 18,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      total.toStringAsFixed(0),
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xff4CAF50),
-                      ),
-                    ),
-                  ],
-                ),
+          ),
+          if (hasItems) ...[
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xff4CAF50).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
               ),
-            ]
-          : null,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.account_balance_wallet_outlined,
+                    color: Color(0xff4CAF50),
+                    size: 18,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    total.toStringAsFixed(0),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xff4CAF50),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+      centerTitle: false,
+      actions: [],
     );
   }
 
@@ -697,12 +712,9 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
     final variantId = item['variantId'] as int;
     final priceController = _priceControllers[variantId];
     final quantityController = _quantityControllers[variantId];
-    final quantityFocusNode = _quantityFocusNodes[variantId]; // ✅ НОВОЕ
-    final priceFocusNode = _priceFocusNodes[variantId]; // ✅ НОВОЕ
-  // ✅ ДОБАВЬТЕ ПРОВЕРКУ
-  if (priceController == null || quantityController == null) {
-    return const SizedBox.shrink();
-  }
+    final quantityFocusNode = _quantityFocusNodes[variantId];
+    final priceFocusNode = _priceFocusNodes[variantId];
+
     return FadeTransition(
       opacity: animation,
       child: SizeTransition(
@@ -728,20 +740,6 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
             children: [
               Row(
                 children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: const Color(0xffF4F7FD),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.shopping_cart_outlined,
-                      color: Color(0xff4759FF),
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       item['name'] ?? '',
@@ -755,36 +753,71 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close, color: Color(0xff99A4BA), size: 18),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    onPressed: () => _removeItem(index),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () => _removeItem(index),
+                    child: const Icon(Icons.close, color: Color(0xff99A4BA), size: 18),
                   ),
                 ],
               ),
-              if (item['remainder'] != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4, bottom: 4),
-                  child: Text(
-                    '${AppLocalizations.of(context)!.translate('available') ?? 'Доступно'}: ${item['remainder']} ${item['selectedUnit'] ?? 'шт'}',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w400,
-                      color: Color(0xff4CAF50),
-                    ),
+              Padding(
+                padding: const EdgeInsets.only(top: 4, bottom: 10),
+                child: Text(
+                  '${AppLocalizations.of(context)!.translate('total') ?? 'Сумма'} ${(item['total'] ?? 0.0).toStringAsFixed(0)}',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff4759FF),
                   ),
                 ),
-              const SizedBox(height: 10),
+              ),
               const Divider(height: 1, color: Color(0xFFE5E7EB)),
               const SizedBox(height: 10),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Expanded(
+                    flex: 20,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          AppLocalizations.of(context)!.translate('quantity') ?? 'Кол-во',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w400,
+                            color: Color(0xff99A4BA),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        CompactTextField(
+                          controller: quantityController ?? TextEditingController(),
+                          focusNode: quantityFocusNode,
+                          hintText: AppLocalizations.of(context)!.translate('quantity') ?? 'Количество',
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,3}')),
+                          ],
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xff1E2E52),
+                          ),
+                          hasError: _quantityErrors[variantId] == true,
+                          onChanged: (value) => _updateItemQuantity(variantId, value),
+                          onDone: _moveToNextEmptyField,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
                   if (availableUnits.isNotEmpty)
                     Expanded(
-                      flex: 2,
+                      flex: 25,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -822,14 +855,14 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
                                   ),
                                   items: availableUnits.map((unit) {
                                     return DropdownMenuItem<String>(
-                                      value: unit.shortName ?? unit.name,
-                                      child: Text(unit.shortName ?? unit.name ?? ''),
+                                      value: unit.name,
+                                      child: Text(unit.name ?? ''),
                                     );
                                   }).toList(),
                                   onChanged: (String? newValue) {
                                     if (newValue != null) {
                                       final selectedUnit = availableUnits.firstWhere(
-                                        (unit) => (unit.shortName ?? unit.name) == newValue,
+                                            (unit) => (unit.name) == newValue,
                                       );
                                       _updateItemUnit(variantId, newValue, selectedUnit.id);
                                     }
@@ -860,47 +893,9 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
                         ],
                       ),
                     ),
-                  if (availableUnits.isNotEmpty) const SizedBox(width: 8),
-                  Expanded(
-                    flex: 2,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          AppLocalizations.of(context)!.translate('quantity') ?? 'Кол-во',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w400,
-                            color: Color(0xff99A4BA),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        CompactTextField(
-                          controller: quantityController!,
-                          focusNode: quantityFocusNode, // ✅ НОВОЕ
-                          hintText: AppLocalizations.of(context)!.translate('quantity') ?? 'Количество',
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                          ],
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xff1E2E52),
-                          ),
-                          hasError: _quantityErrors[variantId] == true,
-                          onChanged: (value) => _updateItemQuantity(variantId, value),
-                          onDone: _moveToNextEmptyField, // ✅ НОВОЕ
-                        ),
-                      ],
-                    ),
-                  ),
                   const SizedBox(width: 8),
                   Expanded(
-                    flex: 3,
+                    flex: 25,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -915,8 +910,8 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
                         ),
                         const SizedBox(height: 4),
                         CompactTextField(
-                          controller: priceController!,
-                          focusNode: priceFocusNode, // ✅ НОВОЕ
+                          controller: priceController ?? TextEditingController(),
+                          focusNode: priceFocusNode,
                           hintText: AppLocalizations.of(context)!.translate('price') ?? 'Цена',
                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           inputFormatters: [
@@ -930,107 +925,16 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
                           ),
                           hasError: _priceErrors[variantId] == true,
                           onChanged: (value) => _updateItemPrice(variantId, value),
-                          onDone: _moveToNextEmptyField, // ✅ НОВОЕ
+                          onDone: _moveToNextEmptyField,
                         ),
                       ],
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF4F7FD),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          AppLocalizations.of(context)!.translate('total') ?? 'Сумма',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xff1E2E52),
-                          ),
-                        ),
-                        if ((item['amount'] ?? 1) > 1)
-                          Text(
-                            '(×${item['amount']} ${AppLocalizations.of(context)!.translate('pieces') ?? 'шт'})',
-                            style: const TextStyle(
-                              fontSize: 10,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w400,
-                              color: Color(0xff99A4BA),
-                            ),
-                          ),
-                      ],
-                    ),
-                    Text(
-                      (item['total'] ?? 0.0).toStringAsFixed(0),
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xff4759FF),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildTotalCard(double total) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xff4759FF), Color(0xff6B7BFF)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
-            spreadRadius: 2,
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            AppLocalizations.of(context)!.translate('total_amount') ?? 'Общая сумма',
-            style: const TextStyle(
-              fontSize: 16,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-            ),
-          ),
-          Text(
-            total.toStringAsFixed(0),
-            style: const TextStyle(
-              fontSize: 20,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
-          ),
-        ],
       ),
     );
   }

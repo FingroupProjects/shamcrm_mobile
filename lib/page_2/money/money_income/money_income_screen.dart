@@ -661,7 +661,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
             : (document) => null,
         onClick: (document) {
           if (_selectionMode) {
-            final currentState = context.read<MoneyIncomeBloc>().state;
+            final currentState = _moneyIncomeBloc.state;
             if (currentState is MoneyIncomeLoaded) {
               final selectedCount = currentState.selectedData?.length ?? 0;
               if (selectedCount <= 1 && currentState.selectedData?.contains(document) == true) {

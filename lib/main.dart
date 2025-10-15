@@ -80,8 +80,10 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/deliviry_adress/delivery_addre
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/client_return/client_return_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/client_sale/bloc/client_sale_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/client_sale/bloc/client_sale_document_history/bloc/client_sale_document_history_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/article_bloc/expense_article_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/storage_bloc/storage_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/units_bloc/units_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/measure_units/measure_units_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/movement/movement_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/price_type/bloc/price_type_bloc.dart';
@@ -788,6 +790,12 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => IncomingBloc(widget.apiService)),
         BlocProvider<StorageBloc>(
           create: (context) => StorageBloc(widget.apiService),
+        ),
+        BlocProvider<UnitsBloc>(
+          create: (context) => UnitsBloc(widget.apiService),
+        ),
+        BlocProvider<ExpenseArticleBloc>(
+          create: (context) => ExpenseArticleBloc(widget.apiService),
         ),
         BlocProvider<SupplierBloc>(
           create: (context) => SupplierBloc(widget.apiService),

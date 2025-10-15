@@ -39,6 +39,7 @@ class IncomingDocument extends Equatable {
   final int? counterpartyAgreementId;
   final int? organizationId;
   final WareHouse? storage;
+  final ArticleGood? article;
   final WareHouse? sender_storage_id;
   final WareHouse? recipient_storage_id;
   final String? type;
@@ -65,6 +66,7 @@ class IncomingDocument extends Equatable {
     this.counterpartyAgreementId,
     this.organizationId,
     this.storage,
+    this.article,
     this.sender_storage_id,
     this.recipient_storage_id,
     this.comment,
@@ -107,6 +109,36 @@ class IncomingDocument extends Equatable {
     return null;
   }
 
+  static num? _parseNum(dynamic value) {
+    if (value == null) return null;
+    if (value is num) {
+      if (value is int) return value;
+      if (value is double) {
+        if (value == value.toInt()) {
+          return value.toInt();
+        }
+        return value;
+      }
+      return value;
+    }
+    if (value is String) {
+      if (value.isEmpty) return null;
+      try {
+        double parsed = double.parse(value.replaceAll(',', '.'));
+
+        if (parsed == parsed.toInt()) {
+          return parsed.toInt(); // Return as int (1, 2, 3, etc.)
+        }
+        return parsed; // Return as double (1.23, 2.5, etc.)
+      } catch (e) {
+        print('Error parsing num from string "$value": $e');
+        return null;
+      }
+    }
+    print('Unexpected type for num parsing: ${value.runtimeType}');
+    return null;
+  }
+
   factory IncomingDocument.fromJson(Map<String, dynamic> json) {
     return IncomingDocument(
       id: _parseInt(json['id']),
@@ -117,6 +149,7 @@ class IncomingDocument extends Equatable {
       organizationId: _parseInt(json['organization_id']), // Теперь безопасно обрабатывает и строки и числа
       storage:
           json['storage'] != null ? WareHouse.fromJson(json['storage']) : null,
+      article: json['article'] != null ? ArticleGood.fromJson(json['article']) : null,
       sender_storage_id: json['sender_storage_id'] != null ? WareHouse.fromJson(json['sender_storage_id']) : null,
       recipient_storage_id: json['recipient_storage_id'] != null ? WareHouse.fromJson(json['recipient_storage_id']) : null,
       comment: json['comment'],
@@ -150,6 +183,7 @@ class IncomingDocument extends Equatable {
       'counterparty_agreement_id': counterpartyAgreementId,
       'organization_id': organizationId,
       'storage': storage?.toJson(),
+      'article': article?.toJson(),
       'comment': comment,
       'currency': currency?.toJson(),
       'document_goods': documentGoods?.map((e) => e.toJson()).toList(),
@@ -180,7 +214,7 @@ class IncomingDocument extends Equatable {
 
   int get totalQuantity {
     if (documentGoods == null || documentGoods!.isEmpty) return 0;
-    return documentGoods!.fold(0, (sum, good) => sum + (good.quantity ?? 0));
+     return documentGoods!.fold(0, (sum, good) => sum + (good.quantity?.toInt() ?? 0));
   }
 
   String get statusText {
@@ -205,6 +239,7 @@ class IncomingDocument extends Equatable {
     int? counterpartyAgreementId,
     int? organizationId,
     WareHouse? storage,
+    ArticleGood? article,
     String? comment,
     Currency? currency,
     List<DocumentGood>? documentGoods,
@@ -230,6 +265,7 @@ class IncomingDocument extends Equatable {
       counterpartyAgreementId: counterpartyAgreementId ?? this.counterpartyAgreementId,
       organizationId: organizationId ?? this.organizationId,
       storage: storage ?? this.storage,
+      article: article ?? this.article,
       comment: comment ?? this.comment,
       currency: currency ?? this.currency,
       documentGoods: documentGoods ?? this.documentGoods,
@@ -452,7 +488,7 @@ class Currency {
   final int? documentId;
   final int? variantId;
   final Good? good;
-  final int? quantity;
+  final num? quantity;
   final String? price;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -488,7 +524,7 @@ class Currency {
       documentId: IncomingDocument._parseInt(json['document_id']),
       variantId: IncomingDocument._parseInt(json['variant_id']),
       good: json['good'] != null ? Good.fromJson(json['good']) : null,
-      quantity: IncomingDocument._parseInt(json['quantity']),
+      quantity: IncomingDocument._parseNum(json['quantity']), // Используем num для поддержки int и double
       price: json['price'],
       createdAt: IncomingDocument._parseDate(json['created_at']),
       updatedAt: IncomingDocument._parseDate(json['updated_at']),
@@ -1058,4 +1094,42 @@ class AttributeValue {
       'category_attribute': categoryAttribute?.toJson(),
     };
   }
+}
+
+class ArticleGood {
+
+  final int? id;
+  final String? name;
+  final String? type;
+
+  ArticleGood({this.id, this.name, this.type});
+  factory ArticleGood.fromJson(Map<String, dynamic> json) {
+    return ArticleGood(
+      id: IncomingDocument._parseInt(json['id']),
+      name: json['name'],
+      type: json['type'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'type': type,
+    };
+  }
+
+  @override
+  String toString() {
+    return name ?? '';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is ArticleGood && other.id == id;
+  }
+
+  @override
+  int get hashCode => id.hashCode;
 }

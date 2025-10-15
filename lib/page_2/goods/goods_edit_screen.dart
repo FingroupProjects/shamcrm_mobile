@@ -1,15 +1,16 @@
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/units_bloc/units_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/units_bloc/units_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_character.dart';
-import 'package:crm_task_manager/models/page_2/branch_model.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart'
     as subCatAttr;
 import 'package:crm_task_manager/page_2/goods/goods_details/image_list_poput.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/label_list.dart';
-import 'package:crm_task_manager/page_2/order/order_details/branch_method_dropdown.dart';
+import 'package:crm_task_manager/page_2/warehouse/incoming/units_widget.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:image_picker/image_picker.dart';
@@ -45,14 +46,11 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
   final TextEditingController commentsController = TextEditingController();
   subCatAttr.SubCategoryAttributesData? selectedCategory;
   
-  Branch? selectedBranch;
-  bool isBranchValid = true;
-  List<Branch> branches = [];
+  String? selectedUnit;
   bool isActive = true;
   List<subCatAttr.SubCategoryAttributesData> subCategories = [];
   String? selectlabel; // Используем для хранения ID метки
   bool isCategoryValid = true;
-  bool isImagesValid = true;
   bool isLoading = false;
   final ApiService _apiService = ApiService();
   String? baseUrl;
@@ -66,7 +64,10 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
   void initState() {
     super.initState();
     _initializeFieldsWithDefaults();
-    _loadAllDataSequentially();
+    // Откладываем загрузку данных до следующего фрейма, когда контекст будет полностью инициализирован
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadAllDataSequentially();
+    });
   }
 
  void _initializeFieldsWithDefaults() {
@@ -84,7 +85,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
   //print('GoodsEditScreen: Initializing selectlabel with value: ${widget.goods.label?.id?.toString()}');
   selectlabel = widget.goods.label?.id?.toString(); // Исправлено
   isActive = widget.goods.isActive ?? false;
-  selectedBranch = null;
+  selectedUnit = widget.goods.unit?.id?.toString();
   _imagePaths =
       widget.sortedFiles.map((file) => '$baseUrl/${file.path}').toList();
   mainImageIndex = widget.initialMainImageIndex ?? 0;
@@ -105,10 +106,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
 }
 
   Future<void> _loadAllDataSequentially() async {
+    if (!mounted) return;
     setState(() => isLoading = true);
-    
-    // Сохраняем ScaffoldMessenger до асинхронных операций
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
     
     try {
       await _initializeBaseUrl();
@@ -120,20 +119,13 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
         });
       }
       await fetchSubCategories();
-      await fetchBranches();
-
-      if (widget.goods.branches != null && widget.goods.branches!.isNotEmpty) {
-        final goodsBranchId = widget.goods.branches![0].id;
-        selectedBranch = branches.firstWhere(
-          (branch) => branch.id == goodsBranchId,
-        );
-      }
+      context.read<UnitsBloc>().add(FetchUnits());
 
       _initializeFieldsWithData();
     } catch (e) {
       print('❌ Error in _loadAllDataSequentially: $e');
       if (mounted) {
-        scaffoldMessenger.showSnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
               content: Text(AppLocalizations.of(context)!
                   .translate('error_loading_data'))),
@@ -143,22 +135,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       if (mounted) {
         setState(() => isLoading = false);
       }
-    }
-  }
-
-  Future<void> fetchBranches() async {
-    try {
-      print('🔍 Fetching branches...');
-      final fetchedBranches = await _apiService.getBranches();
-      print('✅ Branches fetched successfully: ${fetchedBranches.length} branches');
-      if (mounted) {
-        setState(() {
-          branches = fetchedBranches;
-        });
-      }
-    } catch (e) {
-      print('❌ Error fetching branches: $e');
-      throw e;
     }
   }
 
@@ -293,11 +269,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
   void validateForm() {
     setState(() {
       isCategoryValid = selectedCategory != null;
-      isImagesValid = _imagePaths.isNotEmpty;
-      isBranchValid = selectedBranch != null;
-      if (_imagePaths.isNotEmpty && mainImageIndex == null) {
-        isImagesValid = false;
-      }
     });
   }
 
@@ -394,7 +365,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
         if (mainImageIndex == null && _imagePaths.isNotEmpty) {
           mainImageIndex = _imagePaths.length - 1;
         }
-        isImagesValid = true;
       });
     }
   }
@@ -407,7 +377,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
         if (mainImageIndex == null && _imagePaths.isNotEmpty) {
           mainImageIndex = _imagePaths.length - pickedFiles.length;
         }
-        isImagesValid = true;
       });
     }
   }
@@ -421,7 +390,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       } else if (mainImageIndex != null && removedIndex < mainImageIndex!) {
         mainImageIndex = mainImageIndex! - 1;
       }
-      isImagesValid = _imagePaths.isNotEmpty;
     });
   }
 
@@ -598,39 +566,14 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                     },
                   ),
                   const SizedBox(height: 8),
-                  branches.isEmpty
-                      ? Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: CircularProgressIndicator(
-                                color: Color(0xff1E2E52)),
-                          ),
-                        )
-                      : BranchesDropdown(
-                          label:
-                              AppLocalizations.of(context)!.translate('branch'),
-                          selectedBranch: selectedBranch,
-                          branches: branches,
-                          onSelectBranch: (Branch branch) {
-                            setState(() {
-                              selectedBranch = branch;
-                              isBranchValid = true;
-                            });
-                          },
-                        ),
-                  if (!isBranchValid)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        AppLocalizations.of(context)!
-                            .translate('please_select_branch'),
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.red,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                    ),
+                  UnitsWidget(
+                    selectedUnit: selectedUnit,
+                    onChanged: (value) {
+                      setState(() {
+                        selectedUnit = value;
+                      });
+                    },
+                  ),
                   const SizedBox(height: 8),
                   subCategories.isEmpty
                       ? Center(
@@ -647,8 +590,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                               selectedCategory: selectedCategory?.name,
                               onSelectCategory: (category) {
                                 setState(() {
-                                  selectedCategory = category
-                                      as subCatAttr.SubCategoryAttributesData?;
+                                  selectedCategory = category as subCatAttr.SubCategoryAttributesData?;
                                   isCategoryValid = category != null;
                                   attributeControllers.clear();
                                   tableAttributes.clear();
@@ -1066,9 +1008,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                         color: const Color(0xffF4F7FD),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: isImagesValid
-                              ? const Color(0xffF4F7FD)
-                              : Colors.red,
+                          color: const Color(0xffF4F7FD),
                           width: 1.5,
                         ),
                       ),
@@ -1256,19 +1196,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                             ),
                     ),
                   ),
-                  if (!isImagesValid)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        AppLocalizations.of(context)!
-                            .translate('please_select_image'),
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.red,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                    ),
                   const SizedBox(height: 8),
                   Row(
                     children: [
@@ -1383,9 +1310,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                       onPressed: () {
                         validateForm();
                         if (formKey.currentState!.validate() &&
-                            isCategoryValid &&
-                            isImagesValid &&
-                            isBranchValid) {
+                            isCategoryValid) {
                           _updateProduct();
                         } else {
                           showCustomSnackBar(
@@ -1502,6 +1427,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
         parentId: selectedCategory!.id,
         description: goodsDescriptionController.text.trim(),
         quantity: int.tryParse(stockQuantityController.text) ?? 0,
+        unitId: selectedUnit != null ? int.tryParse(selectedUnit!) : null,
         attributes: attributes,
         variants: variants,
         images: generalImages,
@@ -1510,7 +1436,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                 selectedCategory!.hasPriceCharacteristics
             ? null
             : double.tryParse(discountPriceController.text),
-        branch: selectedBranch!.id,
+        storageId: null,
         comments: commentsController.text.trim(),
         mainImageIndex: mainImageIndex ?? 0,
         labelId: labelId, // Передаём labelId
@@ -1533,7 +1459,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
           isSuccess: false,
         );
       }
-    } catch (e, stackTrace) {
+    } catch (e) {
       setState(() => isLoading = false);
       showCustomSnackBar(
         context: context,

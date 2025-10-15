@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class SupplierReturnEvent extends Equatable {
@@ -109,4 +110,40 @@ class RestoreSupplierReturn extends SupplierReturnEvent {
 
   @override
   List<Object> get props => [documentId, localizations];
+}
+
+// Массовые операции
+class MassApproveSupplierReturnDocuments extends SupplierReturnEvent {
+  @override
+  List<Object> get props => [];
+}
+
+class MassDisapproveSupplierReturnDocuments extends SupplierReturnEvent {
+  @override
+  List<Object> get props => [];
+}
+
+class MassDeleteSupplierReturnDocuments extends SupplierReturnEvent {
+  @override
+  List<Object> get props => [];
+}
+
+class MassRestoreSupplierReturnDocuments extends SupplierReturnEvent {
+  @override
+  List<Object> get props => [];
+}
+
+// Выбор документов
+class SelectSupplierReturnDocument extends SupplierReturnEvent {
+  final IncomingDocument document;
+
+  const SelectSupplierReturnDocument(this.document);
+
+  @override
+  List<Object> get props => [document];
+}
+
+class UnselectAllSupplierReturnDocuments extends SupplierReturnEvent {
+  @override
+  List<Object> get props => [];
 }

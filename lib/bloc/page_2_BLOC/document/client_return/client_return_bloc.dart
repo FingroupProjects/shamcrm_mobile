@@ -15,6 +15,7 @@ class ClientReturnBloc extends Bloc<ClientReturnEvent, ClientReturnState> {
   final int _perPage = 20;
   Map<String, dynamic> _filters = {};
   List<IncomingDocument> _allData = [];
+  List<IncomingDocument> _selectedDocuments = [];
 
   ClientReturnBloc(this.apiService) : super(ClientReturnInitial()) {
     on<FetchClientReturns>(_onFetchData);
@@ -22,6 +23,14 @@ class ClientReturnBloc extends Bloc<ClientReturnEvent, ClientReturnState> {
     on<DeleteClientReturnDocument>(_delete);
     on<UpdateClientReturnDocument>(_onUpdateClientReturnDocument);
     on<RestoreClientReturnDocument>(_onRestoreClientReturnDocument);
+
+    on<MassApproveClientReturnDocuments>(_onMassApproveClientReturnDocuments);
+    on<MassDisapproveClientReturnDocuments>(_onMassDisapproveClientReturnDocuments);
+    on<MassDeleteClientReturnDocuments>(_onMassDeleteClientReturnDocuments);
+    on<MassRestoreClientReturnDocuments>(_onMassRestoreClientReturnDocuments);
+
+    on<SelectClientReturnDocument>(_onSelectDocument);
+    on<UnselectAllClientReturnDocuments>(_onUnselectAllDocuments);
   }
 
   _onFetchData(FetchClientReturns event, Emitter<ClientReturnState> emit) async {
@@ -60,10 +69,13 @@ class ClientReturnBloc extends Bloc<ClientReturnEvent, ClientReturnState> {
         _currentPage++;
       }
 
+      final selectedDocuments = _allData.where((doc) => _selectedDocuments.contains(doc)).toList();
+
       emit(ClientReturnLoaded(
         data: _allData,
         pagination: response.pagination,
         hasReachedMax: hasReachedMax,
+        selectedData: selectedDocuments,
       ));
     } catch (e) {
       if (e is ApiException) {
@@ -78,7 +90,7 @@ class ClientReturnBloc extends Bloc<ClientReturnEvent, ClientReturnState> {
       CreateClientReturnDocument event, Emitter<ClientReturnState> emit) async {
     emit(ClientReturnCreateLoading());
     try {
-      final response = await apiService.createClientReturnDocument(
+      await apiService.createClientReturnDocument(
         date: event.date,
         storageId: event.storageId,
         comment: event.comment,
@@ -131,12 +143,136 @@ _delete(DeleteClientReturnDocument event, Emitter<ClientReturnState> emit) async
   }
   
   if (_allData.isNotEmpty) {
+    final selectedDocuments = _allData.where((doc) => _selectedDocuments.contains(doc)).toList();
     emit(ClientReturnLoaded(
       data: List.from(_allData),
       hasReachedMax: state is ClientReturnLoaded ? (state as ClientReturnLoaded).hasReachedMax : false,
+      selectedData: selectedDocuments,
     ));
   }
 }
+
+  // Массовые операции
+  Future<void> _onMassApproveClientReturnDocuments(
+      MassApproveClientReturnDocuments event, Emitter<ClientReturnState> emit) async {
+    final ls = _selectedDocuments.where((e) => e.approved == 0 && e.deletedAt == null).map((e) => e.id!).toList();
+    add(UnselectAllClientReturnDocuments());
+
+    try {
+      await apiService.massApproveClientReturnDocuments(ls);
+      emit(const ClientReturnApproveMassSuccess("mass_approve_success_message"));
+    } catch (e) {
+      if (e is ApiException && e.statusCode == 409) {
+        emit(ClientReturnApproveMassError(e.toString(), statusCode: e.statusCode));
+      } else {
+        emit(ClientReturnApproveMassError(e.toString()));
+      }
+      add(FetchClientReturns(forceRefresh: true));
+    }
+
+    emit(ClientReturnLoaded(data: _allData));
+  }
+
+  Future<void> _onMassDisapproveClientReturnDocuments(
+      MassDisapproveClientReturnDocuments event, Emitter<ClientReturnState> emit) async {
+    final ls = _selectedDocuments.where((e) => e.approved == 1 && e.deletedAt == null).map((e) => e.id!).toList();
+    add(UnselectAllClientReturnDocuments());
+
+    try {
+      await apiService.massDisapproveClientReturnDocuments(ls);
+      emit(const ClientReturnDisapproveMassSuccess("mass_disapprove_success_message"));
+    } catch (e) {
+      if (e is ApiException && e.statusCode == 409) {
+        emit(ClientReturnDisapproveMassError(e.toString(), statusCode: e.statusCode));
+      } else {
+        emit(ClientReturnDisapproveMassError(e.toString()));
+      }
+      add(FetchClientReturns(forceRefresh: true));
+    }
+
+    emit(ClientReturnLoaded(data: _allData));
+  }
+
+  Future<void> _onMassDeleteClientReturnDocuments(
+      MassDeleteClientReturnDocuments event, Emitter<ClientReturnState> emit) async {
+    final ls = _selectedDocuments.where((e) => e.deletedAt == null).map((e) => e.id!).toList();
+    add(UnselectAllClientReturnDocuments());
+
+    try {
+      await apiService.massDeleteClientReturnDocuments(ls);
+      
+      _allData.removeWhere((doc) => ls.contains(doc.id));
+      
+      emit(const ClientReturnDeleteMassSuccess("mass_delete_success_message"));
+    } catch (e) {
+      if (e is ApiException && e.statusCode == 409) {
+        emit(ClientReturnDeleteMassError(e.toString(), statusCode: e.statusCode));
+      } else {
+        emit(ClientReturnDeleteMassError(e.toString()));
+      }
+      add(FetchClientReturns(forceRefresh: true));
+    }
+
+    emit(ClientReturnLoaded(data: List.from(_allData), selectedData: List.from(_selectedDocuments)));
+  }
+
+  Future<void> _onMassRestoreClientReturnDocuments(
+      MassRestoreClientReturnDocuments event, Emitter<ClientReturnState> emit) async {
+    final ls = _selectedDocuments.where((e) => e.deletedAt != null).map((e) => e.id!).toList();
+    add(UnselectAllClientReturnDocuments());
+
+    try {
+      await apiService.massRestoreClientReturnDocuments(ls);
+      emit(const ClientReturnRestoreMassSuccess("mass_restore_success_message"));
+    } catch (e) {
+      if (e is ApiException && e.statusCode == 409) {
+        emit(ClientReturnRestoreMassError(e.toString(), statusCode: e.statusCode));
+      } else {
+        emit(ClientReturnRestoreMassError(e.toString()));
+      }
+      add(FetchClientReturns(forceRefresh: true));
+    }
+
+    emit(ClientReturnLoaded(data: _allData));
+  }
+
+  // Выбор документов
+  Future<void> _onSelectDocument(
+      SelectClientReturnDocument event, Emitter<ClientReturnState> emit) async {
+    if (state is ClientReturnLoaded) {
+      final currentState = state as ClientReturnLoaded;
+
+      if (_selectedDocuments.contains(event.document)) {
+        _selectedDocuments.remove(event.document);
+      } else {
+        _selectedDocuments.add(event.document);
+      }
+
+      final selectedDocuments = currentState.data.where((doc) => _selectedDocuments.contains(doc)).toList();
+
+      emit(ClientReturnLoaded(
+        data: currentState.data,
+        pagination: currentState.pagination,
+        hasReachedMax: currentState.hasReachedMax,
+        selectedData: selectedDocuments,
+      ));
+    }
+  }
+
+  Future<void> _onUnselectAllDocuments(
+      UnselectAllClientReturnDocuments event, Emitter<ClientReturnState> emit) async {
+    _selectedDocuments = [];
+
+    if (state is ClientReturnLoaded) {
+      final currentState = state as ClientReturnLoaded;
+      emit(ClientReturnLoaded(
+        data: currentState.data,
+        pagination: currentState.pagination,
+        hasReachedMax: currentState.hasReachedMax,
+        selectedData: [],
+      ));
+    }
+  }
 
   _onRestoreClientReturnDocument(
       RestoreClientReturnDocument event, Emitter<ClientReturnState> emit) async {

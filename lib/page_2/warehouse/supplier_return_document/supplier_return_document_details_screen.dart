@@ -16,6 +16,7 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../models/api_exception_model.dart';
+import '../../../models/page_2/goods_model.dart';
 import '../../money/widgets/error_dialog.dart';
 
 class SupplierReturnDocumentDetailsScreen extends StatefulWidget {
@@ -555,6 +556,7 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
                   height: 24,
                 ),
                 onPressed: () async {
+                  if (_isLoading) return;
                   final result = await Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -583,6 +585,7 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
                   height: 24,
                 ),
                 onPressed: () {
+                  if (_isLoading) return;
                   showDialog(
                     context: context,
                     builder: (BuildContext context) {
@@ -704,25 +707,31 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
   }
 
   Widget _buildGoodsItem(DocumentGood good) {
-    final unitShortName = good.good?.unitId != null
-        ? _unitMap[good.good!.unitId] ?? (AppLocalizations.of(context)!.translate('unit_pieces_short') ?? 'шт')
-        : (AppLocalizations.of(context)!.translate('unit_pieces_short') ?? 'шт');
+    final availableUnits = good.good?.units ?? [];
+
+    final selectedUnit = good.unit ??
+        availableUnits.firstWhere(
+              (unit) => unit.id == good.unitId,
+          orElse: () => Unit(id: null, name: 'шт'),
+        );
+
+    final unitShortName = selectedUnit.shortName ?? selectedUnit.name ?? 'шт';
 
     return GestureDetector(
       onTap: () {
         _navigateToGoodsDetails(good);
       },
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
+        padding: const EdgeInsets.symmetric(vertical: 8),
         child: Container(
           decoration: TaskCardStyles.taskCardDecoration,
           child: Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildImageWidget(good),
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -737,33 +746,33 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
                       Row(
                         children: [
                           if (_goodMeasurementEnabled)
-                          Expanded(
-                            flex: 2,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  AppLocalizations.of(context)!.translate('unit') ?? 'Ед.',
-                                  style: const TextStyle(
-                                    fontSize: 10,
-                                    fontFamily: 'Gilroy',
-                                    fontWeight: FontWeight.w400,
-                                    color: Color(0xff99A4BA),
+                            Expanded(
+                              flex: 2,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    AppLocalizations.of(context)!.translate('unit') ?? 'Ед.',
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      fontFamily: 'Gilroy',
+                                      fontWeight: FontWeight.w400,
+                                      color: Color(0xff99A4BA),
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  unitShortName,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontFamily: 'Gilroy',
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xff1E2E52),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    unitShortName,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontFamily: 'Gilroy',
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xff1E2E52),
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ),
                           Expanded(
                             flex: 2,
                             child: Column(

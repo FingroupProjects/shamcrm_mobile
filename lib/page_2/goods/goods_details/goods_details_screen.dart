@@ -309,10 +309,8 @@ AppBar _buildAppBar(BuildContext context, String title) {
         'value': goods.label?.name ?? ''
       },
       {
-        'label': AppLocalizations.of(context)!.translate('branch_details'),
-        'value': goods.branches != null && goods.branches!.isNotEmpty
-            ? goods.branches!.map((branch) => branch.name).join(', ')
-            : '',
+        'label': AppLocalizations.of(context)!.translate('unit'),
+        'value': goods.unit?.name ?? '',
       },
       if (goods.discountPrice != null && goods.discountPrice != 0)
         {
@@ -768,10 +766,8 @@ AppBar _buildAppBar(BuildContext context, String title) {
               },
               {
                 'label':
-                    AppLocalizations.of(context)!.translate('branch_details'),
-                'value': goods.branches != null && goods.branches!.isNotEmpty
-                    ? goods.branches!.map((branch) => branch.name).join(', ')
-                    : '',
+                    AppLocalizations.of(context)!.translate('unit'),
+                'value': goods.unit?.name ?? '',
               },
               ...goods.attributes
                   .where((attr) =>

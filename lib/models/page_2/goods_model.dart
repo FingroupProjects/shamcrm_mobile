@@ -42,7 +42,7 @@ class Unit {
   final String? name;
   final String? shortName;
   final bool? isBase;
-  final int? amount;
+  final num? amount;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -62,7 +62,7 @@ class Unit {
       name: json['name'],
       shortName: json['short_name'],
       isBase: json['is_base'],
-      amount: _parseInt(json['amount']),
+      amount: _parseNum(json['amount']),
       createdAt: _parseDate(json['created_at']),
       updatedAt: _parseDate(json['updated_at']),
     );
@@ -102,6 +102,35 @@ class Unit {
       print('Error parsing date $dateStr: $e');
       return null;
     }
+  }
+
+  static num? _parseNum(dynamic value) {
+    if (value == null) return null;
+    if (value is num) {
+      if (value is int) return value;
+      if (value is double) {
+        if (value == value.toInt()) {
+          return value.toInt();
+        }
+        return value;
+      }
+      return value;
+    }
+    if (value is String) {
+      if (value.isEmpty) return null;
+      try {
+        double parsed = double.parse(value.replaceAll(',', '.'));
+        
+        if (parsed == parsed.toInt()) {
+          return parsed.toInt(); // Return as int (1, 2, 3, etc.)
+        }
+        return parsed; // Return as double (1.23, 90.30, etc.)
+      } catch (e) {
+        print('Error parsing num from string "$value": $e');
+        return null;
+      }
+    }
+    return null;
   }
 }
 
@@ -168,6 +197,7 @@ class Goods {
   final String? article;
   final List<Unit>? units;
   final List<Measurement>? measurements;
+  final Unit? unit; // Добавляем поле unit для AddGoodsScreen и EditGoodsScreen
 
   Goods({
     required this.id,
@@ -194,6 +224,7 @@ class Goods {
     this.article,
     this.units,
     this.measurements,
+    this.unit,
   });
 
   factory Goods.fromJson(Map<String, dynamic> json) {
@@ -312,6 +343,8 @@ class Goods {
         article: data['article'] as String?,
         units: units,
         measurements: measurements,
+        unit: data['unit'] != null ? Unit.fromJson(data['unit']) : null, // Инициализируем поле unit
+
       );
     } catch (e, stackTrace) {
       print('GoodsModel: Ошибка парсинга товара: $e');

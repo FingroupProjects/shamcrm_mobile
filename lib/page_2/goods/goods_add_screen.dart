@@ -1,19 +1,18 @@
 
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_bloc.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_event.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_state.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/units_bloc/units_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/units_bloc/units_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_character.dart';
-import 'package:crm_task_manager/models/page_2/branch_model.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/image_list_poput.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/label_list.dart';
-import 'package:crm_task_manager/page_2/order/order_details/branch_method_dropdown.dart';
+import 'package:crm_task_manager/page_2/warehouse/incoming/units_widget.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
@@ -34,17 +33,15 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
   final TextEditingController goodsNameController = TextEditingController();
   final TextEditingController goodsDescriptionController = TextEditingController();
   final TextEditingController discountPriceController = TextEditingController();
+  final TextEditingController priceController = TextEditingController();
   final TextEditingController stockQuantityController = TextEditingController();
   final TextEditingController unitIdController = TextEditingController();
   SubCategoryAttributesData? selectedCategory;
-  Branch? selectedBranch;
   bool isActive = true;
-  List<Branch>? branches = [];
 
   List<SubCategoryAttributesData> subCategories = [];
   bool isCategoryValid = true;
-  bool isImagesValid = true;
-  bool isBranchValid = true;
+  String? selectedUnit;
   int? mainImageIndex;
   String? selectlabel;
 
@@ -59,7 +56,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
   void initState() {
     super.initState();
     fetchSubCategories();
-    context.read<BranchBloc>().add(FetchBranches());
+    context.read<UnitsBloc>().add(FetchUnits());
     mainImageIndex = 0;
   }
 
@@ -80,7 +77,6 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
   void validateForm() {
     setState(() {
       isCategoryValid = selectedCategory != null;
-      isImagesValid = _imagePaths.isNotEmpty;
     });
   }
 
@@ -212,21 +208,6 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
       ),
       body: MultiBlocListener(
         listeners: [
-          // BlocListener<BranchBloc, BranchState>(
-          //   listener: (context, state) {
-          //     if (state is BranchLoaded) {
-          //       setState(() {
-          //         branches = state.branches;
-          //       });
-          //     } else if (state is BranchError) {
-          //       showCustomSnackBar(
-          //         context: context,
-          //         message: AppLocalizations.of(context)!.translate('error_loading_branches') + ': ${state.message}',
-          //         isSuccess: false,
-          //       );
-          //     }
-          //   },
-          // ),
           BlocListener<GoodsBloc, GoodsState>(
             listener: (context, state) {
               if (state is GoodsSuccess) {
@@ -281,28 +262,47 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                       maxLines: 5,
                       keyboardType: TextInputType.multiline,
                     ),
-                    if (selectedCategory != null && !selectedCategory!.hasPriceCharacteristics)
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 8),
-                          CustomTextField(
-                            controller: discountPriceController,
-                            label: AppLocalizations.of(context)!.translate('price'),
-                            hintText: AppLocalizations.of(context)!.translate('enter_price'),
-                            keyboardType: TextInputType.number,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return AppLocalizations.of(context)!.translate('field_required');
-                              }
-                              if (double.tryParse(value) == null) {
-                                return AppLocalizations.of(context)!.translate('enter_correct_number');
-                              }
-                              return null;
-                            },
-                          ),
-                        ],
-                      ),
+                    const SizedBox(height: 8),
+                    CustomTextField(
+                              controller: priceController,
+                              label: AppLocalizations.of(context)!.translate('price'),
+                              hintText: AppLocalizations.of(context)!.translate('enter_price'),
+                              keyboardType: TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,3}')),
+                              ],
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return AppLocalizations.of(context)!.translate('field_required');
+                                }
+                                if (double.tryParse(value) == null) {
+                                  return AppLocalizations.of(context)!.translate('enter_correct_number');
+                                }
+                                return null;
+                              },
+                            ),
+                    // if (selectedCategory != null && !selectedCategory!.hasPriceCharacteristics)
+                    //   Column(
+                    //     crossAxisAlignment: CrossAxisAlignment.start,
+                    //     children: [
+                    //       const SizedBox(height: 8),
+                    //       CustomTextField(
+                    //         controller: discountPriceController,
+                    //         label: AppLocalizations.of(context)!.translate('price'),
+                    //         hintText: AppLocalizations.of(context)!.translate('enter_price'),
+                    //         keyboardType: TextInputType.number,
+                    //         validator: (value) {
+                    //           if (value == null || value.isEmpty) {
+                    //             return AppLocalizations.of(context)!.translate('field_required');
+                    //           }
+                    //           if (double.tryParse(value) == null) {
+                    //             return AppLocalizations.of(context)!.translate('enter_correct_number');
+                    //           }
+                    //           return null;
+                    //         },
+                    //       ),
+                    //     ],
+                    //   ),
                     const SizedBox(height: 8),
                     LabelWidget(
                       selectedLabel: selectlabel,
@@ -312,18 +312,15 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                         });
                       },
                     ),
-                    // const SizedBox(height: 8),
-                    // BranchesDropdown(
-                    //   label: AppLocalizations.of(context)!.translate('branch'),
-                    //   selectedBranch: selectedBranch,
-                    //   branches: branches,
-                    //   onSelectBranch: (Branch branch) {
-                    //     setState(() {
-                    //       selectedBranch = branch;
-                    //       isBranchValid = true;
-                    //     });
-                    //   },
-                    // ),
+                    const SizedBox(height: 8),
+                    UnitsWidget(
+                      selectedUnit: selectedUnit,
+                      onChanged: (value) {
+                        setState(() {
+                          selectedUnit = value;
+                        });
+                      },
+                    ),
                     const SizedBox(height: 8),
                     CategoryDropdownWidget(
                       selectedCategory: selectedCategory?.name,
@@ -627,7 +624,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                           color: const Color(0xffF4F7FD),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: isImagesValid ? const Color(0xffF4F7FD) : Colors.red,
+                            color: const Color(0xffF4F7FD),
                             width: 1.5,
                           ),
                         ),
@@ -788,18 +785,6 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                               ),
                       ),
                     ),
-                    if (!isImagesValid)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Text(
-                          '    ${AppLocalizations.of(context)!.translate('please_select_image')}',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.red,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                      ),
                     const SizedBox(height: 8),
                     Row(
                       children: [
@@ -901,7 +886,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                       textColor: Colors.white,
                       onPressed: () {
                         validateForm();
-                        if (formKey.currentState!.validate() && isCategoryValid && isImagesValid) {
+                        if (formKey.currentState!.validate() && isCategoryValid) {
                           _createProduct();
                         } else {
                           showCustomSnackBar(
@@ -974,7 +959,6 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
     if (pickedFile != null) {
       setState(() {
         _imagePaths.add(pickedFile.path);
-        isImagesValid = true;
       });
     }
   }
@@ -984,7 +968,6 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
     if (pickedFiles != null) {
       setState(() {
         _imagePaths.addAll(pickedFiles.map((file) => file.path));
-        isImagesValid = true;
       });
     }
   }
@@ -993,7 +976,6 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
     setState(() {
       int removedIndex = _imagePaths.indexOf(imagePath);
       _imagePaths.remove(imagePath);
-      isImagesValid = _imagePaths.isNotEmpty;
       if (_imagePaths.isEmpty) {
         mainImageIndex = null;
       } else if (mainImageIndex != null && removedIndex <= mainImageIndex!) {
@@ -1004,7 +986,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
 
   void _createProduct() async {
     validateForm();
-    if (formKey.currentState!.validate() && isCategoryValid && isImagesValid) {
+    if (formKey.currentState!.validate() && isCategoryValid) {
       bool isPriceValid = true;
       if (selectedCategory!.hasPriceCharacteristics) {
         for (var row in tableAttributes) {
@@ -1106,22 +1088,22 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                 parentId: selectedCategory!.id,
                 description: goodsDescriptionController.text.trim(),
                 quantity: int.tryParse(stockQuantityController.text) ?? 0,
-                unitId: int.tryParse(unitIdController.text) ?? 0,
+                unitId: selectedUnit != null ? (int.tryParse(selectedUnit!) ?? 0) : 0,
                 attributes: attributes,
                 variants: variants,
                 images: images,
                 isActive: isActive,
-                discountPrice: selectedCategory!.hasPriceCharacteristics
-                    ? null
-                    : (double.tryParse(discountPriceController.text.trim()) ?? 0.0),
-                branch: selectedBranch?.id,
+                price: double.tryParse(priceController.text.trim()) ?? 0.0,
+                // discountPrice: selectedCategory!.hasPriceCharacteristics
+                //     ? null
+                //     : (double.tryParse(discountPriceController.text.trim()) ?? 0.0),
+                storageId: null,
                 mainImageIndex: mainImageIndex,
                 labelId: labelId,
               ),
             );
-      } catch (e, stackTrace) {
+      } catch (e) {
         //print('GoodsAddScreen: Error creating product - $e');
-        //print(stackTrace);
         setState(() => isLoading = false);
         showCustomSnackBar(
           context: context,

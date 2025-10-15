@@ -186,11 +186,19 @@ class _IncomingScreenState extends State<IncomingScreen> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
-    return BlocProvider.value(
-      value: _incomingBloc,
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        appBar: AppBar(
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) {
+          // Очищаем выбранные элементы при выходе с экрана
+          _incomingBloc.add(UnselectAllDocuments());
+        }
+      },
+      child: BlocProvider.value(
+        value: _incomingBloc,
+        child: Scaffold(
+          backgroundColor: Colors.white,
+          appBar: AppBar(
           automaticallyImplyLeading: !_selectionMode,
           forceMaterialTransparency: true,
           title: _selectionMode
@@ -723,6 +731,7 @@ class _IncomingScreenState extends State<IncomingScreen> {
                 child: const Icon(Icons.add, color: Colors.white),
               )
             : null,
+      ),
       ),
     );
   }

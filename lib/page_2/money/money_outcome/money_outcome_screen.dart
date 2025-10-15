@@ -622,7 +622,7 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
             : (document) {},
         onClick: (document) {
           if (_selectionMode) {
-            final currentState = context.read<MoneyOutcomeBloc>().state;
+            final currentState = _moneyOutcomeBloc.state;
             if (currentState is MoneyOutcomeLoaded) {
               final selectedCount = currentState.selectedData?.length ?? 0;
               if (selectedCount <= 1 && currentState.selectedData?.contains(document) == true) {

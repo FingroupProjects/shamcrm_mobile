@@ -160,36 +160,44 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
 
-    return BlocProvider.value(
-      value: _clientSaleBloc,
-      child: Scaffold(
-        // ИЗМЕНЕНО: FAB только с create-правом
-        floatingActionButton: _hasCreatePermission
-            ? FloatingActionButton(
-                key: const Key('create_client_sale_button'),
-                onPressed: () async {
-                  if (!mounted) return;
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) {
+          // Очищаем выбранные элементы при выходе с экрана
+          _clientSaleBloc.add(UnselectAllDocuments());
+        }
+      },
+      child: BlocProvider.value(
+        value: _clientSaleBloc,
+        child: Scaffold(
+          // ИЗМЕНЕНО: FAB только с create-правом
+          floatingActionButton: _hasCreatePermission
+              ? FloatingActionButton(
+                  key: const Key('create_client_sale_button'),
+                  onPressed: () async {
+                    if (!mounted) return;
 
-                  final result = await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => BlocProvider.value(
-                        value: _clientSaleBloc,
-                        child: CreateClienSalesDocumentScreen(organizationId: widget.organizationId),
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => BlocProvider.value(
+                          value: _clientSaleBloc,
+                          child: CreateClienSalesDocumentScreen(organizationId: widget.organizationId),
+                        ),
                       ),
-                    ),
-                  );
+                    );
 
-                  if (mounted && result == true) {
-                    _clientSaleBloc.add(const FetchClientSales(forceRefresh: true));
-                  }
-                },
-                backgroundColor: const Color(0xff1E2E52),
-                child: const Icon(Icons.add, color: Colors.white),
-              )
-            : null,
-        backgroundColor: Colors.white,
-        appBar: AppBar(
+                    if (mounted && result == true) {
+                      _clientSaleBloc.add(const FetchClientSales(forceRefresh: true));
+                    }
+                  },
+                  backgroundColor: const Color(0xff1E2E52),
+                  child: const Icon(Icons.add, color: Colors.white),
+                )
+              : null,
+          backgroundColor: Colors.white,
+          appBar: AppBar(
           automaticallyImplyLeading: !_selectionMode,
           forceMaterialTransparency: true,
           title: _selectionMode
@@ -757,6 +765,7 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
           ),
         ),
       ),
+    ),
     );
   }
 }

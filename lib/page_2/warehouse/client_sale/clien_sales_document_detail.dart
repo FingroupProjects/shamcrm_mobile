@@ -122,15 +122,15 @@ class _ClientSalesDocumentDetailsScreenState
         'value': document.storage?.name ?? '',
       },
       {
-        'label': '${AppLocalizations.of(context)!.translate('supplier') ?? 'Поставщик'}:', // Оставляем как в коде (client?)
+        'label': '${AppLocalizations.of(context)!.translate('client') ?? 'Клиент'}:',
         'value': document.model?.name ?? '',
       },
       {
-        'label': '${AppLocalizations.of(context)!.translate('supplier_phone') ?? 'Телефон поставщика'}:',
+        'label': '${AppLocalizations.of(context)!.translate('client_phone') ?? 'Телефон клиента'}:',
         'value': document.model?.phone ?? '',
       },
       {
-        'label': '${AppLocalizations.of(context)!.translate('supplier_inn') ?? 'ИНН поставщика'}:',
+        'label': '${AppLocalizations.of(context)!.translate('client_inn') ?? 'ИНН клиента'}:',
         'value': document.model?.inn?.toString() ?? '',
       },
       {
@@ -517,6 +517,7 @@ class _ClientSalesDocumentDetailsScreenState
                         height: 24,
                       ),
                       onPressed: () async {
+                        if (_isLoading) return;
                         final result = await Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -544,6 +545,7 @@ class _ClientSalesDocumentDetailsScreenState
                         height: 24,
                       ),
                       onPressed: () {
+                        if (_isLoading) return;
                         showDialog(
                           context: context,
                           builder: (BuildContext ctx) {
@@ -581,7 +583,7 @@ class _ClientSalesDocumentDetailsScreenState
 
   Widget _buildDetailItem(String label, String value) {
     if (label == AppLocalizations.of(context)!.translate('comment') ||
-        label == AppLocalizations.of(context)!.translate('supplier')) {
+        label == AppLocalizations.of(context)!.translate('client')) {
       return GestureDetector(
         onTap: () {
           if (value.isNotEmpty) {
@@ -666,12 +668,14 @@ class _ClientSalesDocumentDetailsScreenState
   }
 
   Widget _buildGoodsItem(DocumentGood good) {
-    // ИЗМЕНЕНО: Unit как в write_off (из availableUnits)
     final availableUnits = good.good?.units ?? [];
-    final selectedUnit = availableUnits.firstWhere(
-      (unit) => unit.id == good.unitId,
-      orElse: () => Unit(id: null, name: 'шт', shortName: 'шт'),
-    );
+
+    final selectedUnit = good.unit ??
+        availableUnits.firstWhere(
+              (unit) => unit.id == good.unitId,
+          orElse: () => Unit(id: null, name: 'шт'),
+        );
+
     final unitShortName = selectedUnit.shortName ?? selectedUnit.name ?? 'шт';
 
     return GestureDetector(
