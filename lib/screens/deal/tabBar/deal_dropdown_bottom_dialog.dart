@@ -4,16 +4,23 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void DropdownBottomSheet(
   BuildContext context,
   String defaultValue,
   Function(String, int) onSelect, 
   Deal deal,
-) {
+) async {
+  // НОВОЕ: Читаем флаг мультивыбора из настроек
+  final prefs = await SharedPreferences.getInstance();
+  final bool isMultiSelectEnabled = prefs.getBool('managing_deal_status_visibility') ?? false;
+
   String selectedValue = defaultValue;
-  int? selectedStatusId;
-  bool isLoading = false; // Variable to manage the loading state
+  List<int> selectedStatusIds = [];
+  bool isLoading = false;
+print('DropdownBottomSheet: managing_deal_status_visibility = $isMultiSelectEnabled');
+  print('DropdownBottomSheet: Режим работы = ${isMultiSelectEnabled ? "МУЛЬТИВЫБОР" : "ОДИНОЧНЫЙ"}');
 
   showModalBottomSheet(
     context: context,
@@ -52,16 +59,34 @@ void DropdownBottomSheet(
 
                       return ListView(
                         children: statuses.map((DealStatus status) {
+                          bool isSelected = selectedStatusIds.contains(status.id);
+                          
                           return GestureDetector(
                             onTap: () {
                               setState(() {
-                                selectedValue = status.title; 
-                                selectedStatusId = status.id; 
+                                // НОВОЕ: Условная логика на основе флага
+                                if (isMultiSelectEnabled) {
+                                  // Режим мультивыбора
+                                  if (isSelected) {
+                                    selectedStatusIds.remove(status.id);
+                                    if (selectedStatusIds.isEmpty) {
+                                      selectedValue = '';
+                                    }
+                                  } else {
+                                    selectedStatusIds.add(status.id);
+                                    selectedValue = status.title;
+                                  }
+                                } else {
+                                  // Режим одиночного выбора
+                                  selectedStatusIds.clear();
+                                  selectedStatusIds.add(status.id);
+                                  selectedValue = status.title;
+                                }
                               });
                             },
                             child: buildDropDownStyles(
                               text: status.title,
-                              isSelected: selectedValue == status.title,
+                              isSelected: isSelected,
                             ),
                           );
                         }).toList(),
@@ -80,12 +105,13 @@ void DropdownBottomSheet(
                         buttonColor: Color(0xfff4F40EC),
                         textColor: Colors.white,
                         onPressed: () {
-                          if (selectedStatusId != null) {
+                          if (selectedStatusIds.isNotEmpty) {
                             setState(() {
-                              isLoading = true; // Start loading
+                              isLoading = true;
                             });
 
-                            ApiService().updateDealStatus(deal.id, deal.statusId, selectedStatusId!).then((_) {
+                            // Отправка всегда массивом (не изменяется)
+                            ApiService().updateDealStatus(deal.id, deal.statusId, selectedStatusIds).then((_) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                  SnackBar(
                                    content: Text(
@@ -109,14 +135,14 @@ void DropdownBottomSheet(
                                  ),
                                );
                               setState(() {
-                                isLoading = false; // Stop loading
+                                isLoading = false;
                               });
 
                               Navigator.pop(context);
-                              onSelect(selectedValue, selectedStatusId!);
+                              onSelect(selectedValue, selectedStatusIds.first);
                             }).catchError((error) {
                               setState(() {
-                                isLoading = false; // Stop loading
+                                isLoading = false;
                               });
 
                               if (error is DealStatusUpdateException &&
@@ -144,12 +170,8 @@ void DropdownBottomSheet(
                                   ),
                                 );
                                 Navigator.pop(context);
-                              } else {
-                                //print('Ошибка обновления статуса задачи!rror');
                               }
                             });
-                          } else {
-                            //print('Статус не выбран');
                           }
                         },
                       ),

@@ -86,7 +86,20 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
       _initializeWithInternetCheck();
     });
   }
-
+ bool _toBool(dynamic value) {
+    if (value == null) return false;
+    
+    if (value is bool) return value;
+    
+    if (value is int) return value != 0;
+    
+    if (value is String) {
+      final lower = value.toLowerCase();
+      return lower == 'true' || lower == '1';
+    }
+    
+    return false;
+  }
   // ==========================================================================
   // ГЛАВНАЯ ИНИЦИАЛИЗАЦИЯ
   // ==========================================================================
@@ -299,9 +312,25 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
       final response = await _apiService.getSettings(organizationId);
 
       if (response['result'] != null) {
-        await prefs.setBool('department_enabled', response['result']['department'] ?? false);
-        await prefs.setBool('integration_with_1C', response['result']['integration_with_1C'] ?? false);
-        await prefs.setBool('good_measurement', response['result']['good_measurement'] == 1);
+     await prefs.setBool(
+        'department_enabled', 
+        _toBool(response['result']['department'])
+      );
+      
+      await prefs.setBool(
+        'integration_with_1C', 
+        _toBool(response['result']['integration_with_1C'])
+      );
+      
+      await prefs.setBool(
+        'good_measurement', 
+        _toBool(response['result']['good_measurement'])
+      );
+     await prefs.setBool(
+        'managing_deal_status_visibility', 
+        _toBool(response['result']['managing_deal_status_visibility'])
+      );
+
 
         print('PinScreen: Settings сохранены успешно');
       }
@@ -313,6 +342,8 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
         final prefs = await SharedPreferences.getInstance();
         await prefs.setBool('integration_with_1C', false);
         await prefs.setBool('good_measurement', false);
+      await prefs.setBool('managing_deal_status_visibility', false);
+
       } catch (prefsError) {
         print('PinScreen: Ошибка установки значений по умолчанию: $prefsError');
       }

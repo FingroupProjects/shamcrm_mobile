@@ -296,6 +296,7 @@ Future<void> _updateDeal(UpdateDeal event, Emitter<DealState> emit) async {
       directoryValues: event.directoryValues,
       filePaths: event.filePaths,
       existingFiles: event.existingFiles,
+      dealStatusIds: event.dealStatusIds, // ✅ Передаём массив ID статусов
     );
 
     if (result['success']) {

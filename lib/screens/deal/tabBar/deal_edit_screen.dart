@@ -48,6 +48,7 @@ class DealEditScreen extends StatefulWidget {
   final List<DealCustomFieldsById> dealCustomFields;
   final List<DirectoryValue>? directoryValues;
   final List<DealFiles>? files;
+  final List<DealStatusById>? dealStatuses; // ✅ НОВОЕ: массив статусов
 
   DealEditScreen({
     required this.dealId,
@@ -64,6 +65,7 @@ class DealEditScreen extends StatefulWidget {
     required this.dealCustomFields,
     this.directoryValues,
     this.files,
+    this.dealStatuses, // ✅ ДОБАВЬТЕ ЭТУ СТРОКУ В КОНСТРУКТОР!
   });
 
   @override
@@ -79,6 +81,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
   final TextEditingController sumController = TextEditingController();
   final ApiService _apiService = ApiService();
 
+
   int? _selectedStatuses;
   String? selectedManager;
   String? selectedLead;
@@ -89,6 +92,8 @@ class _DealEditScreenState extends State<DealEditScreen> {
   List<String> fileSizes = [];
   List<DealFiles> existingFiles = [];
   List<String> newFiles = [];
+    List<int> _selectedStatusIds = []; // ✅ НОВОЕ: список выбранных ID
+
 
   @override
   void initState() {
@@ -125,7 +130,12 @@ class _DealEditScreenState extends State<DealEditScreen> {
         type: customField.type ?? 'string', // Инициализация с типом
       ));
     }
-
+  // ✅ НОВОЕ: Инициализируем список ID
+  if (widget.dealStatuses != null && widget.dealStatuses!.isNotEmpty) {
+    _selectedStatusIds = widget.dealStatuses!.map((s) => s.id).toList();
+  } else {
+    _selectedStatusIds = [widget.statusId];
+  }
     if (widget.directoryValues != null && widget.directoryValues!.isNotEmpty) {
       final seen = <String>{};
       final uniqueDirectoryValues = widget.directoryValues!.where((dirValue) {
@@ -643,16 +653,29 @@ class _DealEditScreenState extends State<DealEditScreen> {
                               });
                             },
                           ),
-                          const SizedBox(height: 8),
-                          DealStatusEditWidget(
-                            selectedStatus: _selectedStatuses?.toString(),
-                            onSelectStatus: (DealStatus selectedStatusData) {
-                              setState(() {
-                                _selectedStatuses = selectedStatusData.id;
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 8),
+                        const SizedBox(height: 8),
+RepaintBoundary( // ✅ ДОБАВИТЬ
+  child: DealStatusEditWidget(
+    selectedStatus: _selectedStatuses?.toString(),
+    dealStatuses: widget.dealStatuses,
+    onSelectStatus: (DealStatus selectedStatusData) {
+      setState(() {
+        _selectedStatuses = selectedStatusData.id;
+      });
+    },
+  onSelectMultipleStatuses: (List<int> selectedIds) {
+  // ✅ ПРОВЕРКА: Обновляем только если ID изменились
+  if (_selectedStatusIds.length != selectedIds.length ||
+      !_selectedStatusIds.toSet().containsAll(selectedIds)) {
+    setState(() {
+      _selectedStatusIds = selectedIds;
+      print('DealEditScreen: Обновлены ID статусов: $selectedIds');
+    });
+  }
+},
+  ),
+),
+const SizedBox(height: 8),
                           LeadRadioGroupWidget(
                             selectedLead: selectedLead,
                             onSelectLead: (LeadData selectedRegionData) {
@@ -951,6 +974,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                           localizations: localizations,
                                           filePaths: newFiles,
                                           existingFiles: existingFiles,
+                                          dealStatusIds: _selectedStatusIds, // ✅ ПЕРЕДАЁМ МАССИВ
                                         ));
                                   } else {
                                     _showErrorSnackBar(
