@@ -295,9 +295,20 @@ class _ClientReturnFilterScreenState extends State<ClientReturnFilterScreen> {
         _toDate = DateTime(_toDate!.year, _toDate!.month, _toDate!.day, 23, 59, 59);
       }
 
+      // Set from date to 00:00:00 and to date to 23:59:59
+      DateTime? fromDateWithTime = _fromDate;
+      DateTime? toDateWithTime = _toDate;
+
+      if (fromDateWithTime != null) {
+        fromDateWithTime = DateTime(fromDateWithTime.year, fromDateWithTime.month, fromDateWithTime.day, 0, 0, 0);
+      }
+      if (toDateWithTime != null) {
+        toDateWithTime = DateTime(toDateWithTime.year, toDateWithTime.month, toDateWithTime.day, 23, 59, 59);
+      }
+
       final filters = {
-        'date_from': _fromDate,
-        'date_to': _toDate,
+        'date_from': fromDateWithTime,
+        'date_to': toDateWithTime,
         'supplier_id': _selectedSupplier?.id.toString(),
         'storage_id': _selectedCashRegister?.id.toString(),
         'lead_id': _selectedLead?.id.toString(),
