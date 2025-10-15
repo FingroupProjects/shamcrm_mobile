@@ -151,9 +151,20 @@ class _OrdersQuantityFilterScreenState extends State<OrdersQuantityFilterScreen>
     if (!_isAnyFilterSelected()) {
       widget.onResetFilters?.call();
     } else {
+      // Set from date to 00:00:00 and to date to 23:59:59
+      DateTime? fromDateWithTime = _fromDate;
+      DateTime? toDateWithTime = _toDate;
+      
+      if (fromDateWithTime != null) {
+        fromDateWithTime = DateTime(fromDateWithTime.year, fromDateWithTime.month, fromDateWithTime.day, 0, 0, 0);
+      }
+      if (toDateWithTime != null) {
+        toDateWithTime = DateTime(toDateWithTime.year, toDateWithTime.month, toDateWithTime.day, 23, 59, 59);
+      }
+      
       widget.onSelectedDataFilter?.call({
-        'date_from': _fromDate,
-        'date_to': _toDate,
+        'date_from': fromDateWithTime,
+        'date_to': toDateWithTime,
         'sum_from': _parseSum(_sumFromController.text),
         'sum_to': _parseSum(_sumToController.text),
         'status_id': _selectedStatus != null ? int.tryParse(_selectedStatus!) : null,

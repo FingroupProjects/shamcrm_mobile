@@ -196,9 +196,20 @@ class _DebtorsFilterScreenState extends State<DebtorsFilterScreen> {
     if (!_isAnyFilterSelected()) {
       widget.onResetFilters?.call();
     } else {
+      // Set from date to 00:00:00 and to date to 23:59:59
+      DateTime? fromDateWithTime = _fromDate;
+      DateTime? toDateWithTime = _toDate;
+      
+      if (fromDateWithTime != null) {
+        fromDateWithTime = DateTime(fromDateWithTime.year, fromDateWithTime.month, fromDateWithTime.day, 0, 0, 0);
+      }
+      if (toDateWithTime != null) {
+        toDateWithTime = DateTime(toDateWithTime.year, toDateWithTime.month, toDateWithTime.day, 23, 59, 59);
+      }
+      
       var filters = {
-        'date_from': _fromDate,
-        'date_to': _toDate,
+        'date_from': fromDateWithTime,
+        'date_to': toDateWithTime,
         'sum_from': _parseAmount(_amountFromController.text),
         'sum_to': _parseAmount(_amountToController.text),
         'lead_id': _selectedLead?.id, // Include lead ID
