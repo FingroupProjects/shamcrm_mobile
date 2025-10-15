@@ -13603,6 +13603,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     required List<Map<String, dynamic>> documentGoods,
     required int organizationId,
     required bool approve,
+    required int articleId,
   }) async {
     try {
       final token = await getToken();
@@ -13616,6 +13617,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         'document_goods': documentGoods,
         'organization_id': organizationId,
         'approve': approve,
+        'article_id': articleId,
       });
 
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -13688,6 +13690,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     required String comment,
     required List<Map<String, dynamic>> documentGoods,
     required int organizationId,
+    required int articleId,
   }) async {
     try {
       final token = await getToken();
@@ -13702,6 +13705,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         'comment': comment,
         'document_goods': documentGoods,
         'organization_id': organizationId,
+        'article_id': articleId,
       });
 
       final response = await http.put(
@@ -15426,4 +15430,36 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
     throw Exception('Ошибка загрузки статей расхода');
   }
 }
+
+  // used for getting all articles (income and expense)
+  Future<List<ArticleGood>> getAllExpenseArticles() async {
+    final path = await _appendQueryParams('/article?type=expense');
+
+    try {
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = json.decode(response.body);
+        if (data['result']['data'] != null) {
+          List<ArticleGood> articles = [];
+          for (var item in data['result']['data']) {
+            articles.add(ArticleGood.fromJson(item));
+          }
+          return articles;
+        } else {
+          final message = _extractErrorMessageFromResponse(response);
+          throw ApiException(
+            message ?? 'Ошибка при получении данных прихода!',
+            response.statusCode,
+          );
+        }
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw message ?? 'Ошибка при получении данных!';
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
 }

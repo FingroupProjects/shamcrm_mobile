@@ -1193,6 +1193,8 @@
   "error_no_good_id": "Error: Could not determine product ID",
   "document_number": "Document number",
   "storage": "Warehouse",
+  "article": "Article",
+  "select_article": "Select article",
   "supplier": "Supplier",
   "supplier_phone": "Supplier phone",
   "supplier_inn": "Supplier TIN",

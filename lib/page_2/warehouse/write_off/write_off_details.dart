@@ -124,6 +124,10 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
         'value': document.storage?.name ?? '',
       },
       {
+        'label': '${AppLocalizations.of(context)!.translate('article') ?? 'Статья'}:',
+        'value': document.article?.name ?? '',
+      },
+      {
         'label': AppLocalizations.of(context)!.translate('comment') ?? 'Комментарий',
         'value': document.comment ?? '',
       },

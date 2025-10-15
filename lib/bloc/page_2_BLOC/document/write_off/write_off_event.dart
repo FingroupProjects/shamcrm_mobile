@@ -52,6 +52,7 @@ class CreateWriteOffDocument extends WriteOffEvent {
   final List<Map<String, dynamic>> documentGoods;
   final int organizationId;
   final bool approve; // Новый параметр
+  final int articleId; // Новый параметр для статьи расхода
 
   const CreateWriteOffDocument({
     required this.date,
@@ -60,10 +61,13 @@ class CreateWriteOffDocument extends WriteOffEvent {
     required this.documentGoods,
     required this.organizationId,
     this.approve = false, // По умолчанию false
+    required this.articleId,
   });
 
   @override
-  List<Object> get props => [date, storageId, comment, documentGoods, organizationId, approve];
+  List<Object> get props => [
+    date, storageId, comment, documentGoods, organizationId, approve, articleId
+  ];
 }
 
 class UpdateWriteOffDocument extends WriteOffEvent {
@@ -73,6 +77,7 @@ class UpdateWriteOffDocument extends WriteOffEvent {
   final String comment;
   final List<Map<String, dynamic>> documentGoods;
   final int organizationId;
+  final int articleId;
 
   const UpdateWriteOffDocument({
     required this.documentId,
@@ -81,11 +86,12 @@ class UpdateWriteOffDocument extends WriteOffEvent {
     required this.comment,
     required this.documentGoods,
     required this.organizationId,
+    required this.articleId,
   });
 
   @override
   List<Object> get props => [
-    documentId, date, storageId, comment, documentGoods, organizationId
+    documentId, date, storageId, comment, documentGoods, organizationId, articleId
   ];
 }
 
