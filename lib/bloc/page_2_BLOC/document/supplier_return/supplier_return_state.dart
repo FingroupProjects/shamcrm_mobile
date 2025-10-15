@@ -16,15 +16,17 @@ class SupplierReturnLoaded extends SupplierReturnState {
   final List<IncomingDocument> data;
   final Pagination? pagination;
   final bool hasReachedMax;
+  final List<IncomingDocument>? selectedData;
 
   const SupplierReturnLoaded({
     required this.data,
     this.pagination,
     this.hasReachedMax = false,
+    this.selectedData = const [],
   });
 
   @override
-  List<Object> get props => [data, hasReachedMax];
+  List<Object> get props => [data, hasReachedMax, selectedData ?? []];
 }
 
 class SupplierReturnError extends SupplierReturnState {
@@ -117,6 +119,94 @@ class SupplierReturnRestoreError extends SupplierReturnState {
   final int? statusCode;
 
   const SupplierReturnRestoreError(this.message, {this.statusCode});
+
+  @override
+  List<Object> get props => [message, statusCode ?? -1];
+}
+
+// Массовое одобрение
+class SupplierReturnApproveMassLoading extends SupplierReturnState {}
+
+class SupplierReturnApproveMassSuccess extends SupplierReturnState {
+  final String message;
+
+  const SupplierReturnApproveMassSuccess(this.message);
+
+  @override
+  List<Object> get props => [message];
+}
+
+class SupplierReturnApproveMassError extends SupplierReturnState {
+  final String message;
+  final int? statusCode;
+
+  const SupplierReturnApproveMassError(this.message, {this.statusCode});
+
+  @override
+  List<Object> get props => [message, statusCode ?? -1];
+}
+
+// Массовая отмена одобрения
+class SupplierReturnDisapproveMassLoading extends SupplierReturnState {}
+
+class SupplierReturnDisapproveMassSuccess extends SupplierReturnState {
+  final String message;
+
+  const SupplierReturnDisapproveMassSuccess(this.message);
+
+  @override
+  List<Object> get props => [message];
+}
+
+class SupplierReturnDisapproveMassError extends SupplierReturnState {
+  final String message;
+  final int? statusCode;
+
+  const SupplierReturnDisapproveMassError(this.message, {this.statusCode});
+
+  @override
+  List<Object> get props => [message, statusCode ?? -1];
+}
+
+// Массовое удаление
+class SupplierReturnDeleteMassLoading extends SupplierReturnState {}
+
+class SupplierReturnDeleteMassSuccess extends SupplierReturnState {
+  final String message;
+
+  const SupplierReturnDeleteMassSuccess(this.message);
+
+  @override
+  List<Object> get props => [message];
+}
+
+class SupplierReturnDeleteMassError extends SupplierReturnState {
+  final String message;
+  final int? statusCode;
+
+  const SupplierReturnDeleteMassError(this.message, {this.statusCode});
+
+  @override
+  List<Object> get props => [message, statusCode ?? -1];
+}
+
+// Массовое восстановление
+class SupplierReturnRestoreMassLoading extends SupplierReturnState {}
+
+class SupplierReturnRestoreMassSuccess extends SupplierReturnState {
+  final String message;
+
+  const SupplierReturnRestoreMassSuccess(this.message);
+
+  @override
+  List<Object> get props => [message];
+}
+
+class SupplierReturnRestoreMassError extends SupplierReturnState {
+  final String message;
+  final int? statusCode;
+
+  const SupplierReturnRestoreMassError(this.message, {this.statusCode});
 
   @override
   List<Object> get props => [message, statusCode ?? -1];

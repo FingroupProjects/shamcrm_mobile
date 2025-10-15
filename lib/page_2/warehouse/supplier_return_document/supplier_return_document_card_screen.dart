@@ -8,11 +8,19 @@ import 'package:shared_preferences/shared_preferences.dart';
 class SupplierReturnCard extends StatefulWidget {
   final IncomingDocument document;
   final VoidCallback? onUpdate;
+  final Function()? onLongPress;
+  final bool isSelectionMode;
+  final bool isSelected;
+  final VoidCallback? onTap;
 
   const SupplierReturnCard({
     Key? key,
     required this.document,
     this.onUpdate,
+    this.onLongPress,
+    this.isSelectionMode = false,
+    this.isSelected = false,
+    this.onTap,
   }) : super(key: key);
 
   @override
@@ -81,28 +89,39 @@ class _SupplierReturnCardState extends State<SupplierReturnCard> {
     
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => SupplierReturnDocumentDetailsScreen(
-              documentId: doc.id!,
-              docNumber: doc.docNumber ?? 'N/A',
-              onDocumentUpdated: widget.onUpdate,
+        if (widget.onTap != null) {
+          widget.onTap!();
+        } else {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => SupplierReturnDocumentDetailsScreen(
+                documentId: doc.id!,
+                docNumber: doc.docNumber ?? 'N/A',
+                onDocumentUpdated: widget.onUpdate,
+              ),
             ),
-          ),
-        );
+          );
+        }
       },
+      onLongPress: widget.onLongPress,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFFE9EDF5),
+          color: widget.isSelected
+              ? const Color(0xFFDDE8F5)
+              : const Color(0xFFE9EDF5),
           borderRadius: BorderRadius.circular(12),
           boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 4)],
         ),
-        child: Column(
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -178,6 +197,19 @@ class _SupplierReturnCardState extends State<SupplierReturnCard> {
                   ),
                 ),
               ),
+                ],
+              ),
+            ),
+            if (widget.isSelectionMode) ...[
+              Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: Icon(
+                  widget.isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
+                  color: const Color(0xff1E2E52),
+                  size: 24,
+                ),
+              ),
+            ],
           ],
         ),
       ),

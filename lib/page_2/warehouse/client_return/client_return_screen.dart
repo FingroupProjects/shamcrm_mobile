@@ -2,6 +2,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/client_return/client_return_bloc.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
+import 'package:crm_task_manager/custom_widget/app_bar_selection_mode.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/page_2/money/widgets/error_dialog.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_return/client_return_card.dart';
@@ -11,6 +12,7 @@ import 'package:crm_task_manager/page_2/warehouse/client_sale/client_sale_confir
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../widgets/snackbar_widget.dart';
 
 class ClientReturnScreen extends StatefulWidget {
   const ClientReturnScreen({super.key, this.organizationId});
@@ -32,6 +34,7 @@ class _ClientReturnScreenState extends State<ClientReturnScreen> {
   bool _isLoadingMore = false;
   bool _hasReachedMax = false;
   bool _isRefreshing = false; // НОВОЕ: Для consistency
+  bool _selectionMode = false; // НОВОЕ: Режим выбора
 
   // НОВОЕ: Флаги прав доступа
   bool _hasCreatePermission = false;
@@ -184,9 +187,17 @@ class _ClientReturnScreenState extends State<ClientReturnScreen> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
 
-    return BlocProvider.value(
-      value: _clientReturnBloc,
-      child: Scaffold(
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) {
+          // Очищаем выбранные элементы при выходе с экрана
+          _clientReturnBloc.add(UnselectAllClientReturnDocuments());
+        }
+      },
+      child: BlocProvider.value(
+        value: _clientReturnBloc,
+        child: Scaffold(
         // ИЗМЕНЕНО: FAB только с create-правом
         floatingActionButton: _hasCreatePermission
             ? FloatingActionButton(
@@ -214,8 +225,70 @@ class _ClientReturnScreenState extends State<ClientReturnScreen> {
             : null,
         backgroundColor: Colors.white,
         appBar: AppBar(
+          automaticallyImplyLeading: !_selectionMode,
           forceMaterialTransparency: true,
-          title: CustomAppBarPage2(
+          title: _selectionMode
+              ? BlocBuilder<ClientReturnBloc, ClientReturnState>(
+                  builder: (context, state) {
+                    if (state is ClientReturnLoaded) {
+                      bool showApprove = state.selectedData!.any((doc) => doc.approved == 0 && doc.deletedAt == null);
+                      bool showDisapprove = state.selectedData!.any((doc) => doc.approved == 1 && doc.deletedAt == null);
+                      bool showDelete = _hasDeletePermission &&
+                          state.selectedData!.any((doc) => doc.deletedAt == null);
+                      bool showRestore = state.selectedData!.any((doc) => doc.deletedAt != null);
+                      _isRefreshing = false;
+
+                      return AppBarSelectionMode(
+                        title: localizations?.translate('appbar_client_returns') ?? 'Возврат от клиента',
+                        onDismiss: () {
+                          setState(() {
+                            _selectionMode = false;
+                          });
+                          _clientReturnBloc.add(UnselectAllClientReturnDocuments());
+                        },
+                        onApprove: () {
+                          setState(() {
+                            _selectionMode = false;
+                          });
+                          _clientReturnBloc.add(MassApproveClientReturnDocuments());
+                        },
+                        onDisapprove: () {
+                          setState(() {
+                            _selectionMode = false;
+                          });
+                          _clientReturnBloc.add(MassDisapproveClientReturnDocuments());
+                        },
+                        onDelete: () {
+                          setState(() {
+                            _selectionMode = false;
+                          });
+                          _clientReturnBloc.add(MassDeleteClientReturnDocuments());
+                        },
+                        onRestore: () {
+                          setState(() {
+                            _selectionMode = false;
+                          });
+                          _clientReturnBloc.add(MassRestoreClientReturnDocuments());
+                        },
+                        showApprove: showApprove,
+                        showDelete: showDelete,
+                        showDisapprove: showDisapprove,
+                        showRestore: showRestore,
+                      );
+                    }
+
+                    return AppBarSelectionMode(
+                      title: localizations?.translate('appbar_client_returns') ?? 'Возврат от клиента',
+                      onDismiss: () {
+                        setState(() {
+                          _selectionMode = false;
+                        });
+                        _clientReturnBloc.add(UnselectAllClientReturnDocuments());
+                      },
+                    );
+                  },
+                )
+              : CustomAppBarPage2(
             title: localizations?.translate('appbar_client_returns') ??
                 'Возврат от клиента',
             showSearchIcon: true,
@@ -406,12 +479,105 @@ class _ClientReturnScreenState extends State<ClientReturnScreen> {
                   }
                 });
               }
+            } else if (state is ClientReturnApproveMassSuccess) {
+              if (mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && context.mounted) {
+                    showCustomSnackBar(context: context, message: state.message, isSuccess: true);
+                    _clientReturnBloc.add(FetchClientReturns(forceRefresh: true, filters: _currentFilters));
+                  }
+                });
+              }
+            } else if (state is ClientReturnApproveMassError) {
+              if (mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && context.mounted) {
+                    if (state.statusCode == 409) {
+                      showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message);
+                      return;
+                    }
+                    showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+                  }
+                });
+              }
+            } else if (state is ClientReturnDisapproveMassSuccess) {
+              if (mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && context.mounted) {
+                    showCustomSnackBar(context: context, message: state.message, isSuccess: true);
+                    _clientReturnBloc.add(FetchClientReturns(forceRefresh: true, filters: _currentFilters));
+                  }
+                });
+              }
+            } else if (state is ClientReturnDisapproveMassError) {
+              if (mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && context.mounted) {
+                    if (state.statusCode == 409) {
+                      showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message);
+                      return;
+                    }
+                    showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+                  }
+                });
+              }
+            } else if (state is ClientReturnDeleteMassSuccess) {
+              if (mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && context.mounted) {
+                    showCustomSnackBar(context: context, message: state.message, isSuccess: true);
+                    _clientReturnBloc.add(FetchClientReturns(forceRefresh: true, filters: _currentFilters));
+                  }
+                });
+              }
+            } else if (state is ClientReturnDeleteMassError) {
+              if (mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && context.mounted) {
+                    if (state.statusCode == 409) {
+                      showSimpleErrorDialog(
+                          context,
+                          localizations?.translate('error') ?? 'Ошибка',
+                          state.message);
+                      _clientReturnBloc.add(FetchClientReturns(forceRefresh: true, filters: _currentFilters));
+                      return;
+                    }
+                    showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+                  }
+                });
+              }
+            } else if (state is ClientReturnRestoreMassSuccess) {
+              if (mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && context.mounted) {
+                    showCustomSnackBar(context: context, message: state.message, isSuccess: true);
+                    _clientReturnBloc.add(FetchClientReturns(forceRefresh: true, filters: _currentFilters));
+                  }
+                });
+              }
+            } else if (state is ClientReturnRestoreMassError) {
+              if (mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && context.mounted) {
+                    if (state.statusCode == 409) {
+                      showSimpleErrorDialog(
+                          context,
+                          localizations?.translate('error') ?? 'Ошибка',
+                          state.message);
+                      return;
+                    }
+                    showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+                  }
+                });
+              }
             }
           },
           child: BlocBuilder<ClientReturnBloc, ClientReturnState>(
             builder: (context, state) {
               if (_isInitialLoad || state is ClientReturnLoading || state is ClientReturnDeleteLoading ||
-                  state is ClientReturnRestoreLoading || _isRefreshing) {
+                  state is ClientReturnRestoreLoading || state is ClientReturnApproveMassLoading ||
+                  state is ClientReturnDisapproveMassLoading || state is ClientReturnDeleteMassLoading ||
+                  state is ClientReturnRestoreMassLoading || _isRefreshing) {
                 return Center(
                   child: PlayStoreImageLoading(
                     size: 80.0,
@@ -538,6 +704,22 @@ class _ClientReturnScreenState extends State<ClientReturnScreen> {
                         child: ClientReturnCard(
                           document: currentData[index],
                           onTap: () {
+                            if (_selectionMode) {
+                              _clientReturnBloc.add(SelectClientReturnDocument(currentData[index]));
+
+                              final currentState = context.read<ClientReturnBloc>().state;
+
+                              if (currentState is ClientReturnLoaded) {
+                                final selectedCount = currentState.selectedData?.length ?? 0;
+                                if (selectedCount <= 1 && currentState.selectedData?.contains(currentData[index]) == true) {
+                                  setState(() {
+                                    _selectionMode = false;
+                                  });
+                                }
+                              }
+                              return;
+                            }
+
                             if (!mounted) return;
                             Navigator.push(
                               context,
@@ -560,6 +742,17 @@ class _ClientReturnScreenState extends State<ClientReturnScreen> {
                               ),
                             );
                           },
+                          isSelectionMode: _selectionMode,
+                          isSelected: (state as ClientReturnLoaded).selectedData?.contains(currentData[index]) ?? false,
+                          onLongPress: _hasDeletePermission
+                              ? () {
+                            if (_selectionMode) return;
+                            setState(() {
+                              _selectionMode = true;
+                            });
+                            _clientReturnBloc.add(SelectClientReturnDocument(currentData[index]));
+                          }
+                              : null,
                         ),
                       ),
                     )
@@ -599,6 +792,7 @@ class _ClientReturnScreenState extends State<ClientReturnScreen> {
           ),
         ),
       ),
+    ),
     );
   }
 }
