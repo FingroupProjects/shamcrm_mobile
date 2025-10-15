@@ -17,6 +17,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
+import '../incoming/article_widget.dart';
 import '../../money/widgets/error_dialog.dart';
 
 class EditWriteOffDocumentScreen extends StatefulWidget {
@@ -36,7 +37,10 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
   final TextEditingController _dateController = TextEditingController();
   final TextEditingController _commentController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+
   String? _selectedStorage;
+  String? _selectedArticle; // Для выбранной статьи расхода
+
   List<Map<String, dynamic>> _items = [];
   bool _isLoading = false;
   final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
@@ -61,40 +65,51 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
   }
 
   void _initializeFormData() {
-    _dateController.text = widget.document.date != null 
+    _dateController.text = widget.document.date != null
         ? DateFormat('dd/MM/yyyy HH:mm').format(widget.document.date!)
         : DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
-    
+
     _commentController.text = widget.document.comment ?? '';
-    _selectedStorage = widget.document.storage?.id?.toString();
-    
+    _selectedStorage = widget.document.storage?.id.toString();
+    _selectedArticle = widget.document.article?.id.toString();
+
     if (widget.document.documentGoods != null) {
       for (var good in widget.document.documentGoods!) {
         final variantId = good.variantId ?? good.good?.id ?? 0;
         final quantity = good.quantity ?? 0;
+        final price = double.tryParse(good.price ?? '0') ?? 0.0;
+
         // ✅ NEW: Try multiple sources for units
-        final availableUnits = good.good?.units ?? 
-                              (good.unit != null ? [good.unit!] : []);
-        
+        final availableUnits = good.good?.units ??
+            (good.unit != null ? [good.unit!] : []);
+
         // ✅ NEW: Get selected unit from document_goods level first
-        final selectedUnitObj = good.unit ?? 
-                               (availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: 'шт'));
-        
+        final selectedUnitObj = good.unit ??
+            (availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: 'шт'));
+
+        final amount = selectedUnitObj.amount ?? 1;
+
         _items.add({
           'id': good.good?.id ?? 0,
           'variantId': variantId,
           'name': good.fullName ?? good.good?.name ?? '',
           'quantity': quantity,
+          'price': price,
+          'total': quantity * price * amount,
           'selectedUnit': selectedUnitObj.name,
           'unit_id': selectedUnitObj.id,
+          'amount': amount,
           'availableUnits': availableUnits,
         });
-        
+
+        _priceControllers[variantId] = TextEditingController(text: price.toStringAsFixed(3));
         _quantityControllers[variantId] = TextEditingController(text: quantity.toString());
-        
+
         // ✅ НОВОЕ: Создаём FocusNode для существующих товаров
         _quantityFocusNodes[variantId] = FocusNode();
-        
+        _priceFocusNodes[variantId] = FocusNode();
+
+        _priceErrors[variantId] = false;
         _quantityErrors[variantId] = false;
       }
     }
@@ -115,13 +130,12 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
               text: initialPrice > 0 ? initialPrice.toStringAsFixed(3) : ''
           );
 
-          _quantityControllers[variantId] = TextEditingController(text: '1');
+          _quantityControllers[variantId] = TextEditingController(text: '');
 
           // ✅ НОВОЕ: Создаём FocusNode для новых товаров
           _quantityFocusNodes[variantId] = FocusNode();
           _priceFocusNodes[variantId] = FocusNode();
 
-          _items.last['quantity'] = 1;
           _items.last['price'] = initialPrice;
 
           final amount = newItem['amount'] ?? 1;
@@ -313,6 +327,14 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
       return;
     }
 
+    if (_selectedArticle == null) {
+      _showSnackBar(
+        AppLocalizations.of(context)!.translate('select_expense_article') ?? 'Выберите статью расхода',
+        false,
+      );
+      return;
+    }
+
     bool hasErrors = false;
     setState(() {
       _quantityErrors.clear();
@@ -348,6 +370,7 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
         documentId: widget.document.id!,
         date: isoDate,
         storageId: int.parse(_selectedStorage!),
+        articleId: int.parse(_selectedArticle!),
         comment: _commentController.text.trim(),
         documentGoods: _items.map((item) {
           return {
@@ -441,6 +464,11 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
                         StorageWidget(
                           selectedStorage: _selectedStorage,
                           onChanged: (value) => setState(() => _selectedStorage = value),
+                        ),
+                        const SizedBox(height: 16),
+                        ArticleWidget(
+                          selectedArticle: _selectedArticle,
+                          onChanged: (value) => setState(() => _selectedArticle = value),
                         ),
                         const SizedBox(height: 16),
                         _buildCommentField(localizations),

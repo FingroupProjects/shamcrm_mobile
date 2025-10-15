@@ -61,11 +61,12 @@ class CreateGoods extends GoodsEvent {
   final List<Map<String, dynamic>> variants;
   final List<File>? images;
   final bool isActive;
-  final double? discountPrice;
+  // final double? discountPrice;
   // final int? branch;
   final int? storageId; // Добавляем поле storageId
   final int? mainImageIndex;
   final int? labelId; // Добавляем поле для ID метки
+  final double? price; // Добавляем поле для цены
 
   CreateGoods({
     required this.name,
@@ -77,7 +78,8 @@ class CreateGoods extends GoodsEvent {
     required this.variants,
     this.images,
     required this.isActive,
-    this.discountPrice,
+    // this.discountPrice,
+    this.price,
     // this.branch,
     required this.storageId,
     this.mainImageIndex,

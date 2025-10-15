@@ -60,30 +60,39 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
     if (mounted && newItem != null) {
       setState(() {
         final existingIndex = _items.indexWhere((item) => item['variantId'] == newItem['variantId']);
-        
+
         if (existingIndex == -1) {
           _items.add(newItem);
-          
+
           final variantId = newItem['variantId'] as int;
-          _priceControllers[variantId] = TextEditingController();
-          _quantityControllers[variantId] = TextEditingController();
-          
+          debugPrint("Добавлен товар с variantId: $variantId");
+
+          final initialPrice = newItem['price'] ?? 0.0;
+          _priceControllers[variantId] = TextEditingController(text: initialPrice > 0 ? initialPrice.toStringAsFixed(3) : '');
+
+          _quantityControllers[variantId] = TextEditingController(text: '');
+
           // ✅ НОВОЕ: Создаём FocusNode для полей
           _quantityFocusNodes[variantId] = FocusNode();
           _priceFocusNodes[variantId] = FocusNode();
-          
+
+          _items.last['price'] = initialPrice;
+
+          final amount = newItem['amount'] ?? 1;
+
           _priceErrors[variantId] = false;
           _quantityErrors[variantId] = false;
-          
+
           if (!newItem.containsKey('amount')) {
             _items.last['amount'] = 1;
+            _items.last['price'] = initialPrice;
           }
-          
+
           _listKey.currentState?.insertItem(
             _items.length - 1,
             duration: const Duration(milliseconds: 300),
           );
-          
+
           // ✅ НОВОЕ: Устанавливаем фокус на поле количества после добавления
           Future.delayed(const Duration(milliseconds: 350), () {
             if (mounted && _scrollController.hasClients) {
@@ -92,7 +101,7 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
                 duration: const Duration(milliseconds: 400),
                 curve: Curves.easeOut,
               );
-              
+
               _quantityFocusNodes[variantId]?.requestFocus();
             }
           });
@@ -336,7 +345,7 @@ void _removeItem(int index) {
         documentGoods: _items.map((item) {
           final unitId = item['unit_id'];
           return {
-            'good_id': item['variant_id'],
+            'good_id': item['variantId'],
             'quantity': int.tryParse(item['quantity'].toString()),
             'price': _parsePriceAsNumber(item['price']),
             'unit_id': unitId,

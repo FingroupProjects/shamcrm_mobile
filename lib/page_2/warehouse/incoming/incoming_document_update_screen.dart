@@ -120,41 +120,40 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
     if (mounted && newItem != null) {
       setState(() {
         final existingIndex = _items.indexWhere((item) => item['variantId'] == newItem['variantId']);
-        
+
         if (existingIndex == -1) {
           _items.add(newItem);
-          
+
           final variantId = newItem['variantId'] as int;
+
           final initialPrice = newItem['price'] ?? 0.0;
-          
-          // ✅ НОВОЕ: Устанавливаем начальные значения как в примере
           _priceControllers[variantId] = TextEditingController(
-            text: initialPrice > 0 ? initialPrice.toStringAsFixed(3) : ''
+              text: initialPrice > 0 ? initialPrice.toStringAsFixed(3) : ''
           );
-          _quantityControllers[variantId] = TextEditingController(text: '1');
+
+          _quantityControllers[variantId] = TextEditingController(text: '');
 
           // ✅ НОВОЕ: Создаём FocusNode для новых товаров
           _quantityFocusNodes[variantId] = FocusNode();
           _priceFocusNodes[variantId] = FocusNode();
 
-          _items.last['quantity'] = 1;
           _items.last['price'] = initialPrice;
-          
+
           final amount = newItem['amount'] ?? 1;
           _items.last['total'] = (initialPrice * amount).round();
 
           _priceErrors[variantId] = false;
           _quantityErrors[variantId] = false;
-          
+
           if (!newItem.containsKey('amount')) {
             _items.last['amount'] = 1;
           }
-          
+
           _listKey.currentState?.insertItem(
             _items.length - 1,
             duration: const Duration(milliseconds: 300),
           );
-          
+
           // ✅ НОВОЕ: Устанавливаем фокус на поле количества после добавления
           Future.delayed(const Duration(milliseconds: 350), () {
             if (mounted && _scrollController.hasClients) {
@@ -163,7 +162,7 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
                 duration: const Duration(milliseconds: 400),
                 curve: Curves.easeOut,
               );
-              
+
               _quantityFocusNodes[variantId]?.requestFocus();
             }
           });

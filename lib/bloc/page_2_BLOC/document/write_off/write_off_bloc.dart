@@ -235,6 +235,7 @@ class WriteOffBloc extends Bloc<WriteOffEvent, WriteOffState> {
         documentGoods: event.documentGoods,
         organizationId: event.organizationId,
         approve: event.approve,
+        articleId: event.articleId,
       );
       await Future.delayed(const Duration(milliseconds: 100));
       emit(WriteOffCreateSuccess(
@@ -306,6 +307,7 @@ class WriteOffBloc extends Bloc<WriteOffEvent, WriteOffState> {
         comment: event.comment,
         documentGoods: event.documentGoods,
         organizationId: event.organizationId,
+        articleId: event.articleId,
       );
       await Future.delayed(const Duration(milliseconds: 100));
       emit(WriteOffUpdateSuccess('Документ успешно обновлен'));

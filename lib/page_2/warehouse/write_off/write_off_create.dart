@@ -16,6 +16,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
+import '../incoming/article_widget.dart';
 import '../../money/widgets/error_dialog.dart';
 
 class CreateWriteOffDocumentScreen extends StatefulWidget {
@@ -35,6 +36,7 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
   final ScrollController _scrollController = ScrollController();
 
   String? _selectedStorage;
+  String? _selectedArticle;
 
   List<Map<String, dynamic>> _items = [];
   bool _isLoading = false;
@@ -271,6 +273,14 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
       return;
     }
 
+    if (_selectedArticle == null) {
+      _showSnackBar(
+        AppLocalizations.of(context)!.translate('select_article') ?? 'Выберите статью',
+        false,
+      );
+      return;
+    }
+
     bool hasErrors = false;
     setState(() {
       _quantityErrors.clear();
@@ -306,6 +316,7 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
       bloc.add(CreateWriteOffDocument(
         date: isoDate,
         storageId: int.parse(_selectedStorage!),
+        articleId: int.parse(_selectedArticle!),
         comment: _commentController.text.trim(),
         documentGoods: _items.map((item) {
           final unitId = item['unit_id'];
@@ -402,6 +413,11 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
                         StorageWidget(
                           selectedStorage: _selectedStorage,
                           onChanged: (value) => setState(() => _selectedStorage = value),
+                        ),
+                        const SizedBox(height: 16),
+                        ArticleWidget(
+                          selectedArticle: _selectedArticle,
+                          onChanged: (value) => setState(() => _selectedArticle = value),
                         ),
                         const SizedBox(height: 16),
                         _buildCommentField(localizations),
