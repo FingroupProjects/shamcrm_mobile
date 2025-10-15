@@ -168,6 +168,7 @@ class Goods {
   final String? article;
   final List<Unit>? units;
   final List<Measurement>? measurements;
+  final Unit? unit; // Добавляем поле unit для AddGoodsScreen и EditGoodsScreen
 
   Goods({
     required this.id,
@@ -194,6 +195,7 @@ class Goods {
     this.article,
     this.units,
     this.measurements,
+    this.unit,
   });
 
   factory Goods.fromJson(Map<String, dynamic> json) {
@@ -312,6 +314,8 @@ class Goods {
         article: data['article'] as String?,
         units: units,
         measurements: measurements,
+        unit: data['unit'] != null ? Unit.fromJson(data['unit']) : null, // Инициализируем поле unit
+
       );
     } catch (e, stackTrace) {
       print('GoodsModel: Ошибка парсинга товара: $e');

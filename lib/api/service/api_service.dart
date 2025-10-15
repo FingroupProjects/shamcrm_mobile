@@ -8628,13 +8628,14 @@ Future<String> _appendQueryParams(String path) async {
     required int parentId,
     required String description,
     required int quantity,
+    required int unitId,
     required List<Map<String, dynamic>> attributes,
     required List<Map<String, dynamic>> variants,
     required List<File> images,
     required bool isActive,
-    double? discountPrice,
-    int? storageId,
+    // double? discountPrice,
     double? price,
+    int? storageId,
     int? mainImageIndex,
     int? labelId, // Parameter for label ID
   }) async {
@@ -8659,6 +8660,7 @@ Future<String> _appendQueryParams(String path) async {
       request.fields['category_id'] = parentId.toString();
       request.fields['description'] = description;
       request.fields['quantity'] = quantity.toString();
+      request.fields['unit_id'] = unitId.toString();
       request.fields['is_active'] = isActive ? '1' : '0';
 
       // Pass the actual labelId if it exists
@@ -8670,9 +8672,9 @@ Future<String> _appendQueryParams(String path) async {
         request.fields['price'] = price.toString();
       }
 
-      if (discountPrice != null) {
-        request.fields['discount_price'] = discountPrice.toString();
-      }
+      // if (discountPrice != null) {
+      //   request.fields['discount_price'] = discountPrice.toString();
+      // }
 
       if (storageId != null) {
         request.fields['storage_id'] = storageId.toString();
@@ -8757,6 +8759,7 @@ Future<String> _appendQueryParams(String path) async {
     required int parentId,
     required String description,
     required int quantity,
+    int? unitId,
     required List<Map<String, dynamic>> attributes,
     required List<Map<String, dynamic>> variants,
     required List<File> images,
@@ -8798,6 +8801,10 @@ Future<String> _appendQueryParams(String path) async {
       request.fields['is_active'] = isActive ? '1' : '0';
       request.fields['label_id'] =
           labelId != null ? labelId.toString() : ''; // Add label fields
+      
+      if (unitId != null) {
+        request.fields['unit_id'] = unitId.toString();
+      }
 
       if (storageId != null) {
         request.fields['branch_id'] = storageId.toString();
@@ -11358,6 +11365,31 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
   }
 
 //--------------------------------MEASURE UNITS-------------------------------------------------
+
+  Future<List<MeasureUnitModel>> getAllMeasureUnits() async {
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    String path = await _appendQueryParams('/unit');
+
+    if (kDebugMode) {
+      print("ApiService: getAllMeasureUnits - Generated path: $path");
+    }
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      if (response.body.isNotEmpty) {
+        return (json.decode(response.body)['result'] as List)
+            .map((unit) => MeasureUnitModel.fromJson(unit))
+            .toList();
+      } else {
+        return [];
+      }
+    } else {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(message ?? 'Ошибка загрузки единиц измерения', response.statusCode);
+    }
+  }
+
 
   //get measure units
   Future<List<MeasureUnitModel>> getMeasureUnits({String? search}) async {

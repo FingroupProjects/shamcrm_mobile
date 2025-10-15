@@ -1,8 +1,8 @@
 
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/storage_bloc/storage_bloc.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/storage_bloc/storage_event.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/units_bloc/units_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/units_bloc/units_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_state.dart';
@@ -10,8 +10,9 @@ import 'package:crm_task_manager/custom_widget/custom_textfield_character.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/image_list_poput.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/label_list.dart';
-import 'package:crm_task_manager/page_2/warehouse/incoming/storage_widget.dart';
+import 'package:crm_task_manager/page_2/warehouse/incoming/units_widget.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
@@ -32,6 +33,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
   final TextEditingController goodsNameController = TextEditingController();
   final TextEditingController goodsDescriptionController = TextEditingController();
   final TextEditingController discountPriceController = TextEditingController();
+  final TextEditingController priceController = TextEditingController();
   final TextEditingController stockQuantityController = TextEditingController();
   final TextEditingController unitIdController = TextEditingController();
   SubCategoryAttributesData? selectedCategory;
@@ -39,7 +41,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
 
   List<SubCategoryAttributesData> subCategories = [];
   bool isCategoryValid = true;
-  String? selectedStorage;
+  String? selectedUnit;
   int? mainImageIndex;
   String? selectlabel;
 
@@ -54,7 +56,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
   void initState() {
     super.initState();
     fetchSubCategories();
-    context.read<StorageBloc>().add(FetchStorage());
+    context.read<UnitsBloc>().add(FetchUnits());
     mainImageIndex = 0;
   }
 
@@ -260,28 +262,47 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                       maxLines: 5,
                       keyboardType: TextInputType.multiline,
                     ),
-                    if (selectedCategory != null && !selectedCategory!.hasPriceCharacteristics)
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 8),
-                          CustomTextField(
-                            controller: discountPriceController,
-                            label: AppLocalizations.of(context)!.translate('price'),
-                            hintText: AppLocalizations.of(context)!.translate('enter_price'),
-                            keyboardType: TextInputType.number,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return AppLocalizations.of(context)!.translate('field_required');
-                              }
-                              if (double.tryParse(value) == null) {
-                                return AppLocalizations.of(context)!.translate('enter_correct_number');
-                              }
-                              return null;
-                            },
-                          ),
-                        ],
-                      ),
+                    const SizedBox(height: 8),
+                    CustomTextField(
+                              controller: priceController,
+                              label: AppLocalizations.of(context)!.translate('price'),
+                              hintText: AppLocalizations.of(context)!.translate('enter_price'),
+                              keyboardType: TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,3}')),
+                              ],
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return AppLocalizations.of(context)!.translate('field_required');
+                                }
+                                if (double.tryParse(value) == null) {
+                                  return AppLocalizations.of(context)!.translate('enter_correct_number');
+                                }
+                                return null;
+                              },
+                            ),
+                    // if (selectedCategory != null && !selectedCategory!.hasPriceCharacteristics)
+                    //   Column(
+                    //     crossAxisAlignment: CrossAxisAlignment.start,
+                    //     children: [
+                    //       const SizedBox(height: 8),
+                    //       CustomTextField(
+                    //         controller: discountPriceController,
+                    //         label: AppLocalizations.of(context)!.translate('price'),
+                    //         hintText: AppLocalizations.of(context)!.translate('enter_price'),
+                    //         keyboardType: TextInputType.number,
+                    //         validator: (value) {
+                    //           if (value == null || value.isEmpty) {
+                    //             return AppLocalizations.of(context)!.translate('field_required');
+                    //           }
+                    //           if (double.tryParse(value) == null) {
+                    //             return AppLocalizations.of(context)!.translate('enter_correct_number');
+                    //           }
+                    //           return null;
+                    //         },
+                    //       ),
+                    //     ],
+                    //   ),
                     const SizedBox(height: 8),
                     LabelWidget(
                       selectedLabel: selectlabel,
@@ -292,11 +313,11 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                       },
                     ),
                     const SizedBox(height: 8),
-                    StorageWidget(
-                      selectedStorage: selectedStorage,
+                    UnitsWidget(
+                      selectedUnit: selectedUnit,
                       onChanged: (value) {
                         setState(() {
-                          selectedStorage = value;
+                          selectedUnit = value;
                         });
                       },
                     ),
@@ -1067,15 +1088,16 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                 parentId: selectedCategory!.id,
                 description: goodsDescriptionController.text.trim(),
                 quantity: int.tryParse(stockQuantityController.text) ?? 0,
-                unitId: int.tryParse(unitIdController.text) ?? 0,
+                unitId: selectedUnit != null ? (int.tryParse(selectedUnit!) ?? 0) : 0,
                 attributes: attributes,
                 variants: variants,
                 images: images,
                 isActive: isActive,
-                discountPrice: selectedCategory!.hasPriceCharacteristics
-                    ? null
-                    : (double.tryParse(discountPriceController.text.trim()) ?? 0.0),
-                storageId: selectedStorage != null ? int.tryParse(selectedStorage!) : null,
+                price: double.tryParse(priceController.text.trim()) ?? 0.0,
+                // discountPrice: selectedCategory!.hasPriceCharacteristics
+                //     ? null
+                //     : (double.tryParse(discountPriceController.text.trim()) ?? 0.0),
+                storageId: null,
                 mainImageIndex: mainImageIndex,
                 labelId: labelId,
               ),

@@ -1401,6 +1401,7 @@
   "invalid_quantity": "Enter a valid quantity",
   "invalid_price": "Enter a valid price",
   "select_storage": "Select storage",
+  "select_unit": "Select unit of measurement",
   "select_storage_first": "Select storage first",
   "inn": "TIN",
   "enter_inn": "Enter TIN",
