@@ -666,13 +666,15 @@ class _ClientSalesDocumentDetailsScreenState
   }
 
   Widget _buildGoodsItem(DocumentGood good) {
-    // ИЗМЕНЕНО: Unit как в write_off (из availableUnits)
     final availableUnits = good.good?.units ?? [];
-    final selectedUnit = availableUnits.firstWhere(
-      (unit) => unit.id == good.unitId,
-      orElse: () => Unit(id: null, name: 'шт'),
-    );
-    final unitShortName = selectedUnit.name ?? 'шт';
+
+    final selectedUnit = good.unit ??
+        availableUnits.firstWhere(
+              (unit) => unit.id == good.unitId,
+          orElse: () => Unit(id: null, name: 'шт'),
+        );
+
+    final unitShortName = selectedUnit.shortName ?? selectedUnit.name ?? 'шт';
 
     return GestureDetector(
       onTap: () {

@@ -692,29 +692,31 @@ class _ClientReturnDocumentDetailsScreenState
   }
 
   Widget _buildGoodsItem(DocumentGood good) {
-    // ИЗМЕНЕНО: Unit из availableUnits как в предыдущих
     final availableUnits = good.good?.units ?? [];
-    final selectedUnit = availableUnits.firstWhere(
-      (unit) => unit.id == good.unitId,
-      orElse: () => Unit(id: 23, name: 'шт'),
-    );
-    final unitShortName = selectedUnit.name ?? 'шт';
+
+    final selectedUnit = good.unit ??
+        availableUnits.firstWhere(
+              (unit) => unit.id == good.unitId,
+          orElse: () => Unit(id: null, name: 'шт'),
+        );
+
+    final unitShortName = selectedUnit.shortName ?? selectedUnit.name ?? 'шт';
 
     return GestureDetector(
       onTap: () {
         _navigateToGoodsDetails(good);
       },
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
+        padding: const EdgeInsets.symmetric(vertical: 8),
         child: Container(
           decoration: TaskCardStyles.taskCardDecoration,
           child: Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildImageWidget(good),
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
