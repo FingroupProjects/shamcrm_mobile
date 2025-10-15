@@ -57,7 +57,20 @@ class _PinSetupScreenState extends State<PinSetupScreen>
         .chain(CurveTween(curve: Curves.elasticIn))
         .animate(_animationController);
   }
-
+  bool _toBool(dynamic value) {
+    if (value == null) return false;
+    
+    if (value is bool) return value;
+    
+    if (value is int) return value != 0;
+    
+    if (value is String) {
+      final lower = value.toLowerCase();
+      return lower == 'true' || lower == '1';
+    }
+    
+    return false;
+  }
 Future<void> _fetchMiniAppSettings() async {
   try {
     final prefs = await SharedPreferences.getInstance();
@@ -113,12 +126,24 @@ Future<void> _fetchMiniAppSettings() async {
     final response = await _apiService.getSettings(organizationId);
 
     if (response['result'] != null) {
-      await prefs.setBool('department_enabled', response['result']['department'] ?? false);
-      await prefs.setBool('integration_with_1C', response['result']['integration_with_1C'] ?? false);
+       await prefs.setBool(
+        'department_enabled', 
+        _toBool(response['result']['department'])
+      );
       
-      // Добавляем сохранение good_measurement
-      await prefs.setBool('good_measurement', response['result']['good_measurement'] == 1);
+      await prefs.setBool(
+        'integration_with_1C', 
+        _toBool(response['result']['integration_with_1C'])
+      );
       
+      await prefs.setBool(
+        'good_measurement', 
+        _toBool(response['result']['good_measurement'])
+      );
+ await prefs.setBool(
+        'managing_deal_status_visibility', 
+        _toBool(response['result']['managing_deal_status_visibility'])
+      );      
       if (kDebugMode) {
         print('PinScreen: Настройки сохранены: good_measurement = ${response['result']['good_measurement']}');
       }
@@ -129,6 +154,8 @@ Future<void> _fetchMiniAppSettings() async {
     await prefs.setBool('integration_with_1C', false);
     // Добавляем значение по умолчанию для good_measurement
     await prefs.setBool('good_measurement', false); // по умолчанию включено
+        await prefs.setBool('managing_deal_status_visibility', false);
+
   }
 }
 

@@ -3051,32 +3051,32 @@ Future<List<Deal>> getDeals(
   }
 
 // Обновление статуса карточки Сделки в колонке
-  Future<void> updateDealStatus(int dealId, int position, int statusId) async {
-    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/deal/changeStatus/$dealId');
-    if (kDebugMode) {
-      //print('ApiService: updateDealStatus - Generated path: $path');
-    }
-
-    final response = await _postRequest(
-      path,
-      {
-        'position': 1,
-        'status_id': statusId,
-      },
-    );
-
-    if (response.statusCode == 200) {
-      ////print('Статус задачи успешно обновлен.');
-    } else if (response.statusCode == 422) {
-      throw DealStatusUpdateException(
-        422,
-        'Вы не можете переместить задачу на этот статус',
-      );
-    } else {
-      throw Exception('Ошибка обновления задач сделки!');
-    }
+  Future<void> updateDealStatus(int dealId, int position, List<int> statusIds) async {
+  // ИЗМЕНЕНО: принимаем List<int> вместо int
+  final path = await _appendQueryParams('/deal/change-multiple-status/$dealId');
+  if (kDebugMode) {
+    //print('ApiService: updateDealStatus - Generated path: $path');
   }
+
+  final response = await _postRequest(
+    path,
+    {
+      'position': 1,
+      'statuses': statusIds, // ИЗМЕНЕНО: отправляем массив
+    },
+  );
+
+  if (response.statusCode == 200) {
+    ////print('Статус задачи успешно обновлен.');
+  } else if (response.statusCode == 422) {
+    throw DealStatusUpdateException(
+      422,
+      'Вы не можете переместить задачу на этот статус',
+    );
+  } else {
+    throw Exception('Ошибка обновления задач сделки!');
+  }
+}
 
 // Метод для Получения Сделки в Окно Лида
   Future<List<DealTask>> getDealTasks(int dealId) async {
@@ -3124,6 +3124,7 @@ Future<List<Deal>> getDeals(
 
       request.fields['name'] = name;
       request.fields['deal_status_id'] = dealStatusId.toString();
+      request.fields['deal_status_ids[0]'] = dealStatusId.toString();
       request.fields['position'] = '1';
       if (managerId != null) {
         request.fields['manager_id'] = managerId.toString();
@@ -3219,6 +3220,8 @@ Future<List<Deal>> getDeals(
     List<Map<String, dynamic>>? customFields,
     List<Map<String, int>>? directoryValues,
     List<String>? filePaths,
+      List<int>? dealStatusIds, // ✅ НОВОЕ
+
     List<DealFiles>? existingFiles,
   }) async {
     // Формируем путь с query-параметрами
@@ -3241,7 +3244,14 @@ Future<List<Deal>> getDeals(
     if (dealtypeId != null)
       request.fields['deal_type_id'] = dealtypeId.toString();
     if (leadId != null) request.fields['lead_id'] = leadId.toString();
-
+ // ✅ НОВОЕ: Отправляем массив статусов
+  if (dealStatusIds != null && dealStatusIds.isNotEmpty) {
+    for (int i = 0; i < dealStatusIds.length; i++) {
+      request.fields['deal_status_ids[$i]'] = dealStatusIds[i].toString();
+    }
+    print('ApiService: Отправка deal_status_ids: $dealStatusIds');
+  }
+  
     final customFieldsList = customFields ?? [];
     if (customFieldsList.isNotEmpty) {
       for (int i = 0; i < customFieldsList.length; i++) {

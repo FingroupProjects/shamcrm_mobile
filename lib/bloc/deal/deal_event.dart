@@ -122,7 +122,7 @@ class UpdateDeal extends DealEvent {
   final AppLocalizations localizations;
   final List<String>? filePaths;
   final List<DealFiles> existingFiles;
-
+  final List<int>? dealStatusIds; // ✅ НОВОЕ: массив ID статусов
   UpdateDeal({
     required this.dealId,
     required this.name,
@@ -139,6 +139,7 @@ class UpdateDeal extends DealEvent {
     required this.localizations,
     this.filePaths,
     required this.existingFiles,
+    this.dealStatusIds, // ✅ НОВОЕ
   });
 }
 

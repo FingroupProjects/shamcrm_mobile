@@ -387,10 +387,13 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
             AppLocalizations.of(context)!.translate('creation_date_details'),
         'value': formatDate(deal.createdAt)
       },
-      {
-        'label': AppLocalizations.of(context)!.translate('status_history'),
-        'value': deal.dealStatus?.title ?? ''
-      },
+      // ✅ НОВОЕ: Отображение статусов
+    {
+      'label': AppLocalizations.of(context)!.translate('status_history'),
+      'value': deal.dealStatuses != null && deal.dealStatuses!.isNotEmpty
+          ? deal.dealStatuses!.map((s) => s.title).join(', ')
+          : (deal.dealStatus?.title ?? '')
+    },
       if (deal.files != null && deal.files!.isNotEmpty)
         {
           'label': AppLocalizations.of(context)!.translate('files_details'),
@@ -565,68 +568,91 @@ Widget build(BuildContext context) {
         ),
       ),
       actions: [
-        if (_canEditDeal)
-          IconButton(
-            key: keyDealEdit,
-            padding: EdgeInsets.zero,
-            constraints: BoxConstraints(),
-            icon: Image.asset(
-              'assets/icons/edit.png',
-              width: 24,
-              height: 24,
+       if (_canEditDeal)
+  IconButton(
+    key: keyDealEdit,
+    padding: EdgeInsets.zero,
+    constraints: BoxConstraints(),
+    icon: Image.asset(
+      'assets/icons/edit.png',
+      width: 24,
+      height: 24,
+    ),
+    onPressed: () async {
+      if (currentDeal != null) {
+        // ✅ ИСПРАВЛЕНО: Правильный парсинг дат
+        String? startDateString;
+        String? endDateString;
+        String? createdAtDateString;
+        
+        try {
+          // Парсим startDate
+          if (currentDeal!.startDate != null && currentDeal!.startDate!.isNotEmpty) {
+            final parsedStartDate = DateTime.parse(currentDeal!.startDate!);
+            startDateString = DateFormat('dd/MM/yyyy').format(parsedStartDate);
+          }
+        } catch (e) {
+          print('Ошибка парсинга startDate: $e');
+          startDateString = null;
+        }
+        
+        try {
+          // Парсим endDate
+          if (currentDeal!.endDate != null && currentDeal!.endDate!.isNotEmpty) {
+            final parsedEndDate = DateTime.parse(currentDeal!.endDate!);
+            endDateString = DateFormat('dd/MM/yyyy').format(parsedEndDate);
+          }
+        } catch (e) {
+          print('Ошибка парсинга endDate: $e');
+          endDateString = null;
+        }
+        
+        try {
+          // Парсим createdAt
+          if (currentDeal!.createdAt != null && currentDeal!.createdAt!.isNotEmpty) {
+            final parsedCreatedAt = DateTime.parse(currentDeal!.createdAt!);
+            createdAtDateString = DateFormat('dd/MM/yyyy').format(parsedCreatedAt);
+          }
+        } catch (e) {
+          print('Ошибка парсинга createdAt: $e');
+          createdAtDateString = null;
+        }
+
+        final shouldUpdate = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => DealEditScreen(
+              dealId: currentDeal!.id,
+              dealName: currentDeal!.name,
+              statusId: currentDeal!.statusId,
+              dealStatuses: currentDeal!.dealStatuses, // ✅ Передаём массив статусов
+              manager: currentDeal!.manager != null
+                  ? currentDeal!.manager!.id.toString()
+                  : '',
+              lead: currentDeal!.lead != null
+                  ? currentDeal!.lead!.id.toString()
+                  : '',
+              startDate: startDateString,
+              endDate: endDateString,
+              createdAt: createdAtDateString,
+              sum: currentDeal!.sum.toString(),
+              description: currentDeal!.description ?? '',
+              dealCustomFields: currentDeal!.dealCustomFields,
+              directoryValues: currentDeal!.directoryValues,
+              files: currentDeal!.files,
             ),
-            onPressed: () async {
-              if (currentDeal != null) {
-                final startDateString = currentDeal!.startDate != null &&
-                        currentDeal!.startDate!.isNotEmpty
-                    ? DateFormat('dd/MM/yyyy')
-                        .format(DateTime.parse(currentDeal!.startDate!))
-                    : null;
-                final endDateString = currentDeal!.endDate != null &&
-                        currentDeal!.endDate!.isNotEmpty
-                    ? DateFormat('dd/MM/yyyy')
-                        .format(DateTime.parse(currentDeal!.endDate!))
-                    : null;
-                final createdAtDateString = currentDeal!.createdAt != null &&
-                        currentDeal!.createdAt!.isNotEmpty
-                    ? DateFormat('dd/MM/yyyy')
-                        .format(DateTime.parse(currentDeal!.createdAt!))
-                    : null;
-
-                final shouldUpdate = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => DealEditScreen(
-                      dealId: currentDeal!.id,
-                      dealName: currentDeal!.name,
-                      statusId: currentDeal!.statusId,
-                      manager: currentDeal!.manager != null
-                          ? currentDeal!.manager!.id.toString()
-                          : '',
-                      lead: currentDeal!.lead != null
-                          ? currentDeal!.lead!.id.toString()
-                          : '',
-                      startDate: startDateString,
-                      endDate: endDateString,
-                      createdAt: createdAtDateString,
-                      sum: currentDeal!.sum.toString(),
-                      description: currentDeal!.description ?? '',
-                      dealCustomFields: currentDeal!.dealCustomFields,
-                      directoryValues: currentDeal!.directoryValues,
-                      files: currentDeal!.files,
-                    ),
-                  ),
-                );
-
-                if (shouldUpdate == true) {
-                  context
-                      .read<DealByIdBloc>()
-                      .add(FetchDealByIdEvent(dealId: currentDeal!.id));
-                  context.read<DealBloc>().add(FetchDealStatuses());
-                }
-              }
-            },
           ),
+        );
+
+        if (shouldUpdate == true) {
+          context
+              .read<DealByIdBloc>()
+              .add(FetchDealByIdEvent(dealId: currentDeal!.id));
+          context.read<DealBloc>().add(FetchDealStatuses());
+        }
+      }
+    },
+  ),
         if (_canDeleteDeal)
           IconButton(
             key: keyDealDelete,
@@ -759,11 +785,10 @@ Widget build(BuildContext context) {
           );
         }
 
-        if (label.contains(
-                AppLocalizations.of(context)!.translate('name_deal_details')) ||
-            label.contains(AppLocalizations.of(context)!
-                .translate('description_details'))) {
-          return GestureDetector(
+       if (label.contains(AppLocalizations.of(context)!.translate('name_deal_details')) ||
+          label.contains(AppLocalizations.of(context)!.translate('description_details')) ||
+          label == AppLocalizations.of(context)!.translate('status_history')) {
+        return GestureDetector(
             onTap: () {
               if (value.isNotEmpty) {
                 _showFullTextDialog(label.replaceAll(':', ''), value);

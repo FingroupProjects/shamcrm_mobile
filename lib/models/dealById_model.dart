@@ -17,7 +17,8 @@ class DealById {
   final DealStatusById? dealStatus;
   final List<DirectoryValue>? directoryValues;
   final List<DealFiles>? files;
-  final int? dealNumber; // Новое поле
+  final int? dealNumber;
+  final List<DealStatusById>? dealStatuses; // ✅ НОВОЕ: массив статусов
 
   DealById({
     required this.id,
@@ -35,7 +36,8 @@ class DealById {
     this.dealStatus,
     this.directoryValues,
     this.files,
-    this.dealNumber, // Инициализация нового поля
+    this.dealNumber,
+    this.dealStatuses, // ✅ НОВОЕ
   });
 
   factory DealById.fromJson(Map<String, dynamic> json, int dealStatusId) {
@@ -55,10 +57,17 @@ class DealById {
       dealStatus: json['deal_status'] != null ? DealStatusById.fromJson(json['deal_status']) : null,
       directoryValues: (json['directory_values'] as List<dynamic>?)?.map((dirValue) => DirectoryValue.fromJson(dirValue)).toList(),
       files: (json['files'] as List<dynamic>?)?.map((item) => DealFiles.fromJson(item)).toList() ?? [],
-      dealNumber: json['deal_number'] is int ? json['deal_number'] : null, // Парсинг deal_number
+      dealNumber: json['deal_number'] is int ? json['deal_number'] : null,
+      // ✅ НОВОЕ: парсим массив статусов
+      dealStatuses: (json['deal_statuses'] as List<dynamic>?)
+          ?.map((status) => DealStatusById.fromJson(status))
+          .toList(),
     );
   }
 }
+
+
+
 class DealFiles {
   final int id;
   final String name;
@@ -96,6 +105,43 @@ class AuthorDeal {
   }
 }
 
+class DealStatusById {
+  final int id;
+  final String title;
+  final String color;
+  final String? createdAt;
+  final String? updatedAt;
+
+  DealStatusById({
+    required this.id,
+    required this.title,
+    required this.color,
+    this.createdAt,
+    this.updatedAt,
+  });
+
+  factory DealStatusById.fromJson(Map<String, dynamic> json) {
+    return DealStatusById(
+      id: json['id'] is int ? json['id'] : 0,
+      title: json['title'] is String ? json['title'] : 'Без имени',
+      color: json['color'] is String ? json['color'] : '#000',
+      createdAt: json['created_at'] is String ? json['created_at'] : null,
+      updatedAt: json['updated_at'] is String ? json['updated_at'] : null,
+    );
+  }
+  
+  // ✅ НОВОЕ: добавляем методы для сравнения
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is DealStatusById &&
+          runtimeType == other.runtimeType &&
+          id == other.id;
+
+  @override
+  int get hashCode => id.hashCode;
+}
+
 class DealCustomFieldsById {
   final int id;
   final String key;
@@ -127,31 +173,7 @@ class DealCustomFieldsById {
     };
   }
 }
-class DealStatusById {
-  final int id;
-  final String title;
-  final String color;
-  final String? createdAt;
-  final String? updatedAt;
 
-  DealStatusById({
-    required this.id,
-    required this.title,
-    required this.color,
-    this.createdAt,
-    this.updatedAt,
-  });
-
-  factory DealStatusById.fromJson(Map<String, dynamic> json) {
-    return DealStatusById(
-      id: json['id'] is int ? json['id'] : 0,
-      title: json['title'] is String ? json['title'] : 'Без имени',
-      color: json['color'] is String ? json['color'] : '#000',
-      createdAt: json['created_at'] is String ? json['created_at'] : null,
-      updatedAt: json['updated_at'] is String ? json['updated_at'] : null,
-    );
-  }
-}
 
 class DirectoryValue {
   final int id;
