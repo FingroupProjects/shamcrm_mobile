@@ -182,11 +182,19 @@ class _WriteOffScreenState extends State<WriteOffScreen> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
 
-    return BlocProvider.value(
-      value: _writeOffBloc,
-      child: Scaffold(
-        // ИЗМЕНЕНО: FAB только с create-правом
-        floatingActionButton: _hasCreatePermission
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) {
+          // Очищаем выбранные элементы при выходе с экрана
+          _writeOffBloc.add(UnselectAllDocuments());
+        }
+      },
+      child: BlocProvider.value(
+        value: _writeOffBloc,
+        child: Scaffold(
+          // ИЗМЕНЕНО: FAB только с create-правом
+          floatingActionButton: _hasCreatePermission
             ? FloatingActionButton(
                 key: const Key('create_write_off_button'),
                 onPressed: () async {
@@ -820,6 +828,7 @@ class _WriteOffScreenState extends State<WriteOffScreen> {
             },
           ),
         ),
+      ),
       ),
     );
   }

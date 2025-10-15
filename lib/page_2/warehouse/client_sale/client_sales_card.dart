@@ -146,7 +146,7 @@ class _ClientSalesCardState extends State<ClientSalesCard> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${AppLocalizations.of(context)!.translate('date') ?? 'Дата'}: ${_formatDate(doc.date)}',
+                    '${AppLocalizations.of(context)!.translate('date') ?? 'Дата'} ${_formatDate(doc.date)}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
@@ -156,7 +156,7 @@ class _ClientSalesCardState extends State<ClientSalesCard> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${AppLocalizations.of(context)!.translate('supplier') ?? 'Поставщик'}: ${doc.model?.name ?? 'N/A'}',
+                    '${AppLocalizations.of(context)!.translate('client') ?? 'Клиент'} ${doc.model?.name ?? 'N/A'}',
                     style: const TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',

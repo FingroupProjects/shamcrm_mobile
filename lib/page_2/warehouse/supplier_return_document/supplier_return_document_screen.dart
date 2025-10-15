@@ -3,12 +3,14 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/document/supplier_return/suppl
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/supplier_return/supplier_return_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/supplier_return/supplier_return_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
+import 'package:crm_task_manager/custom_widget/app_bar_selection_mode.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/page_2/money/widgets/error_dialog.dart';
 import 'package:crm_task_manager/page_2/warehouse/supplier_return_document/supplier_return_document_card_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_sale/client_sale_confirm_dialog.dart'; // НОВОЕ: Импорт диалога подтверждения
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'supplier_return_document_create_screen.dart';
@@ -31,9 +33,12 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
   late SupplierReturnBloc _supplierReturnBloc;
   bool _isLoadingMore = false;
   bool _hasReachedMax = false;
+  bool _selectionMode = false; // НОВОЕ: Режим выбора
+  bool _isRefreshing = false; // НОВОЕ: Для consistency
 
   // НОВОЕ: Флаги прав доступа
   bool _hasCreatePermission = false;
+  bool _hasUpdatePermission = false; // НОВОЕ
   bool _hasDeletePermission = false;
   final ApiService _apiService = ApiService();
 
@@ -49,11 +54,13 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
   Future<void> _checkPermissions() async {
     try {
       final create = await _apiService.hasPermission('supplier_return_document.create');
+      final update = await _apiService.hasPermission('supplier_return_document.update');
       final delete = await _apiService.hasPermission('supplier_return_document.delete');
 
       if (mounted) {
         setState(() {
           _hasCreatePermission = create;
+          _hasUpdatePermission = update;
           _hasDeletePermission = delete;
         });
       }
@@ -132,13 +139,83 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    return BlocProvider.value(
-      value: _supplierReturnBloc,
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        appBar: AppBar(
-          forceMaterialTransparency: true,
-          title: CustomAppBarPage2(
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) {
+          // Очищаем выбранные элементы при выходе с экрана
+          _supplierReturnBloc.add(UnselectAllSupplierReturnDocuments());
+        }
+      },
+      child: BlocProvider.value(
+        value: _supplierReturnBloc,
+        child: Scaffold(
+          backgroundColor: Colors.white,
+          appBar: AppBar(
+            automaticallyImplyLeading: !_selectionMode,
+            forceMaterialTransparency: true,
+            title: _selectionMode
+                ? BlocBuilder<SupplierReturnBloc, SupplierReturnState>(
+                    builder: (context, state) {
+                      if (state is SupplierReturnLoaded) {
+                        bool showApprove = state.selectedData!.any((doc) => doc.approved == 0 && doc.deletedAt == null);
+                        bool showDisapprove = state.selectedData!.any((doc) => doc.approved == 1 && doc.deletedAt == null);
+                        bool showDelete = _hasDeletePermission &&
+                            state.selectedData!.any((doc) => doc.deletedAt == null);
+                        bool showRestore = state.selectedData!.any((doc) => doc.deletedAt != null);
+                        _isRefreshing = false;
+
+                        return AppBarSelectionMode(
+                          title: localizations.translate('appbar_supplier_return') ?? 'Возврат поставщику',
+                          onDismiss: () {
+                            setState(() {
+                              _selectionMode = false;
+                            });
+                            _supplierReturnBloc.add(UnselectAllSupplierReturnDocuments());
+                          },
+                          onApprove: () {
+                            setState(() {
+                              _selectionMode = false;
+                            });
+                            _supplierReturnBloc.add(MassApproveSupplierReturnDocuments());
+                          },
+                          onDisapprove: () {
+                            setState(() {
+                              _selectionMode = false;
+                            });
+                            _supplierReturnBloc.add(MassDisapproveSupplierReturnDocuments());
+                          },
+                          onDelete: () {
+                            setState(() {
+                              _selectionMode = false;
+                            });
+                            _supplierReturnBloc.add(MassDeleteSupplierReturnDocuments());
+                          },
+                          onRestore: () {
+                            setState(() {
+                              _selectionMode = false;
+                            });
+                            _supplierReturnBloc.add(MassRestoreSupplierReturnDocuments());
+                          },
+                          showApprove: showApprove,
+                          showDelete: showDelete,
+                          showDisapprove: showDisapprove,
+                          showRestore: showRestore,
+                        );
+                      }
+
+                      return AppBarSelectionMode(
+                        title: localizations.translate('appbar_supplier_return') ?? 'Возврат поставщику',
+                        onDismiss: () {
+                          setState(() {
+                            _selectionMode = false;
+                          });
+                          _supplierReturnBloc.add(UnselectAllSupplierReturnDocuments());
+                        },
+                      );
+                    },
+                  )
+                : CustomAppBarPage2(
             title: localizations.translate('appbar_supplier_return') ?? 'Возврат поставщику',
             showSearchIcon: true,
             showFilterIcon: false,
@@ -168,10 +245,12 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
               setState(() {
                 _hasReachedMax = state.hasReachedMax;
                 _isLoadingMore = false;
+                _isRefreshing = false;
               });
             } else if (state is SupplierReturnError) {
               setState(() {
                 _isLoadingMore = false;
+                _isRefreshing = false;
               });
               WidgetsBinding.instance.addPostFrameCallback((_) { // НОВОЕ: postFrame
                 if (mounted && context.mounted) {
@@ -222,6 +301,9 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
               WidgetsBinding.instance.addPostFrameCallback((_) { // НОВОЕ: postFrame
                 if (mounted && context.mounted) {
                   _showSnackBar(state.message, true);
+                  setState(() {
+                    _isRefreshing = true;
+                  });
                   _supplierReturnBloc.add(FetchSupplierReturn(forceRefresh: true, filters: _currentFilters));
                 }
               });
@@ -241,6 +323,9 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (mounted && context.mounted) {
                   _showSnackBar(state.message, true);
+                  setState(() {
+                    _isRefreshing = true;
+                  });
                   _supplierReturnBloc.add(FetchSupplierReturn(forceRefresh: true, filters: _currentFilters));
                 }
               });
@@ -256,13 +341,87 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
                   _showSnackBar(state.message, false);
                 }
               });
+            } else if (state is SupplierReturnApproveMassSuccess) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted && context.mounted) {
+                  showCustomSnackBar(context: context, message: state.message, isSuccess: true);
+                  _supplierReturnBloc.add(FetchSupplierReturn(forceRefresh: true, filters: _currentFilters));
+                }
+              });
+            } else if (state is SupplierReturnApproveMassError) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted && context.mounted) {
+                  if (state.statusCode == 409) {
+                    showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                    return;
+                  }
+                  showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+                }
+              });
+            } else if (state is SupplierReturnDisapproveMassSuccess) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted && context.mounted) {
+                  showCustomSnackBar(context: context, message: state.message, isSuccess: true);
+                  _supplierReturnBloc.add(FetchSupplierReturn(forceRefresh: true, filters: _currentFilters));
+                }
+              });
+            } else if (state is SupplierReturnDisapproveMassError) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted && context.mounted) {
+                  if (state.statusCode == 409) {
+                    showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                    return;
+                  }
+                  showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+                }
+              });
+            } else if (state is SupplierReturnDeleteMassSuccess) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted && context.mounted) {
+                  showCustomSnackBar(context: context, message: state.message, isSuccess: true);
+                  _supplierReturnBloc.add(FetchSupplierReturn(forceRefresh: true, filters: _currentFilters));
+                }
+              });
+            } else if (state is SupplierReturnDeleteMassError) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted && context.mounted) {
+                  if (state.statusCode == 409) {
+                    showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                    _supplierReturnBloc.add(FetchSupplierReturn(forceRefresh: true, filters: _currentFilters));
+                    return;
+                  }
+                  showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+                }
+              });
+            } else if (state is SupplierReturnRestoreMassSuccess) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted && context.mounted) {
+                  showCustomSnackBar(context: context, message: state.message, isSuccess: true);
+                  _supplierReturnBloc.add(FetchSupplierReturn(forceRefresh: true, filters: _currentFilters));
+                }
+              });
+            } else if (state is SupplierReturnRestoreMassError) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted && context.mounted) {
+                  if (state.statusCode == 409) {
+                    showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                    return;
+                  }
+                  showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+                }
+              });
             }
           },
          child: BlocBuilder<SupplierReturnBloc, SupplierReturnState>(
   builder: (context, state) {
     if (state is SupplierReturnLoading || 
         state is SupplierReturnDeleteLoading || 
-        state is SupplierReturnRestoreLoading) {
+        state is SupplierReturnRestoreLoading ||
+        state is SupplierReturnApproveMassLoading ||
+        state is SupplierReturnDisapproveMassLoading ||
+        state is SupplierReturnDeleteMassLoading ||
+        state is SupplierReturnRestoreMassLoading ||
+        _isRefreshing) {
       return Center(
         child: PlayStoreImageLoading(
           size: 80.0,
@@ -381,16 +540,68 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
 
                   child: SupplierReturnCard(
                     document: currentData[index],
+                    onTap: !_selectionMode ? null : () {
+                        _supplierReturnBloc.add(SelectSupplierReturnDocument(currentData[index]));
+
+                        final currentState = context.read<SupplierReturnBloc>().state;
+
+                        if (currentState is SupplierReturnLoaded) {
+                          final selectedCount = currentState.selectedData?.length ?? 0;
+                          if (selectedCount <= 1 && currentState.selectedData?.contains(currentData[index]) == true) {
+                            setState(() {
+                              _selectionMode = false;
+                            });
+                          }
+                        }
+                    },
                     onUpdate: () {
                       _supplierReturnBloc.add(const FetchSupplierReturn(forceRefresh: true));
                     },
+                    isSelectionMode: _selectionMode,
+                    isSelected: (state as SupplierReturnLoaded).selectedData?.contains(currentData[index]) ?? false,
+                    onLongPress: _hasDeletePermission
+                        ? () {
+                      if (_selectionMode) return;
+                      setState(() {
+                        _selectionMode = true;
+                      });
+                      _supplierReturnBloc.add(SelectSupplierReturnDocument(currentData[index]));
+                    }
+                        : null,
                   ),
                 )
               : SupplierReturnCard(
                   document: currentData[index],
+                  onTap: !_selectionMode ? null : () {
+            
+                      _supplierReturnBloc.add(SelectSupplierReturnDocument(currentData[index]));
+
+                      final currentState = context.read<SupplierReturnBloc>().state;
+
+                      if (currentState is SupplierReturnLoaded) {
+                        final selectedCount = currentState.selectedData?.length ?? 0;
+                        if (selectedCount <= 1 && currentState.selectedData?.contains(currentData[index]) == true) {
+                          setState(() {
+                            _selectionMode = false;
+                          });
+                        }
+                      }
+                    
+                  },
                   onUpdate: () {
                     _supplierReturnBloc.add(const FetchSupplierReturn(forceRefresh: true));
                   },
+                  isSelectionMode: _selectionMode,
+                  isSelected: (state as SupplierReturnLoaded).selectedData?.contains(currentData[index]) ?? false,
+                  onLongPress: _hasDeletePermission
+                      ? () {
+                    if (_selectionMode) return;
+                    setState(() {
+                      _selectionMode = true;
+                    });
+                    _supplierReturnBloc.add(SelectSupplierReturnDocument(currentData[index]));
+                  }
+                      : null,
                 );
         },
       ),
@@ -422,6 +633,7 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
                 child: const Icon(Icons.add, color: Colors.white),
               )
             : null,
+        ),
       ),
     );
   }

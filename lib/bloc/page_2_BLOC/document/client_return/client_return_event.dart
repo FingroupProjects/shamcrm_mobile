@@ -110,3 +110,39 @@ class RestoreClientReturnDocument extends ClientReturnEvent {
   @override
   List<Object> get props => [documentId, localizations];
 }
+
+// Массовые операции
+class MassApproveClientReturnDocuments extends ClientReturnEvent {
+  @override
+  List<Object> get props => [];
+}
+
+class MassDisapproveClientReturnDocuments extends ClientReturnEvent {
+  @override
+  List<Object> get props => [];
+}
+
+class MassDeleteClientReturnDocuments extends ClientReturnEvent {
+  @override
+  List<Object> get props => [];
+}
+
+class MassRestoreClientReturnDocuments extends ClientReturnEvent {
+  @override
+  List<Object> get props => [];
+}
+
+// Выбор документов
+class SelectClientReturnDocument extends ClientReturnEvent {
+  final IncomingDocument document;
+
+  const SelectClientReturnDocument(this.document);
+
+  @override
+  List<Object> get props => [document];
+}
+
+class UnselectAllClientReturnDocuments extends ClientReturnEvent {
+  @override
+  List<Object> get props => [];
+}

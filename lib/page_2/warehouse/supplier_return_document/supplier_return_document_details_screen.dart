@@ -556,6 +556,7 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
                   height: 24,
                 ),
                 onPressed: () async {
+                  if (_isLoading) return;
                   final result = await Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -584,6 +585,7 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
                   height: 24,
                 ),
                 onPressed: () {
+                  if (_isLoading) return;
                   showDialog(
                     context: context,
                     builder: (BuildContext context) {
