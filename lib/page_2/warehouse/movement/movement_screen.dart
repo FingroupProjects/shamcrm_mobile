@@ -200,11 +200,19 @@ class _MovementScreenState extends State<MovementScreen> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
 
-    return BlocProvider.value(
-      value: _movementBloc,
-      child: Scaffold(
-        // ИЗМЕНЕНО: Показываем FAB только если есть право на создание
-        floatingActionButton: _hasCreatePermission
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) {
+          // Очищаем выбранные элементы при выходе с экрана
+          _movementBloc.add(UnselectAllDocuments());
+        }
+      },
+      child: BlocProvider.value(
+        value: _movementBloc,
+        child: Scaffold(
+          // ИЗМЕНЕНО: Показываем FAB только если есть право на создание
+          floatingActionButton: _hasCreatePermission
             ? FloatingActionButton(
                 onPressed: () async {
                   if (!mounted) return;
@@ -767,6 +775,7 @@ class _MovementScreenState extends State<MovementScreen> {
           ),
         ),
       ),
+    ),
     );
   }
 
