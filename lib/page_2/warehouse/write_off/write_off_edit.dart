@@ -115,13 +115,12 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
               text: initialPrice > 0 ? initialPrice.toStringAsFixed(3) : ''
           );
 
-          _quantityControllers[variantId] = TextEditingController(text: '1');
+          _quantityControllers[variantId] = TextEditingController(text: '');
 
           // ✅ НОВОЕ: Создаём FocusNode для новых товаров
           _quantityFocusNodes[variantId] = FocusNode();
           _priceFocusNodes[variantId] = FocusNode();
 
-          _items.last['quantity'] = 1;
           _items.last['price'] = initialPrice;
 
           final amount = newItem['amount'] ?? 1;
