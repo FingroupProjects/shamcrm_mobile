@@ -441,7 +441,12 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
             } else if (state is SupplierReturnCreateError && mounted) {
               if (state.statusCode == 409) {
                 final localizations = AppLocalizations.of(context)!; // ✅ ФИКС: localizations внутри
-                showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                showSimpleErrorDialog(
+                  context,
+                  localizations.translate('error') ?? 'Ошибка',
+                  state.message,
+                  errorDialogEnum: ErrorDialogEnum.supplierReturnApprove,
+                );
                 return;
               }
               _showSnackBar(state.message, false);

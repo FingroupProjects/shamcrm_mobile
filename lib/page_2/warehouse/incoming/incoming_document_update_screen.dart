@@ -480,7 +480,12 @@ void _removeItem(int index) {
             } else if (state is IncomingUpdateError && mounted) {
               // ✅ НОВОЕ: Обработка 409 как в примере
               if (state.statusCode == 409) {
-                showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                showSimpleErrorDialog(
+                  context,
+                  localizations.translate('error') ?? 'Ошибка',
+                  state.message,
+                  errorDialogEnum: ErrorDialogEnum.goodsIncomingApprove,
+                );
                 return;
               }
               _showSnackBar(state.message, false);

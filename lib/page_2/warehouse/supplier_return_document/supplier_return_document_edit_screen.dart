@@ -453,7 +453,12 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
             } else if (state is SupplierReturnUpdateError && mounted) {
               if (state.statusCode == 409) {
                 final localizations = AppLocalizations.of(context)!;
-                showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                showSimpleErrorDialog(
+                  context,
+                  localizations.translate('error') ?? 'Ошибка',
+                  state.message,
+                  errorDialogEnum: ErrorDialogEnum.supplierReturnApprove,
+                );
                 return;
               }
               _showSnackBar(state.message, false);

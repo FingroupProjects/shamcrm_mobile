@@ -393,7 +393,12 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
               Navigator.pop(context, true);
             } else if (state is MovementCreateError && mounted) {
               if (state.statusCode == 409) {
-                showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                showSimpleErrorDialog(
+                  context,
+                  localizations.translate('error') ?? 'Ошибка',
+                  state.message,
+                  errorDialogEnum: ErrorDialogEnum.goodsMovementApprove,
+                );
                 return;
               }
               _showSnackBar(state.message, false);

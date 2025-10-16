@@ -369,7 +369,9 @@ class _MovementScreenState extends State<MovementScreen> {
                           showSimpleErrorDialog(
                               context,
                               localizations.translate('error') ?? 'Ошибка',
-                              state.message);
+                              state.message,
+                            errorDialogEnum: ErrorDialogEnum.goodsMovementDelete,
+                          );
                           return;
                         }
                         _showSnackBar(state.message, false);
@@ -394,7 +396,9 @@ class _MovementScreenState extends State<MovementScreen> {
                           showSimpleErrorDialog(
                               context,
                               localizations?.translate('error') ?? 'Ошибка',
-                              state.message);
+                              state.message,
+                              errorDialogEnum: ErrorDialogEnum.goodsMovementDelete,
+                          );
                           return;
                         }
                         showCustomSnackBar(context: context, message: state.message, isSuccess: false);
@@ -421,7 +425,9 @@ class _MovementScreenState extends State<MovementScreen> {
                           showSimpleErrorDialog(
                               context,
                               localizations?.translate('error') ?? 'Ошибка',
-                              state.message);
+                              state.message,
+                              errorDialogEnum: ErrorDialogEnum.goodsMovementDelete
+                          );
                           return;
                         }
                         showCustomSnackBar(context: context, message: state.message, isSuccess: false);
@@ -452,7 +458,9 @@ class _MovementScreenState extends State<MovementScreen> {
                           showSimpleErrorDialog(
                               context,
                               localizations?.translate('error') ?? 'Ошибка',
-                              state.message);
+                              state.message,
+                              errorDialogEnum: ErrorDialogEnum.goodsMovementDelete
+                          );
                           _movementBloc.add(FetchMovements(forceRefresh: true, filters: _currentFilters, search: _search));
                           return;
                         }
@@ -484,7 +492,9 @@ class _MovementScreenState extends State<MovementScreen> {
                           showSimpleErrorDialog(
                               context,
                               localizations?.translate('error') ?? 'Ошибка',
-                              state.message);
+                              state.message,
+                              errorDialogEnum: ErrorDialogEnum.goodsMovementRestore
+                          );
                           _movementBloc.add(FetchMovements(forceRefresh: true, filters: _currentFilters, search: _search));
                           return;
                         }
@@ -515,13 +525,16 @@ class _MovementScreenState extends State<MovementScreen> {
                           showSimpleErrorDialog(
                               context,
                               localizations?.translate('error') ?? 'Ошибка',
-                              state.message);
+                              state.message,
+                              errorDialogEnum: ErrorDialogEnum.goodsMovementApprove
+                          );
                           return;
                         }
                         showCustomSnackBar(
                             context: context,
                             message: state.message,
-                            isSuccess: false);
+                            isSuccess: false
+                        );
                       }
                     });
                   }
@@ -548,7 +561,9 @@ class _MovementScreenState extends State<MovementScreen> {
                           showSimpleErrorDialog(
                               context,
                               localizations?.translate('error') ?? 'Ошибка',
-                              state.message);
+                              state.message
+                              , errorDialogEnum: ErrorDialogEnum.goodsMovementUnapprove
+                          );
                           return;
                         }
                         showCustomSnackBar(
@@ -581,7 +596,9 @@ class _MovementScreenState extends State<MovementScreen> {
                           showSimpleErrorDialog(
                               context,
                               localizations?.translate('error') ?? 'Ошибка',
-                              state.message);
+                              state.message,
+                              errorDialogEnum: ErrorDialogEnum.goodsMovementDelete
+                          );
                           return;
                         }
                         showCustomSnackBar(
@@ -614,7 +631,9 @@ class _MovementScreenState extends State<MovementScreen> {
                           showSimpleErrorDialog(
                               context,
                               localizations?.translate('error') ?? 'Ошибка',
-                              state.message);
+                              state.message,
+                              errorDialogEnum: ErrorDialogEnum.goodsMovementRestore
+                          );
                           return;
                         }
                         showCustomSnackBar(

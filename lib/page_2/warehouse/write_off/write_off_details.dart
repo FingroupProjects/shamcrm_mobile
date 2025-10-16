@@ -214,7 +214,12 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
-        showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
+        showSimpleErrorDialog(
+          context,
+          localizations.translate('error') ?? 'Ошибка',
+          e.message,
+          errorDialogEnum: ErrorDialogEnum.writeOffApprove,
+        );
         return;
       }
       _showSnackBar('Ошибка при проведении документа: $e', false);
@@ -248,7 +253,12 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
-        showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
+        showSimpleErrorDialog(
+          context,
+          localizations.translate('error') ?? 'Ошибка',
+          e.message,
+          errorDialogEnum: ErrorDialogEnum.writeOffUnapprove,
+        );
         return;
       }
       _showSnackBar('Ошибка при отмене проведения документа: $e', false);
@@ -284,7 +294,12 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
-        showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
+        showSimpleErrorDialog(
+          context,
+          localizations.translate('error') ?? 'Ошибка',
+          e.message,
+          errorDialogEnum: ErrorDialogEnum.writeOffRestore,
+        );
         return;
       }
       _showSnackBar('Ошибка при восстановлении документа: $e', false);
