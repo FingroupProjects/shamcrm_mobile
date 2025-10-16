@@ -123,23 +123,23 @@ class _HomeScreenState extends State<HomeScreen> {
     bool hasOrderAccess = await _apiService.hasPermission('order.read');
 
     // ЛОГИКА ВЗАИМОИСКЛЮЧЕНИЯ:
-    if (hasWarehouseAccess) {
-      // Если есть складской учёт → добавляем WarehouseAccountingScreen и OrderScreen (если есть доступ)
-      // widgetsGroup1.add(WarehouseAccountingScreen());
-      // titleKeysGroup1.add('appbar_warehouse');
-      // navBarTitleKeysGroup1.add('appbar_warehouse');
-      // activeIconsGroup1.add('assets/icons/MyNavBar/money_on_.png');
-      // inactiveIconsGroup1.add('assets/icons/MyNavBar/google-docs (5).png');
-      // hasAvailableScreens = true;
-
-      // Добавляем OrderScreen во вторую группу, если естьдоступ
-      if (hasOrderAccess) {
-        widgetsGroup2.add(OrderScreen());
-        titleKeysGroup2.add('appbar_orders'); // Используем ключ 'orders' для локализации
-        navBarTitleKeysGroup2.add('appbar_orders');
-        activeIconsGroup2.add('assets/icons/MyNavBar/orderon.png'); // Убедитесь, что иконка существует
-        inactiveIconsGroup2.add('assets/icons/MyNavBar/order_OFF.png');
-        hasAvailableScreens = true;
+    if (hasWarehouseAccess) { 
+      /*Если есть складской учёт → добавляем WarehouseAccountingScreen и OrderScreen (если есть доступ) */
+      widgetsGroup1.add(WarehouseAccountingScreen());
+      titleKeysGroup1.add('appbar_warehouse');
+      navBarTitleKeysGroup1.add('appbar_warehouse');
+      activeIconsGroup1.add('assets/icons/MyNavBar/money_on_.png');
+      inactiveIconsGroup1.add('assets/icons/MyNavBar/google-docs (5).png');
+      hasAvailableScreens = true;
+ 
+      // Добавляем OrderScreen во вторую группу, если естьдоступ 
+      if (hasOrderAccess) { 
+        widgetsGroup2.add(OrderScreen()); 
+        titleKeysGroup2.add('appbar_orders'); // Используем ключ 'orders' для локализации 
+        navBarTitleKeysGroup2.add('appbar_orders'); 
+        activeIconsGroup2.add('assets/icons/MyNavBar/orderon.png'); // Убедитесь, что иконка существует 
+        inactiveIconsGroup2.add('assets/icons/MyNavBar/order_OFF.png'); 
+        hasAvailableScreens = true; 
       }
       
       // НЕ добавляем OnlineStoreScreen!

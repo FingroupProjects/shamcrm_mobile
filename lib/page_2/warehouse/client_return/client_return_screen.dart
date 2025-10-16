@@ -8,7 +8,7 @@ import 'package:crm_task_manager/page_2/money/widgets/error_dialog.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_return/client_return_card.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_return/client_return_create.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_return/client_return_details.dart';
-import 'package:crm_task_manager/page_2/warehouse/client_sale/client_sale_confirm_dialog.dart';
+import 'package:crm_task_manager/page_2/widgets/document_confirm_dialog.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

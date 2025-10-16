@@ -199,9 +199,20 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
       ////print('No filters selected, resetting filters');
       widget.onResetFilters?.call();
     } else {
+      // Set from date to 00:00:00 and to date to 23:59:59
+      DateTime? fromDateWithTime = _fromDate;
+      DateTime? toDateWithTime = _toDate;
+      
+      if (fromDateWithTime != null) {
+        fromDateWithTime = DateTime(fromDateWithTime.year, fromDateWithTime.month, fromDateWithTime.day, 0, 0, 0);
+      }
+      if (toDateWithTime != null) {
+        toDateWithTime = DateTime(toDateWithTime.year, toDateWithTime.month, toDateWithTime.day, 23, 59, 59);
+      }
+      
       widget.onSelectedDataFilter?.call({
-        'fromDate': _fromDate,
-        'toDate': _toDate,
+        'fromDate': fromDateWithTime,
+        'toDate': toDateWithTime,
         'client': _clientController.text.isNotEmpty ? _clientController.text : null,
         'status': _selectedStatus,
         'paymentMethod': _selectedPaymentMethod,

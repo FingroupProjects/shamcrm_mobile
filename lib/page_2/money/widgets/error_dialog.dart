@@ -16,6 +16,16 @@ enum ErrorDialogEnum {
   goodsMovementDelete,
   goodsMovementRestore,
 
+  writeOffApprove,
+  writeOffUnapprove,
+  writeOffDelete,
+  writeOffRestore,
+
+  supplierReturnApprove,
+  supplierReturnUnapprove,
+  supplierReturnDelete,
+  supplierReturnRestore,
+
   nothing;
 }
 
@@ -102,6 +112,46 @@ class ErrorDialog extends StatelessWidget {
     if (errorDialogEnum == ErrorDialogEnum.goodsMovementRestore) {
       debugPrint("[ERROR] ErrorDialog.GoodsMovementRestore: $message");
       return _buildGoodsMovementRestoreError(message);
+    }
+
+    if (errorDialogEnum == ErrorDialogEnum.writeOffApprove) {
+      debugPrint("[ERROR] ErrorDialog.WriteOffApprove: $message");
+      return _buildWriteOffApproveError(message);
+    }
+
+    if (errorDialogEnum == ErrorDialogEnum.writeOffUnapprove) {
+      debugPrint("[ERROR] ErrorDialog.WriteOffUnapprove: $message");
+      return _buildWriteOffUnapproveError(message);
+    }
+
+    if (errorDialogEnum == ErrorDialogEnum.writeOffDelete) {
+      debugPrint("[ERROR] ErrorDialog.WriteOffDelete: $message");
+      return _buildWriteOffDeleteError(message);
+    }
+
+    if (errorDialogEnum == ErrorDialogEnum.writeOffRestore) {
+      debugPrint("[ERROR] ErrorDialog.WriteOffRestore: $message");
+      return _buildWriteOffRestoreError(message);
+    }
+
+    if (errorDialogEnum == ErrorDialogEnum.supplierReturnApprove) {
+      debugPrint("[ERROR] ErrorDialog.SupplierReturnApprove: $message");
+      return _buildSupplierReturnApproveError(message);
+    }
+
+    if (errorDialogEnum == ErrorDialogEnum.supplierReturnUnapprove) {
+      debugPrint("[ERROR] ErrorDialog.SupplierReturnUnapprove: $message");
+      return _buildSupplierReturnUnapproveError(message);
+    }
+
+    if (errorDialogEnum == ErrorDialogEnum.supplierReturnDelete) {
+      debugPrint("[ERROR] ErrorDialog.SupplierReturnDelete: $message");
+      return _buildSupplierReturnDeleteError(message);
+    }
+
+    if (errorDialogEnum == ErrorDialogEnum.supplierReturnRestore) {
+      debugPrint("[ERROR] ErrorDialog.SupplierReturnRestore: $message");
+      return _buildSupplierReturnRestoreError(message);
     }
 
     // Проверяем, есть ли в сообщении информация о товарах
@@ -2112,6 +2162,1377 @@ class ErrorDialog extends StatelessWidget {
   }
 
   Widget _buildGoodsMovementRestoreError(String message) {
+    // Парсим название товара и причину невозможности восстановления
+    RegExp restoreRegex = RegExp(r"[Тт]овар '([^']+)'");
+    Match? match = restoreRegex.firstMatch(message);
+
+    String productName = match?.group(1) ?? 'Неизвестный товар';
+
+    // Определяем причину
+    bool isDeleted = message.contains('удален') || message.contains('удалён');
+    bool isChanged = message.contains('изменен') || message.contains('изменён');
+
+    String reasonText = isDeleted
+        ? 'Товар был удален из системы'
+        : isChanged
+        ? 'Товар был изменен после удаления документа'
+        : 'Товар недоступен в системе';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Заголовок ошибки
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Color(0xffFFF5F5),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Color(0xffFECDD3),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Невозможно восстановить документ',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xffEA580C),
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        SizedBox(height: 16),
+
+        // Информация о товаре
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Color(0xffE2E8F0),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Color(0xff1E2E52).withOpacity(0.08),
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Название товара
+              Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Color(0xffD97706).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Icon(
+                      Icons.restore_outlined,
+                      size: 16,
+                      color: Color(0xffD97706),
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      productName,
+                      style: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xff1E2E52),
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                  ),
+                ],
+              ),
+
+              SizedBox(height: 16),
+
+              // Причина
+              Row(
+                children: [
+                  Icon(
+                    Icons.warning_amber_outlined,
+                    color: Color(0xffD97706),
+                    size: 20,
+                  ),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      reasonText,
+                      style: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xff92400E),
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWriteOffApproveError(String message) {
+    // Парсим сообщение формата: "Недостаточно остатков для следующих товаров: - Товар: tesats требуется 1.00, доступно 0"
+    debugPrint("🔍 [WriteOffApprove] Полученное сообщение: $message");
+
+    // Парсим все товары с помощью регулярного выражения (поддерживаем десятичные дроби)
+    RegExp writeOffRegex = RegExp(r'- Товар: ([^\s]+) требуется ([\d.]+), доступно ([\d.]+)');
+    Iterable<Match> matches = writeOffRegex.allMatches(message);
+
+    debugPrint("🔍 [WriteOffApprove] Найдено совпадений: ${matches.length}");
+
+    List<Widget> widgets = [];
+
+    // Заголовок ошибки
+    widgets.add(
+      Container(
+        width: double.infinity,
+        padding: EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Color(0xffFFF5F5),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Color(0xffFECDD3),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Недостаточно остатков для списания',
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xffDC2626),
+                ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    widgets.add(SizedBox(height: 16));
+
+    if (matches.isNotEmpty) {
+      // Информация о количестве товаров
+      widgets.add(
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(12),
+          margin: EdgeInsets.only(bottom: 16),
+          decoration: BoxDecoration(
+            color: Color(0xffF1F5F9),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: Color(0xffCBD5E1),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.inventory_2_outlined,
+                size: 16,
+                color: Color(0xff475569),
+              ),
+              SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  'Найдено ${matches.length} ${matches.length == 1 ? 'товар' : matches.length < 5 ? 'товара' : 'товаров'} с недостатком',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff475569),
+                  ),
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 2,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      // Добавляем каждый товар
+      for (int index = 0; index < matches.length; index++) {
+        Match match = matches.elementAt(index);
+        String productName = match.group(1)?.trim() ?? 'Неизвестный товар';
+        String required = match.group(2) ?? '0';
+        String available = match.group(3) ?? '0';
+
+        debugPrint("🔍 [WriteOffApprove] Товар #${index + 1}: $productName, требуется: $required, доступно: $available");
+
+        // Контейнер для товара
+        widgets.add(
+          Container(
+            width: double.infinity,
+            margin: EdgeInsets.only(bottom: index < matches.length - 1 ? 16 : 0),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Color(0xffE2E8F0),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Color(0xff1E2E52).withOpacity(0.08),
+                  blurRadius: 8,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Заголовок товара
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Color(0xffF8FAFC),
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(12),
+                      topRight: Radius.circular(12),
+                    ),
+                    border: Border(
+                      left: BorderSide(
+                        width: 4,
+                        color: Color(0xffDC2626),
+                      ),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Color(0xffDC2626).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          '${index + 1}',
+                          style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xffDC2626),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          productName,
+                          style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xff1E2E52),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Количества
+                Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      // Требуется
+                      Expanded(
+                        child: Container(
+                          padding: EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Color(0xffFEF2F2),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Color(0xffFECDD3),
+                              width: 1,
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Требуется:',
+                                style: TextStyle(
+                                  fontFamily: 'Gilroy',
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xff991B1B),
+                                ),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                required,
+                                style: TextStyle(
+                                  fontFamily: 'Gilroy',
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xffDC2626),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      SizedBox(width: 12),
+
+                      // Доступно
+                      Expanded(
+                        child: Container(
+                          padding: EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Color(0xffF0F9FF),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Color(0xffBAE6FD),
+                              width: 1,
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Доступно:',
+                                style: TextStyle(
+                                  fontFamily: 'Gilroy',
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xff0369A1),
+                                ),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                available,
+                                style: TextStyle(
+                                  fontFamily: 'Gilroy',
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xff0284C7),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+    } else {
+      // Если не удалось распарсить, показываем простое сообщение
+      widgets.add(
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Color(0xffFEF2F2),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Color(0xffFECDD3),
+              width: 1,
+            ),
+          ),
+          child: Text(
+            message,
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 14,
+              color: Color(0xff1F2937),
+              height: 1.5,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: widgets,
+    );
+  }
+
+  Widget _buildWriteOffUnapproveError(String message) {
+    // Парсим сообщение формата похожего на approve
+    debugPrint("🔍 [WriteOffUnapprove] Полученное сообщение: $message");
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Заголовок ошибки
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Color(0xffFFF5F5),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Color(0xffFECDD3),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            children: [
+            Expanded(
+              child: Text(
+                'Невозможно отменить проведение',
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xffDC2626),
+                ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
+            ),
+            ],
+          ),
+        ),
+
+        SizedBox(height: 16),
+
+        // Показываем простое сообщение
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Color(0xffFEF2F2),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Color(0xffFECDD3),
+              width: 1,
+            ),
+          ),
+          child: Text(
+            message,
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 14,
+              color: Color(0xff1F2937),
+              height: 1.5,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWriteOffDeleteError(String message) {
+    // Парсим название товара и отрицательный остаток
+    RegExp deletionRegex = RegExp(r"товара '([^']+)' станет отрицательным: (-?\d+)");
+    Match? match = deletionRegex.firstMatch(message);
+
+    String productName = match?.group(1) ?? 'Неизвестный товар';
+    String negativeAmount = match?.group(2) ?? '0';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Заголовок ошибки
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Color(0xffFFF5F5),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Color(0xffFECDD3),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Невозможно удалить документ',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xffDC2626),
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        SizedBox(height: 16),
+
+        // Информация о товаре
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Color(0xffE2E8F0),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Color(0xff1E2E52).withOpacity(0.08),
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Название товара
+              Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Color(0xffDC2626).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Icon(
+                      Icons.remove_circle_outline,
+                      size: 16,
+                      color: Color(0xffDC2626),
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      productName,
+                      style: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xff1E2E52),
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                  ),
+                ],
+              ),
+
+              SizedBox(height: 16),
+
+              // Информация об остатке
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'После удаления документа остаток станет:',
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xff64748B),
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
+                  ),
+                  SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Color(0xffFEF2F2),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Color(0xffFECDD3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          negativeAmount,
+                          style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 24,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xffDC2626),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWriteOffRestoreError(String message) {
+    // Парсим название товара и причину невозможности восстановления
+    RegExp restoreRegex = RegExp(r"[Тт]овар '([^']+)'");
+    Match? match = restoreRegex.firstMatch(message);
+
+    String productName = match?.group(1) ?? 'Неизвестный товар';
+
+    // Определяем причину
+    bool isDeleted = message.contains('удален') || message.contains('удалён');
+    bool isChanged = message.contains('изменен') || message.contains('изменён');
+
+    String reasonText = isDeleted
+        ? 'Товар был удален из системы'
+        : isChanged
+        ? 'Товар был изменен после удаления документа'
+        : 'Товар недоступен в системе';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Заголовок ошибки
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Color(0xffFFF5F5),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Color(0xffFECDD3),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Невозможно восстановить документ',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xffEA580C),
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        SizedBox(height: 16),
+
+        // Информация о товаре
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Color(0xffE2E8F0),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Color(0xff1E2E52).withOpacity(0.08),
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Название товара
+              Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Color(0xffD97706).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Icon(
+                      Icons.restore_outlined,
+                      size: 16,
+                      color: Color(0xffD97706),
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      productName,
+                      style: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xff1E2E52),
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                  ),
+                ],
+              ),
+
+              SizedBox(height: 16),
+
+              // Причина
+              Row(
+                children: [
+                  Icon(
+                    Icons.warning_amber_outlined,
+                    color: Color(0xffD97706),
+                    size: 20,
+                  ),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      reasonText,
+                      style: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xff92400E),
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSupplierReturnApproveError(String message) {
+    // Невозможно провести возврат. Недостаточно товара от этого поставщика:
+    // Товар "иии": попытка вернуть 20000 шт., доступно для возврата от поставщика 1008 шт.
+    debugPrint("🔍 [SupplierReturnApprove] Полученное сообщение: $message");
+
+    RegExp returnRegex = RegExp(r'Товар "([^"]+)".*вернуть (\d+) шт.*от поставщика (\d+) шт');
+    Match? match = returnRegex.firstMatch(message);
+
+    debugPrint("🔍 [SupplierReturnApprove] Match найден: ${match != null}");
+    if (match != null) {
+      debugPrint("🔍 [SupplierReturnApprove] Group 1 (название): ${match.group(1)}");
+      debugPrint("🔍 [SupplierReturnApprove] Group 2 (попытка вернуть): ${match.group(2)}");
+      debugPrint("🔍 [SupplierReturnApprove] Group 3 (доступно): ${match.group(3)}");
+    }
+
+    String productName = match?.group(1) ?? 'Неизвестный товар';
+    String attemptedReturn = match?.group(2) ?? '0';
+    String availableForReturn = match?.group(3) ?? '0';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Заголовок ошибки
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Color(0xffFFF5F5),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Color(0xffFECDD3),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Невозможно провести возврат поставщику',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xffDC2626),
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        SizedBox(height: 16),
+
+        // Информация о товаре
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Color(0xffE2E8F0),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Color(0xff1E2E52).withOpacity(0.08),
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Заголовок товара
+              Container(
+                width: double.infinity,
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Color(0xffF8FAFC),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    topRight: Radius.circular(12),
+                  ),
+                  border: Border(
+                    left: BorderSide(
+                      width: 4,
+                      color: Color(0xffDC2626),
+                    ),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Color(0xffDC2626).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Icon(
+                        Icons.unarchive_outlined,
+                        size: 16,
+                        color: Color(0xffDC2626),
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        productName,
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xff1E2E52),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Информация о количествах
+              Padding(
+                padding: EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Недостаточно товара от этого поставщика:',
+                      style: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff64748B),
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
+                    ),
+                    SizedBox(height: 12),
+                    Row(
+                      children: [
+                        // Попытка вернуть
+                        Expanded(
+                          child: Container(
+                            padding: EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Color(0xffFEF2F2),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: Color(0xffFECDD3),
+                                width: 1,
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Попытка вернуть:',
+                                  style: TextStyle(
+                                    fontFamily: 'Gilroy',
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w500,
+                                    color: Color(0xff991B1B),
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  _formatNumber(attemptedReturn),
+                                  style: TextStyle(
+                                    fontFamily: 'Gilroy',
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xffDC2626),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        SizedBox(width: 12),
+
+                        // Доступно от поставщика
+                        Expanded(
+                          child: Container(
+                            padding: EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Color(0xffF0F9FF),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: Color(0xffBAE6FD),
+                                width: 1,
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Доступно:',
+                                  style: TextStyle(
+                                    fontFamily: 'Gilroy',
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w500,
+                                    color: Color(0xff0369A1),
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  _formatNumber(availableForReturn),
+                                  style: TextStyle(
+                                    fontFamily: 'Gilroy',
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xff0284C7),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSupplierReturnDeleteError(String message) {
+    // Парсим название товара и отрицательный остаток
+    RegExp deletionRegex = RegExp(r"товара '([^']+)' станет отрицательным: (-?\d+)");
+    Match? match = deletionRegex.firstMatch(message);
+
+    String productName = match?.group(1) ?? 'Неизвестный товар';
+    String negativeAmount = match?.group(2) ?? '0';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Заголовок ошибки
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Color(0xffFFF5F5),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Color(0xffFECDD3),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Невозможно удалить возврат поставщику',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xffDC2626),
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        SizedBox(height: 16),
+
+        // Информация о товаре
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Color(0xffE2E8F0),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Color(0xff1E2E52).withOpacity(0.08),
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Заголовок товара
+              Container(
+                width: double.infinity,
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Color(0xffF8FAFC),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    topRight: Radius.circular(12),
+                  ),
+                  border: Border(
+                    left: BorderSide(
+                      width: 4,
+                      color: Color(0xffDC2626),
+                    ),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Color(0xffDC2626).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Icon(
+                        Icons.delete_outline,
+                        size: 16,
+                        color: Color(0xffDC2626),
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        productName,
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xff1E2E52),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Информация о проблеме
+              Padding(
+                padding: EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Удаление приведет к отрицательному остатку:',
+                      style: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff64748B),
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
+                    ),
+                    SizedBox(height: 12),
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Color(0xffFEF2F2),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: Color(0xffFECDD3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            negativeAmount,
+                            style: TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 24,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xffDC2626),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSupplierReturnUnapproveError(String message) {
+    // Парсим название товара и отрицательный остаток
+    RegExp unapproveRegex = RegExp(r"товара '([^']+)' станет отрицательным: (-?\d+)");
+    Match? match = unapproveRegex.firstMatch(message);
+
+    String productName = match?.group(1) ?? 'Неизвестный товар';
+    String negativeAmount = match?.group(2) ?? '0';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Заголовок ошибки
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Color(0xffFFF5F5),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Color(0xffFECDD3),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Невозможно отменить проведение возврата',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xffDC2626),
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        SizedBox(height: 16),
+
+        // Информация о товаре
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Color(0xffE2E8F0),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Color(0xff1E2E52).withOpacity(0.08),
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Заголовок товара
+              Container(
+                width: double.infinity,
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Color(0xffF8FAFC),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    topRight: Radius.circular(12),
+                  ),
+                  border: Border(
+                    left: BorderSide(
+                      width: 4,
+                      color: Color(0xffDC2626),
+                    ),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Color(0xffDC2626).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Icon(
+                        Icons.block_outlined,
+                        size: 16,
+                        color: Color(0xffDC2626),
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        productName,
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xff1E2E52),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Информация о проблеме
+              Padding(
+                padding: EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Отмена проведения приведет к отрицательному остатку:',
+                      style: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff64748B),
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
+                    ),
+                    SizedBox(height: 12),
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Color(0xffFEF2F2),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: Color(0xffFECDD3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            negativeAmount,
+                            style: TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 24,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xffDC2626),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSupplierReturnRestoreError(String message) {
     // Парсим название товара и причину невозможности восстановления
     RegExp restoreRegex = RegExp(r"[Тт]овар '([^']+)'");
     Match? match = restoreRegex.firstMatch(message);

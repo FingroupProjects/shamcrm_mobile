@@ -24,7 +24,12 @@ class WriteOffDeleteDocumentDialog extends StatelessWidget {
           if (state.statusCode  == 409) {
             final localizations = AppLocalizations.of(context)!;
             Navigator.of(context).pop(false); // Return false on error
-            showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+            showSimpleErrorDialog(
+              context,
+              localizations.translate('error') ?? 'Ошибка',
+              state.message,
+              errorDialogEnum: ErrorDialogEnum.writeOffDelete,
+            );
             return;
           }
          showCustomSnackBar(context: context, message: state.message, isSuccess: false);

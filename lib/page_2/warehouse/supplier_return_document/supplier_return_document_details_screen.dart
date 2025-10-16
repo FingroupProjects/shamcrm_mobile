@@ -237,7 +237,12 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
-        showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
+        showSimpleErrorDialog(
+          context,
+          localizations.translate('error') ?? 'Ошибка',
+          e.message,
+          errorDialogEnum: ErrorDialogEnum.supplierReturnApprove,
+        );
         return;
       }
       final localizations = AppLocalizations.of(context)!;
@@ -281,7 +286,12 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
-        showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
+        showSimpleErrorDialog(
+          context,
+          localizations.translate('error') ?? 'Ошибка',
+          e.message,
+          errorDialogEnum: ErrorDialogEnum.supplierReturnUnapprove,
+        );
         return;
       }
       final localizations = AppLocalizations.of(context)!;
@@ -325,7 +335,12 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
-        showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
+        showSimpleErrorDialog(
+          context,
+          localizations.translate('error') ?? 'Ошибка',
+          e.message,
+          errorDialogEnum: ErrorDialogEnum.supplierReturnRestore,
+        );
         return;
       }
       final localizations = AppLocalizations.of(context)!;

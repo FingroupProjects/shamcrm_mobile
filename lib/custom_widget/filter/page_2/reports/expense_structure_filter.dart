@@ -148,11 +148,22 @@ class _ExpenseStructureFilterScreenState extends State<ExpenseStructureFilterScr
     if (!_isAnyFilterSelected()) {
       widget.onResetFilters?.call();
     } else {
+      // Set from date to 00:00:00 and to date to 23:59:59
+      DateTime? fromDateWithTime = _dateFrom;
+      DateTime? toDateWithTime = _dateTo;
+      
+      if (fromDateWithTime != null) {
+        fromDateWithTime = DateTime(fromDateWithTime.year, fromDateWithTime.month, fromDateWithTime.day, 0, 0, 0);
+      }
+      if (toDateWithTime != null) {
+        toDateWithTime = DateTime(toDateWithTime.year, toDateWithTime.month, toDateWithTime.day, 23, 59, 59);
+      }
+      
       widget.onSelectedDataFilter?.call({
         'category_id': selectedCategoryId != null ? int.tryParse(selectedCategoryId!) : null,
         'article_id': selectedExpenseArticleId != null ? int.tryParse(selectedExpenseArticleId!) : null,
-        'date_from': _dateFrom,
-        'date_to': _dateTo,
+        'date_from': fromDateWithTime,
+        'date_to': toDateWithTime,
       });
     }
     Navigator.pop(context);

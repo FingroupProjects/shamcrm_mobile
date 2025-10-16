@@ -170,11 +170,22 @@ class _TopSellingGoodsFilterScreenState extends State<TopSellingGoodsFilterScree
     if (!_isAnyFilterSelected()) {
       widget.onResetFilters?.call();
     } else {
+      // Set from date to 00:00:00 and to date to 23:59:59
+      DateTime? fromDateWithTime = dateFrom;
+      DateTime? toDateWithTime = dateTo;
+      
+      if (fromDateWithTime != null) {
+        fromDateWithTime = DateTime(fromDateWithTime.year, fromDateWithTime.month, fromDateWithTime.day, 0, 0, 0);
+      }
+      if (toDateWithTime != null) {
+        toDateWithTime = DateTime(toDateWithTime.year, toDateWithTime.month, toDateWithTime.day, 23, 59, 59);
+      }
+      
       final filters = {
         'sum_from': _parseSum(_sumFromController.text),
         'sum_to': _parseSum(_sumToController.text),
-        'date_from': dateFrom,
-        'date_to': dateTo,
+        'date_from': fromDateWithTime,
+        'date_to': toDateWithTime,
         'category_id': selectedCategoryId != null ? int.tryParse(selectedCategoryId!) : null,
         'good_id': selectedGoodId != null ? int.tryParse(selectedGoodId!) : null,
       };

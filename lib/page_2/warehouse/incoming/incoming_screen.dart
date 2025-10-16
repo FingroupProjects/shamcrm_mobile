@@ -15,7 +15,7 @@ import '../../money/widgets/error_dialog.dart';
 import 'incoming_document_create_screen.dart';
 import 'incoming_document_details_screen.dart';
 
-import 'package:crm_task_manager/page_2/warehouse/client_sale/client_sale_confirm_dialog.dart';
+import 'package:crm_task_manager/page_2/widgets/document_confirm_dialog.dart';
 
 
 class IncomingScreen extends StatefulWidget {

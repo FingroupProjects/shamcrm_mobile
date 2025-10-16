@@ -170,66 +170,74 @@ class _DealCardState extends State<DealCard> {
             ),
             const SizedBox(height: 5),
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  AppLocalizations.of(context)!.translate('column'),
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w400,
-                    color: Color(0xff99A4BA),
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () {
-                    DropdownBottomSheet(
-                      context,
-                      dropdownValue,
-                      (String newValue, int newStatusId) {
-                        setState(() {
-                          dropdownValue = newValue;
-                          statusId = newStatusId;
-                        });
-                        widget.onStatusId(newStatusId);
-                        widget.onStatusUpdated();
-                      },
-                      widget.deal,
-                    );
-                  },
-                  child: Container(
-                    key: widget.dropdownKey,
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    child: Container(
-                      decoration: _getStatusButtonDecoration(statusId == widget.statusId),
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      child: Row(
-                        children: [
-                          Container(
-                            constraints: BoxConstraints(maxWidth: 200),
-                            child: Text(
+                Flexible(
+                  child: Row(
+                    children: [
+                      Text(
+                        AppLocalizations.of(context)!.translate('column'),
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w400,
+                          color: Color(0xff99A4BA),
+                        ),
+                      ),
+                      Flexible(
+                        child: GestureDetector(
+                          onTap: () {
+                            DropdownBottomSheet(
+                              context,
                               dropdownValue,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontFamily: 'Gilroy',
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xff1E2E52),
+                                  (String newValue, int newStatusId) {
+                                setState(() {
+                                  dropdownValue = newValue;
+                                  statusId = newStatusId;
+                                });
+                                widget.onStatusId(newStatusId);
+                                widget.onStatusUpdated();
+                              },
+                              widget.deal,
+                            );
+                          },
+                          child: Container(
+                            key: widget.dropdownKey,
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            child: Container(
+                              decoration: _getStatusButtonDecoration(statusId == widget.statusId),
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      dropdownValue,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontFamily: 'Gilroy',
+                                        fontWeight: FontWeight.w500,
+                                        color: Color(0xff1E2E52),
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Image.asset(
+                                    'assets/icons/tabBar/dropdown.png',
+                                    width: 20,
+                                    height: 20,
+                                  ),
+                                ],
                               ),
-                              
-                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          Image.asset(
-                            'assets/icons/tabBar/dropdown.png',
-                            width: 20,
-                            height: 20,
-                          ),
-                        ],
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 8),
               ],
             ),
             const SizedBox(height: 5),

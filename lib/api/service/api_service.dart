@@ -15167,6 +15167,11 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         final dateFrom = filters['date_from'] as DateTime;
         queryParams['date_from'] = dateFrom.toIso8601String();
       }
+      if (filters.containsKey('date_to') && filters['date_to'] != null) {
+        debugPrint("ApiService: filters['date_to']: ${filters['date_to']}");
+        final dateTo = filters['date_to'] as DateTime;
+        queryParams['date_to'] = dateTo.toIso8601String();
+      }
       if (filters.containsKey('category_id') && filters['category_id'] != null) {
         debugPrint("ApiService: filters['category_id']: ${filters['category_id']}");
         final categoryId = filters['category_id'] as int;

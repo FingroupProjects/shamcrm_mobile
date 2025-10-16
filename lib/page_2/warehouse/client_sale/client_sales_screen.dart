@@ -13,7 +13,7 @@ import '../../../models/page_2/incoming_document_model.dart';
 import '../../../widgets/snackbar_widget.dart';
 import '../../money/widgets/error_dialog.dart';
 import 'clien_sales_document_detail.dart';
-import 'client_sale_confirm_dialog.dart';
+import '../../widgets/document_confirm_dialog.dart';
 
 class ClientSaleScreen extends StatefulWidget {
   const ClientSaleScreen({super.key, this.organizationId});
