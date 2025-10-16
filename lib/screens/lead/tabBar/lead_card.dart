@@ -225,74 +225,79 @@ Color _hexToColor(String hexColor) {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        Text(
-                          AppLocalizations.of(context)!.translate('column'),
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w400,
-                            color: Color(0xfff99A4BA),
+                    Flexible(
+                      child: Row(
+                        children: [
+                          Text(
+                            AppLocalizations.of(context)!.translate('column'),
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w400,
+                              color: Color(0xfff99A4BA),
+                            ),
                           ),
-                        ),
-                        GestureDetector(
-                          onTap: () {
-                            DropdownBottomSheet(
-                              context,
-                              dropdownValue,
-                              (String newValue, int newStatusId) {
-                                setState(() {
-                                  dropdownValue = newValue;
-                                  statusId = newStatusId;
-                                });
-                                widget.onStatusId(newStatusId);
-                                widget.onStatusUpdated();
+                          Flexible(
+                            child: GestureDetector(
+                              onTap: () {
+                                DropdownBottomSheet(
+                                  context,
+                                  dropdownValue,
+                                      (String newValue, int newStatusId) {
+                                    setState(() {
+                                      dropdownValue = newValue;
+                                      statusId = newStatusId;
+                                    });
+                                    widget.onStatusId(newStatusId);
+                                    widget.onStatusUpdated();
+                                  },
+                                  widget.lead,
+                                );
                               },
-                              widget.lead,
-                            );
-                          },
-                          child: Container(
-                            key: widget.dropdownStatusKey,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 4),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                border: Border.all(
-                                  color: Color(0xff1E2E52),
-                                  width: 0.2,
-                                ),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 2),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    constraints: BoxConstraints(maxWidth: 200),
-                                    child: Text(
-                                      dropdownValue,
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontFamily: 'Gilroy',
-                                        fontWeight: FontWeight.w500,
-                                        color: Color(0xff1E2E52),
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
+                              child: Container(
+                                key: widget.dropdownStatusKey,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      color: Color(0xff1E2E52),
+                                      width: 0.2,
                                     ),
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
-                                  const SizedBox(width: 8),
-                                  Image.asset(
-                                    'assets/icons/tabBar/dropdown.png',
-                                    width: 20,
-                                    height: 20,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 2),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          dropdownValue,
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontFamily: 'Gilroy',
+                                            fontWeight: FontWeight.w500,
+                                            color: Color(0xff1E2E52),
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                          maxLines: 1,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Image.asset(
+                                        'assets/icons/tabBar/dropdown.png',
+                                        width: 20,
+                                        height: 20,
+                                      ),
+                                    ],
                                   ),
-                                ],
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
                 ),
