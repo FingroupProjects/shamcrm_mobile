@@ -60,6 +60,7 @@ class CreateDealStatus extends DealEvent {
   final bool isSuccess;
   final bool isFailure;
   final AppLocalizations localizations;
+  final List<int>? userIds; // ✅ НОВОЕ
 
   CreateDealStatus({
     required this.title,
@@ -70,6 +71,7 @@ class CreateDealStatus extends DealEvent {
     required this.isSuccess,
     required this.isFailure,
     required this.localizations,
+    this.userIds, // ✅ НОВОЕ
   });
 }
 
@@ -173,6 +175,8 @@ class UpdateDealStatusEdit extends DealEvent {
   final String notificationMessage;
   final bool showOnMainPage;
   final AppLocalizations localizations;
+    final List<int>? userIds; // ✅ НОВОЕ
+
 
   UpdateDealStatusEdit(
     this.dealStatusId,
@@ -183,5 +187,6 @@ class UpdateDealStatusEdit extends DealEvent {
     this.notificationMessage,
     this.showOnMainPage,
     this.localizations,
+    this.userIds,
   );
 }

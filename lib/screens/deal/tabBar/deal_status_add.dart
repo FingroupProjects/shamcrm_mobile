@@ -1,13 +1,15 @@
-
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/bloc/deal/deal_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/models/user_data_response.dart'; // ✅ ДОБАВИТЬ ИМПОРТ
+import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // ✅ ДОБАВИТЬ ИМПОРТ
 
 class CreateStatusDialog extends StatefulWidget {
   CreateStatusDialog({Key? key}) : super(key: key);
@@ -27,6 +29,28 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
   bool _showOnMainPage = false;
   bool _isSuccess = false;
   bool _isFailure = false;
+  bool _isMultiSelectEnabled = false; // ✅ НОВОЕ: флаг мультивыбора
+  List<UserData> _selectedUsers = []; // ✅ НОВОЕ: выбранные пользователи
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMultiSelectSetting(); // ✅ НОВОЕ: загружаем настройку
+  }
+
+  // ✅ НОВОЕ: Загрузка настройки
+  Future<void> _loadMultiSelectSetting() async {
+    final prefs = await SharedPreferences.getInstance();
+    final value = prefs.getBool('managing_deal_status_visibility') ?? false;
+    
+    if (mounted) {
+      setState(() {
+        _isMultiSelectEnabled = value;
+      });
+    }
+    
+    print('CreateStatusDialog: managing_deal_status_visibility = $value');
+  }
 
   Widget _buildTextFieldWithLabel({
     required String label,
@@ -200,6 +224,21 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                             ),
                           ),
                         const SizedBox(height: 20),
+                        
+                        // ✅ НОВОЕ: Поле выбора пользователей (только если включен мультивыбор)
+                        if (_isMultiSelectEnabled) ...[
+                          UserMultiSelectWidget(
+                            selectedUsers: null,
+                            onSelectUsers: (List<UserData> users) {
+                              setState(() {
+                                _selectedUsers = users;
+                              });
+                              print('CreateStatusDialog: Выбрано пользователей: ${users.length}');
+                            },
+                          ),
+                          const SizedBox(height: 20),
+                        ],
+                        
                         GestureDetector(
                           onTap: () {
                             setState(() {
@@ -309,7 +348,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                           ],
                         ),
                         const SizedBox(height: 20),
-                         Row(
+                        Row(
                           mainAxisAlignment: MainAxisAlignment.start,
                           children: [
                             Expanded(
@@ -390,6 +429,11 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                                 return;
                               }
 
+                              // ✅ НОВОЕ: Получаем список ID пользователей
+                              final userIds = _selectedUsers.map((user) => user.id).toList();
+                              
+                              print('CreateStatusDialog: Отправка статуса с пользователями: $userIds');
+
                               context.read<DealBloc>().add(
                                     CreateDealStatus(
                                       title: title,
@@ -399,6 +443,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                                       showOnMainPage: _showOnMainPage,
                                       isSuccess: _isSuccess,
                                       isFailure: _isFailure,
+                                      userIds: userIds.isNotEmpty ? userIds : null, // ✅ НОВОЕ
                                       localizations: localizations,
                                     ),
                                   );

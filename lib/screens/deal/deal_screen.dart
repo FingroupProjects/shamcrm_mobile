@@ -146,7 +146,10 @@ List<DealNameData> _selectedDealNames = [];
       _dealBloc.add(FetchDealStatuses(salesFunnelId: _selectedFunnel?.id));
     });
   }
-});
+}
+
+
+);
         }
       });
     });
@@ -1253,27 +1256,7 @@ Widget _buildTabBarView() {
             }
           });
         }
-      } else if (state is DealDataLoaded) {
-        final deals = state.deals;
-        final statusCounts = <int, int>{};
-
-        // Подсчитываем количество сделок для каждого статуса
-        for (var deal in deals) {
-          statusCounts[deal.statusId] = (statusCounts[deal.statusId] ?? 0) + 1;
-        }
-
-        // Обновляем deals_count в _tabTitles и кэше
-        if (mounted) {
-          setState(() {
-            for (var status in _tabTitles) {
-              final statusId = status['id'];
-              status['deals_count'] = statusCounts[statusId] ?? status['deals_count'] ?? 0;
-              DealCache.updateDealsCountForStatus(statusId, status['deals_count']);
-            }
-            print('DealScreen: Updated _tabTitles with new deals_count: $_tabTitles');
-          });
-        }
-      } else if (state is DealError) {
+      }  else if (state is DealError) {
         print('❌ DealError: ${state.message}');
         if (state.message.contains(
           AppLocalizations.of(context)!.translate('unauthorized_access'),

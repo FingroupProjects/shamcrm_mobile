@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
+import 'package:crm_task_manager/models/user_data_response.dart';
 
 class Deal {
   final int id;
@@ -107,6 +108,46 @@ class DealCustomField {
   }
 }
 
+class DealStatusUser {
+  final int id;
+  final int userId;
+  final int dealStatusId;
+  final String createdAt;
+  final String updatedAt;
+  final UserData user; // Полная информация о пользователе
+
+  DealStatusUser({
+    required this.id,
+    required this.userId,
+    required this.dealStatusId,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.user,
+  });
+
+  factory DealStatusUser.fromJson(Map<String, dynamic> json) {
+    return DealStatusUser(
+      id: json['id'] as int,
+      userId: json['user_id'] as int,
+      dealStatusId: json['deal_status_id'] as int,
+      createdAt: json['created_at'] as String,
+      updatedAt: json['updated_at'] as String,
+      user: UserData.fromJson(json['user']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'user_id': userId,
+      'deal_status_id': dealStatusId,
+      'created_at': createdAt,
+      'updated_at': updatedAt,
+      'user': user.toJson(),
+    };
+  }
+}
+
 class DealStatus {
   final int id;
   final String title;
@@ -117,8 +158,9 @@ class DealStatus {
   final int? day;
   final bool isSuccess;
   final bool isFailure;
-  final String? notificationMessage; // Новое поле
-  final bool showOnMainPage; // Новое поле
+  final String? notificationMessage;
+  final bool showOnMainPage;
+  final List<DealStatusUser>? users; // ✅ НОВОЕ: список пользователей
 
   DealStatus({
     required this.id,
@@ -130,11 +172,20 @@ class DealStatus {
     this.day,
     required this.isSuccess,
     required this.isFailure,
-    this.notificationMessage, // Добавляем в конструктор
-    required this.showOnMainPage, // Добавляем в конструктор
+    this.notificationMessage,
+    required this.showOnMainPage,
+    this.users, // ✅ НОВОЕ
   });
 
   factory DealStatus.fromJson(Map<String, dynamic> json) {
+    // ✅ НОВОЕ: Парсим массив пользователей
+    List<DealStatusUser>? usersList;
+    if (json['users'] != null) {
+      usersList = (json['users'] as List)
+          .map((userJson) => DealStatusUser.fromJson(userJson))
+          .toList();
+    }
+
     return DealStatus(
       id: json['id'] as int? ?? 0,
       title: json['title'] as String? ?? 'Без имени',
@@ -143,13 +194,13 @@ class DealStatus {
       updatedAt: json['updated_at'] as String?,
       day: json['day'] as int?,
       dealsCount: json['deals_count'] as int? ?? 0,
-      isSuccess: json['is_success'] == 1, // Преобразуем int в bool
-      isFailure: json['is_failure'] == 1, // Преобразуем int в bool
-      notificationMessage: json['notification_message'] as String?, // Парсим новое поле
-      showOnMainPage: json['show_on_main_page'] == 1, // Преобразуем int в bool
+      isSuccess: json['is_success'] == 1 || json['is_success'] == true,
+      isFailure: json['is_failure'] == 1 || json['is_failure'] == true,
+      notificationMessage: json['notification_message'] as String?,
+      showOnMainPage: json['show_on_main_page'] == 1 || json['show_on_main_page'] == true,
+      users: usersList, // ✅ НОВОЕ
     );
   }
-
 
   Map<String, dynamic> toJson() {
     return {
@@ -158,12 +209,13 @@ class DealStatus {
       'color': color,
       'created_at': createdAt,
       'updated_at': updatedAt,
-      'deals_count': dealsCount,
       'day': day,
+      'deals_count': dealsCount,
       'is_success': isSuccess,
       'is_failure': isFailure,
-      'notification_message': notificationMessage, // Новое поле
-      'show_on_main_page': showOnMainPage, // Новое поле
+      'notification_message': notificationMessage,
+      'show_on_main_page': showOnMainPage,
+      'users': users?.map((user) => user.toJson()).toList(),
     };
   }
 }

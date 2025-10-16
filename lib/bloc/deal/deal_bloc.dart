@@ -228,6 +228,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         event.showOnMainPage,
         event.isSuccess,
         event.isFailure,
+        event.userIds, // ✅ Передаём массив ID пользователей
       );
 
       if (result['success']) {
@@ -371,6 +372,8 @@ Future<void> _updateDeal(UpdateDeal event, Emitter<DealState> emit) async {
         event.isFailure,
         event.notificationMessage,
         event.showOnMainPage,
+              event.userIds, // ✅ НОВОЕ
+
       );
 
       if (response['result'] == 'Success') {

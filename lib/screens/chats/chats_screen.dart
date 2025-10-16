@@ -1259,78 +1259,86 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
       ),
     );
   }
-
+bool _shouldRefreshData(List<Chats> current, List<Chats> updated) {
+  if (current.isEmpty && updated.isEmpty) return false; // ← Оба пустые — не обновляем
+  if (current.length != updated.length) return true;
+  
+  final currentIds = current.map((c) => c.id).toSet();
+  final updatedIds = updated.map((c) => c.id).toSet();
+  
+  if (!currentIds.containsAll(updatedIds) || !updatedIds.containsAll(currentIds)) {
+    return true;
+  }
+  
+  return _isOrderChanged(current, updated);
+}
   @override
   Widget build(BuildContext context) {
     return BlocListener<ChatsBloc, ChatsState>(
-      listener: (context, state) {
-        print('_ChatItemsWidget: Received state: $state for endpoint ${widget.endPointInTab}');
-        
-        if (state is ChatsLoaded) {
-          print('_ChatItemsWidget: ChatsLoaded - Received ${state.chatsPagination.data.length} chats for page ${state.chatsPagination.currentPage}, endpoint: ${widget.endPointInTab}');
-          print('_ChatItemsWidget: Chat IDs: ${state.chatsPagination.data.map((chat) => chat.id).toList()}');
-
-          // ВАЖНО: Обрабатываем разные сценарии обновления
-          final currentItems = widget.pagingController.itemList ?? [];
-          final newChats = state.chatsPagination.data;
-          
-          // Проверяем, изменилась ли структура данных
-          final currentIds = currentItems.map((chat) => chat.id).toSet();
-          final newIds = newChats.map((chat) => chat.id).toSet();
-          
-          // Если есть новые чаты или порядок изменился
-          if (!currentIds.containsAll(newIds) || 
-              !newIds.containsAll(currentIds) || 
-              currentItems.length != newChats.length ||
-              _isOrderChanged(currentItems, newChats)) {
-            
-            print('_ChatItemsWidget: Detected data changes, refreshing PagingController');
-            
-            // Полностью обновляем PagingController
-            widget.pagingController.itemList = null;
-            
-            // Устанавливаем новые данные
-            if (state.chatsPagination.currentPage >= state.chatsPagination.totalPage) {
-              print('_ChatItemsWidget: Setting last page with ${newChats.length} chats');
-              widget.pagingController.appendLastPage(newChats);
-            } else {
-              print('_ChatItemsWidget: Setting page ${state.chatsPagination.currentPage} with ${newChats.length} chats');
-              widget.pagingController.appendPage(newChats, state.chatsPagination.currentPage);
-            }
-          } else {
-            print('_ChatItemsWidget: No significant changes detected, keeping current state');
-          }
-        } else if (state is ChatsError) {
-          print('_ChatItemsWidget: ChatsError - ${state.message}');
-          widget.pagingController.error = state.message;
-          if (state.message.contains(AppLocalizations.of(context)!.translate('no_internet_connection'))) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  state.message,
-                  style: TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
-                  ),
-                ),
-                behavior: SnackBarBehavior.floating,
-                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                backgroundColor: Colors.red,
-                elevation: 3,
-                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+  listener: (context, state) {
+    print('_ChatItemsWidget: State=$state, endpoint=${widget.endPointInTab}');
+    
+    if (state is ChatsLoaded) {
+      final newChats = state.chatsPagination.data;
+      final currentPage = state.chatsPagination.currentPage;
+      final totalPage = state.chatsPagination.totalPage;
+      
+      print('_ChatItemsWidget: Loaded page $currentPage/$totalPage with ${newChats.length} chats');
+      
+      // ✅ КРИТИЧЕСКАЯ ПРОВЕРКА #1: Первая страница пустая
+      if (currentPage == 1 && newChats.isEmpty) {
+        print('_ChatItemsWidget: No data, showing empty state');
+        widget.pagingController.appendLastPage([]);
+        return;
+      }
+      
+      // ✅ КРИТИЧЕСКАЯ ПРОВЕРКА #2: Проверка на изменения
+      final currentItems = widget.pagingController.itemList ?? [];
+      
+      if (!_shouldRefreshData(currentItems, newChats)) {
+        print('_ChatItemsWidget: No changes detected, skipping update');
+        return;
+      }
+      
+      // Обновляем данные
+      widget.pagingController.itemList = null;
+      
+      if (currentPage >= totalPage) {
+        print('_ChatItemsWidget: Appending last page with ${newChats.length} chats');
+        widget.pagingController.appendLastPage(newChats);
+      } else {
+        print('_ChatItemsWidget: Appending page $currentPage with ${newChats.length} chats');
+        widget.pagingController.appendPage(newChats, currentPage);
+      }
+      
+    } else if (state is ChatsError) {
+      print('_ChatItemsWidget: Error - ${state.message}');
+      widget.pagingController.error = state.message;
+      
+      if (state.message.contains(
+        AppLocalizations.of(context)!.translate('no_internet_connection'),
+      )) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              state.message,
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
               ),
-            );
-          }
-        } else if (state is ChatsInitial) {
-          print('_ChatItemsWidget: ChatsInitial received, resetting PagingController');
-          widget.pagingController.itemList = null;
-        }
-      },
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      
+    } else if (state is ChatsInitial) {
+      print('_ChatItemsWidget: Initial state, resetting');
+      widget.pagingController.itemList = null;
+    }
+  },
       child: PagedListView<int, Chats>(
         padding: EdgeInsets.symmetric(vertical: 0),
         pagingController: widget.pagingController,
