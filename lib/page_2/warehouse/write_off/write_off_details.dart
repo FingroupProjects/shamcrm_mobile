@@ -96,7 +96,12 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
       });
       if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
-        showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
+        showSimpleErrorDialog(
+          context,
+          localizations.translate('error') ?? 'Ошибка',
+          e.message,
+          errorDialogEnum: ErrorDialogEnum.writeOffApprove,
+        );
         return;
       }
       final localizations = AppLocalizations.of(context)!;

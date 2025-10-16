@@ -256,7 +256,12 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
                 if (mounted && context.mounted) {
                   if (state.statusCode  == 409) {
                     final localizations = AppLocalizations.of(context)!;
-                    showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                    showSimpleErrorDialog(
+                      context,
+                      localizations.translate('error') ?? 'Ошибка',
+                      state.message,
+                      errorDialogEnum: ErrorDialogEnum.supplierReturnApprove,
+                    );
                     return;
                   }
                   _showSnackBar(state.message, false);
@@ -273,7 +278,12 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
                 if (mounted && context.mounted) {
                   if (state.statusCode  == 409) {
                     final localizations = AppLocalizations.of(context)!;
-                    showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                    showSimpleErrorDialog(
+                      context,
+                      localizations.translate('error') ?? 'Ошибка',
+                      state.message,
+                      errorDialogEnum: ErrorDialogEnum.supplierReturnApprove,
+                    );
                     return;
                   }
                   _showSnackBar(state.message, false);
@@ -291,7 +301,12 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
                 if (mounted && context.mounted) {
                   if (state.statusCode  == 409) {
                     final localizations = AppLocalizations.of(context)!;
-                    showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                    showSimpleErrorDialog(
+                      context,
+                      localizations.translate('error') ?? 'Ошибка',
+                      state.message,
+                      errorDialogEnum: ErrorDialogEnum.supplierReturnApprove,
+                    );
                     return;
                   }
                   _showSnackBar(state.message, false);
