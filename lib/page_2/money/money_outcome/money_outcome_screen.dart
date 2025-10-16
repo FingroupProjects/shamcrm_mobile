@@ -320,6 +320,7 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                 showCustomSnackBar(context: context, message: state.message, isSuccess: false);
               } else if (state is MoneyOutcomeToggleOneApproveSuccess) {
                 showCustomSnackBar(context: context, message: state.message, isSuccess: true);
+                _moneyOutcomeBloc.add(const FetchMoneyOutcome(forceRefresh: true));
               } else if (state is MoneyOutcomeToggleOneApproveError) {
                 if (state.statusCode == 409) {
                   showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
