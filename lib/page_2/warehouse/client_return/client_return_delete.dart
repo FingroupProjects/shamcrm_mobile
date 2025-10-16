@@ -18,7 +18,12 @@ class ClientReturnDeleteDocumentDialog extends StatelessWidget {
         if (state is ClientReturnError) {
           final localizations = AppLocalizations.of(context)!;
           if (state.statusCode == 409) {
-            showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+            showSimpleErrorDialog(
+              context,
+              localizations.translate('error') ?? 'Ошибка',
+              state.message,
+              errorDialogEnum: ErrorDialogEnum.clientReturnDelete,
+            );
             return;
           }
           ScaffoldMessenger.of(context).showSnackBar(

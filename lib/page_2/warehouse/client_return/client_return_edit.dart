@@ -461,7 +461,12 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
               Navigator.pop(context, true);
             } else if (state is ClientReturnUpdateError && mounted) {
               if (state.statusCode == 409) {
-                showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                showSimpleErrorDialog(
+                  context,
+                  localizations.translate('error') ?? 'Ошибка',
+                  state.message,
+                  errorDialogEnum: ErrorDialogEnum.clientReturnApprove,
+                );
                 return;
               }
               _showSnackBar(state.message, false);

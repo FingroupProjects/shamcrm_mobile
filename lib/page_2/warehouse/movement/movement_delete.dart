@@ -65,7 +65,12 @@ class _MovementDeleteDocumentDialogState extends State<MovementDeleteDocumentDia
           setState(() => _isDeleting = false);
           if (state.statusCode == 409) {
             final localizations = AppLocalizations.of(context)!;
-            showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+            showSimpleErrorDialog(
+              context,
+              localizations.translate('error') ?? 'Ошибка',
+              state.message,
+              errorDialogEnum: ErrorDialogEnum.goodsMovementDelete,
+            );
             return;
           }
           ScaffoldMessenger.of(context).showSnackBar(

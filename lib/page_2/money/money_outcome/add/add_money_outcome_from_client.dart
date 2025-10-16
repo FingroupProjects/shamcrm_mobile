@@ -1,5 +1,4 @@
 import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';
-import 'package:crm_task_manager/bloc/lead_list/lead_list_event.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
@@ -14,7 +13,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../../bloc/page_2_BLOC/money_outcome/money_outcome_bloc.dart';
 import '../money_outcome_operation_type.dart';
-import '../money_outcome_screen.dart';
 
 class AddMoneyOutcomeFromClient extends StatefulWidget {
   const AddMoneyOutcomeFromClient({super.key});
@@ -39,23 +37,8 @@ class _AddMoneyOutcomeFromClientState extends State<AddMoneyOutcomeFromClient> {
     _dateController.text = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
 
     // Предзагружаем данные если их еще нет
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _preloadDataIfNeeded();
-    });
-  }
-
-  void _preloadDataIfNeeded() {
-    final leadBloc = context.read<GetAllLeadBloc>();
-    final leadState = leadBloc.state;
-
-    // Проверяем кэш в блоке
-    final cachedLeads = leadBloc.getCachedLeads();
-
-    if (cachedLeads == null && leadState is! GetAllLeadLoading) {
-      if (mounted) {
-        context.read<GetAllLeadBloc>().add(GetAllLeadEv());
-      }
-    }
+    // ✅ УДАЛЕНО: _preloadDataIfNeeded() чтобы избежать race condition
+    // LeadRadioGroupWidget сам загрузит leads при необходимости
   }
 
   void _createDocument({bool approve = false}) async {
@@ -187,7 +170,7 @@ class _AddMoneyOutcomeFromClientState extends State<AddMoneyOutcomeFromClient> {
                       const SizedBox(height: 8),
                       // Используем переиспользуемый виджет LeadRadioGroupWidget
                       LeadRadioGroupWidget(
-                        selectedLead: _selectedLead?.id.toString(),
+                        selectedLead: _selectedLead?.id?.toString(),
                         onSelectLead: (LeadData selectedLeadData) {
                           if (mounted) {
                             setState(() {

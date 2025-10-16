@@ -8,7 +8,7 @@ import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/page_2/money/widgets/error_dialog.dart';
 import 'package:crm_task_manager/page_2/warehouse/supplier_return_document/supplier_return_document_card_screen.dart';
-import 'package:crm_task_manager/page_2/warehouse/client_sale/client_sale_confirm_dialog.dart'; // НОВОЕ: Импорт диалога подтверждения
+import 'package:crm_task_manager/page_2/widgets/document_confirm_dialog.dart'; // НОВОЕ: Импорт диалога подтверждения
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
@@ -256,7 +256,12 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
                 if (mounted && context.mounted) {
                   if (state.statusCode  == 409) {
                     final localizations = AppLocalizations.of(context)!;
-                    showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                    showSimpleErrorDialog(
+                      context,
+                      localizations.translate('error') ?? 'Ошибка',
+                      state.message,
+                      errorDialogEnum: ErrorDialogEnum.supplierReturnApprove,
+                    );
                     return;
                   }
                   _showSnackBar(state.message, false);
@@ -273,7 +278,12 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
                 if (mounted && context.mounted) {
                   if (state.statusCode  == 409) {
                     final localizations = AppLocalizations.of(context)!;
-                    showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                    showSimpleErrorDialog(
+                      context,
+                      localizations.translate('error') ?? 'Ошибка',
+                      state.message,
+                      errorDialogEnum: ErrorDialogEnum.supplierReturnApprove,
+                    );
                     return;
                   }
                   _showSnackBar(state.message, false);
@@ -291,7 +301,12 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
                 if (mounted && context.mounted) {
                   if (state.statusCode  == 409) {
                     final localizations = AppLocalizations.of(context)!;
-                    showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                    showSimpleErrorDialog(
+                      context,
+                      localizations.translate('error') ?? 'Ошибка',
+                      state.message,
+                      errorDialogEnum: ErrorDialogEnum.supplierReturnApprove,
+                    );
                     return;
                   }
                   _showSnackBar(state.message, false);
@@ -312,7 +327,12 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
                 if (mounted && context.mounted) {
                   if (state.statusCode == 409) {
                     final localizations = AppLocalizations.of(context)!;
-                    showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                    showSimpleErrorDialog(
+                      context,
+                      localizations.translate('error') ?? 'Ошибка',
+                      state.message,
+                      errorDialogEnum: ErrorDialogEnum.supplierReturnDelete,
+                    );
                     _supplierReturnBloc.add(FetchSupplierReturn(forceRefresh: true, filters: _currentFilters));
                     return;
                   }
@@ -334,7 +354,12 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
                 if (mounted && context.mounted) {
                   if (state.statusCode == 409) {
                     final localizations = AppLocalizations.of(context)!;
-                    showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                    showSimpleErrorDialog(
+                      context,
+                      localizations.translate('error') ?? 'Ошибка',
+                      state.message,
+                      errorDialogEnum: ErrorDialogEnum.supplierReturnRestore,
+                    );
                     _supplierReturnBloc.add(FetchSupplierReturn(forceRefresh: true, filters: _currentFilters));
                     return;
                   }
@@ -352,7 +377,12 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (mounted && context.mounted) {
                   if (state.statusCode == 409) {
-                    showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                    showSimpleErrorDialog(
+                      context,
+                      localizations.translate('error') ?? 'Ошибка',
+                      state.message,
+                      errorDialogEnum: ErrorDialogEnum.supplierReturnApprove,
+                    );
                     return;
                   }
                   showCustomSnackBar(context: context, message: state.message, isSuccess: false);
@@ -369,7 +399,12 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (mounted && context.mounted) {
                   if (state.statusCode == 409) {
-                    showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                    showSimpleErrorDialog(
+                      context,
+                      localizations.translate('error') ?? 'Ошибка',
+                      state.message,
+                      errorDialogEnum: ErrorDialogEnum.supplierReturnUnapprove,
+                    );
                     return;
                   }
                   showCustomSnackBar(context: context, message: state.message, isSuccess: false);
@@ -386,7 +421,12 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (mounted && context.mounted) {
                   if (state.statusCode == 409) {
-                    showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                    showSimpleErrorDialog(
+                      context,
+                      localizations.translate('error') ?? 'Ошибка',
+                      state.message,
+                      errorDialogEnum: ErrorDialogEnum.supplierReturnDelete,
+                    );
                     _supplierReturnBloc.add(FetchSupplierReturn(forceRefresh: true, filters: _currentFilters));
                     return;
                   }
@@ -404,7 +444,12 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (mounted && context.mounted) {
                   if (state.statusCode == 409) {
-                    showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                    showSimpleErrorDialog(
+                      context,
+                      localizations.translate('error') ?? 'Ошибка',
+                      state.message,
+                      errorDialogEnum: ErrorDialogEnum.supplierReturnRestore,
+                    );
                     return;
                   }
                   showCustomSnackBar(context: context, message: state.message, isSuccess: false);

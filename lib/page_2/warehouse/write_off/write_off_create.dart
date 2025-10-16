@@ -390,7 +390,12 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
             } else if (state is WriteOffCreateError && mounted) {
               if (state.statusCode == 409) {
                 final localizations = AppLocalizations.of(context)!; // ✅ ФИКС: localizations внутри
-                showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                showSimpleErrorDialog(
+                  context,
+                  localizations.translate('error') ?? 'Ошибка',
+                  state.message,
+                  errorDialogEnum: ErrorDialogEnum.writeOffApprove,
+                );
                 return;
               }
               _showSnackBar(state.message, false);

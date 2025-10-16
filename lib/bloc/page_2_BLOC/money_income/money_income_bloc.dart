@@ -24,7 +24,7 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
     on<CreateMoneyIncome>(_onCreateMoneyIncome);
     on<UpdateMoneyIncome>(_onUpdateMoneyIncome);
     on<DeleteMoneyIncome>(_onDeleteMoneyIncome);
-    // on<RestoreMoneyIncome>(_onRestoreMoneyIncome);
+    on<RestoreMoneyIncome>(_onRestoreMoneyIncome);
     on<MassApproveMoneyIncomeDocuments>(_onMassApproveMoneyIncomeDocuments);
     on<MassDisapproveMoneyIncomeDocuments>(_onMassDisapproveMoneyIncomeDocuments);
     on<MassDeleteMoneyIncomeDocuments>(_onMassDeleteMoneyIncomeDocuments);
@@ -310,6 +310,7 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
         emit(const MoneyIncomeDeleteError('failed_to_delete_document'));
         failed = true;
       }*/
+      emit(MoneyIncomeDeleteSuccess('document_deleted_successfully', reload: true));
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         emit(MoneyIncomeDeleteError(e.toString(), statusCode: e.statusCode));
@@ -326,21 +327,23 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
     }
   }
 
-  // Future<void> _onRestoreMoneyIncome(RestoreMoneyIncome event, Emitter<MoneyIncomeState> emit) async {
-  //   emit(MoneyIncomeLoading());
-  //   try {
-  //     final result = await apiService.restoreMoneyIncomeDocument(event.documentId);
-  //     if (result['result'] == 'Success') {
-  //       emit(const MoneyIncomeRestoreSuccess('document_restored_successfully'));
-  //     } else {
-  //       emit(const MoneyIncomeRestoreError('failed_to_restore_document'));
-  //     }
-  //   } catch (e) {
-  //     emit(MoneyIncomeRestoreError('error_restoring_document: ${e.toString()}'));
-  //   }
-  //
-  //   emit(MoneyIncomeLoaded(data: _allData));
-  // }
+  Future<void> _onRestoreMoneyIncome(RestoreMoneyIncome event, Emitter<MoneyIncomeState> emit) async {
+    emit(MoneyIncomeLoading());
+
+    try {
+      await apiService.masRestoreMoneyIncomeDocuments([event.documentId]);
+      emit(MoneyIncomeRestoreMassSuccess("mass_restore_success_message"));
+    } catch (e) {
+      if (e is ApiException && e.statusCode == 409) {
+        emit(MoneyIncomeRestoreMassError(e.toString(), statusCode: e.statusCode));
+      } else {
+        emit(MoneyIncomeRestoreMassError(e.toString()));
+      }
+      add(FetchMoneyIncome(forceRefresh: true));
+    }
+
+    emit(MoneyIncomeLoaded(data: _allData));
+  }
 
   /// LOCAL LIST MANAGEMENT WITHOUT API CALLS
 

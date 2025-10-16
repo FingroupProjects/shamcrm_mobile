@@ -441,7 +441,12 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
               Navigator.pop(context, true);
             } else if (state is WriteOffUpdateError && mounted) {
               if (state.statusCode == 409) {
-                showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                showSimpleErrorDialog(
+                  context,
+                  localizations.translate('error') ?? 'Ошибка',
+                  state.message,
+                  errorDialogEnum: ErrorDialogEnum.writeOffApprove,
+                );
                 return;
               }
               _showSnackBar(state.message, false);

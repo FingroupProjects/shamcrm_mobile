@@ -124,13 +124,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // ЛОГИКА ВЗАИМОИСКЛЮЧЕНИЯ:
     if (hasWarehouseAccess) { 
-      // Если есть складской учёт → добавляем WarehouseAccountingScreen и OrderScreen (если есть доступ) 
-      // widgetsGroup1.add(WarehouseAccountingScreen()); 
-      // titleKeysGroup1.add('appbar_warehouse'); 
-      // navBarTitleKeysGroup1.add('appbar_warehouse'); 
-      // activeIconsGroup1.add('assets/icons/MyNavBar/money_on_.png'); 
-      // inactiveIconsGroup1.add('assets/icons/MyNavBar/google-docs (5).png'); 
-      // hasAvailableScreens = true; 
+      /*Если есть складской учёт → добавляем WarehouseAccountingScreen и OrderScreen (если есть доступ) */
+      widgetsGroup1.add(WarehouseAccountingScreen());
+      titleKeysGroup1.add('appbar_warehouse');
+      navBarTitleKeysGroup1.add('appbar_warehouse');
+      activeIconsGroup1.add('assets/icons/MyNavBar/money_on_.png');
+      inactiveIconsGroup1.add('assets/icons/MyNavBar/google-docs (5).png');
+      hasAvailableScreens = true;
  
       // Добавляем OrderScreen во вторую группу, если естьдоступ 
       if (hasOrderAccess) { 
