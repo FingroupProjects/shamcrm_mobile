@@ -51,8 +51,6 @@ class MoneyOutcomeBloc extends Bloc<MoneyOutcomeEvent, MoneyOutcomeState> {
       }
       add(FetchMoneyOutcome(forceRefresh: true));
     }
-
-    emit(MoneyOutcomeLoaded(data: _allData));
   }
 
   Future<void> _onMassDisapproveMoneyOutcomeDocuments(MassDisapproveMoneyOutcomeDocuments event, Emitter<MoneyOutcomeState> emit) async {
@@ -70,8 +68,6 @@ class MoneyOutcomeBloc extends Bloc<MoneyOutcomeEvent, MoneyOutcomeState> {
       }
       add(FetchMoneyOutcome(forceRefresh: true));
     }
-
-    emit(MoneyOutcomeLoaded(data: _allData));
   }
 
   Future<void> _onMassDeleteMoneyOutcomeDocuments(MassDeleteMoneyOutcomeDocuments event, Emitter<MoneyOutcomeState> emit) async {
@@ -89,8 +85,6 @@ class MoneyOutcomeBloc extends Bloc<MoneyOutcomeEvent, MoneyOutcomeState> {
       }
       add(FetchMoneyOutcome(forceRefresh: true));
     }
-
-    emit(MoneyOutcomeLoaded(data: _allData));
   }
 
   Future<void> _onMassRestoreMoneyOutcomeDocuments(MassRestoreMoneyOutcomeDocuments event, Emitter<MoneyOutcomeState> emit) async {
@@ -108,8 +102,6 @@ class MoneyOutcomeBloc extends Bloc<MoneyOutcomeEvent, MoneyOutcomeState> {
       }
       add(FetchMoneyOutcome(forceRefresh: true));
     }
-
-    emit(MoneyOutcomeLoaded(data: _allData));
   }
 
   Future<void> _onToggleApproveOneMoneyOutcomeDocument(ToggleApproveOneMoneyOutcomeDocument event, Emitter<MoneyOutcomeState> emit) async {
@@ -123,8 +115,6 @@ class MoneyOutcomeBloc extends Bloc<MoneyOutcomeEvent, MoneyOutcomeState> {
         emit(MoneyOutcomeToggleOneApproveError(e.toString()));
       }
     }
-
-    emit(MoneyOutcomeLoaded(data: _allData));
   }
 
   Future<void> _onFetchMoneyOutcome(FetchMoneyOutcome event, Emitter<MoneyOutcomeState> emit) async {
@@ -180,8 +170,6 @@ class MoneyOutcomeBloc extends Bloc<MoneyOutcomeEvent, MoneyOutcomeState> {
         emit(MoneyOutcomeError(e.toString()));
       }
     }
-
-    emit(MoneyOutcomeLoaded(data: _allData));
   }
 
   Future<void> _onCreateMoneyOutcome(CreateMoneyOutcome event, Emitter<MoneyOutcomeState> emit) async {
@@ -209,15 +197,13 @@ class MoneyOutcomeBloc extends Bloc<MoneyOutcomeEvent, MoneyOutcomeState> {
         emit(MoneyOutcomeCreateError(e.toString()));
       }
     }
-
-    emit(MoneyOutcomeLoaded(data: _allData));
   }
 
   Future<void> _onUpdateMoneyOutcome(UpdateMoneyOutcome event, Emitter<MoneyOutcomeState> emit) async {
     emit(MoneyOutcomeLoading());
     // use the same on UpdateThenToggleOneMoneyOutcomeDocument
     try {
-      final response = await apiService.updateMoneyOutcomeDocument(
+      await apiService.updateMoneyOutcomeDocument(
         documentId: event.id!,
         date: event.date,
         amount: event.amount,
@@ -238,8 +224,6 @@ class MoneyOutcomeBloc extends Bloc<MoneyOutcomeEvent, MoneyOutcomeState> {
         emit(MoneyOutcomeUpdateError(e.toString()));
       }
     }
-
-    emit(MoneyOutcomeLoaded(data: _allData));
   }
 
   Future<void> _onUpdateThenToggleOneMoneyOutcomeDocument(UpdateThenToggleOneMoneyOutcomeDocument event, Emitter<MoneyOutcomeState> emit) async {
@@ -249,7 +233,7 @@ class MoneyOutcomeBloc extends Bloc<MoneyOutcomeEvent, MoneyOutcomeState> {
     // use the same on UpdateMoneyOutcome
     // first update
     try {
-      final response = await apiService.updateMoneyOutcomeDocument(
+      await apiService.updateMoneyOutcomeDocument(
         documentId: event.id,
         date: event.date,
         amount: event.amount,
@@ -292,8 +276,6 @@ class MoneyOutcomeBloc extends Bloc<MoneyOutcomeEvent, MoneyOutcomeState> {
         emit(MoneyOutcomeToggleOneApproveError(e.toString()));
       }
     }
-
-    emit(MoneyOutcomeLoaded(data: _allData));
   }
 
   // only by swiping
@@ -341,8 +323,6 @@ class MoneyOutcomeBloc extends Bloc<MoneyOutcomeEvent, MoneyOutcomeState> {
       }
       add(FetchMoneyOutcome(forceRefresh: true));
     }
-
-    emit(MoneyOutcomeLoaded(data: _allData));
   }
 
   /// LOCAL LIST MANAGEMENT WITHOUT API CALLS

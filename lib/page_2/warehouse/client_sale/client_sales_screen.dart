@@ -345,12 +345,14 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (mounted && context.mounted) {
                     if (state.statusCode == 409) {
+                      // ✅ ИСПРАВЛЕНО: Обновляем данные после ошибки, чтобы избежать белого экрана
+                      _clientSaleBloc.add(FetchClientSales(forceRefresh: true, filters: _currentFilters, search: _search));
                       final localizations = AppLocalizations.of(context)!;
                       showSimpleErrorDialog(
                           context,
                           localizations.translate('error') ?? 'Ошибка',
                           state.message);
-                      return;
+                        return;
                     }
                     showCustomSnackBar(context: context, message: state.message, isSuccess: false);
                   }
@@ -373,6 +375,8 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (mounted && context.mounted) {
                     if (state.statusCode == 409) {
+                      // ✅ ИСПРАВЛЕНО: Обновляем данные после ошибки, чтобы избежать белого экрана
+                      _clientSaleBloc.add(FetchClientSales(forceRefresh: true, filters: _currentFilters, search: _search));
                       final localizations = AppLocalizations.of(context)!;
                       showSimpleErrorDialog(
                           context,

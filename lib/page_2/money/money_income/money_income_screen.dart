@@ -328,6 +328,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                 showCustomSnackBar(context: context, message: state.message, isSuccess: false);
               } else if (state is MoneyIncomeToggleOneApproveSuccess) {
                 showCustomSnackBar(context: context, message: state.message, isSuccess: true);
+                _moneyIncomeBloc.add(const FetchMoneyIncome(forceRefresh: true));
               } else if (state is MoneyIncomeToggleOneApproveError) {
                 if (state.statusCode == 409) {
                   showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
@@ -382,10 +383,6 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
               } else if (state is MoneyIncomeUpdateThenToggleOneApproveSuccess) {
                 showCustomSnackBar(context: context, message: state.message, isSuccess: true);
                 _moneyIncomeBloc.add(const FetchMoneyIncome(forceRefresh: true));
-              } else if (state is MoneyIncomeToggleOneApproveSuccess) {
-                _moneyIncomeBloc.add(const FetchMoneyIncome(forceRefresh: true));
-                // Просто игнорируем это состояние, чтобы не показывать лишние сообщения
-                return;
               }
             },
             child: BlocBuilder<MoneyIncomeBloc, MoneyIncomeState>(
