@@ -2963,44 +2963,50 @@ Future<List<Deal>> getDeals(
 
 // Метод для создания Статуса Сделки
   Future<Map<String, dynamic>> createDealStatus(
-    String title,
-    String color,
-    int? day,
-    String? notificationMessage,
-    bool showOnMainPage,
-    bool isSuccess,
-    bool isFailure,
-  ) async {
-    final path = await _appendQueryParams('/deal/statuses');
-    if (kDebugMode) {
-      //print('ApiService: createDealStatus - Generated path: $path');
-    }
-
-    final organizationId = await getSelectedOrganization();
-    final salesFunnelId = await getSelectedSalesFunnel();
-
-    final response = await _postRequest(
-      path,
-      {
-        'title': title,
-        'day': day,
-        'color': color,
-        'notification_message': notificationMessage,
-        'show_on_main_page': showOnMainPage ? 1 : 0,
-        'is_success': isSuccess ? 1 : 0,
-        'is_failure': isFailure ? 1 : 0,
-        'organization_id': organizationId?.toString() ?? '',
-        if (salesFunnelId != null) 'sales_funnel_id': salesFunnelId.toString(),
-      },
-    );
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'message': 'Статус сделки успешно создан'};
-    } else {
-      return {'success': false, 'message': 'Ошибка создания статуса сделки!'};
-    }
+  String title,
+  String color,
+  int? day,
+  String? notificationMessage,
+  bool showOnMainPage,
+  bool isSuccess,
+  bool isFailure,
+  List<int>? userIds, // ✅ НОВОЕ
+) async {
+  final path = await _appendQueryParams('/deal/statuses');
+  
+  if (kDebugMode) {
+    print('ApiService: createDealStatus - userIds: $userIds');
   }
-
+  
+  final organizationId = await getSelectedOrganization();
+  final salesFunnelId = await getSelectedSalesFunnel();
+  
+  final body = {
+    'title': title,
+    'day': day,
+    'color': color,
+    'notification_message': notificationMessage,
+    'show_on_main_page': showOnMainPage ? 1 : 0,
+    'is_success': isSuccess ? 1 : 0,
+    'is_failure': isFailure ? 1 : 0,
+    'organization_id': organizationId?.toString() ?? '',
+    if (salesFunnelId != null) 'sales_funnel_id': salesFunnelId.toString(),
+    // ✅ ИСПРАВЛЕНО: Простой массив чисел
+    if (userIds != null && userIds.isNotEmpty) 'users': userIds,
+  };
+  
+  if (kDebugMode) {
+    print('ApiService: createDealStatus request body: $body');
+  }
+  
+  final response = await _postRequest(path, body);
+  
+  if (response.statusCode == 200 || response.statusCode == 201) {
+    return {'success': true, 'message': 'Статус сделки успешно создан'};
+  } else {
+    return {'success': false, 'message': 'Ошибка создания статуса сделки!'};
+  }
+}
 // Метод для получения Истории Сделки
   Future<List<DealHistory>> getDealHistory(int dealId) async {
     try {
@@ -3371,49 +3377,51 @@ Future<List<Deal>> getDeals(
   }
 
 // Метод для изменения статуса Сделки в ApiService
-  Future<Map<String, dynamic>> updateDealStatusEdit(
-    int dealStatusId,
-    String title,
-    int day,
-    bool isSuccess,
-    bool isFailure,
-    String notificationMessage,
-    bool showOnMainPage,
-  ) async {
-    final path = await _appendQueryParams('/deal/statuses/$dealStatusId');
-    if (kDebugMode) {
-      //print('ApiService: updateDealStatusEdit - Generated path: $path');
-    }
-
-    final organizationId = await getSelectedOrganization();
-    final salesFunnelId = await getSelectedSalesFunnel(); // Добавляем вручную
-
-    final payload = {
-      "title": title,
-      "day": day,
-      "color": "#000",
-      "is_success": isSuccess ? 1 : 0,
-      "is_failure": isFailure ? 1 : 0,
-      "notification_message": notificationMessage,
-      "show_on_main_page": showOnMainPage ? 1 : 0,
-      "organization_id": organizationId?.toString() ?? '', // Уже есть
-      if (salesFunnelId != null)
-        "sales_funnel_id":
-            salesFunnelId.toString(), // Добавляем в body, если не null
-    };
-
-    final response = await _patchRequest(
-      path,
-      payload,
-    );
-
-    if (response.statusCode == 200) {
-      return {'result': 'Success'};
-    } else {
-      throw Exception('Failed to update dealStatus!');
-    }
+ Future<Map<String, dynamic>> updateDealStatusEdit(
+  int dealStatusId,
+  String title,
+  int day,
+  bool isSuccess,
+  bool isFailure,
+  String notificationMessage,
+  bool showOnMainPage,
+  List<int>? userIds, // ✅ НОВОЕ
+) async {
+  final path = await _appendQueryParams('/deal/statuses/$dealStatusId');
+  
+  if (kDebugMode) {
+    print('ApiService: updateDealStatusEdit - userIds: $userIds');
   }
-
+  
+  final organizationId = await getSelectedOrganization();
+  final salesFunnelId = await getSelectedSalesFunnel();
+  
+  final payload = {
+    "title": title,
+    "day": day,
+    "color": "#000",
+    "is_success": isSuccess ? 1 : 0,
+    "is_failure": isFailure ? 1 : 0,
+    "notification_message": notificationMessage,
+    "show_on_main_page": showOnMainPage ? 1 : 0,
+    "organization_id": organizationId?.toString() ?? '',
+    if (salesFunnelId != null) "sales_funnel_id": salesFunnelId.toString(),
+    // ✅ НОВОЕ: Добавляем массив пользователей
+    if (userIds != null && userIds.isNotEmpty) "users": userIds,
+  };
+  
+  if (kDebugMode) {
+    print('ApiService: updateDealStatusEdit payload: $payload');
+  }
+  
+  final response = await _patchRequest(path, payload);
+  
+  if (response.statusCode == 200) {
+    return {'result': 'Success'};
+  } else {
+    throw Exception('Failed to update dealStatus!');
+  }
+}
   Future<DealStatus> getDealStatus(int dealStatusId) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/deal/statuses/$dealStatusId');

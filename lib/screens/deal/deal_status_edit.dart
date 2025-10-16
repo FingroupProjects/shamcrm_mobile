@@ -4,9 +4,12 @@ import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/bloc/deal/deal_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/models/user_data_response.dart'; // ✅ ДОБАВИТЬ
+import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // ✅ ДОБАВИТЬ
 
 class EditDealStatusScreen extends StatefulWidget {
   final int dealStatusId;
@@ -30,7 +33,12 @@ class _EditDealStatusScreenState extends State<EditDealStatusScreen> {
   late DealBloc _dealBloc;
   bool _dataLoaded = false;
   bool _isExpanded = false;
-  bool _isExpandedMessage = false; // Новая переменная для expandable лейбла notification
+  bool _isExpandedMessage = false;
+  
+  // ✅ НОВОЕ
+  bool _isMultiSelectEnabled = false;
+  List<UserData> _selectedUsers = [];
+  List<String>? _initialUserIds; // Для хранения начальных ID пользователей
 
   @override
   void initState() {
@@ -39,7 +47,22 @@ class _EditDealStatusScreenState extends State<EditDealStatusScreen> {
     _daysController = TextEditingController();
     _notificationMessageController = TextEditingController();
     _dealBloc = DealBloc(ApiService());
+    _loadMultiSelectSetting(); // ✅ НОВОЕ
     _loadDealStatus();
+  }
+
+  // ✅ НОВОЕ: Загрузка настройки
+  Future<void> _loadMultiSelectSetting() async {
+    final prefs = await SharedPreferences.getInstance();
+    final value = prefs.getBool('managing_deal_status_visibility') ?? false;
+    
+    if (mounted) {
+      setState(() {
+        _isMultiSelectEnabled = value;
+      });
+    }
+    
+    print('EditDealStatusScreen: managing_deal_status_visibility = $value');
   }
 
   void _loadDealStatus() {
@@ -58,6 +81,11 @@ class _EditDealStatusScreenState extends State<EditDealStatusScreen> {
   void _saveChanges() {
     final localizations = AppLocalizations.of(context);
     if (localizations != null) {
+      // ✅ НОВОЕ: Получаем список ID пользователей
+      final userIds = _selectedUsers.map((user) => user.id).toList();
+      
+      print('EditDealStatusScreen: Сохранение с пользователями: $userIds');
+      
       _dealBloc.add(
         UpdateDealStatusEdit(
           widget.dealStatusId,
@@ -70,12 +98,12 @@ class _EditDealStatusScreenState extends State<EditDealStatusScreen> {
           _notificationMessageController.text,
           _showOnMainPage,
           localizations,
+          userIds.isNotEmpty ? userIds : null, // ✅ НОВОЕ
         ),
       );
     }
   }
 
-  // Метод для показа диалога редактирования
   static Future<void> show(BuildContext context, int dealStatusId) {
     return showDialog(
       context: context,
@@ -83,11 +111,8 @@ class _EditDealStatusScreenState extends State<EditDealStatusScreen> {
         dealStatusId: dealStatusId,
       ),
     ).then((_) {
-      // После закрытия диалога обновляем данные
       final dealBloc = BlocProvider.of<DealBloc>(context, listen: false);
-      // Обновляем список статусов
       dealBloc.add(FetchDealStatuses());
-      // Обновляем сделки для текущего статуса
       dealBloc.add(FetchDeals(dealStatusId));
     });
   }
@@ -136,73 +161,83 @@ class _EditDealStatusScreenState extends State<EditDealStatusScreen> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return BlocConsumer<DealBloc, DealState>(
-      bloc: _dealBloc,
-      listener: (context, state) {
-        if (state is DealStatusLoaded && !_dataLoaded) {
-          setState(() {
-            _titleController.text = state.dealStatus.title;
-            _daysController.text = state.dealStatus.day.toString();
-            _isSuccess = state.dealStatus.isSuccess;
-            _isFailure = state.dealStatus.isFailure;
-            _notificationMessageController.text = state.dealStatus.notificationMessage ?? '';
-            _showOnMainPage = state.dealStatus.showOnMainPage;
-            _dataLoaded = true;
+@override
+Widget build(BuildContext context) {
+  return BlocConsumer<DealBloc, DealState>(
+    bloc: _dealBloc,
+    listener: (context, state) {
+      if (state is DealStatusLoaded && !_dataLoaded) {
+        setState(() {
+          _titleController.text = state.dealStatus.title;
+          _daysController.text = state.dealStatus.day?.toString() ?? '';
+          _isSuccess = state.dealStatus.isSuccess;
+          _isFailure = state.dealStatus.isFailure;
+          _notificationMessageController.text = state.dealStatus.notificationMessage ?? '';
+          _showOnMainPage = state.dealStatus.showOnMainPage;
+          
+          // ✅ НОВОЕ: Загружаем ID пользователей из статуса
+          _initialUserIds = state.dealStatus.users?.map((user) => user.userId.toString()).toList();
+          
+          print('EditDealStatusScreen: Загружены пользователи: $_initialUserIds');
+          print('EditDealStatusScreen: Полная информация о пользователях:');
+          state.dealStatus.users?.forEach((user) {
+            print('  - ID: ${user.userId}, Имя: ${user.user.name} ${user.user.lastname}');
           });
-        } else if (state is DealStatusUpdatedEdit) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                "Статус успешно обновлен!",
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
+          
+          _dataLoaded = true;
+        });
+      } else if (state is DealStatusUpdatedEdit) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              "Статус успешно обновлен!",
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
               ),
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              backgroundColor: Colors.green,
-              elevation: 3,
-              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              duration: Duration(seconds: 3),
             ),
-          );
-          final dealBloc = BlocProvider.of<DealBloc>(context, listen: false);
-          dealBloc.add(FetchDealStatuses());
-          dealBloc.add(FetchDeals(widget.dealStatusId));
-          Navigator.of(context).pop();
-        } else if (state is DealError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                "Ошибка обновления статуса!",
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              backgroundColor: Colors.red,
-              elevation: 3,
-              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              duration: Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
             ),
-          );
-        }
-      },
+            backgroundColor: Colors.green,
+            elevation: 3,
+            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            duration: Duration(seconds: 3),
+          ),
+        );
+        final dealBloc = BlocProvider.of<DealBloc>(context, listen: false);
+        dealBloc.add(FetchDealStatuses());
+        dealBloc.add(FetchDeals(widget.dealStatusId));
+        Navigator.of(context).pop();
+      } else if (state is DealError) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              "Ошибка обновления статуса!",
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
+              ),
+            ),
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            backgroundColor: Colors.red,
+            elevation: 3,
+            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    },
       builder: (context, state) {
         return Dialog(
           shape: RoundedRectangleBorder(
@@ -211,7 +246,7 @@ class _EditDealStatusScreenState extends State<EditDealStatusScreen> {
           insetPadding: const EdgeInsets.all(16),
           child: SizedBox(
             width: 400,
-            height: 600, // Увеличили высоту для новых элементов
+            height: 600,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               decoration: BoxDecoration(
@@ -258,6 +293,21 @@ class _EditDealStatusScreenState extends State<EditDealStatusScreen> {
                                   isRequired: true,
                                 ),
                                 const SizedBox(height: 20),
+                                
+                                // ✅ НОВОЕ: Поле выбора пользователей
+                                if (_isMultiSelectEnabled) ...[
+                                  UserMultiSelectWidget(
+                                    selectedUsers: _initialUserIds,
+                                    onSelectUsers: (List<UserData> users) {
+                                      setState(() {
+                                        _selectedUsers = users;
+                                      });
+                                      print('EditDealStatusScreen: Выбрано пользователей: ${users.length}');
+                                    },
+                                  ),
+                                  const SizedBox(height: 20),
+                                ],
+                                
                                 GestureDetector(
                                   onTap: () {
                                     setState(() {
@@ -287,7 +337,7 @@ class _EditDealStatusScreenState extends State<EditDealStatusScreen> {
                                 ),
                                 
                                 const SizedBox(height: 16),
-                                GestureDetector( // Новый GestureDetector для expandable лейбла
+                                GestureDetector(
                                   onTap: () {
                                     setState(() {
                                       _isExpandedMessage = !_isExpandedMessage;
@@ -305,9 +355,9 @@ class _EditDealStatusScreenState extends State<EditDealStatusScreen> {
                                     ],
                                   ),
                                 ),
-                                const SizedBox(height: 0), // Аналогично дням, без отступа
+                                const SizedBox(height: 0),
                                 _buildTextFieldWithLabel(
-                                  label: '', // Пустой лейбл, текст выше
+                                  label: '',
                                   controller: _notificationMessageController,
                                   isRequired: false,
                                   hintText: 'Введите текст уведомления',
