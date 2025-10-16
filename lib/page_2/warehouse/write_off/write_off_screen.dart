@@ -364,6 +364,8 @@ class _WriteOffScreenState extends State<WriteOffScreen> {
               }
             } else if (state is WriteOffCreateError) {
               if (mounted) {
+                // ✅ ИСПРАВЛЕНО: Обновляем данные после ошибки, чтобы избежать белого экрана
+                _writeOffBloc.add(FetchWriteOffs(forceRefresh: true, filters: _currentFilters, search: _search));
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (mounted && context.mounted) {
                     if (state.statusCode == 409) {
@@ -393,6 +395,8 @@ class _WriteOffScreenState extends State<WriteOffScreen> {
               }
             } else if (state is WriteOffUpdateError) { // НОВОЕ: Обработка update error
               if (mounted) {
+                // ✅ ИСПРАВЛЕНО: Обновляем данные после ошибки, чтобы избежать белого экрана
+                _writeOffBloc.add(FetchWriteOffs(forceRefresh: true, filters: _currentFilters, search: _search));
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (mounted && context.mounted) {
                     if (state.statusCode == 409) {

@@ -371,6 +371,8 @@ class _ClientReturnScreenState extends State<ClientReturnScreen> {
               }
             } else if (state is ClientReturnCreateError) {
               if (mounted) {
+                // ✅ ИСПРАВЛЕНО: Обновляем данные после ошибки, чтобы избежать белого экрана
+                _clientReturnBloc.add(FetchClientReturns(forceRefresh: true, filters: _currentFilters));
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (mounted && context.mounted) {
                     if (state.statusCode == 409) {
@@ -399,6 +401,8 @@ class _ClientReturnScreenState extends State<ClientReturnScreen> {
               }
             } else if (state is ClientReturnUpdateError) {
               if (mounted) {
+                // ✅ ИСПРАВЛЕНО: Обновляем данные после ошибки, чтобы избежать белого экрана
+                _clientReturnBloc.add(FetchClientReturns(forceRefresh: true, filters: _currentFilters));
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (mounted && context.mounted) {
                     if (state.statusCode == 409) {

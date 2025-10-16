@@ -339,6 +339,8 @@ class _IncomingScreenState extends State<IncomingScreen> {
               }
             } else if (state is IncomingCreateError) {
               if (mounted) {
+                // ✅ ИСПРАВЛЕНО: Обновляем данные после ошибки, чтобы избежать белого экрана
+                _incomingBloc.add(FetchIncoming(forceRefresh: true, filters: _currentFilters, search: _search));
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (mounted && context.mounted) {
                     if (state.statusCode == 409) {
@@ -367,6 +369,8 @@ class _IncomingScreenState extends State<IncomingScreen> {
               }
             } else if (state is IncomingUpdateError) {
               if (mounted) {
+                // ✅ ИСПРАВЛЕНО: Обновляем данные после ошибки, чтобы избежать белого экрана
+                _incomingBloc.add(FetchIncoming(forceRefresh: true, filters: _currentFilters, search: _search));
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (mounted && context.mounted) {
                     if (state.statusCode == 409) {

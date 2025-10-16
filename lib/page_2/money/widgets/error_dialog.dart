@@ -154,6 +154,7 @@ class ErrorDialog extends StatelessWidget {
       return _buildSupplierReturnRestoreError(message);
     }
 
+    // THIS IS FOR CLIENT SALES
     // Проверяем, есть ли в сообщении информация о товарах
     if (message.contains('товар') || message.contains('Товар')) {
       return _buildInventoryError(message);

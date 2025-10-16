@@ -390,6 +390,8 @@ class _MovementScreenState extends State<MovementScreen> {
                   }
                 } else if (state is MovementCreateError) {
                   if (mounted) {
+                    // ✅ ИСПРАВЛЕНО: Обновляем данные после ошибки, чтобы избежать белого экрана
+                    _movementBloc.add(FetchMovements(forceRefresh: true, filters: _currentFilters, search: _search));
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       if (mounted && context.mounted) {
                         if (state.statusCode == 409) {
@@ -419,6 +421,8 @@ class _MovementScreenState extends State<MovementScreen> {
                   }
                 } else if (state is MovementUpdateError) {
                   if (mounted) {
+                    // ✅ ИСПРАВЛЕНО: Обновляем данные после ошибки, чтобы избежать белого экрана
+                    _movementBloc.add(FetchMovements(forceRefresh: true, filters: _currentFilters, search: _search));
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       if (mounted && context.mounted) {
                         if (state.statusCode == 409) {

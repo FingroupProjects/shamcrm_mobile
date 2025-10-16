@@ -274,6 +274,8 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
                 }
               });
             } else if (state is SupplierReturnCreateError) {
+              // ✅ ИСПРАВЛЕНО: Обновляем данные после ошибки, чтобы избежать белого экрана
+              _supplierReturnBloc.add(FetchSupplierReturn(forceRefresh: true, filters: _currentFilters));
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (mounted && context.mounted) {
                   if (state.statusCode  == 409) {
@@ -297,6 +299,8 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
                 }
               });
             } else if (state is SupplierReturnUpdateError) { // НОВОЕ
+              // ✅ ИСПРАВЛЕНО: Обновляем данные после ошибки, чтобы избежать белого экрана
+              _supplierReturnBloc.add(FetchSupplierReturn(forceRefresh: true, filters: _currentFilters));
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (mounted && context.mounted) {
                   if (state.statusCode  == 409) {
