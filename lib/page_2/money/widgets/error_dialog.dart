@@ -380,12 +380,25 @@ class ErrorDialog extends StatelessWidget {
   }
 
   Widget _buildGoodsIncomingUnapproveError(String message) {
-    // Парсим название товара и отрицательный остаток
-    RegExp unapproveRegex = RegExp(r"товара '([^']+)' станет отрицательным: (-?\d+)");
-    Match? match = unapproveRegex.firstMatch(message);
-
+    // Парсим название товара и недостачу
+    // Поддерживаем оба формата:
+    // 1. "товара '...' станет отрицательным: -X"
+    // 2. "не хватит товара '...' для покрытия существующих расходов (недостача: X)"
+    RegExp unapproveRegex1 = RegExp(r"товара '([^']+)' станет отрицательным: (-?\d+)");
+    RegExp unapproveRegex2 = RegExp(r"не хватит товара '([^']+)' для покрытия существующих расходов \(недостача: (\d+)\)");
+    
+    Match? match1 = unapproveRegex1.firstMatch(message);
+    Match? match2 = unapproveRegex2.firstMatch(message);
+    
+    Match? match = match1 ?? match2;
     String productName = match?.group(1) ?? 'Неизвестный товар';
     String negativeAmount = match?.group(2) ?? '0';
+    
+    // Если это формат с недостачей, делаем число отрицательным
+    if (match2 != null) {
+      int shortage = int.tryParse(negativeAmount) ?? 0;
+      negativeAmount = (-shortage).toString();
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

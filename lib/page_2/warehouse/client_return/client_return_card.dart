@@ -175,19 +175,6 @@ class _ClientReturnCardState extends State<ClientReturnCard> {
                       color: Color(0xff99A4BA),
                     ),
                   ),
-                  if (doc.comment != null && doc.comment!.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Text(
-                        '${AppLocalizations.of(context)!.translate('comment') ?? 'Примечание'}: ${doc.comment}',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w400,
-                          color: Color(0xff99A4BA),
-                        ),
-                      ),
-                    ),
                 ],
               ),
             ),
