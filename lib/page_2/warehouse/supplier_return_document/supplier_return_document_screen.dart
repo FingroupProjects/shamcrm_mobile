@@ -8,7 +8,7 @@ import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/page_2/money/widgets/error_dialog.dart';
 import 'package:crm_task_manager/page_2/warehouse/supplier_return_document/supplier_return_document_card_screen.dart';
-import 'package:crm_task_manager/page_2/warehouse/client_sale/client_sale_confirm_dialog.dart'; // НОВОЕ: Импорт диалога подтверждения
+import 'package:crm_task_manager/page_2/widgets/document_confirm_dialog.dart'; // НОВОЕ: Импорт диалога подтверждения
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';

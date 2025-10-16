@@ -1,6 +1,5 @@
 import '../../../../bloc/page_2_BLOC/money_outcome/money_outcome_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';
-import 'package:crm_task_manager/bloc/lead_list/lead_list_event.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
@@ -48,21 +47,8 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
     super.initState();
     _initializeFields();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _preloadDataIfNeeded();
-    });
-  }
-
-  void _preloadDataIfNeeded() {
-    final leadBloc = context.read<GetAllLeadBloc>();
-    final leadState = leadBloc.state;
-    final cachedLeads = leadBloc.getCachedLeads();
-
-    if (cachedLeads == null && leadState is! GetAllLeadLoading) {
-      if (mounted) {
-        context.read<GetAllLeadBloc>().add(GetAllLeadEv());
-      }
-    }
+    // ✅ УДАЛЕНО: _preloadDataIfNeeded() чтобы избежать race condition
+    // LeadRadioGroupWidget сам загрузит leads при необходимости
   }
 
   void _initializeFields() {
@@ -302,7 +288,7 @@ class _EditMoneyOutcomeFromClientState extends State<EditMoneyOutcomeFromClient>
                       _buildApproveButton(localizations),
                       const SizedBox(height: 16),
                       LeadRadioGroupWidget(
-                        selectedLead: _selectedLead?.id.toString(),
+                        selectedLead: _selectedLead?.id?.toString(),
                         onSelectLead: (LeadData selectedLeadData) {
                           if (mounted) {
                             setState(() {

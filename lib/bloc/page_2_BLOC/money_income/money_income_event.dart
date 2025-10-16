@@ -69,15 +69,15 @@ class DeleteMoneyIncome extends MoneyIncomeEvent {
   @override
   List<Object> get props => [document];
 }
-//
-// class RestoreMoneyIncome extends MoneyIncomeEvent {
-//   final int documentId;
-//
-//   const RestoreMoneyIncome(this.documentId);
-//
-//   @override
-//   List<Object> get props => [documentId];
-// }
+
+class RestoreMoneyIncome extends MoneyIncomeEvent {
+  final int documentId;
+
+  const RestoreMoneyIncome(this.documentId);
+
+  @override
+  List<Object> get props => [documentId];
+}
 
 class CreateMoneyIncome extends MoneyIncomeEvent {
   final String date;

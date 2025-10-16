@@ -11,6 +11,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../bloc/page_2_BLOC/money_outcome/money_outcome_bloc.dart';
 import '../../../custom_widget/app_bar_selection_mode.dart';
 import '../../../widgets/snackbar_widget.dart';
+import '../../widgets/document_confirm_dialog.dart';
 import 'add/add_money_outcome_from_client.dart';
 import 'add/add_money_outcome_other_outcome.dart';
 import 'add/add_money_outcome_supplier_return.dart';
@@ -327,6 +328,7 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                 showCustomSnackBar(context: context, message: state.message, isSuccess: false);
               } else if (state is MoneyOutcomeDeleteSuccess) {
                 showCustomSnackBar(context: context, message: state.message, isSuccess: true);
+                _moneyOutcomeBloc.add(const FetchMoneyOutcome(forceRefresh: true));
               } else if (state is MoneyOutcomeDeleteError) {
                 if (state.statusCode == 409) {
                   showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
@@ -435,36 +437,65 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                       // ИЗМЕНЕНО: Показываем Dismissible только если есть право на удаление
                       return _hasDeletePermission
                           ? Dismissible(
-                        key: Key(document.id.toString()),
-                        direction: DismissDirection.endToStart,
-                        background: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.red,
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
+                              key: Key(document.id.toString()),
+                              direction: DismissDirection.endToStart,
+                              background: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: document.deletedAt == null ? Colors.red : const Color(0xFF2196F3),
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.05),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                alignment: Alignment.centerRight,
+                                child: Icon(
+                                  document.deletedAt == null 
+                                      ? Icons.delete 
+                                      : Icons.restore_from_trash,
+                                  color: Colors.white,
+                                  size: 24,
+                                ),
                               ),
-                            ],
-                          ),
-                          alignment: Alignment.centerRight,
-                          child: const Icon(Icons.delete, color: Colors.white, size: 24),
-                        ),
-                        confirmDismiss: (direction) async {
-                          return document.deletedAt == null;
-                        },
-                        onDismissed: (direction) {
-                          print("🗑️ [UI] Удаление dokumenta ID: ${document.id}");
-                          setState(() {
-                            currentData.removeAt(index);
-                          });
-                          _moneyOutcomeBloc.add(DeleteMoneyOutcome(document));
-                        },
-                        child: _buildMoneyOutcomeCard(document, state),
-                      )
+                              confirmDismiss: (direction) async {
+                                final isDeleted = document.deletedAt != null;
+                                final docNumber = document.docNumber ?? 'N/A';
+
+                                if (isDeleted) {
+                                  return await DocumentConfirmDialog.showRestoreConfirmation(
+                                    context,
+                                    docNumber,
+                                  );
+                                } else {
+                                  return await DocumentConfirmDialog.showDeleteConfirmation(
+                                    context,
+                                    docNumber,
+                                  );
+                                }
+                              },
+                              onDismissed: (direction) {
+                                final isDeleted = document.deletedAt != null;
+                                
+                                if (isDeleted) {
+                                  // RESTORE - для удалённых документов
+                                  debugPrint("♻️ [UI] Восстановление документа ID: ${document.id}");
+                                  _moneyOutcomeBloc.add(RestoreMoneyOutcome(document.id!));
+                                } else {
+                                  // DELETE - для активных документов
+                                  debugPrint("🗑️ [UI] Удаление документа ID: ${document.id}");
+                                  setState(() {
+                                    currentData.removeAt(index);
+                                  });
+                                  _moneyOutcomeBloc.add(DeleteMoneyOutcome(document));
+                                }
+                              },
+                              child: _buildMoneyOutcomeCard(document, state),
+                            )
                           : _buildMoneyOutcomeCard(document, state);
                     },
                   ),

@@ -7,7 +7,7 @@ import 'package:crm_task_manager/page_2/money/widgets/error_dialog.dart';
 import 'package:crm_task_manager/page_2/warehouse/write_off/write_off_card.dart';
 import 'package:crm_task_manager/page_2/warehouse/write_off/write_off_create.dart';
 import 'package:crm_task_manager/page_2/warehouse/write_off/write_off_details.dart';
-import 'package:crm_task_manager/page_2/warehouse/client_sale/client_sale_confirm_dialog.dart';
+import 'package:crm_task_manager/page_2/widgets/document_confirm_dialog.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
