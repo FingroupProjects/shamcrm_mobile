@@ -123,10 +123,7 @@ class _EditExpenseScreenState extends State<EditExpenseScreen> {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 24,
-                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
                   child: _buildActionButtons(),
                 ),
               ],
