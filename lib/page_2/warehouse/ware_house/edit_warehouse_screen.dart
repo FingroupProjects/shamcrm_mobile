@@ -37,7 +37,7 @@ class _EditWarehouseScreenState extends State<EditWarehouseScreen> {
   void initState() {
     super.initState();
     nameController.text = widget.warehouse.name ?? '';
-    _isWarehouseVisible = widget.warehouse.showToOnlineStore ?? true;
+    _isWarehouseVisible = widget.warehouse.showOnSite ?? true;
     // Initialize selected users for WarehouseMultiUser widget
     users = widget.userIds.map((id) => id.toString()).toList();
     ids = List.from(widget.userIds);
@@ -231,7 +231,7 @@ class _EditWarehouseScreenState extends State<EditWarehouseScreen> {
                                   final updatedWarehouse = WareHouse(
                                     id: widget.warehouse.id,
                                     name: nameController.text,
-                                    showToOnlineStore: _isWarehouseVisible,
+                                    showOnSite: _isWarehouseVisible,
                                     createdAt: widget.warehouse.createdAt,
                                     updatedAt: DateTime.now().toIso8601String(),
                                   );

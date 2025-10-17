@@ -1,7 +1,7 @@
 class WareHouse {
   final int id;
   final String name;
-  final bool? showToOnlineStore;
+  final bool? showOnSite;
   final String? createdAt;
   final String? updatedAt;
   final List<int>? userIds;
@@ -9,7 +9,7 @@ class WareHouse {
   WareHouse({
     required this.id,
     required this.name,
-    this.showToOnlineStore,
+    this.showOnSite,
     this.createdAt,
     this.updatedAt,
     this.userIds,
@@ -27,7 +27,7 @@ class WareHouse {
     return WareHouse(
       id: json['id'] as int,
       name: json['name'] as String,
-      showToOnlineStore: json['show_to_online_store'] as bool?,
+      showOnSite: (json['show_on_site'] as int?) == 1,
       createdAt: json['created_at'] as String?,
       updatedAt: json['updated_at'] as String?,
       userIds: userIds,
@@ -38,7 +38,7 @@ class WareHouse {
     return {
       'id': id,
       'name': name,
-      'show_to_online_store': showToOnlineStore,
+      'show_on_site': showOnSite,
       'created_at': createdAt,
       'updated_at': updatedAt,
       'user_ids': userIds,

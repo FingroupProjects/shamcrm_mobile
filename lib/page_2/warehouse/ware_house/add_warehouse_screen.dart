@@ -241,7 +241,7 @@ class _AddWarehouseScreenState extends State<AddWarehouseScreen> {
                                   final warehouse = WareHouse(
                                     id: 0,
                                     name: nameController.text,
-                                    showToOnlineStore: _isWarehouseVisible,
+                                    showOnSite: _isWarehouseVisible,
                                     createdAt: DateTime.now().toIso8601String(),
                                     updatedAt: DateTime.now().toIso8601String(),
                                   );
