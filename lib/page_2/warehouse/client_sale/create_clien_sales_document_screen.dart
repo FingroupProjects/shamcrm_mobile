@@ -114,6 +114,13 @@ class CreateClienSalesDocumentScreenState extends State<CreateClienSalesDocument
       final removedItem = _items[index];
       final variantId = removedItem['variantId'] as int;
 
+      // ✅ Сначала удаляем из AnimatedList
+      _listKey.currentState?.removeItem(
+        index,
+        (context, animation) => _buildSelectedItemCard(index, removedItem, animation),
+        duration: const Duration(milliseconds: 300),
+      );
+
       // ✅ Затем обновляем состояние
       setState(() {
         _items.removeAt(index);
@@ -621,7 +628,7 @@ class CreateClienSalesDocumentScreenState extends State<CreateClienSalesDocument
           physics: const NeverScrollableScrollPhysics(),
           initialItemCount: _items.length,
           itemBuilder: (context, index, animation) {
-            return _buildSelectedItemCard(index, _items[index], animation);
+            return _buildSelectedItemCard(index, _items[index],  animation);
           },
         ),
         const SizedBox(height: 16),

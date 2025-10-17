@@ -117,6 +117,13 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
       final variantId = removedItem['variantId'] as int;
       _collapsedItems[variantId] = false;
 
+      // ✅ Сначала удаляем из AnimatedList
+      _listKey.currentState?.removeItem(
+        index,
+        (context, animation) => _buildSelectedItemCard(index, removedItem, animation),
+        duration: const Duration(milliseconds: 300),
+      );
+
       setState(() {
         _items.removeAt(index);
 
@@ -133,12 +140,6 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
 
         _priceErrors.remove(variantId);
         _quantityErrors.remove(variantId);
-
-        _listKey.currentState?.removeItem(
-          index,
-              (context, animation) => _buildSelectedItemCard(index, removedItem, animation),
-          duration: const Duration(milliseconds: 300),
-        );
       });
     }
   }

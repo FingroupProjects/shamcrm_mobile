@@ -113,6 +113,13 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
       final variantId = removedItem['variantId'] as int;
       _collapsedItems[variantId] = false;
 
+      // ✅ Сначала удаляем из AnimatedList
+      _listKey.currentState?.removeItem(
+        index,
+        (context, animation) => _buildSelectedItemCard(index, removedItem, animation),
+        duration: const Duration(milliseconds: 300),
+      );
+
       setState(() {
         _items.removeAt(index);
 
@@ -129,12 +136,6 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
 
         _priceErrors.remove(variantId);
         _quantityErrors.remove(variantId);
-
-        _listKey.currentState?.removeItem(
-          index,
-              (context, animation) => _buildSelectedItemCard(index, removedItem, animation),
-          duration: const Duration(milliseconds: 300),
-        );
       });
     }
   }

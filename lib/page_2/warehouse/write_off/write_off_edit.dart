@@ -175,6 +175,12 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
       final variantId = removedItem['variantId'] as int;
       _collapsedItems.remove(variantId); // Убираем из состояния свернутых элементов
 
+      // ✅ Сначала удаляем из AnimatedList
+      _listKey.currentState?.removeItem(
+        index,
+        (context, animation) => _buildSelectedItemCard(index, removedItem, animation),
+        duration: const Duration(milliseconds: 300),
+      );
 
       setState(() {
         _items.removeAt(index);
@@ -188,12 +194,6 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
         _priceFocusNodes.remove(variantId);
         _priceErrors.remove(variantId);
         _quantityErrors.remove(variantId);
-
-        _listKey.currentState?.removeItem(
-          index,
-              (context, animation) => _buildSelectedItemCard(index, removedItem, animation),
-          duration: const Duration(milliseconds: 300),
-        );
       });
     }
   }
