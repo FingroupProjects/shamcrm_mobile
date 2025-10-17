@@ -92,7 +92,7 @@ class _AddWarehouseScreenState extends State<AddWarehouseScreen> {
                 context,
                 AppLocalizations.of(context)!.translate(state.message) ?? state.message);
           }
-          if (state is WareHouseSuccess || state is WareHouseLoaded) {
+          if (state is WareHouseSuccess) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
