@@ -54,7 +54,7 @@ class ResetSubCategories extends GoodsEvent {} // Новое событие дл
 class CreateGoods extends GoodsEvent {
   final String name;
   final String description;
-  final int unitId;
+  final int? unitId;
   final int quantity;
   final int parentId;
   final List<Map<String, dynamic>> attributes;
@@ -71,7 +71,7 @@ class CreateGoods extends GoodsEvent {
   CreateGoods({
     required this.name,
     required this.description,
-    required this.unitId,
+    this.unitId,
     required this.quantity,
     required this.parentId,
     required this.attributes,

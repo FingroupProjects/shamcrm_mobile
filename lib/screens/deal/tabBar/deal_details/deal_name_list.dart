@@ -314,3 +314,4 @@ class _DealNameSelectionWidgetState extends State<DealNameSelectionWidget> {
     );
   }
 }
+

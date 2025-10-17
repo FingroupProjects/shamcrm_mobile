@@ -1223,29 +1223,26 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
     super.dispose();
   }
 
-  void onTap(Chats chat) {
-    setState(() {
-      chat.unreadCount = 0;
-    });
-    FocusManager.instance.primaryFocus?.unfocus();
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => BlocProvider(
-          create: (context) => MessagingCubit(ApiService()),
-          child: ChatSmsScreen(
-            chatItem: chat.toChatItem(),
-            chatId: chat.id,
-            endPointInTab: widget.endPointInTab,
-            canSendMessage: chat.canSendMessage,
-          ),
+void onTap(Chats chat) {
+  setState(() {
+    chat.unreadCount = 0;
+  });
+  FocusManager.instance.primaryFocus?.unfocus();
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => BlocProvider(
+        create: (context) => MessagingCubit(ApiService()),
+        child: ChatSmsScreen(
+          chatItem: chat.toChatItem(),
+          chatId: chat.id,
+          endPointInTab: widget.endPointInTab,
+          canSendMessage: chat.canSendMessage,
         ),
       ),
-    ).then((_) {
-      widget.updateChats.call();
-    });
-  }
-
+    ),
+  ); // ✅ УДАЛИЛИ .then((_) { widget.updateChats.call(); });
+}
   void onLongPress(Chats chat) {
     if (widget.endPointInTab == 'task' || widget.endPointInTab == 'lead') {
       return;

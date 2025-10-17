@@ -288,29 +288,28 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
     emit(ChatsInitial());
   }
 
-  Future<void> _resetUnreadCount(ResetUnreadCount event, Emitter<ChatsState> emit) async {
-    if (state is ChatsLoaded) {
-      final currentState = state as ChatsLoaded;
-      final updatedChats = List<Chats>.from(currentState.chatsPagination.data);
-      final chatIndex = updatedChats.indexWhere((chat) => chat.id == event.chatId);
+Future<void> _resetUnreadCount(ResetUnreadCount event, Emitter<ChatsState> emit) async {
+  if (state is ChatsLoaded) {
+    final currentState = state as ChatsLoaded;
+    final updatedChats = List<Chats>.from(currentState.chatsPagination.data);
+    final chatIndex = updatedChats.indexWhere((chat) => chat.id == event.chatId);
 
-      if (chatIndex != -1) {
-        updatedChats[chatIndex] = updatedChats[chatIndex].copyWith(unreadCount: 0);
-        print('ChatsBloc._resetUnreadCount: Reset unreadCount for chat ID: ${event.chatId}');
-        
-        // ПРИМЕНЯЕМ УСЛОВНУЮ СОРТИРОВКУ
-        final sortedChats = _sortChatsIfNeeded(updatedChats, endPoint);
-        
-        chatsPagination = PaginationDTO(
-          data: sortedChats,
-          count: currentState.chatsPagination.count,
-          total: currentState.chatsPagination.total,
-          perPage: currentState.chatsPagination.perPage,
-          currentPage: currentState.chatsPagination.currentPage,
-          totalPage: currentState.chatsPagination.totalPage,
-        );
-        emit(ChatsLoaded(chatsPagination!));
-      }
+    if (chatIndex != -1) {
+      // Обновляем только конкретный чат
+      updatedChats[chatIndex] = updatedChats[chatIndex].copyWith(unreadCount: 0);
+      print('ChatsBloc._resetUnreadCount: Reset unreadCount for chat ID: ${event.chatId}');
+      
+      // НЕ пересортировываем, сохраняем порядок
+      chatsPagination = PaginationDTO(
+        data: updatedChats,
+        count: currentState.chatsPagination.count,
+        total: currentState.chatsPagination.total,
+        perPage: currentState.chatsPagination.perPage,
+        currentPage: currentState.chatsPagination.currentPage,
+        totalPage: currentState.chatsPagination.totalPage,
+      );
+      emit(ChatsLoaded(chatsPagination!));
     }
   }
+}
 }

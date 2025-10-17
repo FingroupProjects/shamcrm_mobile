@@ -147,6 +147,9 @@ class _HomeScreenState extends State<HomeScreen> {
     } else {
       // Если НЕТ складского учёта → добавляем OnlineStoreScreen
       // (внутри него уже есть заказы)
+      if (hasOrderAccess) {
+        
+
       widgetsGroup2.add(OnlineStoreScreen());
       titleKeysGroup2.add('appbar_online_store');
       navBarTitleKeysGroup2.add('appbar_online_store');
@@ -155,7 +158,7 @@ class _HomeScreenState extends State<HomeScreen> {
       hasAvailableScreens = true;
       
       // НЕ добавляем OrderScreen отдельно!
-    }
+    } }
 
     if (mounted) {
       setState(() {
