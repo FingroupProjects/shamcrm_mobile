@@ -196,7 +196,7 @@ class _AddSupplierScreenState extends State<AddSupplierScreen> {
               ),
               Container(
                 padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
+                const EdgeInsets.all(16),
                 child: Row(
                   children: [
                     Expanded(

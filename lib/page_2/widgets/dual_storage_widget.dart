@@ -68,6 +68,8 @@ class _DualStorageWidgetState extends State<DualStorageWidget> {
       },
       child: BlocBuilder<StorageBloc, StorageState>(
         builder: (context, state) {
+          final isLoading = state is StorageLoading;
+          
           // Обновляем данные при успешной загрузке
           if (state is StorageLoaded) {
             List<WareHouse> storageList = state.storageList;
@@ -104,6 +106,7 @@ class _DualStorageWidgetState extends State<DualStorageWidget> {
                 hint: localizations.translate('select_sender_storage') ?? 'Выберите склад отправитель',
                 selectedStorage: selectedSenderStorageData,
                 state: state,
+                isLoading: isLoading,
                 onChanged: (value) {
                   if (value != null) {
                     widget.onSenderChanged(value.id.toString());
@@ -123,6 +126,7 @@ class _DualStorageWidgetState extends State<DualStorageWidget> {
                 hint: localizations.translate('select_recipient_storage') ?? 'Выберите склад получатель',
                 selectedStorage: selectedRecipientStorageData,
                 state: state,
+                isLoading: isLoading,
                 onChanged: (value) {
                   if (value != null) {
                     widget.onRecipientChanged(value.id.toString());
@@ -145,6 +149,7 @@ class _DualStorageWidgetState extends State<DualStorageWidget> {
     required String hint,
     required WareHouse? selectedStorage,
     required StorageState state,
+    required bool isLoading,
     required Function(WareHouse?) onChanged,
   }) {
     final localizations = AppLocalizations.of(context)!;
@@ -167,7 +172,7 @@ class _DualStorageWidgetState extends State<DualStorageWidget> {
           items: state is StorageLoaded ? state.storageList : [],
           searchHintText: localizations.translate('search') ?? 'Поиск',
           overlayHeight: 400,
-          enabled: true,
+          enabled: !isLoading,
           decoration: CustomDropdownDecoration(
             closedFillColor: const Color(0xffF4F7FD),
             expandedFillColor: Colors.white,
@@ -196,17 +201,19 @@ class _DualStorageWidgetState extends State<DualStorageWidget> {
             );
           },
           headerBuilder: (context, selectedItem, enabled) {
-            if (state is StorageLoading) {
-              return Text(
-                hint,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
+            if (isLoading) {
+              return const Center(
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                  ),
                 ),
               );
             }
+            
             return Text(
               selectedItem?.name ?? hint,
               style: const TextStyle(
@@ -217,15 +224,56 @@ class _DualStorageWidgetState extends State<DualStorageWidget> {
               ),
             );
           },
-          hintBuilder: (context, hintText, enabled) => Text(
-            hint,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              fontFamily: 'Gilroy',
-              color: Color(0xff1E2E52),
-            ),
-          ),
+          hintBuilder: (context, hintText, enabled) {
+            if (isLoading) {
+              return const Center(
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                  ),
+                ),
+              );
+            }
+            
+            return Text(
+              hint,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Gilroy',
+                color: Color(0xff1E2E52),
+              ),
+            );
+          },
+          noResultFoundBuilder: (context, text) {
+            if (isLoading) {
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(20.0),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                  ),
+                ),
+              );
+            }
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Text(
+                  localizations.translate('no_results') ?? 'Нет результатов',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontFamily: 'Gilroy',
+                    color: Color(0xff1E2E52),
+                  ),
+                ),
+              ),
+            );
+          },
           excludeSelected: false,
           initialItem: (state is StorageLoaded &&
                   state.storageList.contains(selectedStorage))

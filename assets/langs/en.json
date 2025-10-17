@@ -48,6 +48,7 @@
   "resource_not_found": "Resource not found",
   "phone": "Phone",
   "invalid_phone_number": "Invalid phone number. Please check the format and number of digits.",
+  "invalid_phone_length": "Number must contain {length} digits",
   "name_required": "Name field is required",
   "surname_required": "Surname field is required",
   "invalid_email": "Please enter a valid email address",

@@ -32,10 +32,31 @@ class CustomTextFieldDate extends StatelessWidget {
   }
 
   Future<void> _selectDate(BuildContext context) async {
-    String formattedDate = DateFormat('dd/MM/yyyy').format(DateTime.now());
+    // Пытаемся получить дату из контроллера, если она уже выбрана
+    DateTime initialDate = DateTime.now();
+    TimeOfDay initialTime = TimeOfDay.now();
+    
+    if (controller.text.isNotEmpty) {
+      try {
+        if (withTime) {
+          // Парсим дату и время в формате dd/MM/yyyy HH:mm
+          final parsedDateTime = DateFormat('dd/MM/yyyy HH:mm').parse(controller.text);
+          initialDate = parsedDateTime;
+          initialTime = TimeOfDay(hour: parsedDateTime.hour, minute: parsedDateTime.minute);
+        } else {
+          // Парсим только дату в формате dd/MM/yyyy
+          initialDate = DateFormat('dd/MM/yyyy').parse(controller.text);
+        }
+      } catch (e) {
+        // Если не удалось распарсить, используем текущую дату
+        debugPrint('Ошибка парсинга даты: $e');
+      }
+    }
+    
+    String formattedDate = DateFormat('dd/MM/yyyy').format(initialDate);
     final DateTime? pickedDate = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
+      initialDate: initialDate,
       fieldHintText: AppLocalizations.of(context)!.translate('ddmmyyyy'),
       cancelText: AppLocalizations.of(context)!.translate('back'),
       confirmText: AppLocalizations.of(context)!.translate('ok'),
@@ -62,7 +83,7 @@ class CustomTextFieldDate extends StatelessWidget {
       if (withTime) {
         final TimeOfDay? pickedTime = await showTimePicker(
           context: context,
-          initialTime: TimeOfDay.now(),
+          initialTime: initialTime,
           cancelText: AppLocalizations.of(context)!.translate('back'),
           confirmText: AppLocalizations.of(context)!.translate('ok'),
           helpText: AppLocalizations.of(context)!.translate('select_time'),

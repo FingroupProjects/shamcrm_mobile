@@ -11308,7 +11308,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     final body = {
       'name': unit.name,
       "users": userIds,
-      "show_to_online_store": unit.showToOnlineStore,
+      "show_on_site": unit.showOnSite,
       'organization_id': organizationId,
       'sales_funnel_id': salesFunnelId,
     };
@@ -11340,7 +11340,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     final body = {
       'name': storage.name,
       'users': ids,
-      'show_to_online_store': storage.showToOnlineStore,
+      'show_on_site': storage.showOnSite,
       'organization_id': organizationId,
       'sales_funnel_id': salesFunnelId,
     };
