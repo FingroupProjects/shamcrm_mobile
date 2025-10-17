@@ -48,6 +48,7 @@
   "resource_not_found": "Resurs topilmadi",
   "phone": "Telefon",
   "invalid_phone_number": "Noto'g'ri telefon raqami. Format va raqamlar sonini tekshiring.",
+  "invalid_phone_length": "Raqam {length} ta raqamdan iborat bo'lishi kerak",
   "name_required": "Ism maydoni to'ldirilishi shart",
   "surname_required": "Familiya maydoni to'ldirilishi shart",
   "invalid_email": "To'g'ri elektron pochta manzilini kiriting",

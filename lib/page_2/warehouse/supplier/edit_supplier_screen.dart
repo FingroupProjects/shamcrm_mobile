@@ -29,6 +29,7 @@ class _EditSupplierScreenState extends State<EditSupplierScreen> {
 
   String selectedDialCode = '';
   Country? initialCountry;
+  Country? currentCountry;
 
   @override
   void initState() {
@@ -50,6 +51,7 @@ class _EditSupplierScreenState extends State<EditSupplierScreen> {
             initialCountry = countries.firstWhere(
                   (country) => country.dialCode == code,
             );
+            currentCountry = initialCountry;
           } catch (e) {
             // If not found, use default
             initialCountry = null;
@@ -92,6 +94,31 @@ class _EditSupplierScreenState extends State<EditSupplierScreen> {
     });
   }
 
+  String? _validatePhoneNumber(String? value) {
+    if (value == null || value.isEmpty) {
+      return AppLocalizations.of(context)!.translate('field_required') ?? 'Поле обязательно';
+    }
+
+    // Get the dial code from selectedDialCode
+    String dialCode = '';
+    for (var code in countryCodes) {
+      if (selectedDialCode.startsWith(code)) {
+        dialCode = code;
+        break;
+      }
+    }
+
+    // Get expected length for this dial code
+    int? expectedLength = phoneNumberLengths[dialCode];
+
+    if (expectedLength != null && value.length != expectedLength) {
+      return AppLocalizations.of(context)!.translate('invalid_phone_length') ??
+          'Номер телефона должен содержать $expectedLength цифр';
+    }
+
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -120,7 +147,6 @@ class _EditSupplierScreenState extends State<EditSupplierScreen> {
             color: Color(0xff1E2E52),
           ),
         ),
-
       ),
       body: BlocListener<SupplierBloc, SupplierState>(
         listener: (context, state) {
@@ -196,19 +222,24 @@ class _EditSupplierScreenState extends State<EditSupplierScreen> {
                           onInputChanged: (String number) {
                             setState(() {
                               selectedDialCode = number;
+                              for (var code in countryCodes) {
+                                if (number.startsWith(code)) {
+                                  try {
+                                    currentCountry = countries.firstWhere(
+                                          (country) => country.dialCode == code,
+                                    );
+                                  } catch (e) {
+                                    currentCountry = null;
+                                  }
+                                  break;
+                                }
+                              }
                             });
                           },
                           label: AppLocalizations.of(context)!
                               .translate('phone') ??
                               'Телефон',
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return AppLocalizations.of(context)!
-                                  .translate('field_required') ??
-                                  'Поле обязательно';
-                            }
-                            return null;
-                          },
+                          validator: _validatePhoneNumber,
                         ),
                         const SizedBox(height: 16),
                         CustomTextField(
@@ -237,8 +268,7 @@ class _EditSupplierScreenState extends State<EditSupplierScreen> {
                 ),
               ),
               Container(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
+                padding: const EdgeInsets.all(16),
                 child: Row(
                   children: [
                     Expanded(
