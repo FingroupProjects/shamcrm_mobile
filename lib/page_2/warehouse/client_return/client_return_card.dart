@@ -47,11 +47,6 @@ class _ClientReturnCardState extends State<ClientReturnCard> {
     return DateFormat('dd.MM.yyyy').format(date);
   }
 
-  String _formatSum(double sum) {
-    String symbol = widget.document.currency?.symbolCode ?? '\$';
-    return '${NumberFormat('#,##0.00', 'ru_RU').format(sum)} $symbol';
-  }
-
   String _getLocalizedStatus() {
     final localizations = AppLocalizations.of(context)!;
     final doc = widget.document;
@@ -137,7 +132,7 @@ class _ClientReturnCardState extends State<ClientReturnCard> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${AppLocalizations.of(context)!.translate('date') ?? 'Дата'}: ${_formatDate(doc.date)}',
+                    '${AppLocalizations.of(context)!.translate('date') ?? 'Дата'} ${_formatDate(doc.date)}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
@@ -147,7 +142,7 @@ class _ClientReturnCardState extends State<ClientReturnCard> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${AppLocalizations.of(context)!.translate('client') ?? 'Клиент'}: ${doc.model?.name ?? 'N/A'}',
+                    '${AppLocalizations.of(context)!.translate('client') ?? 'Клиент'} ${doc.model?.name ?? 'N/A'}',
                     style: const TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',

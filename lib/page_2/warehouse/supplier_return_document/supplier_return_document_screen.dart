@@ -501,7 +501,9 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
       color: const Color(0xff1E2E52),
       backgroundColor: Colors.white,
       onRefresh: _onRefresh,
-      child: ListView.builder(
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+        separatorBuilder: (context, index) => const SizedBox(height: 10),
         controller: _scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
         itemCount: currentData.length + (_hasReachedMax ? 0 : 1),

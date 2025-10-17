@@ -142,7 +142,7 @@ class _IncomingCardState extends State<IncomingCard> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${localizations.translate('date') ?? 'Дата'}: ${_formatDate(doc.date)}',
+                    '${localizations.translate('date') ?? 'Дата'} ${_formatDate(doc.date)}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
