@@ -14,7 +14,6 @@ import 'package:intl/intl.dart';
 
 import '../../../bloc/page_2_BLOC/variant_bloc/variant_bloc.dart';
 import '../../../bloc/page_2_BLOC/variant_bloc/variant_event.dart';
-import '../../money/widgets/error_dialog.dart';
 import '../incoming/variant_selection_bottom_sheet.dart';
 
 class CreateClientReturnDocumentScreen extends StatefulWidget {
@@ -434,17 +433,6 @@ void _removeItem(int index) {
 
           if (state is ClientReturnCreateSuccess && mounted) {
             Navigator.pop(context, true);
-          } else if (state is ClientReturnCreateError && mounted) {
-            if (state.statusCode == 409) {
-              showSimpleErrorDialog(
-                context,
-                localizations.translate('error') ?? 'Ошибка',
-                state.message,
-                errorDialogEnum: ErrorDialogEnum.clientReturnApprove,
-              );
-              return;
-            }
-            _showSnackBar(state.message, false);
           }
         },
         child: SafeArea(

@@ -17,7 +17,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 import '../incoming/article_widget.dart';
-import '../../money/widgets/error_dialog.dart';
 
 class CreateWriteOffDocumentScreen extends StatefulWidget {
   final int? organizationId;
@@ -381,24 +380,12 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: _buildAppBar(localizations),
-        body: BlocListener<WriteOffBloc, WriteOffState>( // ✅ НОВОЕ: Добавлен BlocListener
+        body: BlocListener<WriteOffBloc, WriteOffState>(
           listener: (context, state) {
             setState(() => _isLoading = false);
 
             if (state is WriteOffCreateSuccess && mounted) {
               Navigator.pop(context, true);
-            } else if (state is WriteOffCreateError && mounted) {
-              if (state.statusCode == 409) {
-                final localizations = AppLocalizations.of(context)!; // ✅ ФИКС: localizations внутри
-                showSimpleErrorDialog(
-                  context,
-                  localizations.translate('error') ?? 'Ошибка',
-                  state.message,
-                  errorDialogEnum: ErrorDialogEnum.writeOffApprove,
-                );
-                return;
-              }
-              _showSnackBar(state.message, false);
             }
           },
           child: Form(

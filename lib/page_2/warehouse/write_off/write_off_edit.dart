@@ -18,7 +18,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 import '../incoming/article_widget.dart';
-import '../../money/widgets/error_dialog.dart';
 
 class EditWriteOffDocumentScreen extends StatefulWidget {
   final IncomingDocument document;
@@ -439,17 +438,6 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
 
             if (state is WriteOffUpdateSuccess && mounted) {
               Navigator.pop(context, true);
-            } else if (state is WriteOffUpdateError && mounted) {
-              if (state.statusCode == 409) {
-                showSimpleErrorDialog(
-                  context,
-                  localizations.translate('error') ?? 'Ошибка',
-                  state.message,
-                  errorDialogEnum: ErrorDialogEnum.writeOffApprove,
-                );
-                return;
-              }
-              _showSnackBar(state.message, false);
             }
           },
           child: Form(

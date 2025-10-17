@@ -17,9 +17,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-
-import '../../money/widgets/error_dialog.dart';
-
 class CreateMovementDocumentScreen extends StatefulWidget {
   final int? organizationId;
 
@@ -391,17 +388,6 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
             setState(() => _isLoading = false);
             if (state is MovementCreateSuccess && mounted) {
               Navigator.pop(context, true);
-            } else if (state is MovementCreateError && mounted) {
-              if (state.statusCode == 409) {
-                showSimpleErrorDialog(
-                  context,
-                  localizations.translate('error') ?? 'Ошибка',
-                  state.message,
-                  errorDialogEnum: ErrorDialogEnum.goodsMovementApprove,
-                );
-                return;
-              }
-              _showSnackBar(state.message, false);
             }
           },
           child: Form(
