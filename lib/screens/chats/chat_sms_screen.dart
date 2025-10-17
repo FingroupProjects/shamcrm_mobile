@@ -1813,24 +1813,30 @@ chatSubscribtion = myPresenceChannel.bind('chat.message').listen((event) async {
     }
   }
 
-  @override
-  void dispose() {
-    apiService.closeChatSocket(widget.chatId);
+@override
+void dispose() {
+  apiService.closeChatSocket(widget.chatId);
 
-    if (_webSocket != null && _webSocket!.readyState != WebSocket.closed) {
-      _webSocket?.close();
-    }
-    if (chatSubscribtion != null) {
-      chatSubscribtion?.cancel();
-      chatSubscribtion = null;
-    }
-    _scrollController.removeListener(_onScroll);
-    _scrollController.dispose();
-    _messageController.dispose();
-    socketClient.dispose();
-    _focusNode.dispose();
-    super.dispose();
+  if (_webSocket != null && _webSocket!.readyState != WebSocket.closed) {
+    _webSocket?.close();
   }
+  if (chatSubscribtion != null) {
+    chatSubscribtion?.cancel();
+    chatSubscribtion = null;
+  }
+  _scrollController.removeListener(_onScroll);
+  _scrollController.dispose();
+  _messageController.dispose();
+  socketClient.dispose();
+  _focusNode.dispose();
+  
+  // ✅ НОВОЕ: Сбрасываем unreadCount конкретного чата БЕЗ полной перезагрузки
+  if (mounted) {
+    context.read<ChatsBloc>().add(ResetUnreadCount(widget.chatId));
+  }
+  
+  super.dispose();
+}
 }
 
 extension on Key? {

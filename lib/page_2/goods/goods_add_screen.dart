@@ -1088,7 +1088,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                 parentId: selectedCategory!.id,
                 description: goodsDescriptionController.text.trim(),
                 quantity: int.tryParse(stockQuantityController.text) ?? 0,
-                unitId: selectedUnit != null ? (int.tryParse(selectedUnit!) ?? 0) : 0,
+unitId: selectedUnit != null ? int.tryParse(selectedUnit!) : null,
                 attributes: attributes,
                 variants: variants,
                 images: images,

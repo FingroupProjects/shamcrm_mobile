@@ -8646,7 +8646,7 @@ Future<String> _appendQueryParams(String path) async {
     required int parentId,
     required String description,
     required int quantity,
-    required int unitId,
+    required int? unitId,
     required List<Map<String, dynamic>> attributes,
     required List<Map<String, dynamic>> variants,
     required List<File> images,
