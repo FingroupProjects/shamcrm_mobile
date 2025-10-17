@@ -20,9 +20,30 @@ class CustomFieldWidget extends StatelessWidget {
   }) : super(key: key);
 
   Future<void> _selectDate(BuildContext context, {bool withTime = false}) async {
+    // Пытаемся получить дату из контроллера, если она уже выбрана
+    DateTime initialDate = DateTime.now();
+    TimeOfDay initialTime = TimeOfDay.now();
+    
+    if (valueController.text.isNotEmpty) {
+      try {
+        if (withTime) {
+          // Парсим дату и время в формате dd/MM/yyyy HH:mm
+          final parsedDateTime = DateFormat('dd/MM/yyyy HH:mm').parse(valueController.text);
+          initialDate = parsedDateTime;
+          initialTime = TimeOfDay(hour: parsedDateTime.hour, minute: parsedDateTime.minute);
+        } else {
+          // Парсим только дату в формате dd/MM/yyyy
+          initialDate = DateFormat('dd/MM/yyyy').parse(valueController.text);
+        }
+      } catch (e) {
+        // Если не удалось распарсить, используем текущую дату
+        debugPrint('Ошибка парсинга даты: $e');
+      }
+    }
+    
     DateTime? pickedDate = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
+      initialDate: initialDate,
       firstDate: DateTime(1900),
       lastDate: DateTime(2100),
       builder: (context, child) {
@@ -45,7 +66,7 @@ class CustomFieldWidget extends StatelessWidget {
       if (withTime) {
         TimeOfDay? pickedTime = await showTimePicker(
           context: context,
-          initialTime: TimeOfDay.now(),
+          initialTime: initialTime,
           builder: (context, child) {
             return Theme(
               data: ThemeData.light().copyWith(
