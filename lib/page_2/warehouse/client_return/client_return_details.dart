@@ -122,7 +122,7 @@ class _ClientReturnDocumentDetailsScreenState
         'value': document.docNumber ?? '',
       },
       {
-        'label': '${AppLocalizations.of(context)!.translate('date') ?? 'Дата'}:',
+        'label': '${AppLocalizations.of(context)!.translate('date') ?? 'Дата'}',
         'value': document.date != null ? DateFormat('dd.MM.yyyy HH:mm').format(document.date!) : '',
       },
       {
@@ -130,11 +130,11 @@ class _ClientReturnDocumentDetailsScreenState
         'value': document.storage?.name ?? '',
       },
       {
-        'label': '${AppLocalizations.of(context)!.translate('client') ?? 'Клиент'}:',
+        'label': '${AppLocalizations.of(context)!.translate('client') ?? 'Клиент'}',
         'value': document.model?.name ?? '',
       },
       {
-        'label': '${AppLocalizations.of(context)!.translate('client_phone') ?? 'Телефон клиента'}:',
+        'label': '${AppLocalizations.of(context)!.translate('client_phone') ?? 'Телефон клиента'}',
         'value': document.model?.phone ?? '',
       },
       {

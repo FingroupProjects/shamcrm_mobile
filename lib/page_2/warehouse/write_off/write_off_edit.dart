@@ -18,7 +18,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 import '../incoming/article_widget.dart';
-import '../../money/widgets/error_dialog.dart';
 
 class EditWriteOffDocumentScreen extends StatefulWidget {
   final IncomingDocument document;
@@ -176,6 +175,12 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
       final variantId = removedItem['variantId'] as int;
       _collapsedItems.remove(variantId); // Убираем из состояния свернутых элементов
 
+      // ✅ Сначала удаляем из AnimatedList
+      _listKey.currentState?.removeItem(
+        index,
+        (context, animation) => _buildSelectedItemCard(index, removedItem, animation),
+        duration: const Duration(milliseconds: 300),
+      );
 
       setState(() {
         _items.removeAt(index);
@@ -189,12 +194,6 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
         _priceFocusNodes.remove(variantId);
         _priceErrors.remove(variantId);
         _quantityErrors.remove(variantId);
-
-        _listKey.currentState?.removeItem(
-          index,
-              (context, animation) => _buildSelectedItemCard(index, removedItem, animation),
-          duration: const Duration(milliseconds: 300),
-        );
       });
     }
   }
@@ -439,17 +438,6 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
 
             if (state is WriteOffUpdateSuccess && mounted) {
               Navigator.pop(context, true);
-            } else if (state is WriteOffUpdateError && mounted) {
-              if (state.statusCode == 409) {
-                showSimpleErrorDialog(
-                  context,
-                  localizations.translate('error') ?? 'Ошибка',
-                  state.message,
-                  errorDialogEnum: ErrorDialogEnum.writeOffApprove,
-                );
-                return;
-              }
-              _showSnackBar(state.message, false);
             }
           },
           child: Form(

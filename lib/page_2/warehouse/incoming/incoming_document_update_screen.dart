@@ -18,9 +18,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-
-import '../../money/widgets/error_dialog.dart'; // ✅ НОВОЕ: Импорт для диалога ошибки
-
 class IncomingDocumentEditScreen extends StatefulWidget {
   final IncomingDocument document;
 
@@ -477,18 +474,6 @@ void _removeItem(int index) {
 
             if (state is IncomingUpdateSuccess && mounted) {
               Navigator.pop(context, true);
-            } else if (state is IncomingUpdateError && mounted) {
-              // ✅ НОВОЕ: Обработка 409 как в примере
-              if (state.statusCode == 409) {
-                showSimpleErrorDialog(
-                  context,
-                  localizations.translate('error') ?? 'Ошибка',
-                  state.message,
-                  errorDialogEnum: ErrorDialogEnum.goodsIncomingApprove,
-                );
-                return;
-              }
-              _showSnackBar(state.message, false);
             }
           },
           child: Form(

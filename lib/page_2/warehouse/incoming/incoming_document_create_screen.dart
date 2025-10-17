@@ -17,7 +17,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import '../../money/widgets/error_dialog.dart';
 
 class IncomingDocumentCreateScreen extends StatefulWidget {
   final int? organizationId;
@@ -415,17 +414,6 @@ void _removeItem(int index) {
             setState(() => _isLoading = false);
             if (state is IncomingCreateSuccess && mounted) {
               Navigator.pop(context, true);
-            } else if (state is IncomingCreateError && mounted) {
-              if (state.statusCode == 409) {
-                showSimpleErrorDialog(
-                  context,
-                  localizations.translate('error') ?? 'Ошибка',
-                  state.message,
-                  errorDialogEnum: ErrorDialogEnum.goodsIncomingApprove,
-                );
-                return;
-              }
-              _showSnackBar(state.message, false);
             }
           },
           child: Form(

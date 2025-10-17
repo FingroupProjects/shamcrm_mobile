@@ -695,7 +695,9 @@ class _MovementScreenState extends State<MovementScreen> {
                 color: const Color(0xff1E2E52),
                 backgroundColor: Colors.white,
                 onRefresh: _onRefresh,
-                child: ListView.builder(
+                child: ListView.separated(
+                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                  separatorBuilder: (context, index) => const SizedBox(height: 10),
                   controller: _scrollController,
                   physics: const AlwaysScrollableScrollPhysics(),
                   itemCount: currentData.length + (_hasReachedMax ? 0 : 1),
@@ -802,8 +804,7 @@ class _MovementScreenState extends State<MovementScreen> {
     );
   }
 
-  Widget _buildMovementCard(
-      List<IncomingDocument> currentData, int index, MovementState state) {
+  Widget _buildMovementCard(List<IncomingDocument> currentData, int index, MovementState state) {
     return MovementCard(
       document: currentData[index],
       onTap: () {

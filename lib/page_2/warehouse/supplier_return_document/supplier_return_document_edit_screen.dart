@@ -19,7 +19,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import '../../money/widgets/error_dialog.dart';
 
 class SupplierReturnDocumentEditScreen extends StatefulWidget {
   final IncomingDocument document;
@@ -170,6 +169,13 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
       final variantId = removedItem['variantId'] as int;
       _collapsedItems.remove(variantId); // Убираем из состояния свернутых элементов
 
+      // ✅ Сначала удаляем из AnimatedList
+      _listKey.currentState?.removeItem(
+        index,
+        (context, animation) => _buildSelectedItemCard(index, removedItem, animation),
+        duration: const Duration(milliseconds: 300),
+      );
+
       setState(() {
         _items.removeAt(index);
         _priceControllers[variantId]?.dispose();
@@ -182,12 +188,6 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
         _priceFocusNodes.remove(variantId);
         _priceErrors.remove(variantId);
         _quantityErrors.remove(variantId);
-
-        _listKey.currentState?.removeItem(
-          index,
-          (context, animation) => _buildSelectedItemCard(index, removedItem, animation),
-          duration: const Duration(milliseconds: 300),
-        );
       });
     }
   }
@@ -450,18 +450,6 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
             setState(() => _isLoading = false);
             if (state is SupplierReturnUpdateSuccess && mounted) {
               Navigator.pop(context, true);
-            } else if (state is SupplierReturnUpdateError && mounted) {
-              if (state.statusCode == 409) {
-                final localizations = AppLocalizations.of(context)!;
-                showSimpleErrorDialog(
-                  context,
-                  localizations.translate('error') ?? 'Ошибка',
-                  state.message,
-                  errorDialogEnum: ErrorDialogEnum.supplierReturnApprove,
-                );
-                return;
-              }
-              _showSnackBar(state.message, false);
             }
           },
           child: Form(

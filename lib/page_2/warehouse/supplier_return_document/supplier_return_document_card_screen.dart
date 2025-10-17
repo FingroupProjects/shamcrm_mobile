@@ -3,7 +3,6 @@ import 'package:crm_task_manager/page_2/warehouse/supplier_return_document/suppl
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class SupplierReturnCard extends StatefulWidget {
   final IncomingDocument document;
@@ -28,29 +27,9 @@ class SupplierReturnCard extends StatefulWidget {
 }
 
 class _SupplierReturnCardState extends State<SupplierReturnCard> {
-  int? currencyId;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadCurrencyId();
-  }
-
-  Future<void> _loadCurrencyId() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      currencyId = prefs.getInt('currency_id') ?? 1; // Дефолт USD
-    });
-  }
-
   String _formatDate(DateTime? date) {
     if (date == null) return AppLocalizations.of(context)!.translate('no_date') ?? 'Нет даты';
     return DateFormat('dd.MM.yyyy').format(date);
-  }
-
-  String _formatSum(double sum) {
-    String symbol = widget.document.currency?.symbolCode ?? '\$';
-    return '${NumberFormat('#,##0.00', 'ru_RU').format(sum)} $symbol';
   }
 
   String _getLocalizedStatus() {
@@ -106,7 +85,6 @@ class _SupplierReturnCardState extends State<SupplierReturnCard> {
       },
       onLongPress: widget.onLongPress,
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: widget.isSelected
@@ -116,7 +94,7 @@ class _SupplierReturnCardState extends State<SupplierReturnCard> {
           boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 4)],
         ),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
               child: Column(
@@ -156,7 +134,7 @@ class _SupplierReturnCardState extends State<SupplierReturnCard> {
             ),
             const SizedBox(height: 8),
             Text(
-              '${localizations.translate('date') ?? 'Дата'}: ${_formatDate(doc.date)}',
+              '${localizations.translate('date') ?? 'Дата'} ${_formatDate(doc.date)}',
               style: const TextStyle(
                 fontSize: 14,
                 fontFamily: 'Gilroy',

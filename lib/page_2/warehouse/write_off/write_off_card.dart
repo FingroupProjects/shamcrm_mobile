@@ -1,6 +1,4 @@
-import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
-import 'package:crm_task_manager/page_2/warehouse/write_off/write_off_details.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -59,13 +57,7 @@ class WriteOffCard extends StatelessWidget {
               ? const Color(0xFFDDE8F5)
               : const Color(0xFFE9EDF5),
           borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 4)],
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -79,21 +71,20 @@ class WriteOffCard extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          '${localizations.translate('empty_0') ?? 'Документ'}№${document.docNumber ?? ''}',
+                          '${localizations.translate('empty_0') ?? 'Списание'}№${document.docNumber ?? ''}',
                           style: const TextStyle(
                             fontSize: 18,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.bold,
                             color: Color(0xff1E2E52),
                           ),
-                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color: _getStatusColor().withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
                           _getLocalizedStatus(context, document),
@@ -108,64 +99,34 @@ class WriteOffCard extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.calendar_today,
-                        size: 16,
-                        color: Color(0xff99A4BA),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        document.date != null
-                            ? DateFormat('dd.MM.yyyy').format(document.date!)
-                            : localizations.translate('empty_0') ?? 'Дата не указана',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w400,
-                          color: Color(0xff99A4BA),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.warehouse,
-                        size: 16,
-                        color: Color(0xff99A4BA),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          document.storage?.name ?? localizations.translate('empty_0') ?? 'Склад не указан',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w400,
-                            color: Color(0xff99A4BA),
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
+                  Text(
+                    '${localizations.translate('date') ?? 'Дата'} ${document.date != null ? DateFormat('dd.MM.yyyy').format(document.date!) : 'N/A'}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w400,
+                      color: Color(0xff99A4BA),
+                    ),
                   ),
                   const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '${localizations.translate('total_quantity') ?? 'Общее количество'}: ${document.totalQuantity}',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xff1E2E52),
-                        ),
-                      ),
-                    ],
+                  Text(
+                    '${localizations.translate('storage') ?? 'Склад'}: ${document.storage?.name ?? 'N/A'}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w400,
+                      color: Color(0xff99A4BA),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${localizations.translate('total_quantity') ?? 'Общее количество'}: ${document.totalQuantity}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xff1E2E52),
+                    ),
                   ),
                   // if (document.comment != null && document.comment!.isNotEmpty) ...[
                   //   const SizedBox(height: 8),

@@ -18,9 +18,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-
-import '../../money/widgets/error_dialog.dart';
-
 class SupplierReturnDocumentCreateScreen extends StatefulWidget {
   final int? organizationId;
 
@@ -119,6 +116,13 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
       final variantId = removedItem['variantId'] as int;
       _collapsedItems[variantId] = false;
 
+      // ✅ Сначала удаляем из AnimatedList
+      _listKey.currentState?.removeItem(
+        index,
+        (context, animation) => _buildSelectedItemCard(index, removedItem, animation),
+        duration: const Duration(milliseconds: 300),
+      );
+
       setState(() {
         _items.removeAt(index);
 
@@ -135,12 +139,6 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
 
         _priceErrors.remove(variantId);
         _quantityErrors.remove(variantId);
-
-        _listKey.currentState?.removeItem(
-          index,
-              (context, animation) => _buildSelectedItemCard(index, removedItem, animation),
-          duration: const Duration(milliseconds: 300),
-        );
       });
     }
   }
@@ -438,18 +436,6 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
 
             if (state is SupplierReturnCreateSuccess && mounted) {
               Navigator.pop(context, true);
-            } else if (state is SupplierReturnCreateError && mounted) {
-              if (state.statusCode == 409) {
-                final localizations = AppLocalizations.of(context)!; // ✅ ФИКС: localizations внутри
-                showSimpleErrorDialog(
-                  context,
-                  localizations.translate('error') ?? 'Ошибка',
-                  state.message,
-                  errorDialogEnum: ErrorDialogEnum.supplierReturnApprove,
-                );
-                return;
-              }
-              _showSnackBar(state.message, false);
             }
           },
           child: Form(
