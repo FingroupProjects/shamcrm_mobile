@@ -817,49 +817,50 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      item['name'] ?? '',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xff1E2E52),
+              GestureDetector(
+                onTap: () => _toggleItemCollapse(variantId),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        item['name'] ?? '',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xff1E2E52),
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  GestureDetector(
-                    onTap: () => _toggleItemCollapse(variantId),
-                    child: Icon(
-                      isCollapsed
-                          ? Icons.keyboard_arrow_down
-                          : Icons.keyboard_arrow_up,
+                    const SizedBox(width: 8),
+                    Icon(
+                      isCollapsed ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_up,
                       color: const Color(0xff4759FF),
                       size: 20,
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  GestureDetector(
-                    onTap: () => _removeItem(index),
-                    child: const Icon(Icons.close,
-                        color: Color(0xff99A4BA), size: 18),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: () => _removeItem(index),
+                      child: const Icon(Icons.close, color: Color(0xff99A4BA), size: 18),
+                    ),
+                  ],
+                ),
               ),
-              Padding(
-                padding: const EdgeInsets.only(top: 4, bottom: 10),
-                child: Text(
-                  '${AppLocalizations.of(context)?.translate('total') ?? 'Сумма'} ${(item['total'] ?? 0.0).toStringAsFixed(0)}',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xff4759FF),
+              InkWell(
+                onTap: () => _toggleItemCollapse(variantId),
+                child: Container(
+                  alignment: Alignment.centerLeft,
+                  padding: const EdgeInsets.only(top: 4, bottom: 10),
+                  child: Text(
+                    '${AppLocalizations.of(context)?.translate('total') ?? 'Сумма'} ${(item['total'] ?? 0.0).toStringAsFixed(0)}',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xff4759FF),
+                    ),
                   ),
                 ),
               ),

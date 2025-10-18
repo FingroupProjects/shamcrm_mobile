@@ -693,9 +693,9 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
                 ),
               ),
               const Icon(
-                Icons.arrow_forward_ios,
+                Icons.add,
                 color: Color(0xff99A4BA),
-                size: 16,
+                size: 22,
               ),
             ],
           ),
