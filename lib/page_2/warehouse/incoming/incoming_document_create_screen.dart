@@ -25,7 +25,8 @@ class IncomingDocumentCreateScreen extends StatefulWidget {
   _IncomingDocumentCreateScreenState createState() => _IncomingDocumentCreateScreenState();
 }
 
-class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScreen> {
+class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScreen>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _dateController = TextEditingController();
   final TextEditingController _commentController = TextEditingController();
@@ -48,11 +49,17 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
   final Map<int, bool> _priceErrors = {};
   final Map<int, bool> _quantityErrors = {};
 
+  final Map<int, bool> _collapsedItems = {};
+
+  late TabController _tabController;
+
   @override
   void initState() {
     super.initState();
     _dateController.text = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
     context.read<VariantBloc>().add(FetchVariants());
+
+    _tabController = TabController(length: 2, vsync: this);
   }
 
   void _handleVariantSelection(Map<String, dynamic>? newItem) {
@@ -61,26 +68,30 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
         final existingIndex = _items.indexWhere((item) => item['variantId'] == newItem['variantId']);
 
         if (existingIndex == -1) {
+          for (var item in _items) {
+            final variantId = item['variantId'] as int;
+            _collapsedItems[variantId] = true;
+          }
+
           _items.add(newItem);
 
           final variantId = newItem['variantId'] as int;
-          debugPrint("Добавлен товар с variantId: $variantId");
 
           final initialPrice = newItem['price'] ?? 0.0;
-          _priceControllers[variantId] = TextEditingController(text: initialPrice > 0 ? initialPrice.toStringAsFixed(3) : '');
+          _priceControllers[variantId] = TextEditingController(
+              text: initialPrice > 0 ? initialPrice.toStringAsFixed(3) : '');
 
           _quantityControllers[variantId] = TextEditingController(text: '');
 
-          // ✅ НОВОЕ: Создаём FocusNode для полей
           _quantityFocusNodes[variantId] = FocusNode();
           _priceFocusNodes[variantId] = FocusNode();
 
           _items.last['price'] = initialPrice;
 
-          final amount = newItem['amount'] ?? 1;
-
           _priceErrors[variantId] = false;
           _quantityErrors[variantId] = false;
+
+          _collapsedItems[variantId] = false;
 
           if (!newItem.containsKey('amount')) {
             _items.last['amount'] = 1;
@@ -92,7 +103,6 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
             duration: const Duration(milliseconds: 300),
           );
 
-          // ✅ НОВОЕ: Устанавливаем фокус на поле количества после добавления
           Future.delayed(const Duration(milliseconds: 350), () {
             if (mounted && _scrollController.hasClients) {
               _scrollController.animateTo(
@@ -109,42 +119,69 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
     }
   }
 
-void _removeItem(int index) {
-  if (!mounted) return;
-  
-  final removedItem = _items[index];
-  final variantId = removedItem['variantId'] as int;
+  void _removeItem(int index) {
+    if (mounted) {
+      final removedItem = _items[index];
+      final variantId = removedItem['variantId'] as int;
 
-  // ✅ Удаляем из AnimatedList ДО setState
-  _listKey.currentState?.removeItem(
-    index,
-    (context, animation) => _buildSelectedItemCard(index, removedItem, animation),
-    duration: const Duration(milliseconds: 300),
-  );
+      _listKey.currentState?.removeItem(
+        index,
+        (context, animation) =>
+            _buildSelectedItemCard(index, removedItem, animation),
+        duration: const Duration(milliseconds: 300),
+      );
 
-  // ✅ Затем обновляем состояние
-  setState(() {
-    _items.removeAt(index);
+      setState(() {
+        _items.removeAt(index);
 
-    // ✅ Безопасно dispose контроллеров
-    _priceControllers[variantId]?.dispose();
-    _priceControllers.remove(variantId);
-    _quantityControllers[variantId]?.dispose();
-    _quantityControllers.remove(variantId);
+        _priceControllers[variantId]?.dispose();
+        _priceControllers.remove(variantId);
+        _quantityControllers[variantId]?.dispose();
+        _quantityControllers.remove(variantId);
 
-    // ✅ Безопасно dispose FocusNode
-    _quantityFocusNodes[variantId]?.dispose();
-    _quantityFocusNodes.remove(variantId);
-    _priceFocusNodes[variantId]?.dispose();
-    _priceFocusNodes.remove(variantId);
+        _quantityFocusNodes[variantId]?.dispose();
+        _quantityFocusNodes.remove(variantId);
+        _priceFocusNodes[variantId]?.dispose();
+        _priceFocusNodes.remove(variantId);
 
-    // ✅ Очищаем ошибки
-    _priceErrors.remove(variantId);
-    _quantityErrors.remove(variantId);
-  });
-}
+        _priceErrors.remove(variantId);
+        _quantityErrors.remove(variantId);
+
+        _collapsedItems.remove(variantId);
+      });
+    }
+  }
+
+  void _toggleItemCollapse(int variantId) {
+    setState(() {
+      _collapsedItems[variantId] = !(_collapsedItems[variantId] ?? false);
+    });
+  }
 
   void _openVariantSelection() async {
+    if (_selectedSupplier == null) {
+      _showSnackBar(
+        AppLocalizations.of(context)!.translate('select_supplier') ??
+            'Сначала выберите поставщика',
+        false,
+      );
+      return;
+    }
+
+    if (_selectedStorage == null) {
+      _showSnackBar(
+        AppLocalizations.of(context)!.translate('select_storage_first') ??
+            'Сначала выберите склад',
+        false,
+      );
+      return;
+    }
+
+    context.read<VariantBloc>().add(FilterVariants({
+          'counterparty_id': int.parse(_selectedSupplier!),
+          'storage_id': int.parse(_selectedStorage!),
+        }));
+
     final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
@@ -153,17 +190,12 @@ void _removeItem(int index) {
         existingItems: _items,
       ),
     );
-    
+
     if (result != null) {
       _handleVariantSelection(result);
+    } else {
+        FocusScope.of(context).unfocus();
     }
-    // Если результат null, сбрасываем фокус с небольшой задержкой
-  // Если результат null (пользователь закрыл окно без выбора), убеждаемся, что фокус сброшен
-  if (result == null) {
-    FocusScope.of(context).unfocus();
-  } else {
-    _handleVariantSelection(result);
-  }
   }
 
   void _updateItemQuantity(int variantId, String value) {
@@ -222,17 +254,22 @@ void _removeItem(int index) {
       if (index != -1) {
         _items[index]['selectedUnit'] = newUnit;
         _items[index]['unit_id'] = newUnitId;
-        
-        final availableUnits = _items[index]['availableUnits'] as List<Unit>? ?? [];
+
+        final availableUnits =
+            _items[index]['availableUnits'] as List<Unit>? ?? [];
         final selectedUnitObj = availableUnits.firstWhere(
-          (unit) => (unit.shortName ?? unit.name) == newUnit,
-          orElse: () => availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: '', amount: 1),
+          (unit) => (unit.name) == newUnit,
+          orElse: () => availableUnits.isNotEmpty
+              ? availableUnits.first
+              : Unit(id: null, name: '', amount: 1),
         );
-        
+
         _items[index]['amount'] = selectedUnitObj.amount ?? 1;
-        
+
         final amount = _items[index]['amount'] ?? 1;
-        _items[index]['total'] = (_items[index]['quantity'] * _items[index]['price'] * amount).round();
+        _items[index]['total'] =
+            (_items[index]['quantity'] * _items[index]['price'] * amount)
+                .round();
       }
     });
   }
@@ -302,18 +339,10 @@ void _removeItem(int index) {
       
       for (var item in _items) {
         final variantId = item['variantId'] as int;
-        final quantityController = _quantityControllers[variantId];
         final priceController = _priceControllers[variantId];
-        
-        // if (quantityController == null || 
-        //     quantityController.text.trim().isEmpty || 
-        //     (int.tryParse(quantityController.text) ?? 0) <= 0) {
-        //   _quantityErrors[variantId] = true;
-        //   hasErrors = true;
-        // }
-        
-        if (priceController == null || 
-            priceController.text.trim().isEmpty || 
+
+        if (priceController == null ||
+            priceController.text.trim().isEmpty ||
             (double.tryParse(priceController.text) ?? -1) < 0) {
           _priceErrors[variantId] = true;
           hasErrors = true;
@@ -342,12 +371,14 @@ void _removeItem(int index) {
         comment: _commentController.text.trim(),
         counterpartyId: int.parse(_selectedSupplier!),
         documentGoods: _items.map((item) {
-          final unitId = item['unit_id'];
+          final availableUnits = item['availableUnits'] as List<Unit>? ?? [];
+          final hasUnits = availableUnits.isNotEmpty;
+
           return {
             'good_id': item['variantId'],
             'quantity': int.tryParse(item['quantity'].toString()),
             'price': _parsePriceAsNumber(item['price']),
-            'unit_id': unitId,
+            if (hasUnits) 'unit_id': item['unit_id'],
           };
         }).toList(),
         organizationId: widget.organizationId ?? 1,
@@ -356,10 +387,7 @@ void _removeItem(int index) {
       ));
     } catch (e) {
       setState(() => _isLoading = false);
-      _showSnackBar(
-        AppLocalizations.of(context)!.translate('enter_valid_datetime') ?? 'Введите корректную дату и время',
-        false,
-      );
+      _showSnackBar(e.toString(), false);
     }
   }
 
@@ -395,66 +423,183 @@ void _removeItem(int index) {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-     return WillPopScope(
-    onWillPop: () async {
-      // Если есть товары в списке, показываем диалог подтверждения
-      if (_items.isNotEmpty) {
-        final shouldExit = await ConfirmExitDialog.show(context);
-        return shouldExit;
-      }
-      // Если товаров нет, разрешаем выход
-      return true;
-    },
-    child: KeyboardDismissible(
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        appBar: _buildAppBar(localizations),
-        body: BlocListener<IncomingBloc, IncomingState>(
-          listener: (context, state) {
-            setState(() => _isLoading = false);
-            if (state is IncomingCreateSuccess && mounted) {
-              Navigator.pop(context, true);
-            }
-          },
-          child: Form(
-            key: _formKey,
-            child: Column(
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 8),
-                        _buildDateField(localizations),
-                        const SizedBox(height: 16),
-                        SupplierWidget(
-                          selectedSupplier: _selectedSupplier,
-                          onChanged: (value) => setState(() => _selectedSupplier = value),
-                        ),
-                        const SizedBox(height: 16),
-                        StorageWidget(
-                          selectedStorage: _selectedStorage,
-                          onChanged: (value) => setState(() => _selectedStorage = value),
-                        ),
-                        const SizedBox(height: 16),
-                        _buildCommentField(localizations),
-                        const SizedBox(height: 16),
-                        _buildGoodsSection(localizations),
-                        const SizedBox(height: 16),
+
+    return WillPopScope(
+      onWillPop: () async {
+        if (_items.isNotEmpty) {
+          final shouldExit = await ConfirmExitDialog.show(context);
+          return shouldExit;
+        }
+        return true;
+      },
+      child: KeyboardDismissible(
+        child: Scaffold(
+          backgroundColor: Colors.white,
+          appBar: _buildAppBar(localizations),
+          body: BlocListener<IncomingBloc, IncomingState>(
+            listener: (context, state) {
+              setState(() => _isLoading = false);
+
+              if (state is IncomingCreateSuccess && mounted) {
+                Navigator.pop(context, true);
+              }
+            },
+            child: Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  Container(
+                    color: Colors.white,
+                    child: TabBar(
+                      controller: _tabController,
+                      labelColor: const Color(0xff4759FF),
+                      unselectedLabelColor: const Color(0xff99A4BA),
+                      indicatorColor: const Color(0xff4759FF),
+                      indicatorWeight: 3,
+                      labelStyle: const TextStyle(
+                        fontSize: 16,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w600,
+                      ),
+                      unselectedLabelStyle: const TextStyle(
+                        fontSize: 16,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                      ),
+                      tabs: [
+                        Tab(
+                            text:
+                                localizations.translate('main') ?? 'Основное'),
+                        Tab(text: localizations.translate('goods') ?? 'Товары'),
                       ],
                     ),
                   ),
-                ),
-                _buildActionButtons(localizations),
-              ],
+                  Expanded(
+                    child: TabBarView(
+                      controller: _tabController,
+                      children: [
+                        _KeepAliveWrapper(child: _buildMainTab(localizations)),
+                        _KeepAliveWrapper(child: _buildGoodsTab(localizations)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
       ),
-      ), ); 
+    );
+  }
+
+  Widget _buildMainTab(AppLocalizations localizations) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 8),
+          _buildDateField(localizations),
+          const SizedBox(height: 16),
+          SupplierWidget(
+            selectedSupplier: _selectedSupplier,
+            onChanged: (value) => setState(() => _selectedSupplier = value),
+          ),
+          const SizedBox(height: 16),
+          StorageWidget(
+            key: const ValueKey('storage_widget_main_tab'),
+            selectedStorage: _selectedStorage,
+            onChanged: (value) => setState(() => _selectedStorage = value),
+          ),
+          const SizedBox(height: 16),
+          _buildCommentField(localizations),
+          const SizedBox(height: 24),
+          _buildActionButtons(localizations),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGoodsTab(AppLocalizations localizations) {
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            controller: _scrollController,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 8),
+                if (_items.isNotEmpty) ...[
+                  _buildSelectedItemsList(),
+                  const SizedBox(height: 12),
+                ] else ...[
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 32),
+                      child: Text(
+                        localizations.translate('no_goods_added') ??
+                            'Товары не добавлены',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w400,
+                          color: Color(0xff99A4BA),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                spreadRadius: 1,
+                blurRadius: 3,
+                offset: const Offset(0, -1),
+              ),
+            ],
+          ),
+          child: ElevatedButton(
+            onPressed: _openVariantSelection,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xff4759FF),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              elevation: 0,
+              minimumSize: const Size(double.infinity, 48),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.add, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  localizations.translate('add_good') ?? 'Добавить товар',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   AppBar _buildAppBar(AppLocalizations localizations) {
@@ -464,18 +609,18 @@ void _removeItem(int index) {
     return AppBar(
       backgroundColor: Colors.white,
       forceMaterialTransparency: true,
+      leadingWidth: 56,
       elevation: 0,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios, color: Color(0xff1E2E52), size: 24),
+        icon: const Icon(Icons.arrow_back_ios,
+            color: Color(0xff1E2E52), size: 24),
         onPressed: () async {
-          // Если есть товары, показываем диалог
           if (_items.isNotEmpty) {
             final shouldExit = await ConfirmExitDialog.show(context);
             if (shouldExit && mounted) {
               Navigator.pop(context);
             }
           } else {
-            // Если товаров нет, просто выходим
             Navigator.pop(context);
           }
         },
@@ -558,58 +703,8 @@ void _removeItem(int index) {
     );
   }
 
-  Widget _buildGoodsSection(AppLocalizations localizations) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          localizations.translate('goods') ?? 'Товары',
-          style: const TextStyle(
-            fontSize: 16,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w400,
-            color: Color(0xff1E2E52),
-          ),
-        ),
-        const SizedBox(height: 8),
-        if (_items.isNotEmpty) ...[
-          _buildSelectedItemsList(),
-          const SizedBox(height: 12),
-        ],
-        ElevatedButton(
-          onPressed: _openVariantSelection,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xff4759FF),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            elevation: 0,
-            minimumSize: const Size(double.infinity, 48),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.add, color: Colors.white, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                localizations.translate('add_good') ?? 'Добавить товар',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
 
   Widget _buildSelectedItemsList() {
-    final total = _totalAmount;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -623,15 +718,10 @@ void _removeItem(int index) {
             return _buildSelectedItemCard(index, _items[index], animation);
           },
         ),
-        const SizedBox(height: 16),
-     //   _buildTotalCard(total),
       ],
     );
   }
 
-  final Map<int, bool> _collapsedItems = {}; // Для управления состоянием свернутых элементов
-
-  // Контроллеры для редактирования полей товаров
   Widget _buildSelectedItemCard(int index, Map<String, dynamic> item, Animation<double> animation) {
     final availableUnits = item['availableUnits'] as List<Unit>? ?? [];
     final variantId = item['variantId'] as int;
@@ -639,6 +729,7 @@ void _removeItem(int index) {
     final quantityController = _quantityControllers[variantId];
     final quantityFocusNode = _quantityFocusNodes[variantId];
     final priceFocusNode = _priceFocusNodes[variantId];
+
     final isCollapsed = _collapsedItems[variantId] ?? false;
 
     return FadeTransition(
@@ -664,198 +755,195 @@ void _removeItem(int index) {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _collapsedItems[variantId] = !isCollapsed;
-                  });
-                },
-                child: Row(
-                  children: [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: const Color(0xffF4F7FD),
-                        borderRadius: BorderRadius.circular(8),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      item['name'] ?? '',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xff1E2E52),
                       ),
-                      child: const Icon(
-                        Icons.shopping_cart_outlined,
-                        color: Color(0xff4759FF),
-                        size: 20,
-                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        item['name'] ?? '',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xff1E2E52),
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                  ),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () => _toggleItemCollapse(variantId),
+                    child: Icon(
+                      isCollapsed
+                          ? Icons.keyboard_arrow_down
+                          : Icons.keyboard_arrow_up,
+                      color: const Color(0xff4759FF),
+                      size: 20,
                     ),
-                    Icon(
-                      isCollapsed ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_up,
-                      color: const Color(0xff99A4BA),
-                      size: 18,
-                    ),
-                    const SizedBox(width: 8),
-                    GestureDetector(
-                      onTap: () => _removeItem(index),
-                      child: const Icon(Icons.close, color: Color(0xff99A4BA), size: 18),
-                    ),
-                  ],
+                  ),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () => _removeItem(index),
+                    child: const Icon(Icons.close,
+                        color: Color(0xff99A4BA), size: 18),
+                  ),
+                ],
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: 4, bottom: 10),
+                child: Text(
+                  '${AppLocalizations.of(context)!.translate('total') ?? 'Сумма'} ${(item['total'] ?? 0.0).toStringAsFixed(0)}',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff4759FF),
+                  ),
                 ),
               ),
               if (!isCollapsed) ...[
-                if (item['remainder'] != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4, bottom: 4),
-                    child: Text(
-                      '${AppLocalizations.of(context)!.translate('available') ?? 'Доступно'}: ${item['remainder']} ${item['selectedUnit'] ?? 'шт'}',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w400,
-                        color: Color(0xff4CAF50),
-                      ),
-                    ),
-                  ),
-                const SizedBox(height: 10),
                 const Divider(height: 1, color: Color(0xFFE5E7EB)),
                 const SizedBox(height: 10),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (availableUnits.isNotEmpty)
-                      Expanded(
-                        flex: 2,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              AppLocalizations.of(context)!.translate('unit') ?? 'Ед.',
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontFamily: 'Gilroy',
-                                fontWeight: FontWeight.w400,
-                                color: Color(0xff99A4BA),
-                              ),
+                Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Expanded(
+                    flex: 20,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          AppLocalizations.of(context)!.translate('quantity') ??
+                              'Кол-во',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w400,
+                            color: Color(0xff99A4BA),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        CompactTextField(
+                          controller:
+                              quantityController ?? TextEditingController(),
+                          focusNode: quantityFocusNode,
+                          hintText: AppLocalizations.of(context)!
+                                  .translate('quantity') ??
+                              'Количество',
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(
+                                RegExp(r'^\d*\.?\d{0,3}')),
+                          ],
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xff1E2E52),
+                          ),
+                          hasError: _quantityErrors[variantId] == true,
+                          onChanged: (value) =>
+                              _updateItemQuantity(variantId, value),
+                          onDone: _moveToNextEmptyField,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  if (availableUnits.isNotEmpty)
+                    Expanded(
+                      flex: 25,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            AppLocalizations.of(context)!.translate('unit') ??
+                                'Ед.',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w400,
+                              color: Color(0xff99A4BA),
                             ),
-                            const SizedBox(height: 4),
-                            if (availableUnits.length > 1)
-                              Container(
-                                height: 48,
-                                padding: const EdgeInsets.symmetric(horizontal: 8),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFF4F7FD),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: const Color(0xFFE5E7EB)),
-                                ),
-                                child: DropdownButtonHideUnderline(
-                                  child: DropdownButton<String>(
-                                    value: item['selectedUnit'],
-                                    isDense: true,
-                                    isExpanded: true,
-                                    dropdownColor: Colors.white,
-                                    icon: const Icon(Icons.arrow_drop_down, size: 16, color: Color(0xff4759FF)),
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      fontFamily: 'Gilroy',
-                                      fontWeight: FontWeight.w500,
-                                      color: Color(0xff1E2E52),
-                                    ),
-                                    items: availableUnits.map((unit) {
-                                      return DropdownMenuItem<String>(
-                                        value: unit.shortName ?? unit.name,
-                                        child: Text(unit.shortName ?? unit.name ?? ''),
-                                      );
-                                    }).toList(),
-                                    onChanged: (String? newValue) {
-                                      if (newValue != null) {
-                                        final selectedUnit = availableUnits.firstWhere(
-                                              (unit) => (unit.shortName ?? unit.name) == newValue,
-                                        );
-                                        _updateItemUnit(variantId, newValue, selectedUnit.id);
-                                      }
-                                    },
-                                  ),
-                                ),
-                              )
-                            else
-                              Container(
-                                height: 48,
-                                padding: const EdgeInsets.symmetric(horizontal: 8),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFF4F7FD),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: const Color(0xFFE5E7EB)),
-                                ),
-                                alignment: Alignment.centerLeft,
-                                child: Text(
-                                  item['selectedUnit'] ?? 'шт',
+                          ),
+                          const SizedBox(height: 4),
+                          if (availableUnits.length > 1)
+                            Container(
+                              height: 48,
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF4F7FD),
+                                borderRadius: BorderRadius.circular(8),
+                                border:
+                                    Border.all(color: const Color(0xFFE5E7EB)),
+                              ),
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  value: item['selectedUnit'],
+                                  isDense: true,
+                                  isExpanded: true,
+                                  dropdownColor: Colors.white,
+                                  icon: const Icon(Icons.arrow_drop_down,
+                                      size: 16, color: Color(0xff4759FF)),
                                   style: const TextStyle(
                                     fontSize: 12,
                                     fontFamily: 'Gilroy',
                                     fontWeight: FontWeight.w500,
                                     color: Color(0xff1E2E52),
                                   ),
+                                  items: availableUnits.map((unit) {
+                                    return DropdownMenuItem<String>(
+                                      value: unit.name,
+                                      child: Text(unit.name ?? ''),
+                                    );
+                                  }).toList(),
+                                  onChanged: (String? newValue) {
+                                    if (newValue != null) {
+                                      final selectedUnit =
+                                          availableUnits.firstWhere(
+                                        (unit) => (unit.name) == newValue,
+                                      );
+                                      _updateItemUnit(
+                                          variantId, newValue, selectedUnit.id);
+                                    }
+                                  },
                                 ),
                               ),
-                          ],
-                        ),
-                      ),
-                    if (availableUnits.isNotEmpty) const SizedBox(width: 8),
-                    Expanded(
-                      flex: 2,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            AppLocalizations.of(context)!.translate('quantity') ?? 'Кол-во',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w400,
-                              color: Color(0xff99A4BA),
+                            )
+                          else
+                            Container(
+                              height: 48,
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF4F7FD),
+                                borderRadius: BorderRadius.circular(8),
+                                border:
+                                    Border.all(color: const Color(0xFFE5E7EB)),
+                              ),
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                item['selectedUnit'] ?? 'шт',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontFamily: 'Gilroy',
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xff1E2E52),
+                                ),
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 4),
-                          CompactTextField(
-                            controller: quantityController ?? TextEditingController(),
-                            focusNode: quantityFocusNode,
-                            hintText: AppLocalizations.of(context)!.translate('quantity') ?? 'Количество',
-                            keyboardType: TextInputType.number,
-                            inputFormatters: [
-                              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,3}')),
-                            ],
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xff1E2E52),
-                            ),
-                            hasError: _quantityErrors[variantId] == true,
-                            onChanged: (value) => _updateItemQuantity(variantId, value),
-                            onDone: _moveToNextEmptyField,
-                          ),
                         ],
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      flex: 3,
-                      child: Column(
+                  if (availableUnits.isNotEmpty) const SizedBox(width: 8),
+                  Expanded(
+                    flex: 25,
+                    child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            AppLocalizations.of(context)!.translate('price') ?? 'Цена',
+                            AppLocalizations.of(context)!.translate('price') ??
+                                'Цена',
                             style: const TextStyle(
                               fontSize: 11,
                               fontFamily: 'Gilroy',
@@ -865,12 +953,17 @@ void _removeItem(int index) {
                           ),
                           const SizedBox(height: 4),
                           CompactTextField(
-                            controller: priceController ?? TextEditingController(),
+                            controller:
+                                priceController ?? TextEditingController(),
                             focusNode: priceFocusNode,
-                            hintText: AppLocalizations.of(context)!.translate('price') ?? 'Цена',
-                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            hintText: AppLocalizations.of(context)!
+                                    .translate('price') ??
+                                'Цена',
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
                             inputFormatters: [
-                              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,3}')),
+                              FilteringTextInputFormatter.allow(
+                                  RegExp(r'^\d*\.?\d{0,3}')),
                             ],
                             style: const TextStyle(
                               fontSize: 13,
@@ -879,61 +972,14 @@ void _removeItem(int index) {
                               color: Color(0xff1E2E52),
                             ),
                             hasError: _priceErrors[variantId] == true,
-                            onChanged: (value) => _updateItemPrice(variantId, value),
+                            onChanged: (value) =>
+                                _updateItemPrice(variantId, value),
                             onDone: _moveToNextEmptyField,
                           ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                        ]),
+                  ),
+                ]),
               ],
-              const SizedBox(height: 10),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF4F7FD),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          AppLocalizations.of(context)!.translate('total') ?? 'Сумма',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xff1E2E52),
-                          ),
-                        ),
-                        if ((item['amount'] ?? 1) > 1)
-                          Text(
-                            '(×${item['amount']} ${AppLocalizations.of(context)!.translate('pieces') ?? 'шт'})',
-                            style: const TextStyle(
-                              fontSize: 10,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w400,
-                              color: Color(0xff99A4BA),
-                            ),
-                          ),
-                      ],
-                    ),
-                    Text(
-                      (item['total'] ?? 0.0).toStringAsFixed(0),
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xff4759FF),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
             ],
           ),
         ),
@@ -941,72 +987,12 @@ void _removeItem(int index) {
     );
   }
 
-  Widget _buildTotalCard(double total) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xff4759FF), Color(0xff6B7BFF)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
-            spreadRadius: 2,
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            AppLocalizations.of(context)!.translate('total_amount') ?? 'Общая сумма',
-            style: const TextStyle(
-              fontSize: 16,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-            ),
-          ),
-          Text(
-            total.toStringAsFixed(0),
-            style: const TextStyle(
-              fontSize: 20,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ✅ ИЗМЕНЕНО: Две кнопки в разных линиях
-Widget _buildActionButtons(AppLocalizations localizations) {
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      boxShadow: [
-        BoxShadow(
-          color: Colors.grey.withOpacity(0.1),
-          spreadRadius: 1,
-          blurRadius: 3,
-          offset: const Offset(0, -1),
-        ),
-      ],
-    ),
-    child: Row(
+  Widget _buildActionButtons(AppLocalizations localizations) {
+    return Row(
       children: [
-        // Первая кнопка "Сохранить и провести" - белый фон с зелёной границей
         Expanded(
           child: Container(
-            height: 48, // Уменьшено с 48 до 40 для компактности
+            height: 48,
             decoration: BoxDecoration(
               border: Border.all(color: const Color(0xff4CAF50), width: 1.5),
               borderRadius: BorderRadius.circular(12),
@@ -1017,23 +1003,28 @@ Widget _buildActionButtons(AppLocalizations localizations) {
                 borderRadius: BorderRadius.circular(12),
                 onTap: _isLoading ? null : _createAndApproveDocument,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8), // Уменьшено с 16 до 8
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
                         Icons.check_circle_outline,
-                        size: 18, // Уменьшено с 20 до 18
-                        color: _isLoading ? const Color(0xff99A4BA) : const Color(0xff4CAF50),
+                        size: 18,
+                        color: _isLoading
+                            ? const Color(0xff99A4BA)
+                            : const Color(0xff4CAF50),
                       ),
-                      const SizedBox(width: 6), // Уменьшено с 8 до 6
+                      const SizedBox(width: 6),
                       Text(
-                        localizations.translate('save_and_approve') ?? 'Сохранить и провести',
+                        localizations.translate('save_and_approve') ??
+                            'Провести',
                         style: TextStyle(
-                          fontSize: 14, // Уменьшено с 16 до 14
+                          fontSize: 14,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w600,
-                          color: _isLoading ? const Color(0xff99A4BA) : const Color(0xff4CAF50),
+                          color: _isLoading
+                              ? const Color(0xff99A4BA)
+                              : const Color(0xff4CAF50),
                         ),
                       ),
                     ],
@@ -1043,11 +1034,10 @@ Widget _buildActionButtons(AppLocalizations localizations) {
             ),
           ),
         ),
-        const SizedBox(width: 12), // Пространство между кнопками
-        // Вторая кнопка "Сохранить" - синяя
+        const SizedBox(width: 12),
         Expanded(
           child: SizedBox(
-            height: 48, // Уменьшено с 48 до 40 для компактности
+            height: 48,
             child: ElevatedButton(
               onPressed: _isLoading ? null : _saveDocument,
               style: ElevatedButton.styleFrom(
@@ -1060,7 +1050,7 @@ Widget _buildActionButtons(AppLocalizations localizations) {
               ),
               child: _isLoading
                   ? const SizedBox(
-                      width: 18, // Уменьшено с 20 до 18
+                      width: 18,
                       height: 18,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
@@ -1070,12 +1060,13 @@ Widget _buildActionButtons(AppLocalizations localizations) {
                   : Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.save_outlined, color: Colors.white, size: 18), // Уменьшено с 20 до 18
-                        const SizedBox(width: 6), // Уменьшено с 8 до 6
+                        const Icon(Icons.save_outlined,
+                            color: Colors.white, size: 18),
+                        const SizedBox(width: 6),
                         Text(
                           localizations.translate('save') ?? 'Сохранить',
                           style: const TextStyle(
-                            fontSize: 14, // Уменьшено с 16 до 14
+                            fontSize: 14,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w600,
                             color: Colors.white,
@@ -1087,9 +1078,8 @@ Widget _buildActionButtons(AppLocalizations localizations) {
           ),
         ),
       ],
-    ),
-  );
-}
+    );
+  }
 
   void _createAndApproveDocument() {
     _createDocument(approve: true);
@@ -1104,21 +1094,44 @@ Widget _buildActionButtons(AppLocalizations localizations) {
     _dateController.dispose();
     _commentController.dispose();
     _scrollController.dispose();
-    
-    // ✅ НОВОЕ: Освобождаем все FocusNode
+    _tabController.dispose();
+
     for (var focusNode in _quantityFocusNodes.values) {
       focusNode.dispose();
     }
     for (var focusNode in _priceFocusNodes.values) {
       focusNode.dispose();
     }
-    
+
     for (var controller in _priceControllers.values) {
       controller.dispose();
     }
     for (var controller in _quantityControllers.values) {
       controller.dispose();
     }
+
     super.dispose();
+  }
+}
+
+// ✅ НОВЫЙ ВИДЖЕТ: Обёртка для сохранения состояния вкладок
+class _KeepAliveWrapper extends StatefulWidget {
+  final Widget child;
+
+  const _KeepAliveWrapper({required this.child});
+
+  @override
+  State<_KeepAliveWrapper> createState() => _KeepAliveWrapperState();
+}
+
+class _KeepAliveWrapperState extends State<_KeepAliveWrapper>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
   }
 }
