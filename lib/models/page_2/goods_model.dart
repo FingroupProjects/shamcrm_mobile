@@ -352,7 +352,25 @@ class Goods {
       rethrow;
     }
   }
+   String? get mainImageUrl {
+    if (files.isEmpty) return null;
+    
+    // Ищем главное изображение
+    try {
+      final mainFile = files.firstWhere(
+        (file) => file.isMain,
+        orElse: () => files.first,
+      );
+      
+      // Формируем полный URL
+      return 'https://shamcrm.com/storage/${mainFile.path}';
+    } catch (e) {
+      print('Ошибка получения главного изображения: $e');
+      return null;
+    }
+  }
 }
+
 
 class GoodsFile {
   final int id;
