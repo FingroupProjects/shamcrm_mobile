@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/screens/deal/deal_cache.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'deal_event.dart';
 import 'deal_state.dart';
@@ -126,6 +127,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
       FetchDealStatuses event, Emitter<DealState> emit) async {
     emit(DealLoading());
 
+    debugPrint("DealBloc: _fetchDealStatuses called");
     // Сначала пробуем получить данные из кэша
     final cachedStatuses = await DealCache.getDealStatuses();
     if (cachedStatuses.isNotEmpty) {
@@ -135,13 +137,14 @@ class DealBloc extends Bloc<DealEvent, DealState> {
       ));
     }
 
+    debugPrint("DealBloc: _fetchDealStatuses - Fetched from cache: ${cachedStatuses.length} statuses");
     // Затем запрашиваем данные из API
     if (!await _checkInternetConnection()) {
       emit(DealError('Нет подключения к интернету'));
       return;
     }
 
-    try {
+      debugPrint("DealBloc: _fetchDealStatuses - Fetching from API");
       final response = await apiService.getDealStatuses();
       // if (response.isEmpty) {
       //   emit(DealError('Нет статусов'));
@@ -154,24 +157,28 @@ class DealBloc extends Bloc<DealEvent, DealState> {
             .map((status) => {'id': status.id, 'title': status.title})
             .toList(),
       );
+      debugPrint("DealBloc: cached deal statuses: ${response.length}");
 
       // Параллельно загружаем количество сделок для каждого статуса
       final futures = response.map((status) {
+        debugPrint("DealBloc: Fetching deal count for status ID: ${status.id}");
         return apiService.getDeals(status.id, page: 1, perPage: 1);
       }).toList();
 
       final dealCountsResults = await Future.wait(futures);
 
+      debugPrint("DealBloc: dealCountsResults fetched for ${dealCountsResults.length} statuses");
+
+
       // Обновляем количество сделок
       for (int i = 0; i < response.length; i++) {
+        debugPrint("DealBloc: Status ID: ${response[i].id}, Deal Count: ${dealCountsResults[i].length}");
         _dealCounts[response[i].id] = dealCountsResults[i].length;
       }
 
       emit(DealLoaded(response, dealCounts: Map.from(_dealCounts)));
-    } catch (e) {
-      emit(DealError('Не удалось загрузить данные!'));
     }
-  }
+
 
   Future<void> _fetchMoreDeals(FetchMoreDeals event, Emitter<DealState> emit) async {
     if (allDealsFetched) return;

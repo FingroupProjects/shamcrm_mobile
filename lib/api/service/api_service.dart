@@ -2869,7 +2869,10 @@ Future<List<Deal>> getDeals(
     }
   }
 
+  debugPrint("ApiService: getDeals - Generated path: $path");
   final response = await _getRequest(path);
+  debugPrint("ApiService: getDeals - Response status: ${response.statusCode}");
+  debugPrint("ApiService: getDeals - Response body: ${response.body}");
 
   if (response.statusCode == 200) {
     final data = json.decode(response.body);
@@ -2878,9 +2881,11 @@ Future<List<Deal>> getDeals(
           .map((json) => Deal.fromJson(json, dealStatusId ?? -1))
           .toList();
     } else {
+      debugPrint("Future<List<Deal>> getDeals( ... Нет данных о сделках в ответе");
       throw Exception('Нет данных о сделках в ответе');
     }
   } else {
+    debugPrint("Future<List<Deal>> getDeals( ... Ошибка загрузки сделок");
     throw Exception('Ошибка загрузки сделок!');
   }
 }
@@ -2920,13 +2925,16 @@ Future<List<Deal>> getDeals(
           //     '----p---------------¿-----UPDATE CACHE DEALSTATUS----------------------------');
           // ////print('Статусы сделок обновлены в кэше');
 
+          debugPrint("ApiService: getDealStatuses - Deal statuses loaded successfully from API.");
           return (data['result'] as List)
               .map((status) => DealStatus.fromJson(status))
               .toList();
         } else {
+          debugPrint("ApiService: getDealStatuses - No result found in response.");
           throw Exception('Результат отсутствует в ответе');
         }
       } else {
+        debugPrint("ApiService: getDealStatuses - Failed to load deal statuses from API. Status code: ${response.statusCode}");
         throw Exception('Ошибка ${response.statusCode}!');
       }
     } catch (e) {

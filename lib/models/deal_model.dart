@@ -33,32 +33,34 @@ class Deal {
     this.createdAt,
   });
 
-factory Deal.fromJson(Map<String, dynamic> json, int dealStatusId) {
-  return Deal(
-    id: json['id'] ?? 0,
-    name: json['name'] ?? 'Без имени',
-    startDate: json['start_date'],
-    endDate: json['end_date'],
-    description: json['description'] ?? '',
-    sum: json['sum'] ?? '0.00',
-    statusId: dealStatusId,
-    dealStatus: json['deal_status'] != null
-        ? DealStatus.fromJson(json['deal_status'])
-        : null,
-    manager: json['manager'] != null
-        ? ManagerData.fromJson(json['manager'])
-        : null,
-    lead: json['lead'] != null
-        ? Lead.fromJson(json['lead'], json['lead']['status_id'] ?? 0)
-        : null,
-    dealCustomFields: (json['deal_custom_fields'] as List<dynamic>?)
-            ?.map((field) => DealCustomField.fromJson(field))
-            .toList() ?? [],
-    outDated: json['out_dated'] ?? false,
-    createdAt: json['created_at'] 
-  );
-}
-
+  factory Deal.fromJson(Map<String, dynamic> json, int dealStatusId) {
+    return Deal(
+      id: json['id'] ?? 0,
+      name: json['name'] ?? 'Без имени',
+      startDate: json['start_date'],
+      endDate: json['end_date'],
+      description: json['description'] ?? '',
+      sum: json['sum'] ?? '0.00',
+      statusId: dealStatusId,
+      dealStatus: json['deal_status'] != null
+          ? DealStatus.fromJson(json['deal_status'] as Map<String, dynamic>)
+          : null,
+      manager: json['manager'] != null
+          ? ManagerData.fromJson(json['manager'] as Map<String, dynamic>)
+          : null,
+      lead: json['lead'] != null
+          ? Lead.fromJson(
+          json['lead'] as Map<String, dynamic>,
+          (json['lead'] as Map<String, dynamic>)['status_id'] ?? 0
+      )
+          : null,
+      dealCustomFields: (json['deal_custom_fields'] as List<dynamic>?)
+          ?.map((field) => DealCustomField.fromJson(field as Map<String, dynamic>))
+          .toList() ?? [],
+      outDated: json['out_dated'] ?? false,
+      createdAt: json['created_at'],
+    );
+  }
 
   Map<String, dynamic> toJson() {
     return {
@@ -114,7 +116,7 @@ class DealStatusUser {
   final int dealStatusId;
   final String createdAt;
   final String updatedAt;
-  final UserData user; // Полная информация о пользователе
+  final UserData? user; // Полная информация о пользователе
 
   DealStatusUser({
     required this.id,
@@ -127,12 +129,14 @@ class DealStatusUser {
 
   factory DealStatusUser.fromJson(Map<String, dynamic> json) {
     return DealStatusUser(
-      id: json['id'] as int,
-      userId: json['user_id'] as int,
-      dealStatusId: json['deal_status_id'] as int,
-      createdAt: json['created_at'] as String,
-      updatedAt: json['updated_at'] as String,
-      user: UserData.fromJson(json['user']),
+      id: json['id'] as int? ?? 0,
+      userId: json['user_id'] as int? ?? 0,
+      dealStatusId: json['deal_status_id'] as int? ?? 0,
+      createdAt: json['created_at'] as String? ?? '',
+      updatedAt: json['updated_at'] as String? ?? '',
+      user: json['user'] != null
+          ? UserData.fromJson(json['user'] as Map<String, dynamic>)
+          : null, // You'll need to create an empty constructor
     );
   }
 
@@ -143,7 +147,7 @@ class DealStatusUser {
       'deal_status_id': dealStatusId,
       'created_at': createdAt,
       'updated_at': updatedAt,
-      'user': user.toJson(),
+      'user': user?.toJson(),
     };
   }
 }
@@ -178,11 +182,12 @@ class DealStatus {
   });
 
   factory DealStatus.fromJson(Map<String, dynamic> json) {
-    // ✅ НОВОЕ: Парсим массив пользователей
+    // Parse users list
     List<DealStatusUser>? usersList;
-    if (json['users'] != null) {
+    if (json['users'] != null && json['users'] is List) {
       usersList = (json['users'] as List)
-          .map((userJson) => DealStatusUser.fromJson(userJson))
+          .where((item) => item != null) // Filter out null items
+          .map((userJson) => DealStatusUser.fromJson(userJson as Map<String, dynamic>))
           .toList();
     }
 
@@ -190,15 +195,15 @@ class DealStatus {
       id: json['id'] as int? ?? 0,
       title: json['title'] as String? ?? 'Без имени',
       color: json['color'] as String? ?? '#000',
-      createdAt: json['created_at'] as String?,
-      updatedAt: json['updated_at'] as String?,
-      day: json['day'] as int?,
+      createdAt: json['created_at'] as String?, // Can be null
+      updatedAt: json['updated_at'] as String?, // Can be null
+      day: json['day'] as int?, // Can be null
       dealsCount: json['deals_count'] as int? ?? 0,
       isSuccess: json['is_success'] == 1 || json['is_success'] == true,
       isFailure: json['is_failure'] == 1 || json['is_failure'] == true,
-      notificationMessage: json['notification_message'] as String?,
+      notificationMessage: json['notification_message'] as String?, // Can be null
       showOnMainPage: json['show_on_main_page'] == 1 || json['show_on_main_page'] == true,
-      users: usersList, // ✅ НОВОЕ
+      users: usersList,
     );
   }
 

@@ -181,7 +181,7 @@ Widget build(BuildContext context) {
           print('EditDealStatusScreen: Загружены пользователи: $_initialUserIds');
           print('EditDealStatusScreen: Полная информация о пользователях:');
           state.dealStatus.users?.forEach((user) {
-            print('  - ID: ${user.userId}, Имя: ${user.user.name} ${user.user.lastname}');
+            print('  - ID: ${user.userId}, Имя: ${user.user!.name} ${user.user!.lastname}');
           });
           
           _dataLoaded = true;
