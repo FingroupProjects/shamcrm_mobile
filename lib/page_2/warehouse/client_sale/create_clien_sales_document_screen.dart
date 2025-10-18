@@ -196,9 +196,6 @@ class CreateClienSalesDocumentScreenState
       ),
     );
 
-    if (result != null) {
-      _handleVariantSelection(result);
-    }
     if (result == null) {
       FocusScope.of(context).unfocus();
     } else {
