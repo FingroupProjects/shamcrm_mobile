@@ -10,8 +10,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class StorageWidget extends StatefulWidget {
   final String? selectedStorage;
   final ValueChanged<String?> onChanged;
+  final Key? key;
 
-  StorageWidget({required this.selectedStorage, required this.onChanged});
+  const StorageWidget({
+    required this.selectedStorage,
+    required this.onChanged,
+    this.key,
+  }) : super(key: key);
 
   @override
   _StorageWidgetState createState() => _StorageWidgetState();
@@ -23,7 +28,11 @@ class _StorageWidgetState extends State<StorageWidget> {
   @override
   void initState() {
     super.initState();
-    context.read<StorageBloc>().add(FetchStorage());
+    // ✅ ИСПРАВЛЕНИЕ: Загружаем данные только если они ещё не загружены
+    final currentState = context.read<StorageBloc>().state;
+    if (currentState is! StorageLoaded && currentState is! StorageLoading) {
+      context.read<StorageBloc>().add(FetchStorage());
+    }
   }
 
   @override
@@ -35,7 +44,7 @@ class _StorageWidgetState extends State<StorageWidget> {
             SnackBar(
               content: Text(
                 AppLocalizations.of(context)!.translate(state.message),
-                style: TextStyle(
+                style: const TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
@@ -43,14 +52,14 @@ class _StorageWidgetState extends State<StorageWidget> {
                 ),
               ),
               behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
               backgroundColor: Colors.red,
               elevation: 3,
-              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              duration: Duration(seconds: 3),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: const Duration(seconds: 3),
             ),
           );
         }
@@ -58,7 +67,7 @@ class _StorageWidgetState extends State<StorageWidget> {
       child: BlocBuilder<StorageBloc, StorageState>(
         builder: (context, state) {
           final isLoading = state is StorageLoading;
-          
+
           // Обновляем данные при успешной загрузке
           if (state is StorageLoaded) {
             List<WareHouse> storageList = state.storageList;
@@ -66,7 +75,8 @@ class _StorageWidgetState extends State<StorageWidget> {
             if (widget.selectedStorage != null && storageList.isNotEmpty) {
               try {
                 selectedStorageData = storageList.firstWhere(
-                      (storage) => storage.id.toString() == widget.selectedStorage,
+                  (storage) =>
+                      storage.id.toString() == widget.selectedStorage,
                 );
               } catch (e) {
                 selectedStorageData = null;
@@ -80,7 +90,7 @@ class _StorageWidgetState extends State<StorageWidget> {
             children: [
               Text(
                 AppLocalizations.of(context)!.translate('storage'),
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
                   fontFamily: 'Gilroy',
@@ -88,141 +98,140 @@ class _StorageWidgetState extends State<StorageWidget> {
                 ),
               ),
               const SizedBox(height: 4),
-              Container(
-                child: CustomDropdown<WareHouse>.search(
-                  closeDropDownOnClearFilterSearch: true,
-                  items: state is StorageLoaded ? state.storageList : [],
-                  searchHintText:
-                  AppLocalizations.of(context)!.translate('search'),
-                  overlayHeight: 400,
-                  enabled: !isLoading, // ← Блокируем при загрузке
-                  decoration: CustomDropdownDecoration(
-                    closedFillColor: Color(0xffF4F7FD),
-                    expandedFillColor: Colors.white,
-                    closedBorder: Border.all(
-                      color: Color(0xffF4F7FD),
-                      width: 1,
-                    ),
-                    closedBorderRadius: BorderRadius.circular(12),
-                    expandedBorder: Border.all(
-                      color: Color(0xffF4F7FD),
-                      width: 1,
-                    ),
-                    expandedBorderRadius: BorderRadius.circular(12),
+              CustomDropdown<WareHouse>.search(
+                closeDropDownOnClearFilterSearch: true,
+                items: state is StorageLoaded ? state.storageList : [],
+                searchHintText:
+                    AppLocalizations.of(context)!.translate('search'),
+                overlayHeight: 400,
+                enabled: !isLoading,
+                decoration: CustomDropdownDecoration(
+                  closedFillColor: const Color(0xffF4F7FD),
+                  expandedFillColor: Colors.white,
+                  closedBorder: Border.all(
+                    color: const Color(0xffF4F7FD),
+                    width: 1,
                   ),
-                  listItemBuilder: (context, item, isSelected, onItemSelect) {
-                    return Text(
-                      item.name ?? '',
-                      style: TextStyle(
-                        color: Color(0xff1E2E52),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    );
-                  },
-                  headerBuilder: (context, selectedItem, enabled) {
-                    // ← Показываем загрузку в центре
-                    if (isLoading) {
-                      return const Center(
-                        child: SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
-                          ),
-                        ),
-                      );
-                    }
-                    
-                    return Text(
-                      selectedItem?.name ??
-                          AppLocalizations.of(context)!
-                              .translate('select_storage'),
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
-                      ),
-                    );
-                  },
-                  hintBuilder: (context, hint, enabled) {
-                    // ← Загрузка когда ничего не выбрано
-                    if (isLoading) {
-                      return const Center(
-                        child: SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
-                          ),
-                        ),
-                      );
-                    }
-                    
-                    return Text(
-                      AppLocalizations.of(context)!.translate('select_storage'),
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
-                      ),
-                    );
-                  },
-                  // ← Загрузка в открытом списке
-                  noResultFoundBuilder: (context, text) {
-                    if (isLoading) {
-                      return const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(20.0),
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
-                          ),
-                        ),
-                      );
-                    }
-                    return Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(20.0),
-                        child: Text(
-                          AppLocalizations.of(context)!.translate('no_results'),
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontFamily: 'Gilroy',
-                            color: Color(0xff1E2E52),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                  excludeSelected: false,
-                  initialItem: (state is StorageLoaded &&
-                      state.storageList.contains(selectedStorageData))
-                      ? selectedStorageData
-                      : null,
-                  validator: (value) {
-                    if (value == null) {
-                      return AppLocalizations.of(context)!.translate('field_required_project');
-                    }
-                    return null;
-                  },
-                  onChanged: (value) {
-                    if (value != null) {
-                      widget.onChanged(value.id.toString());
-                      setState(() {
-                        selectedStorageData = value;
-                      });
-                      FocusScope.of(context).unfocus();
-                    }
-                  },
+                  closedBorderRadius: BorderRadius.circular(12),
+                  expandedBorder: Border.all(
+                    color: const Color(0xffF4F7FD),
+                    width: 1,
+                  ),
+                  expandedBorderRadius: BorderRadius.circular(12),
                 ),
+                listItemBuilder: (context, item, isSelected, onItemSelect) {
+                  return Text(
+                    item.name ?? '',
+                    style: const TextStyle(
+                      color: Color(0xff1E2E52),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Gilroy',
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  );
+                },
+                headerBuilder: (context, selectedItem, enabled) {
+                  if (isLoading) {
+                    return const Center(
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                              Color(0xff1E2E52)),
+                        ),
+                      ),
+                    );
+                  }
+
+                  return Text(
+                    selectedItem?.name ??
+                        AppLocalizations.of(context)!
+                            .translate('select_storage'),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Gilroy',
+                      color: Color(0xff1E2E52),
+                    ),
+                  );
+                },
+                hintBuilder: (context, hint, enabled) {
+                  if (isLoading) {
+                    return const Center(
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                              Color(0xff1E2E52)),
+                        ),
+                      ),
+                    );
+                  }
+
+                  return Text(
+                    AppLocalizations.of(context)!.translate('select_storage'),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Gilroy',
+                      color: Color(0xff1E2E52),
+                    ),
+                  );
+                },
+                noResultFoundBuilder: (context, text) {
+                  if (isLoading) {
+                    return const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(20.0),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                              Color(0xff1E2E52)),
+                        ),
+                      ),
+                    );
+                  }
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Text(
+                        AppLocalizations.of(context)!.translate('no_results'),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontFamily: 'Gilroy',
+                          color: Color(0xff1E2E52),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+                excludeSelected: false,
+                initialItem: (state is StorageLoaded &&
+                        state.storageList.contains(selectedStorageData))
+                    ? selectedStorageData
+                    : null,
+                validator: (value) {
+                  if (value == null) {
+                    return AppLocalizations.of(context)!
+                        .translate('field_required_project');
+                  }
+                  return null;
+                },
+                onChanged: (value) {
+                  if (value != null) {
+                    widget.onChanged(value.id.toString());
+                    setState(() {
+                      selectedStorageData = value;
+                    });
+                    FocusScope.of(context).unfocus();
+                  }
+                },
               ),
             ],
           );

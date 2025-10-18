@@ -1725,5 +1725,7 @@
   "unit_pieces_short": "pcs",
   "error_loading_document_details": "Error loading document",
   "document_approved_successfully": "Document approved",
-  "all_variants_added": "All variants already added"
+  "all_variants_added": "All variants already added",
+  "main": "Main",
+  "no_goods_added": "No goods added"
 }
