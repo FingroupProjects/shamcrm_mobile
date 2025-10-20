@@ -99,6 +99,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/order_by_lead/order_bloc.dart'
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_history/history_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/variant_bloc/variant_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/variant_bottom_sheet_bloc/variant_bottom_sheet_bloc.dart';
 import 'package:crm_task_manager/bloc/permission/permession_bloc.dart';
 import 'package:crm_task_manager/bloc/pricce_type/price_type_bloc.dart';
 import 'package:crm_task_manager/bloc/profile/profile_bloc.dart';
@@ -769,8 +770,7 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => GoodsBloc(widget.apiService)),
         BlocProvider(create: (context) => GoodsByIdBloc(widget.apiService)),
         BlocProvider(create: (context) => BranchBloc(widget.apiService)),
-        BlocProvider(
-            create: (context) => DeliveryAddressBloc(widget.apiService)),
+        BlocProvider(create: (context) => DeliveryAddressBloc(widget.apiService)),
         BlocProvider(create: (context) => LeadOrderBloc(widget.apiService)),
         BlocProvider(create: (context) => CalendarBloc(widget.apiService)),
         BlocProvider(create: (context) => OrderHistoryBloc(widget.apiService)),
@@ -779,6 +779,7 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => PriceTypeBloc(widget.apiService)),
         BlocProvider(create: (context) => LabelBloc(widget.apiService)),
         BlocProvider(create: (context) => VariantBloc(widget.apiService)),
+        BlocProvider(create: (context) => VariantBottomSheetBloc(widget.apiService)),
         BlocProvider(
           create: (context) => CallCenterBloc(ApiService()),
         ),

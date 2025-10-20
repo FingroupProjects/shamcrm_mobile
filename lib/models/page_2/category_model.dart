@@ -137,9 +137,13 @@ class CategoryDetail {
 class CategoryWithCount {
   final CategoryData category;
   final int goodsCount;
+  final int level; // Уровень вложенности: 0 = основная категория, 1+ = подкатегории
+  final int? parentId; // ID родительской категории (для подкатегорий)
 
   CategoryWithCount({
     required this.category,
     required this.goodsCount,
+    this.level = 0,
+    this.parentId,
   });
 }
