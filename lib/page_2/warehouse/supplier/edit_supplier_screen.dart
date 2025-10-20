@@ -112,8 +112,9 @@ class _EditSupplierScreenState extends State<EditSupplierScreen> {
     int? expectedLength = phoneNumberLengths[dialCode];
 
     if (expectedLength != null && value.length != expectedLength) {
-      return AppLocalizations.of(context)!.translate('invalid_phone_length') ??
+      final message = AppLocalizations.of(context)!.translate('invalid_phone_length') ??
           'Номер телефона должен содержать $expectedLength цифр';
+      return message.replaceAll('{expectedLength}', expectedLength.toString());
     }
 
     return null;
