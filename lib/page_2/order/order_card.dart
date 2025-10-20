@@ -388,8 +388,7 @@ class _OrderCardState extends State<OrderCard> {
             // Статус и сумма
             Row(
               children: [
-                Expanded(
-                  flex: 2,
+                Flexible(
                   child: GestureDetector(
                     onTap: () {
                       OrderDropdownBottomSheet(

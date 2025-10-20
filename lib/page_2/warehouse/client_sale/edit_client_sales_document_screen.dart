@@ -502,13 +502,6 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
 
               if (state is ClientSaleUpdateSuccess && mounted) {
                 Navigator.pop(context, true);
-              } else if (state is ClientSaleUpdateError && mounted) {
-                if (state.statusCode == 409) {
-                  showSimpleErrorDialog(context,
-                      localizations.translate('error') ?? 'Ошибка', state.message);
-                  return;
-                }
-                _showSnackBar(state.message, false);
               }
             },
             child: Form(
