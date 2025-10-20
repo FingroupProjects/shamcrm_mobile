@@ -11,9 +11,11 @@ import 'package:cached_network_image/cached_network_image.dart';
 
 class VariantSelectionBottomSheet extends StatefulWidget {
   final List<Map<String, dynamic>> existingItems;
+  final bool forceReload; // Флаг для принудительной перезагрузки
 
   const VariantSelectionBottomSheet({
     required this.existingItems,
+    this.forceReload = false,
     super.key,
   });
 
