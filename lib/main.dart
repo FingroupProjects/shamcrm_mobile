@@ -31,6 +31,7 @@ import 'package:crm_task_manager/bloc/directory_bloc/directory_bloc.dart';
 import 'package:crm_task_manager/bloc/event/event_bloc.dart';
 import 'package:crm_task_manager/bloc/eventByID/event_byId_bloc.dart';
 import 'package:crm_task_manager/bloc/expense/expense_bloc.dart';
+import 'package:crm_task_manager/bloc/field_configuration/field_configuration_bloc.dart';
 import 'package:crm_task_manager/bloc/history_lead_notice_deal/history_lead_notice_deal_bloc.dart';
 import 'package:crm_task_manager/bloc/history_my-task/task_history_bloc.dart';
 import 'package:crm_task_manager/bloc/income/income_bloc.dart';
@@ -830,6 +831,10 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => SalesDashboardCashBalanceBloc()),
         BlocProvider(create: (context) => SalesDashboardCreditorsBloc()),
         BlocProvider(create: (context) => SalesDashboardDebtorsBloc()),
+        BlocProvider(create: (context) => FieldConfigurationBloc(widget.apiService)),
+
+
+
      ],
       child: MaterialApp(
         locale: _locale ?? const Locale('ru'),

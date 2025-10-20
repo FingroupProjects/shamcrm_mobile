@@ -144,7 +144,14 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
       ], eagerError: true).catchError((e) {
         print('PinScreen: Ошибка загрузки данных: $e');
       });
-
+try {
+  print('PinScreen: Загрузка конфигураций полей');
+  await _apiService.loadAndCacheAllFieldConfigurations();
+  print('PinScreen: Конфигурации полей загружены и закэшированы');
+} catch (e) {
+  print('PinScreen: Ошибка загрузки конфигураций полей: $e');
+  // Не критично, продолжаем работу
+}
       // ШАГ 6: Проверка PIN
       await _checkSavedPin();
       

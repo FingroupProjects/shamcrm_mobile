@@ -2,6 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/bloc/field_configuration/field_configuration_bloc.dart';
+import 'package:crm_task_manager/bloc/field_configuration/field_configuration_event.dart';
+import 'package:crm_task_manager/bloc/field_configuration/field_configuration_state.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/lead/lead_state.dart';
@@ -14,7 +17,9 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/order_by_lead/order_bloc.dart'
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_by_lead/order_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/file_utils.dart';
+import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/models/leadById_model.dart';
+import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/history_dialog.dart';
 import 'package:crm_task_manager/screens/lead/export_lead_to_contact.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_delete.dart';
@@ -29,6 +34,7 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_edit_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
@@ -193,11 +199,14 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
 
   Set<String> _normalizedContactPhones = {};
   bool _isLoadingContacts = true;
-
+   // Конфигурация полей
+  List<FieldConfiguration> fieldConfigurations = [];
+  bool isConfigurationLoaded = false;
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
+      _loadFieldConfiguration();
 
     _checkPermissions().then((_) {
       context.read<OrganizationBloc>().add(FetchOrganizations());
@@ -215,38 +224,54 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     _fetchTutorialProgress();
     _listenToPrefsChanges();
   }
-
-  Future<void> _loadContactsToCache() async {
-    try {
-      if (!await FlutterContacts.requestPermission()) {
+ // Новый метод для загрузки конфигурации полей
+  Future<void> _loadFieldConfiguration() async {
+    if (kDebugMode) {
+      print('LeadDetailsScreen: Loading field configuration');
+    }
+    
+    // Загружаем конфигурацию из кэша через Bloc
+    context.read<FieldConfigurationBloc>().add(
+      FetchFieldConfiguration('leads')
+    );
+  }
+Future<void> _loadContactsToCache() async {
+  try {
+    if (!await FlutterContacts.requestPermission()) {
+      if (mounted) {  // ✅ Добавляем проверку
         setState(() {
           _isLoadingContacts = false;
         });
-        return;
       }
+      return;
+    }
 
-      List<Contact> contacts =
-          await FlutterContacts.getContacts(withProperties: true);
+    List<Contact> contacts =
+        await FlutterContacts.getContacts(withProperties: true);
 
-      Set<String> normalizedPhones = {};
-      for (var contact in contacts) {
-        for (var phone in contact.phones) {
-          String normalizedPhone =
-              phone.number.replaceAll(RegExp(r'[^\d+]'), '');
-          normalizedPhones.add(normalizedPhone);
-        }
+    Set<String> normalizedPhones = {};
+    for (var contact in contacts) {
+      for (var phone in contact.phones) {
+        String normalizedPhone =
+            phone.number.replaceAll(RegExp(r'[^\d+]'), '');
+        normalizedPhones.add(normalizedPhone);
       }
+    }
 
+    if (mounted) {  // ✅ Добавляем проверку
       setState(() {
         _normalizedContactPhones = normalizedPhones;
         _isLoadingContacts = false;
       });
-    } catch (e) {
+    }
+  } catch (e) {
+    if (mounted) {  // ✅ Добавляем проверку
       setState(() {
         _isLoadingContacts = false;
       });
     }
   }
+}
 
   bool _isPhoneInContacts(String phoneNumber) {
     String normalizedLeadPhone = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
@@ -518,8 +543,266 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     });
   }
 
-  void _updateDetails(LeadById lead) {
+   void _updateDetails(LeadById lead) {
     currentLead = lead;
+    
+    // Если конфигурация загружена, строим детали на её основе
+    if (isConfigurationLoaded && fieldConfigurations.isNotEmpty) {
+      _buildDetailsFromConfiguration(lead);
+    } else {
+      // Fallback: строим детали как раньше
+      _buildDetailsLegacy(lead);
+    }
+  }
+
+  // Новый метод для построения деталей на основе конфигурации
+
+
+  // Получение значения поля из лида
+String? _getFieldValue(LeadById lead, FieldConfiguration config) {
+  // Обработка кастомных полей
+  if (config.isCustomField) {
+    try {
+      final customField = lead.leadCustomFields.firstWhere(
+        (field) => field.key == config.fieldName,
+      );
+      return customField.value;
+    } catch (e) {
+      // Поле не найдено, возвращаем null
+      if (kDebugMode) {
+        print('LeadDetailsScreen: Custom field "${config.fieldName}" not found in lead data');
+      }
+      return null;
+    }
+  }
+  
+  // Обработка справочников
+  if (config.isDirectory && config.directoryId != null) {
+    try {
+      final dirValue = lead.directoryValues.firstWhere(
+        (dv) => dv.entry?.directory.id == config.directoryId,
+      );
+      return dirValue.entry?.values['value'] ?? '';
+    } catch (e) {
+      // Справочник не найден, возвращаем null
+      if (kDebugMode) {
+        print('LeadDetailsScreen: Directory field with id ${config.directoryId} not found in lead data');
+      }
+      return null;
+    }
+  }
+  
+  // Обработка стандартных полей
+  switch (config.fieldName) {
+    case 'name':
+      return lead.name;
+    case 'phone':
+      return lead.phone ?? '';
+    case 'manager_id':
+      if (lead.manager != null) {
+        return '${lead.manager!.name} ${lead.manager!.lastname ?? ''}';
+      }
+      // Возвращаем специальное значение для кнопки "Стать менеджером"
+      return 'become_manager';
+    case 'region_id':
+      return lead.region?.name;
+    case 'source_id':
+      return lead.source?.name;
+    case 'wa_phone':
+      return lead.whatsApp;
+    case 'insta_login':
+      return lead.instagram;
+    case 'facebook_login':
+      return lead.facebook;
+    case 'tg_nick':
+      return lead.telegram;
+    case 'email':
+      return lead.email;
+    default:
+      if (kDebugMode) {
+        print('LeadDetailsScreen: Unknown field "${config.fieldName}"');
+      }
+      return null;
+  }
+}
+// Новый метод для построения деталей на основе конфигурации
+void _buildDetailsFromConfiguration(LeadById lead) {
+  details = [];
+  
+  if (kDebugMode) {
+    print('LeadDetailsScreen: Building details from configuration with ${fieldConfigurations.length} fields');
+  }
+  
+  // Проходим по конфигурации в правильном порядке
+  for (var config in fieldConfigurations) {
+    if (!config.isActive) {
+      if (kDebugMode) {
+        print('LeadDetailsScreen: Skipping inactive field: ${config.fieldName}');
+      }
+      continue; // Пропускаем неактивные поля
+    }
+    
+    // Получаем значение для каждого поля
+    String? value = _getFieldValue(lead, config);
+    
+    // Особая обработка для manager_id когда нет менеджера
+    if (config.fieldName == 'manager_id' && value == 'become_manager') {
+      details.add({'label': '', 'value': 'become_manager'});
+      if (kDebugMode) {
+        print('LeadDetailsScreen: Added become_manager button');
+      }
+      continue;
+    }
+    
+    if (value != null && value.isNotEmpty) {
+      String label = _getFieldLabel(config);
+      details.add({'label': label, 'value': value});
+      
+      if (kDebugMode) {
+        print('LeadDetailsScreen: Added field - ${config.fieldName}: $value');
+      }
+    }
+  }
+  
+  // Добавляем дополнительные поля которых нет в конфигурации
+  _addExtraFields(lead);
+  
+  // Добавляем файлы если есть
+  if (lead.files != null && lead.files!.isNotEmpty) {
+    details.add({
+      'label': AppLocalizations.of(context)!.translate('files_details'),
+      'value':
+          '${lead.files!.length} ${AppLocalizations.of(context)!.translate('files')}'
+    });
+  }
+  
+  if (kDebugMode) {
+    print('LeadDetailsScreen: Total details count: ${details.length}');
+  }
+}
+
+// Новый метод для добавления дополнительных полей которых нет в конфигурации
+void _addExtraFields(LeadById lead) {
+  // Список полей которые всегда показываем, но которых может не быть в конфигурации
+  
+  // День рождения (только если есть phone_verified_at)
+  if (lead.phone_verified_at != null && lead.birthday != null && lead.birthday!.isNotEmpty) {
+    bool alreadyAdded = details.any((d) => d['label'] == AppLocalizations.of(context)!.translate('birthday_details'));
+    if (!alreadyAdded) {
+      details.add({
+        'label': AppLocalizations.of(context)!.translate('birthday_details'),
+        'value': formatDate(lead.birthday)
+      });
+    }
+  }
+  
+  // Тип цены (только если есть phone_verified_at)
+  if (lead.phone_verified_at != null && lead.priceType != null) {
+    bool alreadyAdded = details.any((d) => d['label'] == AppLocalizations.of(context)!.translate('price_type_details'));
+    if (!alreadyAdded) {
+      details.add({
+        'label': AppLocalizations.of(context)!.translate('price_type_details'),
+        'value': lead.priceType!.name
+      });
+    }
+  }
+  
+  // Описание
+  if (lead.description != null && lead.description!.isNotEmpty) {
+    bool alreadyAdded = details.any((d) => d['label'] == AppLocalizations.of(context)!.translate('description_details_lead'));
+    if (!alreadyAdded) {
+      details.add({
+        'label': AppLocalizations.of(context)!.translate('description_details_lead'),
+        'value': lead.description!
+      });
+    }
+  }
+  
+  // Автор
+  if (lead.author != null) {
+    bool alreadyAdded = details.any((d) => d['label'] == AppLocalizations.of(context)!.translate('author_details'));
+    if (!alreadyAdded) {
+      details.add({
+        'label': AppLocalizations.of(context)!.translate('author_details'),
+        'value': lead.author!.name
+      });
+    }
+  }
+  
+  // Воронка продаж
+  if (lead.salesFunnel != null) {
+    bool alreadyAdded = details.any((d) => d['label'] == AppLocalizations.of(context)!.translate('sales_funnel_details'));
+    if (!alreadyAdded) {
+      details.add({
+        'label': AppLocalizations.of(context)!.translate('sales_funnel_details'),
+        'value': lead.salesFunnel!.name
+      });
+    }
+  }
+  
+  // Дата создания
+  if (lead.createdAt != null && lead.createdAt!.isNotEmpty) {
+    bool alreadyAdded = details.any((d) => d['label'] == AppLocalizations.of(context)!.translate('created_at_details'));
+    if (!alreadyAdded) {
+      details.add({
+        'label': AppLocalizations.of(context)!.translate('created_at_details'),
+        'value': formatDate(lead.createdAt)
+      });
+    }
+  }
+  
+  // Статус
+  if (lead.leadStatus != null) {
+    bool alreadyAdded = details.any((d) => d['label'] == AppLocalizations.of(context)!.translate('status_details'));
+    if (!alreadyAdded) {
+      details.add({
+        'label': AppLocalizations.of(context)!.translate('status_details'),
+        'value': lead.leadStatus!.title
+      });
+    }
+  }
+}
+
+  // Получение лейбла для поля
+  String _getFieldLabel(FieldConfiguration config) {
+    // Для кастомных полей и справочников используем их имя
+    if (config.isCustomField || config.isDirectory) {
+      return '${config.fieldName}:';
+    }
+    
+    // Для стандартных полей используем локализованные названия
+    switch (config.fieldName) {
+      case 'name':
+        return AppLocalizations.of(context)!.translate('lead_name');
+      case 'phone':
+        return AppLocalizations.of(context)!.translate('phone_use');
+      case 'manager_id':
+        return AppLocalizations.of(context)!.translate('manager_details');
+      case 'region_id':
+        return AppLocalizations.of(context)!.translate('region_details');
+      case 'source_id':
+        return AppLocalizations.of(context)!.translate('source_details');
+      case 'wa_phone':
+        return 'WhatsApp:';
+      case 'insta_login':
+        return 'Instagram:';
+      case 'facebook_login':
+        return 'Facebook:';
+      case 'tg_nick':
+        return 'Telegram:';
+      case 'email':
+        return AppLocalizations.of(context)!.translate('email_details');
+      default:
+        return '${config.fieldName}:';
+    }
+  }
+
+  // Старый метод как fallback (на случай если конфигурация не загрузилась)
+  void _buildDetailsLegacy(LeadById lead) {
+    if (kDebugMode) {
+      print('LeadDetailsScreen: Building details using legacy method');
+    }
+    
     details = [
       {
         'label': AppLocalizations.of(context)!.translate('lead_name'),
@@ -572,7 +855,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         'label': '${AppLocalizations.of(context)!.translate('author_details')}',
         'value': lead.author?.name ?? ''
       },
-       {
+      {
         'label': '${AppLocalizations.of(context)!.translate('sales_funnel_details')}',
         'value': lead.salesFunnel?.name ?? ''
       },
@@ -592,17 +875,20 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
               '${lead.files!.length} ${AppLocalizations.of(context)!.translate('files')}'
         },
     ];
+    
+    // Добавляем кастомные поля
     for (var field in lead.leadCustomFields) {
-      // print(
-      //     'LeadDetailsScreen: Adding custom field - key: ${field.key}, value: ${field.value}');
       details.add({'label': '${field.key}:', 'value': field.value});
     }
+    
+    // Добавляем справочники
     for (var dirValue in lead.directoryValues) {
       final directoryName = dirValue.entry?.directory.name;
       final value = dirValue.entry?.values['value'] ?? '';
       details.add({'label': '$directoryName:', 'value': value});
     }
   }
+
 
   Widget _buildExpandableText(String label, String value, double maxWidth) {
     final TextStyle style = TextStyle(
@@ -626,39 +912,76 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     );
   }
 
-  @override
+   @override
   Widget build(BuildContext context) {
     if (!_isTutorialShown) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        //showTutorial();
         setState(() {
           _isTutorialShown = true;
         });
       });
     }
+    
     return MultiBlocProvider(
       providers: [
         BlocProvider<OrderByLeadBloc>(
           create: (context) => OrderByLeadBloc(context.read<ApiService>()),
         ),
+        BlocProvider<FieldConfigurationBloc>(
+          create: (context) => FieldConfigurationBloc(ApiService()),
+        ),
       ],
       child: Scaffold(
         appBar: _buildAppBar(
-            context, AppLocalizations.of(context)!.translate('view_lead')  + widget.leadId),
+            context, AppLocalizations.of(context)!.translate('view_lead') + ' #' + widget.leadId),
         backgroundColor: Colors.white,
-        body: BlocListener<LeadByIdBloc, LeadByIdState>(
-          listener: (context, state) {
-            if (state is LeadByIdError) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                showCustomSnackBar(
-                  context: context,
-                  message:
-                      AppLocalizations.of(context)!.translate(state.message),
-                  isSuccess: false,
-                );
-              });
-            }
-          },
+        body: MultiBlocListener(
+          listeners: [
+            BlocListener<LeadByIdBloc, LeadByIdState>(
+              listener: (context, state) {
+                if (state is LeadByIdError) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    showCustomSnackBar(
+                      context: context,
+                      message:
+                          AppLocalizations.of(context)!.translate(state.message),
+                      isSuccess: false,
+                    );
+                  });
+                }
+              },
+            ),
+            BlocListener<FieldConfigurationBloc, FieldConfigurationState>(
+              listener: (context, configState) {
+                if (kDebugMode) {
+                  print('LeadDetailsScreen: FieldConfigurationBloc state changed: ${configState.runtimeType}');
+                }
+                
+                if (configState is FieldConfigurationLoaded) {
+                  if (kDebugMode) {
+                    print('LeadDetailsScreen: Configuration loaded with ${configState.fields.length} fields');
+                  }
+                  setState(() {
+                    fieldConfigurations = configState.fields;
+                    isConfigurationLoaded = true;
+                  });
+                  
+                  // Перестраиваем детали если лид уже загружен
+                  if (currentLead != null) {
+                    _updateDetails(currentLead!);
+                  }
+                } else if (configState is FieldConfigurationError) {
+                  if (kDebugMode) {
+                    print('LeadDetailsScreen: Configuration error: ${configState.message}');
+                  }
+                  // Используем legacy метод
+                  setState(() {
+                    isConfigurationLoaded = false;
+                  });
+                }
+              },
+            ),
+          ],
           child: BlocBuilder<LeadByIdBloc, LeadByIdState>(
             builder: (context, state) {
               if (state is LeadByIdLoading) {
@@ -667,7 +990,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
               } else if (state is LeadByIdLoaded) {
                 LeadById lead = state.lead;
                 _updateDetails(lead);
-                // print('LeadDetailsScreen: Lead chats: ${lead.chats}');
+                
                 return Padding(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -745,6 +1068,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       ),
     );
   }
+
 
   AppBar _buildAppBar(BuildContext context, String title) {
     return AppBar(

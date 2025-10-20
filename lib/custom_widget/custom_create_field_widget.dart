@@ -9,6 +9,8 @@ class CustomFieldWidget extends StatelessWidget {
   final VoidCallback onRemove;
   final bool isDirectory;
   final String? type;
+    final bool isCustomField; // Новый флаг
+
 
   const CustomFieldWidget({
     Key? key,
@@ -17,6 +19,8 @@ class CustomFieldWidget extends StatelessWidget {
     required this.onRemove,
     this.isDirectory = false,
     this.type,
+        this.isCustomField = false, // По умолчанию false
+
   }) : super(key: key);
 
   Future<void> _selectDate(BuildContext context, {bool withTime = false}) async {
