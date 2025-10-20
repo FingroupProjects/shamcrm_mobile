@@ -236,58 +236,38 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
       );
     }
 
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.85,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Column(
-        children: [
-          _buildHeader(localizations),
-          _buildSearchField(localizations),
-          Expanded(
-            child: BlocBuilder<VariantBloc, VariantState>(
-              builder: (context, state) {
-                if (state is VariantLoading) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+    return PopScope(
+      canPop: _showAllMode || _selectedCategoryId == null,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop && !_showAllMode && _selectedCategoryId != null) {
+          // Если мы в режиме категорий и выбрана категория - возвращаемся к списку категорий
+          setState(() {
+            _selectedCategoryId = null;
+          });
+          _saveSelectedCategory(null);
+        }
+      },
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.85,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          children: [
+            _buildHeader(localizations),
+            _buildSearchField(localizations),
+            Expanded(
+              child: BlocBuilder<VariantBloc, VariantState>(
+                builder: (context, state) {
+                  if (state is VariantLoading) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
 
-                if (state is VariantEmpty) {
-                  return Center(
-                    child: Text(
-                      localizations.translate('no_variants_found') ?? 'Варианты не найдены',
-                      style: const TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontSize: 16,
-                        color: Color(0xff99A4BA),
-                      ),
-                    ),
-                  );
-                }
-
-                if (state is VariantError) {
-                  return Center(
-                    child: Text(
-                      state.message,
-                      style: const TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontSize: 16,
-                        color: Colors.red,
-                      ),
-                    ),
-                  );
-                }
-
-                if (state is VariantDataLoaded) {
-                  final availableVariants = state.variants
-                      .where((variant) => !_isItemAlreadyAdded(variant))
-                      .toList();
-
-                  if (availableVariants.isEmpty) {
+                  if (state is VariantEmpty) {
                     return Center(
                       child: Text(
-                        localizations.translate('all_variants_added') ?? 'Все варианты уже добавлены',
+                        localizations.translate('no_variants_found') ?? 'Варианты не найдены',
                         style: const TextStyle(
                           fontFamily: 'Gilroy',
                           fontSize: 16,
@@ -297,30 +277,77 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
                     );
                   }
 
-                  // Выбор режима отображения
-                  if (_showAllMode || _searchController.text.isNotEmpty) {
-                    // Режим "Все товары"
-                    return _buildVariantsList(availableVariants, state, localizations);
-                  } else {
-                    // Режим "По категориям"
-                    if (_selectedCategoryId == null) {
-                      // Показываем список категорий
-                      return _buildCategoriesList(availableVariants, localizations);
+                  if (state is VariantError) {
+                    return Center(
+                      child: Text(
+                        state.message,
+                        style: const TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 16,
+                          color: Colors.red,
+                        ),
+                      ),
+                    );
+                  }
+
+                  if (state is VariantDataLoaded) {
+                    final availableVariants = state.variants
+                        .where((variant) => !_isItemAlreadyAdded(variant))
+                        .toList();
+
+                    if (availableVariants.isEmpty) {
+                      return Center(
+                        child: Text(
+                          localizations.translate('all_variants_added') ?? 'Все варианты уже добавлены',
+                          style: const TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 16,
+                            color: Color(0xff99A4BA),
+                          ),
+                        ),
+                      );
+                    }
+
+                    // Выбор режима отображения
+                    if (_showAllMode || _searchController.text.isNotEmpty) {
+                      // Режим "Все товары"
+                      return _buildVariantsList(availableVariants, state, localizations);
                     } else {
-                      // Показываем товары выбранной категории
-                      final categoryVariants = availableVariants
-                          .where((v) => v.good?.category.id == _selectedCategoryId)
-                          .toList();
-                      return _buildVariantsList(categoryVariants, state, localizations);
+                      // Режим "По категориям"
+                      if (_selectedCategoryId == null) {
+                        // Показываем список категорий
+                        return _buildCategoriesList(availableVariants, localizations);
+                      } else {
+                        // Показываем товары выбранной категории
+                        final categoryVariants = availableVariants
+                            .where((v) => v.good?.category.id == _selectedCategoryId)
+                            .toList();
+                        
+                        // Если в категории нет товаров, показываем сообщение
+                        if (categoryVariants.isEmpty) {
+                          return Center(
+                            child: Text(
+                              localizations.translate('no_goods_in_category') ?? 'В этой категории нет товаров',
+                              style: const TextStyle(
+                                fontFamily: 'Gilroy',
+                                fontSize: 16,
+                                color: Color(0xff99A4BA),
+                              ),
+                            ),
+                          );
+                        }
+                        
+                        return _buildVariantsList(categoryVariants, state, localizations);
+                      }
                     }
                   }
-                }
 
-                return const SizedBox.shrink();
-              },
+                  return const SizedBox.shrink();
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -589,14 +616,16 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
       itemCount: variants.length + 1,
       itemBuilder: (context, index) {
         if (index == variants.length) {
-          return context.read<VariantBloc>().allVariantsFetched
-              ? const SizedBox.shrink()
-              : const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(16),
-                    child: CircularProgressIndicator(),
-                  ),
-                );
+          final showLoader = _showAllMode && !context.read<VariantBloc>().allVariantsFetched;
+
+          return showLoader
+              ? const Center(
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: CircularProgressIndicator(),
+            ),
+          )
+              : const SizedBox.shrink();
         }
 
         final variant = variants[index];

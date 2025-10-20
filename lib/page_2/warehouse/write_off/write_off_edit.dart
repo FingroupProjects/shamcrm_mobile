@@ -45,15 +45,10 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
   final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
 
   // Контроллеры для редактирования полей товаров
-  final Map<int, TextEditingController> _priceControllers = {};
   final Map<int, TextEditingController> _quantityControllers = {};
-
   // ✅ НОВОЕ: FocusNode для управления фокусом
   final Map<int, FocusNode> _quantityFocusNodes = {};
-  final Map<int, FocusNode> _priceFocusNodes = {};
-
   // Для отслеживания ошибок валидации
-  final Map<int, bool> _priceErrors = {};
   final Map<int, bool> _quantityErrors = {};
 
   // Для сворачивания/разворачивания карточек
@@ -82,7 +77,6 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
       for (var good in widget.document.documentGoods!) {
         final variantId = good.variantId ?? good.good?.id ?? 0;
         final quantity = good.quantity ?? 0;
-        final price = double.tryParse(good.price ?? '0') ?? 0.0;
 
         // ✅ NEW: Try multiple sources for units
         final availableUnits = good.good?.units ??
@@ -99,22 +93,17 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
           'variantId': variantId,
           'name': good.fullName ?? good.good?.name ?? '',
           'quantity': quantity,
-          'price': price,
-          'total': quantity * price * amount,
           'selectedUnit': selectedUnitObj.name,
           'unit_id': selectedUnitObj.id,
           'amount': amount,
           'availableUnits': availableUnits,
         });
 
-        _priceControllers[variantId] = TextEditingController(text: price.toStringAsFixed(3));
         _quantityControllers[variantId] = TextEditingController(text: quantity.toString());
 
         // ✅ НОВОЕ: Создаём FocusNode для существующих товаров
         _quantityFocusNodes[variantId] = FocusNode();
-        _priceFocusNodes[variantId] = FocusNode();
 
-        _priceErrors[variantId] = false;
         _quantityErrors[variantId] = false;
       }
     }
@@ -136,22 +125,10 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
 
           final variantId = newItem['variantId'] as int;
 
-          final initialPrice = newItem['price'] ?? 0.0;
-          _priceControllers[variantId] = TextEditingController(
-              text: initialPrice > 0 ? initialPrice.toStringAsFixed(3) : ''
-          );
-
           _quantityControllers[variantId] = TextEditingController(text: '');
 
           _quantityFocusNodes[variantId] = FocusNode();
-          _priceFocusNodes[variantId] = FocusNode();
 
-          _items.last['price'] = initialPrice;
-
-          final amount = newItem['amount'] ?? 1;
-          _items.last['total'] = (initialPrice * amount).round();
-
-          _priceErrors[variantId] = false;
           _quantityErrors[variantId] = false;
 
           // ✅ Новая карточка развернута
@@ -196,17 +173,11 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
       setState(() {
         _items.removeAt(index);
 
-        _priceControllers[variantId]?.dispose();
-        _priceControllers.remove(variantId);
         _quantityControllers[variantId]?.dispose();
         _quantityControllers.remove(variantId);
 
         _quantityFocusNodes[variantId]?.dispose();
         _quantityFocusNodes.remove(variantId);
-        _priceFocusNodes[variantId]?.dispose();
-        _priceFocusNodes.remove(variantId);
-
-        _priceErrors.remove(variantId);
         _quantityErrors.remove(variantId);
 
         _collapsedItems.remove(variantId);
@@ -248,8 +219,6 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
         final index = _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
           _items[index]['quantity'] = quantity;
-          final amount = _items[index]['amount'] ?? 1;
-          _items[index]['total'] = (_items[index]['quantity'] * _items[index]['price'] * amount).round();
         }
         _quantityErrors[variantId] = false;
       });
@@ -258,30 +227,6 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
         final index = _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
           _items[index]['quantity'] = 0;
-          _items[index]['total'] = 0.0;
-        }
-      });
-    }
-  }
-
-  void _updateItemPrice(int variantId, String value) {
-    final price = double.tryParse(value);
-    if (price != null && price >= 0) {
-      setState(() {
-        final index = _items.indexWhere((item) => item['variantId'] == variantId);
-        if (index != -1) {
-          _items[index]['price'] = price;
-          final amount = _items[index]['amount'] ?? 1;
-          _items[index]['total'] = (_items[index]['quantity'] * _items[index]['price'] * amount).round();
-        }
-        _priceErrors[variantId] = false;
-      });
-    } else if (value.isEmpty) {
-      setState(() {
-        final index = _items.indexWhere((item) => item['variantId'] == variantId);
-        if (index != -1) {
-          _items[index]['price'] = 0.0;
-          _items[index]['total'] = 0.0;
         }
       });
     }
@@ -301,9 +246,6 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
         );
 
         _items[index]['amount'] = selectedUnitObj.amount ?? 1;
-
-        final amount = _items[index]['amount'] ?? 1;
-        _items[index]['total'] = (_items[index]['quantity'] * _items[index]['price'] * amount).round();
       }
     });
   }
@@ -313,15 +255,9 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
     for (var item in _items) {
       final variantId = item['variantId'] as int;
       final quantityController = _quantityControllers[variantId];
-      final priceController = _priceControllers[variantId];
 
       if (quantityController != null && quantityController.text.trim().isEmpty) {
         _quantityFocusNodes[variantId]?.requestFocus();
-        return;
-      }
-
-      if (priceController != null && priceController.text.trim().isEmpty) {
-        _priceFocusNodes[variantId]?.requestFocus();
         return;
       }
     }
@@ -434,11 +370,6 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
         duration: const Duration(seconds: 3),
       ),
     );
-  }
-
-  // ✅ НОВОЕ: Вычисляем общую сумму
-  double get _totalAmount {
-    return _items.fold<double>(0, (sum, item) => sum + (item['total'] ?? 0.0));
   }
 
   @override
@@ -620,9 +551,6 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
   }
 
   AppBar _buildAppBar(AppLocalizations localizations) {
-    final hasItems = _items.isNotEmpty;
-    final total = _totalAmount;
-
     return AppBar(
       backgroundColor: Colors.white,
       forceMaterialTransparency: true,
@@ -656,36 +584,6 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
               ),
             ),
           ),
-          if (hasItems) ...[
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: const Color(0xff4CAF50).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.account_balance_wallet_outlined,
-                    color: Color(0xff4CAF50),
-                    size: 18,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    total.toStringAsFixed(0),
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xff4CAF50),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
         ],
       ),
       centerTitle: false,
@@ -781,10 +679,8 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
   Widget _buildSelectedItemCard(int index, Map<String, dynamic> item, Animation<double> animation) {
     final availableUnits = item['availableUnits'] as List<Unit>? ?? [];
     final variantId = item['variantId'] as int;
-    final priceController = _priceControllers[variantId];
     final quantityController = _quantityControllers[variantId];
     final quantityFocusNode = _quantityFocusNodes[variantId];
-    final priceFocusNode = _priceFocusNodes[variantId];
 
     final isCollapsed = _collapsedItems[variantId] ?? false;
 
@@ -842,22 +738,7 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
                   ],
                 ),
               ),
-              InkWell(
-                onTap: () => _toggleItemCollapse(variantId),
-                child: Container(
-                  alignment: Alignment.centerLeft,
-                  padding: const EdgeInsets.only(top: 4, bottom: 10),
-                  child: Text(
-                    '${AppLocalizations.of(context)?.translate('total') ?? 'Сумма'} ${(item['total'] ?? 0.0).toStringAsFixed(0)}',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xff4759FF),
-                    ),
-                  ),
-                ),
-              ),
+              const SizedBox(height: 8),
               if (!isCollapsed) ...[
                 const Divider(height: 1, color: Color(0xFFE5E7EB)),
                 const SizedBox(height: 10),
@@ -996,13 +877,6 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
 
     for (var focusNode in _quantityFocusNodes.values) {
       focusNode.dispose();
-    }
-    for (var focusNode in _priceFocusNodes.values) {
-      focusNode.dispose();
-    }
-
-    for (var controller in _priceControllers.values) {
-      controller.dispose();
     }
     for (var controller in _quantityControllers.values) {
       controller.dispose();

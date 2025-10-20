@@ -1727,5 +1727,6 @@
   "document_approved_successfully": "Hujjat tasdiqlandi",
   "all_variants_added": "Barcha variantlar qo'shilgan",
   "main": "Asosiy",
-  "no_goods_added": "Mahsulotlar qo'shilmagan"
+  "no_goods_added": "Mahsulotlar qo'shilmagan",
+  "no_goods_in_category": "Ushbu kategoriyada tovarlar yo'q"
 }

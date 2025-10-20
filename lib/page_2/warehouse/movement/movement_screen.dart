@@ -399,7 +399,7 @@ class _MovementScreenState extends State<MovementScreen> {
                               context,
                               localizations?.translate('error') ?? 'Ошибка',
                               state.message,
-                              errorDialogEnum: ErrorDialogEnum.goodsMovementDelete,
+                              errorDialogEnum: ErrorDialogEnum.goodsMovementUpdate,
                           );
                           return;
                         }
@@ -430,7 +430,7 @@ class _MovementScreenState extends State<MovementScreen> {
                               context,
                               localizations?.translate('error') ?? 'Ошибка',
                               state.message,
-                              errorDialogEnum: ErrorDialogEnum.goodsMovementDelete
+                              errorDialogEnum: ErrorDialogEnum.goodsMovementUpdate
                           );
                           return;
                         }

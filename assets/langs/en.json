@@ -1727,5 +1727,6 @@
   "document_approved_successfully": "Document approved",
   "all_variants_added": "All variants already added",
   "main": "Main",
-  "no_goods_added": "No goods added"
+  "no_goods_added": "No goods added",
+  "no_goods_in_category": "No goods in this category"
 }

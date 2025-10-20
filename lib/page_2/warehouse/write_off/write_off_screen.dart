@@ -374,7 +374,7 @@ class _WriteOffScreenState extends State<WriteOffScreen> {
                           context,
                           localizations.translate('error'),
                           state.message,
-                      errorDialogEnum: ErrorDialogEnum.writeOffApprove);
+                      errorDialogEnum: ErrorDialogEnum.writeOffUpdate);
                       return;
                     }
                     _showSnackBar(state.message, false);
@@ -405,7 +405,7 @@ class _WriteOffScreenState extends State<WriteOffScreen> {
                           context,
                           localizations.translate('error'),
                           state.message,
-                      errorDialogEnum: ErrorDialogEnum.writeOffApprove);
+                      errorDialogEnum: ErrorDialogEnum.writeOffUpdate);
                       return;
                     }
                     _showSnackBar(state.message, false);
