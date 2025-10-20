@@ -10,6 +10,8 @@ class CustomField {
   final String uniqueId; // Уникальный идентификатор
   final String? type; // Тип поля
   final GlobalKey _key; // Приватный ключ для виджета
+    final bool isCustomField; // Новый флаг
+
 
   CustomField({
     required this.fieldName,
@@ -18,6 +20,7 @@ class CustomField {
     this.directoryId,
     this.entryId,
     this.type,
+        this.isCustomField = false, // По умолчанию false
     String? uniqueId,
   }) : uniqueId = uniqueId ?? Uuid().v4(),
        _key = GlobalKey();
@@ -42,6 +45,7 @@ class CustomField {
       entryId: entryId ?? this.entryId,
       uniqueId: uniqueId ?? this.uniqueId,
       type: type ?? this.type,
+      isCustomField: this.isCustomField,
     );
   }
 

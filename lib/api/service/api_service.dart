@@ -58,6 +58,7 @@ import 'package:crm_task_manager/models/page_2/call_center_model.dart';
 import 'package:crm_task_manager/models/page_2/call_statistics1_model.dart';
 import 'package:crm_task_manager/models/page_2/call_summary_stats_model.dart';
 import 'package:crm_task_manager/models/page_2/category_dashboard_warehouse_model.dart';
+import 'package:crm_task_manager/models/page_2/field_configuration.dart';
 import 'package:crm_task_manager/models/page_2/order_status_warehouse_model.dart';
 import 'package:crm_task_manager/models/page_2/expense_article_dashboard_warehouse_model.dart';
 import 'package:crm_task_manager/models/page_2/category_model.dart';
@@ -1754,186 +1755,135 @@ Future<String> getStaticBaseUrl() async {
   }
 
 // Обновленный метод createLead
-  Future<Map<String, dynamic>> createLead({
-    required String name,
-    required int leadStatusId,
-    required String phone,
-    int? regionId,
-    int? managerId,
-    int? sourceId,
-    String? instaLogin,
-    String? facebookLogin,
-    String? tgNick,
-    DateTime? birthday,
-    String? email,
-    String? description,
-    String? waPhone,
-    List<Map<String, dynamic>>? customFields,
-    String? manager,
-  }) async {
-    final Map<String, dynamic> requestData = {
-      'name': name,
-      'lead_status_id': leadStatusId,
-      'phone': phone,
-      'position': 1,
-      if (regionId != null) 'region_id': regionId,
-      if (managerId != null) 'manager_id': managerId,
-      if (manager != null) 'manager': manager,
-      if (sourceId != null) 'source_id': sourceId,
-      if (instaLogin != null) 'insta_login': instaLogin,
-      if (facebookLogin != null) 'facebook_login': facebookLogin,
-      if (tgNick != null) 'tg_nick': tgNick,
-      if (birthday != null) 'birthday': birthday.toIso8601String(),
-      if (email != null) 'email': email,
-      if (description != null) 'description': description,
-      if (waPhone != null) 'wa_phone': waPhone,
-      if (customFields != null && customFields.isNotEmpty)
-        'lead_custom_fields': customFields,
-    };
+ Future<Map<String, dynamic>> createLeadWithData(
+  Map<String, dynamic> data, {
+  List<String>? filePaths,
+}) async {
+  // Формируем путь с query-параметрами
+  final updatedPath = await _appendQueryParams('/lead');
+  if (kDebugMode) {
+    print('ApiService: createLeadWithData - Generated path: $updatedPath');
+  }
+  
+  final token = await getToken();
+  var request = http.MultipartRequest('POST', Uri.parse('$baseUrl$updatedPath'));
+  
+  request.headers.addAll({
+    'Authorization': 'Bearer $token',
+    'Accept': 'application/json',
+    'Device': 'mobile',
+  });
 
-    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/lead');
-    if (kDebugMode) {
-      //print('ApiService: createLead - Generated path: $path');
+  // Добавляем обычные поля
+  data.forEach((key, value) {
+    // Пропускаем массивы - их обработаем отдельно
+    if (key != 'lead_custom_fields' && key != 'directory_values') {
+      if (value != null) {
+        request.fields[key] = value.toString();
+      }
     }
+  });
 
-    final response = await _postRequest(path, requestData);
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'message': 'lead_created_successfully'};
-    } else if (response.statusCode == 422) {
-      if (response.body.contains('The phone has already been taken.')) {
-        return {'success': false, 'message': 'phone_already_exists'};
-      }
-      if (response.body.contains('validation.phone')) {
-        return {'success': false, 'message': 'invalid_phone_format'};
-      }
-      if (response.body
-          .contains('The email field must be a valid email address.')) {
-        return {'success': false, 'message': 'error_enter_email'};
-      }
-      if (response.body.contains('name')) {
-        return {'success': false, 'message': 'invalid_name_length'};
-      }
-      if (response.body.contains('insta_login')) {
-        return {'success': false, 'message': 'instagram_login_exists'};
-      }
-      if (response.body.contains('tg_nick')) {
-        return {'success': false, 'message': 'telegram_nick_exists'};
-      }
-      if (response.body.contains('birthday')) {
-        return {'success': false, 'message': 'invalid_birthday'};
-      }
-      if (response.body.contains('wa_phone')) {
-        return {'success': false, 'message': 'whatsapp_number_exists'};
-      }
-      if (response.body.contains('type')) {
-        return {'success': false, 'message': 'invalid_field_type'};
-      }
-      if (response.body.contains('lead_custom_fields')) {
-        return {'success': false, 'message': 'invalid_custom_fields'};
-      }
-      return {'success': false, 'message': 'unknown_error'};
-    } else if (response.statusCode == 500) {
-      return {'success': false, 'message': 'error_server_text'};
-    } else {
-      return {'success': false, 'message': 'lead_creation_error'};
+  // Обрабатываем lead_custom_fields как массив объектов
+  if (data['lead_custom_fields'] != null &&
+      data['lead_custom_fields'] is List &&
+      (data['lead_custom_fields'] as List).isNotEmpty) {
+    List<Map<String, dynamic>> customFields =
+        List<Map<String, dynamic>>.from(data['lead_custom_fields']);
+    for (int i = 0; i < customFields.length; i++) {
+      request.fields['lead_custom_fields[$i][key]'] =
+          customFields[i]['key']?.toString() ?? '';
+      request.fields['lead_custom_fields[$i][value]'] =
+          customFields[i]['value']?.toString() ?? '';
+      request.fields['lead_custom_fields[$i][type]'] =
+          customFields[i]['type']?.toString() ?? 'string';
     }
   }
 
-  Future<Map<String, dynamic>> createLeadWithData(
-    Map<String, dynamic> data, {
-    List<String>? filePaths,
-  }) async {
-    // Формируем путь с query-параметрами
-    final updatedPath = await _appendQueryParams('/lead');
-    if (kDebugMode) {
-      //print('ApiService: createLeadWithData - Generated path: $updatedPath');
+  // ВАЖНО: Обрабатываем directory_values как массив объектов
+  if (data['directory_values'] != null &&
+      data['directory_values'] is List &&
+      (data['directory_values'] as List).isNotEmpty) {
+    List<Map<String, dynamic>> directoryValues =
+        List<Map<String, dynamic>>.from(data['directory_values']);
+    for (int i = 0; i < directoryValues.length; i++) {
+      request.fields['directory_values[$i][directory_id]'] =
+          directoryValues[i]['directory_id'].toString();
+      request.fields['directory_values[$i][entry_id]'] =
+          directoryValues[i]['entry_id'].toString();
     }
-    var request =
-        http.MultipartRequest('POST', Uri.parse('$baseUrl$updatedPath'));
+  }
 
-    // Добавляем поля, кроме lead_custom_fields
-    data.forEach((key, value) {
-      if (key != 'lead_custom_fields') {
-        if (value is List) {
-          request.fields[key] = json.encode(value);
-        } else if (value != null) {
-          request.fields[key] = value.toString();
-        }
-      }
+  // Добавляем файлы
+  if (filePaths != null && filePaths.isNotEmpty) {
+    for (var filePath in filePaths) {
+      final file = await http.MultipartFile.fromPath('files[]', filePath);
+      request.files.add(file);
+    }
+  }
+
+  if (kDebugMode) {
+    print('ApiService: createLeadWithData - Request fields:');
+    request.fields.forEach((key, value) {
+      print('  $key: $value');
     });
-
-    // Обрабатываем lead_custom_fields как массив объектов
-    if (data['lead_custom_fields'] != null &&
-        data['lead_custom_fields'] is List &&
-        data['lead_custom_fields'].isNotEmpty) {
-      List<Map<String, dynamic>> customFields =
-          data['lead_custom_fields'] as List<Map<String, dynamic>>;
-      for (int i = 0; i < customFields.length; i++) {
-        request.fields['lead_custom_fields[$i][key]'] =
-            customFields[i]['key'] ?? '';
-        request.fields['lead_custom_fields[$i][value]'] =
-            customFields[i]['value'] ?? '';
-        request.fields['lead_custom_fields[$i][type]'] =
-            customFields[i]['type'] ?? 'string';
-      }
-    }
-
-    // Добавляем файлы
-    if (filePaths != null && filePaths.isNotEmpty) {
-      for (var filePath in filePaths) {
-        final file = await http.MultipartFile.fromPath('files[]', filePath);
-        request.files.add(file);
-      }
-    }
-
-    final response = await _multipartPostRequest('/lead', request);
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'message': 'lead_created_successfully'};
-    } else if (response.statusCode == 422) {
-      if (response.body.contains('The phone has already been taken.')) {
-        return {'success': false, 'message': 'phone_already_exists'};
-      }
-      if (response.body.contains('validation.phone')) {
-        return {'success': false, 'message': 'invalid_phone_format'};
-      }
-      if (response.body
-          .contains('The email field must be a valid email address.')) {
-        return {'success': false, 'message': 'error_enter_email'};
-      }
-      if (response.body.contains('name')) {
-        return {'success': false, 'message': 'invalid_name_length'};
-      }
-      if (response.body.contains('insta_login')) {
-        return {'success': false, 'message': 'instagram_login_exists'};
-      }
-      if (response.body.contains('facebook_login')) {
-        return {'success': false, 'message': 'facebook_login_exists'};
-      }
-      if (response.body.contains('tg_nick')) {
-        return {'success': false, 'message': 'telegram_nick_exists'};
-      }
-      if (response.body.contains('birthday')) {
-        return {'success': false, 'message': 'invalid_birthday'};
-      }
-      if (response.body.contains('wa_phone')) {
-        return {'success': false, 'message': 'whatsapp_number_exists'};
-      }
-      if (response.body.contains('type')) {
-        return {'success': false, 'message': 'invalid_field_type'};
-      }
-      if (response.body.contains('lead_custom_fields')) {
-        return {'success': false, 'message': 'invalid_custom_fields'};
-      }
-      return {'success': false, 'message': 'unknown_error'};
-    } else if (response.statusCode == 500) {
-      return {'success': false, 'message': 'error_server_text'};
-    } else {
-      return {'success': false, 'message': 'lead_creation_error'};
-    }
   }
+
+  final streamedResponse = await request.send();
+  final response = await http.Response.fromStream(streamedResponse);
+
+  if (kDebugMode) {
+    print('ApiService: createLeadWithData - Response status: ${response.statusCode}');
+    print('ApiService: createLeadWithData - Response body: ${response.body}');
+  }
+
+  if (response.statusCode == 200 || response.statusCode == 201) {
+    return {'success': true, 'message': 'lead_created_successfully'};
+  } else if (response.statusCode == 422) {
+    if (response.body.contains('The phone has already been taken.')) {
+      return {'success': false, 'message': 'phone_already_exists'};
+    }
+    if (response.body.contains('validation.phone')) {
+      return {'success': false, 'message': 'invalid_phone_format'};
+    }
+    if (response.body
+        .contains('The email field must be a valid email address.')) {
+      return {'success': false, 'message': 'error_enter_email'};
+    }
+    if (response.body.contains('name')) {
+      return {'success': false, 'message': 'invalid_name_length'};
+    }
+    if (response.body.contains('insta_login')) {
+      return {'success': false, 'message': 'instagram_login_exists'};
+    }
+    if (response.body.contains('facebook_login')) {
+      return {'success': false, 'message': 'facebook_login_exists'};
+    }
+    if (response.body.contains('tg_nick')) {
+      return {'success': false, 'message': 'telegram_nick_exists'};
+    }
+    if (response.body.contains('birthday')) {
+      return {'success': false, 'message': 'invalid_birthday'};
+    }
+    if (response.body.contains('wa_phone')) {
+      return {'success': false, 'message': 'whatsapp_number_exists'};
+    }
+    if (response.body.contains('type')) {
+      return {'success': false, 'message': 'invalid_field_type'};
+    }
+    if (response.body.contains('lead_custom_fields')) {
+      return {'success': false, 'message': 'invalid_custom_fields'};
+    }
+    if (response.body.contains('directory_values')) {
+      return {'success': false, 'message': 'invalid_directory_values'};
+    }
+    return {'success': false, 'message': 'unknown_error'};
+  } else if (response.statusCode == 500) {
+    return {'success': false, 'message': 'error_server_text'};
+  } else {
+    return {'success': false, 'message': 'lead_creation_error'};
+  }
+}
 
   Future<Map<String, dynamic>> updateLead({
     required int leadId,
@@ -2757,6 +2707,35 @@ Future<String> getStaticBaseUrl() async {
     // since it may contain partial errors
     return responseData;
   }
+
+
+
+  Future<FieldConfigurationResponse> getFieldPositions({
+  required String tableName,
+}) async {
+  try {
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/field-position?table=$tableName');
+    
+    if (kDebugMode) {
+      print('ApiService: getFieldPositions - Generated path: $path');
+    }
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return FieldConfigurationResponse.fromJson(data);
+    } else {
+      throw Exception('Ошибка загрузки конфигурации полей: ${response.statusCode}');
+    }
+  } catch (e) {
+    if (kDebugMode) {
+      print('ApiService: getFieldPositions - Error: $e');
+    }
+    throw Exception('Ошибка загрузки конфигурации полей!');
+  }
+}
   //_________________________________ END_____API__SCREEN__LEAD____________________________________________//
 
   //_________________________________ START___API__SCREEN__DEAL____________________________________________//
