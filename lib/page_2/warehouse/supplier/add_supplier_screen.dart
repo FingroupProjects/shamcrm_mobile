@@ -25,6 +25,7 @@ class _AddSupplierScreenState extends State<AddSupplierScreen> {
   final TextEditingController noteController = TextEditingController();
 
   String selectedDialCode = '';
+  Country? currentCountry;
 
   String? _validatePhone(String? value) {
     if (value == null || value.isEmpty) {
@@ -32,8 +33,17 @@ class _AddSupplierScreenState extends State<AddSupplierScreen> {
           'Поле обязательно';
     }
 
+    // Get the dial code from selectedDialCode
+    String dialCode = '';
+    for (var code in countryCodes) {
+      if (selectedDialCode.startsWith(code)) {
+        dialCode = code;
+        break;
+      }
+    }
+
     // Get expected length for this dial code
-    int? expectedLength = phoneNumberLengths[selectedDialCode];
+    int? expectedLength = phoneNumberLengths[dialCode];
 
     if (expectedLength != null && value.length != expectedLength) {
       final message = AppLocalizations.of(context)!.translate('invalid_phone_length') ??
@@ -173,6 +183,18 @@ class _AddSupplierScreenState extends State<AddSupplierScreen> {
                           onInputChanged: (String number) {
                             setState(() {
                               selectedDialCode = number;
+                              for (var code in countryCodes) {
+                                if (number.startsWith(code)) {
+                                  try {
+                                    currentCountry = countries.firstWhere(
+                                          (country) => country.dialCode == code,
+                                    );
+                                  } catch (e) {
+                                    currentCountry = null;
+                                  }
+                                  break;
+                                }
+                              }
                             });
                           },
                           label: AppLocalizations.of(context)!
