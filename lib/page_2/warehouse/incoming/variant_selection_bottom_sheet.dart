@@ -43,6 +43,31 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
     _scrollController.addListener(_onScroll);
     _loadSettings();
   }
+  
+  bool _dataInitialized = false;
+  
+  void _initializeData() {
+    // Защита от повторной инициализации
+    if (_dataInitialized) {
+      print('⚠️ _initializeData already called, skipping');
+      return;
+    }
+    _dataInitialized = true;
+    
+    if (_showAllMode) {
+      print('📦 Loading ALL variants');
+      // В режиме "все товары" загружаем все варианты
+      context.read<VariantBloc>().add(FetchVariants());
+    } else if (_selectedCategoryId != null) {
+      print('📦 Loading variants for saved category: $_selectedCategoryId');
+      // Если была сохранена категория - загружаем её товары
+      context.read<VariantBloc>().add(FetchVariantsByCategory(categoryId: _selectedCategoryId!));
+    } else {
+      print('📂 Loading CATEGORIES first');
+      // В режиме "по категориям" загружаем список категорий
+      context.read<VariantBloc>().add(FetchCategories());
+    }
+  }
 
   @override
   void dispose() {
@@ -63,24 +88,45 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
       // Безопасная загрузка режима отображения (по умолчанию - по категориям)
       try {
         final savedMode = prefs.getString('variant_display_mode');
-        _showAllMode = savedMode == 'all';
+        print('🔍 SharedPreferences: variant_display_mode = "$savedMode"');
+        
+        // ВРЕМЕННО: Принудительно сбрасываем в режим категорий если был 'all'
+        // Уберите эти 4 строки после тестирования
+        if (savedMode == 'all') {
+          print('🔄 Forcing reset to categories mode');
+          prefs.setString('variant_display_mode', 'category');
+          _showAllMode = false;
+        } else {
+          _showAllMode = savedMode == 'all';
+        }
+        
+        print('🔍 _showAllMode = $_showAllMode (${_showAllMode ? "All goods" : "Categories"})');
       } catch (e) {
+        print('⚠️ Error loading display mode: $e');
         // Если был сохранён в другом формате, очищаем и используем значение по умолчанию
         prefs.remove('variant_display_mode');
         _showAllMode = false; // По умолчанию - по категориям
+        print('🔍 Reset to default: _showAllMode = false (Categories)');
       }
       
       // Безопасная загрузка ID последней выбранной категории
       try {
         final savedCategoryId = prefs.getInt('variant_selected_category_id');
+        print('🔍 SharedPreferences: variant_selected_category_id = $savedCategoryId');
         _selectedCategoryId = savedCategoryId;
       } catch (e) {
+        print('⚠️ Error loading category id: $e');
         prefs.remove('variant_selected_category_id');
         _selectedCategoryId = null;
       }
       
       _isInitialized = true;
     });
+    
+    // Инициализируем данные после загрузки настроек
+    if (mounted) {
+      _initializeData();
+    }
   }
 
   // Сохранение режима отображения
@@ -102,8 +148,17 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
   void _onScroll() {
     if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent * 0.9) {
       final state = context.read<VariantBloc>().state;
+      
       if (state is VariantDataLoaded && !context.read<VariantBloc>().allVariantsFetched) {
         context.read<VariantBloc>().add(FetchMoreVariants(state.currentPage));
+      } else if (state is CategoryVariantsLoaded) {
+        // Проверяем, есть ли ещё страницы для загрузки
+        if (state.currentPage < state.pagination.totalPages) {
+          context.read<VariantBloc>().add(FetchMoreVariantsByCategory(
+            categoryId: state.categoryId,
+            currentPage: state.currentPage,
+          ));
+        }
       }
     }
   }
@@ -131,22 +186,15 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
     // Сохраняем новый режим
     _saveDisplayMode(_showAllMode);
     _saveSelectedCategory(null);
+    
+    // Загружаем данные в зависимости от режима (не зависит от _dataInitialized)
+    if (_showAllMode) {
+      context.read<VariantBloc>().add(FetchVariants());
+    } else {
+      context.read<VariantBloc>().add(FetchCategories());
+    }
   }
 
-  // Получение уникальных категорий из вариантов
-  List<CategoryData> _getCategories(List<Variant> variants) {
-    final Map<int, CategoryData> categoriesMap = {};
-    
-    for (var variant in variants) {
-      if (variant.good?.category != null) {
-        final category = variant.good!.category;
-        categoriesMap[category.id] = category;
-      }
-    }
-    
-    return categoriesMap.values.toList()
-      ..sort((a, b) => a.name.compareTo(b.name));
-  }
 
   void _onVariantTap(Variant variant) {
     final isAlreadyAdded = widget.existingItems.any((item) => item['variantId'] == variant.id);
@@ -247,6 +295,8 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
             _selectedCategoryId = null;
           });
           _saveSelectedCategory(null);
+          // Загружаем список категорий
+          context.read<VariantBloc>().add(FetchCategories());
         }
       },
       child: Container(
@@ -262,10 +312,16 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
             Expanded(
               child: BlocBuilder<VariantBloc, VariantState>(
                 builder: (context, state) {
-                  if (state is VariantLoading) {
+                  // Обработка состояний загрузки
+                  if (state is VariantLoading || state is CategoriesLoading) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  
+                  if (state is CategoryVariantsLoading) {
                     return const Center(child: CircularProgressIndicator());
                   }
 
+                  // Обработка пустых состояний
                   if (state is VariantEmpty) {
                     return Center(
                       child: Text(
@@ -279,10 +335,12 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
                     );
                   }
 
-                  if (state is VariantError) {
+                  // Обработка ошибок
+                  if (state is VariantError || state is CategoriesError) {
+                    final message = state is VariantError ? state.message : (state as CategoriesError).message;
                     return Center(
                       child: Text(
-                        state.message,
+                        message,
                         style: const TextStyle(
                           fontFamily: 'Gilroy',
                           fontSize: 16,
@@ -292,6 +350,46 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
                     );
                   }
 
+                  // Обработка загруженных категорий
+                  if (state is CategoriesLoaded) {
+                    if (state.categories.isEmpty) {
+                      return Center(
+                        child: Text(
+                          localizations.translate('no_categories_found') ?? 'Категории не найдены',
+                          style: const TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 16,
+                            color: Color(0xff99A4BA),
+                          ),
+                        ),
+                      );
+                    }
+                    return _buildCategoriesListFromApi(state.categories, localizations);
+                  }
+
+                  // Обработка загруженных вариантов по категории
+                  if (state is CategoryVariantsLoaded) {
+                    final availableVariants = state.variants
+                        .where((variant) => !_isItemAlreadyAdded(variant))
+                        .toList();
+
+                    if (availableVariants.isEmpty) {
+                      return Center(
+                        child: Text(
+                          localizations.translate('all_variants_added') ?? 'Все варианты уже добавлены',
+                          style: const TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 16,
+                            color: Color(0xff99A4BA),
+                          ),
+                        ),
+                      );
+                    }
+
+                    return _buildCategoryVariantsList(availableVariants, state, localizations);
+                  }
+
+                  // Обработка загруженных вариантов (режим "Все товары")
                   if (state is VariantDataLoaded) {
                     final availableVariants = state.variants
                         .where((variant) => !_isItemAlreadyAdded(variant))
@@ -310,38 +408,7 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
                       );
                     }
 
-                    // Выбор режима отображения
-                    if (_showAllMode || _searchController.text.isNotEmpty) {
-                      // Режим "Все товары"
-                      return _buildVariantsList(availableVariants, state, localizations);
-                    } else {
-                      // Режим "По категориям"
-                      if (_selectedCategoryId == null) {
-                        // Показываем список категорий
-                        return _buildCategoriesList(availableVariants, localizations);
-                      } else {
-                        // Показываем товары выбранной категории
-                        final categoryVariants = availableVariants
-                            .where((v) => v.good?.category.id == _selectedCategoryId)
-                            .toList();
-                        
-                        // Если в категории нет товаров, показываем сообщение
-                        if (categoryVariants.isEmpty) {
-                          return Center(
-                            child: Text(
-                              localizations.translate('no_goods_in_category') ?? 'В этой категории нет товаров',
-                              style: const TextStyle(
-                                fontFamily: 'Gilroy',
-                                fontSize: 16,
-                                color: Color(0xff99A4BA),
-                              ),
-                            ),
-                          );
-                        }
-                        
-                        return _buildVariantsList(categoryVariants, state, localizations);
-                      }
-                    }
+                    return _buildVariantsList(availableVariants, state, localizations);
                   }
 
                   return const SizedBox.shrink();
@@ -381,52 +448,49 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
                     color: Color(0xff1E2E52),
                   ),
                 ),
-                if (_selectedCategoryId != null)
-                  BlocBuilder<VariantBloc, VariantState>(
-                    builder: (context, state) {
-                      if (state is VariantDataLoaded) {
-                        final category = state.variants
-                            .firstWhere(
-                              (v) => v.good?.category.id == _selectedCategoryId,
-                              orElse: () => state.variants.first,
-                            )
-                            .good
-                            ?.category;
-                        
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _selectedCategoryId = null;
-                              });
-                              _saveSelectedCategory(null);
-                            },
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.arrow_back,
-                                  size: 14,
+                BlocBuilder<VariantBloc, VariantState>(
+                  builder: (context, state) {
+                    if (state is CategoryVariantsLoaded) {
+                      // Получаем имя категории из первого варианта
+                      final categoryName = state.variants.isNotEmpty 
+                          ? state.variants.first.good?.category.name 
+                          : '';
+                      
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _selectedCategoryId = null;
+                            });
+                            _saveSelectedCategory(null);
+                            context.read<VariantBloc>().add(FetchCategories());
+                          },
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.arrow_back,
+                                size: 14,
+                                color: Color(0xff4759FF),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                categoryName ?? '',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontFamily: 'Gilroy',
+                                  fontWeight: FontWeight.w500,
                                   color: Color(0xff4759FF),
                                 ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  category?.name ?? '',
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontFamily: 'Gilroy',
-                                    fontWeight: FontWeight.w500,
-                                    color: Color(0xff4759FF),
-                                  ),
-                                ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                        );
-                      }
-                      return const SizedBox.shrink();
-                    },
-                  ),
+                        ),
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  },
+                ),
               ],
             ),
           ),
@@ -495,20 +559,14 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
     );
   }
 
-  // Список категорий
-  Widget _buildCategoriesList(List<Variant> variants, AppLocalizations localizations) {
-    final categories = _getCategories(variants);
-    
+  // Список категорий из API
+  Widget _buildCategoriesListFromApi(List<CategoryWithCount> categories, AppLocalizations localizations) {
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       itemCount: categories.length,
       itemBuilder: (context, index) {
-        final category = categories[index];
-        final categoryVariantsCount = variants
-            .where((v) => v.good?.category.id == category.id)
-            .length;
-        
-        return _buildCategoryCard(category, categoryVariantsCount);
+        final categoryWithCount = categories[index];
+        return _buildCategoryCard(categoryWithCount.category, categoryWithCount.goodsCount);
       },
     );
   }
@@ -522,6 +580,8 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
         });
         // Сохраняем выбранную категорию
         _saveSelectedCategory(category.id);
+        // Загружаем варианты для выбранной категории
+        context.read<VariantBloc>().add(FetchVariantsByCategory(categoryId: category.id));
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
@@ -610,7 +670,7 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
     );
   }
 
-  // Список товаров
+  // Список товаров (все товары)
   Widget _buildVariantsList(List<Variant> variants, VariantDataLoaded state, AppLocalizations localizations) {
     return ListView.builder(
       controller: _scrollController,
@@ -619,6 +679,32 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
       itemBuilder: (context, index) {
         if (index == variants.length) {
           final showLoader = _showAllMode && !context.read<VariantBloc>().allVariantsFetched;
+
+          return showLoader
+              ? const Center(
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: CircularProgressIndicator(),
+            ),
+          )
+              : const SizedBox.shrink();
+        }
+
+        final variant = variants[index];
+        return _buildVariantCard(variant, localizations);
+      },
+    );
+  }
+
+  // Список товаров категории
+  Widget _buildCategoryVariantsList(List<Variant> variants, CategoryVariantsLoaded state, AppLocalizations localizations) {
+    return ListView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      itemCount: variants.length + 1,
+      itemBuilder: (context, index) {
+        if (index == variants.length) {
+          final showLoader = state.currentPage < state.pagination.totalPages;
 
           return showLoader
               ? const Center(
