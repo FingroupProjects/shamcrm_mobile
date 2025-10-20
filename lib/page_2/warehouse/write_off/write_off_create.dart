@@ -40,17 +40,10 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
   List<Map<String, dynamic>> _items = [];
   bool _isLoading = false;
   final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
-  final Map<int, TextEditingController> _priceControllers = {};
   final Map<int, TextEditingController> _quantityControllers = {};
-
   final Map<int, FocusNode> _quantityFocusNodes = {};
-  final Map<int, FocusNode> _priceFocusNodes = {};
-
-  final Map<int, bool> _priceErrors = {};
   final Map<int, bool> _quantityErrors = {};
-
   final Map<int, bool> _collapsedItems = {};
-
   late TabController _tabController;
 
   @override
@@ -77,26 +70,15 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
 
           final variantId = newItem['variantId'] as int;
 
-          final initialPrice = newItem['price'] ?? 0.0;
-          _priceControllers[variantId] = TextEditingController(text: initialPrice > 0 ? initialPrice.toStringAsFixed(3) : '');
-
           _quantityControllers[variantId] = TextEditingController(text: '');
 
           _quantityFocusNodes[variantId] = FocusNode();
-          _priceFocusNodes[variantId] = FocusNode();
-
-          _items.last['price'] = initialPrice;
-
-          final amount = newItem['amount'] ?? 1;
-
-          _priceErrors[variantId] = false;
           _quantityErrors[variantId] = false;
 
           _collapsedItems[variantId] = false;
 
           if (!newItem.containsKey('amount')) {
             _items.last['amount'] = 1;
-            _items.last['price'] = initialPrice;
           }
 
           _listKey.currentState?.insertItem(
@@ -134,17 +116,11 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
       setState(() {
         _items.removeAt(index);
 
-        _priceControllers[variantId]?.dispose();
-        _priceControllers.remove(variantId);
         _quantityControllers[variantId]?.dispose();
         _quantityControllers.remove(variantId);
 
         _quantityFocusNodes[variantId]?.dispose();
         _quantityFocusNodes.remove(variantId);
-        _priceFocusNodes[variantId]?.dispose();
-        _priceFocusNodes.remove(variantId);
-
-        _priceErrors.remove(variantId);
         _quantityErrors.remove(variantId);
 
         _collapsedItems.remove(variantId);
@@ -182,8 +158,6 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
         final index = _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
           _items[index]['quantity'] = quantity;
-          final amount = _items[index]['amount'] ?? 1;
-          _items[index]['total'] = (_items[index]['quantity'] * _items[index]['price'] * amount).round();
         }
         _quantityErrors[variantId] = false;
       });
@@ -192,31 +166,6 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
         final index = _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
           _items[index]['quantity'] = 0;
-          _items[index]['total'] = 0;
-        }
-      });
-    }
-  }
-
-  void _updateItemPrice(int variantId, String value) {
-    final price = double.tryParse(value);
-    if (price != null && price >= 0) {
-      setState(() {
-        final index = _items.indexWhere((item) => item['variantId'] == variantId);
-        if (index != -1) {
-          _items[index]['price'] = price;
-          final amount = _items[index]['amount'] ?? 1;
-          final formattedPrice = double.parse(price.toStringAsFixed(3));
-          _items[index]['total'] = (_items[index]['quantity'] * formattedPrice * amount).round();
-        }
-        _priceErrors[variantId] = false;
-      });
-    } else if (value.isEmpty) {
-      setState(() {
-        final index = _items.indexWhere((item) => item['variantId'] == variantId);
-        if (index != -1) {
-          _items[index]['price'] = 0.0;
-          _items[index]['total'] = 0.0;
         }
       });
     }
@@ -236,9 +185,6 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
         );
 
         _items[index]['amount'] = selectedUnitObj.amount ?? 1;
-
-        final amount = _items[index]['amount'] ?? 1;
-        _items[index]['total'] = (_items[index]['quantity'] * _items[index]['price'] * amount).round();
       }
     });
   }
@@ -248,15 +194,9 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
     for (var item in _items) {
       final variantId = item['variantId'] as int;
       final quantityController = _quantityControllers[variantId];
-      final priceController = _priceControllers[variantId];
 
       if (quantityController != null && quantityController.text.trim().isEmpty) {
         _quantityFocusNodes[variantId]?.requestFocus();
-        return;
-      }
-
-      if (priceController != null && priceController.text.trim().isEmpty) {
-        _priceFocusNodes[variantId]?.requestFocus();
         return;
       }
     }
@@ -445,9 +385,6 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
   }
 
   AppBar _buildAppBar(AppLocalizations localizations) {
-    final hasItems = _items.isNotEmpty;
-    final total = _items.fold<double>(0, (sum, item) => sum + (item['total'] ?? 0.0));
-
     return AppBar(
       backgroundColor: Colors.white,
       forceMaterialTransparency: true,
@@ -456,21 +393,18 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_ios, color: Color(0xff1E2E52), size: 24),
         onPressed: () async {
-          // Если есть товары, показываем диалог
           if (_items.isNotEmpty) {
             final shouldExit = await ConfirmExitDialog.show(context);
             if (shouldExit && mounted) {
               Navigator.pop(context);
             }
           } else {
-            // Если товаров нет, просто выходим
             Navigator.pop(context);
           }
         },
       ),
       title: Row(
         children: [
-          // Заголовок — всегда виден, но усекается при нехватке места
           Expanded(
             child: Text(
               localizations.translate('create_write_off') ?? 'Создать списание',
@@ -484,36 +418,6 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
               ),
             ),
           ),
-          if (hasItems) ...[
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: const Color(0xff4CAF50).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.account_balance_wallet_outlined,
-                    color: Color(0xff4CAF50),
-                    size: 18,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    total.toStringAsFixed(0),
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xff4CAF50),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
         ],
       ),
       centerTitle: false,
@@ -765,10 +669,8 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
   Widget _buildSelectedItemCard(int index, Map<String, dynamic> item, Animation<double> animation) {
     final availableUnits = item['availableUnits'] as List<Unit>? ?? [];
     final variantId = item['variantId'] as int;
-    final priceController = _priceControllers[variantId];
     final quantityController = _quantityControllers[variantId];
     final quantityFocusNode = _quantityFocusNodes[variantId];
-    final priceFocusNode = _priceFocusNodes[variantId];
     final isCollapsed = _collapsedItems[variantId] ?? false;
 
     return FadeTransition(
@@ -825,22 +727,7 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
                   ],
                 ),
               ),
-              InkWell(
-                onTap: () => _toggleItemCollapse(variantId),
-                child: Container(
-                  alignment: Alignment.centerLeft,
-                  padding: const EdgeInsets.only(top: 4, bottom: 10),
-                  child: Text(
-                    '${AppLocalizations.of(context)!.translate('total') ?? 'Сумма'} ${(item['total'] ?? 0.0).toStringAsFixed(0)}',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xff4759FF),
-                    ),
-                  ),
-                ),
-              ),
+              const SizedBox(height: 8),
               if (!isCollapsed) ...[
                 const Divider(height: 1, color: Color(0xFFE5E7EB)),
                 const SizedBox(height: 10),
@@ -987,13 +874,7 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
     for (var focusNode in _quantityFocusNodes.values) {
       focusNode.dispose();
     }
-    for (var focusNode in _priceFocusNodes.values) {
-      focusNode.dispose();
-    }
 
-    for (var controller in _priceControllers.values) {
-      controller.dispose();
-    }
     for (var controller in _quantityControllers.values) {
       controller.dispose();
     }
