@@ -58,7 +58,7 @@ import 'package:crm_task_manager/models/page_2/call_center_model.dart';
 import 'package:crm_task_manager/models/page_2/call_statistics1_model.dart';
 import 'package:crm_task_manager/models/page_2/call_summary_stats_model.dart';
 import 'package:crm_task_manager/models/page_2/category_dashboard_warehouse_model.dart';
-import 'package:crm_task_manager/models/page_2/field_configuration.dart';
+import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/models/page_2/order_status_warehouse_model.dart';
 import 'package:crm_task_manager/models/page_2/expense_article_dashboard_warehouse_model.dart';
 import 'package:crm_task_manager/models/page_2/category_model.dart';
@@ -2710,32 +2710,8 @@ Future<String> getStaticBaseUrl() async {
 
 
 
-  Future<FieldConfigurationResponse> getFieldPositions({
-  required String tableName,
-}) async {
-  try {
-    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/field-position?table=$tableName');
-    
-    if (kDebugMode) {
-      print('ApiService: getFieldPositions - Generated path: $path');
-    }
 
-    final response = await _getRequest(path);
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      return FieldConfigurationResponse.fromJson(data);
-    } else {
-      throw Exception('Ошибка загрузки конфигурации полей: ${response.statusCode}');
-    }
-  } catch (e) {
-    if (kDebugMode) {
-      print('ApiService: getFieldPositions - Error: $e');
-    }
-    throw Exception('Ошибка загрузки конфигурации полей!');
-  }
-}
   //_________________________________ END_____API__SCREEN__LEAD____________________________________________//
 
   //_________________________________ START___API__SCREEN__DEAL____________________________________________//
@@ -15472,4 +15448,152 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
     }
   }
 
+
+// _______________________________SECTION FOR FIELD CONFIGURATION _______________________________
+
+// В секции API__SCREEN__LEAD
+
+// Метод для получения конфигурации полей (уже есть)
+Future<FieldConfigurationResponse> getFieldPositions({
+  required String tableName,
+}) async {
+  try {
+    final path = await _appendQueryParams('/field-position?table=$tableName');
+    
+    if (kDebugMode) {
+      print('ApiService: getFieldPositions - Generated path: $path');
+    }
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return FieldConfigurationResponse.fromJson(data);
+    } else {
+      throw Exception('Ошибка загрузки конфигурации полей: ${response.statusCode}');
+    }
+  } catch (e) {
+    if (kDebugMode) {
+      print('ApiService: getFieldPositions - Error: $e');
+    }
+    throw Exception('Ошибка загрузки конфигурации полей!');
+  }
+}
+
+// Новый метод для сохранения конфигурации в кэш
+Future<void> cacheFieldConfiguration({
+  required String tableName,
+  required FieldConfigurationResponse configuration,
+}) async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final organizationId = await getSelectedOrganization();
+    final cacheKey = 'field_config_${tableName}_org_${organizationId}';
+    
+    final jsonData = json.encode(configuration.toJson()); 
+    await prefs.setString(cacheKey, jsonData);
+    
+    // Сохраняем timestamp последнего обновления
+    await prefs.setInt('${cacheKey}_timestamp', DateTime.now().millisecondsSinceEpoch);
+    
+    if (kDebugMode) {
+      print('ApiService: Cached field configuration for $tableName');
+    }
+  } catch (e) {
+    if (kDebugMode) {
+      print('ApiService: Error caching field configuration: $e');
+    }
+  }
+}
+
+// Новый метод для получения конфигурации из кэша
+Future<FieldConfigurationResponse?> getCachedFieldConfiguration({
+  required String tableName,
+}) async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final organizationId = await getSelectedOrganization();
+    final cacheKey = 'field_config_${tableName}_org_${organizationId}';
+    
+    final cachedData = prefs.getString(cacheKey);
+    
+    if (cachedData != null) {
+      final jsonData = json.decode(cachedData);
+      final config = FieldConfigurationResponse.fromJson(jsonData);
+      
+      if (kDebugMode) {
+        print('ApiService: Loaded cached field configuration for $tableName');
+      }
+      
+      return config;
+    }
+    
+    return null;
+  } catch (e) {
+    if (kDebugMode) {
+      print('ApiService: Error loading cached field configuration: $e');
+    }
+    return null;
+  }
+}
+
+// Метод для загрузки и кэширования всех конфигураций
+Future<void> loadAndCacheAllFieldConfigurations() async {
+  try {
+    if (kDebugMode) {
+      print('ApiService: Loading all field configurations');
+    }
+    
+    final tables = ['leads', 'tasks', 'deals'];
+    
+    for (final tableName in tables) {
+      try {
+        final config = await getFieldPositions(tableName: tableName);
+        await cacheFieldConfiguration(tableName: tableName, configuration: config);
+        
+        if (kDebugMode) {
+          print('ApiService: Successfully cached configuration for $tableName');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('ApiService: Error loading configuration for $tableName: $e');
+        }
+      }
+    }
+    
+    if (kDebugMode) {
+      print('ApiService: Finished loading all field configurations');
+    }
+  } catch (e) {
+    if (kDebugMode) {
+      print('ApiService: Error in loadAndCacheAllFieldConfigurations: $e');
+    }
+  }
+}
+
+// Метод для очистки кэша конфигураций (при смене организации)
+Future<void> clearFieldConfigurationCache() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final organizationId = await getSelectedOrganization();
+    
+    final tables = ['leads', 'tasks', 'deals'];
+    
+    for (final tableName in tables) {
+      final cacheKey = 'field_config_${tableName}_org_${organizationId}';
+      await prefs.remove(cacheKey);
+      await prefs.remove('${cacheKey}_timestamp');
+    }
+    
+    if (kDebugMode) {
+      print('ApiService: Cleared all field configuration cache');
+    }
+  } catch (e) {
+    if (kDebugMode) {
+      print('ApiService: Error clearing field configuration cache: $e');
+    }
+  }
+}
+
+// _______________________________END SECTION FOR FIELD CONFIGURATION _______________________________
 }

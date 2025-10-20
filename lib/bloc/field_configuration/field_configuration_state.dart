@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/models/page_2/field_configuration.dart';
+import 'package:crm_task_manager/models/field_configuration.dart';
 
 abstract class FieldConfigurationState {}
 

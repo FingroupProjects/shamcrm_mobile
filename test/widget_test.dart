@@ -1,1225 +1,1266 @@
 // import 'dart:async';
 // import 'dart:convert';
+// import 'dart:io';
 // import 'package:crm_task_manager/api/service/api_service.dart';
-// import 'package:crm_task_manager/custom_widget/calendar/calendar_screen.dart';
-// import 'package:crm_task_manager/custom_widget/filter/call_center/call_center_screen.dart';
-// import 'package:crm_task_manager/custom_widget/filter/deal/manager_app_bar_deal.dart';
-// import 'package:crm_task_manager/custom_widget/filter/event/manager_app_bar_event.dart';
-// import 'package:crm_task_manager/custom_widget/filter/lead/manager_app_bar_lead.dart';
-// import 'package:crm_task_manager/custom_widget/filter/task/user_app_bar_task.dart';
-// import 'package:crm_task_manager/models/user_byId_model..dart';
-// import 'package:crm_task_manager/notifications_screen.dart';
-// import 'package:crm_task_manager/page_2/call_center/call_center_screen.dart';
-// import 'package:crm_task_manager/screens/event/event_screen.dart';
-// import 'package:crm_task_manager/screens/my-task/my_task_screen.dart';
-// import 'package:crm_task_manager/screens/gps/gps_screen_for_admin.dart'; // Новый импорт
+// import 'package:crm_task_manager/bloc/field_configuration/field_configuration_bloc.dart';
+// import 'package:crm_task_manager/bloc/field_configuration/field_configuration_event.dart';
+// import 'package:crm_task_manager/bloc/field_configuration/field_configuration_state.dart';
+// import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
+// import 'package:crm_task_manager/bloc/lead/lead_event.dart';
+// import 'package:crm_task_manager/bloc/lead/lead_state.dart';
+// import 'package:crm_task_manager/bloc/lead_by_id/leadById_bloc.dart';
+// import 'package:crm_task_manager/bloc/lead_by_id/leadById_event.dart';
+// import 'package:crm_task_manager/bloc/lead_by_id/leadById_state.dart';
+// import 'package:crm_task_manager/bloc/organization/organization_bloc.dart';
+// import 'package:crm_task_manager/bloc/organization/organization_event.dart';
+// import 'package:crm_task_manager/bloc/page_2_BLOC/order_by_lead/order_bloc.dart';
+// import 'package:crm_task_manager/bloc/page_2_BLOC/order_by_lead/order_event.dart';
+// import 'package:crm_task_manager/custom_widget/custom_button.dart';
+// import 'package:crm_task_manager/custom_widget/file_utils.dart';
+// import 'package:crm_task_manager/models/field_configuration.dart';
+// import 'package:crm_task_manager/models/leadById_model.dart';
+// import 'package:crm_task_manager/models/lead_model.dart';
+// import 'package:crm_task_manager/models/page_2/field_configuration.dart';
+// import 'package:crm_task_manager/screens/lead/tabBar/lead_details/history_dialog.dart';
+// import 'package:crm_task_manager/screens/lead/export_lead_to_contact.dart';
+// import 'package:crm_task_manager/screens/lead/tabBar/lead_delete.dart';
+// import 'package:crm_task_manager/screens/lead/tabBar/lead_details/contact_person_screen.dart';
+// import 'package:crm_task_manager/screens/lead/tabBar/lead_details/dropdown_history.dart';
+// import 'package:crm_task_manager/screens/lead/tabBar/lead_details/dropdown_notes.dart';
+// import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_deal_screen.dart';
+// import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_navigate_to_chat.dart';
+// import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_to_1c.dart';
+// import 'package:crm_task_manager/screens/lead/tabBar/lead_details/orders_widget.dart';
+// import 'package:crm_task_manager/screens/lead/tabBar/lead_edit_screen.dart';
 // import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-// import 'package:dart_pusher_channels/dart_pusher_channels.dart';
-// import 'package:firebase_messaging/firebase_messaging.dart';
-// import 'package:flutter/foundation.dart';
+// import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
+// import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 // import 'package:flutter/material.dart';
-// import 'package:just_audio/just_audio.dart';
+// import 'package:flutter_bloc/flutter_bloc.dart';
+// import 'package:flutter_contacts/flutter_contacts.dart';
+// import 'package:intl/intl.dart';
 // import 'package:shared_preferences/shared_preferences.dart';
+// import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
+// import 'package:url_launcher/url_launcher.dart';
+// import 'package:dio/dio.dart';
+// import 'package:open_file/open_file.dart';
+// import 'package:path_provider/path_provider.dart';
+// import 'package:flutter/foundation.dart';
 
-// class CustomAppBar extends StatefulWidget {
-//   final GlobalKey? menuIconKey;
-//   final GlobalKey? SearchIconKey;
-//   final GlobalKey? FiltrEventIconKey;
-//   final GlobalKey? NotificationIconKey;
-//   final GlobalKey? MyTaskIconKey;
-//   final GlobalKey? CalendarIconKey;
-//   String title;
-//   Function() onClickProfileAvatar;
-//   FocusNode focusNode;
-//   TextEditingController textEditingController;
-//   ValueChanged<String>? onChangedSearchInput;
-//   Function(bool) clearButtonClick;
-//   Function(bool) clearButtonClickFiltr;
-//   bool showSearchIcon;
-//   bool showFilterIconEvent;
-//   final bool showFilterIcon;
-//   final bool showFilterIconOnSelectLead;
-//   final bool showFilterIconOnSelectDeal;
-//   final bool showFilterIconOnSelectTask;
-//   final bool showFilterIconDeal;
-//   final bool showFilterTaskIcon;
-//   final bool showEvent;
-//   final bool showSeparateTaskFilter;
-//   final bool showSeparateMyTasks;
-//   final bool showNotification;
-//   final bool showCalendar;
-//   final bool showCalendarDashboard;
-//   final bool showCallCenter;
-//   final bool showGps; // Новый параметр для GPS
-//   final bool showFilterIconCallCenter;
-//   final bool showFilterIconOnSelectCallCenter;
-//   final Function(Map)? onManagersLeadSelected;
-//   final Function(Map)? onManagersDealSelected;
-//   final Function(Map)? onLeadsDealSelected;
-//   final Function(int?)? onStatusDealSelected;
-//   final Function(DateTime?, DateTime?)? onDateRangeDealSelected;
-//   final Function(int?, DateTime?, DateTime?)? onStatusAndDateRangeDealSelected;
-//   final Function(Map)? onManagersEventSelected;
-//   final Function(int?)? onStatusEventSelected;
-//   final Function(DateTime?, DateTime?)? onDateRangeEventSelected;
-//   final Function(int?, DateTime?, DateTime?)? onStatusAndDateRangeEventSelected;
-//   final Function(DateTime?, DateTime?)? onNoticeDateRangeEventSelected;
-//   final Function(int?, DateTime?, DateTime?)? onNoticeStatusAndDateRangeEventSelected;
-//   final Function(int?, DateTime?, DateTime?, DateTime?, DateTime?)? onDateNoticeStatusAndDateRangeSelected;
-//   final Function(DateTime?, DateTime?, DateTime?, DateTime?)? onDateNoticeAndDateRangeSelected;
-//   final Function(Map)? onUsersSelected;
-//   final Function(int?)? onStatusSelected;
-//   final Function(DateTime?, DateTime?)? onDateRangeSelected;
-//   final Function(int?, DateTime?, DateTime?)? onStatusAndDateRangeSelected;
-//   final List? initialUsers;
-//   final int? initialStatuses;
-//   final DateTime? initialFromDate;
-//   final DateTime? initialToDate;
-//   final List? initialManagersLead;
-//   final List? initialManagersLeadRegions;
-//   final List? initialManagersLeadSources;
-//   final int? initialManagerLeadStatuses;
-//   final DateTime? initialManagerLeadFromDate;
-//   final DateTime? initialManagerLeadToDate;
-//   final bool? initialManagerLeadHasSuccessDeals;
-//   final bool? initialManagerLeadHasInProgressDeals;
-//   final bool? initialManagerLeadHasFailureDeals;
-//   final bool? initialManagerLeadHasNotices;
-//   final bool? initialManagerLeadHasContact;
-//   final bool? initialManagerLeadHasChat;
-//   final bool? initialManagerLeadHasNoReplies;
-//   final bool? initialManagerLeadHasUnreadMessages;
-//   final bool? initialManagerLeadHasDeal;
-//   final int? initialManagerLeadDaysWithoutActivity;
-//   final List<Map<String, dynamic>>? initialDirectoryValuesLead;
-//   final List? initialManagersDeal;
-//   final List? initialLeadsDeal;
-//   final int? initialManagerDealStatuses;
-//   final DateTime? initialManagerDealFromDate;
-//   final DateTime? initialManagerDealToDate;
-//   final bool? initialManagerDealHasTasks;
-//   final int? initialManagerDealDaysWithoutActivity;
-//   final List<Map<String, dynamic>>? initialDirectoryValuesDeal;
-//   final List? initialManagersEvent;
-//   final int? initialManagerEventStatuses;
-//   final DateTime? initialManagerEventFromDate;
-//   final DateTime? initialManagerEventToDate;
-//   final DateTime? initialNoticeManagerEventFromDate;
-//   final DateTime? initialNoticeManagerEventToDate;
-//   final VoidCallback? onResetFilters;
-//   final VoidCallback? onLeadResetFilters;
-//   final VoidCallback? onDealResetFilters;
-//   final VoidCallback? onEventResetFilters;
-//   final bool showMyTaskIcon;
-//   final bool showMenuIcon;
-//   final bool showSeparateFilter;
-//   final bool? initialTaskIsOverdue;
-//   final bool? initialTaskHasFile;
-//   final bool? initialTaskHasDeal;
-//   final bool? initialTaskIsUrgent;
-//   final DateTime? initialDeadlineFromDate;
-//   final DateTime? initialDeadlineToDate;
-//   final List<String>? initialAuthors;
-//   final String? initialDepartment;
-//   final List<Map<String, dynamic>>? initialDirectoryValuesTask;
-//   final bool showDashboardIcon;
-//   final VoidCallback? onDashboardPressed;
-//   final Widget? titleWidget;
-//   final VoidCallback? onFiltersReset;
+// class LeadDetailsScreen extends StatefulWidget {
+//   final String leadId;
+//   final String leadName;
+//   final String leadStatus;
+//   final int statusId;
+//   final String? region;
+//   final int? regionId;
+//   final String? sourse;
+//   final int? sourseId;
+//   final String? manager;
+//   final int? managerId;
+//   final String? birthday;
+//   final String? instagram;
+//   final String? facebook;
+//   final String? telegram;
+//   final String? phone;
+//   final String? description;
 
-//   CustomAppBar({
-//     super.key,
-//     this.menuIconKey,
-//     this.SearchIconKey,
-//     this.FiltrEventIconKey,
-//     this.NotificationIconKey,
-//     this.MyTaskIconKey,
-//     this.CalendarIconKey,
-//     required this.title,
-//     required this.onClickProfileAvatar,
-//     required this.onChangedSearchInput,
-//     required this.textEditingController,
-//     required this.focusNode,
-//     required this.clearButtonClick,
-//     required this.clearButtonClickFiltr,
-//     this.initialUsers,
-//     this.initialStatuses,
-//     this.initialFromDate,
-//     this.initialToDate,
-//     this.initialManagersLead,
-//     this.initialManagersLeadRegions,
-//     this.initialManagersLeadSources,
-//     this.initialManagerLeadStatuses,
-//     this.initialManagerLeadFromDate,
-//     this.initialManagerLeadToDate,
-//     this.initialManagerLeadHasSuccessDeals,
-//     this.initialManagerLeadHasInProgressDeals,
-//     this.initialManagerLeadHasFailureDeals,
-//     this.initialManagerLeadHasNotices,
-//     this.initialManagerLeadHasContact,
-//     this.initialManagerLeadHasChat,
-//     this.initialManagerLeadHasNoReplies,
-//     this.initialManagerLeadHasUnreadMessages,
-//     this.initialManagerLeadHasDeal,
-//     this.initialManagerLeadDaysWithoutActivity,
-//     this.initialDirectoryValuesLead,
-//     this.initialDirectoryValuesTask,
-//     this.showDashboardIcon = false,
-//     this.onDashboardPressed,
-//     this.initialManagersDeal,
-//     this.initialLeadsDeal,
-//     this.initialManagerDealStatuses,
-//     this.initialManagerDealFromDate,
-//     this.initialManagerDealToDate,
-//     this.initialManagerDealHasTasks,
-//     this.initialManagerDealDaysWithoutActivity,
-//     this.initialManagersEvent,
-//     this.initialManagerEventStatuses,
-//     this.initialManagerEventFromDate,
-//     this.initialManagerEventToDate,
-//     this.initialNoticeManagerEventFromDate,
-//     this.initialNoticeManagerEventToDate,
-//     this.onResetFilters,
-//     this.onLeadResetFilters,
-//     this.onDealResetFilters,
-//     this.onEventResetFilters,
-//     this.showSearchIcon = true,
-//     this.showFilterIconEvent = false,
-//     this.showFilterIcon = true,
-//     this.showFilterIconOnSelectLead = false,
-//     this.showFilterIconOnSelectDeal = false,
-//     this.showFilterIconCallCenter = false,
-//     this.showFilterIconOnSelectTask = false,
-//     this.showFilterIconDeal = true,
-//     this.showFilterTaskIcon = true,
-//     this.showCallCenter = true,
-//     this.showGps = true, // Новый параметр
-//     this.showFilterIconOnSelectCallCenter = false,
-//     this.onManagersLeadSelected,
-//     this.onManagersDealSelected,
-//     this.onStatusDealSelected,
-//     this.onDateRangeDealSelected,
-//     this.onStatusAndDateRangeDealSelected,
-//     this.onManagersEventSelected,
-//     this.onStatusEventSelected,
-//     this.onDateRangeEventSelected,
-//     this.onStatusAndDateRangeEventSelected,
-//     this.onNoticeDateRangeEventSelected,
-//     this.onNoticeStatusAndDateRangeEventSelected,
-//     this.onDateNoticeStatusAndDateRangeSelected,
-//     this.onDateNoticeAndDateRangeSelected,
-//     this.onUsersSelected,
-//     this.onStatusSelected,
-//     this.onDateRangeSelected,
-//     this.onStatusAndDateRangeSelected,
-//     this.showEvent = false,
-//     this.showSeparateTaskFilter = false,
-//     this.showSeparateMyTasks = false,
-//     this.showMyTaskIcon = false,
-//     this.showMenuIcon = true,
-//     this.showNotification = true,
-//     this.showSeparateFilter = false,
-//     this.showCalendar = true,
-//     this.showCalendarDashboard = false,
-//     this.initialTaskIsOverdue,
-//     this.initialTaskHasFile,
-//     this.initialTaskHasDeal,
-//     this.initialTaskIsUrgent,
-//     this.initialDeadlineFromDate,
-//     this.initialDeadlineToDate,
-//     this.initialAuthors,
-//     this.initialDepartment,
-//     this.onLeadsDealSelected,
-//     this.initialDirectoryValuesDeal,
-//     this.titleWidget,
-//     this.onFiltersReset,
+//   LeadDetailsScreen({
+//     required this.leadId,
+//     required this.leadName,
+//     required this.leadStatus,
+//     required this.statusId,
+//     this.region,
+//     this.regionId,
+//     this.sourse,
+//     this.sourseId,
+//     this.manager,
+//     this.managerId,
+//     this.birthday,
+//     this.instagram,
+//     this.facebook,
+//     this.telegram,
+//     this.phone,
+//     this.description,
 //   });
 
 //   @override
-//   State<CustomAppBar> createState() => _CustomAppBarState();
+//   _LeadDetailsScreenState createState() => _LeadDetailsScreenState();
 // }
 
-// class _CustomAppBarState extends State<CustomAppBar> with SingleTickerProviderStateMixin {
-//   bool _isSearching = false;
+// // [FileCacheManager остается без изменений]
+
+// class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
+//   List<Map<String, String>> details = [];
+//   LeadById? currentLead;
+  
+//   // Конфигурация полей
+//   List<FieldConfiguration> fieldConfigurations = [];
+//   bool isConfigurationLoaded = false;
+  
+//   bool _canEditLead = false;
+//   bool _canDeleteLead = false;
+//   bool _canReadNotes = false;
+//   bool _canReadDeal = false;
+//   bool _canExportContact = false;
+//   bool _canReadOrders = true;
+//   bool _isExportContactEnabled = false;
+//   bool _isDownloading = false;
+//   Map<int, double> _downloadProgress = {};
+
 //   final ApiService _apiService = ApiService();
-//   late TextEditingController _searchController;
-//   late FocusNode focusNode;
-//   String _userImage = '';
-//   String _lastLoadedImage = '';
-//   static String _cachedUserImage = '';
-//   bool _isFiltering = false;
-//   bool _isTaskFiltering = false;
-//   bool _hasNewNotification = false;
-//   late PusherChannelsClient socketClient;
-//   late StreamSubscription<ChannelReadEvent> notificationSubscription;
-//   final AudioPlayer _audioPlayer = AudioPlayer();
-//   Timer? _checkOverdueTimer;
-//   late AnimationController _blinkController;
-//   late Animation<double> _blinkAnimation;
-//   bool _hasOverdueTasks = false;
-//   bool _canReadCallCenter = false;
-//   bool _canReadNotice = false;
-//   bool _canReadCalendar = false;
-//   bool _canReadGps = false; // Новая переменная для GPS
-//   Color _iconColor = const Color.fromARGB(255, 0, 0, 0);
-//   late Timer _timer;
-//   bool _areFiltersActive = false;
+//   String? selectedOrganization;
+//   StreamSubscription? _prefsSubscription;
+//   final GlobalKey keyLeadHistory = GlobalKey();
+//   final GlobalKey keyLeadEdit = GlobalKey();
+//   final GlobalKey keyLeadDelete = GlobalKey();
+//   final GlobalKey keyLeadNavigateChat = GlobalKey();
+//   final GlobalKey keyLeadNotice = GlobalKey();
+//   final GlobalKey keyLeadDeal = GlobalKey();
+//   final GlobalKey keyLeadContactPerson = GlobalKey();
+//   late ScrollController _scrollController;
+
+//   List<TargetFocus> targets = [];
+//   bool _isTutorialShown = false;
+//   bool _isTutorialInProgress = false;
+//   Map<String, dynamic>? tutorialProgress;
+
+//   Set<String> _normalizedContactPhones = {};
+//   bool _isLoadingContacts = true;
 
 //   @override
 //   void initState() {
 //     super.initState();
-//     _checkPermissions();
-//     _searchController = widget.textEditingController;
-//     focusNode = widget.focusNode;
+//     _scrollController = ScrollController();
 
-//     if (_cachedUserImage.isNotEmpty) {
-//       _userImage = _cachedUserImage;
+//     _checkPermissions().then((_) {
+//       context.read<OrganizationBloc>().add(FetchOrganizations());
+//       _loadSelectedOrganization();
+      
+//       // Загружаем конфигурацию полей
+//       _loadFieldConfiguration();
+      
+//       context
+//           .read<LeadByIdBloc>()
+//           .add(FetchLeadByIdEvent(leadId: int.parse(widget.leadId)));
+//       if (_canReadOrders) {
+//         context
+//             .read<OrderByLeadBloc>()
+//             .add(FetchOrdersByLead(leadId: int.parse(widget.leadId)));
+//       }
+//       _loadContactsToCache();
+//     });
+//     _fetchTutorialProgress();
+//     _listenToPrefsChanges();
+//   }
+
+//   // Новый метод для загрузки конфигурации полей
+//   Future<void> _loadFieldConfiguration() async {
+//     if (kDebugMode) {
+//       print('LeadDetailsScreen: Loading field configuration');
+//     }
+    
+//     // Загружаем конфигурацию из кэша через Bloc
+//     context.read<FieldConfigurationBloc>().add(
+//       FetchFieldConfiguration('leads')
+//     );
+//   }
+
+//   // [Все остальные методы остаются без изменений до _updateDetails]
+
+//   void _updateDetails(LeadById lead) {
+//     currentLead = lead;
+    
+//     // Если конфигурация загружена, строим детали на её основе
+//     if (isConfigurationLoaded && fieldConfigurations.isNotEmpty) {
+//       _buildDetailsFromConfiguration(lead);
 //     } else {
-//       _loadUserProfile();
-//     }
-
-//     _loadNotificationState();
-//     _setUpSocketForNotifications();
-//     _setupFirebaseMessaging();
-
-//     _blinkController = AnimationController(
-//       vsync: this,
-//       duration: Duration(milliseconds: 700),
-//       lowerBound: 0.0,
-//       upperBound: 1.0,
-//     )..repeat(reverse: true);
-
-//     _blinkAnimation = CurvedAnimation(
-//       parent: _blinkController,
-//       curve: Curves.easeInOut,
-//     );
-//     _checkOverdueTasks();
-//     _checkOverdueTimer = Timer.periodic(
-//       const Duration(minutes: 5),
-//       (_) => _checkOverdueTasks(),
-//     );
-
-//     _timer = Timer.periodic(Duration(milliseconds: 700), (timer) {
-//       if (_areFiltersActive) {
-//         setState(() {
-//           _iconColor = (_iconColor == Colors.blue) ? Colors.black : Colors.blue;
-//         });
-//       } else {
-//         setState(() {
-//           _iconColor = Colors.black;
-//         });
-//       }
-//     });
-//   }
-
-//   void _setFiltersActive(bool active) {
-//     setState(() {
-//       _areFiltersActive = active;
-//       if (!active) {
-//         _iconColor = Colors.black;
-//       }
-//     });
-//   }
-
-//   void resetFilterIconState() {
-//     _setFiltersActive(false);
-//   }
-
-//     Future<void> _checkOverdueTasks() async {
-//     try {
-//       final apiService = ApiService();
-//       final hasOverdue = await apiService.checkOverdueTasks();
-
-//       if (mounted) {
-//         setState(() {
-//           _hasOverdueTasks = hasOverdue;
-//         });
-//       }
-//     } catch (e) {
-//       //print('Error checking overdue tasks: $e');
+//       // Fallback: строим детали как раньше
+//       _buildDetailsLegacy(lead);
 //     }
 //   }
 
-//   Future<void> _loadNotificationState() async {
-//     final prefs = await SharedPreferences.getInstance();
-//     bool hasNewNotification = prefs.getBool('hasNewNotification') ?? false;
-//     setState(() {
-//       _hasNewNotification = hasNewNotification;
-//     });
-//   }
-//  Future<void> _setUpSocketForNotifications() async {
-//     debugPrint(
-//         '--------------------------- start socket CUSTOM APPBAR:::::::----------------');
-//     final prefs = await SharedPreferences.getInstance();
-//     String? token = prefs.getString('token');
-//     final enteredDomainMap = await ApiService().getEnteredDomain();
-//     String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
-//     String? enteredDomain = enteredDomainMap['enteredDomain'];
-
-//     final customOptions = PusherChannelsOptions.custom(
-//       uriResolver: (metadata) =>
-//           Uri.parse('wss://soketi.$enteredMainDomain/app/app-key'),
-//       metadata: PusherChannelsOptionsMetadata.byDefault(),
-//     );
-
-//     socketClient = PusherChannelsClient.websocket(
-//       options: customOptions,
-//       connectionErrorHandler: (exception, trace, refresh) {},
-//       minimumReconnectDelayDuration: const Duration(seconds: 1),
-//     );
-
-//     String userId = prefs.getString('unique_id') ?? '';
-//     //print('userID--------------------------------------------------popopop-p : $userId');
-//     //print(userId);
-
-//     final myPresenceChannel = socketClient.presenceChannel(
-//       'presence-user.$userId',
-//       authorizationDelegate:
-//           EndpointAuthorizableChannelTokenAuthorizationDelegate
-//               .forPresenceChannel(
-//         authorizationEndpoint: Uri.parse(
-//             'https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth'),
-//         headers: {
-//           'Authorization': 'Bearer $token',
-//           'X-Tenant': '$enteredDomain-back'
-//         },
-//         onAuthFailed: (exception, trace) {
-//           debugPrint(exception);
-//         },
-//       ),
-//     );
-
-//     socketClient.onConnectionEstablished.listen((_) {
-//       myPresenceChannel.subscribeIfNotUnsubscribed();
-//       notificationSubscription =
-//           myPresenceChannel.bind('notification.created').listen((event) {
-//         debugPrint('Получено уведомление через сокет: ${event.data}');
-//         try {
-//           final data = jsonDecode(event.data);
-//           debugPrint('Данные уведомления: $data');
-//           setState(() {
-//             _hasNewNotification = true;
-//           });
-//           prefs.setBool('hasNewNotification', true);
-//           _playSound();
-//         } catch (e) {
-//           debugPrint('Ошибка парсинга данных уведомления: $e');
+//   // Новый метод для построения деталей на основе конфигурации
+//   void _buildDetailsFromConfiguration(LeadById lead) {
+//     details = [];
+    
+//     if (kDebugMode) {
+//       print('LeadDetailsScreen: Building details from configuration with ${fieldConfigurations.length} fields');
+//     }
+    
+//     // Проходим по конфигурации в правильном порядке
+//     for (var config in fieldConfigurations) {
+//       if (!config.isActive) {
+//         if (kDebugMode) {
+//           print('LeadDetailsScreen: Skipping inactive field: ${config.fieldName}');
 //         }
+//         continue; // Пропускаем неактивные поля
+//       }
+      
+//       // Получаем значение для каждого поля
+//       String? value = _getFieldValue(lead, config);
+      
+//       if (value != null && value.isNotEmpty) {
+//         String label = _getFieldLabel(config);
+//         details.add({'label': label, 'value': value});
+        
+//         if (kDebugMode) {
+//           print('LeadDetailsScreen: Added field - ${config.fieldName}: $value');
+//         }
+//       }
+//     }
+    
+//     // Добавляем файлы если есть
+//     if (lead.files != null && lead.files!.isNotEmpty) {
+//       details.add({
+//         'label': AppLocalizations.of(context)!.translate('files_details'),
+//         'value':
+//             '${lead.files!.length} ${AppLocalizations.of(context)!.translate('files')}'
 //       });
-//     });
-
-//     try {
-//       await socketClient.connect();
-//       //print('Socket connection SUCCESSS');
-//     } catch (e) {
-//       if (kDebugMode) {
-//         //print('Socket connection error!');
-//       }
+//     }
+    
+//     if (kDebugMode) {
+//       print('LeadDetailsScreen: Total details count: ${details.length}');
 //     }
 //   }
 
-// void _setupFirebaseMessaging() async {
-//     final prefs = await SharedPreferences.getInstance();
-//     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-//       debugPrint('Получено push-уведомление: ${message.data}');
-//       if (message.data['type'] == 'message') {
-//         setState(() {
-//           _hasNewNotification = true;
-//         });
-//         prefs.setBool('hasNewNotification', true);
-//         _playSound();
-//       }
-//     });
-//     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-//       debugPrint('Push-уведомление открыто: ${message.data}');
-//       if (message.data['type'] == 'message') {
-//         setState(() {
-//           _hasNewNotification = true;
-//         });
-//         prefs.setBool('hasNewNotification', true);
-//         Navigator.push(
-//           context,
-//           MaterialPageRoute(builder: (context) => NotificationsScreen()),
-//         );
-//       }
-//     });
-//   }
-//   Future<void> _playSound() async {
-//     try {
-//       await _audioPlayer.setAsset('assets/audio/get.mp3');
-//       await _audioPlayer.play();
-//     } catch (e) {
-//       //print('Error playing sound: $e');
+//   // Получение значения поля из лида
+//   String? _getFieldValue(LeadById lead, FieldConfiguration config) {
+//     // Обработка кастомных полей
+//     if (config.isCustomField) {
+//       final customField = lead.leadCustomFields.firstWhere(
+//         (field) => field.key == config.fieldName,
+//         orElse: () => LeadCustomField(key: '', value: '', type: ''),
+//       );
+//       return customField.value;
+//     }
+    
+//     // Обработка справочников
+//     if (config.isDirectory && config.directoryId != null) {
+//       final dirValue = lead.directoryValues.firstWhere(
+//         (dv) => dv.entry?.directory.id == config.directoryId,
+//         orElse: () => DirectoryValue(id: 0, entry: null),
+//       );
+//       return dirValue.entry?.values['value'] ?? '';
+//     }
+    
+//     // Обработка стандартных полей
+//     switch (config.fieldName) {
+//       case 'name':
+//         return lead.name;
+//       case 'phone':
+//         return lead.phone ?? '';
+//       case 'manager_id':
+//         return lead.manager != null
+//             ? '${lead.manager!.name} ${lead.manager!.lastname ?? ''}'
+//             : null;
+//       case 'region_id':
+//         return lead.region?.name;
+//       case 'source_id':
+//         return lead.source?.name;
+//       case 'wa_phone':
+//         return lead.whatsApp;
+//       case 'insta_login':
+//         return lead.instagram;
+//       case 'facebook_login':
+//         return lead.facebook;
+//       case 'tg_nick':
+//         return lead.telegram;
+//       case 'email':
+//         return lead.email;
+//       default:
+//         return null;
 //     }
 //   }
-//   Future<void> _loadUserProfile() async {
-//     try {
-//       SharedPreferences prefs = await SharedPreferences.getInstance();
-//       String UUID = prefs.getString('userID') ??
-//           AppLocalizations.of(context)!.translate('not_found');
 
-//       UserByIdProfile userProfile =
-//           await ApiService().getUserById(int.parse(UUID));
-
-//       if (userProfile.image != null && userProfile.image != _lastLoadedImage) {
-//         setState(() {
-//           _userImage = userProfile.image!;
-//           _lastLoadedImage = userProfile.image!;
-//           _cachedUserImage = userProfile.image!;
-//         });
-
-//         await prefs.setString('userProfileImage_$UUID', _userImage);
-//       } else if (_userImage.isEmpty && _cachedUserImage.isNotEmpty) {
-//         setState(() {
-//           _userImage = _cachedUserImage;
-//         });
-//       }
-//     } catch (e) {
-//       //print('Ошибка при загрузке изображения!');
-//       if (_userImage.isEmpty && _cachedUserImage.isNotEmpty) {
-//         setState(() {
-//           _userImage = _cachedUserImage;
-//         });
-//       }
+//   // Получение лейбла для поля
+//   String _getFieldLabel(FieldConfiguration config) {
+//     // Для кастомных полей и справочников используем их имя
+//     if (config.isCustomField || config.isDirectory) {
+//       return '${config.fieldName}:';
+//     }
+    
+//     // Для стандартных полей используем локализованные названия
+//     switch (config.fieldName) {
+//       case 'name':
+//         return AppLocalizations.of(context)!.translate('lead_name');
+//       case 'phone':
+//         return AppLocalizations.of(context)!.translate('phone_use');
+//       case 'manager_id':
+//         return AppLocalizations.of(context)!.translate('manager_details');
+//       case 'region_id':
+//         return AppLocalizations.of(context)!.translate('region_details');
+//       case 'source_id':
+//         return AppLocalizations.of(context)!.translate('source_details');
+//       case 'wa_phone':
+//         return 'WhatsApp:';
+//       case 'insta_login':
+//         return 'Instagram:';
+//       case 'facebook_login':
+//         return 'Facebook:';
+//       case 'tg_nick':
+//         return 'Telegram:';
+//       case 'email':
+//         return AppLocalizations.of(context)!.translate('email_details');
+//       default:
+//         return '${config.fieldName}:';
 //     }
 //   }
-//   Future<void> _checkPermissions() async {
-//     final canReadNotice = await _apiService.hasPermission('notice.read');
-//     final canReadCalendar = await _apiService.hasPermission('calendar');
-//     final canReadCallCenter = await _apiService.hasPermission('call-center');
-//     final canReadGps = await _apiService.hasPermission('gps'); // Проверка прав для GPS
-//     setState(() {
-//       _canReadNotice = canReadNotice;
-//       _canReadCalendar = canReadCalendar;
-//       _canReadCallCenter = canReadCallCenter;
-//       _canReadGps = canReadGps;
-//     });
+
+//   // Старый метод как fallback (на случай если конфигурация не загрузилась)
+//   void _buildDetailsLegacy(LeadById lead) {
+//     if (kDebugMode) {
+//       print('LeadDetailsScreen: Building details using legacy method');
+//     }
+    
+//     details = [
+//       {
+//         'label': AppLocalizations.of(context)!.translate('lead_name'),
+//         'value': lead.name
+//       },
+//       {
+//         'label': AppLocalizations.of(context)!.translate('phone_use'),
+//         'value': lead.phone ?? ''
+//       },
+//       if (lead.manager != null)
+//         {
+//           'label':
+//               '${AppLocalizations.of(context)!.translate('manager_details')}',
+//           'value': '${lead.manager!.name} ${lead.manager!.lastname ?? ''}'
+//         }
+//       else
+//         {'label': '', 'value': 'become_manager'},
+//       {
+//         'label': '${AppLocalizations.of(context)!.translate('region_details')}',
+//         'value': lead.region?.name ?? ''
+//       },
+//       {
+//         'label': '${AppLocalizations.of(context)!.translate('source_details')}',
+//         'value': lead.source?.name ?? ''
+//       },
+//       {'label': 'WhatsApp:', 'value': lead.whatsApp ?? ''},
+//       {'label': 'Instagram:', 'value': lead.instagram ?? ''},
+//       {'label': 'Facebook:', 'value': lead.facebook ?? ''},
+//       {'label': 'Telegram:', 'value': lead.telegram ?? ''},
+//       {
+//         'label': '${AppLocalizations.of(context)!.translate('email_details')}',
+//         'value': lead.email ?? ''
+//       },
+//       if (lead.phone_verified_at != null)
+//         {
+//           'label': '${AppLocalizations.of(context)!.translate('birthday_details')}',
+//           'value': formatDate(lead.birthday)
+//         },
+//       if (lead.phone_verified_at != null)
+//         {
+//           'label': '${AppLocalizations.of(context)!.translate('price_type_details')}',
+//           'value': lead.priceType?.name ?? ''
+//         },
+//       {
+//         'label':
+//             '${AppLocalizations.of(context)!.translate('description_details_lead')}',
+//         'value': lead.description ?? ''
+//       },
+//       {
+//         'label': '${AppLocalizations.of(context)!.translate('author_details')}',
+//         'value': lead.author?.name ?? ''
+//       },
+//       {
+//         'label': '${AppLocalizations.of(context)!.translate('sales_funnel_details')}',
+//         'value': lead.salesFunnel?.name ?? ''
+//       },
+//       {
+//         'label':
+//             '${AppLocalizations.of(context)!.translate('created_at_details')}',
+//         'value': formatDate(lead.createdAt)
+//       },
+//       {
+//         'label': '${AppLocalizations.of(context)!.translate('status_details')}',
+//         'value': lead.leadStatus?.title ?? ''
+//       },
+//       if (lead.files != null && lead.files!.isNotEmpty)
+//         {
+//           'label': AppLocalizations.of(context)!.translate('files_details'),
+//           'value':
+//               '${lead.files!.length} ${AppLocalizations.of(context)!.translate('files')}'
+//         },
+//     ];
+    
+//     // Добавляем кастомные поля
+//     for (var field in lead.leadCustomFields) {
+//       details.add({'label': '${field.key}:', 'value': field.value});
+//     }
+    
+//     // Добавляем справочники
+//     for (var dirValue in lead.directoryValues) {
+//       final directoryName = dirValue.entry?.directory.name;
+//       final value = dirValue.entry?.values['value'] ?? '';
+//       details.add({'label': '$directoryName:', 'value': value});
+//     }
 //   }
 
-//   // Остальные методы (_setupFirebaseMessaging, _loadUserProfile, etc.) остаются без изменений
+//   // [Остальные методы остаются без изменений]
 
 //   @override
 //   Widget build(BuildContext context) {
-//     return Container(
-//       width: double.infinity,
-//       height: kToolbarHeight,
-//       color: Colors.white,
-//       padding: EdgeInsets.zero,
-//       child: Row(children: [
-//         Container(
-//           width: 40,
-//           height: 40,
-//           child: IconButton(
-//             padding: EdgeInsets.zero,
-//             icon: _buildAvatarImage(_userImage),
-//             onPressed: widget.onClickProfileAvatar,
-//           ),
+//     if (!_isTutorialShown) {
+//       WidgetsBinding.instance.addPostFrameCallback((_) {
+//         setState(() {
+//           _isTutorialShown = true;
+//         });
+//       });
+//     }
+    
+//     return MultiBlocProvider(
+//       providers: [
+//         BlocProvider<OrderByLeadBloc>(
+//           create: (context) => OrderByLeadBloc(context.read<ApiService>()),
 //         ),
-//         SizedBox(width: 8),
-//         if (!_isSearching)
-//           Expanded(
-//             child: widget.titleWidget ??
-//                 Text(
-//                   widget.title,
-//                   style: TextStyle(
-//                     fontSize: 20,
-//                     fontFamily: 'Gilroy',
-//                     fontWeight: FontWeight.w600,
-//                     color: Color(0xff1E2E52),
-//                   ),
-//                 ),
-//           ),
-//         if (_isSearching)
-//           Expanded(
-//             child: AnimatedContainer(
-//               duration: Duration(milliseconds: 300),
-//               curve: Curves.easeInOut,
-//               width: _isSearching ? 200.0 : 0.0,
-//               child: TextField(
-//                 controller: _searchController,
-//                 focusNode: focusNode,
-//                 onChanged: widget.onChangedSearchInput,
-//                 decoration: InputDecoration(
-//                   hintText: AppLocalizations.of(context)!.translate('search_appbar'),
-//                   border: InputBorder.none,
-//                 ),
-//                 style: TextStyle(fontSize: 16),
-//                 autofocus: true,
-//               ),
-//             ),
-//           ),
-//         if (widget.showDashboardIcon)
-//           Transform.translate(
-//             offset: const Offset(10, 0),
-//             child: Tooltip(
-//               message: AppLocalizations.of(context)!.translate('dashboard'),
-//               preferBelow: false,
-//               decoration: BoxDecoration(
-//                 color: Colors.white,
-//                 borderRadius: BorderRadius.circular(8),
-//                 boxShadow: [
-//                   BoxShadow(
-//                     color: Colors.black.withOpacity(0.2),
-//                     blurRadius: 6,
-//                     offset: Offset(0, 2),
-//                   ),
-//                 ],
-//               ),
-//               textStyle: TextStyle(
-//                 fontSize: 12,
-//                 color: Colors.black,
-//               ),
-//               child: IconButton(
-//                 padding: EdgeInsets.zero,
-//                 constraints: BoxConstraints(),
-//                 icon: Image.asset(
-//                   'assets/icons/MyNavBar/dashboard_OFF.png',
-//                   width: 24,
-//                   height: 24,
-//                 ),
-//                 onPressed: widget.onDashboardPressed,
-//               ),
-//             ),
-//           ),
-//         if (widget.showNotification)
-//           Transform.translate(
-//             offset: const Offset(10, 0),
-//             child: Tooltip(
-//               message: AppLocalizations.of(context)!.translate('notification'),
-//               preferBelow: false,
-//               decoration: BoxDecoration(
-//                 color: Colors.white,
-//                 borderRadius: BorderRadius.circular(8),
-//                 boxShadow: [
-//                   BoxShadow(
-//                     color: Colors.black.withOpacity(0.2),
-//                     blurRadius: 6,
-//                     offset: Offset(0, 2),
-//                   ),
-//                 ],
-//               ),
-//               textStyle: TextStyle(
-//                 fontSize: 12,
-//                 color: Colors.black,
-//               ),
-//               child: IconButton(
-//                 key: widget.NotificationIconKey,
-//                 padding: EdgeInsets.zero,
-//                 constraints: BoxConstraints(),
-//                 icon: Stack(
-//                   children: [
-//                     Image.asset(
-//                       'assets/icons/AppBar/notification.png',
-//                       width: 24,
-//                       height: 24,
-//                     ),
-//                     if (_hasNewNotification)
-//                       Positioned(
-//                         right: 0,
-//                         child: FadeTransition(
-//                           opacity: _blinkAnimation,
-//                           child: Container(
-//                             width: 10,
-//                             height: 10,
-//                             decoration: BoxDecoration(
-//                               color: Colors.red,
-//                               shape: BoxShape.circle,
-//                             ),
-//                           ),
-//                         ),
-//                       ),
-//                   ],
-//                 ),
-//                 onPressed: () {
-//                   setState(() {
-//                     _hasNewNotification = false;
+//         BlocProvider<FieldConfigurationBloc>(
+//           create: (context) => FieldConfigurationBloc(ApiService()),
+//         ),
+//       ],
+//       child: Scaffold(
+//         appBar: _buildAppBar(
+//             context, AppLocalizations.of(context)!.translate('view_lead') + ' #' + widget.leadId),
+//         backgroundColor: Colors.white,
+//         body: MultiBlocListener(
+//           listeners: [
+//             BlocListener<LeadByIdBloc, LeadByIdState>(
+//               listener: (context, state) {
+//                 if (state is LeadByIdError) {
+//                   WidgetsBinding.instance.addPostFrameCallback((_) {
+//                     showCustomSnackBar(
+//                       context: context,
+//                       message:
+//                           AppLocalizations.of(context)!.translate(state.message),
+//                       isSuccess: false,
+//                     );
 //                   });
-//                   SharedPreferences.getInstance().then((prefs) {
-//                     prefs.setBool('hasNewNotification', false);
-//                   });
-//                   Navigator.push(
-//                     context,
-//                     MaterialPageRoute(
-//                       builder: (context) => NotificationsScreen(),
-//                     ),
-//                   );
-//                 },
-//               ),
+//                 }
+//               },
 //             ),
-//           ),
-//         if (widget.showSearchIcon)
-//           Transform.translate(
-//             offset: const Offset(10, 0),
-//             child: Tooltip(
-//               message: AppLocalizations.of(context)!.translate('search'),
-//               preferBelow: false,
-//               decoration: BoxDecoration(
-//                 color: Colors.white,
-//                 borderRadius: BorderRadius.circular(8),
-//                 boxShadow: [
-//                   BoxShadow(
-//                     color: Colors.black.withOpacity(0.2),
-//                     blurRadius: 6,
-//                     offset: Offset(0, 0),
-//                   ),
-//                 ],
-//               ),
-//               textStyle: TextStyle(
-//                 fontSize: 12,
-//                 color: Colors.black,
-//               ),
-//               child: IconButton(
-//                 key: widget.SearchIconKey,
-//                 padding: EdgeInsets.zero,
-//                 constraints: BoxConstraints(),
-//                 icon: _isSearching
-//                     ? Icon(Icons.close)
-//                     : Image.asset(
-//                         'assets/icons/AppBar/search.png',
-//                         width: 24,
-//                         height: 24,
-//                       ),
-//                 onPressed: () {
-//                   setState(() {
-//                     _isSearching = !_isSearching;
-//                     if (!_isSearching) {
-//                       _searchController.clear();
-//                       FocusScope.of(context).unfocus();
-//                     }
-//                   });
-//                   widget.clearButtonClick(_isSearching);
-//                   if (_isSearching) {
-//                     Future.delayed(Duration(milliseconds: 100), () {
-//                       FocusScope.of(context).requestFocus(focusNode);
-//                     });
+//             BlocListener<FieldConfigurationBloc, FieldConfigurationState>(
+//               listener: (context, configState) {
+//                 if (kDebugMode) {
+//                   print('LeadDetailsScreen: FieldConfigurationBloc state changed: ${configState.runtimeType}');
+//                 }
+                
+//                 if (configState is FieldConfigurationLoaded) {
+//                   if (kDebugMode) {
+//                     print('LeadDetailsScreen: Configuration loaded with ${configState.fields.length} fields');
 //                   }
-//                 },
-//               ),
+//                   setState(() {
+//                     fieldConfigurations = configState.fields;
+//                     isConfigurationLoaded = true;
+//                   });
+                  
+//                   // Перестраиваем детали если лид уже загружен
+//                   if (currentLead != null) {
+//                     _updateDetails(currentLead!);
+//                   }
+//                 } else if (configState is FieldConfigurationError) {
+//                   if (kDebugMode) {
+//                     print('LeadDetailsScreen: Configuration error: ${configState.message}');
+//                   }
+//                   // Используем legacy метод
+//                   setState(() {
+//                     isConfigurationLoaded = false;
+//                   });
+//                 }
+//               },
 //             ),
-//           ),
-//         if (widget.showFilterIconCallCenter)
-//           IconButton(
-//             icon: Padding(
-//               padding: const EdgeInsets.only(left: 12),
-//               child: Image.asset(
-//                 'assets/icons/AppBar/filter.png',
-//                 width: 24,
-//                 height: 24,
-//                 color: _iconColor,
-//               ),
-//             ),
-//             onPressed: () {
-//               Navigator.push(
-//                 context,
-//                 MaterialPageRoute(
-//                   builder: (context) => CallCenterFilterScreen(),
-//                 ),
-//               );
-//             },
-//           ),
-//         if (widget.showFilterIconEvent)
-//           Tooltip(
-//             message: AppLocalizations.of(context)!.translate('search'),
-//             preferBelow: false,
-//             decoration: BoxDecoration(
-//               color: Colors.white,
-//               borderRadius: BorderRadius.circular(8),
-//               boxShadow: [
-//                 BoxShadow(
-//                   color: Colors.black.withOpacity(0.2),
-//                   blurRadius: 6,
-//                   offset: Offset(0, 2),
-//                 ),
-//               ],
-//             ),
-//             textStyle: TextStyle(
-//               fontSize: 12,
-//               color: Colors.black,
-//             ),
-//             child: IconButton(
-//               key: widget.FiltrEventIconKey,
-//               icon: Image.asset(
-//                 'assets/icons/AppBar/filter.png',
-//                 width: 24,
-//                 height: 24,
-//               ),
-//               onPressed: () {
-//                 Navigator.push(
-//                   context,
-//                   MaterialPageRoute(
-//                     builder: (context) => EventManagerFilterScreen(
-//                       onManagersSelected: widget.onManagersEventSelected,
-//                       initialManagers: widget.initialManagersEvent,
-//                       initialStatuses: widget.initialManagerEventStatuses,
-//                       initialFromDate: widget.initialManagerEventFromDate,
-//                       initialToDate: widget.initialManagerEventToDate,
-//                       initialNoticeFromDate: widget.initialNoticeManagerEventFromDate,
-//                       initialNoticeToDate: widget.initialNoticeManagerEventToDate,
-//                       onResetFilters: widget.onEventResetFilters,
+//           ],
+//           child: BlocBuilder<LeadByIdBloc, LeadByIdState>(
+//             builder: (context, state) {
+//               if (state is LeadByIdLoading) {
+//                 return Center(
+//                     child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+//               } else if (state is LeadByIdLoaded) {
+//                 LeadById lead = state.lead;
+//                 _updateDetails(lead);
+                
+//                 return Padding(
+//                   padding:
+//                       const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+//                   child: ListView(
+//                     controller: _scrollController,
+//                     children: [
+//                       _buildDetailsList(),
+//                       const SizedBox(height: 8),
+//                       LeadNavigateToChat(
+//                         key: keyLeadNavigateChat,
+//                         leadId: int.parse(widget.leadId),
+//                         leadName: widget.leadName,
+//                         chats: state.lead.chats
+//                             .map((chat) => {
+//                                   'id': chat.id,
+//                                   'integration': chat.integration != null
+//                                       ? {
+//                                           'id': chat.integration!.id,
+//                                           'name': chat.integration!.name,
+//                                           'username':
+//                                               chat.integration!.username,
+//                                         }
+//                                       : null,
+//                                 })
+//                             .toList(),
+//                       ),
+//                       const SizedBox(height: 8),
+//                       if (selectedOrganization != null)
+//                         LeadToC(
+//                           leadId: int.parse(widget.leadId),
+//                           selectedOrganization: selectedOrganization!,
+//                         ),
+//                       const SizedBox(height: 8),
+//                       ActionHistoryWidget(leadId: int.parse(widget.leadId)),
+//                       const SizedBox(height: 8),
+//                       if (_canReadNotes)
+//                         NotesWidget(
+//                           leadId: int.parse(widget.leadId),
+//                           key: keyLeadNotice,
+//                           managerId: lead.manager?.id,
+//                         ),
+//                       if (_canReadDeal)
+//                         DealsWidget(
+//                           leadId: int.parse(widget.leadId),
+//                           key: keyLeadDeal,
+//                         ),
+//                       if (_canReadOrders)
+//                         OrdersWidget(
+//                           leadId: int.parse(widget.leadId),
+//                           key: GlobalKey(),
+//                         ),
+//                       ContactPersonWidget(
+//                           leadId: int.parse(widget.leadId),
+//                           key: keyLeadContactPerson),
+//                     ],
+//                   ),
+//                 );
+//               } else if (state is LeadByIdError) {
+//                 return Center(
+//                   child: Text(
+//                     AppLocalizations.of(context)!.translate(state.message),
+//                     style: TextStyle(
+//                       fontFamily: 'Gilroy',
+//                       fontSize: 16,
+//                       fontWeight: FontWeight.w500,
+//                       color: Colors.black,
 //                     ),
 //                   ),
 //                 );
-//               },
-//             ),
-//           ),
-//         if (widget.showFilterIconOnSelectLead)
-//           IconButton(
-//             icon: Padding(
-//               padding: const EdgeInsets.only(left: 12),
-//               child: Image.asset(
-//                 'assets/icons/AppBar/filter.png',
-//                 width: 24,
-//                 height: 24,
-//                 color: _iconColor,
-//               ),
-//             ),
-//             onPressed: () {
-//               navigateToLeadManagerFilterScreen(context);
+//               }
+//               return Center(child: Text(''));
 //             },
 //           ),
-//         if (widget.showFilterIconOnSelectDeal)
-//           IconButton(
-//             icon: Padding(
-//               padding: const EdgeInsets.only(left: 12),
-//               child: Image.asset(
-//                 'assets/icons/AppBar/filter.png',
-//                 width: 24,
-//                 height: 24,
-//                 color: _iconColor,
-//               ),
+//         ),
+//       ),
+//     );
+//   }
+
+
+//   AppBar _buildAppBar(BuildContext context, String title) {
+//     return AppBar(
+//       backgroundColor: Colors.white,
+//       forceMaterialTransparency: true,
+//       elevation: 0,
+//       centerTitle: false,
+//       leadingWidth: 40,
+//       leading: Padding(
+//         padding: const EdgeInsets.only(left: 0),
+//         child: Transform.translate(
+//           offset: const Offset(0, -2),
+//           child: IconButton(
+//             icon: Image.asset(
+//               'assets/icons/arrow-left.png',
+//               width: 24,
+//               height: 24,
 //             ),
-//             onPressed: () {
-//               navigateToDealManagerFilterScreen(context);
+//             onPressed: () async {
+//               Navigator.pop(context, widget.statusId);
 //             },
 //           ),
-//         if (widget.showFilterIconOnSelectTask)
-//           IconButton(
-//             icon: Padding(
-//               padding: const EdgeInsets.only(left: 12),
-//               child: Image.asset(
-//                 'assets/icons/AppBar/filter.png',
-//                 width: 24,
-//                 height: 24,
-//                 color: _iconColor,
-//               ),
-//             ),
-//             onPressed: () {
-//               navigateToTaskManagerFilterScreen(context);
-//             },
+//         ),
+//       ),
+//       title: Transform.translate(
+//         offset: const Offset(-10, 0),
+//         child: Text(
+//           title,
+//           style: const TextStyle(
+//             fontSize: 20,
+//             fontFamily: 'Gilroy',
+//             fontWeight: FontWeight.w600,
+//             color: Color(0xff1E2E52),
 //           ),
-//         if (widget.showSeparateMyTasks)
-//           Transform.translate(
-//             offset: const Offset(6, 0),
-//             child: Tooltip(
-//               message: AppLocalizations.of(context)!.translate('appbar_my_tasks'),
-//               preferBelow: false,
-//               decoration: BoxDecoration(
-//                 color: Colors.white,
-//                 borderRadius: BorderRadius.circular(8),
-//                 boxShadow: [
-//                   BoxShadow(
-//                     color: Colors.black.withOpacity(0.2),
-//                     blurRadius: 6,
-//                     offset: Offset(0, 2),
+//         ),
+//       ),
+//       actions: [
+//         IconButton(
+//           key: keyLeadHistory,
+//           padding: EdgeInsets.zero,
+//           constraints: BoxConstraints(),
+//           icon: Icon(
+//             Icons.history,
+//             size: 30,
+//             color: Color.fromARGB(224, 0, 0, 0),
+//           ),
+//           onPressed: () {
+//             showDialog(
+//               context: context,
+//               builder: (context) => HistoryDialog(
+//                 leadId: currentLead!.id,
+//               ),
+//             );
+//           },
+//         ),
+//         if (_canEditLead || _canDeleteLead)
+//           Row(
+//             mainAxisSize: MainAxisSize.min,
+//             children: [
+//               if (_canEditLead)
+//                 IconButton(
+//                   key: keyLeadEdit,
+//                   padding: EdgeInsets.zero,
+//                   constraints: BoxConstraints(),
+//                   icon: Image.asset(
+//                     'assets/icons/edit.png',
+//                     width: 24,
+//                     height: 24,
 //                   ),
-//                 ],
-//               ),
-//               textStyle: TextStyle(
-//                 fontSize: 12,
-//                 color: Colors.black,
-//               ),
-//               child: IconButton(
-//                 key: widget.MyTaskIconKey,
-//                 padding: EdgeInsets.zero,
-//                 constraints: BoxConstraints(),
-//                 icon: Stack(
-//                   children: [
-//                     Image.asset(
-//                       'assets/icons/AppBar/my-task.png',
-//                       width: 24,
-//                       height: 24,
-//                     ),
-//                     if (_hasOverdueTasks)
-//                       Positioned(
-//                         right: 0,
-//                         child: FadeTransition(
-//                           opacity: _blinkAnimation,
-//                           child: Container(
-//                             width: 10,
-//                             height: 10,
-//                             decoration: BoxDecoration(
-//                               color: Colors.red,
-//                               shape: BoxShape.circle,
-//                             ),
+//                   onPressed: () async {
+//                     if (currentLead != null) {
+//                       final birthdayString = currentLead!.birthday != null &&
+//                               currentLead!.birthday!.isNotEmpty
+//                           ? DateFormat('dd/MM/yyyy')
+//                               .format(DateTime.parse(currentLead!.birthday!))
+//                           : null;
+//                       final createdAtString = currentLead!.createdAt != null &&
+//                               currentLead!.createdAt!.isNotEmpty
+//                           ? DateFormat('dd/MM/yyyy')
+//                               .format(DateTime.parse(currentLead!.createdAt!))
+//                           : null;
+//                       final shouldUpdate = await Navigator.push(
+//                         context,
+//                         MaterialPageRoute(
+//                           builder: (context) => LeadEditScreen(
+//                             leadId: currentLead!.id,
+//                             leadName: currentLead!.name,
+//                             statusId: currentLead!.statusId,
+//                             sourceId: currentLead!.source != null
+//                                 ? currentLead!.source!.id.toString()
+//                                 : '',
+//                             salesFunnelId: currentLead!.salesFunnel != null
+//                                 ? currentLead!.salesFunnel!.id.toString()
+//                                 : '',
+//                             region: currentLead!.region != null
+//                                 ? currentLead!.region!.id.toString()
+//                                 : '',
+//                             manager: currentLead!.manager != null
+//                                 ? currentLead!.manager!.id.toString()
+//                                 : '',
+//                             birthday: birthdayString,
+//                             createAt: createdAtString,
+//                             instagram: currentLead!.instagram,
+//                             facebook: currentLead!.facebook,
+//                             telegram: currentLead!.telegram,
+//                             phone: currentLead!.phone,
+//                             whatsApp: currentLead!.whatsApp,
+//                             email: currentLead!.email,
+//                             description: currentLead!.description,
+//                             leadCustomFields: currentLead!.leadCustomFields,
+//                             directoryValues: currentLead!.directoryValues,
+//                             files: currentLead!.files,
+//                             // phoneVerifiedAt: currentLead!.phone_verified_at,
+//                             // verificationCode: currentLead!.verification_code,
+//                             priceTypeId: currentLead!.priceType?.id.toString(),
+//                             priceTypeName: currentLead!.priceType?.name,
 //                           ),
 //                         ),
-//                       ),
-//                   ],
+//                       );
+//                       if (shouldUpdate == true) {
+//                         context.read<LeadByIdBloc>().add(FetchLeadByIdEvent(
+//                             leadId: int.parse(widget.leadId)));
+//                         context.read<LeadBloc>().add(FetchLeadStatuses());
+//                       }
+//                     }
+//                   },
 //                 ),
-//                 onPressed: () {
-//                   Navigator.push(
-//                     context,
-//                     MaterialPageRoute(
-//                       builder: (context) => MyTaskScreen(),
-//                     ),
-//                   );
-//                 },
-//               ),
-//             ),
-//           ),
-//         if (widget.showCalendarDashboard && _canReadCalendar)
-//           Transform.translate(
-//             offset: const Offset(6, 0),
-//             child: Tooltip(
-//               message: AppLocalizations.of(context)!.translate('calendar'),
-//               preferBelow: false,
-//               decoration: BoxDecoration(
-//                 color: Colors.white,
-//                 borderRadius: BorderRadius.circular(8),
-//                 boxShadow: [
-//                   BoxShadow(
-//                     color: Colors.black.withOpacity(0.2),
-//                     blurRadius: 6,
-//                     offset: Offset(0, 2),
+//               if (_canDeleteLead)
+//                 IconButton(
+//                   key: keyLeadDelete,
+//                   padding: EdgeInsets.only(right: 8),
+//                   constraints: BoxConstraints(),
+//                   icon: Image.asset(
+//                     'assets/icons/delete.png',
+//                     width: 24,
+//                     height: 24,
 //                   ),
-//                 ],
-//               ),
-//               textStyle: TextStyle(
-//                 fontSize: 12,
-//                 color: Colors.black,
-//               ),
-//               child: IconButton(
-//                 key: widget.CalendarIconKey,
-//                 padding: EdgeInsets.zero,
-//                 constraints: BoxConstraints(),
-//                 icon: Image.asset(
-//                   'assets/icons/AppBar/calendar.png',
-//                   width: 24,
-//                   height: 24,
+//                   onPressed: () {
+//                     showDialog(
+//                       context: context,
+//                       builder: (context) =>
+//                           DeleteLeadDialog(leadId: currentLead!.id),
+//                     );
+//                   },
 //                 ),
-//                 onPressed: () {
-//                   Navigator.push(
-//                     context,
-//                     MaterialPageRoute(
-//                       builder: (context) => CalendarScreen(),
-//                     ),
-//                   );
-//                 },
+//             ],
+//           ),
+//       ],
+//     );
+//   }
+
+//   Widget _buildDetailsList() {
+//     return Column(
+//       crossAxisAlignment: CrossAxisAlignment.start,
+//       children: [
+//         if (currentLead?.verification_code != null)
+//           Padding(
+//             padding: const EdgeInsets.symmetric(vertical: 8),
+//             child: Text(
+//               'Код верификации: ${currentLead!.verification_code}',
+//               style: TextStyle(
+//                 fontSize: 18,
+//                 fontFamily: 'Gilroy',
+//                 fontWeight: FontWeight.w500,
+//                 color: Color(0xFF3935e7),
 //               ),
 //             ),
 //           ),
-//         if (widget.showMenuIcon)
-//           Transform.translate(
-//             offset: const Offset(8, 0),
-//             child: PopupMenuButton<String>(
-//               key: widget.menuIconKey,
-//               padding: EdgeInsets.zero,
-//               position: PopupMenuPosition.under,
-//               icon: Stack(
-//                 children: [
-//                   Icon(Icons.more_vert),
-//                   if (_hasOverdueTasks)
-//                     Positioned(
-//                       right: 0,
-//                       top: 0,
-//                       child: FadeTransition(
-//                         opacity: _blinkAnimation,
+//         ListView.builder(
+//           shrinkWrap: true,
+//           physics: NeverScrollableScrollPhysics(),
+//           itemCount: details.length,
+//           itemBuilder: (context, index) {
+//             return Padding(
+//               padding: const EdgeInsets.symmetric(vertical: 6),
+//               child: _buildDetailItem(
+//                 details[index]['label']!,
+//                 details[index]['value']!,
+//               ),
+//             );
+//           },
+//         ),
+//       ],
+//     );
+//   }
+
+//   Widget _buildDetailItem(String label, String value) {
+//     return LayoutBuilder(
+//       builder: (BuildContext context, BoxConstraints constraints) {
+//         if (label == AppLocalizations.of(context)!.translate('files_details')) {
+//           return Column(
+//             crossAxisAlignment: CrossAxisAlignment.start,
+//             children: [
+//               _buildLabel(label),
+//               SizedBox(height: 8),
+//               Container(
+//                 height: 120,
+//                 child: ListView.builder(
+//                   scrollDirection: Axis.horizontal,
+//                   itemCount: currentLead?.files?.length ?? 0,
+//                   itemBuilder: (context, index) {
+//                     final file = currentLead!.files![index];
+//                     final fileExtension =
+//                         file.name.split('.').last.toLowerCase();
+
+//                     return Padding(
+//                       padding: EdgeInsets.only(right: 16),
+//                       child: GestureDetector(
+//                         onTap: () {
+//                           if (!_isDownloading) {
+//                             FileUtils.showFile(
+//                               context: context,
+//                               fileUrl: file.path,
+//                               fileId: file.id,
+//                               setState: setState,
+//                               downloadProgress: _downloadProgress,
+//                               isDownloading: _isDownloading,
+//                               apiService: _apiService,
+//                             );
+//                           }
+//                         },
 //                         child: Container(
-//                           width: 10,
-//                           height: 10,
-//                           decoration: BoxDecoration(
-//                             color: Colors.red,
-//                             shape: BoxShape.circle,
+//                           width: 100,
+//                           child: Column(
+//                             children: [
+//                               Stack(
+//                                 alignment: Alignment.center,
+//                                 children: [
+//                                   Image.asset(
+//                                     'assets/icons/files/$fileExtension.png',
+//                                     width: 60,
+//                                     height: 60,
+//                                     errorBuilder: (context, error, stackTrace) {
+//                                       return Image.asset(
+//                                         'assets/icons/files/file.png',
+//                                         width: 60,
+//                                         height: 60,
+//                                       );
+//                                     },
+//                                   ),
+//                                   if (_downloadProgress.containsKey(file.id))
+//                                     CircularProgressIndicator(
+//                                       value: _downloadProgress[file.id],
+//                                       strokeWidth: 3,
+//                                       backgroundColor:
+//                                           Colors.grey.withOpacity(0.3),
+//                                       valueColor: AlwaysStoppedAnimation<Color>(
+//                                         Color(0xff1E2E52),
+//                                       ),
+//                                     ),
+//                                 ],
+//                               ),
+//                               SizedBox(height: 8),
+//                               Text(
+//                                 file.name,
+//                                 maxLines: 2,
+//                                 overflow: TextOverflow.ellipsis,
+//                                 textAlign: TextAlign.center,
+//                                 style: TextStyle(
+//                                   fontSize: 12,
+//                                   fontFamily: 'Gilroy',
+//                                   color: Color(0xff1E2E52),
+//                                 ),
+//                               ),
+//                             ],
 //                           ),
 //                         ),
 //                       ),
-//                     ),
-//                 ],
+//                     );
+//                   },
+//                 ),
 //               ),
-//               color: Colors.white,
-//               onSelected: (String value) {
-//                 switch (value) {
-//                   case 'filter_task':
-//                     navigateToTaskManagerFilterScreen(context);
-//                     break;
-//                   case 'filter_lead':
-//                     navigateToLeadManagerFilterScreen(context);
-//                     break;
-//                   case 'filter_deal':
-//                     navigateToDealManagerFilterScreen(context);
-//                     break;
-//                   case 'events':
-//                     Navigator.push(
-//                       context,
-//                       MaterialPageRoute(
-//                         builder: (context) => EventScreen(),
-//                       ),
-//                     );
-//                     break;
-//                   case 'my_tasks':
-//                     Navigator.push(
-//                       context,
-//                       MaterialPageRoute(
-//                         builder: (context) => MyTaskScreen(),
-//                       ),
-//                     );
-//                     break;
-//                   case 'calendar':
-//                     Navigator.push(
-//                       context,
-//                       MaterialPageRoute(
-//                         builder: (context) => CalendarScreen(),
-//                       ),
-//                     );
-//                     break;
-//                   case 'call_center':
-//                     Navigator.push(
-//                       context,
-//                       MaterialPageRoute(
-//                         builder: (context) => CallCenterScreen(),
-//                       ),
-//                     );
-//                     break;
-//                   case 'gps':
-//                     Navigator.push(
-//                       context,
-//                       MaterialPageRoute(
-//                         builder: (context) => GpsScreenForAdmin(),
-//                       ),
-//                     );
-//                     break;
-//                 }
-//               },
-//               itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-//                 if (widget.showFilterIcon)
-//                   PopupMenuItem<String>(
-//                     value: 'filter_lead',
-//                     child: Row(
+//             ],
+//           );
+//         }
+//         return Row(
+//           crossAxisAlignment: CrossAxisAlignment.start,
+//           children: [
+//             _buildLabel(label),
+//             SizedBox(width: 8),
+//             Expanded(
+//               child: Row(
+//                 crossAxisAlignment: CrossAxisAlignment.start,
+//                 children: [
+//                   if (label == AppLocalizations.of(context)!.translate('lead_name'))
+//                     Row(
 //                       children: [
-//                         _isFiltering
-//                             ? Icon(Icons.close)
-//                             : Image.asset(
-//                                 'assets/icons/AppBar/filter.png',
-//                                 width: 24,
-//                                 height: 24,
-//                               ),
-//                         SizedBox(width: 8),
-//                         Text(AppLocalizations.of(context)!.translate('filtr')),
-//                       ],
-//                     ),
-//                   ),
-//                 if (widget.showFilterIconDeal)
-//                   PopupMenuItem<String>(
-//                     value: 'filter_deal',
-//                     child: Row(
-//                       children: [
-//                         _isFiltering
-//                             ? Icon(Icons.close)
-//                             : Image.asset(
-//                                 'assets/icons/AppBar/filter.png',
-//                                 width: 24,
-//                                 height: 24,
-//                               ),
-//                         SizedBox(width: 8),
-//                         Text(AppLocalizations.of(context)!.translate('filtr')),
-//                       ],
-//                     ),
-//                   ),
-//                 if (widget.showEvent && _canReadNotice)
-//                   PopupMenuItem<String>(
-//                     value: 'events',
-//                     child: Row(
-//                       children: [
-//                         Icon(Icons.event),
-//                         SizedBox(width: 8),
-//                         Text(AppLocalizations.of(context)!.translate('events')),
-//                       ],
-//                     ),
-//                   ),
-//                 if (widget.showFilterTaskIcon)
-//                   PopupMenuItem<String>(
-//                     value: 'filter_task',
-//                     child: Row(
-//                       children: [
-//                         _isTaskFiltering
-//                             ? Icon(Icons.close)
-//                             : Image.asset(
-//                                 'assets/icons/AppBar/filter.png',
-//                                 width: 24,
-//                                 height: 24,
-//                               ),
-//                         SizedBox(width: 8),
-//                         Text(AppLocalizations.of(context)!.translate('filtr')),
-//                       ],
-//                     ),
-//                   ),
-//                 if (widget.showMyTaskIcon)
-//                   PopupMenuItem<String>(
-//                     value: 'my_tasks',
-//                     child: Row(
-//                       children: [
-//                         Stack(
-//                           children: [
-//                             Image.asset(
-//                               'assets/icons/AppBar/my-task.png',
+//                         _buildExpandableText(
+//                             label, value, constraints.maxWidth * 0.7),
+//                         if (currentLead?.phone_verified_at != null)
+//                           Padding(
+//                             padding: const EdgeInsets.only(left: 8),
+//                             child: Image.asset(
+//                               'assets/icons/badge.png',
 //                               width: 24,
 //                               height: 24,
 //                             ),
-//                             if (_hasOverdueTasks)
-//                               Positioned(
-//                                 right: 0,
-//                                 child: FadeTransition(
-//                                   opacity: _blinkAnimation,
-//                                   child: Container(
-//                                     width: 10,
-//                                     height: 10,
-//                                     decoration: BoxDecoration(
-//                                       color: Colors.red,
-//                                       shape: BoxShape.circle,
-//                                     ),
+//                           ),
+//                       ],
+//                     )
+//                   else
+//                     Expanded(
+//                       child: (label.contains(
+//                                   AppLocalizations.of(context)!
+//                                       .translate('lead')) ||
+//                               label.contains(AppLocalizations.of(context)!
+//                                   .translate('description_details_lead')))
+//                           ? _buildExpandableText(
+//                               label, value, constraints.maxWidth)
+//                           : _buildValue(value, label),
+//                     ),
+//                   if (label == AppLocalizations.of(context)!.translate('phone_use') &&
+//                       _canExportContact &&
+//                       _isExportContactEnabled)
+//                     _isLoadingContacts
+//                         ? SizedBox(
+//                             width: 24,
+//                             height: 24,
+//                             child: CircularProgressIndicator(
+//                               color: Color(0xFF1E2E52),
+//                               strokeWidth: 2,
+//                             ),
+//                           )
+//                         : !_isPhoneInContacts(value)
+//                             ? Padding(
+//                                 padding: const EdgeInsets.only(left: 8),
+//                                 child: GestureDetector(
+//                                   onTap: () => _addContact(widget.leadName, value),
+//                                   child: Icon(
+//                                     Icons.contacts,
+//                                     size: 24,
+//                                     color: Color(0xFF1E2E52),
 //                                   ),
 //                                 ),
-//                               ),
-//                           ],
-//                         ),
-//                         SizedBox(width: 8),
-//                         Text(AppLocalizations.of(context)!.translate('appbar_my_tasks')),
-//                       ],
-//                     ),
-//                   ),
-//                 if (widget.showCalendar && _canReadCalendar)
-//                   PopupMenuItem<String>(
-//                     value: 'calendar',
-//                     child: Row(
-//                       children: [
-//                         Image.asset(
-//                           'assets/icons/AppBar/calendar.png',
-//                           width: 24,
-//                           height: 24,
-//                         ),
-//                         SizedBox(width: 8),
-//                         Text(AppLocalizations.of(context)!.translate('calendar')),
-//                       ],
-//                     ),
-//                   ),
-//                 if (widget.showCallCenter && _canReadCallCenter)
-//                   PopupMenuItem<String>(
-//                     value: 'call_center',
-//                     child: Row(
-//                       children: [
-//                         Image.asset(
-//                           'assets/icons/AppBar/call_center.png',
-//                           width: 24,
-//                           height: 24,
-//                           color: _iconColor,
-//                         ),
-//                         SizedBox(width: 8),
-//                         Text(AppLocalizations.of(context)!.translate('call_center')),
-//                       ],
-//                     ),
-//                   ),
-//                 if (widget.showGps && _canReadGps)
-//                   PopupMenuItem<String>(
-//                     value: 'gps',
-//                     child: Row(
-//                       children: [
-//                         Image.asset(
-//                           'assets/icons/AppBar/gps.png', // Предполагаемый путь к иконке GPS
-//                           width: 24,
-//                           height: 24,
-//                           color: _iconColor,
-//                         ),
-//                         SizedBox(width: 8),
-//                         Text(AppLocalizations.of(context)!.translate('gps')),
-//                       ],
-//                     ),
-//                   ),
-//               ],
+//                               )
+//                             : Container(),
+//                 ],
+//               ),
+//             ),
+//           ],
+//         );
+//       },
+//     );
+//   }
+
+//   String formatDate(String? dateString) {
+//     if (dateString == null || dateString.isEmpty) return '';
+//     try {
+//       final parsedDate = DateTime.parse(dateString);
+//       final formatted = DateFormat('dd/MM/yyyy').format(parsedDate);
+//       return formatted;
+//     } catch (e) {
+//       return AppLocalizations.of(context)!.translate('invalid_format');
+//     }
+//   }
+
+//   Widget _buildLabel(String label) {
+//     return Text(
+//       label,
+//       style: TextStyle(
+//         fontSize: 16,
+//         fontFamily: 'Gilroy',
+//         fontWeight: FontWeight.w400,
+//         color: Color(0xff99A4BA),
+//       ),
+//     );
+//   }
+
+//   Widget _buildValue(String value, String label) {
+//     if (value.isEmpty) {
+//       return Container();
+//     }
+
+//     if (label == AppLocalizations.of(context)!.translate('phone_use')) {
+//       return Row(
+//         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//         children: [
+//           GestureDetector(
+//             onTap: () => _makePhoneCall(value),
+//             child: Text(
+//               value,
+//               style: TextStyle(
+//                 fontSize: 16,
+//                 fontFamily: 'Gilroy',
+//                 fontWeight: FontWeight.w500,
+//                 color: Color(0xFF1E2E52),
+//                 decoration: TextDecoration.underline,
+//               ),
 //             ),
 //           ),
-//       ]),
-//     );
-//   }
-
-//   void navigateToLeadManagerFilterScreen(BuildContext context) {
-//     Navigator.push(
-//       context,
-//       MaterialPageRoute(
-//         builder: (context) => ManagerFilterScreen(
-//           onManagersSelected: widget.onManagersLeadSelected,
-//           initialManagers: widget.initialManagersLead,
-//           initialRegions: widget.initialManagersLeadRegions,
-//           initialSources: widget.initialManagersLeadSources,
-//           initialStatuses: widget.initialManagerLeadStatuses,
-//           initialFromDate: widget.initialManagerLeadFromDate,
-//           initialToDate: widget.initialManagerLeadToDate,
-//           initialHasSuccessDeals: widget.initialManagerLeadHasSuccessDeals,
-//           initialHasInProgressDeals: widget.initialManagerLeadHasInProgressDeals,
-//           initialHasFailureDeals: widget.initialManagerLeadHasFailureDeals,
-//           initialHasNotices: widget.initialManagerLeadHasNotices,
-//           initialHasContact: widget.initialManagerLeadHasContact,
-//           initialHasChat: widget.initialManagerLeadHasChat,
-//           initialHasNoReplies: widget.initialManagerLeadHasNoReplies,
-//           initialHasUnreadMessages: widget.initialManagerLeadHasUnreadMessages,
-//           initialHasDeal: widget.initialManagerLeadHasDeal,
-//           initialDaysWithoutActivity: widget.initialManagerLeadDaysWithoutActivity,
-//           onResetFilters: widget.onLeadResetFilters,
-//           initialDirectoryValues: widget.initialDirectoryValuesLead,
+//         ],
+//       );
+//     }
+//     if (label == 'WhatsApp:') {
+//       return GestureDetector(
+//         onTap: () => _openWhatsApp(value),
+//         child: Text(
+//           value,
+//           style: TextStyle(
+//             fontSize: 16,
+//             fontFamily: 'Gilroy',
+//             fontWeight: FontWeight.w500,
+//             color: Color(0xFF1E2E52),
+//             decoration: TextDecoration.underline,
+//           ),
 //         ),
-//       ),
-//     );
-//   }
+//       );
+//     }
 
-//   void navigateToDealManagerFilterScreen(BuildContext context) {
-//     Navigator.push(
-//       context,
-//       MaterialPageRoute(
-//         builder: (context) => DealManagerFilterScreen(
-//           onManagersSelected: widget.onManagersDealSelected,
-//           onLeadsSelected: widget.onLeadsDealSelected,
-//           onStatusSelected: widget.onStatusDealSelected,
-//           onDateRangeSelected: widget.onDateRangeDealSelected,
-//           onStatusAndDateRangeSelected: widget.onStatusAndDateRangeDealSelected,
-//           initialManagers: widget.initialManagersDeal,
-//           initialLeads: widget.initialLeadsDeal,
-//           initialHasTasks: widget.initialManagerDealHasTasks,
-//           initialStatuses: widget.initialManagerDealStatuses,
-//           initialFromDate: widget.initialManagerDealFromDate,
-//           initialToDate: widget.initialManagerDealToDate,
-//           onResetFilters: widget.onDealResetFilters,
-//           initialDaysWithoutActivity: widget.initialManagerDealDaysWithoutActivity,
-//           initialDirectoryValues: widget.initialDirectoryValuesDeal,
+//     if (label == '' && value == 'become_manager') {
+//       return Padding(
+//         padding: EdgeInsets.only(left: 0),
+//         child: Row(
+//           mainAxisAlignment: MainAxisAlignment.start,
+//           children: [
+//             Text(
+//               '${AppLocalizations.of(context)!.translate('manager_details')}  ',
+//               style: TextStyle(
+//                 fontSize: 16,
+//                 fontFamily: 'Gilroy',
+//                 fontWeight: FontWeight.w400,
+//                 color: Color(0xff99A4BA),
+//               ),
+//             ),
+//             GestureDetector(
+//               onTap: () {
+//                 _assignManager();
+//               },
+//               child: Container(
+//                 padding: EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+//                 decoration: BoxDecoration(
+//                   color: Color(0xff1E2E52),
+//                   borderRadius: BorderRadius.circular(10),
+//                 ),
+//                 child: Row(
+//                   mainAxisSize: MainAxisSize.min,
+//                   children: [
+//                     Icon(
+//                       Icons.person_add_alt_1,
+//                       color: Colors.white,
+//                       size: 20,
+//                     ),
+//                     SizedBox(width: 12),
+//                     Text(
+//                       AppLocalizations.of(context)!.translate('become_manager'),
+//                       textAlign: TextAlign.center,
+//                       style: TextStyle(
+//                         fontSize: 16,
+//                         fontFamily: 'Gilroy',
+//                         fontWeight: FontWeight.w500,
+//                         color: Colors.white,
+//                       ),
+//                     ),
+//                   ],
+//                 ),
+//               ),
+//             ),
+//           ],
 //         ),
+//       );
+//     }
+//     return Text(
+//       value,
+//       style: TextStyle(
+//         fontSize: 16,
+//         fontFamily: 'Gilroy',
+//         fontWeight: FontWeight.w500,
+//         color: Color(0xFF1E2E52),
 //       ),
+//       maxLines: 1,
+//       overflow: TextOverflow.ellipsis,
 //     );
 //   }
 
-//   void navigateToTaskManagerFilterScreen(BuildContext context) {
-//     Navigator.push(
-//       context,
-//       MaterialPageRoute(
-//         builder: (context) => UserFilterScreen(
-//           onUsersSelected: widget.onUsersSelected,
-//           onStatusSelected: widget.onStatusSelected,
-//           onDateRangeSelected: widget.onDateRangeSelected,
-//           onStatusAndDateRangeSelected: widget.onStatusAndDateRangeSelected,
-//           initialUsers: widget.initialUsers,
-//           initialStatuses: widget.initialStatuses,
-//           initialFromDate: widget.initialFromDate,
-//           initialToDate: widget.initialToDate,
-//           initialIsOverdue: widget.initialTaskIsOverdue,
-//           initialHasFile: widget.initialTaskHasFile,
-//           initialHasDeal: widget.initialTaskHasDeal,
-//           initialIsUrgent: widget.initialTaskIsUrgent,
-//           onResetFilters: widget.onResetFilters,
-//           initialAuthors: widget.initialAuthors,
-//           initialDepartment: widget.initialDepartment,
-//           initialDeadlineFromDate: widget.initialDeadlineFromDate,
-//           initialDeadlineToDate: widget.initialDeadlineToDate,
-//           initialDirectoryValues: widget.initialDirectoryValuesTask,
-//         ),
-//       ),
+//   void _showFullTextDialog(String title, String content) {
+//     showDialog(
+//       context: context,
+//       builder: (BuildContext context) {
+//         return Dialog(
+//           backgroundColor: Colors.white,
+//           shape: RoundedRectangleBorder(
+//             borderRadius: BorderRadius.circular(12),
+//           ),
+//           child: Column(
+//             mainAxisSize: MainAxisSize.min,
+//             children: [
+//               Padding(
+//                 padding: EdgeInsets.all(16),
+//                 child: Text(
+//                   title,
+//                   style: TextStyle(
+//                     color: Color(0xff1E2E52),
+//                     fontSize: 18,
+//                     fontFamily: 'Gilroy',
+//                     fontWeight: FontWeight.bold,
+//                   ),
+//                 ),
+//               ),
+//               Container(
+//                 constraints: BoxConstraints(maxHeight: 400),
+//                 padding: EdgeInsets.symmetric(horizontal: 16),
+//                 child: SingleChildScrollView(
+//                   child: Text(
+//                     content,
+//                     textAlign: TextAlign.justify,
+//                     style: TextStyle(
+//                       color: Color(0xff1E2E52),
+//                       fontSize: 16,
+//                       fontFamily: 'Gilroy',
+//                       fontWeight: FontWeight.w500,
+//                     ),
+//                   ),
+//                 ),
+//               ),
+//               Padding(
+//                 padding: const EdgeInsets.all(16),
+//                 child: CustomButton(
+//                   buttonText: AppLocalizations.of(context)!.translate('close'),
+//                   onPressed: () {
+//                     Navigator.pop(context);
+//                   },
+//                   buttonColor: Color(0xff1E2E52),
+//                   textColor: Colors.white,
+//                 ),
+//               ),
+//             ],
+//           ),
+//         );
+//       },
 //     );
 //   }
 
+//   Future<void> _loadSelectedOrganization() async {
+//     SharedPreferences prefs = await SharedPreferences.getInstance();
+//     setState(() {
+//       selectedOrganization = prefs.getString('selectedOrganization');
+//     });
+//   }
+
+//   Future<void> _makePhoneCall(String phoneNumber) async {
+//     final Uri launchUri = Uri(
+//       scheme: 'tel',
+//       path: phoneNumber,
+//     );
+//     if (!await launchUrl(launchUri)) {
+//       throw Exception('Could not launch $launchUri');
+//     }
+//   }
+
+//   Future<void> _openWhatsApp(String phoneNumber) async {
+//     String cleanNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+
+//     if (cleanNumber.startsWith('8')) {
+//       cleanNumber = '+7${cleanNumber.substring(1)}';
+//     } else if (cleanNumber.startsWith('7')) {
+//       cleanNumber = '+$cleanNumber';
+//     }
+
+//     try {
+//       Uri whatsappUri;
+//       if (Platform.isIOS) {
+//         whatsappUri = Uri.parse('https://wa.me/$cleanNumber');
+//       } else {
+//         whatsappUri = Uri.parse('whatsapp://send?phone=$cleanNumber');
+//       }
+//       if (!await launchUrl(whatsappUri, mode: LaunchMode.externalApplication)) {
+//         showCustomSnackBar(
+//           context: context,
+//           message:
+//               AppLocalizations.of(context)!.translate('whatsapp_not_installed'),
+//           isSuccess: false,
+//         );
+//       }
+//     } catch (e) {
+//       showCustomSnackBar(
+//         context: context,
+//         message:
+//             AppLocalizations.of(context)!.translate('whatsapp_open_failed'),
+//         isSuccess: false,
+//       );
+//     }
+//   }
+
+//   Future<void> _assignManager() async {
+//     bool? confirm = await showDialog<bool>(
+//       context: context,
+//       builder: (BuildContext context) {
+//         return AlertDialog(
+//           backgroundColor: Colors.white,
+//           title: Center(
+//             child: Text(
+//               AppLocalizations.of(context)!.translate('confirm_manager_title'),
+//               style: TextStyle(
+//                 fontSize: 20,
+//                 fontFamily: 'Gilroy',
+//                 fontWeight: FontWeight.w600,
+//                 color: Color(0xFF1E2E52),
+//               ),
+//             ),
+//           ),
+//           content: Text(
+//             AppLocalizations.of(context)!.translate('confirm_manager_message'),
+//             style: TextStyle(
+//               fontSize: 16,
+//               fontFamily: 'Gilroy',
+//               fontWeight: FontWeight.w500,
+//               color: Color(0xFF1E2E52),
+//             ),
+//           ),
+//           actions: [
+//             Row(
+//               mainAxisAlignment: MainAxisAlignment.end,
+//               children: [
+//                 Expanded(
+//                   child: CustomButton(
+//                     buttonText: AppLocalizations.of(context)!.translate('no'),
+//                     onPressed: () {
+//                       Navigator.of(context).pop(false);
+//                     },
+//                     buttonColor: Colors.red,
+//                     textColor: Colors.white,
+//                   ),
+//                 ),
+//                 SizedBox(width: 8),
+//                 Expanded(
+//                   child: CustomButton(
+//                     buttonText: AppLocalizations.of(context)!.translate('yes'),
+//                     onPressed: () {
+//                       Navigator.of(context).pop(true);
+//                     },
+//                     buttonColor: Color(0xFF1E2E52),
+//                     textColor: Colors.white,
+//                   ),
+//                 ),
+//               ],
+//             ),
+//           ],
+//         );
+//       },
+//     );
+
+//     if (confirm != true) {
+//       return;
+//     }
+
+//     // if (currentLead?.phone == null || currentLead!.phone!.isEmpty) {
+//     //   showCustomSnackBar(
+//     //     context: context,
+//     //     message: AppLocalizations.of(context)!.translate('phone_required'),
+//     //     isSuccess: false,
+//     //   );
+//     //   return;
+//     // }
+
+//     try {
+//       SharedPreferences prefs = await SharedPreferences.getInstance();
+//       String? userID = prefs.getString('userID');
+//       if (userID == null || userID.isEmpty) {
+//         return;
+//       }
+//       int? parsedUserId = int.tryParse(userID);
+
+//       final completer = Completer<void>();
+//       final leadBloc = context.read<LeadBloc>();
+
+//       final listener = context.read<LeadBloc>().stream.listen((state) {
+//         if (state is LeadSuccess) {
+//           completer.complete();
+//         } else if (state is LeadError) {
+//           completer.completeError(Exception(state.message));
+//         }
+//       });
+
+//       final localizations = AppLocalizations.of(context)!;
+//       leadBloc.add(UpdateLead(
+//         leadId: currentLead!.id,
+//         name: currentLead!.name,
+//         phone: currentLead!.phone ?? "",
+//         managerId: parsedUserId,
+//         leadStatusId: currentLead?.leadStatus?.id ?? 0,
+//         localizations: localizations,
+//         existingFiles: currentLead!.files ?? [], customFields: [], directoryValues: [], isSystemManager: false, filePaths: [],
+//       ));
+
+//       await completer.future;
+//       listener.cancel();
+//       context
+//           .read<LeadByIdBloc>()
+//           .add(FetchLeadByIdEvent(leadId: currentLead!.id));
+//       context.read<LeadBloc>().add(FetchLeadStatuses());
+//       showCustomSnackBar(
+//         context: context,
+//         message:
+//             AppLocalizations.of(context)!.translate('manager_assigned_success'),
+//         isSuccess: true,
+//       );
+//     } catch (e) {
+//       showCustomSnackBar(
+//         context: context,
+//         message:
+//             AppLocalizations.of(context)!.translate('manager_assign_failed'),
+//         isSuccess: false,
+//       );
+//     }
+//   }
 // }

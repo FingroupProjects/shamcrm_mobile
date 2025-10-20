@@ -6,6 +6,8 @@ class FieldConfiguration {
   final bool required;
   final bool isActive;
   final bool isCustomField;
+  final DateTime createdAt;
+  final DateTime updatedAt;
   final int? customFieldId;
   final int? directoryId;
   final String? type;
@@ -20,6 +22,8 @@ class FieldConfiguration {
     required this.required,
     required this.isActive,
     required this.isCustomField,
+    required this.createdAt,
+    required this.updatedAt,
     this.customFieldId,
     this.directoryId,
     this.type,
@@ -36,12 +40,33 @@ class FieldConfiguration {
       required: json['required'] == 1,
       isActive: json['is_active'],
       isCustomField: json['is_custom_field'],
+      createdAt: DateTime.parse(json['created_at']),
+      updatedAt: DateTime.parse(json['updated_at']),
       customFieldId: json['custom_field_id'],
       directoryId: json['directory_id'],
       type: json['type'],
       isDirectory: json['is_directory'],
       showOnTable: json['show_on_table'] == 1,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'table_name': tableName,
+      'field_name': fieldName,
+      'position': position,
+      'required': required ? 1 : 0,
+      'is_active': isActive,
+      'is_custom_field': isCustomField,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
+      'custom_field_id': customFieldId,
+      'directory_id': directoryId,
+      'type': type,
+      'is_directory': isDirectory,
+      'show_on_table': showOnTable ? 1 : 0,
+    };
   }
 }
 
@@ -61,5 +86,12 @@ class FieldConfigurationResponse {
           .toList(),
       errors: json['errors'],
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'result': result.map((field) => field.toJson()).toList(),
+      'errors': errors,
+    };
   }
 }

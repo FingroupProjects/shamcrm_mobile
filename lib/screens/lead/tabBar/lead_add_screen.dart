@@ -14,7 +14,7 @@
   import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
   import 'package:crm_task_manager/models/main_field_model.dart';
   import 'package:crm_task_manager/models/manager_model.dart';
-  import 'package:crm_task_manager/models/page_2/field_configuration.dart';
+  import 'package:crm_task_manager/models/field_configuration.dart';
   import 'package:crm_task_manager/models/region_model.dart';
   import 'package:crm_task_manager/screens/lead/tabBar/lead_details/custom_field_model.dart';
   import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_create_custom.dart';
@@ -573,40 +573,64 @@
     Widget build(BuildContext context) {
       return Scaffold(
         backgroundColor: Colors.white,
-        appBar: AppBar(
-          title: Transform.translate(
-            offset: const Offset(-10, 0),
-            child: Text(
-              AppLocalizations.of(context)!.translate('new_lead'),
-              style: const TextStyle(
-                fontSize: 20,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w600,
-                color: Color(0xff1E2E52),
-              ),
-            ),
-          ),
-          centerTitle: false,
-          leading: Padding(
-            padding: const EdgeInsets.only(left: 0),
-            child: Transform.translate(
-              offset: const Offset(0, -2),
-              child: IconButton(
-                icon: Image.asset(
-                  'assets/icons/arrow-left.png',
-                  width: 24,
-                  height: 24,
-                ),
-                onPressed: () {
-                  Navigator.pop(context, widget.statusId);
-                  context.read<LeadBloc>().add(FetchLeadStatuses());
-                },
-              ),
-            ),
-          ),
-          leadingWidth: 40,
-          backgroundColor: const Color.fromARGB(255, 255, 255, 255),
+       appBar: AppBar(
+  title: Transform.translate(
+    offset: const Offset(-10, 0),
+    child: Text(
+      AppLocalizations.of(context)!.translate('new_lead'),
+      style: const TextStyle(
+        fontSize: 20,
+        fontFamily: 'Gilroy',
+        fontWeight: FontWeight.w600,
+        color: Color(0xff1E2E52),
+      ),
+    ),
+  ),
+  centerTitle: false,
+  leading: Padding(
+    padding: const EdgeInsets.only(left: 0),
+    child: Transform.translate(
+      offset: const Offset(0, -2),
+      child: IconButton(
+        icon: Image.asset(
+          'assets/icons/arrow-left.png',
+          width: 24,
+          height: 24,
         ),
+        onPressed: () {
+          Navigator.pop(context, widget.statusId);
+          context.read<LeadBloc>().add(FetchLeadStatuses());
+        },
+      ),
+    ),
+  ),
+  leadingWidth: 40,
+  // Добавляем кнопку обновления
+  actions: [
+    IconButton(
+      icon: Icon(Icons.refresh, color: Color(0xff1E2E52)),
+      onPressed: () async {
+        // Очищаем кэш и загружаем заново
+        await ApiService().clearFieldConfigurationCache();
+        await ApiService().loadAndCacheAllFieldConfigurations();
+        
+        // Перезагружаем конфигурацию
+        context.read<FieldConfigurationBloc>().add(
+          FetchFieldConfiguration('leads')
+        );
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Конфигурация обновлена'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      },
+      tooltip: 'Обновить структуру полей',
+    ),
+  ],
+  backgroundColor: const Color.fromARGB(255, 255, 255, 255),
+),
         body: BlocConsumer<FieldConfigurationBloc, FieldConfigurationState>(
           listener: (context, configState) {
             if (kDebugMode) {
