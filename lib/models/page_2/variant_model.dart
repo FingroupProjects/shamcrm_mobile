@@ -1,6 +1,52 @@
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:flutter/foundation.dart';
 
+class VariantResponse {
+  final List<Variant> data;
+  final VariantPagination pagination;
+
+  VariantResponse({
+    required this.data,
+    required this.pagination,
+  });
+
+  factory VariantResponse.fromJson(Map<String, dynamic> json) {
+    return VariantResponse(
+      data: (json['data'] as List<dynamic>?)
+              ?.map((item) => Variant.fromJson(item as Map<String, dynamic>))
+              .toList() ??
+          [],
+      pagination: VariantPagination.fromJson(json['pagination'] as Map<String, dynamic>),
+    );
+  }
+}
+
+class VariantPagination {
+  final int total;
+  final int count;
+  final int perPage;
+  final int currentPage;
+  final int totalPages;
+
+  VariantPagination({
+    required this.total,
+    required this.count,
+    required this.perPage,
+    required this.currentPage,
+    required this.totalPages,
+  });
+
+  factory VariantPagination.fromJson(Map<String, dynamic> json) {
+    return VariantPagination(
+      total: json['total'] as int? ?? 0,
+      count: json['count'] as int? ?? 0,
+      perPage: json['per_page'] as int? ?? 15,
+      currentPage: json['current_page'] as int? ?? 1,
+      totalPages: json['total_pages'] as int? ?? 1,
+    );
+  }
+}
+
 class Variant {
   final int id;
   final int goodId;
