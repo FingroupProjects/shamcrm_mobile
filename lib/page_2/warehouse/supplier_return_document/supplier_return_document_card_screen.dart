@@ -11,6 +11,8 @@ class SupplierReturnCard extends StatefulWidget {
   final bool isSelectionMode;
   final bool isSelected;
   final VoidCallback? onTap;
+  final bool hasUpdatePermission;
+  final bool hasDeletePermission;
 
   const SupplierReturnCard({
     Key? key,
@@ -20,6 +22,8 @@ class SupplierReturnCard extends StatefulWidget {
     this.isSelectionMode = false,
     this.isSelected = false,
     this.onTap,
+    this.hasUpdatePermission = false,
+    this.hasDeletePermission = false,
   }) : super(key: key);
 
   @override
@@ -78,6 +82,8 @@ class _SupplierReturnCardState extends State<SupplierReturnCard> {
                 documentId: doc.id!,
                 docNumber: doc.docNumber ?? 'N/A',
                 onDocumentUpdated: widget.onUpdate,
+                hasUpdatePermission: widget.hasUpdatePermission,
+                hasDeletePermission: widget.hasDeletePermission,
               ),
             ),
           );
