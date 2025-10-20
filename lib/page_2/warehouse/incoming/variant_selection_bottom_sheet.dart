@@ -322,6 +322,21 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
                         final categoryVariants = availableVariants
                             .where((v) => v.good?.category.id == _selectedCategoryId)
                             .toList();
+                        
+                        // Если в категории нет товаров, показываем сообщение
+                        if (categoryVariants.isEmpty) {
+                          return Center(
+                            child: Text(
+                              localizations.translate('no_goods_in_category') ?? 'В этой категории нет товаров',
+                              style: const TextStyle(
+                                fontFamily: 'Gilroy',
+                                fontSize: 16,
+                                color: Color(0xff99A4BA),
+                              ),
+                            ),
+                          );
+                        }
+                        
                         return _buildVariantsList(categoryVariants, state, localizations);
                       }
                     }

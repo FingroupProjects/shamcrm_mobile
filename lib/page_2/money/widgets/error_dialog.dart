@@ -15,11 +15,13 @@ enum ErrorDialogEnum {
   goodsMovementUnapprove,
   goodsMovementDelete,
   goodsMovementRestore,
+  goodsMovementUpdate,
 
   writeOffApprove,
   writeOffUnapprove,
   writeOffDelete,
   writeOffRestore,
+  writeOffUpdate,
 
   supplierReturnApprove,
   supplierReturnUnapprove,
@@ -114,6 +116,11 @@ class ErrorDialog extends StatelessWidget {
       return _buildGoodsMovementRestoreError(message);
     }
 
+    if (errorDialogEnum == ErrorDialogEnum.goodsMovementUpdate) {
+      debugPrint("[ERROR] ErrorDialog.GoodsMovementUpdate: $message");
+      return _buildGoodsMovementUpdateError(message);
+    }
+
     if (errorDialogEnum == ErrorDialogEnum.writeOffApprove) {
       debugPrint("[ERROR] ErrorDialog.WriteOffApprove: $message");
       return _buildWriteOffApproveError(message);
@@ -132,6 +139,11 @@ class ErrorDialog extends StatelessWidget {
     if (errorDialogEnum == ErrorDialogEnum.writeOffRestore) {
       debugPrint("[ERROR] ErrorDialog.WriteOffRestore: $message");
       return _buildWriteOffRestoreError(message);
+    }
+
+    if (errorDialogEnum == ErrorDialogEnum.writeOffUpdate) {
+      debugPrint("[ERROR] ErrorDialog.WriteOffUpdate: $message");
+      return _buildWriteOffUpdateError(message);
     }
 
     if (errorDialogEnum == ErrorDialogEnum.supplierReturnApprove) {
@@ -2315,6 +2327,219 @@ class ErrorDialog extends StatelessWidget {
     );
   }
 
+  Widget _buildGoodsMovementUpdateError(String message) {
+    // Парсим сообщение формата: "Недостаточно остатков для следующих товаров: - Товар: tesats требуется 1200, доступно 999"
+    debugPrint("🔍 [GoodsMovementUpdate] Полученное сообщение: $message");
+
+    // Парсим все товары с помощью регулярного выражения (поддерживаем целые и дробные числа)
+    RegExp movementRegex = RegExp(r'- Товар: ([^\s]+) требуется ([\d.]+), доступно ([\d.]+)');
+    Iterable<Match> matches = movementRegex.allMatches(message);
+
+    debugPrint("🔍 [GoodsMovementUpdate] Найдено совпадений: ${matches.length}");
+
+    List<Widget> widgets = [];
+
+    // Заголовок
+    widgets.add(
+      Container(
+        width: double.infinity,
+        padding: EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Color(0xffFFF5F5),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Color(0xffFECDD3),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Недостаточно остатков для сохранения',
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xffDC2626),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    widgets.add(SizedBox(height: 16));
+
+    // Добавляем информацию по каждому товару
+    for (int index = 0; index < matches.length; index++) {
+      if (index > 0) {
+        widgets.add(SizedBox(height: 12));
+      }
+
+      Match match = matches.elementAt(index);
+      String productName = match.group(1)?.trim() ?? 'Неизвестный товар';
+      String required = match.group(2) ?? '0';
+      String available = match.group(3) ?? '0';
+
+      debugPrint("🔍 [GoodsMovementUpdate] Товар #${index + 1}: $productName, требуется: $required, доступно: $available");
+
+      // Контейнер для товара
+      widgets.add(
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Color(0xffE2E8F0),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Color(0xff1E2E52).withOpacity(0.08),
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Название товара
+              Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Color(0xffDC2626).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Icon(
+                      Icons.inventory_2_outlined,
+                      size: 16,
+                      color: Color(0xffDC2626),
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      productName,
+                      style: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xff1E2E52),
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+
+              SizedBox(height: 16),
+
+              // Информация о количестве
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Требуется',
+                          style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xff64748B),
+                          ),
+                        ),
+                        SizedBox(height: 6),
+                        Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Color(0xffFEF2F2),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Color(0xffFECDD3),
+                              width: 1,
+                            ),
+                          ),
+                          child: Text(
+                            required,
+                            style: TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xffDC2626),
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  SizedBox(width: 12),
+
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Доступно',
+                          style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xff64748B),
+                          ),
+                        ),
+                        SizedBox(height: 6),
+                        Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Color(0xffF1F5F9),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Color(0xffCBD5E1),
+                              width: 1,
+                            ),
+                          ),
+                          child: Text(
+                            available,
+                            style: TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xff475569),
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: widgets,
+    );
+  }
+
   Widget _buildWriteOffApproveError(String message) {
     // Парсим сообщение формата: "Недостаточно остатков для следующих товаров: - Товар: tesats требуется 1.00, доступно 0"
     debugPrint("🔍 [WriteOffApprove] Полученное сообщение: $message");
@@ -2967,6 +3192,219 @@ class ErrorDialog extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildWriteOffUpdateError(String message) {
+    // Парсим сообщение формата: "Недостаточно остатков для следующих товаров: - Товар: tesats требуется 1.00, доступно 0"
+    debugPrint("🔍 [WriteOffUpdate] Полученное сообщение: $message");
+
+    // Парсим все товары с помощью регулярного выражения (поддерживаем десятичные дроби)
+    RegExp writeOffRegex = RegExp(r'- Товар: ([^\s]+) требуется ([\d.]+), доступно ([\d.]+)');
+    Iterable<Match> matches = writeOffRegex.allMatches(message);
+
+    debugPrint("🔍 [WriteOffUpdate] Найдено совпадений: ${matches.length}");
+
+    List<Widget> widgets = [];
+
+    // Заголовок
+    widgets.add(
+      Container(
+        width: double.infinity,
+        padding: EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Color(0xffFFF5F5),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Color(0xffFECDD3),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Недостаточно остатков для сохранения',
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xffDC2626),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    widgets.add(SizedBox(height: 16));
+
+    // Добавляем информацию по каждому товару
+    for (int index = 0; index < matches.length; index++) {
+      if (index > 0) {
+        widgets.add(SizedBox(height: 12));
+      }
+
+      Match match = matches.elementAt(index);
+      String productName = match.group(1)?.trim() ?? 'Неизвестный товар';
+      String required = match.group(2) ?? '0';
+      String available = match.group(3) ?? '0';
+
+      debugPrint("🔍 [WriteOffUpdate] Товар #${index + 1}: $productName, требуется: $required, доступно: $available");
+
+      // Контейнер для товара
+      widgets.add(
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Color(0xffE2E8F0),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Color(0xff1E2E52).withOpacity(0.08),
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Название товара
+              Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Color(0xffDC2626).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Icon(
+                      Icons.inventory_2_outlined,
+                      size: 16,
+                      color: Color(0xffDC2626),
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      productName,
+                      style: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xff1E2E52),
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+
+              SizedBox(height: 16),
+
+              // Информация о количестве
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Требуется',
+                          style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xff64748B),
+                          ),
+                        ),
+                        SizedBox(height: 6),
+                        Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Color(0xffFEF2F2),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Color(0xffFECDD3),
+                              width: 1,
+                            ),
+                          ),
+                          child: Text(
+                            required,
+                            style: TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xffDC2626),
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  SizedBox(width: 12),
+
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Доступно',
+                          style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xff64748B),
+                          ),
+                        ),
+                        SizedBox(height: 6),
+                        Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Color(0xffF1F5F9),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Color(0xffCBD5E1),
+                              width: 1,
+                            ),
+                          ),
+                          child: Text(
+                            available,
+                            style: TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xff475569),
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: widgets,
     );
   }
 
