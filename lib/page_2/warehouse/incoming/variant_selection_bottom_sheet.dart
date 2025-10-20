@@ -589,14 +589,16 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
       itemCount: variants.length + 1,
       itemBuilder: (context, index) {
         if (index == variants.length) {
-          return context.read<VariantBloc>().allVariantsFetched
-              ? const SizedBox.shrink()
-              : const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(16),
-                    child: CircularProgressIndicator(),
-                  ),
-                );
+          final showLoader = _showAllMode && !context.read<VariantBloc>().allVariantsFetched;
+
+          return showLoader
+              ? const Center(
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: CircularProgressIndicator(),
+            ),
+          )
+              : const SizedBox.shrink();
         }
 
         final variant = variants[index];
