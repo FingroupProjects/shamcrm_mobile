@@ -4,6 +4,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/supplier_bloc/supplier_state.d
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_phone_number_input.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
+import 'package:crm_task_manager/custom_widget/country_data_list.dart';
 import 'package:crm_task_manager/models/page_2/supplier_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -24,6 +25,34 @@ class _AddSupplierScreenState extends State<AddSupplierScreen> {
   final TextEditingController noteController = TextEditingController();
 
   String selectedDialCode = '';
+  Country? currentCountry;
+
+  String? _validatePhone(String? value) {
+    if (value == null || value.isEmpty) {
+      return AppLocalizations.of(context)!.translate('field_required') ??
+          'Поле обязательно';
+    }
+
+    // Get the dial code from selectedDialCode
+    String dialCode = '';
+    for (var code in countryCodes) {
+      if (selectedDialCode.startsWith(code)) {
+        dialCode = code;
+        break;
+      }
+    }
+
+    // Get expected length for this dial code
+    int? expectedLength = phoneNumberLengths[dialCode];
+
+    if (expectedLength != null && value.length != expectedLength) {
+      final message = AppLocalizations.of(context)!.translate('invalid_phone_length') ??
+          'Номер телефона должен содержать $expectedLength цифр';
+      return message.replaceAll('{expectedLength}', expectedLength.toString());
+    }
+
+    return null;
+  }
 
   void _showErrorSnackBar(BuildContext context, String message) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -154,19 +183,24 @@ class _AddSupplierScreenState extends State<AddSupplierScreen> {
                           onInputChanged: (String number) {
                             setState(() {
                               selectedDialCode = number;
+                              for (var code in countryCodes) {
+                                if (number.startsWith(code)) {
+                                  try {
+                                    currentCountry = countries.firstWhere(
+                                          (country) => country.dialCode == code,
+                                    );
+                                  } catch (e) {
+                                    currentCountry = null;
+                                  }
+                                  break;
+                                }
+                              }
                             });
                           },
                           label: AppLocalizations.of(context)!
                               .translate('phone') ??
                               'Телефон',
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return AppLocalizations.of(context)!
-                                  .translate('field_required') ??
-                                  'Поле обязательно';
-                            }
-                            return null;
-                          },
+                          validator: _validatePhone,
                         ),
                         const SizedBox(height: 16),
                         CustomTextField(

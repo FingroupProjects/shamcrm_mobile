@@ -619,6 +619,8 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
                       _supplierReturnBloc.add(SelectSupplierReturnDocument(currentData[index]));
                     }
                         : null,
+                    hasUpdatePermission: _hasUpdatePermission,
+                    hasDeletePermission: _hasDeletePermission,
                   ),
                 )
               : SupplierReturnCard(
@@ -653,6 +655,8 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
                     _supplierReturnBloc.add(SelectSupplierReturnDocument(currentData[index]));
                   }
                       : null,
+                  hasUpdatePermission: _hasUpdatePermission,
+                  hasDeletePermission: _hasDeletePermission,
                 );
         },
       ),

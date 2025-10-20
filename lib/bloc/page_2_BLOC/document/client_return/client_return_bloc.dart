@@ -298,8 +298,7 @@ _delete(DeleteClientReturnDocument event, Emitter<ClientReturnState> emit) async
     }
   }
 
-  _onUpdateClientReturnDocument(
-      UpdateClientReturnDocument event, Emitter<ClientReturnState> emit) async {
+  _onUpdateClientReturnDocument(UpdateClientReturnDocument event, Emitter<ClientReturnState> emit) async {
     emit(ClientReturnCreateLoading());
     try {
       await apiService.updateClientReturnDocument(
