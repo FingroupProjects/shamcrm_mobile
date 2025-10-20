@@ -2,7 +2,8 @@ abstract class VariantBottomSheetEvent {}
 
 class FetchVariants extends VariantBottomSheetEvent {
   final int page;
-  FetchVariants({this.page = 1});
+  final bool forceReload;
+  FetchVariants({this.page = 1, this.forceReload = false});
 }
 
 class FetchMoreVariants extends VariantBottomSheetEvent {
@@ -30,9 +31,11 @@ class FetchCategories extends VariantBottomSheetEvent {
 class FetchVariantsByCategory extends VariantBottomSheetEvent {
   final int categoryId;
   final int page;
+  final bool forceReload;
   FetchVariantsByCategory({
     required this.categoryId,
     this.page = 1,
+    this.forceReload = false,
   });
 }
 
@@ -44,3 +47,18 @@ class FetchMoreVariantsByCategory extends VariantBottomSheetEvent {
     required this.currentPage,
   });
 }
+
+// Унифицированный поиск по категориям И товарам
+class SearchAll extends VariantBottomSheetEvent {
+  final String query;
+  SearchAll(this.query);
+}
+
+// Подгрузка следующей страницы результатов поиска
+class FetchMoreSearchResults extends VariantBottomSheetEvent {
+  final int currentPage;
+  FetchMoreSearchResults(this.currentPage);
+}
+
+// Очистка кеша
+class ClearCache extends VariantBottomSheetEvent {}
