@@ -8539,7 +8539,7 @@ Future<String> _appendQueryParams(String path) async {
     }
   }
 
-  Future<VariantResponse> getVariants({
+  Future<List<Variant>> getVariants({
   int page = 1,
   int perPage = 15,
   String? search,
@@ -8561,14 +8561,16 @@ Future<String> _appendQueryParams(String path) async {
     if (filters.containsKey('storage_id')) {
       path += '&storage_id=${filters['storage_id']}';
     }
-
-    if (filters.containsKey('category_id')) {
-      final categoryId = filters['category_id'];
-      if (categoryId is int) {
-        path += '&category_id=$categoryId';
+    
+    if (filters.containsKey('category_id') &&
+        filters['category_id'] is List &&
+        (filters['category_id'] as List).isNotEmpty) {
+      final categoryIds = filters['category_id'] as List;
+      for (int i = 0; i < categoryIds.length; i++) {
+        path += '&category_id[]=${categoryIds[i]}';
       }
     }
-
+    
     if (filters.containsKey('is_active')) {
       path += '&is_active=${filters['is_active'] ? 1 : 0}';
     }
@@ -8580,8 +8582,11 @@ Future<String> _appendQueryParams(String path) async {
   
   if (response.statusCode == 200) {
     final Map<String, dynamic> data = json.decode(response.body);
-    if (data.containsKey('result')) {
-      return VariantResponse.fromJson(data['result'] as Map<String, dynamic>);
+    if (data.containsKey('result') && data['result']['data'] is List) {
+      final variants = (data['result']['data'] as List)
+          .map((item) => Variant.fromJson(item as Map<String, dynamic>))
+          .toList();
+      return variants;
     } else {
       throw Exception('Ошибка: Неверный формат данных');
     }

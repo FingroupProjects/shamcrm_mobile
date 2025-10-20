@@ -133,13 +133,3 @@ class CategoryDetail {
     );
   }
 }
-
-class CategoryWithCount {
-  final CategoryData category;
-  final int goodsCount;
-
-  CategoryWithCount({
-    required this.category,
-    required this.goodsCount,
-  });
-}
