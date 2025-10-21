@@ -12,15 +12,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 class DealStatusEditWidget extends StatefulWidget {
   final String? selectedStatus;
   final Function(DealStatus) onSelectStatus;
-    final Function(List<int>)? onSelectMultipleStatuses; // ✅ НОВОЕ
-
+  final Function(List<int>)? onSelectMultipleStatuses;
   final List<DealStatusById>? dealStatuses;
 
   DealStatusEditWidget({
     Key? key,
     required this.onSelectStatus,
     this.selectedStatus,
-      this.onSelectMultipleStatuses, // ✅ НОВОЕ
+    this.onSelectMultipleStatuses,
     this.dealStatuses,
   }) : super(key: key);
 
@@ -33,8 +32,10 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
   DealStatus? selectedStatusData;
   List<DealStatus> selectedStatusesList = [];
   bool isMultiSelectEnabled = false;
-  bool _isInitialized = false;
-  bool allSelected = false; // ✅ НОВОЕ: для "Выделить всё"
+  bool allSelected = false;
+  
+  // ✅ ИЗМЕНЕНО: Храним ID для сравнения вместо bool флага
+  Set<int> _lastInitializedIds = {};
 
   final TextStyle statusTextStyle = const TextStyle(
     fontSize: 16,
@@ -50,12 +51,30 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
     context.read<DealBloc>().add(FetchDealStatuses());
   }
 
+  // ✅ НОВОЕ: Отслеживаем изменения во входных параметрах
+  @override
+  void didUpdateWidget(DealStatusEditWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    
+    // Проверяем, изменились ли dealStatuses
+    final oldIds = oldWidget.dealStatuses?.map((s) => s.id).toSet() ?? {};
+    final newIds = widget.dealStatuses?.map((s) => s.id).toSet() ?? {};
+    
+    if (!oldIds.containsAll(newIds) || !newIds.containsAll(oldIds)) {
+      print('🔄 DealStatusEditWidget: dealStatuses изменились, переинициализация');
+      _lastInitializedIds.clear();
+      if (statusList.isNotEmpty) {
+        _initializeSelectedStatuses();
+      }
+    }
+  }
+
   Future<void> _loadMultiSelectSetting() async {
     final prefs = await SharedPreferences.getInstance();
     final value = prefs.getBool('managing_deal_status_visibility') ?? false;
     
-    //print('DealStatusEditWidget: managing_deal_status_visibility = $value');
-    //print('DealStatusEditWidget: Режим = ${value ? "МУЛЬТИВЫБОР" : "ОДИНОЧНЫЙ"}');
+    print('DealStatusEditWidget: managing_deal_status_visibility = $value');
+    print('DealStatusEditWidget: Режим = ${value ? "МУЛЬТИВЫБОР" : "ОДИНОЧНЫЙ"}');
     
     if (mounted) {
       setState(() {
@@ -65,21 +84,26 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
   }
 
   void _initializeSelectedStatuses() {
-    if (_isInitialized || statusList.isEmpty) return;
+    if (statusList.isEmpty) {
+      print('❌ DealStatusEditWidget: statusList пустой, инициализация невозможна');
+      return;
+    }
     
-    //print('DealStatusEditWidget: Инициализация выбранных статусов');
-    //print('DealStatusEditWidget: widget.selectedStatus = ${widget.selectedStatus}');
-    //print('DealStatusEditWidget: widget.dealStatuses = ${widget.dealStatuses?.map((s) => s.id).toList()}');
-    //print('DealStatusEditWidget: statusList IDs = ${statusList.map((s) => s.id).toList()}');
+    print('🔍 DealStatusEditWidget: Начало инициализации');
+    print('   - widget.selectedStatus = ${widget.selectedStatus}');
+    print('   - widget.dealStatuses = ${widget.dealStatuses?.map((s) => s.id).toList()}');
+    print('   - statusList IDs = ${statusList.map((s) => s.id).toList()}');
     
     List<int> targetIds = [];
     
+    // ✅ ПРИОРИТЕТ 1: Используем dealStatuses (массив от бэкенда)
     if (widget.dealStatuses != null && widget.dealStatuses!.isNotEmpty) {
-      //print('DealStatusEditWidget: Используем dealStatuses от бэкенда');
+      print('✅ Используем dealStatuses от бэкенда');
       targetIds = widget.dealStatuses!.map((s) => s.id).toList();
     }
+    // ✅ ПРИОРИТЕТ 2: Парсим selectedStatus (строка с ID через запятую)
     else if (widget.selectedStatus != null && widget.selectedStatus!.isNotEmpty) {
-      //print('DealStatusEditWidget: Используем selectedStatus');
+      print('✅ Используем selectedStatus');
       targetIds = widget.selectedStatus!
           .split(',')
           .map((id) => int.tryParse(id.trim()))
@@ -87,39 +111,50 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
           .cast<int>()
           .toList();
     }
+    // ✅ ПРИОРИТЕТ 3: Если только один статус в списке, выбираем его
     else if (statusList.length == 1) {
-      //print('DealStatusEditWidget: Автовыбор единственного статуса');
+      print('✅ Автовыбор единственного статуса');
       targetIds = [statusList[0].id];
     }
     
-   if (targetIds.isNotEmpty) {
-    final newSelectedList = statusList
-        .where((status) => targetIds.contains(status.id))
-        .toList();
-    
-    if (newSelectedList.isNotEmpty) {
-      // ✅ ПРОВЕРКА: Обновляем только если список действительно изменился
-      final currentIds = selectedStatusesList.map((s) => s.id).toSet();
-      final newIds = newSelectedList.map((s) => s.id).toSet();
-      
-      if (currentIds.length != newIds.length || 
-          !currentIds.containsAll(newIds)) {
-        selectedStatusesList = newSelectedList;
-        selectedStatusData = newSelectedList.first;
-        allSelected = newSelectedList.length == statusList.length;
-      }
-        
-        //print('DealStatusEditWidget: Инициализировано ${selectedStatusesList.length} статус(ов)');
-        //print('DealStatusEditWidget: Выбранные ID: ${selectedStatusesList.map((s) => s.id).toList()}');
-      } else {
-        //print('DealStatusEditWidget: ⚠️ Не найдены статусы с ID: $targetIds');
-      }
+    // ✅ ПРОВЕРКА: Нужна ли повторная инициализация?
+    final targetIdsSet = targetIds.toSet();
+    if (_lastInitializedIds.containsAll(targetIdsSet) && 
+        targetIdsSet.containsAll(_lastInitializedIds)) {
+      print('⏭️ Инициализация уже выполнена для этих ID, пропускаем');
+      return;
     }
     
-    _isInitialized = true;
+    if (targetIds.isNotEmpty) {
+      final newSelectedList = statusList
+          .where((status) => targetIds.contains(status.id))
+          .toList();
+      
+      if (newSelectedList.isNotEmpty) {
+        setState(() {
+          selectedStatusesList = newSelectedList;
+          selectedStatusData = newSelectedList.first;
+          allSelected = newSelectedList.length == statusList.length;
+          _lastInitializedIds = targetIds.toSet();
+        });
+        
+        print('✅ Инициализировано ${selectedStatusesList.length} статус(ов)');
+        print('✅ Выбранные ID: ${selectedStatusesList.map((s) => s.id).toList()}');
+        
+        // ✅ ВАЖНО: Уведомляем родителя о выборе
+        widget.onSelectStatus(newSelectedList.first);
+        if (widget.onSelectMultipleStatuses != null && isMultiSelectEnabled) {
+          widget.onSelectMultipleStatuses!(targetIds);
+        }
+      } else {
+        print('❌ Не найдены статусы с ID: $targetIds');
+        print('   Доступные ID: ${statusList.map((s) => s.id).toList()}');
+      }
+    } else {
+      print('⚠️ targetIds пустой, выбор не установлен');
+    }
   }
 
-  // ✅ НОВОЕ: Функция для выделения/снятия выделения всех статусов
   void _toggleSelectAll() {
     setState(() {
       allSelected = !allSelected;
@@ -131,6 +166,11 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
       
       if (selectedStatusesList.isNotEmpty) {
         widget.onSelectStatus(selectedStatusesList.first);
+        if (widget.onSelectMultipleStatuses != null) {
+          widget.onSelectMultipleStatuses!(
+            selectedStatusesList.map((s) => s.id).toList()
+          );
+        }
       }
     });
   }
@@ -143,7 +183,11 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
         BlocBuilder<DealBloc, DealState>(
           builder: (context, state) {
             if (state is DealLoading) {
-              return const Center(child: CircularProgressIndicator());
+              return const Center(
+                child: CircularProgressIndicator(
+                  color: Color(0xff1E2E52),
+                ),
+              );
             }
             
             if (state is DealError) {
@@ -166,12 +210,27 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
                   ),
                 );
               });
-              return const SizedBox();
+              return Center(
+                child: Text(
+                  'Ошибка загрузки статусов',
+                  style: statusTextStyle.copyWith(color: Colors.red),
+                ),
+              );
             }
 
             if (state is DealLoaded) {
+              // ✅ КРИТИЧНО: Обновляем statusList и сразу инициализируем
+              final needsInit = statusList.isEmpty || 
+                  statusList.length != state.dealStatuses.length;
+              
               statusList = state.dealStatuses;
-              _initializeSelectedStatuses();
+              
+              if (needsInit) {
+                // Используем WidgetsBinding чтобы не вызывать setState во время build
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  _initializeSelectedStatuses();
+                });
+              }
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -246,10 +305,14 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
       initialItem: selectedStatusData,
       onChanged: (value) {
         if (value != null) {
-          widget.onSelectStatus(value);
           setState(() {
             selectedStatusData = value;
+            selectedStatusesList = [value];
           });
+          widget.onSelectStatus(value);
+          if (widget.onSelectMultipleStatuses != null) {
+            widget.onSelectMultipleStatuses!([value.id]);
+          }
           FocusScope.of(context).unfocus();
         }
       },
@@ -257,17 +320,15 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
   }
 
   Widget _buildMultiSelectDropdown() {
-    //print('DealStatusEditWidget: Рендер мультивыбора');
-    //print('DealStatusEditWidget: statusList IDs = ${statusList.map((s) => s.id).toList()}');
-    //print('DealStatusEditWidget: selectedStatusesList IDs (старые) = ${selectedStatusesList.map((s) => s.id).toList()}');
+    print('📋 Рендер мультивыбора');
+    print('   - statusList: ${statusList.length} элементов');
+    print('   - selectedStatusesList: ${selectedStatusesList.length} элементов');
     
-    // ✅ Пересоздаём список из актуального statusList
+    // ✅ Синхронизируем выбранные статусы с актуальным statusList
     final currentlySelectedIds = selectedStatusesList.map((s) => s.id).toSet();
     final actualSelectedStatuses = statusList
         .where((status) => currentlySelectedIds.contains(status.id))
         .toList();
-    
-    //print('DealStatusEditWidget: actualSelectedStatuses IDs = ${actualSelectedStatuses.map((s) => s.id).toList()}');
     
     return CustomDropdown<DealStatus>.multiSelectSearch(
       items: statusList,
@@ -289,7 +350,6 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
         expandedBorderRadius: BorderRadius.circular(12),
       ),
       listItemBuilder: (context, item, isSelected, onItemSelect) {
-        // ✅ Добавляем "Выделить всех" как первый элемент
         if (statusList.indexOf(item) == 0) {
           return Column(
             children: [
@@ -341,7 +401,6 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
         }
         return _buildListItem(item, isSelected, onItemSelect);
       },
-      // ✅ ИСПРАВЛЕНО: Правильное отображение выбранных статусов
       headerListBuilder: (context, selectedItems, enabled) {
         if (selectedItems.isEmpty) {
           return Text(
@@ -350,7 +409,6 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
           );
         }
         
-        // Формируем строку с названиями статусов
         String statusNames = selectedItems.map((e) => e.title).join(', ');
         
         return Text(
@@ -364,34 +422,28 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
         AppLocalizations.of(context)!.translate('select_status'),
         style: statusTextStyle.copyWith(fontSize: 14),
       ),
-    onListChanged: (value) {
-  print('DealStatusEditWidget: Выбрано статусов: ${value.length}');
-  
-  // ✅ ОПТИМИЗАЦИЯ: Один setState для всех изменений
-  final needsUpdate = selectedStatusesList.length != value.length ||
-      !selectedStatusesList.toSet().containsAll(value.toSet());
-  
-  if (needsUpdate) {
-    setState(() {
-      selectedStatusesList = value;
-      allSelected = value.length == statusList.length;
-    });
-    
-    if (value.isNotEmpty) {
-      widget.onSelectStatus(value.first);
-      
-      if (widget.onSelectMultipleStatuses != null) {
-        final selectedIds = value.map((s) => s.id).toList();
-        widget.onSelectMultipleStatuses!(selectedIds);
-      }
-    }
-  }
-  
-},
+      onListChanged: (value) {
+        print('✏️ Выбрано статусов: ${value.length}');
+        
+        setState(() {
+          selectedStatusesList = value;
+          allSelected = value.length == statusList.length;
+          if (value.isNotEmpty) {
+            selectedStatusData = value.first;
+          }
+        });
+        
+        if (value.isNotEmpty) {
+          widget.onSelectStatus(value.first);
+          if (widget.onSelectMultipleStatuses != null) {
+            final selectedIds = value.map((s) => s.id).toList();
+            widget.onSelectMultipleStatuses!(selectedIds);
+          }
+        }
+      },
     );
   }
 
-  // ✅ НОВЫЙ МЕТОД: Красивый элемент списка с чекбоксом
   Widget _buildListItem(DealStatus item, bool isSelected, Function() onItemSelect) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

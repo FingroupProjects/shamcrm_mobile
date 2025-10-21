@@ -19,7 +19,6 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/file_utils.dart';
 import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/models/leadById_model.dart';
-import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/history_dialog.dart';
 import 'package:crm_task_manager/screens/lead/export_lead_to_contact.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_delete.dart';
@@ -42,9 +41,6 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:dio/dio.dart';
-import 'package:open_file/open_file.dart';
-import 'package:path_provider/path_provider.dart';
 
 class LeadDetailsScreen extends StatefulWidget {
   final String leadId;
@@ -170,6 +166,12 @@ class FileCacheManager {
 class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   List<Map<String, String>> details = [];
   LeadById? currentLead;
+  
+  // Конфигурация полей
+  List<FieldConfiguration> fieldConfigurations = [];
+  bool isConfigurationLoaded = false;
+  
+  // Permissions
   bool _canEditLead = false;
   bool _canDeleteLead = false;
   bool _canReadNotes = false;
@@ -183,6 +185,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   final ApiService _apiService = ApiService();
   String? selectedOrganization;
   StreamSubscription? _prefsSubscription;
+  
+  // Tutorial keys
   final GlobalKey keyLeadHistory = GlobalKey();
   final GlobalKey keyLeadEdit = GlobalKey();
   final GlobalKey keyLeadDelete = GlobalKey();
@@ -199,79 +203,85 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
 
   Set<String> _normalizedContactPhones = {};
   bool _isLoadingContacts = true;
-   // Конфигурация полей
-  List<FieldConfiguration> fieldConfigurations = [];
-  bool isConfigurationLoaded = false;
-  @override
-  void initState() {
-    super.initState();
-    _scrollController = ScrollController();
-      _loadFieldConfiguration();
 
-    _checkPermissions().then((_) {
-      context.read<OrganizationBloc>().add(FetchOrganizations());
-      _loadSelectedOrganization();
-      context
-          .read<LeadByIdBloc>()
-          .add(FetchLeadByIdEvent(leadId: int.parse(widget.leadId)));
-      if (_canReadOrders) {
-        context
-            .read<OrderByLeadBloc>()
-            .add(FetchOrdersByLead(leadId: int.parse(widget.leadId)));
-      }
-      _loadContactsToCache();
-    });
-    _fetchTutorialProgress();
-    _listenToPrefsChanges();
-  }
- // Новый метод для загрузки конфигурации полей
-  Future<void> _loadFieldConfiguration() async {
-    if (kDebugMode) {
-      print('LeadDetailsScreen: Loading field configuration');
+@override
+void initState() {
+  super.initState();
+  _scrollController = ScrollController();
+
+  // ✅ Загружаем конфигурацию после того как виджет построен
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (mounted) {
+      _loadFieldConfiguration();
     }
-    
-    // Загружаем конфигурацию из кэша через Bloc
+  });
+
+  _checkPermissions().then((_) {
+    context.read<OrganizationBloc>().add(FetchOrganizations());
+    _loadSelectedOrganization();
+    context
+        .read<LeadByIdBloc>()
+        .add(FetchLeadByIdEvent(leadId: int.parse(widget.leadId)));
+    if (_canReadOrders) {
+      context
+          .read<OrderByLeadBloc>()
+          .add(FetchOrdersByLead(leadId: int.parse(widget.leadId)));
+    }
+    _loadContactsToCache();
+  });
+  _fetchTutorialProgress();
+  _listenToPrefsChanges();
+}
+
+Future<void> _loadFieldConfiguration() async {
+  if (kDebugMode) {
+    print('LeadDetailsScreen: Loading field configuration');
+  }
+  
+  if (mounted) {
     context.read<FieldConfigurationBloc>().add(
       FetchFieldConfiguration('leads')
     );
   }
-Future<void> _loadContactsToCache() async {
-  try {
-    if (!await FlutterContacts.requestPermission()) {
-      if (mounted) {  // ✅ Добавляем проверку
+}
+
+  Future<void> _loadContactsToCache() async {
+    try {
+      if (!await FlutterContacts.requestPermission()) {
+        if (mounted) {
+          setState(() {
+            _isLoadingContacts = false;
+          });
+        }
+        return;
+      }
+
+      List<Contact> contacts =
+          await FlutterContacts.getContacts(withProperties: true);
+
+      Set<String> normalizedPhones = {};
+      for (var contact in contacts) {
+        for (var phone in contact.phones) {
+          String normalizedPhone =
+              phone.number.replaceAll(RegExp(r'[^\d+]'), '');
+          normalizedPhones.add(normalizedPhone);
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _normalizedContactPhones = normalizedPhones;
+          _isLoadingContacts = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
         setState(() {
           _isLoadingContacts = false;
         });
       }
-      return;
-    }
-
-    List<Contact> contacts =
-        await FlutterContacts.getContacts(withProperties: true);
-
-    Set<String> normalizedPhones = {};
-    for (var contact in contacts) {
-      for (var phone in contact.phones) {
-        String normalizedPhone =
-            phone.number.replaceAll(RegExp(r'[^\d+]'), '');
-        normalizedPhones.add(normalizedPhone);
-      }
-    }
-
-    if (mounted) {  // ✅ Добавляем проверку
-      setState(() {
-        _normalizedContactPhones = normalizedPhones;
-        _isLoadingContacts = false;
-      });
-    }
-  } catch (e) {
-    if (mounted) {  // ✅ Добавляем проверку
-      setState(() {
-        _isLoadingContacts = false;
-      });
     }
   }
-}
 
   bool _isPhoneInContacts(String phoneNumber) {
     String normalizedLeadPhone = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
@@ -287,7 +297,7 @@ Future<void> _loadContactsToCache() async {
         phoneNumber: phone,
       ),
     );
-    if (result == true) {
+    if (result == true && mounted) {
       String normalizedPhone = phone.replaceAll(RegExp(r'[^\d+]'), '');
       setState(() {
         _normalizedContactPhones.add(normalizedPhone);
@@ -300,7 +310,7 @@ Future<void> _loadContactsToCache() async {
     _prefsSubscription =
         Stream.periodic(Duration(seconds: 1)).listen((_) async {
       bool newValue = prefs.getBool('switchContact') ?? false;
-      if (newValue != _isExportContactEnabled) {
+      if (newValue != _isExportContactEnabled && mounted) {
         setState(() {
           _isExportContactEnabled = newValue;
         });
@@ -312,16 +322,24 @@ Future<void> _loadContactsToCache() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final progress = await _apiService.getTutorialProgress();
-      setState(() {
-        tutorialProgress = progress['result'];
-      });
+      
+      if (mounted) {
+        setState(() {
+          tutorialProgress = progress['result'];
+        });
+      }
+      
       await prefs.setString(
           'tutorial_progress', json.encode(progress['result']));
       bool isTutorialShown =
           prefs.getBool('isTutorialShownLeadDetails') ?? false;
-      setState(() {
-        _isTutorialShown = isTutorialShown;
-      });
+      
+      if (mounted) {
+        setState(() {
+          _isTutorialShown = isTutorialShown;
+        });
+      }
+      
       _initTutorialTargets();
       if (tutorialProgress != null &&
           tutorialProgress!['leads']?['view'] == false &&
@@ -334,15 +352,19 @@ Future<void> _loadContactsToCache() async {
     } catch (e) {
       final prefs = await SharedPreferences.getInstance();
       final savedProgress = prefs.getString('tutorial_progress');
-      if (savedProgress != null) {
+      if (savedProgress != null && mounted) {
         setState(() {
           tutorialProgress = json.decode(savedProgress);
         });
         bool isTutorialShown =
             prefs.getBool('isTutorialShownLeadDetails') ?? false;
-        setState(() {
-          _isTutorialShown = isTutorialShown;
-        });
+        
+        if (mounted) {
+          setState(() {
+            _isTutorialShown = isTutorialShown;
+          });
+        }
+        
         _initTutorialTargets();
         if (tutorialProgress != null &&
             tutorialProgress!['leads']?['view'] == false &&
@@ -455,7 +477,7 @@ Future<void> _loadContactsToCache() async {
   }
 
   void showTutorial() async {
-    if (_isTutorialInProgress) {
+    if (_isTutorialInProgress || !mounted) {
       return;
     }
 
@@ -473,10 +495,15 @@ Future<void> _loadContactsToCache() async {
       return;
     }
 
-    setState(() {
-      _isTutorialInProgress = true;
-    });
+    if (mounted) {
+      setState(() {
+        _isTutorialInProgress = true;
+      });
+    }
+    
     await Future.delayed(const Duration(milliseconds: 700));
+
+    if (!mounted) return;
 
     TutorialCoachMark(
       targets: targets,
@@ -506,19 +533,23 @@ Future<void> _loadContactsToCache() async {
       onSkip: () {
         prefs.setBool('isTutorialShownLeadDetails', true);
         _apiService.markPageCompleted("leads", "view").catchError((e) {});
-        setState(() {
-          _isTutorialShown = true;
-          _isTutorialInProgress = false;
-        });
+        if (mounted) {
+          setState(() {
+            _isTutorialShown = true;
+            _isTutorialInProgress = false;
+          });
+        }
         return true;
       },
       onFinish: () {
         prefs.setBool('isTutorialShownLeadDetails', true);
         _apiService.markPageCompleted("leads", "view").catchError((e) {});
-        setState(() {
-          _isTutorialShown = true;
-          _isTutorialInProgress = false;
-        });
+        if (mounted) {
+          setState(() {
+            _isTutorialShown = true;
+            _isTutorialInProgress = false;
+          });
+        }
       },
     ).show(context: context);
   }
@@ -532,124 +563,93 @@ Future<void> _loadContactsToCache() async {
     final canExportContact = await _apiService.hasPermission('lead.create');
     final canReadOrder = await _apiService.hasPermission('order.read');
 
-    setState(() {
-      _canEditLead = canEdit;
-      _canDeleteLead = canDelete;
-      _canReadNotes = canReadNotes;
-      _canReadDeal = canReadDeal;
-      _canExportContact = canExportContact;
-      _canReadOrders = canReadOrder;
-      _isExportContactEnabled = prefs.getBool('switchContact') ?? false;
-    });
-  }
-
-   void _updateDetails(LeadById lead) {
-    currentLead = lead;
-    
-    // Если конфигурация загружена, строим детали на её основе
-    if (isConfigurationLoaded && fieldConfigurations.isNotEmpty) {
-      _buildDetailsFromConfiguration(lead);
-    } else {
-      // Fallback: строим детали как раньше
-      _buildDetailsLegacy(lead);
+    if (mounted) {
+      setState(() {
+        _canEditLead = canEdit;
+        _canDeleteLead = canDelete;
+        _canReadNotes = canReadNotes;
+        _canReadDeal = canReadDeal;
+        _canExportContact = canExportContact;
+        _canReadOrders = canReadOrder;
+        _isExportContactEnabled = prefs.getBool('switchContact') ?? false;
+      });
     }
   }
 
-  // Новый метод для построения деталей на основе конфигурации
-
-
-  // Получение значения поля из лида
-String? _getFieldValue(LeadById lead, FieldConfiguration config) {
-  // Обработка кастомных полей
-  if (config.isCustomField) {
-    try {
-      final customField = lead.leadCustomFields.firstWhere(
-        (field) => field.key == config.fieldName,
-      );
-      return customField.value;
-    } catch (e) {
-      // Поле не найдено, возвращаем null
-      if (kDebugMode) {
-        print('LeadDetailsScreen: Custom field "${config.fieldName}" not found in lead data');
-      }
-      return null;
-    }
+  void _updateDetails(LeadById lead) {
+  currentLead = lead;
+  
+  if (kDebugMode) {
+    print('=== LeadDetailsScreen: _updateDetails START ===');
+    print('LeadDetailsScreen: isConfigurationLoaded = $isConfigurationLoaded');
+    print('LeadDetailsScreen: fieldConfigurations.length = ${fieldConfigurations.length}');
+    print('LeadDetailsScreen: fieldConfigurations.isEmpty = ${fieldConfigurations.isEmpty}');
   }
   
-  // Обработка справочников
-  if (config.isDirectory && config.directoryId != null) {
-    try {
-      final dirValue = lead.directoryValues.firstWhere(
-        (dv) => dv.entry?.directory.id == config.directoryId,
-      );
-      return dirValue.entry?.values['value'] ?? '';
-    } catch (e) {
-      // Справочник не найден, возвращаем null
-      if (kDebugMode) {
-        print('LeadDetailsScreen: Directory field with id ${config.directoryId} not found in lead data');
-      }
-      return null;
+  // Если конфигурация загружена, строим детали на её основе
+  if (isConfigurationLoaded && fieldConfigurations.isNotEmpty) {
+    if (kDebugMode) {
+      print('LeadDetailsScreen: Using configuration-based details');
     }
+    _buildDetailsFromConfiguration(lead);
+  } else {
+    if (kDebugMode) {
+      print('LeadDetailsScreen: Using LEGACY method (fallback)');
+      print('LeadDetailsScreen: Reason - isConfigurationLoaded: $isConfigurationLoaded, isEmpty: ${fieldConfigurations.isEmpty}');
+    }
+    _buildDetailsLegacy(lead);
   }
   
-  // Обработка стандартных полей
-  switch (config.fieldName) {
-    case 'name':
-      return lead.name;
-    case 'phone':
-      return lead.phone ?? '';
-    case 'manager_id':
-      if (lead.manager != null) {
-        return '${lead.manager!.name} ${lead.manager!.lastname ?? ''}';
-      }
-      // Возвращаем специальное значение для кнопки "Стать менеджером"
-      return 'become_manager';
-    case 'region_id':
-      return lead.region?.name;
-    case 'source_id':
-      return lead.source?.name;
-    case 'wa_phone':
-      return lead.whatsApp;
-    case 'insta_login':
-      return lead.instagram;
-    case 'facebook_login':
-      return lead.facebook;
-    case 'tg_nick':
-      return lead.telegram;
-    case 'email':
-      return lead.email;
-    default:
-      if (kDebugMode) {
-        print('LeadDetailsScreen: Unknown field "${config.fieldName}"');
-      }
-      return null;
+  if (kDebugMode) {
+    print('LeadDetailsScreen: Total details built: ${details.length}');
+    print('=== LeadDetailsScreen: _updateDetails END ===');
   }
 }
+
 // Новый метод для построения деталей на основе конфигурации
 void _buildDetailsFromConfiguration(LeadById lead) {
   details = [];
   
   if (kDebugMode) {
-    print('LeadDetailsScreen: Building details from configuration with ${fieldConfigurations.length} fields');
+    print('');
+    print('=== _buildDetailsFromConfiguration START ===');
+    print('LeadDetailsScreen: fieldConfigurations count: ${fieldConfigurations.length}');
+    
+    // Выводим ВСЕ поля из конфигурации
+    for (int i = 0; i < fieldConfigurations.length; i++) {
+      var config = fieldConfigurations[i];
+      print('CONFIG[$i]: position=${config.position}, name="${config.fieldName}", isActive=${config.isActive}, isCustom=${config.isCustomField}, isDirectory=${config.isDirectory}');
+    }
+    print('');
   }
   
   // Проходим по конфигурации в правильном порядке
+  int addedCount = 0;
   for (var config in fieldConfigurations) {
+    if (kDebugMode) {
+      print('Processing field: "${config.fieldName}" (pos=${config.position}, active=${config.isActive})');
+    }
+    
     if (!config.isActive) {
       if (kDebugMode) {
-        print('LeadDetailsScreen: Skipping inactive field: ${config.fieldName}');
+        print('  ❌ SKIP: field is inactive');
       }
-      continue; // Пропускаем неактивные поля
+      continue;
     }
     
     // Получаем значение для каждого поля
     String? value = _getFieldValue(lead, config);
     
+    if (kDebugMode) {
+      print('  Value obtained: "${value}"');
+    }
+    
     // Особая обработка для manager_id когда нет менеджера
     if (config.fieldName == 'manager_id' && value == 'become_manager') {
       details.add({'label': '', 'value': 'become_manager'});
+      addedCount++;
       if (kDebugMode) {
-        print('LeadDetailsScreen: Added become_manager button');
+        print('  ✅ ADDED as become_manager button (count: $addedCount)');
       }
       continue;
     }
@@ -657,15 +657,29 @@ void _buildDetailsFromConfiguration(LeadById lead) {
     if (value != null && value.isNotEmpty) {
       String label = _getFieldLabel(config);
       details.add({'label': label, 'value': value});
+      addedCount++;
       
       if (kDebugMode) {
-        print('LeadDetailsScreen: Added field - ${config.fieldName}: $value');
+        print('  ✅ ADDED: label="$label", value="$value" (count: $addedCount)');
+      }
+    } else {
+      if (kDebugMode) {
+        print('  ❌ SKIP: value is null or empty');
       }
     }
   }
   
+  if (kDebugMode) {
+    print('');
+    print('After main fields processing: $addedCount fields added');
+  }
+  
   // Добавляем дополнительные поля которых нет в конфигурации
   _addExtraFields(lead);
+  
+  if (kDebugMode) {
+    print('After extra fields: ${details.length} total fields');
+  }
   
   // Добавляем файлы если есть
   if (lead.files != null && lead.files!.isNotEmpty) {
@@ -674,93 +688,125 @@ void _buildDetailsFromConfiguration(LeadById lead) {
       'value':
           '${lead.files!.length} ${AppLocalizations.of(context)!.translate('files')}'
     });
+    
+    if (kDebugMode) {
+      print('Files added: ${lead.files!.length} files');
+    }
   }
   
   if (kDebugMode) {
-    print('LeadDetailsScreen: Total details count: ${details.length}');
+    print('');
+    print('=== FINAL DETAILS ORDER ===');
+    for (int i = 0; i < details.length; i++) {
+      print('DETAIL[$i]: label="${details[i]['label']}", value="${details[i]['value']}"');
+    }
+    print('=== _buildDetailsFromConfiguration END ===');
+    print('');
   }
 }
 
-// Новый метод для добавления дополнительных полей которых нет в конфигурации
-void _addExtraFields(LeadById lead) {
-  // Список полей которые всегда показываем, но которых может не быть в конфигурации
+// Получение значения поля из лида
+String? _getFieldValue(LeadById lead, FieldConfiguration config) {
+  if (kDebugMode) {
+    print('    _getFieldValue called for: "${config.fieldName}"');
+  }
   
-  // День рождения (только если есть phone_verified_at)
-  if (lead.phone_verified_at != null && lead.birthday != null && lead.birthday!.isNotEmpty) {
-    bool alreadyAdded = details.any((d) => d['label'] == AppLocalizations.of(context)!.translate('birthday_details'));
-    if (!alreadyAdded) {
-      details.add({
-        'label': AppLocalizations.of(context)!.translate('birthday_details'),
-        'value': formatDate(lead.birthday)
-      });
+  // Обработка кастомных полей
+  if (config.isCustomField) {
+    if (kDebugMode) {
+      print('    This is a CUSTOM field');
+    }
+    try {
+      final customField = lead.leadCustomFields.firstWhere(
+        (field) => field.key == config.fieldName,
+      );
+      if (kDebugMode) {
+        print('    Found custom field with value: "${customField.value}"');
+      }
+      return customField.value;
+    } catch (e) {
+      if (kDebugMode) {
+        print('    Custom field "${config.fieldName}" NOT FOUND in lead data');
+      }
+      return null;
     }
   }
   
-  // Тип цены (только если есть phone_verified_at)
-  if (lead.phone_verified_at != null && lead.priceType != null) {
-    bool alreadyAdded = details.any((d) => d['label'] == AppLocalizations.of(context)!.translate('price_type_details'));
-    if (!alreadyAdded) {
-      details.add({
-        'label': AppLocalizations.of(context)!.translate('price_type_details'),
-        'value': lead.priceType!.name
-      });
+  // Обработка справочников
+  if (config.isDirectory && config.directoryId != null) {
+    if (kDebugMode) {
+      print('    This is a DIRECTORY field (id=${config.directoryId})');
+    }
+    try {
+      final dirValue = lead.directoryValues.firstWhere(
+        (dv) => dv.entry?.directory.id == config.directoryId,
+      );
+      final value = dirValue.entry?.values['value'] ?? '';
+      if (kDebugMode) {
+        print('    Found directory value: "$value"');
+      }
+      return value;
+    } catch (e) {
+      if (kDebugMode) {
+        print('    Directory field with id ${config.directoryId} NOT FOUND in lead data');
+      }
+      return null;
     }
   }
   
-  // Описание
-  if (lead.description != null && lead.description!.isNotEmpty) {
-    bool alreadyAdded = details.any((d) => d['label'] == AppLocalizations.of(context)!.translate('description_details_lead'));
-    if (!alreadyAdded) {
-      details.add({
-        'label': AppLocalizations.of(context)!.translate('description_details_lead'),
-        'value': lead.description!
-      });
-    }
+  // Обработка стандартных полей
+  if (kDebugMode) {
+    print('    This is a STANDARD field');
   }
   
-  // Автор
-  if (lead.author != null) {
-    bool alreadyAdded = details.any((d) => d['label'] == AppLocalizations.of(context)!.translate('author_details'));
-    if (!alreadyAdded) {
-      details.add({
-        'label': AppLocalizations.of(context)!.translate('author_details'),
-        'value': lead.author!.name
-      });
-    }
+  String? result;
+  switch (config.fieldName) {
+    case 'name':
+      result = lead.name;
+      break;
+    case 'phone':
+      result = lead.phone ?? '';
+      break;
+    case 'manager_id':
+      if (lead.manager != null) {
+        result = '${lead.manager!.name} ${lead.manager!.lastname ?? ''}';
+      } else {
+        result = 'become_manager';
+      }
+      break;
+    case 'region_id':
+      result = lead.region?.name;
+      break;
+    case 'source_id':
+      result = lead.source?.name;
+      break;
+    case 'wa_phone':
+      result = lead.whatsApp;
+      break;
+    case 'insta_login':
+      result = lead.instagram;
+      break;
+    case 'facebook_login':
+      result = lead.facebook;
+      break;
+    case 'tg_nick':
+      result = lead.telegram;
+      break;
+    case 'email':
+      result = lead.email;
+      break;
+    default:
+      if (kDebugMode) {
+        print('    ⚠️ Unknown standard field: "${config.fieldName}"');
+      }
+      result = null;
   }
   
-  // Воронка продаж
-  if (lead.salesFunnel != null) {
-    bool alreadyAdded = details.any((d) => d['label'] == AppLocalizations.of(context)!.translate('sales_funnel_details'));
-    if (!alreadyAdded) {
-      details.add({
-        'label': AppLocalizations.of(context)!.translate('sales_funnel_details'),
-        'value': lead.salesFunnel!.name
-      });
-    }
+  if (kDebugMode) {
+    print('    Returning: "$result"');
   }
   
-  // Дата создания
-  if (lead.createdAt != null && lead.createdAt!.isNotEmpty) {
-    bool alreadyAdded = details.any((d) => d['label'] == AppLocalizations.of(context)!.translate('created_at_details'));
-    if (!alreadyAdded) {
-      details.add({
-        'label': AppLocalizations.of(context)!.translate('created_at_details'),
-        'value': formatDate(lead.createdAt)
-      });
-    }
-  }
-  
-  // Статус
-  if (lead.leadStatus != null) {
-    bool alreadyAdded = details.any((d) => d['label'] == AppLocalizations.of(context)!.translate('status_details'));
-    if (!alreadyAdded) {
-      details.add({
-        'label': AppLocalizations.of(context)!.translate('status_details'),
-        'value': lead.leadStatus!.title
-      });
-    }
-  }
+  return result;
 }
 
   // Получение лейбла для поля
@@ -796,6 +842,86 @@ void _addExtraFields(LeadById lead) {
         return '${config.fieldName}:';
     }
   }
+
+  // Новый метод для добавления дополнительных полей которых нет в конфигурации
+  void _addExtraFields(LeadById lead) {
+    // День рождения (только если есть phone_verified_at)
+    if (lead.phone_verified_at != null && lead.birthday != null && lead.birthday!.isNotEmpty) {
+      bool alreadyAdded = details.any((d) => d['label'] == AppLocalizations.of(context)!.translate('birthday_details'));
+      if (!alreadyAdded) {
+        details.add({
+          'label': AppLocalizations.of(context)!.translate('birthday_details'),
+          'value': formatDate(lead.birthday)
+        });
+      }
+    }
+    
+    // Тип цены (только если есть phone_verified_at)
+    if (lead.phone_verified_at != null && lead.priceType != null) {
+      bool alreadyAdded = details.any((d) => d['label'] == AppLocalizations.of(context)!.translate('price_type_details'));
+      if (!alreadyAdded) {
+        details.add({
+          'label': AppLocalizations.of(context)!.translate('price_type_details'),
+          'value': lead.priceType!.name
+        });
+      }
+    }
+    
+    // Описание
+    if (lead.description != null && lead.description!.isNotEmpty) {
+      bool alreadyAdded = details.any((d) => d['label'] == AppLocalizations.of(context)!.translate('description_details_lead'));
+      if (!alreadyAdded) {
+        details.add({
+          'label': AppLocalizations.of(context)!.translate('description_details_lead'),
+          'value': lead.description!
+        });
+      }
+    }
+    
+    // Автор
+    if (lead.author != null) {
+      bool alreadyAdded = details.any((d) => d['label'] == AppLocalizations.of(context)!.translate('author_details'));
+      if (!alreadyAdded) {
+        details.add({
+          'label': AppLocalizations.of(context)!.translate('author_details'),
+          'value': lead.author!.name
+        });
+      }
+    }
+    
+    // Воронка продаж
+    if (lead.salesFunnel != null) {
+      bool alreadyAdded = details.any((d) => d['label'] == AppLocalizations.of(context)!.translate('sales_funnel_details'));
+      if (!alreadyAdded) {
+        details.add({
+          'label': AppLocalizations.of(context)!.translate('sales_funnel_details'),
+          'value': lead.salesFunnel!.name
+        });
+      }
+    }
+    
+    // Дата создания
+    if (lead.createdAt != null && lead.createdAt!.isNotEmpty) {
+      bool alreadyAdded = details.any((d) => d['label'] == AppLocalizations.of(context)!.translate('created_at_details'));
+      if (!alreadyAdded) {
+        details.add({
+          'label': AppLocalizations.of(context)!.translate('created_at_details'),
+          'value': formatDate(lead.createdAt)
+        });
+      }
+    }
+    
+    // Статус
+   if (lead.leadStatus != null) {
+    bool alreadyAdded = details.any((d) => d['label'] == AppLocalizations.of(context)!.translate('status_details'));
+    if (!alreadyAdded) {
+      details.add({
+        'label': AppLocalizations.of(context)!.translate('status_details'),
+        'value': lead.leadStatus!.title
+      });
+    }
+  }
+}
 
   // Старый метод как fallback (на случай если конфигурация не загрузилась)
   void _buildDetailsLegacy(LeadById lead) {
@@ -889,7 +1015,6 @@ void _addExtraFields(LeadById lead) {
     }
   }
 
-
   Widget _buildExpandableText(String label, String value, double maxWidth) {
     final TextStyle style = TextStyle(
       fontSize: 16,
@@ -912,13 +1037,15 @@ void _addExtraFields(LeadById lead) {
     );
   }
 
-   @override
+  @override
   Widget build(BuildContext context) {
     if (!_isTutorialShown) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        setState(() {
-          _isTutorialShown = true;
-        });
+        if (mounted) {
+          setState(() {
+            _isTutorialShown = true;
+          });
+        }
       });
     }
     
@@ -927,9 +1054,9 @@ void _addExtraFields(LeadById lead) {
         BlocProvider<OrderByLeadBloc>(
           create: (context) => OrderByLeadBloc(context.read<ApiService>()),
         ),
-        BlocProvider<FieldConfigurationBloc>(
-          create: (context) => FieldConfigurationBloc(ApiService()),
-        ),
+        // BlocProvider<FieldConfigurationBloc>(
+        //   create: (context) => FieldConfigurationBloc(ApiService()),
+        // ),
       ],
       child: Scaffold(
         appBar: _buildAppBar(
@@ -941,46 +1068,87 @@ void _addExtraFields(LeadById lead) {
               listener: (context, state) {
                 if (state is LeadByIdError) {
                   WidgetsBinding.instance.addPostFrameCallback((_) {
-                    showCustomSnackBar(
-                      context: context,
-                      message:
-                          AppLocalizations.of(context)!.translate(state.message),
-                      isSuccess: false,
-                    );
+                    if (mounted) {
+                      showCustomSnackBar(
+                        context: context,
+                        message:
+                            AppLocalizations.of(context)!.translate(state.message),
+                        isSuccess: false,
+                      );
+                    }
                   });
                 }
               },
             ),
-            BlocListener<FieldConfigurationBloc, FieldConfigurationState>(
-              listener: (context, configState) {
-                if (kDebugMode) {
-                  print('LeadDetailsScreen: FieldConfigurationBloc state changed: ${configState.runtimeType}');
-                }
-                
-                if (configState is FieldConfigurationLoaded) {
-                  if (kDebugMode) {
-                    print('LeadDetailsScreen: Configuration loaded with ${configState.fields.length} fields');
-                  }
-                  setState(() {
-                    fieldConfigurations = configState.fields;
-                    isConfigurationLoaded = true;
-                  });
-                  
-                  // Перестраиваем детали если лид уже загружен
-                  if (currentLead != null) {
-                    _updateDetails(currentLead!);
-                  }
-                } else if (configState is FieldConfigurationError) {
-                  if (kDebugMode) {
-                    print('LeadDetailsScreen: Configuration error: ${configState.message}');
-                  }
-                  // Используем legacy метод
-                  setState(() {
-                    isConfigurationLoaded = false;
-                  });
-                }
-              },
-            ),
+           BlocListener<FieldConfigurationBloc, FieldConfigurationState>(
+  listener: (context, configState) {
+    if (kDebugMode) {
+      print('');
+      print('╔════════════════════════════════════════════════════════╗');
+      print('║ FieldConfigurationBloc LISTENER TRIGGERED             ║');
+      print('╠════════════════════════════════════════════════════════╣');
+      print('║ State type: ${configState.runtimeType}');
+      print('╚════════════════════════════════════════════════════════╝');
+    }
+    
+    if (configState is FieldConfigurationLoaded) {
+      if (kDebugMode) {
+        print('✅ Configuration LOADED with ${configState.fields.length} fields');
+        print('Fields received:');
+        for (int i = 0; i < configState.fields.length; i++) {
+          var field = configState.fields[i];
+          print('  [$i] pos=${field.position}, name="${field.fieldName}", active=${field.isActive}');
+        }
+      }
+      
+      if (mounted) {
+        setState(() {
+          fieldConfigurations = configState.fields;
+          isConfigurationLoaded = true;
+        });
+        
+        if (kDebugMode) {
+          print('✅ State updated: isConfigurationLoaded = $isConfigurationLoaded');
+          print('✅ fieldConfigurations.length = ${fieldConfigurations.length}');
+        }
+        
+        // Перестраиваем детали если лид уже загружен
+        if (currentLead != null) {
+          if (kDebugMode) {
+            print('🔄 Rebuilding details because lead is already loaded');
+          }
+          _updateDetails(currentLead!);
+        } else {
+          if (kDebugMode) {
+            print('⏳ Lead not loaded yet, will rebuild when lead loads');
+          }
+        }
+      }
+    } else if (configState is FieldConfigurationError) {
+      if (kDebugMode) {
+        print('❌ Configuration ERROR: ${configState.message}');
+      }
+      
+      if (mounted) {
+        setState(() {
+          isConfigurationLoaded = false;
+        });
+      }
+    } else if (configState is FieldConfigurationLoading) {
+      if (kDebugMode) {
+        print('⏳ Configuration LOADING...');
+      }
+    } else {
+      if (kDebugMode) {
+        print('❓ Unknown state: ${configState.runtimeType}');
+      }
+    }
+    
+    if (kDebugMode) {
+      print('');
+    }
+  },
+),
           ],
           child: BlocBuilder<LeadByIdBloc, LeadByIdState>(
             builder: (context, state) {
@@ -1068,7 +1236,6 @@ void _addExtraFields(LeadById lead) {
       ),
     );
   }
-
 
   AppBar _buildAppBar(BuildContext context, String title) {
     return AppBar(
@@ -1181,8 +1348,6 @@ void _addExtraFields(LeadById lead) {
                             leadCustomFields: currentLead!.leadCustomFields,
                             directoryValues: currentLead!.directoryValues,
                             files: currentLead!.files,
-                            // phoneVerifiedAt: currentLead!.phone_verified_at,
-                            // verificationCode: currentLead!.verification_code,
                             priceTypeId: currentLead!.priceType?.id.toString(),
                             priceTypeName: currentLead!.priceType?.name,
                           ),
@@ -1603,9 +1768,11 @@ void _addExtraFields(LeadById lead) {
 
   Future<void> _loadSelectedOrganization() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      selectedOrganization = prefs.getString('selectedOrganization');
-    });
+    if (mounted) {
+      setState(() {
+        selectedOrganization = prefs.getString('selectedOrganization');
+      });
+    }
   }
 
   Future<void> _makePhoneCall(String phoneNumber) async {
@@ -1635,20 +1802,24 @@ void _addExtraFields(LeadById lead) {
         whatsappUri = Uri.parse('whatsapp://send?phone=$cleanNumber');
       }
       if (!await launchUrl(whatsappUri, mode: LaunchMode.externalApplication)) {
+        if (mounted) {
+          showCustomSnackBar(
+            context: context,
+            message:
+                AppLocalizations.of(context)!.translate('whatsapp_not_installed'),
+            isSuccess: false,
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
         showCustomSnackBar(
           context: context,
           message:
-              AppLocalizations.of(context)!.translate('whatsapp_not_installed'),
+              AppLocalizations.of(context)!.translate('whatsapp_open_failed'),
           isSuccess: false,
         );
       }
-    } catch (e) {
-      showCustomSnackBar(
-        context: context,
-        message:
-            AppLocalizations.of(context)!.translate('whatsapp_open_failed'),
-        isSuccess: false,
-      );
     }
   }
 
@@ -1700,8 +1871,7 @@ void _addExtraFields(LeadById lead) {
                       Navigator.of(context).pop(true);
                     },
                     buttonColor: Color(0xFF1E2E52),
-                    textColor: Colors.white,
-                  ),
+                    textColor: Colors.white,),
                 ),
               ],
             ),
@@ -1713,15 +1883,6 @@ void _addExtraFields(LeadById lead) {
     if (confirm != true) {
       return;
     }
-
-    // if (currentLead?.phone == null || currentLead!.phone!.isEmpty) {
-    //   showCustomSnackBar(
-    //     context: context,
-    //     message: AppLocalizations.of(context)!.translate('phone_required'),
-    //     isSuccess: false,
-    //   );
-    //   return;
-    // }
 
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -1750,28 +1911,38 @@ void _addExtraFields(LeadById lead) {
         managerId: parsedUserId,
         leadStatusId: currentLead?.leadStatus?.id ?? 0,
         localizations: localizations,
-        existingFiles: currentLead!.files ?? [], customFields: [], directoryValues: [], isSystemManager: false, filePaths: [],
+        existingFiles: currentLead!.files ?? [],
+        customFields: [],
+        directoryValues: [],
+        isSystemManager: false,
+        filePaths: [],
       ));
 
       await completer.future;
       listener.cancel();
-      context
-          .read<LeadByIdBloc>()
-          .add(FetchLeadByIdEvent(leadId: currentLead!.id));
-      context.read<LeadBloc>().add(FetchLeadStatuses());
-      showCustomSnackBar(
-        context: context,
-        message:
-            AppLocalizations.of(context)!.translate('manager_assigned_success'),
-        isSuccess: true,
-      );
+      
+      if (mounted) {
+        context
+            .read<LeadByIdBloc>()
+            .add(FetchLeadByIdEvent(leadId: currentLead!.id));
+        context.read<LeadBloc>().add(FetchLeadStatuses());
+        showCustomSnackBar(
+          context: context,
+          message:
+              AppLocalizations.of(context)!.translate('manager_assigned_success'),
+          isSuccess: true,
+        );
+      }
     } catch (e) {
-      showCustomSnackBar(
-        context: context,
-        message:
-            AppLocalizations.of(context)!.translate('manager_assign_failed'),
-        isSuccess: false,
-      );
+      if (mounted) {
+        showCustomSnackBar(
+          context: context,
+          message:
+              AppLocalizations.of(context)!.translate('manager_assign_failed'),
+          isSuccess: false,
+        );
+      }
     }
   }
-}
+  }
+
