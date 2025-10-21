@@ -147,7 +147,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
         customFields.add(CustomField(
           fieldName: dirValue.entry.directory.name,
           controller:
-              TextEditingController(text: dirValue.entry.values['value'] ?? ''),
+              TextEditingController(text: dirValue.entry.values.first['value'] ?? ''),
           isDirectoryField: true,
           directoryId: dirValue.entry.directory.id,
           entryId: dirValue.entry.id,

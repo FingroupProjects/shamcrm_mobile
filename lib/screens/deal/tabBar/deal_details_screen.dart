@@ -410,7 +410,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       for (var dirValue in deal.directoryValues!) {
         details.add({
           'label': '${dirValue.entry.directory.name}:',
-          'value': dirValue.entry.values['value'] ?? '',
+          'value': dirValue.entry.values.first['value'] ?? '',
         });
       }
     }

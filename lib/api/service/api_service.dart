@@ -2722,7 +2722,7 @@ Future<String> getStaticBaseUrl() async {
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       final path = await _appendQueryParams('/deal/$dealId');
       if (kDebugMode) {
-        //print('ApiService: getDealById - Generated path: $path');
+        print('ApiService: getDealById - Generated path: $path');
       }
 
       final response = await _getRequest(path);
