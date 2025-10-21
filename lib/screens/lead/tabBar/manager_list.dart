@@ -118,6 +118,8 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
               isInitialized = true;
             }
 
+            debugPrint("ManagerList managerList dropdown : $managersList");
+
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

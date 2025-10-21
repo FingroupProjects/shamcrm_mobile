@@ -630,7 +630,7 @@ Widget build(BuildContext context) {
               manager: currentDeal!.manager != null
                   ? currentDeal!.manager!.id.toString()
                   : '',
-              lead: LeadData(id: currentDeal!.id, name: currentDeal!.lead?.name ?? '', managerId: currentDeal!.lead?.manager?.id, debt: currentDeal!.lead?.debt),
+              lead: LeadData(id: currentDeal!.lead!.id, name: currentDeal!.lead?.name ?? '', managerId: currentDeal!.lead?.manager?.id, debt: currentDeal!.lead?.debt),
               startDate: startDateString,
               endDate: endDateString,
               createdAt: createdAtDateString,

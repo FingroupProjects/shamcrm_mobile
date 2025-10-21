@@ -696,6 +696,7 @@ const SizedBox(height: 8),
                             selectedManager: selectedManager,
                             onSelectManager: (ManagerData selectedManagerData) {
                               setState(() {
+                                debugPrint("DealEditScreen Selected Manager ID: ${selectedManagerData.id}");
                                 selectedManager =
                                     selectedManagerData.id.toString();
                               });
@@ -952,6 +953,8 @@ const SizedBox(height: 8),
                                         });
                                       }
                                     }
+
+                                    debugPrint('DealEditScreen: SelectedManagerID: $selectedManager');
 
                                     final localizations =
                                         AppLocalizations.of(context)!;

@@ -62,6 +62,7 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
   }
 
   void _updateSelectedLeadData() {
+    debugPrint("_updateSelectedLeadData started");
     if (widget.selectedLead != null && leadsList.isNotEmpty) {
       try {
         // ИСПРАВЛЕНО: Ищем в текущем списке leadsList
@@ -69,12 +70,12 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
           (lead) => lead.id.toString() == widget.selectedLead,
         );
         if (kDebugMode) {
-          //print('🟢 LeadWidget: Selected lead found - ${selectedLeadData?.name}');
+          print('🟢 LeadWidget: Selected lead found - ${selectedLeadData?.name}');
         }
       } catch (e) {
         selectedLeadData = null; // ИСПРАВЛЕНО: обнуляем если не найден
         if (kDebugMode) {
-          //print('🔴 LeadWidget: Selected lead NOT found - searching for ${widget.selectedLead}');
+          print('🔴 LeadWidget: Selected lead NOT found - searching for ${widget.selectedLead}');
         }
       }
     }
@@ -138,6 +139,11 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
             if (kDebugMode && selectedLeadData != null && !leadsList.contains(selectedLeadData)) {
               //print('⚠️ LeadWidget: selectedLeadData not in list, resetting to null');
             }
+
+            debugPrint("LeadWidget dropdown items count: ${leadsList.length}");
+            debugPrint("leadlist ids : ${leadsList.map((e) => e.id).toList()}");
+            debugPrint("LeadWidget selectedLeadData: ${selectedLeadData?.toString()}");
+            debugPrint("leadsList contains selectedLeadData: ${leadsList.contains(selectedLeadData)}");
 
             return CustomDropdown<LeadData>.search(
               closeDropDownOnClearFilterSearch: true,
