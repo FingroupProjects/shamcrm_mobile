@@ -2779,7 +2779,7 @@ Future<List<Deal>> getDeals(
       (names != null && names.isNotEmpty); // Учитываем names
 
   if (dealStatusId != null && !hasFilters) {
-    path += '&deal_status_id=$dealStatusId';
+    path += '&deal_statuses=$dealStatusId'; // changed FROM deal_status_id to deal_statuses
   }
 
   if (search != null && search.isNotEmpty) {
@@ -2803,7 +2803,7 @@ Future<List<Deal>> getDeals(
     path += '&withTasks=1';
   }
   if (statuses != null) {
-    path += '&deal_status_id=$statuses';
+    path += '&deal_statuses=$statuses'; // changed FROM deal_status_id to deal_statuses
   }
   if (fromDate != null && toDate != null) {
     final formattedFromDate =
