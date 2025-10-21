@@ -195,7 +195,7 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
                             .map((country) => ListTile(
                           leading: Text(country.flag, style: TextStyle(fontSize: 24)),
                           title: Text(
-                            "${country.name} (${country.dialCode})",
+                            country.dialCode,
                             style: TextStyle(
                                 fontFamily: 'Gilroy',
                                 fontSize: 16,

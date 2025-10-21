@@ -291,15 +291,6 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
                             fontWeight: FontWeight.w500,
                           ),
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          country.name,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
                       ],
                     ),
                   );
