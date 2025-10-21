@@ -1,27 +1,25 @@
 import 'package:flutter/services.dart';
 
-/// Форматтер для ввода цены
+/// Форматтер для ввода количества
 /// Разрешает:
 /// - Целые числа: 1, 2, 10, 100, и т.д.
-/// - Десятичные числа с максимум 3 цифрами после точки: 1.234, 10.5, и т.д.
 /// - Одиночный ноль: 0
-/// - Ноль с десятичной частью: 0.5, 0.123
 /// 
 /// Запрещает:
 /// - Несколько нулей в начале: 0000, 00, 01, и т.д.
-/// - Более 3 цифр после точки
 /// - Буквы и специальные символы
+/// - Десятичные числа (точки)
 ///
 /// Использование:
 /// ```dart
 /// inputFormatters: [
-///   PriceInputFormatter(),
+///   QuantityInputFormatter(),
 /// ],
 /// ```
-class PriceInputFormatter extends TextInputFormatter {
-  final int decimalRange;
+class QuantityInputFormatter extends TextInputFormatter {
+  final int maxLength;
 
-  PriceInputFormatter({this.decimalRange = 3});
+  QuantityInputFormatter({this.maxLength = 10});
 
   @override
   TextEditingValue formatEditUpdate(
@@ -35,14 +33,9 @@ class PriceInputFormatter extends TextInputFormatter {
       return newValue;
     }
 
-    // Проверяем, что строка содержит только цифры и точку
-    if (!RegExp(r'^[\d.]+$').hasMatch(newText)) {
+    // Проверяем, что строка содержит только цифры
+    if (!RegExp(r'^\d+$').hasMatch(newText)) {
       // Если есть недопустимые символы, отклоняем ввод
-      return oldValue;
-    }
-
-    // Запрещаем более одной точки
-    if ('.'.allMatches(newText).length > 1) {
       return oldValue;
     }
 
@@ -51,21 +44,16 @@ class PriceInputFormatter extends TextInputFormatter {
       return oldValue;
     }
 
-    // Запрещаем числа типа "01", "02" и т.д. (ноль с последующими цифрами без точки)
+    // Запрещаем числа типа "01", "02" и т.д. (ноль с последующими цифрами)
     if (newText.length >= 2 &&
         newText[0] == '0' &&
-        newText[1] != '.' &&
         RegExp(r'\d').hasMatch(newText[1])) {
       return oldValue;
     }
 
-    // Проверяем количество цифр после точки
-    if (newText.contains('.')) {
-      final parts = newText.split('.');
-      // Если после точки больше decimalRange цифр, отклоняем ввод
-      if (parts.length == 2 && parts[1].length > decimalRange) {
-        return oldValue;
-      }
+    // Ограничиваем максимальную длину
+    if (newText.length > maxLength) {
+      return oldValue;
     }
 
     // Если все проверки пройдены, принимаем новое значение
