@@ -38,7 +38,7 @@ class DealEditScreen extends StatefulWidget {
   final String dealName;
   final String? manager;
   final String? currency;
-  final String? lead;
+  final LeadData? lead;
   final String? startDate;
   final String? endDate;
   final String? createdAt;
@@ -84,7 +84,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
 
   int? _selectedStatuses;
   String? selectedManager;
-  String? selectedLead;
+  LeadData? selectedLead;  // ✅ Храним полный объект LeadData
   List<CustomField> customFields = [];
   bool isEndDateInvalid = false;
   List<String> selectedFiles = [];
@@ -117,7 +117,13 @@ class _DealEditScreenState extends State<DealEditScreen> {
     _selectedStatuses = widget.statusId;
     descriptionController.text = widget.description ?? '';
     selectedManager = widget.manager;
-    selectedLead = widget.lead;
+    
+    if (widget.lead != null) {
+      selectedLead = widget.lead;
+    }
+
+    debugPrint('Initialized selectedLead: $selectedLead');
+    
     startDateController.text = widget.startDate ?? '';
     endDateController.text = widget.endDate ?? '';
     sumController.text = widget.sum ?? '';
@@ -676,11 +682,12 @@ RepaintBoundary( // ✅ ДОБАВИТЬ
   ),
 ),
 const SizedBox(height: 8),
+                          // ✅ УПРОЩЕНО: Прямое использование без BlocBuilder
                           LeadRadioGroupWidget(
-                            selectedLead: selectedLead,
-                            onSelectLead: (LeadData selectedRegionData) {
+                            selectedLead: selectedLead?.id.toString(),
+                            onSelectLead: (LeadData selectedLeadData) {
                               setState(() {
-                                selectedLead = selectedRegionData.id.toString();
+                                selectedLead = selectedLeadData;
                               });
                             },
                           ),
@@ -956,9 +963,7 @@ const SizedBox(height: 8),
                                           managerId: selectedManager != null
                                               ? int.parse(selectedManager!)
                                               : null,
-                                          leadId: selectedLead != null
-                                              ? int.parse(selectedLead!)
-                                              : null,
+                                          leadId: selectedLead?.id,  // ✅ ИЗМЕНЕНО: Используем .id напрямую
                                           description:
                                               descriptionController.text.isEmpty
                                                   ? null

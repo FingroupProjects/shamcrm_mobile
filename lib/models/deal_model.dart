@@ -223,4 +223,23 @@ class DealStatus {
       'users': users?.map((user) => user.toJson()).toList(),
     };
   }
+
+  // Override equality to compare ONLY by ID
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        other is DealStatus &&
+            runtimeType == other.runtimeType &&
+            id == other.id;  // Ignores title and other fields
+  }
+
+  // HashCode based ONLY on ID (must match == logic)
+  @override
+  int get hashCode => id.hashCode;
+
+  // override toString for better debugging
+  @override
+  String toString() {
+    return 'DealStatus{id: $id, title: $title, color: $color, dealsCount: $dealsCount, isSuccess: $isSuccess, isFailure: $isFailure, users: $users}';
+  }
 }
