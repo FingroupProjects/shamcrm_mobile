@@ -47,8 +47,8 @@ print('DropdownBottomSheet: managing_deal_status_visibility = $isMultiSelectEnab
                 ),
                 Expanded(
                   child: FutureBuilder<List<DealStatus>>(
-                    future: ApiService().getDealStatuses(),
-                    builder: (context, snapshot) {
+  future: ApiService().getDealStatuses(includeAll: true), // ← Добавили параметр
+  builder: (context, snapshot) {
                       if (snapshot.hasError) {
                         return Center(child: Text(AppLocalizations.of(context)!.translate('error_text')));
                       } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
