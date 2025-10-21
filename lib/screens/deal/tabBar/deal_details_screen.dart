@@ -13,6 +13,7 @@ import 'package:crm_task_manager/custom_widget/file_utils.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/dealById_model.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
+import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_delete.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/dropdown_history.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/deal_task_screen.dart';
@@ -410,7 +411,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       for (var dirValue in deal.directoryValues!) {
         details.add({
           'label': '${dirValue.entry.directory.name}:',
-          'value': dirValue.entry.values['value'] ?? '',
+          'value': dirValue.entry.values.first['value'] ?? '',
         });
       }
     }
@@ -629,9 +630,7 @@ Widget build(BuildContext context) {
               manager: currentDeal!.manager != null
                   ? currentDeal!.manager!.id.toString()
                   : '',
-              lead: currentDeal!.lead != null
-                  ? currentDeal!.lead!.id.toString()
-                  : '',
+              lead: LeadData(id: currentDeal!.lead!.id, name: currentDeal!.lead?.name ?? '', managerId: currentDeal!.lead?.manager?.id, debt: currentDeal!.lead?.debt),
               startDate: startDateString,
               endDate: endDateString,
               createdAt: createdAtDateString,

@@ -44,7 +44,6 @@ class _ProfitabilityChartState extends State<ProfitabilityChart> {
     if (value == null) return 0.0;
     if (value is num) return value.toDouble();
     if (value is String) {
-      // Remove any non-numeric characters except decimal point and minus
       final cleaned = value.replaceAll(RegExp(r'[^\d.-]'), '');
       return double.tryParse(cleaned) ?? 0.0;
     }
@@ -77,11 +76,63 @@ class _ProfitabilityChartState extends State<ProfitabilityChart> {
     }
   }
 
+  // Calculate dynamic Y-axis range based on actual data
+  Map<String, double> _calculateYAxisRange(List<ProfitabilityMonth> months) {
+    if (months.isEmpty) {
+      return {'minY': 0, 'maxY': 100, 'interval': 20};
+    }
+
+    final values = months
+        .map((m) => _parseProfitabilityValue(m.profitabilityPercentage))
+        .toList();
+
+    final minValue = values.reduce((a, b) => a < b ? a : b);
+    final maxValue = values.reduce((a, b) => a > b ? a : b);
+
+    // Add padding to min/max for better visualization
+    final range = maxValue - minValue;
+    final padding = range > 0 ? range * 0.2 : 10;
+
+    double calculatedMin = minValue - padding;
+    double calculatedMax = maxValue + padding;
+
+    // Ensure minimum range for readability
+    if ((calculatedMax - calculatedMin) < 10) {
+      final center = (calculatedMax + calculatedMin) / 2;
+      calculatedMin = center - 5;
+      calculatedMax = center + 5;
+    }
+
+    // Round to nice numbers
+    calculatedMin = (calculatedMin / 5).floor() * 5.0;
+    calculatedMax = (calculatedMax / 5).ceil() * 5.0;
+
+    // Calculate appropriate interval
+    final totalRange = calculatedMax - calculatedMin;
+    double interval;
+    if (totalRange <= 20) {
+      interval = 5;
+    } else if (totalRange <= 50) {
+      interval = 10;
+    } else if (totalRange <= 100) {
+      interval = 20;
+    } else {
+      interval = 50;
+    }
+
+    return {
+      'minY': calculatedMin,
+      'maxY': calculatedMax,
+      'interval': interval,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
     final periodData = _getSelectedPeriodData();
     final months = periodData?.data.result.months ?? [];
+    final yAxisRange = _calculateYAxisRange(months);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -155,8 +206,6 @@ class _ProfitabilityChartState extends State<ProfitabilityChart> {
             ],
           ),
 
-          const SizedBox(height: 16),
-
           const SizedBox(height: 24),
 
           // Chart content
@@ -181,7 +230,7 @@ class _ProfitabilityChartState extends State<ProfitabilityChart> {
               ),
             )
                 : Padding(
-              padding: const EdgeInsets.only(right: 16, top: 16),
+              padding: const EdgeInsets.only(right: 16, top: 16, bottom: 8),
               child: LineChart(
                 LineChartData(
                   backgroundColor: Colors.transparent,
@@ -189,15 +238,8 @@ class _ProfitabilityChartState extends State<ProfitabilityChart> {
                     show: true,
                     drawHorizontalLine: true,
                     drawVerticalLine: false,
-                    horizontalInterval: 20,
-                    verticalInterval: 1,
+                    horizontalInterval: yAxisRange['interval'],
                     getDrawingHorizontalLine: (value) {
-                      return FlLine(
-                        color: Colors.grey.withOpacity(0.2),
-                        strokeWidth: 1,
-                      );
-                    },
-                    getDrawingVerticalLine: (value) {
                       return FlLine(
                         color: Colors.grey.withOpacity(0.2),
                         strokeWidth: 1,
@@ -218,13 +260,13 @@ class _ProfitabilityChartState extends State<ProfitabilityChart> {
                           return Padding(
                             padding: const EdgeInsets.only(top: 8),
                             child: Transform.rotate(
-                              angle: -0.5,
+                              angle: -0.4, // Slightly reduced rotation
                               child: Text(
                                 localizations.translate(monthName.toLowerCase()),
                                 textAlign: TextAlign.center,
                                 style: const TextStyle(
                                   fontFamily: 'Gilroy',
-                                  fontSize: 12,
+                                  fontSize: 11,
                                   fontWeight: FontWeight.w500,
                                   color: Colors.black54,
                                 ),
@@ -232,7 +274,7 @@ class _ProfitabilityChartState extends State<ProfitabilityChart> {
                             ),
                           );
                         },
-                        reservedSize: 50,
+                        reservedSize: 70, // Increased from 50 to 70
                       ),
                     ),
                     leftTitles: AxisTitles(
@@ -240,7 +282,7 @@ class _ProfitabilityChartState extends State<ProfitabilityChart> {
                         showTitles: true,
                         getTitlesWidget: (value, meta) {
                           return Text(
-                            value.toInt().toString(),
+                            value.toStringAsFixed(0),
                             style: const TextStyle(
                               fontFamily: 'Gilroy',
                               fontSize: 12,
@@ -250,21 +292,21 @@ class _ProfitabilityChartState extends State<ProfitabilityChart> {
                           );
                         },
                         reservedSize: 40,
-                        interval: 20,
+                        interval: yAxisRange['interval'],
                       ),
                     ),
-                    rightTitles: AxisTitles(
+                    rightTitles: const AxisTitles(
                       sideTitles: SideTitles(showTitles: false),
                     ),
-                    topTitles: AxisTitles(
+                    topTitles: const AxisTitles(
                       sideTitles: SideTitles(showTitles: false),
                     ),
                   ),
                   borderData: FlBorderData(show: false),
                   minX: 0,
                   maxX: (months.length - 1).toDouble(),
-                  minY: 0,
-                  maxY: _calculateMaxY(months),
+                  minY: yAxisRange['minY']!,
+                  maxY: yAxisRange['maxY']!,
                   lineBarsData: [
                     LineChartBarData(
                       spots: List.generate(
@@ -300,6 +342,7 @@ class _ProfitabilityChartState extends State<ProfitabilityChart> {
                             const Color(0xFF5D5FEF).withOpacity(0.0),
                           ],
                         ),
+                        cutOffY: 0.0, // This will cut the area at Y=0
                       ),
                     ),
                   ],
@@ -357,7 +400,11 @@ class _ProfitabilityChartState extends State<ProfitabilityChart> {
             child: GestureDetector(
               onTap: () {
                 debugPrint("Подробнее pressed");
-                Navigator.of(context).push(MaterialPageRoute(builder: (context) => DetailedReportScreen(currentTabIndex: 8)));
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => DetailedReportScreen(currentTabIndex: 8),
+                  ),
+                );
               },
               child: Text(
                 localizations.translate('more_details'),
@@ -373,20 +420,6 @@ class _ProfitabilityChartState extends State<ProfitabilityChart> {
         ],
       ),
     );
-  }
-
-  double _calculateMaxY(List<ProfitabilityMonth> months) {
-    if (months.isEmpty) return 100;
-
-    final values = months
-        .map((m) => _parseProfitabilityValue(m.profitabilityPercentage))
-        .toList();
-
-    final maxValue = values.reduce((a, b) => a > b ? a : b);
-    final calculatedMax = maxValue * 1.2;
-
-    // Ensure minimum range of 100 for proper visualization
-    return calculatedMax < 100 ? 100 : calculatedMax;
   }
 
   Widget _buildPeriodDropdown(AppLocalizations localizations) {

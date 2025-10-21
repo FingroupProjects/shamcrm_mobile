@@ -35,8 +35,6 @@ class _NetProfitChartState extends State<NetProfitChart> {
     }
   }
 
-
-
   void onPeriodChanged(NetProfitPeriod? period) {
     if (period != null && selectedPeriod != period) {
       setState(() {
@@ -74,7 +72,6 @@ class _NetProfitChartState extends State<NetProfitChart> {
 
   double _parseNetProfit(String netProfit) {
     try {
-      // Remove any whitespace and convert to double
       return double.parse(netProfit.trim());
     } catch (e) {
       return 0.0;
@@ -179,8 +176,8 @@ class _NetProfitChartState extends State<NetProfitChart> {
                 BarChartData(
                   alignment: BarChartAlignment.spaceAround,
                   maxY: _calculateMaxY(months),
-                  minY: 0,
-                  groupsSpace: 8,
+                  minY: _calculateMinY(months),
+                  groupsSpace: 20,
                   backgroundColor: Colors.transparent,
                   barTouchData: BarTouchData(
                     enabled: true,
@@ -228,7 +225,7 @@ class _NetProfitChartState extends State<NetProfitChart> {
                             child: Transform.rotate(
                               angle: -0.5,
                               child: Text(
-                               months[value.toInt()].monthName,
+                                months[value.toInt()].monthName,
                                 textAlign: TextAlign.center,
                                 style: const TextStyle(
                                   fontFamily: 'Gilroy',
@@ -283,20 +280,25 @@ class _NetProfitChartState extends State<NetProfitChart> {
                   borderData: FlBorderData(show: false),
                   barGroups: List.generate(
                     months.length,
-                        (index) => BarChartGroupData(
-                      x: index,
-                      barRods: [
-                        BarChartRodData(
-                          toY: _parseNetProfit(months[index].netProfit),
-                          color: const Color(0xFF4CAF50),
-                          width: 16,
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(8),
-                            topRight: Radius.circular(8),
+                        (index) {
+                      final value = _parseNetProfit(months[index].netProfit);
+                      return BarChartGroupData(
+                        x: index,
+                        barRods: [
+                          BarChartRodData(
+                            toY: value,
+                            color: value >= 0 ? const Color(0xFF4CAF50) : const Color(0xFFFF5252),
+                            width: 16,
+                            borderRadius: BorderRadius.only(
+                              topLeft: const Radius.circular(8),
+                              topRight: const Radius.circular(8),
+                              bottomLeft: value < 0 ? const Radius.circular(8) : Radius.zero,
+                              bottomRight: value < 0 ? const Radius.circular(8) : Radius.zero,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
+                        ],
+                      );
+                    },
                   ),
                 ),
               ),
@@ -328,6 +330,20 @@ class _NetProfitChartState extends State<NetProfitChart> {
     );
   }
 
+  double _calculateMinY(List<NetProfitMonth> months) {
+    if (months.isEmpty) return 0;
+
+    final minValue = months
+        .map((m) => _parseNetProfit(m.netProfit))
+        .reduce((a, b) => a < b ? a : b);
+
+    // If all values are positive, return 0
+    if (minValue >= 0) return 0;
+
+    // Add 20% padding for negative values
+    return minValue * 1.2;
+  }
+
   double _calculateMaxY(List<NetProfitMonth> months) {
     if (months.isEmpty) return 100;
 
@@ -335,37 +351,51 @@ class _NetProfitChartState extends State<NetProfitChart> {
         .map((m) => _parseNetProfit(m.netProfit))
         .reduce((a, b) => a > b ? a : b);
 
-    if (maxValue == 0) return 100;
+    // If all values are negative, return 0
+    if (maxValue <= 0) return 0;
+
     return maxValue * 1.2;
   }
 
   double _calculateInterval(List<NetProfitMonth> months) {
-    final maxY = _calculateMaxY(months);
-    if (maxY <= 10) return 2;
-    if (maxY <= 50) return 10;
-    if (maxY <= 150) return 20;
-    if (maxY <= 500) return 50;
-    if (maxY <= 1000) return 100;
-    if (maxY <= 5000) return 500;
+    if (months.isEmpty) return 10;
+
+    final values = months.map((m) => _parseNetProfit(m.netProfit)).toList();
+    final minValue = values.reduce((a, b) => a < b ? a : b);
+    final maxValue = values.reduce((a, b) => a > b ? a : b);
+    final range = (maxValue - minValue).abs();
+
+    if (range <= 10) return 2;
+    if (range <= 50) return 10;
+    if (range <= 150) return 20;
+    if (range <= 500) return 50;
+    if (range <= 1000) return 100;
+    if (range <= 5000) return 500;
     return 1000;
   }
 
   String _formatValue(double value) {
-    if (value >= 1000000) {
-      return '${(value / 1000000).toStringAsFixed(1)}M';
+    final absValue = value.abs();
+    final sign = value < 0 ? '-' : '';
+
+    if (absValue >= 1000000) {
+      return '$sign${(absValue / 1000000).toStringAsFixed(1)}M';
     }
-    if (value >= 1000) {
-      return '${(value / 1000).toStringAsFixed(1)}k';
+    if (absValue >= 1000) {
+      return '$sign${(absValue / 1000).toStringAsFixed(1)}k';
     }
     return value.toStringAsFixed(0);
   }
 
   String _formatAxisValue(double value) {
-    if (value >= 1000000) {
-      return '${(value / 1000000).toInt()}M';
+    final absValue = value.abs();
+    final sign = value < 0 ? '-' : '';
+
+    if (absValue >= 1000000) {
+      return '$sign${(absValue / 1000000).toInt()}M';
     }
-    if (value >= 1000) {
-      return '${(value / 1000).toInt()}k';
+    if (absValue >= 1000) {
+      return '$sign${(absValue / 1000).toInt()}k';
     }
     return value.toInt().toString();
   }

@@ -195,7 +195,7 @@ class DirectoryValue {
 class Entry {
   final int id;
   final DirectoryByDeal directory;
-  final Map<String, dynamic> values;
+  final List<Map<String, dynamic>> values; // Changed from Map to List
 
   Entry({
     required this.id,
@@ -207,7 +207,9 @@ class Entry {
     return Entry(
       id: json['id'] ?? 0,
       directory: DirectoryByDeal.fromJson(json['directory']),
-      values: json['values'] ?? {},
+      values: (json['values'] as List<dynamic>?)
+          ?.map((item) => item as Map<String, dynamic>)
+          .toList() ?? [],
     );
   }
 }

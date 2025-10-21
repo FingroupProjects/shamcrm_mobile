@@ -7,6 +7,8 @@ import 'package:crm_task_manager/custom_widget/compact_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/custom_widget/keyboard_dismissible.dart';
+import 'package:crm_task_manager/custom_widget/price_input_formatter.dart';
+import 'package:crm_task_manager/custom_widget/quantity_input_formatter.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/storage_widget.dart';
@@ -890,7 +892,7 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
                           hintText: AppLocalizations.of(context)?.translate('quantity') ?? 'Количество',
                           keyboardType: TextInputType.number,
                           inputFormatters: [
-                            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,3}')),
+                            QuantityInputFormatter(),
                           ],
                           textAlign: TextAlign.center,
                           style: const TextStyle(
@@ -1009,8 +1011,7 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
                             keyboardType: const TextInputType.numberWithOptions(
                                 decimal: true),
                             inputFormatters: [
-                              FilteringTextInputFormatter.allow(
-                                  RegExp(r'^\d*\.?\d{0,3}')),
+                              PriceInputFormatter(),
                             ],
                             style: const TextStyle(
                               fontSize: 13,

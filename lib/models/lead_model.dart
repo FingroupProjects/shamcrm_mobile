@@ -20,6 +20,7 @@ class Lead {
   final String? messageStatus;
   final List<Map<String, dynamic>>? chats;
   final List<MainPageDeal>? mainPageDeals; // Новое поле
+  final num? debt;
 
   Lead({
     required this.id,
@@ -39,6 +40,7 @@ class Lead {
     this.messageStatus,
     this.chats,
     this.mainPageDeals,
+    this.debt,
   });
 
   factory Lead.fromJson(Map<String, dynamic> json, int leadStatusId) {
@@ -81,6 +83,7 @@ class Lead {
               .map((deal) => MainPageDeal.fromJson(deal))
               .toList()
           : null,
+      debt: json['debt'] is num ? json['debt'] : null,
     );
   }
 
@@ -103,6 +106,7 @@ class Lead {
       'messageStatus': messageStatus,
       'chats': chats,
       'main_page_deals': mainPageDeals?.map((deal) => deal.toJson()).toList(),
+      'debt': debt,
     };
   }
 }

@@ -12,6 +12,7 @@ import 'package:crm_task_manager/page_2/goods/goods_details/image_list_poput.dar
 import 'package:crm_task_manager/page_2/goods/goods_details/label_list.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/units_widget.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
+import 'package:crm_task_manager/custom_widget/price_input_formatter.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
@@ -269,7 +270,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                               hintText: AppLocalizations.of(context)!.translate('enter_price'),
                               keyboardType: TextInputType.number,
                               inputFormatters: [
-                                FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,3}')),
+                                PriceInputFormatter(),
                               ],
                               validator: (value) {
                                 if (value == null || value.isEmpty) {

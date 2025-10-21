@@ -31,6 +31,17 @@ class LeadData {
   String toString() {
     return 'LeadData{id: $id, name: $name, managerId: $managerId, debt: $debt}';
   }
+
+  @override
+  bool operator == (Object other) =>
+      identical(this, other) ||
+      other is LeadData &&
+          runtimeType == other.runtimeType &&
+          id == other.id;
+
+  @override
+  int get hashCode => id.hashCode ^ name.hashCode;
+
 }
 
 class Pagination {
