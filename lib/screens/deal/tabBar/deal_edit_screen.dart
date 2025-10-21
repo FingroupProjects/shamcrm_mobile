@@ -112,56 +112,59 @@ class _DealEditScreenState extends State<DealEditScreen> {
     }
   }
 
-  void _initializeControllers() {
-    titleController.text = widget.dealName;
-    _selectedStatuses = widget.statusId;
-    descriptionController.text = widget.description ?? '';
-    selectedManager = widget.manager;
-    
-    if (widget.lead != null) {
-      selectedLead = widget.lead;
-    }
+ void _initializeControllers() {
+  titleController.text = widget.dealName;
+  _selectedStatuses = widget.statusId;
+  descriptionController.text = widget.description ?? '';
+  selectedManager = widget.manager;
+  
+  if (widget.lead != null) {
+    selectedLead = widget.lead;
+  }
 
-    debugPrint('Initialized selectedLead: $selectedLead');
-    
-    startDateController.text = widget.startDate ?? '';
-    endDateController.text = widget.endDate ?? '';
-    sumController.text = widget.sum ?? '';
+  debugPrint('Initialized selectedLead: $selectedLead');
+  
+  startDateController.text = widget.startDate ?? '';
+  endDateController.text = widget.endDate ?? '';
+  sumController.text = widget.sum ?? '';
 
-    for (var customField in widget.dealCustomFields) {
-      customFields.add(CustomField(
-        fieldName: customField.key,
-        controller: TextEditingController(text: customField.value),
-        uniqueId: Uuid().v4(),
-        type: customField.type ?? 'string', // Инициализация с типом
-      ));
-    }
-  // ✅ НОВОЕ: Инициализируем список ID
+  for (var customField in widget.dealCustomFields) {
+    customFields.add(CustomField(
+      fieldName: customField.key,
+      controller: TextEditingController(text: customField.value),
+      uniqueId: Uuid().v4(),
+      type: customField.type ?? 'string',
+    ));
+  }
+
+  // ✅ ИСПРАВЛЕНО: Инициализация списка ID статусов с проверкой
   if (widget.dealStatuses != null && widget.dealStatuses!.isNotEmpty) {
     _selectedStatusIds = widget.dealStatuses!.map((s) => s.id).toList();
+    print('✅ DealEditScreen: Инициализированы статусы: $_selectedStatusIds');
   } else {
     _selectedStatusIds = [widget.statusId];
+    print('⚠️ DealEditScreen: Используем fallback statusId: ${widget.statusId}');
   }
-    if (widget.directoryValues != null && widget.directoryValues!.isNotEmpty) {
-      final seen = <String>{};
-      final uniqueDirectoryValues = widget.directoryValues!.where((dirValue) {
-        final key = '${dirValue.entry.directory.id}_${dirValue.entry.id}';
-        return seen.add(key);
-      }).toList();
 
-      for (var dirValue in uniqueDirectoryValues) {
-        customFields.add(CustomField(
-          fieldName: dirValue.entry.directory.name,
-          controller:
-              TextEditingController(text: dirValue.entry.values.first['value'] ?? ''),
-          isDirectoryField: true,
-          directoryId: dirValue.entry.directory.id,
-          entryId: dirValue.entry.id,
-          uniqueId: Uuid().v4(),
-        ));
-      }
+  if (widget.directoryValues != null && widget.directoryValues!.isNotEmpty) {
+    final seen = <String>{};
+    final uniqueDirectoryValues = widget.directoryValues!.where((dirValue) {
+      final key = '${dirValue.entry.directory.id}_${dirValue.entry.id}';
+      return seen.add(key);
+    }).toList();
+
+    for (var dirValue in uniqueDirectoryValues) {
+      customFields.add(CustomField(
+        fieldName: dirValue.entry.directory.name,
+        controller: TextEditingController(text: dirValue.entry.values.first['value'] ?? ''),
+        isDirectoryField: true,
+        directoryId: dirValue.entry.directory.id,
+        entryId: dirValue.entry.id,
+        uniqueId: Uuid().v4(),
+      ));
     }
   }
+}
 
   void _fetchAndAddDirectoryFields() async {
     try {
@@ -660,25 +663,25 @@ class _DealEditScreenState extends State<DealEditScreen> {
                             },
                           ),
                         const SizedBox(height: 8),
-RepaintBoundary( // ✅ ДОБАВИТЬ
+RepaintBoundary(
   child: DealStatusEditWidget(
     selectedStatus: _selectedStatuses?.toString(),
-    dealStatuses: widget.dealStatuses,
+    dealStatuses: widget.dealStatuses ?? [], // ✅ Защита от null
     onSelectStatus: (DealStatus selectedStatusData) {
       setState(() {
         _selectedStatuses = selectedStatusData.id;
+        print('✅ Выбран основной статус: ${selectedStatusData.id}');
       });
     },
-  onSelectMultipleStatuses: (List<int> selectedIds) {
-  // ✅ ПРОВЕРКА: Обновляем только если ID изменились
-  if (_selectedStatusIds.length != selectedIds.length ||
-      !_selectedStatusIds.toSet().containsAll(selectedIds)) {
-    setState(() {
-      _selectedStatusIds = selectedIds;
-      print('DealEditScreen: Обновлены ID статусов: $selectedIds');
-    });
-  }
-},
+    onSelectMultipleStatuses: (List<int> selectedIds) {
+      if (_selectedStatusIds.length != selectedIds.length ||
+          !_selectedStatusIds.toSet().containsAll(selectedIds)) {
+        setState(() {
+          _selectedStatusIds = selectedIds;
+          print('✅ DealEditScreen: Обновлены ID статусов: $selectedIds');
+        });
+      }
+    },
   ),
 ),
 const SizedBox(height: 8),

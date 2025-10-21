@@ -569,7 +569,7 @@ Widget build(BuildContext context) {
         ),
       ),
       actions: [
-       if (_canEditDeal)
+if (_canEditDeal)
   IconButton(
     key: keyDealEdit,
     padding: EdgeInsets.zero,
@@ -587,7 +587,6 @@ Widget build(BuildContext context) {
         String? createdAtDateString;
         
         try {
-          // Парсим startDate
           if (currentDeal!.startDate != null && currentDeal!.startDate!.isNotEmpty) {
             final parsedStartDate = DateTime.parse(currentDeal!.startDate!);
             startDateString = DateFormat('dd/MM/yyyy').format(parsedStartDate);
@@ -598,7 +597,6 @@ Widget build(BuildContext context) {
         }
         
         try {
-          // Парсим endDate
           if (currentDeal!.endDate != null && currentDeal!.endDate!.isNotEmpty) {
             final parsedEndDate = DateTime.parse(currentDeal!.endDate!);
             endDateString = DateFormat('dd/MM/yyyy').format(parsedEndDate);
@@ -609,7 +607,6 @@ Widget build(BuildContext context) {
         }
         
         try {
-          // Парсим createdAt
           if (currentDeal!.createdAt != null && currentDeal!.createdAt!.isNotEmpty) {
             final parsedCreatedAt = DateTime.parse(currentDeal!.createdAt!);
             createdAtDateString = DateFormat('dd/MM/yyyy').format(parsedCreatedAt);
@@ -619,6 +616,28 @@ Widget build(BuildContext context) {
           createdAtDateString = null;
         }
 
+        // ✅ КРИТИЧЕСКИ ВАЖНО: Проверяем наличие массива статусов
+        List<DealStatusById>? dealStatusesToPass;
+        
+        if (currentDeal!.dealStatuses != null && currentDeal!.dealStatuses!.isNotEmpty) {
+          dealStatusesToPass = currentDeal!.dealStatuses;
+          print('✅ Передаём массив статусов: ${dealStatusesToPass!.length} элементов');
+        } else {
+          // ✅ Если массив пустой, создаём его из текущего статуса
+          if (currentDeal!.dealStatus != null) {
+            dealStatusesToPass = [
+              DealStatusById(
+                id: currentDeal!.dealStatus!.id,
+                title: currentDeal!.dealStatus!.title, color: '',
+              )
+            ];
+            print('⚠️ Массив статусов пуст, создали из текущего статуса');
+          } else {
+            dealStatusesToPass = [];
+            print('❌ ОШИБКА: Нет информации о статусе сделки!');
+          }
+        }
+
         final shouldUpdate = await Navigator.push(
           context,
           MaterialPageRoute(
@@ -626,11 +645,16 @@ Widget build(BuildContext context) {
               dealId: currentDeal!.id,
               dealName: currentDeal!.name,
               statusId: currentDeal!.statusId,
-              dealStatuses: currentDeal!.dealStatuses, // ✅ Передаём массив статусов
+              dealStatuses: dealStatusesToPass, // ✅ Гарантированно передаём список
               manager: currentDeal!.manager != null
                   ? currentDeal!.manager!.id.toString()
                   : '',
-              lead: LeadData(id: currentDeal!.lead!.id, name: currentDeal!.lead?.name ?? '', managerId: currentDeal!.lead?.manager?.id, debt: currentDeal!.lead?.debt),
+              lead: LeadData(
+                id: currentDeal!.lead!.id, 
+                name: currentDeal!.lead?.name ?? '', 
+                managerId: currentDeal!.lead?.manager?.id, 
+                debt: currentDeal!.lead?.debt
+              ),
               startDate: startDateString,
               endDate: endDateString,
               createdAt: createdAtDateString,
