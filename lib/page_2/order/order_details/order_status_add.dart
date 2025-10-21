@@ -296,7 +296,7 @@ class _CreateOrderStatusDialogState extends State<CreateOrderStatusDialog> {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(
-                                  localizations.translate('fill_all_fields'),
+                                  localizations.translate('fill_all_required_fields'),
                                   style: const TextStyle(
                                     fontFamily: 'Gilroy',
                                     fontSize: 16,
