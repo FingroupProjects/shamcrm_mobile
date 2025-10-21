@@ -6,6 +6,7 @@ class DealCache {
   static const String _cachedDealStatusesKey = 'cachedDealStatuses';
   static const String _cachedDealsKey = 'cachedDeals';
 
+
   // Save deal statuses to cache, including deals_count
   static Future<void> cacheDealStatuses(List<Map<String, dynamic>> dealStatuses) async {
   final SharedPreferences prefs = await SharedPreferences.getInstance();
