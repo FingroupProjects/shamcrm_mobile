@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:crm_task_manager/api/service/api_service.dart';
@@ -8,11 +7,15 @@ import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/bloc/deal_by_id/dealById_bloc.dart';
 import 'package:crm_task_manager/bloc/deal_by_id/dealById_event.dart';
 import 'package:crm_task_manager/bloc/deal_by_id/dealById_state.dart';
+import 'package:crm_task_manager/bloc/field_configuration/field_configuration_bloc.dart';
+import 'package:crm_task_manager/bloc/field_configuration/field_configuration_event.dart';
+import 'package:crm_task_manager/bloc/field_configuration/field_configuration_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/file_utils.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/dealById_model.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
+import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_delete.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/dropdown_history.dart';
@@ -21,13 +24,10 @@ import 'package:crm_task_manager/screens/deal/tabBar/deal_edit_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
-import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:open_file/open_file.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
@@ -69,6 +69,11 @@ class DealDetailsScreen extends StatefulWidget {
 class _DealDetailsScreenState extends State<DealDetailsScreen> {
   List<Map<String, String>> details = [];
   DealById? currentDeal;
+
+  // Конфигурация полей
+  List<FieldConfiguration> fieldConfigurations = [];
+  bool isConfigurationLoaded = false;
+
   bool _canEditDeal = false;
   bool _canDeleteDeal = false;
   bool _canReadTasks = false;
@@ -90,6 +95,14 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
   @override
   void initState() {
     super.initState();
+
+    // ✅ Загружаем конфигурацию после того как виджет построен
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _loadFieldConfiguration();
+      }
+    });
+
     _checkPermissions().then((_) {
       context
           .read<DealByIdBloc>()
@@ -338,6 +351,18 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     });
   }
 
+  Future<void> _loadFieldConfiguration() async {
+    if (kDebugMode) {
+      print('DealDetailsScreen: Loading field configuration');
+    }
+
+    if (mounted) {
+      context.read<FieldConfigurationBloc>().add(
+        FetchFieldConfiguration('deals')
+      );
+    }
+  }
+
   String formatDate(String? dateString) {
     if (dateString == null || dateString.isEmpty) return '';
     try {
@@ -350,6 +375,284 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
 
   void _updateDetails(DealById deal) {
     currentDeal = deal;
+
+    if (kDebugMode) {
+      print('=== DealDetailsScreen: _updateDetails START ===');
+      print('DealDetailsScreen: isConfigurationLoaded = $isConfigurationLoaded');
+      print('DealDetailsScreen: fieldConfigurations.length = ${fieldConfigurations.length}');
+      print('DealDetailsScreen: fieldConfigurations.isEmpty = ${fieldConfigurations.isEmpty}');
+    }
+
+    // Если конфигурация загружена, строим детали на её основе
+    if (isConfigurationLoaded && fieldConfigurations.isNotEmpty) {
+      if (kDebugMode) {
+        print('DealDetailsScreen: Using configuration-based details');
+      }
+      _buildDetailsFromConfiguration(deal);
+    } else {
+      if (kDebugMode) {
+        print('DealDetailsScreen: Using LEGACY method (fallback)');
+        print('DealDetailsScreen: Reason - isConfigurationLoaded: $isConfigurationLoaded, isEmpty: ${fieldConfigurations.isEmpty}');
+      }
+      _buildDetailsLegacy(deal);
+    }
+
+    if (kDebugMode) {
+      print('DealDetailsScreen: Total details built: ${details.length}');
+      print('=== DealDetailsScreen: _updateDetails END ===');
+    }
+  }
+
+  // Новый метод для построения деталей на основе конфигурации
+  void _buildDetailsFromConfiguration(DealById deal) {
+    details = [];
+
+    if (kDebugMode) {
+      print('');
+      print('=== _buildDetailsFromConfiguration START ===');
+      print('DealDetailsScreen: fieldConfigurations count: ${fieldConfigurations.length}');
+
+      // Выводим ВСЕ поля из конфигурации
+      for (int i = 0; i < fieldConfigurations.length; i++) {
+        var config = fieldConfigurations[i];
+        print('CONFIG[$i]: position=${config.position}, name="${config.fieldName}", isActive=${config.isActive}, isCustom=${config.isCustomField}, isDirectory=${config.isDirectory}');
+      }
+      print('');
+    }
+
+    // Проходим по конфигурации в правильном порядке
+    int addedCount = 0;
+    for (var config in fieldConfigurations) {
+      if (kDebugMode) {
+        print('Processing field: "${config.fieldName}" (pos=${config.position}, active=${config.isActive})');
+      }
+
+      if (!config.isActive) {
+        if (kDebugMode) {
+          print('  ❌ SKIP: field is inactive');
+        }
+        continue;
+      }
+
+      // Получаем значение для каждого поля
+      String? value = _getFieldValue(deal, config);
+
+      if (kDebugMode) {
+        print('  Value obtained: "${value}"');
+      }
+
+      if (value != null && value.isNotEmpty) {
+        String label = _getFieldLabel(config);
+        details.add({'label': label, 'value': value});
+        addedCount++;
+
+        if (kDebugMode) {
+          print('  ✅ ADDED: label="$label", value="$value" (count: $addedCount)');
+        }
+      } else {
+        if (kDebugMode) {
+          print('  ❌ SKIP: value is null or empty');
+        }
+      }
+    }
+
+    if (kDebugMode) {
+      print('');
+      print('After main fields processing: $addedCount fields added');
+    }
+
+    // Добавляем дополнительные поля которых нет в конфигурации
+    _addExtraFields(deal);
+
+    if (kDebugMode) {
+      print('After extra fields: ${details.length} total fields');
+    }
+
+    // Добавляем файлы если есть
+    if (deal.files != null && deal.files!.isNotEmpty) {
+      details.add({
+        'label': AppLocalizations.of(context)!.translate('files_details'),
+        'value':
+            '${deal.files!.length} ${AppLocalizations.of(context)!.translate('files')}'
+      });
+
+      if (kDebugMode) {
+        print('Files added: ${deal.files!.length} files');
+      }
+    }
+
+    if (kDebugMode) {
+      print('');
+      print('=== FINAL DETAILS ORDER ===');
+      for (int i = 0; i < details.length; i++) {
+        print('DETAIL[$i]: label="${details[i]['label']}", value="${details[i]['value']}"');
+      }
+      print('=== _buildDetailsFromConfiguration END ===');
+      print('');
+    }
+  }
+
+  // Получение значения поля из сделки
+  String? _getFieldValue(DealById deal, FieldConfiguration config) {
+    if (kDebugMode) {
+      print('    _getFieldValue called for: "${config.fieldName}"');
+    }
+
+    // Обработка кастомных полей
+    if (config.isCustomField) {
+      if (kDebugMode) {
+        print('    This is a CUSTOM field');
+      }
+      try {
+        final customField = deal.dealCustomFields.firstWhere(
+          (field) => field.key == config.fieldName,
+        );
+        if (kDebugMode) {
+          print('    Found custom field with value: "${customField.value}"');
+        }
+        return customField.value;
+      } catch (e) {
+        if (kDebugMode) {
+          print('    Custom field "${config.fieldName}" NOT FOUND in deal data');
+        }
+        return null;
+      }
+    }
+
+    // Обработка справочников
+    if (config.isDirectory && config.directoryId != null) {
+      if (kDebugMode) {
+        print('    This is a DIRECTORY field (id=${config.directoryId})');
+      }
+      try {
+        final dirValue = deal.directoryValues?.firstWhere(
+          (dv) => dv.entry.directory.id == config.directoryId,
+        );
+        final value = dirValue?.entry.values.first['value'] ?? '';
+        if (kDebugMode) {
+          print('    Found directory value: "$value"');
+        }
+        return value;
+      } catch (e) {
+        if (kDebugMode) {
+          print('    Directory field with id ${config.directoryId} NOT FOUND in deal data');
+        }
+        return null;
+      }
+    }
+
+    // Обработка стандартных полей
+    if (kDebugMode) {
+      print('    This is a STANDARD field');
+    }
+
+    String? result;
+    switch (config.fieldName) {
+      case 'name':
+        result = deal.name;
+        break;
+      case 'lead_id':
+        result = deal.lead?.name;
+        break;
+      case 'manager_id':
+        result = deal.manager?.name ?? 'Система';
+        break;
+      case 'start_date':
+        result = formatDate(deal.startDate);
+        break;
+      case 'end_date':
+        result = formatDate(deal.endDate);
+        break;
+      case 'sum':
+        result = deal.sum.toString();
+        break;
+      case 'description':
+        result = deal.description;
+        break;
+      default:
+        if (kDebugMode) {
+          print('    ⚠️ Unknown standard field: "${config.fieldName}"');
+        }
+        result = null;
+    }
+
+    if (kDebugMode) {
+      print('    Returning: "$result"');
+    }
+
+    return result;
+  }
+
+  // Получение лейбла для поля
+  String _getFieldLabel(FieldConfiguration config) {
+    // Для кастомных полей и справочников используем их имя
+    if (config.isCustomField || config.isDirectory) {
+      return '${config.fieldName}:';
+    }
+
+    // Для стандартных полей используем локализованные названия
+    switch (config.fieldName) {
+      case 'name':
+        return AppLocalizations.of(context)!.translate('name_deal_details');
+      case 'lead_id':
+        return AppLocalizations.of(context)!.translate('lead_deal_card');
+      case 'manager_id':
+        return AppLocalizations.of(context)!.translate('manager_details');
+      case 'start_date':
+        return AppLocalizations.of(context)!.translate('start_date_details');
+      case 'end_date':
+        return AppLocalizations.of(context)!.translate('end_date_details');
+      case 'sum':
+        return AppLocalizations.of(context)!.translate('summa_details');
+      case 'description':
+        return AppLocalizations.of(context)!.translate('description_details');
+      default:
+        return '${config.fieldName}:';
+    }
+  }
+
+  // Новый метод для добавления дополнительных полей которых нет в конфигурации
+  void _addExtraFields(DealById deal) {
+    // Автор
+    if (deal.author != null) {
+      bool alreadyAdded = details.any((d) => d['label'] == AppLocalizations.of(context)!.translate('author_details'));
+      if (!alreadyAdded) {
+        details.add({
+          'label': AppLocalizations.of(context)!.translate('author_details'),
+          'value': deal.author!.name
+        });
+      }
+    }
+
+    // Дата создания
+    if (deal.createdAt != null && deal.createdAt!.isNotEmpty) {
+      bool alreadyAdded = details.any((d) => d['label'] == AppLocalizations.of(context)!.translate('creation_date_details'));
+      if (!alreadyAdded) {
+        details.add({
+          'label': AppLocalizations.of(context)!.translate('creation_date_details'),
+          'value': formatDate(deal.createdAt)
+        });
+      }
+    }
+
+    // Статусы
+    bool alreadyAdded = details.any((d) => d['label'] == AppLocalizations.of(context)!.translate('status_history'));
+    if (!alreadyAdded) {
+      details.add({
+        'label': AppLocalizations.of(context)!.translate('status_history'),
+        'value': deal.dealStatuses != null && deal.dealStatuses!.isNotEmpty
+            ? deal.dealStatuses!.map((s) => s.title).join(', ')
+            : (deal.dealStatus?.title ?? '')
+      });
+    }
+  }
+
+  // Старый метод как fallback (на случай если конфигурация не загрузилась)
+  void _buildDetailsLegacy(DealById deal) {
+    if (kDebugMode) {
+      print('DealDetailsScreen: Building details using legacy method');
+    }
+
     details = [
       {
         'label': AppLocalizations.of(context)!.translate('name_deal_details'),
@@ -449,34 +752,107 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
 
 @override
 Widget build(BuildContext context) {
-  return BlocListener<DealByIdBloc, DealByIdState>(
-    listener: (context, state) {
-      if (state is DealByIdError) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                AppLocalizations.of(context)!.translate(state.message),
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
+  return MultiBlocListener(
+    listeners: [
+      BlocListener<DealByIdBloc, DealByIdState>(
+        listener: (context, state) {
+          if (state is DealByIdError) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    AppLocalizations.of(context)!.translate(state.message),
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                  behavior: SnackBarBehavior.floating,
+                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  backgroundColor: Colors.red,
+                  elevation: 3,
+                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  duration: Duration(seconds: 3),
                 ),
-              ),
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              backgroundColor: Colors.red,
-              elevation: 3,
-              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              duration: Duration(seconds: 3),
-            ),
-          );
-        });
-      }
-    },
+              );
+            });
+          }
+        },
+      ),
+      BlocListener<FieldConfigurationBloc, FieldConfigurationState>(
+        listener: (context, configState) {
+          if (kDebugMode) {
+            print('');
+            print('╔════════════════════════════════════════════════════════╗');
+            print('║ FieldConfigurationBloc LISTENER TRIGGERED             ║');
+            print('╠════════════════════════════════════════════════════════╣');
+            print('║ State type: ${configState.runtimeType}');
+            print('╚════════════════════════════════════════════════════════╝');
+          }
+
+          if (configState is FieldConfigurationLoaded) {
+            if (kDebugMode) {
+              print('✅ Configuration LOADED with ${configState.fields.length} fields');
+              print('Fields received:');
+              for (int i = 0; i < configState.fields.length; i++) {
+                var field = configState.fields[i];
+                print('  [$i] pos=${field.position}, name="${field.fieldName}", active=${field.isActive}');
+              }
+            }
+
+            if (mounted) {
+              setState(() {
+                fieldConfigurations = configState.fields;
+                isConfigurationLoaded = true;
+              });
+
+              if (kDebugMode) {
+                print('✅ State updated: isConfigurationLoaded = $isConfigurationLoaded');
+                print('✅ fieldConfigurations.length = ${fieldConfigurations.length}');
+              }
+
+              // Перестраиваем детали если сделка уже загружена
+              if (currentDeal != null) {
+                if (kDebugMode) {
+                  print('🔄 Rebuilding details because deal is already loaded');
+                }
+                _updateDetails(currentDeal!);
+              } else {
+                if (kDebugMode) {
+                  print('⏳ Deal not loaded yet, will rebuild when deal loads');
+                }
+              }
+            }
+          } else if (configState is FieldConfigurationError) {
+            if (kDebugMode) {
+              print('❌ Configuration ERROR: ${configState.message}');
+            }
+
+            if (mounted) {
+              setState(() {
+                isConfigurationLoaded = false;
+              });
+            }
+          } else if (configState is FieldConfigurationLoading) {
+            if (kDebugMode) {
+              print('⏳ Configuration LOADING...');
+            }
+          } else {
+            if (kDebugMode) {
+              print('❓ Unknown state: ${configState.runtimeType}');
+            }
+          }
+
+          if (kDebugMode) {
+            print('');
+          }
+        },
+      ),
+    ],
     child: BlocBuilder<DealByIdBloc, DealByIdState>(
       builder: (context, state) {
         if (state is DealByIdLoading) {
@@ -513,8 +889,16 @@ Widget build(BuildContext context) {
           return Scaffold(
             backgroundColor: Colors.white,
             body: Center(
-                child: Text(
-                    AppLocalizations.of(context)!.translate('error_text'))),
+              child: Text(
+                AppLocalizations.of(context)!.translate('error_text'),
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black,
+                ),
+              ),
+            ),
           );
         }
         return Scaffold(
@@ -525,6 +909,7 @@ Widget build(BuildContext context) {
     ),
   );
 }
+
  AppBar _buildAppBar(BuildContext context, String title, DealById? deal) {
     // Формируем заголовок в зависимости от наличия номера сделки
     String appBarTitle;
@@ -585,7 +970,7 @@ if (_canEditDeal)
         String? startDateString;
         String? endDateString;
         String? createdAtDateString;
-        
+
         try {
           if (currentDeal!.startDate != null && currentDeal!.startDate!.isNotEmpty) {
             final parsedStartDate = DateTime.parse(currentDeal!.startDate!);
@@ -595,7 +980,7 @@ if (_canEditDeal)
           print('Ошибка парсинга startDate: $e');
           startDateString = null;
         }
-        
+
         try {
           if (currentDeal!.endDate != null && currentDeal!.endDate!.isNotEmpty) {
             final parsedEndDate = DateTime.parse(currentDeal!.endDate!);
@@ -605,7 +990,7 @@ if (_canEditDeal)
           print('Ошибка парсинга endDate: $e');
           endDateString = null;
         }
-        
+
         try {
           if (currentDeal!.createdAt != null && currentDeal!.createdAt!.isNotEmpty) {
             final parsedCreatedAt = DateTime.parse(currentDeal!.createdAt!);
@@ -618,7 +1003,7 @@ if (_canEditDeal)
 
         // ✅ КРИТИЧЕСКИ ВАЖНО: Проверяем наличие массива статусов
         List<DealStatusById>? dealStatusesToPass;
-        
+
         if (currentDeal!.dealStatuses != null && currentDeal!.dealStatuses!.isNotEmpty) {
           dealStatusesToPass = currentDeal!.dealStatuses;
           print('✅ Передаём массив статусов: ${dealStatusesToPass!.length} элементов');
@@ -650,9 +1035,9 @@ if (_canEditDeal)
                   ? currentDeal!.manager!.id.toString()
                   : '',
               lead: LeadData(
-                id: currentDeal!.lead!.id, 
-                name: currentDeal!.lead?.name ?? '', 
-                managerId: currentDeal!.lead?.manager?.id, 
+                id: currentDeal!.lead!.id,
+                name: currentDeal!.lead?.name ?? '',
+                managerId: currentDeal!.lead?.manager?.id,
                 debt: currentDeal!.lead?.debt
               ),
               startDate: startDateString,

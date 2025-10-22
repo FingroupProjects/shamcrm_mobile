@@ -3,6 +3,9 @@ import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/calendar/calendar_bloc.dart';
 import 'package:crm_task_manager/bloc/calendar/calendar_event.dart';
+import 'package:crm_task_manager/bloc/field_configuration/field_configuration_bloc.dart';
+import 'package:crm_task_manager/bloc/field_configuration/field_configuration_event.dart';
+import 'package:crm_task_manager/bloc/field_configuration/field_configuration_state.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_event.dart';
 import 'package:crm_task_manager/bloc/task_by_id/taskById_bloc.dart';
@@ -11,6 +14,7 @@ import 'package:crm_task_manager/bloc/task_by_id/taskById_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/file_utils.dart';
 import 'package:crm_task_manager/main.dart';
+import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/taskbyId_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
@@ -21,6 +25,7 @@ import 'package:crm_task_manager/screens/task/task_details/task_edit_screen.dart
 import 'package:crm_task_manager/screens/task/task_details/task_navigate_to_chat.dart';
 import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -156,6 +161,11 @@ class FileCacheManager {
 class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   List<Map<String, String>> details = [];
   TaskById? currentTask;
+  
+  // Конфигурация полей
+  List<FieldConfiguration> fieldConfigurations = [];
+  bool isConfigurationLoaded = false;
+  
   bool _canEditTask = false;
   bool _canDeleteTask = false;
   bool _canCreateTask = false;
@@ -181,6 +191,14 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   @override
   void initState() {
     super.initState();
+    
+    // ✅ Загружаем конфигурацию после того как виджет построен
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _loadFieldConfiguration();
+      }
+    });
+    
     context.read<TaskBloc>().add(FetchTaskStatuses());
     _checkPermissions();
     context
@@ -378,17 +396,239 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   //   }
   // }
 
+  Future<void> _loadFieldConfiguration() async {
+    if (kDebugMode) {
+      print('TaskDetailsScreen: Loading field configuration');
+    }
+    
+    if (mounted) {
+      context.read<FieldConfigurationBloc>().add(
+        FetchFieldConfiguration('tasks')
+      );
+    }
+  }
+
   void _updateDetails(TaskById? task) {
     if (task == null) {
       currentTask = null;
       details.clear();
-      _isAuthor = false; // Обновляем _isAuthor
+      _isAuthor = false;
       return;
     }
 
     currentTask = task;
     _isAuthor = _currentUserId != null && task.author?.id != null && _currentUserId == task.author!.id;
+    
+    if (kDebugMode) {
+      print('=== TaskDetailsScreen: _updateDetails START ===');
+      print('TaskDetailsScreen: isConfigurationLoaded = $isConfigurationLoaded');
+      print('TaskDetailsScreen: fieldConfigurations.length = ${fieldConfigurations.length}');
+    }
+    
+    // Если конфигурация загружена, строим детали на её основе
+    if (isConfigurationLoaded && fieldConfigurations.isNotEmpty) {
+      if (kDebugMode) {
+        print('TaskDetailsScreen: Using configuration-based details');
+      }
+      _buildDetailsFromConfiguration(task);
+    } else {
+      if (kDebugMode) {
+        print('TaskDetailsScreen: Using LEGACY method (fallback)');
+      }
+      _buildDetailsLegacy(task);
+    }
+    
+    if (kDebugMode) {
+      print('TaskDetailsScreen: Total details built: ${details.length}');
+      print('=== TaskDetailsScreen: _updateDetails END ===');
+    }
+  }
 
+  // Новый метод для построения деталей на основе конфигурации
+  void _buildDetailsFromConfiguration(TaskById task) {
+    details = [];
+    
+    if (kDebugMode) {
+      print('');
+      print('=== _buildDetailsFromConfiguration START ===');
+      print('TaskDetailsScreen: fieldConfigurations count: ${fieldConfigurations.length}');
+    }
+    
+    // Проходим по конфигурации в правильном порядке
+    int addedCount = 0;
+    for (var config in fieldConfigurations) {
+      if (kDebugMode) {
+        print('Processing field: "${config.fieldName}" (pos=${config.position}, active=${config.isActive})');
+      }
+      
+      if (!config.isActive) {
+        if (kDebugMode) {
+          print('  ❌ SKIP: field is inactive');
+        }
+        continue;
+      }
+      
+      // Получаем значение для каждого поля
+      String? value = _getFieldValue(task, config);
+      
+      if (kDebugMode) {
+        print('  Value obtained: "${value}"');
+      }
+      
+      if (value != null && value.isNotEmpty) {
+        String label = _getFieldLabel(config);
+        details.add({'label': label, 'value': value});
+        addedCount++;
+        
+        if (kDebugMode) {
+          print('  ✅ ADDED: label="$label", value="$value" (count: $addedCount)');
+        }
+      } else {
+        if (kDebugMode) {
+          print('  ❌ SKIP: value is null or empty');
+        }
+      }
+    }
+    
+    // Добавляем дополнительные поля которых нет в конфигурации
+    _addExtraFields(task);
+    
+    // Добавляем файлы если есть
+    if (task.files != null && task.files!.isNotEmpty) {
+      details.add({
+        'label': AppLocalizations.of(context)!.translate('files_details'),
+        'value': task.files!.length.toString() + ' ' + AppLocalizations.of(context)!.translate('files'),
+      });
+    }
+    
+    if (kDebugMode) {
+      print('=== _buildDetailsFromConfiguration END ===');
+    }
+  }
+
+  // Получение значения поля из задачи
+  String? _getFieldValue(TaskById task, FieldConfiguration config) {
+    // Обработка кастомных полей
+    if (config.isCustomField) {
+      try {
+        final customField = task.taskCustomFields.firstWhere(
+          (field) => field.key == config.fieldName,
+        );
+        return customField.value;
+      } catch (e) {
+        return null;
+      }
+    }
+    
+    // Обработка справочников
+    if (config.isDirectory && config.directoryId != null) {
+      try {
+        final dirValue = task.directoryValues?.firstWhere(
+          (dv) => dv.entry.directory.id == config.directoryId,
+        );
+        return dirValue?.entry.values['value'] ?? '';
+      } catch (e) {
+        return null;
+      }
+    }
+    
+    // Обработка стандартных полей
+    final Map<int, String> priorityLevels = {
+      1: AppLocalizations.of(context)!.translate('normal'),
+      2: AppLocalizations.of(context)!.translate('normal'),
+      3: AppLocalizations.of(context)!.translate('urgent'),
+    };
+    
+    switch (config.fieldName) {
+      case 'name':
+        return task.name;
+      case 'priority':
+        return priorityLevels[task.priority] ?? AppLocalizations.of(context)!.translate('normal');
+      case 'description':
+        return task.description?.isNotEmpty == true ? task.description : null;
+      case 'user_id':
+        return task.user != null && task.user!.isNotEmpty
+            ? task.user!.map((user) => '${user.name} ${user.lastname ?? ''}').join(', ')
+            : null;
+      case 'project_id':
+        return task.project?.name;
+      case 'end_date':
+        return task.endDate != null && task.endDate!.isNotEmpty
+            ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.endDate!))
+            : null;
+      case 'status_id':
+        return task.taskStatus?.taskStatus?.name;
+      default:
+        return null;
+    }
+  }
+
+  // Получение лейбла для поля
+  String _getFieldLabel(FieldConfiguration config) {
+    // Для кастомных полей и справочников используем их имя
+    if (config.isCustomField || config.isDirectory) {
+      return '${config.fieldName}:';
+    }
+    
+    // Для стандартных полей используем локализованные названия
+    switch (config.fieldName) {
+      case 'name':
+        return AppLocalizations.of(context)!.translate('task_name');
+      case 'priority':
+        return AppLocalizations.of(context)!.translate('priority_level_colon');
+      case 'description':
+        return AppLocalizations.of(context)!.translate('description_details');
+      case 'user_id':
+        return AppLocalizations.of(context)!.translate('assignee');
+      case 'project_id':
+        return AppLocalizations.of(context)!.translate('project_details');
+      case 'end_date':
+        return AppLocalizations.of(context)!.translate('dead_line');
+      case 'status_id':
+        return AppLocalizations.of(context)!.translate('status_details');
+      default:
+        return '${config.fieldName}:';
+    }
+  }
+
+  // Добавление дополнительных полей которых нет в конфигурации
+  void _addExtraFields(TaskById task) {
+    // Автор
+    if (task.author != null) {
+      bool alreadyAdded = details.any((d) => d['label'] == AppLocalizations.of(context)!.translate('author_details'));
+      if (!alreadyAdded) {
+        details.add({
+          'label': AppLocalizations.of(context)!.translate('author_details'),
+          'value': task.author!.name
+        });
+      }
+    }
+    
+    // Дата создания
+    if (task.createdAt != null && task.createdAt!.isNotEmpty) {
+      bool alreadyAdded = details.any((d) => d['label'] == AppLocalizations.of(context)!.translate('creation_date_details'));
+      if (!alreadyAdded) {
+        details.add({
+          'label': AppLocalizations.of(context)!.translate('creation_date_details'),
+          'value': formatDate(task.createdAt)
+        });
+      }
+    }
+    
+    // Связанная сделка
+    if (task.deal != null && (task.deal?.name?.isNotEmpty == true)) {
+      bool alreadyAdded = details.any((d) => d['label'] == AppLocalizations.of(context)!.translate('task_by_deal'));
+      if (!alreadyAdded) {
+        details.add({
+          'label': AppLocalizations.of(context)!.translate('task_by_deal'),
+          'value': task.deal!.name!
+        });
+      }
+    }
+  }
+
+  // Legacy метод для построения деталей (fallback)
+  void _buildDetailsLegacy(TaskById task) {
     final Map<int, String> priorityLevels = {
       1: AppLocalizations.of(context)!.translate('normal'),
       2: AppLocalizations.of(context)!.translate('normal'),
@@ -1067,112 +1307,79 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<TaskByIdBloc, TaskByIdState>(
-      listener: (context, state) {
-        if (state is TaskByIdError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                state.message,
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<TaskByIdBloc, TaskByIdState>(
+          listener: (context, state) {
+            if (state is TaskByIdError) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    state.message,
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                  behavior: SnackBarBehavior.floating,
+                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  backgroundColor: Colors.red,
+                  elevation: 3,
+                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  duration: Duration(seconds: 3),
                 ),
-              ),
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              backgroundColor: Colors.red,
-              elevation: 3,
-              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              duration: Duration(seconds: 3),
-            ),
-          );
-        }
-      },
-      child: BlocBuilder<TaskByIdBloc, TaskByIdState>(
-        builder: (context, state) {
-          // Удаляем вызов _updateDetails из BlocBuilder, чтобы избежать setState
-          if (state is TaskByIdLoaded) {
-            // Обновляем данные без setState
-            currentTask = state.task;
-            _isAuthor = _currentUserId != null && state.task.author?.id != null && _currentUserId == state.task!.author!.id;
-
-            final Map<int, String> priorityLevels = {
-              1: AppLocalizations.of(context)!.translate('normal'),
-              2: AppLocalizations.of(context)!.translate('normal'),
-              3: AppLocalizations.of(context)!.translate('urgent'),
-            };
-
-            details = [
-              {
-                'label': AppLocalizations.of(context)!.translate('task_name'),
-                'value': state.task!.name ?? ''
-              },
-              {
-                'label': AppLocalizations.of(context)!.translate('priority_level_colon'),
-                'value': priorityLevels[state.task!.priority] ?? AppLocalizations.of(context)!.translate('normal'),
-              },
-              {
-                'label': AppLocalizations.of(context)!.translate('description_details'),
-                'value': state.task!.description?.isNotEmpty == true ? state.task!.description! : ''
-              },
-              {
-                'label': AppLocalizations.of(context)!.translate('assignee'),
-                'value': state.task!.user != null && state.task!.user!.isNotEmpty
-                    ? state.task!.user!.map((user) => '${user.name} ${user.lastname ?? ''}').join(', ')
-                    : '',
-              },
-              {
-                'label': AppLocalizations.of(context)!.translate('project_details'),
-                'value': state.task!.project?.name ?? ''
-              },
-              {
-                'label': AppLocalizations.of(context)!.translate('dead_line'),
-                'value': state.task!.endDate != null && state.task!.endDate!.isNotEmpty
-                    ? DateFormat('dd.MM.yyyy').format(DateTime.parse(state.task!.endDate!))
-                    : ''
-              },
-              {
-                'label': AppLocalizations.of(context)!.translate('status_details'),
-                'value': state.task!.taskStatus?.taskStatus?.name ?? '',
-              },
-              {
-                'label': AppLocalizations.of(context)!.translate('author_details'),
-                'value': state.task!.author?.name ?? ''
-              },
-              {
-                'label': AppLocalizations.of(context)!.translate('creation_date_details'),
-                'value': formatDate(state.task!.createdAt)
-              },
-              if (state.task!.deal != null && (state.task!.deal?.name?.isNotEmpty == true))
-                {
-                  'label': AppLocalizations.of(context)!.translate('task_by_deal'),
-                  'value': state.task!.deal!.name!
-                },
-              if (state.task!.files != null && state.task!.files!.isNotEmpty)
-                {
-                  'label': AppLocalizations.of(context)!.translate('files_details'),
-                  'value': state.task!.files!.length.toString() + ' ' + AppLocalizations.of(context)!.translate('files'),
-                },
-            ];
-
-            for (var field in state.task!.taskCustomFields) {
-              details.add({'label': '${field.key}:', 'value': field.value});
+              );
             }
-
-            if (state.task!.directoryValues != null && state.task!.directoryValues!.isNotEmpty) {
-              for (var dirValue in state.task!.directoryValues!) {
-                details.add({
-                  'label': '${dirValue.entry.directory.name}:',
-                  'value': dirValue.entry.values['value'] ?? '',
+          },
+        ),
+        BlocListener<FieldConfigurationBloc, FieldConfigurationState>(
+          listener: (context, configState) {
+            if (kDebugMode) {
+              print('TaskDetailsScreen: FieldConfigurationBloc state changed: ${configState.runtimeType}');
+            }
+            
+            if (configState is FieldConfigurationLoaded) {
+              if (kDebugMode) {
+                print('TaskDetailsScreen: Configuration loaded with ${configState.fields.length} fields');
+              }
+              
+              if (mounted) {
+                setState(() {
+                  fieldConfigurations = configState.fields;
+                  isConfigurationLoaded = true;
+                });
+                
+                // Перестраиваем детали если задача уже загружена
+                if (currentTask != null) {
+                  setState(() {
+                    _updateDetails(currentTask);
+                  });
+                }
+              }
+            } else if (configState is FieldConfigurationError) {
+              if (kDebugMode) {
+                print('TaskDetailsScreen: Configuration error: ${configState.message}');
+              }
+              
+              if (mounted) {
+                setState(() {
+                  isConfigurationLoaded = false;
                 });
               }
             }
+          },
+        ),
+      ],
+      child: BlocBuilder<TaskByIdBloc, TaskByIdState>(
+        builder: (context, state) {
+          if (state is TaskByIdLoaded) {
+            // Обновляем данные через _updateDetails
+            _updateDetails(state.task);
           } else {
             currentTask = null;
             details.clear();

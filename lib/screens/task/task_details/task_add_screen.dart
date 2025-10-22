@@ -1,11 +1,15 @@
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/bloc/field_configuration/field_configuration_bloc.dart';
+import 'package:crm_task_manager/bloc/field_configuration/field_configuration_event.dart';
+import 'package:crm_task_manager/bloc/field_configuration/field_configuration_state.dart';
 import 'package:crm_task_manager/bloc/main_field/main_field_bloc.dart';
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/project_task/project_task_bloc.dart';
 import 'package:crm_task_manager/bloc/project_task/project_task_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_withPriority.dart';
+import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/models/project_task_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
@@ -17,11 +21,11 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_details/main_field_dro
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_details/project_list_task.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
-import 'package:crm_task_manager/models/directory_model.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:crm_task_manager/bloc/user/user_bloc.dart';
 import 'package:crm_task_manager/bloc/user/user_event.dart';
 import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
@@ -50,6 +54,10 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   final TextEditingController endDateController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
 
+  // Конфигурация полей
+  List<FieldConfiguration> fieldConfigurations = [];
+  bool isConfigurationLoaded = false;
+
   List<String> selectedFiles = [];
   List<String> fileNames = [];
   List<String> fileSizes = [];
@@ -67,6 +75,14 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   @override
   void initState() {
     super.initState();
+    
+    // Загружаем конфигурацию после build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _loadFieldConfiguration();
+      }
+    });
+    
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     context.read<GetTaskProjectBloc>().add(GetTaskProjectEv());
     context.read<UserTaskBloc>().add(FetchUsers());
@@ -88,8 +104,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
       ]);
 
       setState(() {
-        _hasTaskCreatePermission = results[0] as bool;
-        _hasTaskCreateForMySelfPermission = results[1] as bool;
+        _hasTaskCreatePermission = results[0];
+        _hasTaskCreateForMySelfPermission = results[1];
         _currentUserId = userIdString != null ? int.tryParse(userIdString) : null;
       });
 
@@ -143,6 +159,95 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     selectedPriority = 1;
     final now = DateTime.now();
     startDateController.text = DateFormat('dd/MM/yyyy').format(now);
+  }
+
+  Future<void> _loadFieldConfiguration() async {
+    if (kDebugMode) {
+      print('TaskAddScreen: Loading field configuration');
+    }
+    
+    if (mounted) {
+      context.read<FieldConfigurationBloc>().add(
+        FetchFieldConfiguration('tasks')
+      );
+    }
+  }
+
+  Widget _buildFieldWidget(FieldConfiguration config) {
+    switch (config.fieldName) {
+      case 'name':
+        return CustomTextFieldWithPriority(
+          controller: nameController,
+          hintText: AppLocalizations.of(context)!.translate('enter_title'),
+          label: AppLocalizations.of(context)!.translate('event_name'),
+          showPriority: true,
+          isPrioritySelected: selectedPriority == 3,
+          onPriorityChanged: (bool? value) {
+            setState(() {
+              selectedPriority = value == true ? 3 : 1;
+            });
+          },
+          priorityText: AppLocalizations.of(context)!.translate('urgent'),
+          validator: config.required ? (value) {
+            if (value == null || value.isEmpty) {
+              return AppLocalizations.of(context)!.translate('field_required');
+            }
+            return null;
+          } : null,
+        );
+        
+      case 'description':
+        return CustomTextField(
+          controller: descriptionController,
+          hintText: AppLocalizations.of(context)!.translate('enter_description'),
+          label: AppLocalizations.of(context)!.translate('description_list'),
+          maxLines: 5,
+          keyboardType: TextInputType.multiline,
+        );
+        
+      case 'user_id':
+        // Условно отображаем UserMultiSelectWidget
+        if (_hasTaskCreatePermission || !_hasTaskCreateForMySelfPermission) {
+          return UserMultiSelectWidget(
+            selectedUsers: selectedUsers,
+            onSelectUsers: (List<UserData> selectedUsersData) {
+              setState(() {
+                selectedUsers = selectedUsersData.map((user) => user.id.toString()).toList();
+              });
+            },
+          );
+        }
+        return SizedBox.shrink();
+        
+      case 'project_id':
+        return ProjectTaskGroupWidget(
+          selectedProject: selectedProject,
+          onSelectProject: (ProjectTask selectedProjectData) {
+            setState(() {
+              selectedProject = selectedProjectData.id.toString();
+            });
+          },
+        );
+        
+      case 'end_date':
+        return CustomTextFieldDate(
+          controller: endDateController,
+          label: AppLocalizations.of(context)!.translate('deadline'),
+          hasError: isEndDateInvalid,
+          validator: config.required ? (value) {
+            if (value == null || value.isEmpty) {
+              return AppLocalizations.of(context)!.translate('field_required');
+            }
+            return null;
+          } : null,
+        );
+        
+      default:
+        if (kDebugMode) {
+          print('TaskAddScreen: Unknown field: ${config.fieldName}');
+        }
+        return SizedBox.shrink();
+    }
   }
 
   void _addCustomField(String fieldName, {bool isDirectory = false, int? directoryId, String? type}) {
@@ -403,23 +508,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     }
   }
 
-  InputDecoration _inputDecoration() {
-    return InputDecoration(
-      border: OutlineInputBorder(
-        borderSide: const BorderSide(color: Color(0xFFF4F7FD)),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderSide: const BorderSide(color: Color(0xFFF4F7FD)),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderSide: const BorderSide(color: Color(0xFFF4F7FD)),
-        borderRadius: BorderRadius.circular(12),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -458,63 +546,125 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
         leadingWidth: 40,
         backgroundColor: const Color.fromARGB(255, 255, 255, 255),
       ),
-      body: MultiBlocProvider(
-        providers: [
-          BlocProvider(create: (context) => MainFieldBloc()),
-        ],
-        child: BlocListener<TaskBloc, TaskState>(
-          listener: (context, state) {
-            if (state is TaskError) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    AppLocalizations.of(context)!.translate(state.message),
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  behavior: SnackBarBehavior.floating,
-                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  backgroundColor: Colors.red,
-                  elevation: 3,
-                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  duration: Duration(seconds: 3),
-                ),
-              );
-            } else if (state is TaskSuccess) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    AppLocalizations.of(context)!.translate(state.message),
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  behavior: SnackBarBehavior.floating,
-                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  backgroundColor: Colors.green,
-                  elevation: 3,
-                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  duration: Duration(seconds: 3),
-                ),
-              );
-              Navigator.pop(context, widget.statusId);
-              context.read<TaskBloc>().add(FetchTaskStatuses());
+      body: BlocConsumer<FieldConfigurationBloc, FieldConfigurationState>(
+        listener: (context, configState) {
+          if (kDebugMode) {
+            print('TaskAddScreen: FieldConfigurationBloc state changed: ${configState.runtimeType}');
+          }
+          
+          if (configState is FieldConfigurationLoaded) {
+            if (kDebugMode) {
+              print('TaskAddScreen: Configuration loaded with ${configState.fields.length} fields');
             }
-          },
-          child: Form(
+            setState(() {
+              fieldConfigurations = configState.fields;
+              isConfigurationLoaded = true;
+            });
+          } else if (configState is FieldConfigurationError) {
+            if (kDebugMode) {
+              print('TaskAddScreen: Configuration error: ${configState.message}');
+            }
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Ошибка загрузки конфигурации: ${configState.message}',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        },
+        builder: (context, configState) {
+          if (kDebugMode) {
+            print('TaskAddScreen: Building with state: ${configState.runtimeType}, isLoaded: $isConfigurationLoaded');
+          }
+          
+          if (configState is FieldConfigurationLoading) {
+            return Center(
+              child: CircularProgressIndicator(
+                color: Color(0xff1E2E52),
+              ),
+            );
+          }
+          
+          if (!isConfigurationLoaded) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(
+                    color: Color(0xff1E2E52),
+                  ),
+                  SizedBox(height: 16),
+                  Text('Загрузка конфигурации...'),
+                ],
+              ),
+            );
+          }
+          
+          return MultiBlocProvider(
+            providers: [
+              BlocProvider(create: (context) => MainFieldBloc()),
+            ],
+            child: BlocListener<TaskBloc, TaskState>(
+              listener: (context, state) {
+                if (state is TaskError) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        AppLocalizations.of(context)!.translate(state.message),
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white,
+                        ),
+                      ),
+                      behavior: SnackBarBehavior.floating,
+                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      backgroundColor: Colors.red,
+                      elevation: 3,
+                      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      duration: Duration(seconds: 3),
+                    ),
+                  );
+                } else if (state is TaskSuccess) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        AppLocalizations.of(context)!.translate(state.message),
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white,
+                        ),
+                      ),
+                      behavior: SnackBarBehavior.floating,
+                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      backgroundColor: Colors.green,
+                      elevation: 3,
+                      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      duration: Duration(seconds: 3),
+                    ),
+                  );
+                  Navigator.pop(context, widget.statusId);
+                  context.read<TaskBloc>().add(FetchTaskStatuses());
+                }
+              },
+              child: Form(
             key: _formKey,
             child: Column(
               children: [
@@ -528,66 +678,16 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          CustomTextFieldWithPriority(
-                            controller: nameController,
-                            hintText: AppLocalizations.of(context)!.translate('enter_title'),
-                            label: AppLocalizations.of(context)!.translate('event_name'),
-                            showPriority: true,
-                            isPrioritySelected: selectedPriority == 3,
-                            onPriorityChanged: (bool? value) {
-                              setState(() {
-                                selectedPriority = value == true ? 3 : 1;
-                              });
-                            },
-                            priorityText: AppLocalizations.of(context)!.translate('urgent'),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return AppLocalizations.of(context)!.translate('field_required');
-                              }
-                              return null;
-                            },
-                          ),
+                          // Динамическое построение полей на основе конфигурации с сервера
+                          ...fieldConfigurations.map((config) {
+                            return Column(
+                              children: [
+                                _buildFieldWidget(config),
+                                const SizedBox(height: 8),
+                              ],
+                            );
+                          }).toList(),
                           const SizedBox(height: 8),
-                          CustomTextField(
-                            controller: descriptionController,
-                            hintText: AppLocalizations.of(context)!.translate('enter_description'),
-                            label: AppLocalizations.of(context)!.translate('description_list'),
-                            maxLines: 5,
-                            keyboardType: TextInputType.multiline,
-                          ),
-                          const SizedBox(height: 8),
-                          // Условно отображаем UserMultiSelectWidget
-                          if (_hasTaskCreatePermission || !_hasTaskCreateForMySelfPermission)
-                            UserMultiSelectWidget(
-                              selectedUsers: selectedUsers,
-                              onSelectUsers: (List<UserData> selectedUsersData) {
-                                setState(() {
-                                  selectedUsers = selectedUsersData.map((user) => user.id.toString()).toList();
-                                });
-                              },
-                            ),
-                          const SizedBox(height: 8),
-                          ProjectTaskGroupWidget(
-                            selectedProject: selectedProject,
-                            onSelectProject: (ProjectTask selectedProjectData) {
-                              setState(() {
-                                selectedProject = selectedProjectData.id.toString();
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 8),
-                          CustomTextFieldDate(
-                            controller: endDateController,
-                            label: AppLocalizations.of(context)!.translate('deadline'),
-                            hasError: isEndDateInvalid,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return AppLocalizations.of(context)!.translate('field_required');
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 16),
                           if (!_showAdditionalFields)
                             CustomButton(
                               buttonText: AppLocalizations.of(context)!.translate('additionally'),
@@ -667,8 +767,10 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                 _buildActionButtons(context),
               ],
             ),
-          ),
-        ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }

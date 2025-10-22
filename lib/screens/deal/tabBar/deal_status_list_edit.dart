@@ -296,6 +296,7 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
         return Text(
           selectedItem?.title ??
               AppLocalizations.of(context)!.translate('select_status'),
+
           style: statusTextStyle,
         );
       },
@@ -332,9 +333,11 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
         .where((status) => currentlySelectedIds.contains(status.id))
         .toList();
 
+    print('   - selectedStatusesList IDs: ${selectedStatusesList.map((s) => s.id).toList()}');
+    
     return CustomDropdown<DealStatus>.multiSelectSearch(
       items: statusList,
-      initialItems: actualSelectedStatuses,
+      initialItems: selectedStatusesList,
       searchHintText: AppLocalizations.of(context)!.translate('search'),
       overlayHeight: 400,
       decoration: CustomDropdownDecoration(
@@ -427,6 +430,21 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
       onListChanged: (value) {
         print('✏️ Выбрано статусов: ${value.length}');
 
+        print('✏️ onListChanged вызван: ${value.length} статусов');
+        
+        // ✅ КРИТИЧНО: Проверяем, действительно ли изменились данные
+        final newIds = value.map((s) => s.id).toSet();
+        final currentIds = selectedStatusesList.map((s) => s.id).toSet();
+        
+        // Если списки идентичны, игнорируем
+        if (newIds.length == currentIds.length && 
+            newIds.containsAll(currentIds)) {
+          print('⏭️ Список не изменился, пропускаем обновление');
+          return;
+        }
+        
+        print('✅ Список изменился, обновляем');
+        
         setState(() {
           selectedStatusesList = value;
           allSelected = value.length == statusList.length;

@@ -5,6 +5,9 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/bloc/deal/deal_state.dart';
+import 'package:crm_task_manager/bloc/field_configuration/field_configuration_bloc.dart';
+import 'package:crm_task_manager/bloc/field_configuration/field_configuration_event.dart';
+import 'package:crm_task_manager/bloc/field_configuration/field_configuration_state.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_event.dart';
 import 'package:crm_task_manager/bloc/main_field/main_field_bloc.dart';
@@ -14,6 +17,7 @@ import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/models/dealById_model.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
+import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
@@ -25,6 +29,7 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_details/main_field_dro
 import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -81,6 +86,11 @@ class _DealEditScreenState extends State<DealEditScreen> {
   final TextEditingController sumController = TextEditingController();
   final ApiService _apiService = ApiService();
 
+  // Конфигурация полей
+  List<FieldConfiguration> fieldConfigurations = [];
+  bool isConfigurationLoaded = false;
+  Map<String, Widget> fieldWidgets = {};
+  List<String> fieldOrder = [];
 
   int? _selectedStatuses;
   String? selectedManager;
@@ -92,12 +102,20 @@ class _DealEditScreenState extends State<DealEditScreen> {
   List<String> fileSizes = [];
   List<DealFiles> existingFiles = [];
   List<String> newFiles = [];
-    List<int> _selectedStatusIds = []; // ✅ НОВОЕ: список выбранных ID
+  List<int> _selectedStatusIds = []; // ✅ НОВОЕ: список выбранных ID
 
 
   @override
   void initState() {
     super.initState();
+    
+    // Загружаем конфигурацию после build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _loadFieldConfiguration();
+      }
+    });
+    
     _initializeControllers();
     _loadInitialData();
     _fetchAndAddDirectoryFields();
@@ -195,6 +213,164 @@ class _DealEditScreenState extends State<DealEditScreen> {
   void _loadInitialData() {
     context.read<GetAllLeadBloc>().add(GetAllLeadEv());
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
+  }
+
+  Future<void> _loadFieldConfiguration() async {
+    if (kDebugMode) {
+      print('DealEditScreen: Loading field configuration');
+    }
+    
+    if (mounted) {
+      context.read<FieldConfigurationBloc>().add(
+        FetchFieldConfiguration('deals')
+      );
+    }
+  }
+
+  void _buildFieldsFromConfiguration() {
+    if (kDebugMode) {
+      print('DealEditScreen: Building fields from configuration with ${fieldConfigurations.length} fields');
+    }
+    
+    fieldWidgets.clear();
+    fieldOrder.clear();
+
+    for (var config in fieldConfigurations) {
+      if (!config.isActive) {
+        if (kDebugMode) {
+          print('DealEditScreen: Skipping inactive field: ${config.fieldName}');
+        }
+        continue;
+      }
+
+      Widget? widget = _buildFieldWidget(config);
+      if (widget != null) {
+        fieldWidgets[config.fieldName] = widget;
+        fieldOrder.add(config.fieldName);
+        
+        if (kDebugMode) {
+          print('DealEditScreen: Added field widget for: ${config.fieldName} at position ${config.position}');
+        }
+      }
+    }
+    
+    if (kDebugMode) {
+      print('DealEditScreen: Total field widgets: ${fieldWidgets.length}');
+    }
+  }
+
+  Widget? _buildFieldWidget(FieldConfiguration config) {
+    switch (config.fieldName) {
+      case 'name':
+        return DealNameSelectionWidget(
+          selectedDealName: titleController.text,
+          onSelectDealName: (String dealName) {
+            setState(() {
+              titleController.text = dealName;
+            });
+          },
+        );
+        
+      case 'status_id':
+        return RepaintBoundary(
+          child: DealStatusEditWidget(
+            selectedStatus: _selectedStatuses?.toString(),
+            dealStatuses: widget.dealStatuses ?? [],
+            onSelectStatus: (DealStatus selectedStatusData) {
+              if (_selectedStatuses != selectedStatusData.id) {
+                setState(() {
+                  _selectedStatuses = selectedStatusData.id;
+                  print('✅ Выбран основной статус: ${selectedStatusData.id}');
+                });
+              }
+            },
+            onSelectMultipleStatuses: (List<int> selectedIds) {
+              final currentSet = _selectedStatusIds.toSet();
+              final newSet = selectedIds.toSet();
+
+              if (currentSet.length != newSet.length || !currentSet.containsAll(newSet)) {
+                setState(() {
+                  _selectedStatusIds = selectedIds;
+                  print('✅ DealEditScreen: Обновлены ID статусов: $selectedIds');
+                });
+              }
+            },
+          ),
+        );
+        
+      case 'lead_id':
+        return LeadRadioGroupWidget(
+          selectedLead: selectedLead?.id.toString(),
+          onSelectLead: (LeadData selectedLeadData) {
+            if (selectedLead?.id != selectedLeadData.id) {
+              setState(() {
+                selectedLead = selectedLeadData;
+              });
+            }
+          },
+        );
+        
+      case 'manager_id':
+        return ManagerRadioGroupWidget(
+          selectedManager: selectedManager,
+          onSelectManager: (ManagerData selectedManagerData) {
+            final newManagerId = selectedManagerData.id.toString();
+            if (selectedManager != newManagerId) {
+              setState(() {
+                debugPrint("DealEditScreen Selected Manager ID: ${selectedManagerData.id}");
+                selectedManager = newManagerId;
+              });
+            }
+          },
+        );
+        
+      case 'start_date':
+        return CustomTextFieldDate(
+          controller: startDateController,
+          label: AppLocalizations.of(context)!
+              .translate('start_date'),
+          withTime: false,
+        );
+        
+      case 'end_date':
+        return CustomTextFieldDate(
+          controller: endDateController,
+          label:
+              AppLocalizations.of(context)!.translate('end_date'),
+          hasError: isEndDateInvalid,
+          withTime: false,
+        );
+        
+      case 'sum':
+        return CustomTextField(
+          controller: sumController,
+          hintText: AppLocalizations.of(context)!
+              .translate('enter_summ'),
+          label:
+              AppLocalizations.of(context)!.translate('summ'),
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(
+                RegExp(r'[0-9\.,]')),
+          ],
+        );
+        
+      case 'description':
+        return CustomTextField(
+          controller: descriptionController,
+          hintText: AppLocalizations.of(context)!
+              .translate('enter_description'),
+          label: AppLocalizations.of(context)!
+              .translate('description_list'),
+          maxLines: 5,
+          keyboardType: TextInputType.multiline,
+        );
+        
+      default:
+        if (kDebugMode) {
+          print('DealEditScreen: Unknown field: ${config.fieldName}');
+        }
+        return null;
+    }
   }
 
   void _addCustomField(String fieldName,
@@ -313,9 +489,9 @@ class _DealEditScreenState extends State<DealEditScreen> {
         for (var file in result.files) {
           if (file.path != null && file.name != null) {
             final filePath = file.path!;
+            final fileName = file.name!;
             final fileObject = File(filePath);
             if (await fileObject.exists()) {
-              final fileName = file.name;
               if (!existingFiles.any((f) => f.name == fileName) &&
                   !newFiles.contains(filePath)) {
                 final fileSize = await fileObject.length();
@@ -611,35 +787,71 @@ class _DealEditScreenState extends State<DealEditScreen> {
         providers: [
           BlocProvider(create: (context) => MainFieldBloc()),
         ],
-        child: BlocListener<DealBloc, DealState>(
-          listener: (context, state) {
-            if (state is DealError) {
-              _showErrorSnackBar(
-                  AppLocalizations.of(context)!.translate(state.message));
-            } else if (state is DealSuccess) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    AppLocalizations.of(context)!
-                        .translate('deal_updated_successfully'),
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
+        child: MultiBlocListener(
+          listeners: [
+            BlocListener<DealBloc, DealState>(
+              listener: (context, state) {
+                if (state is DealError) {
+                  _showErrorSnackBar(
+                      AppLocalizations.of(context)!.translate(state.message));
+                } else if (state is DealSuccess) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        AppLocalizations.of(context)!
+                            .translate('deal_updated_successfully'),
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white,
+                        ),
+                      ),
+                      backgroundColor: Colors.green,
+                      behavior: SnackBarBehavior.floating,
+                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
-                  ),
-                  backgroundColor: Colors.green,
-                  behavior: SnackBarBehavior.floating,
-                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              );
-              Navigator.pop(context, true);
-            }
-          },
+                  );
+                  Navigator.pop(context, true);
+                }
+              },
+            ),
+            BlocListener<FieldConfigurationBloc, FieldConfigurationState>(
+              listener: (context, configState) {
+                if (kDebugMode) {
+                  print('DealEditScreen: FieldConfigurationBloc state changed: ${configState.runtimeType}');
+                }
+                
+                if (configState is FieldConfigurationLoaded) {
+                  if (kDebugMode) {
+                    print('DealEditScreen: Configuration loaded with ${configState.fields.length} fields');
+                  }
+                  
+                  if (mounted) {
+                    setState(() {
+                      fieldConfigurations = configState.fields;
+                      isConfigurationLoaded = true;
+                    });
+                    
+                    _buildFieldsFromConfiguration();
+                  }
+                } else if (configState is FieldConfigurationError) {
+                  if (kDebugMode) {
+                    print('DealEditScreen: Configuration error: ${configState.message}');
+                  }
+                  
+                  if (mounted) {
+                    setState(() {
+                      isConfigurationLoaded = false;
+                    });
+                  }
+                }
+              },
+            ),
+          ],
           child: Form(
             key: _formKey,
             child: Column(
@@ -654,95 +866,113 @@ class _DealEditScreenState extends State<DealEditScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          DealNameSelectionWidget(
-                            selectedDealName: titleController.text,
-                            onSelectDealName: (String dealName) {
-                              setState(() {
-                                titleController.text = dealName;
-                              });
-                            },
-                          ),
-                        const SizedBox(height: 8),
-RepaintBoundary(
-  child: DealStatusEditWidget(
-    selectedStatus: _selectedStatuses?.toString(),
-    dealStatuses: widget.dealStatuses ?? [], // ✅ Защита от null
-    onSelectStatus: (DealStatus selectedStatusData) {
-      setState(() {
-        _selectedStatuses = selectedStatusData.id;
-        print('✅ Выбран основной статус: ${selectedStatusData.id}');
-      });
-    },
-    onSelectMultipleStatuses: (List<int> selectedIds) {
-      if (_selectedStatusIds.length != selectedIds.length ||
-          !_selectedStatusIds.toSet().containsAll(selectedIds)) {
-        setState(() {
-          _selectedStatusIds = selectedIds;
-          print('✅ DealEditScreen: Обновлены ID статусов: $selectedIds');
-        });
-      }
-    },
-  ),
-),
-const SizedBox(height: 8),
-                          // ✅ УПРОЩЕНО: Прямое использование без BlocBuilder
-                          LeadRadioGroupWidget(
-                            selectedLead: selectedLead?.id.toString(),
-                            onSelectLead: (LeadData selectedLeadData) {
-                              setState(() {
-                                selectedLead = selectedLeadData;
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 8),
-                          ManagerRadioGroupWidget(
-                            selectedManager: selectedManager,
-                            onSelectManager: (ManagerData selectedManagerData) {
-                              setState(() {
-                                debugPrint("DealEditScreen Selected Manager ID: ${selectedManagerData.id}");
-                                selectedManager =
-                                    selectedManagerData.id.toString();
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 8),
-                          CustomTextFieldDate(
-                            controller: startDateController,
-                            label: AppLocalizations.of(context)!
-                                .translate('start_date'),
-                            withTime: false,
-                          ),
-                          const SizedBox(height: 8),
-                          CustomTextFieldDate(
-                            controller: endDateController,
-                            label:
-                                AppLocalizations.of(context)!.translate('end_date'),
-                            hasError: isEndDateInvalid,
-                            withTime: false,
-                          ),
-                          const SizedBox(height: 8),
-                          CustomTextField(
-                            controller: sumController,
-                            hintText: AppLocalizations.of(context)!
-                                .translate('enter_summ'),
-                            label:
-                                AppLocalizations.of(context)!.translate('summ'),
-                            inputFormatters: [
-                              FilteringTextInputFormatter.allow(
-                                  RegExp(r'[0-9\.,]')),
+                          // Используем конфигурацию если загружена
+                          if (isConfigurationLoaded && fieldWidgets.isNotEmpty) ...[
+                            for (var fieldName in fieldOrder) ...[
+                              fieldWidgets[fieldName]!,
+                              const SizedBox(height: 8),
                             ],
-                          ),
-                          const SizedBox(height: 8),
-                          CustomTextField(
-                            controller: descriptionController,
-                            hintText: AppLocalizations.of(context)!
-                                .translate('enter_description'),
-                            label: AppLocalizations.of(context)!
-                                .translate('description_list'),
-                            maxLines: 5,
-                            keyboardType: TextInputType.multiline,
-                          ),
-                          const SizedBox(height: 8),
+                          ] else ...[
+                            // Fallback: показываем все поля как раньше
+                            DealNameSelectionWidget(
+                              selectedDealName: titleController.text,
+                              onSelectDealName: (String dealName) {
+                                setState(() {
+                                  titleController.text = dealName;
+                                });
+                              },
+                            ),
+                            const SizedBox(height: 8),
+                            RepaintBoundary(
+                              child: DealStatusEditWidget(
+                                selectedStatus: _selectedStatuses?.toString(),
+                                dealStatuses: widget.dealStatuses ?? [],
+                                onSelectStatus: (DealStatus selectedStatusData) {
+                                  if (_selectedStatuses != selectedStatusData.id) {
+                                    setState(() {
+                                      _selectedStatuses = selectedStatusData.id;
+                                      print('✅ Выбран основной статус: ${selectedStatusData.id}');
+                                    });
+                                  }
+                                },
+                                onSelectMultipleStatuses: (List<int> selectedIds) {
+                                  final currentSet = _selectedStatusIds.toSet();
+                                  final newSet = selectedIds.toSet();
+
+                                  if (currentSet.length != newSet.length || !currentSet.containsAll(newSet)) {
+                                    setState(() {
+                                      _selectedStatusIds = selectedIds;
+                                      print('✅ DealEditScreen: Обновлены ID статусов: $selectedIds');
+                                    });
+                                  }
+                                },
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            LeadRadioGroupWidget(
+                              selectedLead: selectedLead?.id.toString(),
+                              onSelectLead: (LeadData selectedLeadData) {
+                                if (selectedLead?.id != selectedLeadData.id) {
+                                  setState(() {
+                                    selectedLead = selectedLeadData;
+                                  });
+                                }
+                              },
+                            ),
+                            const SizedBox(height: 8),
+                            ManagerRadioGroupWidget(
+                              selectedManager: selectedManager,
+                              onSelectManager: (ManagerData selectedManagerData) {
+                                final newManagerId = selectedManagerData.id.toString();
+                                if (selectedManager != newManagerId) {
+                                  setState(() {
+                                    debugPrint("DealEditScreen Selected Manager ID: ${selectedManagerData.id}");
+                                    selectedManager = newManagerId;
+                                  });
+                                }
+                              },
+                            ),
+                            const SizedBox(height: 8),
+                            CustomTextFieldDate(
+                              controller: startDateController,
+                              label: AppLocalizations.of(context)!
+                                  .translate('start_date'),
+                              withTime: false,
+                            ),
+                            const SizedBox(height: 8),
+                            CustomTextFieldDate(
+                              controller: endDateController,
+                              label:
+                                  AppLocalizations.of(context)!.translate('end_date'),
+                              hasError: isEndDateInvalid,
+                              withTime: false,
+                            ),
+                            const SizedBox(height: 8),
+                            CustomTextField(
+                              controller: sumController,
+                              hintText: AppLocalizations.of(context)!
+                                  .translate('enter_summ'),
+                              label:
+                                  AppLocalizations.of(context)!.translate('summ'),
+                              inputFormatters: [
+                                FilteringTextInputFormatter.allow(
+                                    RegExp(r'[0-9\.,]')),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            CustomTextField(
+                              controller: descriptionController,
+                              hintText: AppLocalizations.of(context)!
+                                  .translate('enter_description'),
+                              label: AppLocalizations.of(context)!
+                                  .translate('description_list'),
+                              maxLines: 5,
+                              keyboardType: TextInputType.multiline,
+                            ),
+                            const SizedBox(height: 8),
+                          ],
+                          
+                          // Общие поля которые всегда показываются
                           _buildFileSelection(),
                           const SizedBox(height: 20),
                           ListView.builder(
