@@ -7293,6 +7293,8 @@ Future<String> _appendQueryParams(String path) async {
     List<String>? filePaths,
     int position = 1,
     required bool setPush,
+    List<Map<String, dynamic>>? customFields,
+    List<Map<String, int>>? directoryValues,
   }) async {
     try {
       final token = await getToken();
@@ -7337,6 +7339,25 @@ Future<String> _appendQueryParams(String path) async {
           final file = await http.MultipartFile.fromPath(
               'files[]', filePath); // Используем 'files[]'
           request.files.add(file);
+        }
+      }
+
+      // Добавляем кастомные поля
+      if (customFields != null && customFields.isNotEmpty) {
+        for (int i = 0; i < customFields.length; i++) {
+          final field = customFields[i];
+          request.fields['custom_fields[$i][key]'] = field['key'].toString();
+          request.fields['custom_fields[$i][value]'] = field['value'].toString();
+          request.fields['custom_fields[$i][type]'] = field['type'].toString();
+        }
+      }
+
+      // Добавляем справочники
+      if (directoryValues != null && directoryValues.isNotEmpty) {
+        for (int i = 0; i < directoryValues.length; i++) {
+          final directory = directoryValues[i];
+          request.fields['directories[$i][directory_id]'] = directory['directory_id'].toString();
+          request.fields['directories[$i][entry_id]'] = directory['entry_id'].toString();
         }
       }
 

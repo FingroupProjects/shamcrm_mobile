@@ -219,6 +219,8 @@ class MyTaskBloc extends Bloc<MyTaskEvent, MyTaskState> {
         description: event.description,
         filePaths: event.filePaths,
         setPush: event.setPush,
+        customFields: event.customFields,
+        directoryValues: event.directoryValues,
       );
 
       if (result['success']) {

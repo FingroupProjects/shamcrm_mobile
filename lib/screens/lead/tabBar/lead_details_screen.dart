@@ -1060,7 +1060,7 @@ String? _getFieldValue(LeadById lead, FieldConfiguration config) {
       ],
       child: Scaffold(
         appBar: _buildAppBar(
-            context, AppLocalizations.of(context)!.translate('view_lead') + ' #' + widget.leadId),
+            context, AppLocalizations.of(context)!.translate('view_lead') + widget.leadId),
         backgroundColor: Colors.white,
         body: MultiBlocListener(
           listeners: [

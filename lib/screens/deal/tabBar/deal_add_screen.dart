@@ -62,7 +62,6 @@ class _DealAddScreenState extends State<DealAddScreen> {
   bool isEndDateInvalid = false;
   bool isTitleInvalid = false;
   bool isManagerInvalid = false;
-  bool _showAdditionalFields = false;
   bool isManagerManuallySelected = false;
   List<String> selectedFiles = [];
   List<String> fileNames = [];
@@ -73,17 +72,16 @@ class _DealAddScreenState extends State<DealAddScreen> {
     super.initState();
     //print('DealAddScreen: initState started');
     
+    context.read<GetAllManagerBloc>().add(GetAllManagerEv());
+    context.read<GetAllLeadBloc>().add(GetAllLeadEv());
+    //print('DealAddScreen: Dispatched GetAllManagerEv and GetAllLeadEv');
+    
     // Загружаем конфигурацию после build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _loadFieldConfiguration();
       }
     });
-    
-    context.read<GetAllManagerBloc>().add(GetAllManagerEv());
-    context.read<GetAllLeadBloc>().add(GetAllLeadEv());
-    //print('DealAddScreen: Dispatched GetAllManagerEv and GetAllLeadEv');
-    _fetchAndAddCustomFields();
   }
   
   Future<void> _loadFieldConfiguration() async {
@@ -97,8 +95,49 @@ class _DealAddScreenState extends State<DealAddScreen> {
       );
     }
   }
-  
-  Widget _buildFieldWidget(FieldConfiguration config) {
+
+  // Вспомогательный метод для создания/получения кастомного поля
+  CustomField _getOrCreateCustomField(FieldConfiguration config) {
+    final existingField = customFields.firstWhere(
+      (field) => field.fieldName == config.fieldName && field.isCustomField,
+      orElse: () {
+        final newField = CustomField(
+          fieldName: config.fieldName,
+          uniqueId: Uuid().v4(),
+          controller: TextEditingController(),
+          type: config.type,
+          isCustomField: true,
+        );
+        customFields.add(newField);
+        return newField;
+      },
+    );
+    
+    return existingField;
+  }
+
+  // Вспомогательный метод для создания/получения поля-справочника
+  CustomField _getOrCreateDirectoryField(FieldConfiguration config) {
+    final existingField = customFields.firstWhere(
+      (field) => field.directoryId == config.directoryId,
+      orElse: () {
+        final newField = CustomField(
+          fieldName: config.fieldName,
+          isDirectoryField: true,
+          directoryId: config.directoryId,
+          uniqueId: Uuid().v4(),
+          controller: TextEditingController(),
+        );
+        customFields.add(newField);
+        return newField;
+      },
+    );
+    
+    return existingField;
+  }
+
+  // Метод для построения стандартных системных полей
+  Widget _buildStandardField(FieldConfiguration config) {
     switch (config.fieldName) {
       case 'name':
         return DealNameSelectionWidget(
@@ -205,6 +244,63 @@ class _DealAddScreenState extends State<DealAddScreen> {
         }
         return SizedBox.shrink();
     }
+  }
+
+  // Метод для построения виджета на основе конфигурации поля
+  Widget _buildFieldWidget(FieldConfiguration config) {
+    // Сначала проверяем, является ли это кастомным полем
+    if (config.isCustomField) {
+      final customField = _getOrCreateCustomField(config);
+      
+      return CustomFieldWidget(
+        fieldName: config.fieldName,
+        valueController: customField.controller,
+        onRemove: () {}, // Пустая функция, так как серверные поля нельзя удалить
+        type: config.type,
+        isDirectory: false,
+      );
+    }
+    
+    // Затем проверяем, является ли это справочником
+    if (config.isDirectory && config.directoryId != null) {
+      final directoryField = _getOrCreateDirectoryField(config);
+      
+      return MainFieldDropdownWidget(
+        directoryId: directoryField.directoryId!,
+        directoryName: directoryField.fieldName,
+        selectedField: null,
+        onSelectField: (MainField selectedField) {
+          setState(() {
+            final index = customFields.indexWhere(
+              (f) => f.directoryId == config.directoryId
+            );
+            if (index != -1) {
+              customFields[index] = directoryField.copyWith(
+                entryId: selectedField.id,
+                controller: TextEditingController(text: selectedField.value),
+              );
+            }
+          });
+        },
+        controller: directoryField.controller,
+        onSelectEntryId: (int entryId) {
+          setState(() {
+            final index = customFields.indexWhere(
+              (f) => f.directoryId == config.directoryId
+            );
+            if (index != -1) {
+              customFields[index] = directoryField.copyWith(
+                entryId: entryId,
+              );
+            }
+          });
+        },
+        onRemove: () {},
+      );
+    }
+    
+    // Иначе это стандартное системное поле
+    return _buildStandardField(config);
   }
 
   Future<void> _pickFile() async {
@@ -373,43 +469,6 @@ class _DealAddScreenState extends State<DealAddScreen> {
     );
   }
 
-  void _fetchAndAddCustomFields() async {
-    try {
-      //print('DealAddScreen: Fetching custom fields and directories');
-      final customFieldsData = await ApiService().getCustomFieldsdeal();
-      if (customFieldsData['result'] != null) {
-        setState(() {
-          customFields.addAll(customFieldsData['result'].map<CustomField>((value) {
-            return CustomField(
-              fieldName: value,
-              controller: TextEditingController(),
-              uniqueId: Uuid().v4(),
-            );
-          }).toList());
-          //print('DealAddScreen: Added custom fields: ${customFields.length}');
-        });
-      }
-
-      final directoryLinkData = await ApiService().getDealDirectoryLinks();
-      if (directoryLinkData.data != null) {
-        setState(() {
-          customFields.addAll(directoryLinkData.data!.map<CustomField>((link) {
-            return CustomField(
-              fieldName: link.directory.name,
-              controller: TextEditingController(),
-              isDirectoryField: true,
-              directoryId: link.directory.id,
-              uniqueId: Uuid().v4(),
-            );
-          }).toList());
-          //print('DealAddScreen: Added directory fields: ${customFields.length}');
-        });
-      }
-    } catch (e) {
-      //print('DealAddScreen: Error fetching custom fields: $e');
-    }
-  }
-
   void _addCustomField(String fieldName, {bool isDirectory = false, int? directoryId, String? type}) {
     //print('DealAddScreen: Adding field: $fieldName, isDirectory: $isDirectory, directoryId: $directoryId, type: $type');
     if (isDirectory && directoryId != null) {
@@ -422,11 +481,12 @@ class _DealAddScreenState extends State<DealAddScreen> {
     setState(() {
       customFields.add(CustomField(
         fieldName: fieldName,
-        controller: TextEditingController(),
+        uniqueId: Uuid().v4(),
         isDirectoryField: isDirectory,
         directoryId: directoryId,
         type: type,
-        uniqueId: Uuid().v4(),
+        controller: TextEditingController(),
+        isCustomField: !isDirectory,
       ));
       //print('DealAddScreen: Added custom field: $fieldName');
     });
@@ -642,90 +702,84 @@ class _DealAddScreenState extends State<DealAddScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Динамическое построение полей на основе серверной конфигурации
+                          // Динамическое построение полей на основе конфигурации с сервера
                           ...fieldConfigurations.map((config) {
                             return Column(
                               children: [
                                 _buildFieldWidget(config),
-                                const SizedBox(height: 8),
+                                const SizedBox(height: 15),
                               ],
                             );
                           }).toList(),
                           
-                          // Кнопка "Дополнительно" и кастомные поля всегда показываются
-                          if (!_showAdditionalFields)
-                            CustomButton(
-                              buttonText: AppLocalizations.of(context)!.translate('additionally'),
-                              buttonColor: Color(0xff1E2E52),
-                              textColor: Colors.white,
-                              onPressed: () {
-                                setState(() {
-                                  _showAdditionalFields = true;
-                                  //print('DealAddScreen: Additional fields toggled');
-                                });
-                              },
-                            )
-                          else ...[
-                            _buildFileSelection(),
-                            const SizedBox(height: 15),
-                            ListView.builder(
-                              shrinkWrap: true,
-                              physics: NeverScrollableScrollPhysics(),
-                              itemCount: customFields.length,
-                              itemBuilder: (context, index) {
-                                final field = customFields[index];
-                                return Container(
-                                  key: ValueKey(field.uniqueId),
-                                  child: field.isDirectoryField && field.directoryId != null
-                                      ? MainFieldDropdownWidget(
-                                          directoryId: field.directoryId!,
-                                          directoryName: field.fieldName,
-                                          selectedField: null,
-                                          onSelectField: (MainField selectedField) {
-                                            setState(() {
-                                              customFields[index] = field.copyWith(
-                                                entryId: selectedField.id,
-                                                controller: TextEditingController(text: selectedField.value),
-                                              );
-                                              //print('DealAddScreen: Directory field updated: ${field.fieldName}');
-                                            });
-                                          },
-                                          controller: field.controller,
-                                          onSelectEntryId: (int entryId) {
-                                            setState(() {
-                                              customFields[index] = field.copyWith(entryId: entryId);
-                                              //print('DealAddScreen: Directory entry ID updated: $entryId');
-                                            });
-                                          },
-                                          onRemove: () {
-                                            setState(() {
-                                              customFields.removeAt(index);
-                                              //print('DealAddScreen: Removed custom field at index: $index');
-                                            });
-                                          },
-                                        )
-                                      : CustomFieldWidget(
-                                          fieldName: field.fieldName,
-                                          valueController: field.controller,
-                                          onRemove: () {
-                                            setState(() {
-                                              customFields.removeAt(index);
-                                              //print('DealAddScreen: Removed custom field: ${field.fieldName}');
-                                            });
-                                          },
-                                          type: field.type,
-                                        ),
-                                );
-                              },
-                            ),
-                            const SizedBox(height: 8),
-                            CustomButton(
-                              buttonText: AppLocalizations.of(context)!.translate('add_field'),
-                              buttonColor: Color(0xff1E2E52),
-                              textColor: Colors.white,
-                              onPressed: _showAddFieldMenu,
-                            ),
-                          ],
+                          // Файлы (всегда показываем)
+                          _buildFileSelection(),
+                          const SizedBox(height: 15),
+                          
+                          // ТОЛЬКО пользовательские поля (те, которые добавлены через кнопку "Добавить поле")
+                          ...customFields.where((field) {
+                            // Исключаем поля, которые уже есть в серверной конфигурации
+                            return !fieldConfigurations.any((config) =>
+                              (config.isCustomField && config.fieldName == field.fieldName) ||
+                              (config.isDirectory && config.directoryId == field.directoryId)
+                            );
+                          }).map((field) {
+                            return Column(
+                              children: [
+                                field.isDirectoryField && field.directoryId != null
+                                    ? MainFieldDropdownWidget(
+                                        directoryId: field.directoryId!,
+                                        directoryName: field.fieldName,
+                                        selectedField: null,
+                                        onSelectField: (MainField selectedField) {
+                                          setState(() {
+                                            final idx = customFields.indexOf(field);
+                                            customFields[idx] = field.copyWith(
+                                              entryId: selectedField.id,
+                                              controller: TextEditingController(
+                                                  text: selectedField.value),
+                                            );
+                                          });
+                                        },
+                                        controller: field.controller,
+                                        onSelectEntryId: (int entryId) {
+                                          setState(() {
+                                            final idx = customFields.indexOf(field);
+                                            customFields[idx] = field.copyWith(
+                                              entryId: entryId,
+                                            );
+                                          });
+                                        },
+                                        onRemove: () {
+                                          setState(() {
+                                            customFields.remove(field);
+                                          });
+                                        },
+                                      )
+                                    : CustomFieldWidget(
+                                        fieldName: field.fieldName,
+                                        valueController: field.controller,
+                                        onRemove: () {
+                                          setState(() {
+                                            customFields.remove(field);
+                                          });
+                                        },
+                                        type: field.type,
+                                        isDirectory: false,
+                                      ),
+                                const SizedBox(height: 15),
+                              ],
+                            );
+                          }).toList(),
+                          
+                          // Кнопка добавления дополнительных полей
+                          CustomButton(
+                            buttonText: AppLocalizations.of(context)!.translate('add_field'),
+                            buttonColor: Color(0xff1E2E52),
+                            textColor: Colors.white,
+                            onPressed: _showAddFieldMenu,
+                          ),
+                          const SizedBox(height: 20),
                         ],
                       ),
                     ),
@@ -876,6 +930,13 @@ class _DealAddScreenState extends State<DealAddScreen> {
       String fieldValue = field.controller.text.trim();
       String? fieldType = field.type;
 
+      // ВАЖНО: Нормализуем тип поля - преобразуем "text" в "string"
+      if (fieldType == 'text') {
+        fieldType = 'string';
+      }
+      // Если type null, устанавливаем string по умолчанию
+      fieldType ??= 'string';
+
       // Валидация для number
       if (fieldType == 'number' && fieldValue.isNotEmpty) {
         if (!RegExp(r'^\d+$').hasMatch(fieldValue)) {
@@ -936,10 +997,16 @@ class _DealAddScreenState extends State<DealAddScreen> {
         customFieldMap.add({
           'key': fieldName,
           'value': fieldValue,
-          'type': fieldType ?? 'string',
+          'type': fieldType, // Теперь гарантированно один из: string, number, date, datetime
         });
         //print('DealAddScreen: Added custom field: $fieldName = $fieldValue, type: $fieldType');
       }
+    }
+
+    if (kDebugMode) {
+      print('DealAddScreen: Creating deal with data:');
+      print('  customFields: $customFieldMap');
+      print('  directoryValues: $directoryValues');
     }
 
     final localizations = AppLocalizations.of(context)!;
