@@ -30,7 +30,8 @@ class CreateMyTask extends MyTaskEvent {
   final DateTime? endDate;
   final String? description;
   final List<String>? filePaths; // Изменено на список путей к файлам
-  final List<Map<String, String>>? customFields;
+  final List<Map<String, dynamic>>? customFields;
+  final List<Map<String, int>>? directoryValues;
   final bool setPush; // Add this line
   final AppLocalizations localizations;
 
@@ -42,6 +43,7 @@ class CreateMyTask extends MyTaskEvent {
     this.endDate,
     this.description,
     this.customFields,
+    this.directoryValues,
     this.filePaths, // Изменено на список путей к файлам
     this.setPush = false, // Add this line with default value
     required this.localizations,
