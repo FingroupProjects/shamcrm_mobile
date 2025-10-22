@@ -1,12 +1,9 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
-import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
-import 'package:crm_task_manager/bloc/deal/deal_event.dart';
-import 'package:crm_task_manager/bloc/deal/deal_state.dart';
 import 'package:crm_task_manager/models/dealById_model.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class DealStatusEditWidget extends StatefulWidget {
@@ -33,8 +30,8 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
   List<DealStatus> selectedStatusesList = [];
   bool isMultiSelectEnabled = false;
   bool allSelected = false;
-  
-  // ✅ ИЗМЕНЕНО: Храним ID для сравнения вместо bool флага
+  bool isLoadingStatuses = false;
+
   Set<int> _lastInitializedIds = {};
 
   final TextStyle statusTextStyle = const TextStyle(
@@ -48,18 +45,15 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
   void initState() {
     super.initState();
     _loadMultiSelectSetting();
-    context.read<DealBloc>().add(FetchDealStatuses());
   }
 
-  // ✅ НОВОЕ: Отслеживаем изменения во входных параметрах
   @override
   void didUpdateWidget(DealStatusEditWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    
-    // Проверяем, изменились ли dealStatuses
+
     final oldIds = oldWidget.dealStatuses?.map((s) => s.id).toSet() ?? {};
     final newIds = widget.dealStatuses?.map((s) => s.id).toSet() ?? {};
-    
+
     if (!oldIds.containsAll(newIds) || !newIds.containsAll(oldIds)) {
       print('🔄 DealStatusEditWidget: dealStatuses изменились, переинициализация');
       _lastInitializedIds.clear();
@@ -72,14 +66,64 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
   Future<void> _loadMultiSelectSetting() async {
     final prefs = await SharedPreferences.getInstance();
     final value = prefs.getBool('managing_deal_status_visibility') ?? false;
-    
+
     print('DealStatusEditWidget: managing_deal_status_visibility = $value');
     print('DealStatusEditWidget: Режим = ${value ? "МУЛЬТИВЫБОР" : "ОДИНОЧНЫЙ"}');
-    
+
     if (mounted) {
       setState(() {
         isMultiSelectEnabled = value;
       });
+      // ✅ НОВОЕ: Загружаем статусы с правильным эндпоинтом
+      await _loadDealStatuses();
+    }
+  }
+
+  // ✅ НОВОЕ: Метод для загрузки статусов напрямую из API
+  Future<void> _loadDealStatuses() async {
+    if (isLoadingStatuses) return;
+
+    setState(() {
+      isLoadingStatuses = true;
+    });
+
+    try {
+      print('📡 Загрузка статусов: includeAll = $isMultiSelectEnabled');
+
+      // Используем правильный эндпоинт в зависимости от настройки
+      final statuses = await ApiService().getDealStatuses(
+          includeAll: isMultiSelectEnabled
+      );
+
+      print('✅ Загружено ${statuses.length} статусов');
+
+      if (mounted) {
+        setState(() {
+          statusList = statuses;
+          isLoadingStatuses = false;
+        });
+
+        // После загрузки инициализируем выбранные статусы
+        _initializeSelectedStatuses();
+      }
+    } catch (e) {
+      print('❌ Ошибка загрузки статусов: $e');
+      if (mounted) {
+        setState(() {
+          isLoadingStatuses = false;
+        });
+
+        // Показываем ошибку пользователю
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Ошибка загрузки статусов',
+              style: statusTextStyle.copyWith(color: Colors.white),
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -88,14 +132,14 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
       print('❌ DealStatusEditWidget: statusList пустой, инициализация невозможна');
       return;
     }
-    
+
     print('🔍 DealStatusEditWidget: Начало инициализации');
     print('   - widget.selectedStatus = ${widget.selectedStatus}');
     print('   - widget.dealStatuses = ${widget.dealStatuses?.map((s) => s.id).toList()}');
     print('   - statusList IDs = ${statusList.map((s) => s.id).toList()}');
-    
+
     List<int> targetIds = [];
-    
+
     // ✅ ПРИОРИТЕТ 1: Используем dealStatuses (массив от бэкенда)
     if (widget.dealStatuses != null && widget.dealStatuses!.isNotEmpty) {
       print('✅ Используем dealStatuses от бэкенда');
@@ -116,20 +160,20 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
       print('✅ Автовыбор единственного статуса');
       targetIds = [statusList[0].id];
     }
-    
+
     // ✅ ПРОВЕРКА: Нужна ли повторная инициализация?
     final targetIdsSet = targetIds.toSet();
-    if (_lastInitializedIds.containsAll(targetIdsSet) && 
+    if (_lastInitializedIds.containsAll(targetIdsSet) &&
         targetIdsSet.containsAll(_lastInitializedIds)) {
-      print('⏭️ Инициализация уже выполнена для этих ID, пропускаем');
+      print('⭐️ Инициализация уже выполнена для этих ID, пропускаем');
       return;
     }
-    
+
     if (targetIds.isNotEmpty) {
       final newSelectedList = statusList
           .where((status) => targetIds.contains(status.id))
           .toList();
-      
+
       if (newSelectedList.isNotEmpty) {
         setState(() {
           selectedStatusesList = newSelectedList;
@@ -137,18 +181,15 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
           allSelected = newSelectedList.length == statusList.length;
           _lastInitializedIds = targetIds.toSet();
         });
-        
+
         print('✅ Инициализировано ${selectedStatusesList.length} статус(ов)');
         print('✅ Выбранные ID: ${selectedStatusesList.map((s) => s.id).toList()}');
-        
-        // ✅ ВАЖНО: Уведомляем родителя о выборе ТОЛЬКО при реальном изменении
-        // Родитель сам должен проверять, нужно ли вызывать setState
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          widget.onSelectStatus(newSelectedList.first);
-          if (widget.onSelectMultipleStatuses != null && isMultiSelectEnabled) {
-            widget.onSelectMultipleStatuses!(targetIds);
-          }
-        });
+
+        // ✅ ВАЖНО: Уведомляем родителя о выборе
+        widget.onSelectStatus(newSelectedList.first);
+        if (widget.onSelectMultipleStatuses != null && isMultiSelectEnabled) {
+          widget.onSelectMultipleStatuses!(targetIds);
+        }
       } else {
         print('❌ Не найдены статусы с ID: $targetIds');
         print('   Доступные ID: ${statusList.map((s) => s.id).toList()}');
@@ -166,12 +207,12 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
       } else {
         selectedStatusesList = [];
       }
-      
+
       if (selectedStatusesList.isNotEmpty) {
         widget.onSelectStatus(selectedStatusesList.first);
         if (widget.onSelectMultipleStatuses != null) {
           widget.onSelectMultipleStatuses!(
-            selectedStatusesList.map((s) => s.id).toList()
+              selectedStatusesList.map((s) => s.id).toList()
           );
         }
       }
@@ -183,86 +224,44 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        BlocBuilder<DealBloc, DealState>(
-          builder: (context, state) {
-            if (state is DealLoading) {
-              return const Center(
-                child: CircularProgressIndicator(
-                  color: Color(0xff1E2E52),
+        // ✅ ИЗМЕНЕНО: Используем собственную загрузку вместо BlocBuilder
+        if (isLoadingStatuses)
+          const Center(
+            child: CircularProgressIndicator(
+              color: Color(0xff1E2E52),
+            ),
+          )
+        else if (statusList.isEmpty)
+          Center(
+            child: Text(
+              'Ошибка загрузки статусов',
+              style: statusTextStyle.copyWith(color: Colors.red),
+            ),
+          )
+        else
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                AppLocalizations.of(context)!.translate('deal_statuses'),
+                style: statusTextStyle.copyWith(fontWeight: FontWeight.w400),
+              ),
+              const SizedBox(height: 4),
+              Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF4F7FD),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    width: 1,
+                    color: const Color(0xFFF4F7FD),
+                  ),
                 ),
-              );
-            }
-            
-            if (state is DealError) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      AppLocalizations.of(context)!.translate(state.message),
-                      style: statusTextStyle.copyWith(color: Colors.white),
-                    ),
-                    behavior: SnackBarBehavior.floating,
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    backgroundColor: Colors.red,
-                    elevation: 3,
-                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                    duration: const Duration(seconds: 3),
-                  ),
-                );
-              });
-              return Center(
-                child: Text(
-                  'Ошибка загрузки статусов',
-                  style: statusTextStyle.copyWith(color: Colors.red),
-                ),
-              );
-            }
-
-            if (state is DealLoaded) {
-              // ✅ КРИТИЧНО: Обновляем statusList и сразу инициализируем
-              final needsInit = statusList.isEmpty || 
-                  statusList.length != state.dealStatuses.length;
-              
-              statusList = state.dealStatuses;
-              
-              if (needsInit) {
-                // Используем WidgetsBinding чтобы не вызывать setState во время build
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  _initializeSelectedStatuses();
-                });
-              }
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    AppLocalizations.of(context)!.translate('deal_statuses'),
-                    style: statusTextStyle.copyWith(fontWeight: FontWeight.w400),
-                  ),
-                  const SizedBox(height: 4),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF4F7FD),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        width: 1,
-                        color: const Color(0xFFF4F7FD),
-                      ),
-                    ),
-                    child: isMultiSelectEnabled
-                        ? _buildMultiSelectDropdown()
-                        : _buildSingleSelectDropdown(),
-                  ),
-                ],
-              );
-            }
-            
-            return const SizedBox();
-          },
-        ),
+                child: isMultiSelectEnabled
+                    ? _buildMultiSelectDropdown()
+                    : _buildSingleSelectDropdown(),
+              ),
+            ],
+          ),
       ],
     );
   }
@@ -295,7 +294,9 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
       },
       headerBuilder: (context, selectedItem, enabled) {
         return Text(
-          selectedItem.title,
+          selectedItem?.title ??
+              AppLocalizations.of(context)!.translate('select_status'),
+
           style: statusTextStyle,
         );
       },
@@ -325,6 +326,13 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
     print('📋 Рендер мультивыбора');
     print('   - statusList: ${statusList.length} элементов');
     print('   - selectedStatusesList: ${selectedStatusesList.length} элементов');
+
+    // ✅ Синхронизируем выбранные статусы с актуальным statusList
+    final currentlySelectedIds = selectedStatusesList.map((s) => s.id).toSet();
+    final actualSelectedStatuses = statusList
+        .where((status) => currentlySelectedIds.contains(status.id))
+        .toList();
+
     print('   - selectedStatusesList IDs: ${selectedStatusesList.map((s) => s.id).toList()}');
     
     return CustomDropdown<DealStatus>.multiSelectSearch(
@@ -374,10 +382,10 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
                         ),
                         child: allSelected
                             ? const Icon(
-                                Icons.check,
-                                color: Colors.white,
-                                size: 14,
-                              )
+                          Icons.check,
+                          color: Colors.white,
+                          size: 14,
+                        )
                             : null,
                       ),
                       const SizedBox(width: 12),
@@ -405,9 +413,9 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
             style: statusTextStyle,
           );
         }
-        
+
         String statusNames = selectedItems.map((e) => e.title).join(', ');
-        
+
         return Text(
           statusNames,
           style: statusTextStyle,
@@ -420,6 +428,8 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
         style: statusTextStyle.copyWith(fontSize: 14),
       ),
       onListChanged: (value) {
+        print('✏️ Выбрано статусов: ${value.length}');
+
         print('✏️ onListChanged вызван: ${value.length} статусов');
         
         // ✅ КРИТИЧНО: Проверяем, действительно ли изменились данные
@@ -442,7 +452,7 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
             selectedStatusData = value.first;
           }
         });
-        
+
         if (value.isNotEmpty) {
           widget.onSelectStatus(value.first);
           if (widget.onSelectMultipleStatuses != null) {
@@ -474,10 +484,10 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
               ),
               child: isSelected
                   ? const Icon(
-                      Icons.check,
-                      color: Colors.white,
-                      size: 14,
-                    )
+                Icons.check,
+                color: Colors.white,
+                size: 14,
+              )
                   : null,
             ),
             const SizedBox(width: 12),
