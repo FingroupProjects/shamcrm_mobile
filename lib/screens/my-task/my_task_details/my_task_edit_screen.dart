@@ -1,17 +1,22 @@
 import 'dart:io';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/bloc/field_configuration/field_configuration_bloc.dart';
+import 'package:crm_task_manager/bloc/field_configuration/field_configuration_event.dart';
+import 'package:crm_task_manager/bloc/field_configuration/field_configuration_state.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_bloc.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_event.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
+import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/models/my-task_model.dart';
 import 'package:crm_task_manager/models/my-taskbyId_model.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/mytask_status_list_edit.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -51,6 +56,12 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
   final TextEditingController endDateController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
 
+  // Конфигурация полей
+  List<FieldConfiguration> fieldConfigurations = [];
+  bool isConfigurationLoaded = false;
+  Map<String, Widget> fieldWidgets = {};
+  List<String> fieldOrder = [];
+
   // Добавьте эти переменные в класс _MyTaskEditScreenState
   List<String> selectedFiles = [];
   List<String> fileNames = [];
@@ -69,6 +80,14 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
   @override
   void initState() {
     super.initState();
+    
+    // Загружаем конфигурацию после build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _loadFieldConfiguration();
+      }
+    });
+    
     _initializeControllers();
     _loadInitialData();
 
@@ -96,6 +115,106 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
 
   void _loadInitialData() {
     context.read<MyTaskBloc>().add(FetchMyTaskStatuses());
+  }
+
+  Future<void> _loadFieldConfiguration() async {
+    if (kDebugMode) {
+      print('MyTaskEditScreen: Loading field configuration');
+    }
+    
+    if (mounted) {
+      context.read<FieldConfigurationBloc>().add(
+        FetchFieldConfiguration('tasks')  // Используем ту же конфигурацию что и для обычных задач
+      );
+    }
+  }
+
+  void _buildFieldsFromConfiguration() {
+    if (kDebugMode) {
+      print('MyTaskEditScreen: Building fields from configuration with ${fieldConfigurations.length} fields');
+    }
+    
+    fieldWidgets.clear();
+    fieldOrder.clear();
+
+    for (var config in fieldConfigurations) {
+      if (!config.isActive) {
+        if (kDebugMode) {
+          print('MyTaskEditScreen: Skipping inactive field: ${config.fieldName}');
+        }
+        continue;
+      }
+
+      Widget? widget = _buildFieldWidget(config);
+      if (widget != null) {
+        fieldWidgets[config.fieldName] = widget;
+        fieldOrder.add(config.fieldName);
+        
+        if (kDebugMode) {
+          print('MyTaskEditScreen: Added field widget for: ${config.fieldName} at position ${config.position}');
+        }
+      }
+    }
+    
+    if (kDebugMode) {
+      print('MyTaskEditScreen: Total field widgets: ${fieldWidgets.length}');
+    }
+  }
+
+  Widget? _buildFieldWidget(FieldConfiguration config) {
+    switch (config.fieldName) {
+      case 'name':
+        return CustomTextField(
+          controller: nameController,
+          hintText: AppLocalizations.of(context)!.translate('enter_title'),
+          label: AppLocalizations.of(context)!.translate('event_name'),
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return AppLocalizations.of(context)!.translate('field_required');
+            }
+            return null;
+          },
+        );
+        
+      case 'status_id':
+        return MyTaskStatusEditWidget(
+          selectedStatus: _selectedStatuses?.toString(),
+          onSelectStatus: (MyTaskStatus selectedStatusData) {
+            setState(() {
+              _selectedStatuses = selectedStatusData.id;
+            });
+          },
+          isSubmitted: isSubmitted,
+        );
+        
+      case 'description':
+        return CustomTextField(
+          controller: descriptionController,
+          hintText: AppLocalizations.of(context)!.translate('enter_description'),
+          label: AppLocalizations.of(context)!.translate('description_list'),
+          maxLines: 5,
+          keyboardType: TextInputType.multiline,
+        );
+        
+      case 'end_date':
+        return CustomTextFieldDate(
+          controller: endDateController,
+          label: AppLocalizations.of(context)!.translate('deadline'),
+          hasError: isEndDateInvalid,
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return AppLocalizations.of(context)!.translate('field_required');
+            }
+            return null;
+          },
+        );
+        
+      default:
+        if (kDebugMode) {
+          print('MyTaskEditScreen: Unknown field: ${config.fieldName}');
+        }
+        return null;
+    }
   }
 
 
@@ -505,34 +624,70 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
         ),
         leadingWidth: 40,
       ),
-      body: BlocListener<MyTaskBloc, MyTaskState>(
-        listener: (context, state) {
-          if (state is MyTaskSuccess) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  '${state.message}',
-                  style: TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
+      body: MultiBlocListener(
+        listeners: [
+          BlocListener<MyTaskBloc, MyTaskState>(
+            listener: (context, state) {
+              if (state is MyTaskSuccess) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      '${state.message}',
+                      style: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white,
+                      ),
+                    ),
+                    behavior: SnackBarBehavior.floating,
+                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    backgroundColor: Colors.green,
+                    elevation: 3,
+                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                    duration: Duration(seconds: 3),
                   ),
-                ),
-                behavior: SnackBarBehavior.floating,
-                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                backgroundColor: Colors.green,
-                elevation: 3,
-                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                duration: Duration(seconds: 3), // Установлено на 2 секунды
-              ),
-            );
-            Navigator.pop(context, true);
-          }
-        },
+                );
+                Navigator.pop(context, true);
+              }
+            },
+          ),
+          BlocListener<FieldConfigurationBloc, FieldConfigurationState>(
+            listener: (context, configState) {
+              if (kDebugMode) {
+                print('MyTaskEditScreen: FieldConfigurationBloc state changed: ${configState.runtimeType}');
+              }
+              
+              if (configState is FieldConfigurationLoaded) {
+                if (kDebugMode) {
+                  print('MyTaskEditScreen: Configuration loaded with ${configState.fields.length} fields');
+                }
+                
+                if (mounted) {
+                  setState(() {
+                    fieldConfigurations = configState.fields;
+                    isConfigurationLoaded = true;
+                  });
+                  
+                  _buildFieldsFromConfiguration();
+                }
+              } else if (configState is FieldConfigurationError) {
+                if (kDebugMode) {
+                  print('MyTaskEditScreen: Configuration error: ${configState.message}');
+                }
+                
+                if (mounted) {
+                  setState(() {
+                    isConfigurationLoaded = false;
+                  });
+                }
+              }
+            },
+          ),
+        ],
         child: Form(
         key: _formKey,
         child: Column(
@@ -547,22 +702,30 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      CustomTextField(
-                        controller: nameController,
-                        hintText: AppLocalizations.of(context)!
-                            .translate('enter_title'),
-                        label: AppLocalizations.of(context)!
-                            .translate('event_name'),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return AppLocalizations.of(context)!
-                                .translate('field_required');
-                          }
-                          return null;
-                        },
-                      ),
-                         const SizedBox(height: 8),
-                         MyTaskStatusEditWidget(
+                      // Используем конфигурацию если загружена
+                      if (isConfigurationLoaded && fieldWidgets.isNotEmpty) ...[
+                        for (var fieldName in fieldOrder) ...[
+                          fieldWidgets[fieldName]!,
+                          const SizedBox(height: 8),
+                        ],
+                      ] else ...[
+                        // Fallback: показываем все поля как раньше
+                        CustomTextField(
+                          controller: nameController,
+                          hintText: AppLocalizations.of(context)!
+                              .translate('enter_title'),
+                          label: AppLocalizations.of(context)!
+                              .translate('event_name'),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return AppLocalizations.of(context)!
+                                  .translate('field_required');
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        MyTaskStatusEditWidget(
                           selectedStatus: _selectedStatuses?.toString(),
                           onSelectStatus: (MyTaskStatus selectedStatusData) {
                             setState(() {
@@ -571,43 +734,24 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
                           },
                           isSubmitted: isSubmitted,
                         ),
-                      // const SizedBox(height: 8),
-                      // CustomTextFieldDate(
-                      //   controller: startDateController,
-                      //   label: AppLocalizations.of(context)!
-                      //       .translate('from_list'),
-                      //   // validator: (value) {
-                      //   //   if (value == null || value.isEmpty) {
-                      //   //     return AppLocalizations.of(context)!
-                      //   //         .translate('field_required');
-                      //   //   }
-                      //   //   return null;
-                      //   // },
-                      // ),
-                      const SizedBox(height: 8),
-                      CustomTextField(
-                        controller: descriptionController,
-                        hintText: AppLocalizations.of(context)!
-                            .translate('enter_description'),
-                        label: AppLocalizations.of(context)!
-                            .translate('description_list'),
-                        maxLines: 5,
-                        keyboardType: TextInputType.multiline,
-                      ),
-                      const SizedBox(height: 8),
-                      CustomTextFieldDate(
-                        controller: endDateController,
-                        label:
-                            AppLocalizations.of(context)!.translate('deadline'),
-                        hasError: isEndDateInvalid,
-                        // validator: (value) {
-                        //   if (value == null || value.isEmpty) {
-                        //     return AppLocalizations.of(context)!
-                        //         .translate('field_required');
-                        //   }
-                        //   return null;
-                        // },
-                      ),
+                        const SizedBox(height: 8),
+                        CustomTextField(
+                          controller: descriptionController,
+                          hintText: AppLocalizations.of(context)!
+                              .translate('enter_description'),
+                          label: AppLocalizations.of(context)!
+                              .translate('description_list'),
+                          maxLines: 5,
+                          keyboardType: TextInputType.multiline,
+                        ),
+                        const SizedBox(height: 8),
+                        CustomTextFieldDate(
+                          controller: endDateController,
+                          label:
+                              AppLocalizations.of(context)!.translate('deadline'),
+                          hasError: isEndDateInvalid,
+                        ),
+                      ],
                       const SizedBox(height: 16),
 
                       if (!_showAdditionalFields)
