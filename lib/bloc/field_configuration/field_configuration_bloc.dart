@@ -36,20 +36,19 @@ class FieldConfigurationBloc extends Bloc<FieldConfigurationEvent, FieldConfigur
           print('FieldConfigurationBloc: Found cached configuration with ${cachedConfig.result.length} fields');
         }
         
-        // Фильтруем только активные поля и сортируем по position
-        final activeFields = cachedConfig.result
-            .where((field) => field.isActive)
+        // Получаем ВСЕ поля (не фильтруем по isActive) и сортируем по position
+        final allFields = cachedConfig.result
             .toList()
           ..sort((a, b) => a.position.compareTo(b.position));
         
         if (kDebugMode) {
-          print('FieldConfigurationBloc: Active fields count: ${activeFields.length}');
-          for (var field in activeFields) {
-            print('FieldConfigurationBloc: Field - name: ${field.fieldName}, position: ${field.position}, isCustom: ${field.isCustomField}, isDirectory: ${field.isDirectory}');
+          print('FieldConfigurationBloc: All fields count: ${allFields.length}');
+          for (var field in allFields) {
+            print('FieldConfigurationBloc: Field - name: ${field.fieldName}, position: ${field.position}, isActive: ${field.isActive}, isCustom: ${field.isCustomField}, isDirectory: ${field.isDirectory}');
           }
         }
         
-        emit(FieldConfigurationLoaded(activeFields));
+        emit(FieldConfigurationLoaded(allFields));
         
         if (kDebugMode) {
           print('FieldConfigurationBloc: Successfully emitted FieldConfigurationLoaded state from cache');
@@ -77,20 +76,19 @@ class FieldConfigurationBloc extends Bloc<FieldConfigurationEvent, FieldConfigur
         configuration: response,
       );
       
-      // Фильтруем только активные поля и сортируем по position
-      final activeFields = response.result
-          .where((field) => field.isActive)
+      // Получаем ВСЕ поля (не фильтруем по isActive) и сортируем по position
+      final allFields = response.result
           .toList()
         ..sort((a, b) => a.position.compareTo(b.position));
       
       if (kDebugMode) {
-        print('FieldConfigurationBloc: Active fields count: ${activeFields.length}');
-        for (var field in activeFields) {
-          print('FieldConfigurationBloc: Field - name: ${field.fieldName}, position: ${field.position}, isCustom: ${field.isCustomField}, isDirectory: ${field.isDirectory}');
+        print('FieldConfigurationBloc: All fields count: ${allFields.length}');
+        for (var field in allFields) {
+          print('FieldConfigurationBloc: Field - name: ${field.fieldName}, position: ${field.position}, isActive: ${field.isActive}, isCustom: ${field.isCustomField}, isDirectory: ${field.isDirectory}');
         }
       }
       
-      emit(FieldConfigurationLoaded(activeFields));
+      emit(FieldConfigurationLoaded(allFields));
       
       if (kDebugMode) {
         print('FieldConfigurationBloc: Successfully emitted FieldConfigurationLoaded state from API');

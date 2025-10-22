@@ -35,13 +35,43 @@ class LeadDataLoaded extends LeadState {
   final List<Lead> leads;
   final int currentPage;
   final Map<int, int> leadCounts;
+  final DateTime timestamp; // Добавляем временную метку для гарантии уникальности
 
-  LeadDataLoaded(this.leads, {this.currentPage = 1, required this.leadCounts});
+  LeadDataLoaded(
+    this.leads, {
+    this.currentPage = 1,
+    required this.leadCounts,
+    DateTime? timestamp,
+  }) : this.timestamp = timestamp ?? DateTime.now();
 
   LeadDataLoaded merge(List<Lead> newLeads) {
-    return LeadDataLoaded([...leads, ...newLeads],
-        currentPage: currentPage + 1, leadCounts: leadCounts);
+    return LeadDataLoaded(
+      [...leads, ...newLeads],
+      currentPage: currentPage + 1,
+      leadCounts: leadCounts,
+      timestamp: DateTime.now(), // Обновляем временную метку
+    );
   }
+
+  // Метод для создания нового состояния с обновлёнными данными
+  LeadDataLoaded refresh(List<Lead> newLeads, {Map<int, int>? newCounts}) {
+    return LeadDataLoaded(
+      newLeads,
+      currentPage: 1, // Сбрасываем пагинацию
+      leadCounts: newCounts ?? leadCounts,
+      timestamp: DateTime.now(), // Новая временная метка
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is LeadDataLoaded &&
+        other.timestamp == timestamp; // Сравниваем по timestamp
+  }
+
+  @override
+  int get hashCode => timestamp.hashCode;
 }
 
 class LeadError extends LeadState {
