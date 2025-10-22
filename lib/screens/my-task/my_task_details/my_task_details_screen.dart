@@ -4,6 +4,9 @@ import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/calendar/calendar_bloc.dart';
 import 'package:crm_task_manager/bloc/calendar/calendar_event.dart';
+import 'package:crm_task_manager/bloc/field_configuration/field_configuration_bloc.dart';
+import 'package:crm_task_manager/bloc/field_configuration/field_configuration_event.dart';
+import 'package:crm_task_manager/bloc/field_configuration/field_configuration_state.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_bloc.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_event.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_state.dart';
@@ -12,11 +15,13 @@ import 'package:crm_task_manager/bloc/my-task_by_id/taskById_event.dart';
 import 'package:crm_task_manager/bloc/my-task_by_id/taskById_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/file_utils.dart';
+import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/models/my-taskbyId_model.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_delete.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_edit_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -140,6 +145,11 @@ class FileCacheManager {
 class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
   List<Map<String, String>> details = [];
   MyTaskById? currentMyTask;
+  
+  // Конфигурация полей
+  List<FieldConfiguration> fieldConfigurations = [];
+  bool isConfigurationLoaded = false;
+  
   final ApiService _apiService = ApiService();
   bool _isLoading = false;
   bool _isDownloading = false;
@@ -148,9 +158,29 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
   @override
   void initState() {
     super.initState();
+    
+    // Загружаем конфигурацию после того как виджет построен
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _loadFieldConfiguration();
+      }
+    });
+    
     context
         .read<MyTaskByIdBloc>()
         .add(FetchMyTaskByIdEvent(taskId: int.parse(widget.taskId)));
+  }
+
+  Future<void> _loadFieldConfiguration() async {
+    if (kDebugMode) {
+      print('MyTaskDetailsScreen: Loading field configuration');
+    }
+    
+    if (mounted) {
+      context.read<FieldConfigurationBloc>().add(
+        FetchFieldConfiguration('tasks')  // Используем ту же конфигурацию что и для обычных задач
+      );
+    }
   }
 
   String formatDate(String? dateString) {
@@ -172,6 +202,122 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
     }
 
     currentMyTask = task;
+    
+    if (kDebugMode) {
+      print('=== MyTaskDetailsScreen: _updateDetails START ===');
+      print('MyTaskDetailsScreen: isConfigurationLoaded = $isConfigurationLoaded');
+      print('MyTaskDetailsScreen: fieldConfigurations.length = ${fieldConfigurations.length}');
+    }
+    
+    // Если конфигурация загружена, строим детали на её основе
+    if (isConfigurationLoaded && fieldConfigurations.isNotEmpty) {
+      if (kDebugMode) {
+        print('MyTaskDetailsScreen: Using configuration-based details');
+      }
+      _buildDetailsFromConfiguration(task);
+    } else {
+      if (kDebugMode) {
+        print('MyTaskDetailsScreen: Using LEGACY method (fallback)');
+      }
+      _buildDetailsLegacy(task);
+    }
+    
+    if (kDebugMode) {
+      print('MyTaskDetailsScreen: Total details built: ${details.length}');
+      print('=== MyTaskDetailsScreen: _updateDetails END ===');
+    }
+  }
+
+  // Новый метод для построения деталей на основе конфигурации
+  void _buildDetailsFromConfiguration(MyTaskById task) {
+    details = [];
+    
+    if (kDebugMode) {
+      print('=== _buildDetailsFromConfiguration START ===');
+      print('MyTaskDetailsScreen: fieldConfigurations count: ${fieldConfigurations.length}');
+    }
+    
+    // Проходим по конфигурации в правильном порядке
+    for (var config in fieldConfigurations) {
+      if (!config.isActive) continue;
+      
+      String? value = _getFieldValue(task, config);
+      if (value != null && value.isNotEmpty) {
+        String label = _getFieldLabel(config);
+        details.add({'label': label, 'value': value});
+      }
+    }
+    
+    // Добавляем дополнительные поля
+    _addExtraFields(task);
+    
+    // Добавляем файлы если есть
+    if (task.files != null && task.files!.isNotEmpty) {
+      details.add({
+        'label': AppLocalizations.of(context)!.translate('files_details'),
+        'value': task.files!.length.toString() + ' ' + AppLocalizations.of(context)!.translate('files'),
+      });
+    }
+    
+    if (kDebugMode) {
+      print('=== _buildDetailsFromConfiguration END ===');
+    }
+  }
+
+  // Получение значения поля из задачи
+  String? _getFieldValue(MyTaskById task, FieldConfiguration config) {
+    switch (config.fieldName) {
+      case 'name':
+        return task.name;
+      case 'description':
+        return task.description?.isNotEmpty == true ? task.description : null;
+      case 'status_id':
+        return task.taskStatus?.title;
+      case 'end_date':
+        return task.endDate != null && task.endDate!.isNotEmpty
+            ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.endDate!))
+            : null;
+      default:
+        return null;
+    }
+  }
+
+  // Получение лейбла для поля
+  String _getFieldLabel(FieldConfiguration config) {
+    if (config.isCustomField || config.isDirectory) {
+      return '${config.fieldName}:';
+    }
+    
+    switch (config.fieldName) {
+      case 'name':
+        return AppLocalizations.of(context)!.translate('task_name');
+      case 'description':
+        return AppLocalizations.of(context)!.translate('description_details');
+      case 'status_id':
+        return AppLocalizations.of(context)!.translate('Статус:');
+      case 'end_date':
+        return AppLocalizations.of(context)!.translate('deadLine');
+      default:
+        return '${config.fieldName}:';
+    }
+  }
+
+  // Добавление дополнительных полей
+  void _addExtraFields(MyTaskById task) {
+    // Дата создания
+    if (task.startDate != null && task.startDate!.isNotEmpty) {
+      bool alreadyAdded = details.any((d) => d['label'] == AppLocalizations.of(context)!.translate('created_at_details'));
+      if (!alreadyAdded) {
+        details.add({
+          'label': AppLocalizations.of(context)!.translate('created_at_details'),
+          'value': formatDate(task.startDate)
+        });
+      }
+    }
+  }
+
+  // Legacy метод для построения деталей (fallback)
+  void _buildDetailsLegacy(MyTaskById task) {
     details = [
       {
         'label': AppLocalizations.of(context)!.translate('task_name'),
@@ -266,27 +412,67 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<MyTaskByIdBloc, MyTaskByIdState>(
-      builder: (context, state) {
-        if (state is MyTaskByIdLoading) {
-          return Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(color: Color(0xff1E2E52)),
-            ),
-          );
-        } else if (state is MyTaskByIdLoaded) {
-          if (state.task == null) {
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<FieldConfigurationBloc, FieldConfigurationState>(
+          listener: (context, configState) {
+            if (kDebugMode) {
+              print('MyTaskDetailsScreen: FieldConfigurationBloc state changed: ${configState.runtimeType}');
+            }
+            
+            if (configState is FieldConfigurationLoaded) {
+              if (kDebugMode) {
+                print('MyTaskDetailsScreen: Configuration loaded with ${configState.fields.length} fields');
+              }
+              
+              if (mounted) {
+                setState(() {
+                  fieldConfigurations = configState.fields;
+                  isConfigurationLoaded = true;
+                });
+                
+                // Перестраиваем детали если задача уже загружена
+                if (currentMyTask != null) {
+                  setState(() {
+                    _updateDetails(currentMyTask);
+                  });
+                }
+              }
+            } else if (configState is FieldConfigurationError) {
+              if (kDebugMode) {
+                print('MyTaskDetailsScreen: Configuration error: ${configState.message}');
+              }
+              
+              if (mounted) {
+                setState(() {
+                  isConfigurationLoaded = false;
+                });
+              }
+            }
+          },
+        ),
+      ],
+      child: BlocBuilder<MyTaskByIdBloc, MyTaskByIdState>(
+        builder: (context, state) {
+          if (state is MyTaskByIdLoading) {
             return Scaffold(
               body: Center(
-                child: Text(
-                  AppLocalizations.of(context)!
-                      .translate('task_data_unavailable'),
-                ),
+                child: CircularProgressIndicator(color: Color(0xff1E2E52)),
               ),
             );
-          }
-          MyTaskById task = state.task!;
-          _updateDetails(task);
+          } else if (state is MyTaskByIdLoaded) {
+            if (state.task == null) {
+              return Scaffold(
+                body: Center(
+                  child: Text(
+                    AppLocalizations.of(context)!
+                        .translate('task_data_unavailable'),
+                  ),
+                ),
+              );
+            }
+            MyTaskById task = state.task!;
+            _updateDetails(task);
 
           return Scaffold(
             appBar: _buildAppBar(context,
@@ -310,6 +496,7 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
           body: Center(child: Text('')),
         );
       },
+      ),
     );
   }
 
