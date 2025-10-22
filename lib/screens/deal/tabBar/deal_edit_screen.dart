@@ -5,6 +5,9 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/bloc/deal/deal_state.dart';
+import 'package:crm_task_manager/bloc/field_configuration/field_configuration_bloc.dart';
+import 'package:crm_task_manager/bloc/field_configuration/field_configuration_event.dart';
+import 'package:crm_task_manager/bloc/field_configuration/field_configuration_state.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_event.dart';
 import 'package:crm_task_manager/bloc/main_field/main_field_bloc.dart';
@@ -14,6 +17,7 @@ import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/models/dealById_model.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
+import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
@@ -25,6 +29,7 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_details/main_field_dro
 import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -81,6 +86,11 @@ class _DealEditScreenState extends State<DealEditScreen> {
   final TextEditingController sumController = TextEditingController();
   final ApiService _apiService = ApiService();
 
+  // Конфигурация полей
+  List<FieldConfiguration> fieldConfigurations = [];
+  bool isConfigurationLoaded = false;
+  Map<String, Widget> fieldWidgets = {};
+  List<String> fieldOrder = [];
 
   int? _selectedStatuses;
   String? selectedManager;
@@ -98,6 +108,14 @@ class _DealEditScreenState extends State<DealEditScreen> {
   @override
   void initState() {
     super.initState();
+    
+    // Загружаем конфигурацию после build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _loadFieldConfiguration();
+      }
+    });
+    
     _initializeControllers();
     _loadInitialData();
     _fetchAndAddDirectoryFields();
@@ -106,65 +124,65 @@ class _DealEditScreenState extends State<DealEditScreen> {
       setState(() {
         fileNames.addAll(existingFiles.map((file) => file.name));
         fileSizes.addAll(existingFiles.map(
-                (file) => '${(file.path.length / 1024).toStringAsFixed(3)}KB'));
+            (file) => '${(file.path.length / 1024).toStringAsFixed(3)}KB'));
         selectedFiles.addAll(existingFiles.map((file) => file.path));
       });
     }
   }
 
-  void _initializeControllers() {
-    titleController.text = widget.dealName;
-    _selectedStatuses = widget.statusId;
-    descriptionController.text = widget.description ?? '';
-    selectedManager = widget.manager;
+ void _initializeControllers() {
+  titleController.text = widget.dealName;
+  _selectedStatuses = widget.statusId;
+  descriptionController.text = widget.description ?? '';
+  selectedManager = widget.manager;
+  
+  if (widget.lead != null) {
+    selectedLead = widget.lead;
+  }
 
-    if (widget.lead != null) {
-      selectedLead = widget.lead;
-    }
+  debugPrint('Initialized selectedLead: $selectedLead');
+  
+  startDateController.text = widget.startDate ?? '';
+  endDateController.text = widget.endDate ?? '';
+  sumController.text = widget.sum ?? '';
 
-    debugPrint('Initialized selectedLead: $selectedLead');
+  for (var customField in widget.dealCustomFields) {
+    customFields.add(CustomField(
+      fieldName: customField.key,
+      controller: TextEditingController(text: customField.value),
+      uniqueId: Uuid().v4(),
+      type: customField.type ?? 'string',
+    ));
+  }
 
-    startDateController.text = widget.startDate ?? '';
-    endDateController.text = widget.endDate ?? '';
-    sumController.text = widget.sum ?? '';
+  // ✅ ИСПРАВЛЕНО: Инициализация списка ID статусов с проверкой
+  if (widget.dealStatuses != null && widget.dealStatuses!.isNotEmpty) {
+    _selectedStatusIds = widget.dealStatuses!.map((s) => s.id).toList();
+    print('✅ DealEditScreen: Инициализированы статусы: $_selectedStatusIds');
+  } else {
+    _selectedStatusIds = [widget.statusId];
+    print('⚠️ DealEditScreen: Используем fallback statusId: ${widget.statusId}');
+  }
 
-    for (var customField in widget.dealCustomFields) {
+  if (widget.directoryValues != null && widget.directoryValues!.isNotEmpty) {
+    final seen = <String>{};
+    final uniqueDirectoryValues = widget.directoryValues!.where((dirValue) {
+      final key = '${dirValue.entry.directory.id}_${dirValue.entry.id}';
+      return seen.add(key);
+    }).toList();
+
+    for (var dirValue in uniqueDirectoryValues) {
       customFields.add(CustomField(
-        fieldName: customField.key,
-        controller: TextEditingController(text: customField.value),
+        fieldName: dirValue.entry.directory.name,
+        controller: TextEditingController(text: dirValue.entry.values.first['value'] ?? ''),
+        isDirectoryField: true,
+        directoryId: dirValue.entry.directory.id,
+        entryId: dirValue.entry.id,
         uniqueId: Uuid().v4(),
-        type: customField.type ?? 'string',
       ));
     }
-
-    // ✅ ИСПРАВЛЕНО: Инициализация списка ID статусов с проверкой
-    if (widget.dealStatuses != null && widget.dealStatuses!.isNotEmpty) {
-      _selectedStatusIds = widget.dealStatuses!.map((s) => s.id).toList();
-      print('✅ DealEditScreen: Инициализированы статусы: $_selectedStatusIds');
-    } else {
-      _selectedStatusIds = [widget.statusId];
-      print('⚠️ DealEditScreen: Используем fallback statusId: ${widget.statusId}');
-    }
-
-    if (widget.directoryValues != null && widget.directoryValues!.isNotEmpty) {
-      final seen = <String>{};
-      final uniqueDirectoryValues = widget.directoryValues!.where((dirValue) {
-        final key = '${dirValue.entry.directory.id}_${dirValue.entry.id}';
-        return seen.add(key);
-      }).toList();
-
-      for (var dirValue in uniqueDirectoryValues) {
-        customFields.add(CustomField(
-          fieldName: dirValue.entry.directory.name,
-          controller: TextEditingController(text: dirValue.entry.values.first['value'] ?? ''),
-          isDirectoryField: true,
-          directoryId: dirValue.entry.directory.id,
-          entryId: dirValue.entry.id,
-          uniqueId: Uuid().v4(),
-        ));
-      }
-    }
   }
+}
 
   void _fetchAndAddDirectoryFields() async {
     try {
@@ -173,7 +191,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
         setState(() {
           for (var link in directoryLinkData.data!) {
             bool directoryExists = customFields.any((field) =>
-            field.isDirectoryField && field.directoryId == link.directory.id);
+                field.isDirectoryField && field.directoryId == link.directory.id);
             if (!directoryExists) {
               customFields.add(CustomField(
                 fieldName: link.directory.name,
@@ -197,11 +215,169 @@ class _DealEditScreenState extends State<DealEditScreen> {
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
   }
 
+  Future<void> _loadFieldConfiguration() async {
+    if (kDebugMode) {
+      print('DealEditScreen: Loading field configuration');
+    }
+    
+    if (mounted) {
+      context.read<FieldConfigurationBloc>().add(
+        FetchFieldConfiguration('deals')
+      );
+    }
+  }
+
+  void _buildFieldsFromConfiguration() {
+    if (kDebugMode) {
+      print('DealEditScreen: Building fields from configuration with ${fieldConfigurations.length} fields');
+    }
+    
+    fieldWidgets.clear();
+    fieldOrder.clear();
+
+    for (var config in fieldConfigurations) {
+      if (!config.isActive) {
+        if (kDebugMode) {
+          print('DealEditScreen: Skipping inactive field: ${config.fieldName}');
+        }
+        continue;
+      }
+
+      Widget? widget = _buildFieldWidget(config);
+      if (widget != null) {
+        fieldWidgets[config.fieldName] = widget;
+        fieldOrder.add(config.fieldName);
+        
+        if (kDebugMode) {
+          print('DealEditScreen: Added field widget for: ${config.fieldName} at position ${config.position}');
+        }
+      }
+    }
+    
+    if (kDebugMode) {
+      print('DealEditScreen: Total field widgets: ${fieldWidgets.length}');
+    }
+  }
+
+  Widget? _buildFieldWidget(FieldConfiguration config) {
+    switch (config.fieldName) {
+      case 'name':
+        return DealNameSelectionWidget(
+          selectedDealName: titleController.text,
+          onSelectDealName: (String dealName) {
+            setState(() {
+              titleController.text = dealName;
+            });
+          },
+        );
+        
+      case 'status_id':
+        return RepaintBoundary(
+          child: DealStatusEditWidget(
+            selectedStatus: _selectedStatuses?.toString(),
+            dealStatuses: widget.dealStatuses ?? [],
+            onSelectStatus: (DealStatus selectedStatusData) {
+              if (_selectedStatuses != selectedStatusData.id) {
+                setState(() {
+                  _selectedStatuses = selectedStatusData.id;
+                  print('✅ Выбран основной статус: ${selectedStatusData.id}');
+                });
+              }
+            },
+            onSelectMultipleStatuses: (List<int> selectedIds) {
+              final currentSet = _selectedStatusIds.toSet();
+              final newSet = selectedIds.toSet();
+
+              if (currentSet.length != newSet.length || !currentSet.containsAll(newSet)) {
+                setState(() {
+                  _selectedStatusIds = selectedIds;
+                  print('✅ DealEditScreen: Обновлены ID статусов: $selectedIds');
+                });
+              }
+            },
+          ),
+        );
+        
+      case 'lead_id':
+        return LeadRadioGroupWidget(
+          selectedLead: selectedLead?.id.toString(),
+          onSelectLead: (LeadData selectedLeadData) {
+            if (selectedLead?.id != selectedLeadData.id) {
+              setState(() {
+                selectedLead = selectedLeadData;
+              });
+            }
+          },
+        );
+        
+      case 'manager_id':
+        return ManagerRadioGroupWidget(
+          selectedManager: selectedManager,
+          onSelectManager: (ManagerData selectedManagerData) {
+            final newManagerId = selectedManagerData.id.toString();
+            if (selectedManager != newManagerId) {
+              setState(() {
+                debugPrint("DealEditScreen Selected Manager ID: ${selectedManagerData.id}");
+                selectedManager = newManagerId;
+              });
+            }
+          },
+        );
+        
+      case 'start_date':
+        return CustomTextFieldDate(
+          controller: startDateController,
+          label: AppLocalizations.of(context)!
+              .translate('start_date'),
+          withTime: false,
+        );
+        
+      case 'end_date':
+        return CustomTextFieldDate(
+          controller: endDateController,
+          label:
+              AppLocalizations.of(context)!.translate('end_date'),
+          hasError: isEndDateInvalid,
+          withTime: false,
+        );
+        
+      case 'sum':
+        return CustomTextField(
+          controller: sumController,
+          hintText: AppLocalizations.of(context)!
+              .translate('enter_summ'),
+          label:
+              AppLocalizations.of(context)!.translate('summ'),
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(
+                RegExp(r'[0-9\.,]')),
+          ],
+        );
+        
+      case 'description':
+        return CustomTextField(
+          controller: descriptionController,
+          hintText: AppLocalizations.of(context)!
+              .translate('enter_description'),
+          label: AppLocalizations.of(context)!
+              .translate('description_list'),
+          maxLines: 5,
+          keyboardType: TextInputType.multiline,
+        );
+        
+      default:
+        if (kDebugMode) {
+          print('DealEditScreen: Unknown field: ${config.fieldName}');
+        }
+        return null;
+    }
+  }
+
   void _addCustomField(String fieldName,
       {bool isDirectory = false, int? directoryId, String? type}) {
     if (isDirectory && directoryId != null) {
       bool directoryExists = customFields.any((field) =>
-      field.isDirectoryField && field.directoryId == directoryId);
+          field.isDirectoryField && field.directoryId == directoryId);
       if (directoryExists) {
         return;
       }
@@ -311,28 +487,28 @@ class _DealEditScreenState extends State<DealEditScreen> {
       );
       if (result != null && result.files.isNotEmpty) {
         for (var file in result.files) {
-          final filePath = file.path;
-          final fileName = file.name;
-          if (filePath == null) continue;
-
-          final fileObject = File(filePath);
-          if (await fileObject.exists()) {
-            if (!existingFiles.any((f) => f.name == fileName) &&
-                !newFiles.contains(filePath)) {
-              final fileSize = await fileObject.length();
-              setState(() {
-                newFiles.add(filePath);
-                fileNames.add(fileName);
-                fileSizes.add('${(fileSize / 1024).toStringAsFixed(3)}KB');
-                selectedFiles.add(filePath);
-              });
+          if (file.path != null && file.name != null) {
+            final filePath = file.path!;
+            final fileName = file.name!;
+            final fileObject = File(filePath);
+            if (await fileObject.exists()) {
+              if (!existingFiles.any((f) => f.name == fileName) &&
+                  !newFiles.contains(filePath)) {
+                final fileSize = await fileObject.length();
+                setState(() {
+                  newFiles.add(filePath);
+                  fileNames.add(fileName);
+                  fileSizes.add('${(fileSize / 1024).toStringAsFixed(3)}KB');
+                  selectedFiles.add(filePath);
+                });
+              } else {
+                _showErrorSnackBar(AppLocalizations.of(context)!
+                    .translate('file_already_exists'));
+              }
             } else {
-              _showErrorSnackBar(AppLocalizations.of(context)!
-                  .translate('file_already_exists'));
+              _showErrorSnackBar(
+                  AppLocalizations.of(context)!.translate('file_not_found'));
             }
-          } else {
-            _showErrorSnackBar(
-                AppLocalizations.of(context)!.translate('file_not_found'));
           }
         }
       }
@@ -488,7 +664,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                               try {
                                                 final result = await _apiService
                                                     .deleteTaskFile(
-                                                    existingFiles[index].id);
+                                                        existingFiles[index].id);
                                                 if (result['result'] ==
                                                     'Success') {
                                                   setState(() {
@@ -502,19 +678,19 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                                     SnackBar(
                                                       content: Text(
                                                         AppLocalizations.of(
-                                                            context)!
+                                                                context)!
                                                             .translate(
-                                                            'file_deleted_successfully'),
+                                                                'file_deleted_successfully'),
                                                         style: TextStyle(
                                                           fontFamily: 'Gilroy',
                                                           fontSize: 16,
                                                           fontWeight:
-                                                          FontWeight.w500,
+                                                              FontWeight.w500,
                                                           color: Colors.white,
                                                         ),
                                                       ),
                                                       backgroundColor:
-                                                      Colors.green,
+                                                          Colors.green,
                                                     ),
                                                   );
                                                 }
@@ -523,7 +699,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                                 _showErrorSnackBar(
                                                     AppLocalizations.of(context)!
                                                         .translate(
-                                                        'failed_to_delete_file'));
+                                                            'failed_to_delete_file'));
                                               }
                                             } else {
                                               setState(() {
@@ -611,35 +787,71 @@ class _DealEditScreenState extends State<DealEditScreen> {
         providers: [
           BlocProvider(create: (context) => MainFieldBloc()),
         ],
-        child: BlocListener<DealBloc, DealState>(
-          listener: (context, state) {
-            if (state is DealError) {
-              _showErrorSnackBar(
-                  AppLocalizations.of(context)!.translate(state.message));
-            } else if (state is DealSuccess) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    AppLocalizations.of(context)!
-                        .translate('deal_updated_successfully'),
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
+        child: MultiBlocListener(
+          listeners: [
+            BlocListener<DealBloc, DealState>(
+              listener: (context, state) {
+                if (state is DealError) {
+                  _showErrorSnackBar(
+                      AppLocalizations.of(context)!.translate(state.message));
+                } else if (state is DealSuccess) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        AppLocalizations.of(context)!
+                            .translate('deal_updated_successfully'),
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white,
+                        ),
+                      ),
+                      backgroundColor: Colors.green,
+                      behavior: SnackBarBehavior.floating,
+                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
-                  ),
-                  backgroundColor: Colors.green,
-                  behavior: SnackBarBehavior.floating,
-                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              );
-              Navigator.pop(context, true);
-            }
-          },
+                  );
+                  Navigator.pop(context, true);
+                }
+              },
+            ),
+            BlocListener<FieldConfigurationBloc, FieldConfigurationState>(
+              listener: (context, configState) {
+                if (kDebugMode) {
+                  print('DealEditScreen: FieldConfigurationBloc state changed: ${configState.runtimeType}');
+                }
+                
+                if (configState is FieldConfigurationLoaded) {
+                  if (kDebugMode) {
+                    print('DealEditScreen: Configuration loaded with ${configState.fields.length} fields');
+                  }
+                  
+                  if (mounted) {
+                    setState(() {
+                      fieldConfigurations = configState.fields;
+                      isConfigurationLoaded = true;
+                    });
+                    
+                    _buildFieldsFromConfiguration();
+                  }
+                } else if (configState is FieldConfigurationError) {
+                  if (kDebugMode) {
+                    print('DealEditScreen: Configuration error: ${configState.message}');
+                  }
+                  
+                  if (mounted) {
+                    setState(() {
+                      isConfigurationLoaded = false;
+                    });
+                  }
+                }
+              },
+            ),
+          ],
           child: Form(
             key: _formKey,
             child: Column(
@@ -654,104 +866,113 @@ class _DealEditScreenState extends State<DealEditScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          DealNameSelectionWidget(
-                            selectedDealName: titleController.text,
-                            onSelectDealName: (String dealName) {
-                              setState(() {
-                                titleController.text = dealName;
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 8),
-                          RepaintBoundary(
-                            child: DealStatusEditWidget(
-                              selectedStatus: _selectedStatuses?.toString(),
-                              dealStatuses: widget.dealStatuses ?? [], // ✅ Защита от null
-                              onSelectStatus: (DealStatus selectedStatusData) {
-                                if (_selectedStatuses != selectedStatusData.id) {
-                                  setState(() {
-                                    _selectedStatuses = selectedStatusData.id;
-                                    print('✅ Выбран основной статус: ${selectedStatusData.id}');
-                                  });
-                                }
+                          // Используем конфигурацию если загружена
+                          if (isConfigurationLoaded && fieldWidgets.isNotEmpty) ...[
+                            for (var fieldName in fieldOrder) ...[
+                              fieldWidgets[fieldName]!,
+                              const SizedBox(height: 8),
+                            ],
+                          ] else ...[
+                            // Fallback: показываем все поля как раньше
+                            DealNameSelectionWidget(
+                              selectedDealName: titleController.text,
+                              onSelectDealName: (String dealName) {
+                                setState(() {
+                                  titleController.text = dealName;
+                                });
                               },
-                              onSelectMultipleStatuses: (List<int> selectedIds) {
-                                final currentSet = _selectedStatusIds.toSet();
-                                final newSet = selectedIds.toSet();
+                            ),
+                            const SizedBox(height: 8),
+                            RepaintBoundary(
+                              child: DealStatusEditWidget(
+                                selectedStatus: _selectedStatuses?.toString(),
+                                dealStatuses: widget.dealStatuses ?? [],
+                                onSelectStatus: (DealStatus selectedStatusData) {
+                                  if (_selectedStatuses != selectedStatusData.id) {
+                                    setState(() {
+                                      _selectedStatuses = selectedStatusData.id;
+                                      print('✅ Выбран основной статус: ${selectedStatusData.id}');
+                                    });
+                                  }
+                                },
+                                onSelectMultipleStatuses: (List<int> selectedIds) {
+                                  final currentSet = _selectedStatusIds.toSet();
+                                  final newSet = selectedIds.toSet();
 
-                                // Проверяем, действительно ли изменились данные
-                                if (currentSet.length != newSet.length || !currentSet.containsAll(newSet)) {
+                                  if (currentSet.length != newSet.length || !currentSet.containsAll(newSet)) {
+                                    setState(() {
+                                      _selectedStatusIds = selectedIds;
+                                      print('✅ DealEditScreen: Обновлены ID статусов: $selectedIds');
+                                    });
+                                  }
+                                },
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            LeadRadioGroupWidget(
+                              selectedLead: selectedLead?.id.toString(),
+                              onSelectLead: (LeadData selectedLeadData) {
+                                if (selectedLead?.id != selectedLeadData.id) {
                                   setState(() {
-                                    _selectedStatusIds = selectedIds;
-                                    print('✅ DealEditScreen: Обновлены ID статусов: $selectedIds');
+                                    selectedLead = selectedLeadData;
                                   });
                                 }
                               },
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          // ✅ УПРОЩЕНО: Прямое использование без BlocBuilder
-                          LeadRadioGroupWidget(
-                            selectedLead: selectedLead?.id.toString(),
-                            onSelectLead: (LeadData selectedLeadData) {
-                              if (selectedLead?.id != selectedLeadData.id) {
-                                setState(() {
-                                  selectedLead = selectedLeadData;
-                                });
-                              }
-                            },
-                          ),
-                          const SizedBox(height: 8),
-                          ManagerRadioGroupWidget(
-                            selectedManager: selectedManager,
-                            onSelectManager: (ManagerData selectedManagerData) {
-                              final newManagerId = selectedManagerData.id.toString();
-                              if (selectedManager != newManagerId) {
-                                setState(() {
-                                  debugPrint("DealEditScreen Selected Manager ID: ${selectedManagerData.id}");
-                                  selectedManager = newManagerId;
-                                });
-                              }
-                            },
-                          ),
-                          const SizedBox(height: 8),
-                          CustomTextFieldDate(
-                            controller: startDateController,
-                            label: AppLocalizations.of(context)!
-                                .translate('start_date'),
-                            withTime: false,
-                          ),
-                          const SizedBox(height: 8),
-                          CustomTextFieldDate(
-                            controller: endDateController,
-                            label:
-                            AppLocalizations.of(context)!.translate('end_date'),
-                            hasError: isEndDateInvalid,
-                            withTime: false,
-                          ),
-                          const SizedBox(height: 8),
-                          CustomTextField(
-                            controller: sumController,
-                            hintText: AppLocalizations.of(context)!
-                                .translate('enter_summ'),
-                            label:
-                            AppLocalizations.of(context)!.translate('summ'),
-                            inputFormatters: [
-                              FilteringTextInputFormatter.allow(
-                                  RegExp(r'[0-9\.,]')),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          CustomTextField(
-                            controller: descriptionController,
-                            hintText: AppLocalizations.of(context)!
-                                .translate('enter_description'),
-                            label: AppLocalizations.of(context)!
-                                .translate('description_list'),
-                            maxLines: 5,
-                            keyboardType: TextInputType.multiline,
-                          ),
-                          const SizedBox(height: 8),
+                            const SizedBox(height: 8),
+                            ManagerRadioGroupWidget(
+                              selectedManager: selectedManager,
+                              onSelectManager: (ManagerData selectedManagerData) {
+                                final newManagerId = selectedManagerData.id.toString();
+                                if (selectedManager != newManagerId) {
+                                  setState(() {
+                                    debugPrint("DealEditScreen Selected Manager ID: ${selectedManagerData.id}");
+                                    selectedManager = newManagerId;
+                                  });
+                                }
+                              },
+                            ),
+                            const SizedBox(height: 8),
+                            CustomTextFieldDate(
+                              controller: startDateController,
+                              label: AppLocalizations.of(context)!
+                                  .translate('start_date'),
+                              withTime: false,
+                            ),
+                            const SizedBox(height: 8),
+                            CustomTextFieldDate(
+                              controller: endDateController,
+                              label:
+                                  AppLocalizations.of(context)!.translate('end_date'),
+                              hasError: isEndDateInvalid,
+                              withTime: false,
+                            ),
+                            const SizedBox(height: 8),
+                            CustomTextField(
+                              controller: sumController,
+                              hintText: AppLocalizations.of(context)!
+                                  .translate('enter_summ'),
+                              label:
+                                  AppLocalizations.of(context)!.translate('summ'),
+                              inputFormatters: [
+                                FilteringTextInputFormatter.allow(
+                                    RegExp(r'[0-9\.,]')),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            CustomTextField(
+                              controller: descriptionController,
+                              hintText: AppLocalizations.of(context)!
+                                  .translate('enter_description'),
+                              label: AppLocalizations.of(context)!
+                                  .translate('description_list'),
+                              maxLines: 5,
+                              keyboardType: TextInputType.multiline,
+                            ),
+                            const SizedBox(height: 8),
+                          ],
+                          
+                          // Общие поля которые всегда показываются
                           _buildFileSelection(),
                           const SizedBox(height: 20),
                           ListView.builder(
@@ -763,52 +984,52 @@ class _DealEditScreenState extends State<DealEditScreen> {
                               return Container(
                                 key: ValueKey(field.uniqueId),
                                 child: field.isDirectoryField &&
-                                    field.directoryId != null
+                                        field.directoryId != null
                                     ? MainFieldDropdownWidget(
-                                  directoryId: field.directoryId!,
-                                  directoryName: field.fieldName,
-                                  selectedField: field.entryId != null
-                                      ? MainField(
-                                      id: field.entryId!,
-                                      value: field.controller.text)
-                                      : null,
-                                  onSelectField:
-                                      (MainField selectedField) {
-                                    setState(() {
-                                      customFields[index] =
-                                          field.copyWith(
-                                            entryId: selectedField.id,
-                                            controller: TextEditingController(
-                                                text: selectedField.value),
-                                          );
-                                    });
-                                  },
-                                  controller: field.controller,
-                                  onSelectEntryId: (int entryId) {
-                                    setState(() {
-                                      customFields[index] =
-                                          field.copyWith(
-                                            entryId: entryId,
-                                          );
-                                    });
-                                  },
-                                  onRemove: () {
-                                    setState(() {
-                                      customFields.removeAt(index);
-                                    });
-                                  },
-                                  initialEntryId: field.entryId,
-                                )
+                                        directoryId: field.directoryId!,
+                                        directoryName: field.fieldName,
+                                        selectedField: field.entryId != null
+                                            ? MainField(
+                                                id: field.entryId!,
+                                                value: field.controller.text)
+                                            : null,
+                                        onSelectField:
+                                            (MainField selectedField) {
+                                          setState(() {
+                                            customFields[index] =
+                                                field.copyWith(
+                                              entryId: selectedField.id,
+                                              controller: TextEditingController(
+                                                  text: selectedField.value),
+                                            );
+                                          });
+                                        },
+                                        controller: field.controller,
+                                        onSelectEntryId: (int entryId) {
+                                          setState(() {
+                                            customFields[index] =
+                                                field.copyWith(
+                                              entryId: entryId,
+                                            );
+                                          });
+                                        },
+                                        onRemove: () {
+                                          setState(() {
+                                            customFields.removeAt(index);
+                                          });
+                                        },
+                                        initialEntryId: field.entryId,
+                                      )
                                     : CustomFieldWidget(
-                                  fieldName: field.fieldName,
-                                  valueController: field.controller,
-                                  onRemove: () {
-                                    setState(() {
-                                      customFields.removeAt(index);
-                                    });
-                                  },
-                                  type: field.type,
-                                ),
+                                        fieldName: field.fieldName,
+                                        valueController: field.controller,
+                                        onRemove: () {
+                                          setState(() {
+                                            customFields.removeAt(index);
+                                          });
+                                        },
+                                        type: field.type,
+                                      ),
                               );
                             },
                           ),
@@ -826,7 +1047,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
                 ),
                 Container(
                   padding:
-                  const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 30),
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
                   child: Row(
                     children: [
                       Expanded(
@@ -865,7 +1086,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                       try {
                                         parsedStartDate = DateFormat('dd/MM/yyyy')
                                             .parseStrict(
-                                            startDateController.text);
+                                                startDateController.text);
                                       } catch (e) {
                                         _showErrorSnackBar(
                                             AppLocalizations.of(context)!
@@ -898,13 +1119,13 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                     }
 
                                     List<Map<String, dynamic>> customFieldList =
-                                    [];
+                                        [];
                                     List<Map<String, int>> directoryValues = [];
 
                                     for (var field in customFields) {
                                       String fieldName = field.fieldName.trim();
                                       String fieldValue =
-                                      field.controller.text.trim();
+                                          field.controller.text.trim();
                                       String? fieldType = field.type;
 
                                       // Валидация для number
@@ -915,39 +1136,39 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                           _showErrorSnackBar(
                                               AppLocalizations.of(context)!
                                                   .translate(
-                                                  'enter_valid_number'));
+                                                      'enter_valid_number'));
                                           return;
                                         }
                                       }
 
                                       // Валидация и форматирование для date и datetime
-                                      if ((fieldType == 'date' || fieldType == 'datetime') &&
-                                          fieldValue.isNotEmpty) {
-                                        try {
-                                          if (fieldType == 'date') {
-                                            DateFormat('dd/MM/yyyy').parse(fieldValue);
-                                          } else {
-                                            DateFormat('dd/MM/yyyy HH:mm').parse(fieldValue);
-                                          }
-                                        } catch (e) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            SnackBar(
-                                              content: Text(
-                                                AppLocalizations.of(context)!
-                                                    .translate('enter_valid_${fieldType}'),
-                                                style: TextStyle(
-                                                  fontFamily: 'Gilroy',
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.w500,
-                                                  color: Colors.white,
-                                                ),
-                                              ),
-                                              backgroundColor: Colors.red,
-                                            ),
-                                          );
-                                          return;
-                                        }
-                                      }
+      if ((fieldType == 'date' || fieldType == 'datetime') &&
+          fieldValue.isNotEmpty) {
+        try {
+          if (fieldType == 'date') {
+            DateFormat('dd/MM/yyyy').parse(fieldValue);
+          } else {
+            DateFormat('dd/MM/yyyy HH:mm').parse(fieldValue);
+          }
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(context)!
+                    .translate('enter_valid_${fieldType}'),
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+      }
 
                                       if (field.isDirectoryField &&
                                           field.directoryId != null &&
@@ -969,33 +1190,33 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                     debugPrint('DealEditScreen: SelectedManagerID: $selectedManager');
 
                                     final localizations =
-                                    AppLocalizations.of(context)!;
+                                        AppLocalizations.of(context)!;
                                     context.read<DealBloc>().add(UpdateDeal(
-                                      dealId: widget.dealId,
-                                      name: titleController.text,
-                                      dealStatusId:
-                                      _selectedStatuses!.toInt(),
-                                      managerId: selectedManager != null
-                                          ? int.parse(selectedManager!)
-                                          : null,
-                                      leadId: selectedLead?.id,  // ✅ ИЗМЕНЕНО: Используем .id напрямую
-                                      description:
-                                      descriptionController.text.isEmpty
-                                          ? null
-                                          : descriptionController.text,
-                                      startDate: parsedStartDate,
-                                      endDate: parsedEndDate,
-                                      sum: sumController.text.isEmpty
-                                          ? null
-                                          : sumController.text,
-                                      dealtypeId: 1,
-                                      customFields: customFieldList,
-                                      directoryValues: directoryValues,
-                                      localizations: localizations,
-                                      filePaths: newFiles,
-                                      existingFiles: existingFiles,
-                                      dealStatusIds: _selectedStatusIds, // ✅ ПЕРЕДАЁМ МАССИВ
-                                    ));
+                                          dealId: widget.dealId,
+                                          name: titleController.text,
+                                          dealStatusId:
+                                              _selectedStatuses!.toInt(),
+                                          managerId: selectedManager != null
+                                              ? int.parse(selectedManager!)
+                                              : null,
+                                          leadId: selectedLead?.id,  // ✅ ИЗМЕНЕНО: Используем .id напрямую
+                                          description:
+                                              descriptionController.text.isEmpty
+                                                  ? null
+                                                  : descriptionController.text,
+                                          startDate: parsedStartDate,
+                                          endDate: parsedEndDate,
+                                          sum: sumController.text.isEmpty
+                                              ? null
+                                              : sumController.text,
+                                          dealtypeId: 1,
+                                          customFields: customFieldList,
+                                          directoryValues: directoryValues,
+                                          localizations: localizations,
+                                          filePaths: newFiles,
+                                          existingFiles: existingFiles,
+                                          dealStatusIds: _selectedStatusIds, // ✅ ПЕРЕДАЁМ МАССИВ
+                                        ));
                                   } else {
                                     _showErrorSnackBar(
                                         AppLocalizations.of(context)!
