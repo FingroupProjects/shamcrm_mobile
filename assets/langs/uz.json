@@ -1733,5 +1733,6 @@
   "all_variants_added": "Barcha variantlar qo'shilgan",
   "main": "Asosiy",
   "no_goods_added": "Mahsulotlar qo'shilmagan",
-  "no_goods_in_category": "Ushbu kategoriyada tovarlar yo'q"
+  "no_goods_in_category": "Ushbu kategoriyada tovarlar yo'q",
+  "subcategory_updated_successfully": "Subkategoriya muvaffaqiyatli yangilandi"
 }

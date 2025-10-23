@@ -33,18 +33,12 @@ class SearchGoods extends GoodsEvent {
   final String query;
 
   SearchGoods(this.query);
-
-  @override
-  List<Object> get props => [query];
 }
 
 class FilterGoods extends GoodsEvent {
   final Map<String, dynamic> filters;
 
   FilterGoods(this.filters);
-
-  @override
-  List<Object> get props => [filters];
 }
 
 class FetchSubCategories extends GoodsEvent {}
@@ -131,9 +125,6 @@ class SearchGoodsByBarcode extends GoodsEvent {
   final String barcode;
 
   SearchGoodsByBarcode(this.barcode);
-
-  @override
-  List<Object> get props => [barcode];
 }
 
 class CloseBatchRemainders extends GoodsEvent {}

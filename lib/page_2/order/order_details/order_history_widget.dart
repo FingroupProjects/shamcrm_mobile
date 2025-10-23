@@ -35,52 +35,50 @@ class _OrderHistoryWidgetState extends State<OrderHistoryWidget> {
         } else if (state is OrderHistoryLoaded) {
           orderHistory = state.orderHistory;
         } else if (state is OrderHistoryError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                state.message,
-                style: const TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  state.message,
+                  style: const TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
                 ),
+                behavior: SnackBarBehavior.floating,
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                backgroundColor: Colors.red,
+                elevation: 3,
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                duration: const Duration(seconds: 3),
               ),
-              behavior: SnackBarBehavior.floating,
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              backgroundColor: Colors.red,
-              elevation: 3,
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              duration: const Duration(seconds: 3),
-            ),
-          );
+            );
+          });
         }
 
         return _buildExpandableContainer(
           AppLocalizations.of(context)!.translate('order_history'),
           _buildHistoryItems(orderHistory),
-          isHistoryExpanded,
-          () {
-            setState(() {
-              isHistoryExpanded = !isHistoryExpanded;
-            });
-          },
         );
       },
     );
   }
 
   Widget _buildExpandableContainer(
-    String title,
-    List<String> items,
-    bool isExpanded,
-    VoidCallback onTap,
-  ) {
+      String title,
+      List<String> items,
+      ) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        setState(() {
+          isHistoryExpanded = !isHistoryExpanded;
+        });
+      },
       child: Container(
         padding: const EdgeInsets.only(right: 16, left: 16, top: 16, bottom: 8),
         decoration: BoxDecoration(
@@ -89,19 +87,38 @@ class _OrderHistoryWidgetState extends State<OrderHistoryWidget> {
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             _buildTitleRow(title),
             const SizedBox(height: 8),
-            AnimatedSize(
-              duration: const Duration(milliseconds: 200),
-              child: isExpanded
-                  ? SizedBox(
-                      height: 250,
-                      child: SingleChildScrollView(
-                        child: _buildItemList(items),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              constraints: BoxConstraints(
+                maxHeight: isHistoryExpanded ? 250 : 0,
+              ),
+              child: SingleChildScrollView(
+                physics: const ClampingScrollPhysics(),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: items.isNotEmpty
+                      ? items.map((item) => _buildHistoryItem(item)).toList()
+                      : [
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Text(
+                        AppLocalizations.of(context)!.translate('no_history_available'),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w400,
+                          color: Color(0xff1E2E52),
+                        ),
                       ),
-                    )
-                  : const SizedBox.shrink(),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ],
         ),
@@ -122,33 +139,16 @@ class _OrderHistoryWidgetState extends State<OrderHistoryWidget> {
             color: Color(0xff1E2E52),
           ),
         ),
-        Image.asset(
-          'assets/icons/tabBar/dropdown.png',
-          width: 16,
-          height: 16,
+        AnimatedRotation(
+          turns: isHistoryExpanded ? 0.5 : 0,
+          duration: const Duration(milliseconds: 300),
+          child: Image.asset(
+            'assets/icons/tabBar/dropdown.png',
+            width: 16,
+            height: 16,
+          ),
         ),
       ],
-    );
-  }
-
-  Column _buildItemList(List<String> items) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: items.isNotEmpty
-          ? items.map((item) {
-              return _buildHistoryItem(item);
-            }).toList()
-          : [
-              Text(
-                AppLocalizations.of(context)!.translate('no_history_available'),
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w400,
-                  color: Color(0xff1E2E52),
-                ),
-              ),
-            ],
     );
   }
 
@@ -162,11 +162,13 @@ class _OrderHistoryWidgetState extends State<OrderHistoryWidget> {
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           _buildStatusRow(status, userName),
-          const SizedBox(height: 10),
-          if (additionalDetails.isNotEmpty)
+          if (additionalDetails.isNotEmpty) ...[
+            const SizedBox(height: 10),
             _buildAdditionalDetails(additionalDetails),
+          ],
         ],
       ),
     );
@@ -175,6 +177,7 @@ class _OrderHistoryWidgetState extends State<OrderHistoryWidget> {
   Row _buildStatusRow(String status, String userName) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
           child: Text(
@@ -200,6 +203,7 @@ class _OrderHistoryWidgetState extends State<OrderHistoryWidget> {
             ),
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.end,
           ),
         ),
       ],
@@ -209,66 +213,62 @@ class _OrderHistoryWidgetState extends State<OrderHistoryWidget> {
   Column _buildAdditionalDetails(List<String> details) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: details.where((detail) => detail.isNotEmpty).map((detail) {
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Text(
-                detail,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w400,
-                  color: Color(0xff1E2E52),
-                ),
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-              ),
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 4.0),
+          child: Text(
+            detail,
+            style: const TextStyle(
+              fontSize: 14,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w400,
+              color: Color(0xff1E2E52),
             ),
-          ],
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+          ),
         );
       }).toList(),
     );
   }
 
-List<String> _buildHistoryItems(List<OrderHistory> history) {
-  return history.map((entry) {
-    final changes = entry.changes;
-    final formattedDate = DateFormat('dd.MM.yyyy HH:mm').format(entry.date.toLocal());
-    String actionDetail = '${entry.status}\n${entry.user?.name ?? AppLocalizations.of(context)!.translate('unknown_user')} $formattedDate';
+  List<String> _buildHistoryItems(List<OrderHistory> history) {
+    return history.map((entry) {
+      final changes = entry.changes;
+      final formattedDate = DateFormat('dd.MM.yyyy HH:mm').format(entry.date.toLocal());
+      String actionDetail = '${entry.status}\n${entry.user?.name ?? AppLocalizations.of(context)!.translate('unknown_user')} $formattedDate';
 
-    if (changes != null && changes.body != null) {
-      changes.body!.forEach((key, value) {
-        final newValue = value['new_value'] ?? AppLocalizations.of(context)!.translate('');
-        final previousValue = value['previous_value'] ?? AppLocalizations.of(context)!.translate('');
+      if (changes != null && changes.body != null) {
+        changes.body!.forEach((key, value) {
+          final newValue = value['new_value'] ?? AppLocalizations.of(context)!.translate('');
+          final previousValue = value['previous_value'] ?? AppLocalizations.of(context)!.translate('');
 
-        // Перевод для deliveryType
-        String translatedKey = key;
-        String translatedNewValue = newValue.toString();
-        String translatedPreviousValue = previousValue.toString();
+          String translatedKey = key;
+          String translatedNewValue = newValue.toString();
+          String translatedPreviousValue = previousValue.toString();
 
-        if (key == 'deliveryType') {
-          translatedKey = AppLocalizations.of(context)!.translate('delivery_method'); // Способ доставки
-          if (newValue == 'pickup') {
-            translatedNewValue = AppLocalizations.of(context)!.translate('pickup'); // Самовывоз
-          } else if (newValue == 'delivery') {
-            translatedNewValue = AppLocalizations.of(context)!.translate('delivery'); // Курьер
+          if (key == 'deliveryType') {
+            translatedKey = AppLocalizations.of(context)!.translate('delivery_method');
+            if (newValue == 'pickup') {
+              translatedNewValue = AppLocalizations.of(context)!.translate('pickup');
+            } else if (newValue == 'delivery') {
+              translatedNewValue = AppLocalizations.of(context)!.translate('delivery');
+            }
+            if (previousValue == 'pickup') {
+              translatedPreviousValue = AppLocalizations.of(context)!.translate('pickup');
+            } else if (previousValue == 'delivery') {
+              translatedPreviousValue = AppLocalizations.of(context)!.translate('delivery');
+            }
+          } else {
+            translatedKey = AppLocalizations.of(context)!.translate(key);
           }
-          if (previousValue == 'pickup') {
-            translatedPreviousValue = AppLocalizations.of(context)!.translate('pickup'); // Самовывоз
-          } else if (previousValue == 'delivery') {
-            translatedPreviousValue = AppLocalizations.of(context)!.translate('delivery'); // Курьер
-          }
-        } else {
-          translatedKey = AppLocalizations.of(context)!.translate(key); // Другие ключи
-        }
 
-        actionDetail += '\n$translatedKey: $translatedPreviousValue > $translatedNewValue';
-      });
-    }
+          actionDetail += '\n$translatedKey: $translatedPreviousValue > $translatedNewValue';
+        });
+      }
 
-    return actionDetail;
-  }).toList();
-}
+      return actionDetail;
+    }).toList();
+  }
 }

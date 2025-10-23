@@ -27,7 +27,6 @@ class _GoodsScreenState extends State<GoodsScreen> {
   bool _isSearching = false;
   bool isClickAvatarIcon = false;
   late ScrollController _scrollController;
-  String _lastSearchQuery = '';
   Map<String, dynamic> _currentFilters = {};
   bool _canCreateProduct = false;
   final ApiService _apiService = ApiService();
@@ -89,7 +88,6 @@ class _GoodsScreenState extends State<GoodsScreen> {
 
   void _onSearch(String query) {
     setState(() {
-      _lastSearchQuery = query;
       _isSearching = query.isNotEmpty;
       if (kDebugMode) {
         print('GoodsScreen: Поиск товаров с запросом: $query');
@@ -101,7 +99,6 @@ class _GoodsScreenState extends State<GoodsScreen> {
   void _resetSearch() {
     setState(() {
       _isSearching = false;
-      _lastSearchQuery = '';
       _searchController.clear();
       if (kDebugMode) {
         print('GoodsScreen: Сброс поиска');

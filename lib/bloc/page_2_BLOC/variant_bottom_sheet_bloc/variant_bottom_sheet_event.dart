@@ -30,10 +30,12 @@ class FetchCategories extends VariantBottomSheetEvent {
 
 class FetchVariantsByCategory extends VariantBottomSheetEvent {
   final int categoryId;
+  final String? categoryName;
   final int page;
   final bool forceReload;
   FetchVariantsByCategory({
     required this.categoryId,
+    this.categoryName,
     this.page = 1,
     this.forceReload = false,
   });

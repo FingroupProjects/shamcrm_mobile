@@ -31,18 +31,33 @@ class _CashRegisterGroupWidgetState extends State<CashRegisterGroupWidget> {
   @override
   void initState() {
     super.initState();
+    // ✅ ИСПРАВЛЕНИЕ: Всегда загружаем актуальные данные при инициализации
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        final state = context.read<GetAllCashRegisterBloc>().state;
-        if (state is GetAllCashRegisterSuccess) {
-          cashRegistersList = state.dataCashRegisters.result ?? [];
-          _updateSelectedCashRegisterData();
-        }
-        if (state is! GetAllCashRegisterSuccess) {
-          context.read<GetAllCashRegisterBloc>().add(GetAllCashRegisterEv());
-        }
+        context.read<GetAllCashRegisterBloc>().add(GetAllCashRegisterEv());
       }
     });
+  }
+
+  @override
+  void didUpdateWidget(CashRegisterGroupWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // ✅ Обновляем выбранную кассу если изменилась извне
+    if (oldWidget.selectedCashRegisterId != widget.selectedCashRegisterId) {
+      if (cashRegistersList.isNotEmpty) {
+        if (widget.selectedCashRegisterId != null) {
+          try {
+            selectedCashRegisterData = cashRegistersList.firstWhere(
+                  (register) => register.id.toString() == widget.selectedCashRegisterId,
+            );
+          } catch (e) {
+            selectedCashRegisterData = null;
+          }
+        } else {
+          selectedCashRegisterData = null;
+        }
+      }
+    }
   }
 
   void _updateSelectedCashRegisterData() {

@@ -28,10 +28,29 @@ class _StorageWidgetState extends State<StorageWidget> {
   @override
   void initState() {
     super.initState();
-    // ✅ ИСПРАВЛЕНИЕ: Загружаем данные только если они ещё не загружены
-    final currentState = context.read<StorageBloc>().state;
-    if (currentState is! StorageLoaded && currentState is! StorageLoading) {
-      context.read<StorageBloc>().add(FetchStorage());
+    // ✅ ИСПРАВЛЕНИЕ: Всегда загружаем актуальные данные при инициализации
+    context.read<StorageBloc>().add(FetchStorage());
+  }
+
+  @override
+  void didUpdateWidget(StorageWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // ✅ Обновляем выбранный склад если изменился извне
+    if (oldWidget.selectedStorage != widget.selectedStorage) {
+      final currentState = context.read<StorageBloc>().state;
+      if (currentState is StorageLoaded) {
+        if (widget.selectedStorage != null) {
+          try {
+            selectedStorageData = currentState.storageList.firstWhere(
+                  (storage) => storage.id.toString() == widget.selectedStorage,
+            );
+          } catch (e) {
+            selectedStorageData = null;
+          }
+        } else {
+          selectedStorageData = null;
+        }
+      }
     }
   }
 
@@ -75,8 +94,8 @@ class _StorageWidgetState extends State<StorageWidget> {
             if (widget.selectedStorage != null && storageList.isNotEmpty) {
               try {
                 selectedStorageData = storageList.firstWhere(
-                  (storage) =>
-                      storage.id.toString() == widget.selectedStorage,
+                      (storage) =>
+                  storage.id.toString() == widget.selectedStorage,
                 );
               } catch (e) {
                 selectedStorageData = null;
@@ -102,7 +121,7 @@ class _StorageWidgetState extends State<StorageWidget> {
                 closeDropDownOnClearFilterSearch: true,
                 items: state is StorageLoaded ? state.storageList : [],
                 searchHintText:
-                    AppLocalizations.of(context)!.translate('search'),
+                AppLocalizations.of(context)!.translate('search'),
                 overlayHeight: 400,
                 enabled: !isLoading,
                 decoration: CustomDropdownDecoration(
@@ -213,7 +232,7 @@ class _StorageWidgetState extends State<StorageWidget> {
                 },
                 excludeSelected: false,
                 initialItem: (state is StorageLoaded &&
-                        state.storageList.contains(selectedStorageData))
+                    state.storageList.contains(selectedStorageData))
                     ? selectedStorageData
                     : null,
                 validator: (value) {

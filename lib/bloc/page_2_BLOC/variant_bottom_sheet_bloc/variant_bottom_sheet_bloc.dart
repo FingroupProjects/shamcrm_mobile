@@ -412,6 +412,7 @@ class VariantBottomSheetBloc extends Bloc<VariantBottomSheetEvent, VariantBottom
       emit(state.copyWith(
         isLoading: false,
         selectedCategoryId: event.categoryId,
+        selectedCategoryName: event.categoryName,
         categoryVariants: cached,
         allVariants: const [], // Clear all variants
         searchQuery: null, // Clear search
@@ -425,6 +426,7 @@ class VariantBottomSheetBloc extends Bloc<VariantBottomSheetEvent, VariantBottom
     emit(state.copyWith(
       isLoading: true,
       selectedCategoryId: event.categoryId,
+      selectedCategoryName: event.categoryName,
       allVariants: const [],
       searchQuery: null,
       searchCategories: const [],
@@ -452,6 +454,7 @@ class VariantBottomSheetBloc extends Bloc<VariantBottomSheetEvent, VariantBottom
 
       emit(state.copyWith(
         isLoading: false,
+        selectedCategoryName: event.categoryName,
         categoryVariants: response.data,
         categoryVariantsPagination: response.pagination,
         currentPage: event.page,
