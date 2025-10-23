@@ -29,18 +29,18 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
     _initializeBaseUrl();
   }
 
- Future<void> _initializeBaseUrl() async {
-  try {
-    final staticBaseUrl = await _apiService.getStaticBaseUrl();
-    setState(() {
-      baseUrl = staticBaseUrl;
-    });
-  } catch (error) {
-    setState(() {
-      baseUrl = 'https://shamcrm.com/storage';
-    });
+  Future<void> _initializeBaseUrl() async {
+    try {
+      final staticBaseUrl = await _apiService.getStaticBaseUrl();
+      setState(() {
+        baseUrl = staticBaseUrl;
+      });
+    } catch (error) {
+      setState(() {
+        baseUrl = 'https://shamcrm.com/storage';
+      });
+    }
   }
-}
   @override
   Widget build(BuildContext context) {
     return _buildGoodsList(widget.goods);
@@ -78,6 +78,8 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
           SizedBox(
             height: 550,
             child: ListView.builder(
+              primary: false,
+              physics: const ClampingScrollPhysics(),
               itemCount: goods.length,
               itemBuilder: (context, index) {
                 return _buildGoodsItem(goods[index]);
@@ -204,43 +206,43 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
 
   // ИСПРАВЛЕННЫЙ МЕТОД - здесь была проблема!
   void _navigateToGoodsDetails(Good good) {
-  int correctGoodId = good.getCorrectGoodId();
-  print('Navigating to GoodsDetailsScreen with ID: $correctGoodId (goodId: ${good.goodId}, variantGood.id: ${good.variantGood?.id}, good.id: ${good.good.id})');
-  
-  if (correctGoodId == 0) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Ошибка: Не удалось определить ID товара'),
-        backgroundColor: Colors.red,
-      ),
-    );
-    return;
-  }
+    int correctGoodId = good.getCorrectGoodId();
+    print('Navigating to GoodsDetailsScreen with ID: $correctGoodId (goodId: ${good.goodId}, variantGood.id: ${good.variantGood?.id}, good.id: ${good.good.id})');
 
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => GoodsDetailsScreen(
-        id: correctGoodId,
-        isFromOrder: true,
-      ),
-    ),
-  );
-}
+    if (correctGoodId == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Ошибка: Не удалось определить ID товара'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
-  Row _buildTitleRow(String title) {
-  return Row(
-    mainAxisAlignment: MainAxisAlignment.start, // Выравнивание заголовка слева
-    children: [
-      Text(
-        title,
-        style: TaskCardStyles.titleStyle.copyWith(
-          fontWeight: FontWeight.w500,
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => GoodsDetailsScreen(
+          id: correctGoodId,
+          isFromOrder: true,
         ),
       ),
-    ],
-  );
-}
+    );
+  }
+
+  Row _buildTitleRow(String title) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.start, // Выравнивание заголовка слева
+      children: [
+        Text(
+          title,
+          style: TaskCardStyles.titleStyle.copyWith(
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 class DeleteGoodsDialog extends StatelessWidget {

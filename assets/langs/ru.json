@@ -1735,5 +1735,6 @@
   "unsaved_changes_message":"У вас есть несохранённые изменения. Вы действительно хотите выйти?",
   "main":"Основное",
   "no_goods_added":"Нет добавленных товаров",
-  "no_goods_in_category": "В этой категории нет товаров"
+  "no_goods_in_category": "В этой категории нет товаров",
+  "subcategory_updated_successfully": "Подкатегория успешно обновлена"
 }

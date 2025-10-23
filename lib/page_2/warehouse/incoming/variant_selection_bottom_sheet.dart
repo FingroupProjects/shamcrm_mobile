@@ -16,7 +16,7 @@ class VariantSelectionBottomSheet extends StatefulWidget {
 
   const VariantSelectionBottomSheet({
     required this.existingItems,
-    this.forceReload = false,
+    this.forceReload = true,
     super.key,
   });
 
@@ -124,8 +124,8 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
     }
   }
 
-  void _onCategoryTap(int categoryId) {
-    _bloc.add(FetchVariantsByCategory(categoryId: categoryId));
+  void _onCategoryTap(int categoryId, String categoryName) {
+    _bloc.add(FetchVariantsByCategory(categoryId: categoryId, categoryName: categoryName));
   }
 
   void _onBackFromCategory() {
@@ -275,9 +275,11 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
   }
 
   Widget _buildCategoryBreadcrumb(VariantBottomSheetState state) {
-    final categoryName = state.categoryVariants.isNotEmpty 
-        ? state.categoryVariants.first.good?.category.name ?? ''
-        : '';
+    // ✅ ИСПРАВЛЕНИЕ: Получаем название категории из состояния
+    final categoryName = state.selectedCategoryName ??
+        (state.categoryVariants.isNotEmpty
+            ? state.categoryVariants.first.good?.category.name ?? ''
+            : '');
 
     return Padding(
       padding: const EdgeInsets.only(top: 4),
@@ -312,7 +314,7 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
   Widget _buildSearchBreadcrumb(VariantBottomSheetState state) {
     final totalResults = state.searchCategories.length + state.searchVariants.length;
     final localizations = AppLocalizations.of(context)!;
-    
+
     return Padding(
       padding: const EdgeInsets.only(top: 4),
       child: Text(
@@ -346,12 +348,12 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
                 prefixIcon: const Icon(Icons.search, color: Color(0xff4759FF)),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.clear, color: Color(0xff99A4BA)),
-                        onPressed: () {
-                          _searchController.clear();
-                          _bloc.add(SearchAll(''));
-                        },
-                      )
+                  icon: const Icon(Icons.clear, color: Color(0xff99A4BA)),
+                  onPressed: () {
+                    _searchController.clear();
+                    _bloc.add(SearchAll(''));
+                  },
+                )
                     : null,
                 filled: true,
                 fillColor: const Color(0xFFF4F7FD),
@@ -547,7 +549,7 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
     final leftPadding = 16.0 + (level * 24.0);
 
     return GestureDetector(
-      onTap: () => _onCategoryTap(category.id),
+      onTap: () => _onCategoryTap(category.id, category.name),
       child: Container(
         margin: EdgeInsets.only(bottom: 12, left: level > 0 ? leftPadding - 16 : 0),
         decoration: BoxDecoration(
@@ -582,29 +584,29 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
                 ),
                 child: category.image != null && category.image!.isNotEmpty
                     ? ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: CachedNetworkImage(
-                          imageUrl: 'https://shamcrm.com/storage/${category.image}',
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => const Center(
-                            child: SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                          ),
-                          errorWidget: (context, url, error) => Icon(
-                            level > 0 ? Icons.subdirectory_arrow_right : Icons.category,
-                            color: const Color(0xff4759FF),
-                            size: level > 0 ? 20 : 28,
-                          ),
-                        ),
-                      )
-                    : Icon(
-                        level > 0 ? Icons.subdirectory_arrow_right : Icons.category,
-                        color: const Color(0xff4759FF),
-                        size: level > 0 ? 20 : 28,
+                  borderRadius: BorderRadius.circular(10),
+                  child: CachedNetworkImage(
+                    imageUrl: 'https://shamcrm.com/storage/${category.image}',
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => const Center(
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
                       ),
+                    ),
+                    errorWidget: (context, url, error) => Icon(
+                      level > 0 ? Icons.subdirectory_arrow_right : Icons.category,
+                      color: const Color(0xff4759FF),
+                      size: level > 0 ? 20 : 28,
+                    ),
+                  ),
+                )
+                    : Icon(
+                  level > 0 ? Icons.subdirectory_arrow_right : Icons.category,
+                  color: const Color(0xff4759FF),
+                  size: level > 0 ? 20 : 28,
+                ),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -640,9 +642,19 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
   }
 
   Widget _buildCategoryVariants(AppLocalizations localizations, VariantBottomSheetState state) {
+    // ✅ ИСПРАВЛЕНИЕ: Определяем правильное сообщение в зависимости от ситуации
+    String emptyMessageKey;
+    if (state.categoryVariants.isEmpty) {
+      // Если в категории вообще нет товаров
+      emptyMessageKey = 'no_goods_in_category';
+    } else {
+      // Если товары есть, но все уже добавлены
+      emptyMessageKey = 'all_variants_added';
+    }
+
     return _buildVariantsList(
       variants: state.categoryVariants,
-      emptyMessageKey: 'all_variants_added',
+      emptyMessageKey: emptyMessageKey,
       state: state,
       localizations: localizations,
     );
@@ -727,9 +739,9 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
   }
 
   Widget _buildVariantCard(Variant variant, AppLocalizations localizations) {
-    final displayName = variant.fullName ?? 
-                        variant.good?.name ?? 
-                        localizations.translate('unknown_variant');
+    final displayName = variant.fullName ??
+        variant.good?.name ??
+        localizations.translate('unknown_variant');
     final imageUrl = variant.good?.mainImageUrl;
 
     return GestureDetector(
@@ -757,29 +769,29 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
                 ),
                 child: imageUrl != null
                     ? ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: CachedNetworkImage(
-                          imageUrl: imageUrl,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => const Center(
-                            child: SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                          ),
-                          errorWidget: (context, url, error) => const Icon(
-                            Icons.shopping_cart_outlined,
-                            color: Color(0xff4759FF),
-                            size: 24,
-                          ),
-                        ),
-                      )
-                    : const Icon(
-                        Icons.shopping_cart_outlined,
-                        color: Color(0xff4759FF),
-                        size: 24,
+                  borderRadius: BorderRadius.circular(8),
+                  child: CachedNetworkImage(
+                    imageUrl: imageUrl,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => const Center(
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
                       ),
+                    ),
+                    errorWidget: (context, url, error) => const Icon(
+                      Icons.shopping_cart_outlined,
+                      color: Color(0xff4759FF),
+                      size: 24,
+                    ),
+                  ),
+                )
+                    : const Icon(
+                  Icons.shopping_cart_outlined,
+                  color: Color(0xff4759FF),
+                  size: 24,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
