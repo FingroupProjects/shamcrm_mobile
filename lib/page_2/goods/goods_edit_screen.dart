@@ -45,7 +45,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
   late TextEditingController stockQuantityController;
   final TextEditingController commentsController = TextEditingController();
   subCatAttr.SubCategoryAttributesData? selectedCategory;
-  
+
   String? selectedUnit;
   bool isActive = true;
   List<subCatAttr.SubCategoryAttributesData> subCategories = [];
@@ -108,7 +108,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
   Future<void> _loadAllDataSequentially() async {
     if (!mounted) return;
     setState(() => isLoading = true);
-    
+
     try {
       await _initializeBaseUrl();
       if (mounted && widget.sortedFiles.isNotEmpty) {
@@ -518,7 +518,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                             .translate('field_required')
                         : null,
                   ),
-                 
+
                    const SizedBox(height: 8),
                   CustomTextField(
                     controller: goodsDescriptionController,
@@ -1017,12 +1017,10 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.camera_alt,
-                                      color: Color(0xff99A4BA), size: 40),
+                                  Icon(Icons.camera_alt, color: Color(0xff99A4BA), size: 40),
                                   const SizedBox(height: 8),
                                   Text(
-                                    AppLocalizations.of(context)!
-                                        .translate('select_image'),
+                                    AppLocalizations.of(context)!.translate('select_image'),
                                     style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w500,
@@ -1050,18 +1048,11 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                           width: 100,
                                           height: 100,
                                           decoration: BoxDecoration(
-                                            borderRadius:
-                                                BorderRadius.circular(12),
-                                            border: mainImageIndex == index
-                                                ? Border.all(
-                                                    color: Colors.blue,
-                                                    width: 2)
-                                                : null,
+                                            borderRadius: BorderRadius.circular(12),
+                                            border: mainImageIndex == index ? Border.all(color: Colors.blue, width: 2) : null,
                                             image: DecorationImage(
-                                              image: imagePath
-                                                      .startsWith('http')
-                                                  ? NetworkImage(imagePath)
-                                                      as ImageProvider
+                                              image: imagePath.startsWith('http')
+                                                  ? NetworkImage(imagePath) as ImageProvider
                                                   : FileImage(File(imagePath)),
                                               fit: BoxFit.cover,
                                             ),
@@ -1072,14 +1063,11 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                                 top: 4,
                                                 right: 4,
                                                 child: GestureDetector(
-                                                  onTap: () =>
-                                                      _removeImage(imagePath),
+                                                  onTap: () => _removeImage(imagePath),
                                                   child: Container(
-                                                    padding:
-                                                        const EdgeInsets.all(4),
+                                                    padding: const EdgeInsets.all(4),
                                                     decoration: BoxDecoration(
-                                                      color: Colors.black
-                                                          .withOpacity(0.5),
+                                                      color: Colors.black.withOpacity(0.5),
                                                       shape: BoxShape.circle,
                                                     ),
                                                     child: Icon(
@@ -1095,14 +1083,10 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                                 right: 4,
                                                 child: mainImageIndex == index
                                                     ? Container(
-                                                        padding:
-                                                            const EdgeInsets
-                                                                .all(4),
-                                                        decoration:
-                                                            BoxDecoration(
+                                                        padding: const EdgeInsets.all(4),
+                                                        decoration: BoxDecoration(
                                                           color: Colors.blue,
-                                                          shape:
-                                                              BoxShape.circle,
+                                                          shape: BoxShape.circle,
                                                         ),
                                                         child: Icon(
                                                           Icons.check,
@@ -1124,22 +1108,16 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                         height: 100,
                                         decoration: BoxDecoration(
                                           color: Color(0xffF4F7FD),
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                          border: Border.all(
-                                              color: Color(0xffF4F7FD)),
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(color: Color(0xffF4F7FD)),
                                         ),
                                         child: Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
+                                          mainAxisAlignment: MainAxisAlignment.center,
                                           children: [
-                                            Icon(Icons.add_a_photo,
-                                                color: Color(0xff99A4BA),
-                                                size: 40),
+                                            Icon(Icons.add_a_photo, color: Color(0xff99A4BA), size: 40),
                                             SizedBox(height: 4),
                                             Text(
-                                              AppLocalizations.of(context)!
-                                                  .translate('add_image'),
+                                              AppLocalizations.of(context)!.translate('add_image'),
                                               style: TextStyle(
                                                 fontSize: 10,
                                                 color: Color(0xff99A4BA),
@@ -1152,17 +1130,14 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                   ],
                                   onReorder: (int oldIndex, int newIndex) {
                                     setState(() {
-                                      final item =
-                                          _imagePaths.removeAt(oldIndex);
+                                      final item = _imagePaths.removeAt(oldIndex);
                                       _imagePaths.insert(newIndex, item);
                                       if (mainImageIndex != null) {
                                         if (mainImageIndex == oldIndex) {
                                           mainImageIndex = newIndex;
-                                        } else if (oldIndex < mainImageIndex! &&
-                                            newIndex >= mainImageIndex!) {
+                                        } else if (oldIndex < mainImageIndex! && newIndex >= mainImageIndex!) {
                                           mainImageIndex = mainImageIndex! - 1;
-                                        } else if (oldIndex > mainImageIndex! &&
-                                            newIndex <= mainImageIndex!) {
+                                        } else if (oldIndex > mainImageIndex! && newIndex <= mainImageIndex!) {
                                           mainImageIndex = mainImageIndex! + 1;
                                         }
                                       } else if (_imagePaths.isNotEmpty) {
@@ -1174,20 +1149,21 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                 Positioned(
                                   top: 8,
                                   left: 8,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.5),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Text(
-                                      '${_imagePaths.length} ${AppLocalizations.of(context)!.translate('images')}',
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
-                                        fontFamily: 'Gilroy',
-                                        color: Colors.white,
+                                  child: IgnorePointer(
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.black.withOpacity(0.5),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        '${_imagePaths.length} ${AppLocalizations.of(context)!.translate('images')}',
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                          fontFamily: 'Gilroy',
+                                          color: Colors.white,
+                                        ),
                                       ),
                                     ),
                                   ),
