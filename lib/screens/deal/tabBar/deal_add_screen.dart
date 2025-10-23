@@ -1,7 +1,4 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/bloc/field_configuration/field_configuration_bloc.dart';
-import 'package:crm_task_manager/bloc/field_configuration/field_configuration_event.dart';
-import 'package:crm_task_manager/bloc/field_configuration/field_configuration_state.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_event.dart';
 import 'package:crm_task_manager/bloc/main_field/main_field_bloc.dart';
@@ -13,7 +10,6 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
-import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
@@ -25,7 +21,6 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_create_cu
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/main_field_dropdown_widget.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -51,17 +46,13 @@ class _DealAddScreenState extends State<DealAddScreen> {
   final TextEditingController endDateController = TextEditingController();
   final TextEditingController sumController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
-  
-  // Конфигурация полей
-  List<FieldConfiguration> fieldConfigurations = [];
-  bool isConfigurationLoaded = false;
-  
   String? selectedManager;
   String? selectedLead;
   List<CustomField> customFields = [];
   bool isEndDateInvalid = false;
   bool isTitleInvalid = false;
   bool isManagerInvalid = false;
+  bool _showAdditionalFields = false;
   bool isManagerManuallySelected = false;
   List<String> selectedFiles = [];
   List<String> fileNames = [];
@@ -71,236 +62,10 @@ class _DealAddScreenState extends State<DealAddScreen> {
   void initState() {
     super.initState();
     //print('DealAddScreen: initState started');
-    
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     context.read<GetAllLeadBloc>().add(GetAllLeadEv());
     //print('DealAddScreen: Dispatched GetAllManagerEv and GetAllLeadEv');
-    
-    // Загружаем конфигурацию после build
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _loadFieldConfiguration();
-      }
-    });
-  }
-  
-  Future<void> _loadFieldConfiguration() async {
-    if (kDebugMode) {
-      print('DealAddScreen: Loading field configuration');
-    }
-    
-    if (mounted) {
-      context.read<FieldConfigurationBloc>().add(
-        FetchFieldConfiguration('deals')
-      );
-    }
-  }
-
-  // Вспомогательный метод для создания/получения кастомного поля
-  CustomField _getOrCreateCustomField(FieldConfiguration config) {
-    final existingField = customFields.firstWhere(
-      (field) => field.fieldName == config.fieldName && field.isCustomField,
-      orElse: () {
-        final newField = CustomField(
-          fieldName: config.fieldName,
-          uniqueId: Uuid().v4(),
-          controller: TextEditingController(),
-          type: config.type,
-          isCustomField: true,
-        );
-        customFields.add(newField);
-        return newField;
-      },
-    );
-    
-    return existingField;
-  }
-
-  // Вспомогательный метод для создания/получения поля-справочника
-  CustomField _getOrCreateDirectoryField(FieldConfiguration config) {
-    final existingField = customFields.firstWhere(
-      (field) => field.directoryId == config.directoryId,
-      orElse: () {
-        final newField = CustomField(
-          fieldName: config.fieldName,
-          isDirectoryField: true,
-          directoryId: config.directoryId,
-          uniqueId: Uuid().v4(),
-          controller: TextEditingController(),
-        );
-        customFields.add(newField);
-        return newField;
-      },
-    );
-    
-    return existingField;
-  }
-
-  // Метод для построения стандартных системных полей
-  Widget _buildStandardField(FieldConfiguration config) {
-    switch (config.fieldName) {
-      case 'name':
-        return DealNameSelectionWidget(
-          selectedDealName: titleController.text,
-          onSelectDealName: (String dealName) {
-            setState(() {
-              titleController.text = dealName;
-              isTitleInvalid = dealName.isEmpty;
-              //print('DealAddScreen: Deal name selected: $dealName');
-            });
-          },
-          hasError: isTitleInvalid,
-        );
-        
-      case 'lead_id':
-        return LeadWithManager(
-          selectedLead: selectedLead,
-          onSelectLead: (LeadData selectedLeadData) {
-            //print('DealAddScreen: Lead selected: ${selectedLeadData.id}, managerId: ${selectedLeadData.managerId}');
-            if (selectedLead == selectedLeadData.id.toString()) {
-              //print('DealAddScreen: Lead ${selectedLeadData.id} already selected, skipping');
-              return;
-            }
-            setState(() {
-              selectedLead = selectedLeadData.id.toString();
-              //print('DealAddScreen: isManagerManuallySelected: $isManagerManuallySelected');
-              if (!isManagerManuallySelected && selectedLeadData.managerId != null) {
-                //print('DealAddScreen: Attempting to auto-select manager');
-                final managerBlocState = context.read<GetAllManagerBloc>().state;
-                //print('DealAddScreen: ManagerBloc state: $managerBlocState');
-                if (managerBlocState is GetAllManagerSuccess) {
-                  final managers = managerBlocState.dataManager.result ?? [];
-                  //print('DealAddScreen: Available managers: ${managers.map((m) => m.id)}');
-                  try {
-                    final matchingManager = managers.firstWhere(
-                      (manager) => manager.id == selectedLeadData.managerId,
-                    );
-                    selectedManager = matchingManager.id.toString();
-                    //print('DealAddScreen: Auto-selected manager: ${matchingManager.id} (${matchingManager.name})');
-                  } catch (e) {
-                    //print('DealAddScreen: Manager not found for ID ${selectedLeadData.managerId}, skipping auto-select');
-                    selectedManager = null;
-                  }
-                } else {
-                  //print('DealAddScreen: ManagerBloc not in success state, skipping auto-select');
-                }
-              } else {
-                //print('DealAddScreen: Manager already manually selected or no managerId, skipping auto-select');
-              }
-            });
-          },
-        );
-        
-      case 'manager_id':
-        return ManagerForLead(
-          selectedManager: selectedManager,
-          onSelectManager: (ManagerData selectedManagerData) {
-            setState(() {
-              selectedManager = selectedManagerData.id.toString();
-              isManagerInvalid = false;
-              isManagerManuallySelected = true;
-              //print('DealAddScreen: Manager manually selected: ${selectedManagerData.id} (${selectedManagerData.name})');
-            });
-          },
-          hasError: isManagerInvalid,
-        );
-        
-      case 'start_date':
-        return CustomTextFieldDate(
-          controller: startDateController,
-          label: AppLocalizations.of(context)!.translate('start_date'),
-          withTime: false,
-        );
-        
-      case 'end_date':
-        return CustomTextFieldDate(
-          controller: endDateController,
-          label: AppLocalizations.of(context)!.translate('end_date'),
-          hasError: isEndDateInvalid,
-          withTime: false,
-        );
-        
-      case 'sum':
-        return CustomTextField(
-          controller: sumController,
-          hintText: AppLocalizations.of(context)!.translate('enter_summ'),
-          label: AppLocalizations.of(context)!.translate('summ'),
-          keyboardType: TextInputType.number,
-          inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9\.,]'))],
-        );
-        
-      case 'description':
-        return CustomTextField(
-          controller: descriptionController,
-          hintText: AppLocalizations.of(context)!.translate('enter_description'),
-          label: AppLocalizations.of(context)!.translate('description_list'),
-          maxLines: 5,
-          keyboardType: TextInputType.multiline,
-        );
-        
-      default:
-        if (kDebugMode) {
-          print('DealAddScreen: Unknown field: ${config.fieldName}');
-        }
-        return SizedBox.shrink();
-    }
-  }
-
-  // Метод для построения виджета на основе конфигурации поля
-  Widget _buildFieldWidget(FieldConfiguration config) {
-    // Сначала проверяем, является ли это кастомным полем
-    if (config.isCustomField) {
-      final customField = _getOrCreateCustomField(config);
-      
-      return CustomFieldWidget(
-        fieldName: config.fieldName,
-        valueController: customField.controller,
-        onRemove: () {}, // Пустая функция, так как серверные поля нельзя удалить
-        type: config.type,
-        isDirectory: false,
-      );
-    }
-    
-    // Затем проверяем, является ли это справочником
-    if (config.isDirectory && config.directoryId != null) {
-      final directoryField = _getOrCreateDirectoryField(config);
-      
-      return MainFieldDropdownWidget(
-        directoryId: directoryField.directoryId!,
-        directoryName: directoryField.fieldName,
-        selectedField: null,
-        onSelectField: (MainField selectedField) {
-          setState(() {
-            final index = customFields.indexWhere(
-              (f) => f.directoryId == config.directoryId
-            );
-            if (index != -1) {
-              customFields[index] = directoryField.copyWith(
-                entryId: selectedField.id,
-                controller: TextEditingController(text: selectedField.value),
-              );
-            }
-          });
-        },
-        controller: directoryField.controller,
-        onSelectEntryId: (int entryId) {
-          setState(() {
-            final index = customFields.indexWhere(
-              (f) => f.directoryId == config.directoryId
-            );
-            if (index != -1) {
-              customFields[index] = directoryField.copyWith(
-                entryId: entryId,
-              );
-            }
-          });
-        },
-        onRemove: () {},
-      );
-    }
-    
-    // Иначе это стандартное системное поле
-    return _buildStandardField(config);
+    _fetchAndAddCustomFields();
   }
 
   Future<void> _pickFile() async {
@@ -469,6 +234,43 @@ class _DealAddScreenState extends State<DealAddScreen> {
     );
   }
 
+  void _fetchAndAddCustomFields() async {
+    try {
+      //print('DealAddScreen: Fetching custom fields and directories');
+      final customFieldsData = await ApiService().getCustomFieldsdeal();
+      if (customFieldsData['result'] != null) {
+        setState(() {
+          customFields.addAll(customFieldsData['result'].map<CustomField>((value) {
+            return CustomField(
+              fieldName: value,
+              controller: TextEditingController(),
+              uniqueId: Uuid().v4(),
+            );
+          }).toList());
+          //print('DealAddScreen: Added custom fields: ${customFields.length}');
+        });
+      }
+
+      final directoryLinkData = await ApiService().getDealDirectoryLinks();
+      if (directoryLinkData.data != null) {
+        setState(() {
+          customFields.addAll(directoryLinkData.data!.map<CustomField>((link) {
+            return CustomField(
+              fieldName: link.directory.name,
+              controller: TextEditingController(),
+              isDirectoryField: true,
+              directoryId: link.directory.id,
+              uniqueId: Uuid().v4(),
+            );
+          }).toList());
+          //print('DealAddScreen: Added directory fields: ${customFields.length}');
+        });
+      }
+    } catch (e) {
+      //print('DealAddScreen: Error fetching custom fields: $e');
+    }
+  }
+
   void _addCustomField(String fieldName, {bool isDirectory = false, int? directoryId, String? type}) {
     //print('DealAddScreen: Adding field: $fieldName, isDirectory: $isDirectory, directoryId: $directoryId, type: $type');
     if (isDirectory && directoryId != null) {
@@ -481,12 +283,11 @@ class _DealAddScreenState extends State<DealAddScreen> {
     setState(() {
       customFields.add(CustomField(
         fieldName: fieldName,
-        uniqueId: Uuid().v4(),
+        controller: TextEditingController(),
         isDirectoryField: isDirectory,
         directoryId: directoryId,
         type: type,
-        controller: TextEditingController(),
-        isCustomField: !isDirectory,
+        uniqueId: Uuid().v4(),
       ));
       //print('DealAddScreen: Added custom field: $fieldName');
     });
@@ -604,90 +405,28 @@ class _DealAddScreenState extends State<DealAddScreen> {
         providers: [
           BlocProvider(create: (context) => MainFieldBloc()),
         ],
-        child: BlocConsumer<FieldConfigurationBloc, FieldConfigurationState>(
-          listener: (context, configState) {
-            if (kDebugMode) {
-              print('DealAddScreen: FieldConfigurationBloc state changed: ${configState.runtimeType}');
-            }
-            
-            if (configState is FieldConfigurationLoaded) {
-              if (kDebugMode) {
-                print('DealAddScreen: Configuration loaded with ${configState.fields.length} fields');
-              }
-              setState(() {
-                fieldConfigurations = configState.fields;
-                isConfigurationLoaded = true;
-              });
-            } else if (configState is FieldConfigurationError) {
-              if (kDebugMode) {
-                print('DealAddScreen: Configuration error: ${configState.message}');
-              }
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    'Ошибка загрузки конфигурации: ${configState.message}',
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  backgroundColor: Colors.red,
-                ),
+        child: BlocListener<DealBloc, DealState>(
+          listener: (context, state) {
+            //print('DealAddScreen: DealBloc state changed: $state');
+            if (state is DealError) {
+              showCustomSnackBar(
+                context: context,
+                message: AppLocalizations.of(context)!.translate(state.message),
+                isSuccess: false,
               );
+            } else if (state is DealSuccess) {
+              showCustomSnackBar(
+                context: context,
+                message: AppLocalizations.of(context)!.translate(state.message),
+                isSuccess: true,
+              );
+              if (context.mounted) {
+                Navigator.pop(context, widget.statusId);
+                context.read<DealBloc>().add(FetchDealStatuses());
+              }
             }
           },
-          builder: (context, configState) {
-            if (kDebugMode) {
-              print('DealAddScreen: Building with state: ${configState.runtimeType}, isLoaded: $isConfigurationLoaded');
-            }
-            
-            if (configState is FieldConfigurationLoading) {
-              return Center(
-                child: CircularProgressIndicator(
-                  color: Color(0xff1E2E52),
-                ),
-              );
-            }
-            
-            if (!isConfigurationLoaded) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircularProgressIndicator(
-                      color: Color(0xff1E2E52),
-                    ),
-                    SizedBox(height: 16),
-                    Text('Загрузка конфигурации...'),
-                  ],
-                ),
-              );
-            }
-            
-            return BlocListener<DealBloc, DealState>(
-              listener: (context, state) {
-                //print('DealAddScreen: DealBloc state changed: $state');
-                if (state is DealError) {
-                  showCustomSnackBar(
-                    context: context,
-                    message: AppLocalizations.of(context)!.translate(state.message),
-                    isSuccess: false,
-                  );
-                } else if (state is DealSuccess) {
-                  showCustomSnackBar(
-                    context: context,
-                    message: AppLocalizations.of(context)!.translate(state.message),
-                    isSuccess: true,
-                  );
-                  if (context.mounted) {
-                    Navigator.pop(context, widget.statusId);
-                    context.read<DealBloc>().add(FetchDealStatuses());
-                  }
-                }
-              },
-              child: Form(
+          child: Form(
             key: _formKey,
             child: Column(
               children: [
@@ -702,84 +441,171 @@ class _DealAddScreenState extends State<DealAddScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Динамическое построение полей на основе конфигурации с сервера
-                          ...fieldConfigurations.map((config) {
-                            return Column(
-                              children: [
-                                _buildFieldWidget(config),
-                                const SizedBox(height: 15),
-                              ],
-                            );
-                          }).toList(),
-                          
-                          // Файлы (всегда показываем)
-                          _buildFileSelection(),
-                          const SizedBox(height: 15),
-                          
-                          // ТОЛЬКО пользовательские поля (те, которые добавлены через кнопку "Добавить поле")
-                          ...customFields.where((field) {
-                            // Исключаем поля, которые уже есть в серверной конфигурации
-                            return !fieldConfigurations.any((config) =>
-                              (config.isCustomField && config.fieldName == field.fieldName) ||
-                              (config.isDirectory && config.directoryId == field.directoryId)
-                            );
-                          }).map((field) {
-                            return Column(
-                              children: [
-                                field.isDirectoryField && field.directoryId != null
-                                    ? MainFieldDropdownWidget(
-                                        directoryId: field.directoryId!,
-                                        directoryName: field.fieldName,
-                                        selectedField: null,
-                                        onSelectField: (MainField selectedField) {
-                                          setState(() {
-                                            final idx = customFields.indexOf(field);
-                                            customFields[idx] = field.copyWith(
-                                              entryId: selectedField.id,
-                                              controller: TextEditingController(
-                                                  text: selectedField.value),
-                                            );
-                                          });
-                                        },
-                                        controller: field.controller,
-                                        onSelectEntryId: (int entryId) {
-                                          setState(() {
-                                            final idx = customFields.indexOf(field);
-                                            customFields[idx] = field.copyWith(
-                                              entryId: entryId,
-                                            );
-                                          });
-                                        },
-                                        onRemove: () {
-                                          setState(() {
-                                            customFields.remove(field);
-                                          });
-                                        },
-                                      )
-                                    : CustomFieldWidget(
-                                        fieldName: field.fieldName,
-                                        valueController: field.controller,
-                                        onRemove: () {
-                                          setState(() {
-                                            customFields.remove(field);
-                                          });
-                                        },
-                                        type: field.type,
-                                        isDirectory: false,
-                                      ),
-                                const SizedBox(height: 15),
-                              ],
-                            );
-                          }).toList(),
-                          
-                          // Кнопка добавления дополнительных полей
-                          CustomButton(
-                            buttonText: AppLocalizations.of(context)!.translate('add_field'),
-                            buttonColor: Color(0xff1E2E52),
-                            textColor: Colors.white,
-                            onPressed: _showAddFieldMenu,
+                          DealNameSelectionWidget(
+                            selectedDealName: titleController.text,
+                            onSelectDealName: (String dealName) {
+                              setState(() {
+                                titleController.text = dealName;
+                                isTitleInvalid = dealName.isEmpty;
+                                //print('DealAddScreen: Deal name selected: $dealName');
+                              });
+                            },
+                            hasError: isTitleInvalid,
                           ),
-                          const SizedBox(height: 20),
+                          const SizedBox(height: 8),
+                          LeadWithManager(
+                            selectedLead: selectedLead,
+                            onSelectLead: (LeadData selectedLeadData) {
+                              //print('DealAddScreen: Lead selected: ${selectedLeadData.id}, managerId: ${selectedLeadData.managerId}');
+                              if (selectedLead == selectedLeadData.id.toString()) {
+                                //print('DealAddScreen: Lead ${selectedLeadData.id} already selected, skipping');
+                                return;
+                              }
+                              setState(() {
+                                selectedLead = selectedLeadData.id.toString();
+                                //print('DealAddScreen: isManagerManuallySelected: $isManagerManuallySelected');
+                                if (!isManagerManuallySelected && selectedLeadData.managerId != null) {
+                                  //print('DealAddScreen: Attempting to auto-select manager');
+                                  final managerBlocState = context.read<GetAllManagerBloc>().state;
+                                  //print('DealAddScreen: ManagerBloc state: $managerBlocState');
+                                  if (managerBlocState is GetAllManagerSuccess) {
+                                    final managers = managerBlocState.dataManager.result ?? [];
+                                    //print('DealAddScreen: Available managers: ${managers.map((m) => m.id)}');
+                                    try {
+                                      final matchingManager = managers.firstWhere(
+                                        (manager) => manager.id == selectedLeadData.managerId,
+                                      );
+                                      selectedManager = matchingManager.id.toString();
+                                      //print('DealAddScreen: Auto-selected manager: ${matchingManager.id} (${matchingManager.name})');
+                                    } catch (e) {
+                                      //print('DealAddScreen: Manager not found for ID ${selectedLeadData.managerId}, skipping auto-select');
+                                      selectedManager = null;
+                                    }
+                                  } else {
+                                    //print('DealAddScreen: ManagerBloc not in success state, skipping auto-select');
+                                  }
+                                } else {
+                                  //print('DealAddScreen: Manager already manually selected or no managerId, skipping auto-select');
+                                }
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 8),
+                          ManagerForLead(
+                            selectedManager: selectedManager,
+                            onSelectManager: (ManagerData selectedManagerData) {
+                              setState(() {
+                                selectedManager = selectedManagerData.id.toString();
+                                isManagerInvalid = false;
+                                isManagerManuallySelected = true;
+                                //print('DealAddScreen: Manager manually selected: ${selectedManagerData.id} (${selectedManagerData.name})');
+                              });
+                            },
+                            hasError: isManagerInvalid,
+                          ),
+                          const SizedBox(height: 8),
+                          CustomTextFieldDate(
+                            controller: startDateController,
+                            label: AppLocalizations.of(context)!.translate('start_date'),
+                            withTime: false,
+                          ),
+                          const SizedBox(height: 8),
+                          CustomTextFieldDate(
+                            controller: endDateController,
+                            label: AppLocalizations.of(context)!.translate('end_date'),
+                            hasError: isEndDateInvalid,
+                            withTime: false,
+                          ),
+                          const SizedBox(height: 8),
+                          CustomTextField(
+                            controller: sumController,
+                            hintText: AppLocalizations.of(context)!.translate('enter_summ'),
+                            label: AppLocalizations.of(context)!.translate('summ'),
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9\.,]'))],
+                          ),
+                          const SizedBox(height: 8),
+                          CustomTextField(
+                            controller: descriptionController,
+                            hintText: AppLocalizations.of(context)!.translate('enter_description'),
+                            label: AppLocalizations.of(context)!.translate('description_list'),
+                            maxLines: 5,
+                            keyboardType: TextInputType.multiline,
+                          ),
+                          const SizedBox(height: 16),
+                          if (!_showAdditionalFields)
+                            CustomButton(
+                              buttonText: AppLocalizations.of(context)!.translate('additionally'),
+                              buttonColor: Color(0xff1E2E52),
+                              textColor: Colors.white,
+                              onPressed: () {
+                                setState(() {
+                                  _showAdditionalFields = true;
+                                  //print('DealAddScreen: Additional fields toggled');
+                                });
+                              },
+                            )
+                          else ...[
+                            _buildFileSelection(),
+                            const SizedBox(height: 15),
+                            ListView.builder(
+                              shrinkWrap: true,
+                              physics: NeverScrollableScrollPhysics(),
+                              itemCount: customFields.length,
+                              itemBuilder: (context, index) {
+                                final field = customFields[index];
+                                return Container(
+                                  key: ValueKey(field.uniqueId),
+                                  child: field.isDirectoryField && field.directoryId != null
+                                      ? MainFieldDropdownWidget(
+                                          directoryId: field.directoryId!,
+                                          directoryName: field.fieldName,
+                                          selectedField: null,
+                                          onSelectField: (MainField selectedField) {
+                                            setState(() {
+                                              customFields[index] = field.copyWith(
+                                                entryId: selectedField.id,
+                                                controller: TextEditingController(text: selectedField.value),
+                                              );
+                                              //print('DealAddScreen: Directory field updated: ${field.fieldName}');
+                                            });
+                                          },
+                                          controller: field.controller,
+                                          onSelectEntryId: (int entryId) {
+                                            setState(() {
+                                              customFields[index] = field.copyWith(entryId: entryId);
+                                              //print('DealAddScreen: Directory entry ID updated: $entryId');
+                                            });
+                                          },
+                                          onRemove: () {
+                                            setState(() {
+                                              customFields.removeAt(index);
+                                              //print('DealAddScreen: Removed custom field at index: $index');
+                                            });
+                                          },
+                                        )
+                                      : CustomFieldWidget(
+                                          fieldName: field.fieldName,
+                                          valueController: field.controller,
+                                          onRemove: () {
+                                            setState(() {
+                                              customFields.removeAt(index);
+                                              //print('DealAddScreen: Removed custom field: ${field.fieldName}');
+                                            });
+                                          },
+                                          type: field.type,
+                                        ),
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 8),
+                            CustomButton(
+                              buttonText: AppLocalizations.of(context)!.translate('add_field'),
+                              buttonColor: Color(0xff1E2E52),
+                              textColor: Colors.white,
+                              onPressed: _showAddFieldMenu,
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -823,9 +649,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
                 ),
               ],
             ),
-              ),
-            );
-          },
+          ),
         ),
       ),
     );
@@ -930,13 +754,6 @@ class _DealAddScreenState extends State<DealAddScreen> {
       String fieldValue = field.controller.text.trim();
       String? fieldType = field.type;
 
-      // ВАЖНО: Нормализуем тип поля - преобразуем "text" в "string"
-      if (fieldType == 'text') {
-        fieldType = 'string';
-      }
-      // Если type null, устанавливаем string по умолчанию
-      fieldType ??= 'string';
-
       // Валидация для number
       if (fieldType == 'number' && fieldValue.isNotEmpty) {
         if (!RegExp(r'^\d+$').hasMatch(fieldValue)) {
@@ -997,16 +814,10 @@ class _DealAddScreenState extends State<DealAddScreen> {
         customFieldMap.add({
           'key': fieldName,
           'value': fieldValue,
-          'type': fieldType, // Теперь гарантированно один из: string, number, date, datetime
+          'type': fieldType ?? 'string',
         });
         //print('DealAddScreen: Added custom field: $fieldName = $fieldValue, type: $fieldType');
       }
-    }
-
-    if (kDebugMode) {
-      print('DealAddScreen: Creating deal with data:');
-      print('  customFields: $customFieldMap');
-      print('  directoryValues: $directoryValues');
     }
 
     final localizations = AppLocalizations.of(context)!;

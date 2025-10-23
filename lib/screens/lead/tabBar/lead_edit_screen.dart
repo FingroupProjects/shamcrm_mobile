@@ -1,7 +1,4 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/bloc/field_configuration/field_configuration_bloc.dart';
-import 'package:crm_task_manager/bloc/field_configuration/field_configuration_event.dart';
-import 'package:crm_task_manager/bloc/field_configuration/field_configuration_state.dart';
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/lead/lead_state.dart';
@@ -12,7 +9,6 @@ import 'package:crm_task_manager/custom_widget/country_data_list.dart';
 import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/custom_widget/custom_phone_for_lead_edit.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/lead_status_list.dart';
-import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/models/leadById_model.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
@@ -29,7 +25,6 @@ import 'package:crm_task_manager/screens/lead/tabBar/source_lead_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/add_custom_directory_dialog.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/main_field_dropdown_widget.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
@@ -109,12 +104,6 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
   final TextEditingController authorController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
 
-  // Конфигурация полей
-  List<FieldConfiguration> fieldConfigurations = [];
-  bool isConfigurationLoaded = false;
-  Map<String, Widget> fieldWidgets = {};
-  List<String> fieldOrder = [];
-
   int? _selectedStatuses;
   String? selectedRegion;
   String? selectedSource;
@@ -122,7 +111,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
   String? _selectedPriceType;
   String selectedDialCode = '+992';
   String selectedWhatsAppDialCode = '+992';
-  String? _fullWhatsAppNumber;
+  String? _fullWhatsAppNumber; // Новая переменная для хранения полного номера WhatsApp
   bool _isPhoneEdited = false;
   bool _isWhatsAppEdited = false;
   bool _showAdditionalFields = false;
@@ -140,14 +129,6 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
   @override
   void initState() {
     super.initState();
-    
-    // Загружаем конфигурацию после build
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _loadFieldConfiguration();
-      }
-    });
-    
     titleController.text = widget.leadName;
     _selectedStatuses = widget.statusId;
     _selectedPriceType = widget.priceTypeId;
@@ -181,7 +162,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
           setState(() {
             selectedWhatsAppDialCode = code;
             whatsAppController.text = whatsAppNumber.substring(code.length);
-            _fullWhatsAppNumber = whatsAppNumber;
+            _fullWhatsAppNumber = whatsAppNumber; // Инициализируем полный номер
           });
           break;
         }
@@ -236,160 +217,11 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
         selectedFiles.addAll(existingFiles.map((file) => file.path));
       });
     }
-    
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     context.read<GetAllRegionBloc>().add(GetAllRegionEv());
     context.read<SalesFunnelBloc>().add(FetchSalesFunnels());
     context.read<LeadBloc>().add(FetchLeadStatuses());
     _fetchAndAddDirectoryFields();
-  }
-
-  Future<void> _loadFieldConfiguration() async {
-    if (kDebugMode) {
-      print('LeadEditScreen: Loading field configuration');
-    }
-    
-    if (mounted) {
-      context.read<FieldConfigurationBloc>().add(
-        FetchFieldConfiguration('leads')
-      );
-    }
-  }
-
-  void _buildFieldsFromConfiguration() {
-    if (kDebugMode) {
-      print('LeadEditScreen: Building fields from configuration with ${fieldConfigurations.length} fields');
-    }
-    
-    fieldWidgets.clear();
-    fieldOrder.clear();
-
-    for (var config in fieldConfigurations) {
-      if (!config.isActive) {
-        if (kDebugMode) {
-          print('LeadEditScreen: Skipping inactive field: ${config.fieldName}');
-        }
-        continue;
-      }
-
-      Widget? widget = _buildFieldWidget(config);
-      if (widget != null) {
-        fieldWidgets[config.fieldName] = widget;
-        fieldOrder.add(config.fieldName);
-        
-        if (kDebugMode) {
-          print('LeadEditScreen: Added field widget for: ${config.fieldName} at position ${config.position}');
-        }
-      }
-    }
-    
-    if (kDebugMode) {
-      print('LeadEditScreen: Total field widgets: ${fieldWidgets.length}');
-    }
-  }
-
-  Widget? _buildFieldWidget(FieldConfiguration config) {
-    switch (config.fieldName) {
-      case 'name':
-        return CustomTextField(
-          controller: titleController,
-          hintText: AppLocalizations.of(context)!.translate('enter_name_list'),
-          label: AppLocalizations.of(context)!.translate('name_list'),
-          validator: (value) => value!.isEmpty
-              ? AppLocalizations.of(context)!.translate('field_required')
-              : null,
-        );
-        
-      case 'phone':
-        return CustomPhoneNumberInput(
-          controller: phoneController,
-          selectedDialCode: selectedDialCode,
-          onInputChanged: (String number) {
-            setState(() {
-              _isPhoneEdited = true;
-            });
-          },
-          label: AppLocalizations.of(context)!.translate('phone'),
-        );
-        
-      case 'manager_id':
-        return ManagerRadioGroupWidget(
-          selectedManager: selectedManager,
-          onSelectManager: (ManagerData selectedManagerData) {
-            setState(() {
-              selectedManager = selectedManagerData.id.toString();
-            });
-          },
-        );
-        
-      case 'region_id':
-        return RegionRadioGroupWidget(
-          selectedRegion: selectedRegion,
-          onSelectRegion: (RegionData selectedRegionData) {
-            setState(() {
-              selectedRegion = selectedRegionData.id.toString();
-            });
-          },
-        );
-        
-      case 'source_id':
-        return SourceLeadWidget(
-          selectedSourceLead: selectedSource,
-          onChanged: (String? newValue) {
-            setState(() {
-              selectedSource = newValue;
-            });
-          },
-        );
-        
-      case 'wa_phone':
-        return CustomPhoneNumberInput(
-          controller: whatsAppController,
-          selectedDialCode: selectedWhatsAppDialCode,
-          onInputChanged: (String number) {
-            setState(() {
-              _isWhatsAppEdited = true;
-              _fullWhatsAppNumber = number;
-            });
-          },
-          label: 'WhatsApp',
-        );
-        
-      case 'insta_login':
-        return CustomTextField(
-          controller: instaLoginController,
-          hintText: AppLocalizations.of(context)!.translate('enter_instagram_username'),
-          label: AppLocalizations.of(context)!.translate('instagram'),
-        );
-        
-      case 'facebook_login':
-        return CustomTextField(
-          controller: facebookLoginController,
-          hintText: AppLocalizations.of(context)!.translate('enter_facebook_username'),
-          label: AppLocalizations.of(context)!.translate('Facebook'),
-        );
-        
-      case 'tg_nick':
-        return CustomTextField(
-          controller: telegramController,
-          hintText: AppLocalizations.of(context)!.translate('enter_telegram_username'),
-          label: AppLocalizations.of(context)!.translate('telegram'),
-        );
-        
-      case 'email':
-        return CustomTextField(
-          controller: emailController,
-          hintText: AppLocalizations.of(context)!.translate('enter_email'),
-          label: AppLocalizations.of(context)!.translate('email'),
-          keyboardType: TextInputType.emailAddress,
-        );
-        
-      default:
-        if (kDebugMode) {
-          print('LeadEditScreen: Unknown field: ${config.fieldName}');
-        }
-        return null;
-    }
   }
 
   @override
@@ -412,7 +244,6 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
 
     super.dispose();
   }
-
 
   Future<void> _pickFile() async {
     try {
@@ -851,7 +682,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
     );
   }
 
-   @override
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
@@ -888,77 +719,41 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
         ),
         leadingWidth: 40,
       ),
-      body: MultiBlocListener(
-        listeners: [
-          BlocListener<LeadBloc, LeadState>(
-            listener: (context, state) {
-              if (state is LeadError) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      AppLocalizations.of(context)!.translate(state.message),
-                      style: TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white,
-                      ),
-                    ),
-                    backgroundColor: Colors.red,
+      body: BlocListener<LeadBloc, LeadState>(
+        listener: (context, state) {
+          if (state is LeadError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  AppLocalizations.of(context)!.translate(state.message),
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
                   ),
-                );
-              } else if (state is LeadSuccess) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      AppLocalizations.of(context)!.translate(state.message),
-                      style: TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white,
-                      ),
-                    ),
-                    backgroundColor: Colors.green,
+                ),
+                backgroundColor: Colors.red,
+              ),
+            );
+          } else if (state is LeadSuccess) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  AppLocalizations.of(context)!.translate(state.message),
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
                   ),
-                );
-                Navigator.pop(context, true);
-              }
-            },
-          ),
-          BlocListener<FieldConfigurationBloc, FieldConfigurationState>(
-            listener: (context, configState) {
-              if (kDebugMode) {
-                print('LeadEditScreen: FieldConfigurationBloc state changed: ${configState.runtimeType}');
-              }
-              
-              if (configState is FieldConfigurationLoaded) {
-                if (kDebugMode) {
-                  print('LeadEditScreen: Configuration loaded with ${configState.fields.length} fields');
-                }
-                
-                if (mounted) {
-                  setState(() {
-                    fieldConfigurations = configState.fields;
-                    isConfigurationLoaded = true;
-                  });
-                  
-                  _buildFieldsFromConfiguration();
-                }
-              } else if (configState is FieldConfigurationError) {
-                if (kDebugMode) {
-                  print('LeadEditScreen: Configuration error: ${configState.message}');
-                }
-                
-                if (mounted) {
-                  setState(() {
-                    isConfigurationLoaded = false;
-                  });
-                }
-              }
-            },
-          ),
-        ],
+                ),
+                backgroundColor: Colors.green,
+              ),
+            );
+            Navigator.pop(context, true);
+          }
+        },
         child: Form(
           key: _formKey,
           child: Column(
@@ -973,112 +768,63 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Используем конфигурацию если загружена
-                        if (isConfigurationLoaded && fieldWidgets.isNotEmpty) ...[
-                          for (var fieldName in fieldOrder) ...[
-                            fieldWidgets[fieldName]!,
-                            const SizedBox(height: 8),
-                          ],
-                        ] else ...[
-                          // Fallback: показываем все поля как раньше
-                          CustomTextField(
-                            controller: titleController,
-                            hintText: AppLocalizations.of(context)!.translate('enter_name_list'),
-                            label: AppLocalizations.of(context)!.translate('name_list'),
-                            validator: (value) => value!.isEmpty
-                                ? AppLocalizations.of(context)!.translate('field_required')
-                                : null,
-                          ),
-                          const SizedBox(height: 8),
-                          CustomPhoneNumberInput(
-                            controller: phoneController,
-                            selectedDialCode: selectedDialCode,
-                            onInputChanged: (String number) {
-                              setState(() {
-                                _isPhoneEdited = true;
-                              });
-                            },
-                            label: AppLocalizations.of(context)!.translate('phone'),
-                          ),
-                          const SizedBox(height: 8),
-                          ManagerRadioGroupWidget(
-                            selectedManager: selectedManager,
-                            onSelectManager: (ManagerData selectedManagerData) {
-                              setState(() {
-                                selectedManager = selectedManagerData.id.toString();
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 8),
-                          RegionRadioGroupWidget(
-                            selectedRegion: selectedRegion,
-                            onSelectRegion: (RegionData selectedRegionData) {
-                              setState(() {
-                                selectedRegion = selectedRegionData.id.toString();
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 8),
-                          SourceLeadWidget(
-                            selectedSourceLead: selectedSource,
-                            onChanged: (String? newValue) {
-                              setState(() {
-                                selectedSource = newValue;
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 8),
-                          CustomPhoneNumberInput(
-                            controller: whatsAppController,
-                            selectedDialCode: selectedWhatsAppDialCode,
-                            onInputChanged: (String number) {
-                              setState(() {
-                                _isWhatsAppEdited = true;
-                                _fullWhatsAppNumber = number;
-                              });
-                            },
-                            label: 'WhatsApp',
-                          ),
-                          const SizedBox(height: 8),
-                          CustomTextField(
-                            controller: instaLoginController,
-                            hintText: AppLocalizations.of(context)!.translate('enter_instagram_username'),
-                            label: AppLocalizations.of(context)!.translate('instagram'),
-                          ),
-                          const SizedBox(height: 8),
-                          CustomTextField(
-                            controller: facebookLoginController,
-                            hintText: AppLocalizations.of(context)!.translate('enter_facebook_username'),
-                            label: AppLocalizations.of(context)!.translate('Facebook'),
-                          ),
-                          const SizedBox(height: 8),
-                          CustomTextField(
-                            controller: telegramController,
-                            hintText: AppLocalizations.of(context)!.translate('enter_telegram_username'),
-                            label: AppLocalizations.of(context)!.translate('telegram'),
-                          ),
-                          const SizedBox(height: 8),
-                          CustomTextField(
-                            controller: emailController,
-                            hintText: AppLocalizations.of(context)!.translate('enter_email'),
-                            label: AppLocalizations.of(context)!.translate('email'),
-                            keyboardType: TextInputType.emailAddress,
-                          ),
-                          const SizedBox(height: 8),
-                        ],
-                        
-                        // Общие поля которые всегда показываются
+                        CustomTextField(
+                          controller: titleController,
+                          hintText: AppLocalizations.of(context)!.translate('enter_name_list'),
+                          label: AppLocalizations.of(context)!.translate('name_list'),
+                          validator: (value) => value!.isEmpty
+                              ? AppLocalizations.of(context)!.translate('field_required')
+                              : null,
+                        ),
+                        const SizedBox(height: 8),
                         LeadStatusEditpWidget(
-                          selectedStatus: _selectedStatuses?.toString(),
-                          salesFunnelId: selectedSalesFunnel,
-                          onSelectStatus: (LeadStatus selectedStatusData) {
+  selectedStatus: _selectedStatuses?.toString(), // Проверяем, что это не null
+  salesFunnelId: selectedSalesFunnel, // Убеждаемся, что передаем salesFunnelId
+  onSelectStatus: (LeadStatus selectedStatusData) {
+    setState(() {
+      _selectedStatuses = selectedStatusData.id;
+    });
+  },
+),
+                        const SizedBox(height: 8),
+                        CustomPhoneNumberInput(
+                          controller: phoneController,
+                          selectedDialCode: selectedDialCode,
+                          onInputChanged: (String number) {
                             setState(() {
-                              _selectedStatuses = selectedStatusData.id;
+                              _isPhoneEdited = true;
+                            });
+                          },
+                          label: AppLocalizations.of(context)!.translate('phone'),
+                        ),
+                        const SizedBox(height: 8),
+                        ManagerRadioGroupWidget(
+                          selectedManager: selectedManager,
+                          onSelectManager: (ManagerData selectedManagerData) {
+                            setState(() {
+                              selectedManager = selectedManagerData.id.toString();
                             });
                           },
                         ),
                         const SizedBox(height: 8),
-                        
+                        RegionRadioGroupWidget(
+                          selectedRegion: selectedRegion,
+                          onSelectRegion: (RegionData selectedRegionData) {
+                            setState(() {
+                              selectedRegion = selectedRegionData.id.toString();
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        SourceLeadWidget(
+                          selectedSourceLead: selectedSource,
+                          onChanged: (String? newValue) {
+                            setState(() {
+                              selectedSource = newValue;
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 8),
                         SalesFunnelWidget(
                           selectedSalesFunnel: selectedSalesFunnel,
                           onChanged: (String? newValue) {
@@ -1093,7 +839,6 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                             });
                           },
                         ),
-                        const SizedBox(height: 8),
                         if (_showDuplicateOptions) ...[
                           const SizedBox(height: 8),
                           Column(
