@@ -15776,6 +15776,78 @@ Future<void> clearFieldConfigurationCache() async {
     }
   }
 
+  /// Получить список leads для выбора при создании остатка кассы
+  Future<List<Lead>> getCashRegisterLeads() async {
+    try {
+      String path = await _appendQueryParams('/initial-balance/get/leads');
+      
+      if (kDebugMode) {
+        print('ApiService: getCashRegisterLeads - path: $path');
+      }
+
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        
+        if (data is List) {
+          return data.map((json) => Lead.fromJson(json, -1)).toList();
+        } else {
+          throw Exception('Неожиданный формат ответа API');
+        }
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка получения списка leads',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('ApiService: getCashRegisterLeads - Error: $e');
+      }
+      rethrow;
+    }
+  }
+
+  /// Создать первоначальный остаток кассы
+  Future<Map<String, dynamic>> createCashRegisterOpening({
+    required int leadId,
+    required String sum,
+  }) async {
+    try {
+      String path = await _appendQueryParams('/cash-register-initial-balance');
+      
+      final body = {
+        'lead_id': leadId,
+        'sum': sum,
+      };
+
+      if (kDebugMode) {
+        print('ApiService: createCashRegisterOpening - path: $path, body: $body');
+      }
+
+      final response = await _postRequest(path, body);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = json.decode(response.body);
+        return data;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка создания остатка кассы',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('ApiService: createCashRegisterOpening - Error: $e');
+      }
+      rethrow;
+    }
+  }
+
+
   /// Удалить первоначальный остаток кассы
   Future<Map<String, dynamic>> deleteCashRegisterOpening(int id) async {
     try {
@@ -15890,6 +15962,80 @@ Future<void> clearFieldConfigurationCache() async {
     }
   }
 
+  /// Создать первоначальный остаток клиента
+  Future<Map<String, dynamic>> createClientOpening({
+    required int leadId,
+    required double ourDuty,
+    required double debtToUs,
+  }) async {
+    try {
+      String path = await _appendQueryParams('/initial-balance/lead');
+
+      final body = {
+        "counterparty_type": "lead",
+        "counterparty_id": leadId,
+        "our_duty": ourDuty,
+        "debt_to_us": debtToUs,
+      };
+
+      if (kDebugMode) {
+        print('ApiService: createClientOpening - path: $path');
+        print('ApiService: createClientOpening - body: $body');
+      }
+
+      final response = await _postRequest(path, body);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {'result': 'Success'};
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? "Ошибка создания остатка клиента",
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Создать первоначальный остаток поставщика
+  Future<Map<String, dynamic>> createSupplierOpening({
+    required int supplierId,
+    required double ourDuty,
+    required double debtToUs,
+  }) async {
+    try {
+      String path = await _appendQueryParams('/initial-balance/supplier');
+
+      final body = {
+        "counterparty_type": "supplier",
+        "counterparty_id": supplierId,
+        "our_duty": ourDuty,
+        "debt_to_us": debtToUs,
+      };
+
+      if (kDebugMode) {
+        print('ApiService: createSupplierOpening - path: $path');
+        print('ApiService: createSupplierOpening - body: $body');
+      }
+
+      final response = await _postRequest(path, body);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {'result': 'Success'};
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? "Ошибка создания остатка поставщика",
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
 // _______________________________END SECTION FOR OPENINGS _______________________________
 
   /// Получить варианты товаров
@@ -15908,6 +16054,48 @@ Future<void> clearFieldConfigurationCache() async {
         final message = _extractErrorMessageFromResponse(response);
         throw ApiException(
           message ?? "Ошибка получения вариантов товаров",
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Получить список поставщиков для диалога выбора
+  Future<SuppliersForOpeningsResponse> getOpeningsSuppliers() async {
+    try {
+      String path = await _appendQueryParams('/initial-balance/get/suppliers');
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return SuppliersForOpeningsResponse.fromJson(data);
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? "Ошибка получения списка поставщиков",
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Получить список клиентов/лидов для диалога выбора
+  Future<LeadsForOpeningsResponse> getOpeningsLeads() async {
+    try {
+      String path = await _appendQueryParams('/initial-balance/get/leads');
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return LeadsForOpeningsResponse.fromJson(data);
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? "Ошибка получения списка клиентов",
           response.statusCode,
         );
       }

@@ -27,3 +27,20 @@ class DeleteSupplierOpening extends SupplierOpeningsEvent {
 
   DeleteSupplierOpening({required this.id});
 }
+
+class CreateSupplierOpening extends SupplierOpeningsEvent {
+  final int supplierId;
+  final double ourDuty;
+  final double debtToUs;
+
+  CreateSupplierOpening({
+    required this.supplierId,
+    required this.ourDuty,
+    required this.debtToUs,
+  });
+}
+
+// События для списка поставщиков (для диалога)
+class LoadSupplierOpeningsSuppliers extends SupplierOpeningsEvent {}
+
+class RefreshSupplierOpeningsSuppliers extends SupplierOpeningsEvent {}

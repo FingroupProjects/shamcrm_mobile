@@ -1,4 +1,5 @@
 import '../../../../models/page_2/openings/supplier_openings_model.dart';
+import '../../../../models/page_2/supplier_model.dart' as supplier_model;
 
 abstract class SupplierOpeningsState {}
 
@@ -40,6 +41,33 @@ class SupplierOpeningsPaginationError extends SupplierOpeningsState {
   final String message;
 
   SupplierOpeningsPaginationError({required this.message});
+}
+
+// Состояния для списка поставщиков (для диалога)
+class SupplierOpeningsSuppliersInitial extends SupplierOpeningsState {}
+
+class SupplierOpeningsSuppliersLoading extends SupplierOpeningsState {}
+
+class SupplierOpeningsSuppliersLoaded extends SupplierOpeningsState {
+  final List<supplier_model.Supplier> suppliers;
+
+  SupplierOpeningsSuppliersLoaded({
+    required this.suppliers,
+  });
+
+  SupplierOpeningsSuppliersLoaded copyWith({
+    List<supplier_model.Supplier>? suppliers,
+  }) {
+    return SupplierOpeningsSuppliersLoaded(
+      suppliers: suppliers ?? this.suppliers,
+    );
+  }
+}
+
+class SupplierOpeningsSuppliersError extends SupplierOpeningsState {
+  final String message;
+
+  SupplierOpeningsSuppliersError({required this.message});
 }
 
 class Pagination {

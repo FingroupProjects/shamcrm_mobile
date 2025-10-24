@@ -42,6 +42,21 @@ class ClientOpeningsPaginationError extends ClientOpeningsState {
   ClientOpeningsPaginationError({required this.message});
 }
 
+// Состояния для загрузки списка клиентов/лидов (для диалога выбора)
+class ClientOpeningsLeadsLoading extends ClientOpeningsState {}
+
+class ClientOpeningsLeadsLoaded extends ClientOpeningsState {
+  final List<LeadForOpenings> leads;
+
+  ClientOpeningsLeadsLoaded({required this.leads});
+}
+
+class ClientOpeningsLeadsError extends ClientOpeningsState {
+  final String message;
+
+  ClientOpeningsLeadsError({required this.message});
+}
+
 class Pagination {
   final int total;
   final int count;

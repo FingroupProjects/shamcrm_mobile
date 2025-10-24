@@ -60,10 +60,6 @@ class _GoodsOpeningDetailsScreenState extends State<GoodsOpeningDetailsScreen> {
         'value': firstGood?.goodVariant?.fullName ?? currentDocument.docNumber ?? 'N/A',
       },
       {
-        'label': '${localizations.translate('unit')}:',
-        'value': firstGood?.unit?.shortName ?? 'N/A',
-      },
-      {
         'label': '${localizations.translate('supplier')}:',
         'value': currentDocument.model?.name ?? 'N/A',
       },
@@ -74,6 +70,10 @@ class _GoodsOpeningDetailsScreenState extends State<GoodsOpeningDetailsScreen> {
       {
         'label': '${localizations.translate('quantity')}:',
         'value': firstGood?.quantity ?? '0',
+      },
+      {
+        'label': '${localizations.translate('unit')}:',
+        'value': firstGood?.unit?.shortName ?? 'N/A',
       },
       {
         'label': '${localizations.translate('price')}:',

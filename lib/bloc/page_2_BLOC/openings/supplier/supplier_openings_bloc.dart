@@ -14,6 +14,9 @@ class SupplierOpeningsBloc extends Bloc<SupplierOpeningsEvent, SupplierOpeningsS
     on<LoadSupplierOpenings>(_onLoadSupplierOpenings);
     on<RefreshSupplierOpenings>(_onRefreshSupplierOpenings);
     on<DeleteSupplierOpening>(_onDeleteSupplierOpening);
+    on<CreateSupplierOpening>(_onCreateSupplierOpening);
+    on<LoadSupplierOpeningsSuppliers>(_onLoadSupplierOpeningsSuppliers);
+    on<RefreshSupplierOpeningsSuppliers>(_onRefreshSupplierOpeningsSuppliers);
   }
 
   Future<void> _onLoadSupplierOpenings(
@@ -86,5 +89,51 @@ class SupplierOpeningsBloc extends Bloc<SupplierOpeningsEvent, SupplierOpeningsS
     } catch (e) {
       emit(SupplierOpeningsError(message: e.toString()));
     }
+  }
+
+  Future<void> _onCreateSupplierOpening(
+    CreateSupplierOpening event,
+    Emitter<SupplierOpeningsState> emit,
+  ) async {
+    try {
+      await _apiService.createSupplierOpening(
+        supplierId: event.supplierId,
+        ourDuty: event.ourDuty,
+        debtToUs: event.debtToUs,
+      );
+      
+      // Reload the list after successful creation
+      add(LoadSupplierOpenings(page: 1));
+    } catch (e) {
+      emit(SupplierOpeningsError(message: e.toString()));
+    }
+  }
+
+  Future<void> _onLoadSupplierOpeningsSuppliers(
+    LoadSupplierOpeningsSuppliers event,
+    Emitter<SupplierOpeningsState> emit,
+  ) async {
+    try {
+      emit(SupplierOpeningsSuppliersLoading());
+
+      final response = await _apiService.getOpeningsSuppliers();
+
+      if (response.result != null) {
+        emit(SupplierOpeningsSuppliersLoaded(
+          suppliers: response.result!,
+        ));
+      } else {
+        emit(SupplierOpeningsSuppliersError(message: 'Не удалось загрузить данные'));
+      }
+    } catch (e) {
+      emit(SupplierOpeningsSuppliersError(message: e.toString()));
+    }
+  }
+
+  Future<void> _onRefreshSupplierOpeningsSuppliers(
+    RefreshSupplierOpeningsSuppliers event,
+    Emitter<SupplierOpeningsState> emit,
+  ) async {
+    add(LoadSupplierOpeningsSuppliers());
   }
 }

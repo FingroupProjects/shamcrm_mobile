@@ -1,4 +1,5 @@
 import '../../../../models/page_2/openings/cash_register_openings_model.dart';
+import '../../../../models/lead_model.dart';
 
 abstract class CashRegisterOpeningsState {}
 
@@ -40,6 +41,20 @@ class CashRegisterOpeningsPaginationError extends CashRegisterOpeningsState {
   final String message;
 
   CashRegisterOpeningsPaginationError({required this.message});
+}
+
+class CashRegisterLeadsLoading extends CashRegisterOpeningsState {}
+
+class CashRegisterLeadsLoaded extends CashRegisterOpeningsState {
+  final List<Lead> leads;
+
+  CashRegisterLeadsLoaded({required this.leads});
+}
+
+class CashRegisterLeadsError extends CashRegisterOpeningsState {
+  final String message;
+
+  CashRegisterLeadsError({required this.message});
 }
 
 class Pagination {

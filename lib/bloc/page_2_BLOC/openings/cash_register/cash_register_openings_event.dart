@@ -27,3 +27,17 @@ class DeleteCashRegisterOpening extends CashRegisterOpeningsEvent {
 
   DeleteCashRegisterOpening({required this.id});
 }
+
+class LoadCashRegisterLeads extends CashRegisterOpeningsEvent {}
+
+class RefreshCashRegisterLeads extends CashRegisterOpeningsEvent {}
+
+class CreateCashRegisterOpening extends CashRegisterOpeningsEvent {
+  final int leadId;
+  final String sum;
+
+  CreateCashRegisterOpening({
+    required this.leadId,
+    required this.sum,
+  });
+}

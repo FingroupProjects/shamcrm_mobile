@@ -14,6 +14,9 @@ class ClientOpeningsBloc extends Bloc<ClientOpeningsEvent, ClientOpeningsState> 
     on<LoadClientOpenings>(_onLoadClientOpenings);
     on<RefreshClientOpenings>(_onRefreshClientOpenings);
     on<DeleteClientOpening>(_onDeleteClientOpening);
+    on<CreateClientOpening>(_onCreateClientOpening);
+    on<LoadClientOpeningsLeads>(_onLoadClientOpeningsLeads);
+    on<RefreshClientOpeningsLeads>(_onRefreshClientOpeningsLeads);
   }
 
   Future<void> _onLoadClientOpenings(
@@ -86,5 +89,49 @@ class ClientOpeningsBloc extends Bloc<ClientOpeningsEvent, ClientOpeningsState> 
     } catch (e) {
       emit(ClientOpeningsError(message: e.toString()));
     }
+  }
+
+  Future<void> _onCreateClientOpening(
+    CreateClientOpening event,
+    Emitter<ClientOpeningsState> emit,
+  ) async {
+    try {
+      await _apiService.createClientOpening(
+        leadId: event.leadId,
+        ourDuty: event.ourDuty,
+        debtToUs: event.debtToUs,
+      );
+      
+      // Reload the list after successful creation
+      add(LoadClientOpenings(page: 1));
+    } catch (e) {
+      emit(ClientOpeningsError(message: e.toString()));
+    }
+  }
+
+  Future<void> _onLoadClientOpeningsLeads(
+    LoadClientOpeningsLeads event,
+    Emitter<ClientOpeningsState> emit,
+  ) async {
+    try {
+      emit(ClientOpeningsLeadsLoading());
+
+      final response = await _apiService.getOpeningsLeads();
+
+      if (response.result != null) {
+        emit(ClientOpeningsLeadsLoaded(leads: response.result!));
+      } else {
+        emit(ClientOpeningsLeadsError(message: 'Не удалось загрузить данные'));
+      }
+    } catch (e) {
+      emit(ClientOpeningsLeadsError(message: e.toString()));
+    }
+  }
+
+  Future<void> _onRefreshClientOpeningsLeads(
+    RefreshClientOpeningsLeads event,
+    Emitter<ClientOpeningsState> emit,
+  ) async {
+    add(LoadClientOpeningsLeads());
   }
 }

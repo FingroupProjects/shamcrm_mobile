@@ -194,3 +194,63 @@ class ClientCounterparty {
     );
   }
 }
+
+/// Модель для списка клиентов/лидов для диалога выбора (используется в create dialog)
+class LeadForOpenings {
+  final int? id;
+  final String? name;
+  final String? phone;
+  final String? email;
+
+  LeadForOpenings({
+    this.id,
+    this.name,
+    this.phone,
+    this.email,
+  });
+
+  factory LeadForOpenings.fromJson(Map<String, dynamic> json) {
+    return LeadForOpenings(
+      id: json['id'],
+      name: json['name'],
+      phone: json['phone'],
+      email: json['email'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'phone': phone,
+      'email': email,
+    };
+  }
+}
+
+/// Модель ответа API для списка клиентов/лидов (используется в диалоге выбора)
+class LeadsForOpeningsResponse {
+  final List<LeadForOpenings>? result;
+  final dynamic errors;
+
+  LeadsForOpeningsResponse({
+    this.result,
+    this.errors,
+  });
+
+  factory LeadsForOpeningsResponse.fromJson(Map<String, dynamic> json) {
+    return LeadsForOpeningsResponse(
+      result: json['result'] != null
+          ? (json['result'] as List).map((item) => LeadForOpenings.fromJson(item)).toList()
+          : null,
+      errors: json['errors'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'result': result?.map((item) => item.toJson()).toList(),
+      'errors': errors,
+    };
+  }
+}

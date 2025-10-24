@@ -55,3 +55,30 @@ class Supplier {
   @override
   int get hashCode => id.hashCode;
 }
+
+/// Модель ответа API для списка поставщиков (используется в диалоге выбора)
+class SuppliersForOpeningsResponse {
+  final List<Supplier>? result;
+  final dynamic errors;
+
+  SuppliersForOpeningsResponse({
+    this.result,
+    this.errors,
+  });
+
+  factory SuppliersForOpeningsResponse.fromJson(Map<String, dynamic> json) {
+    return SuppliersForOpeningsResponse(
+      result: json['result'] != null
+          ? (json['result'] as List).map((item) => Supplier.fromJson(item)).toList()
+          : null,
+      errors: json['errors'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'result': result?.map((item) => item.toJson()).toList(),
+      'errors': errors,
+    };
+  }
+}

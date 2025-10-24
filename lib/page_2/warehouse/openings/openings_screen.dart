@@ -17,9 +17,9 @@ import 'client/client_content.dart';
 import 'goods/goods_content.dart';
 import 'cash_register/cash_register_content.dart';
 // import 'supplier/create_supplier_opening_dialog.dart';
-// import 'client/create_client_opening_dialog.dart';
+import 'client/create_client_opening_dialog.dart';
 import 'goods/create_goods_opening_dialog.dart';
-// import 'cash_register/create_cash_register_opening_dialog.dart';
+import 'cash_register/create_cash_register_opening_dialog.dart';
 
 class TaskStyles {
   static const Color activeColor = Color(0xff1E2E52);
@@ -194,7 +194,7 @@ class _OpeningsScreenState extends State<OpeningsScreen> with TickerProviderStat
           title: CustomAppBarSimple(
             title: isClickAvatarIcon
                 ? localizations!.translate('appbar_settings')
-                : localizations!.translate('appbar_openings') ?? 'Первоначальный остаток',
+                : localizations!.translate('appbar_openings'),
             onClickProfileAvatar: () {
               setState(() {
                 isClickAvatarIcon = !isClickAvatarIcon;
@@ -243,9 +243,8 @@ class _OpeningsScreenState extends State<OpeningsScreen> with TickerProviderStat
     bool isActive = _tabController.index == index;
     final localizations = AppLocalizations.of(context)!;
 
-    // Use fallback title if translation not available
-    String title = localizations.translate(_tabTitles[index]['titleKey']) ?? 
-                   _tabTitles[index]['title'];
+    // Use translation for title
+    String title = localizations.translate(_tabTitles[index]['titleKey']);
 
     return GestureDetector(
       key: _tabKeys[index],
@@ -312,29 +311,42 @@ class _OpeningsScreenState extends State<OpeningsScreen> with TickerProviderStat
   void _showCreateDialog() {
     final id = _tabTitles[_currentTabIndex]['id'];
     
-    Widget dialog;
-    if (id == 0) {
-      dialog = const CreateGoodsOpeningDialog();
 
+    if (id == 0) {
+      showDialog(
+      context: context,
+      builder: (context) => BlocProvider.value(
+        value: _supplierBloc,
+        child: const CreateGoodsOpeningDialog(),
+      ),
+    );
       // dialog = const CreateSupplierOpeningDialog();
     } else if (id == 1) {
-      dialog = const CreateGoodsOpeningDialog();
-      // dialog = const CreateClientOpeningDialog();
+      showDialog(
+      context: context,
+      builder: (context) => BlocProvider.value(
+        value: _clientBloc,
+        child: const CreateClientOpeningDialog(),
+      ),
+    );
     } else if (id == 2) {
-      dialog = const CreateGoodsOpeningDialog();
-    } else if (id == 3) {
-      dialog = const CreateGoodsOpeningDialog();
-      // dialog = const CreateCashRegisterOpeningDialog();
-    } else {
-      return;
-    }
-
-    showDialog(
+      showDialog(
       context: context,
       builder: (context) => BlocProvider.value(
         value: _goodsBloc,
-        child: dialog,
+        child: const CreateGoodsOpeningDialog(),
       ),
     );
+    } else if (id == 3) {
+      showDialog(
+      context: context,
+      builder: (context) => BlocProvider.value(
+        value: _cashRegisterBloc,
+        child: const CreateCashRegisterOpeningDialog(),
+      ),
+    );}
+    else {
+      return;
+    }
   }
 }
