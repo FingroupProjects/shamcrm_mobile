@@ -159,7 +159,7 @@ class _OpeningsScreenState extends State<OpeningsScreen> with TickerProviderStat
     } else if (id == 2) {
       _goodsBloc.add(LoadGoodsOpenings(page: 1, search: search));
     } else if (id == 3) {
-      _cashRegisterBloc.add(LoadCashRegisterOpenings(page: 1, search: search));
+      _cashRegisterBloc.add(LoadCashRegisterOpenings());
     }
   }
 

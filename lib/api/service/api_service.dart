@@ -15738,25 +15738,8 @@ Future<void> clearFieldConfigurationCache() async {
   }
 
   /// Получить первоначальные остатки по кассам/складам
-  Future<openings.CashRegisterOpeningsResponse> getCashRegisterOpenings({
-    String? search,
-    Map<String, dynamic>? filter,
-  }) async {
+  Future<openings.CashRegisterOpeningsResponse> getCashRegisterOpenings() async {
     String path = await _appendQueryParams('/cash-register-initial-balance');
-
-    // Добавляем параметр поиска
-    if (search != null && search.isNotEmpty) {
-      path = path.contains('?') ? '$path&search=$search' : '$path?search=$search';
-    }
-
-    // Добавляем фильтры
-    if (filter != null && filter.isNotEmpty) {
-      filter.forEach((key, value) {
-        if (value != null && value.toString().isNotEmpty) {
-          path = path.contains('?') ? '$path&$key=$value' : '$path?$key=$value';
-        }
-      });
-    }
 
     if (kDebugMode) {
       print('ApiService: getCashRegisterOpenings - path: $path');
@@ -15775,7 +15758,7 @@ Future<void> clearFieldConfigurationCache() async {
       );
     }
   }
-
+  /// 
   /// Получить список касс для выбора при создании остатка кассы
   Future<List<openings.CashRegister>> getCashRegisters() async {
     try {

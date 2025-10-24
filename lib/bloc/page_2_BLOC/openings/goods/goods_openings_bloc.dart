@@ -16,8 +16,6 @@ class GoodsOpeningsBloc extends Bloc<GoodsOpeningsEvent, GoodsOpeningsState> {
     on<DeleteGoodsOpening>(_onDeleteGoodsOpening);
     on<CreateGoodsOpening>(_onCreateGoodsOpening);
     on<UpdateGoodsOpening>(_onUpdateGoodsOpening);
-    on<LoadGoodsOpeningsGoodVariants>(_onLoadGoodsOpeningsGoodVariants);
-    on<RefreshGoodsOpeningsGoodVariants>(_onRefreshGoodsOpeningsGoodVariants);
   }
 
   Future<void> _onLoadGoodsOpenings(
@@ -135,38 +133,5 @@ class GoodsOpeningsBloc extends Bloc<GoodsOpeningsEvent, GoodsOpeningsState> {
     } catch (e) {
       emit(GoodsOpeningUpdateError(message: e.toString()));
     }
-  }
-
-  Future<void> _onLoadGoodsOpeningsGoodVariants(
-    LoadGoodsOpeningsGoodVariants event,
-    Emitter<GoodsOpeningsState> emit,
-  ) async {
-    try {
-      emit(GoodsOpeningsGoodVariantsLoading());
-
-      final response = await _apiService.getOpeningsGoodVariants(
-        page: event.page,
-        perPage: event.perPage,
-      );
-
-      if (response.result != null) {
-        emit(GoodsOpeningsGoodVariantsLoaded(
-          variants: response.result!.data ?? [],
-          pagination: response.result!.pagination,
-          currentPage: response.result!.pagination?.currentPage ?? 1,
-        ));
-      } else {
-        emit(GoodsOpeningsGoodVariantsError(message: 'Не удалось загрузить данные'));
-      }
-    } catch (e) {
-      emit(GoodsOpeningsGoodVariantsError(message: e.toString()));
-    }
-  }
-
-  Future<void> _onRefreshGoodsOpeningsGoodVariants(
-    RefreshGoodsOpeningsGoodVariants event,
-    Emitter<GoodsOpeningsState> emit,
-  ) async {
-    add(LoadGoodsOpeningsGoodVariants(page: 1, perPage: 15));
   }
 }

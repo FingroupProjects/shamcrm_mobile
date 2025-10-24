@@ -22,23 +22,18 @@ class _CashRegisterContentState extends State<CashRegisterContent> {
   bool _isLoadingMore = false;
 
   @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
   void dispose() {
     super.dispose();
   }
 
   Future<void> _onRefresh() async {
-    context.read<CashRegisterOpeningsBloc>().add(LoadCashRegisterOpenings(page: 1));
+    context.read<CashRegisterOpeningsBloc>().add(LoadCashRegisterOpenings());
     await context.read<CashRegisterOpeningsBloc>().stream.firstWhere(
           (state) => state is! CashRegisterOpeningsLoading || state is CashRegisterOpeningsLoaded || state is CashRegisterOpeningsError,
     );
   }
 
-  Widget _buildCashRegisterList(List<CashRegisterOpening> cashRegisters, bool hasReachedMax) {
+  Widget _buildCashRegisterList(List<CashRegisterOpening> cashRegisters) {
     return RefreshIndicator(
       onRefresh: _onRefresh,
       color: const Color(0xff1E2E52),
@@ -47,7 +42,7 @@ class _CashRegisterContentState extends State<CashRegisterContent> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         controller: _scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
-        itemCount: cashRegisters.length + (hasReachedMax ? 0 : 1),
+        itemCount: cashRegisters.length,
         itemBuilder: (context, index) {
           if (index >= cashRegisters.length) {
             return _isLoadingMore
@@ -130,15 +125,6 @@ class _CashRegisterContentState extends State<CashRegisterContent> {
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
                       color: Color(0xff1E2E52),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    localizations.translate('no_cash_registers_description') ?? 'Список касс пуст',
-                    style: const TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 14,
-                      color: Color(0xff99A4BA),
                     ),
                   ),
                 ],
@@ -277,6 +263,9 @@ class _CashRegisterContentState extends State<CashRegisterContent> {
         }
       },
       builder: (context, state) {
+
+        debugPrint("state cash register openings: $state");
+
         if (state is CashRegisterOpeningsLoading) {
           return _buildLoadingState();
         } else if (state is CashRegisterOpeningsError) {
@@ -285,7 +274,7 @@ class _CashRegisterContentState extends State<CashRegisterContent> {
           if (state.cashRegisters.isEmpty) {
             return _buildEmptyState();
           }
-          return _buildCashRegisterList(state.cashRegisters, state.hasReachedMax);
+          return _buildCashRegisterList(state.cashRegisters);
         }
 
         return _buildEmptyState();

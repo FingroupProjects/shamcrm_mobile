@@ -16,8 +16,6 @@ class SupplierOpeningsBloc extends Bloc<SupplierOpeningsEvent, SupplierOpeningsS
     on<DeleteSupplierOpening>(_onDeleteSupplierOpening);
     on<CreateSupplierOpening>(_onCreateSupplierOpening);
     on<EditSupplierOpening>(_onEditSupplierOpening);
-    on<LoadSupplierOpeningsSuppliers>(_onLoadSupplierOpeningsSuppliers);
-    on<RefreshSupplierOpeningsSuppliers>(_onRefreshSupplierOpeningsSuppliers);
   }
 
   Future<void> _onLoadSupplierOpenings(
@@ -127,33 +125,5 @@ class SupplierOpeningsBloc extends Bloc<SupplierOpeningsEvent, SupplierOpeningsS
     } catch (e) {
       emit(SupplierOpeningsError(message: e.toString()));
     }
-  }
-
-  Future<void> _onLoadSupplierOpeningsSuppliers(
-    LoadSupplierOpeningsSuppliers event,
-    Emitter<SupplierOpeningsState> emit,
-  ) async {
-    try {
-      emit(SupplierOpeningsSuppliersLoading());
-
-      final response = await _apiService.getOpeningsSuppliers();
-
-      if (response.result != null) {
-        emit(SupplierOpeningsSuppliersLoaded(
-          suppliers: response.result!,
-        ));
-      } else {
-        emit(SupplierOpeningsSuppliersError(message: 'Не удалось загрузить данные'));
-      }
-    } catch (e) {
-      emit(SupplierOpeningsSuppliersError(message: e.toString()));
-    }
-  }
-
-  Future<void> _onRefreshSupplierOpeningsSuppliers(
-    RefreshSupplierOpeningsSuppliers event,
-    Emitter<SupplierOpeningsState> emit,
-  ) async {
-    add(LoadSupplierOpeningsSuppliers());
   }
 }

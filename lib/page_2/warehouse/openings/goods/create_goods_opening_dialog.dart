@@ -2,48 +2,36 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/models/page_2/good_variants_model.dart' as good_variants;
 import '../../../../bloc/page_2_BLOC/openings/goods/goods_openings_bloc.dart';
-import '../../../../bloc/page_2_BLOC/openings/goods/goods_openings_event.dart';
-import '../../../../bloc/page_2_BLOC/openings/goods/goods_openings_state.dart';
+import '../../../../bloc/page_2_BLOC/openings/goods/goods_dialog_bloc.dart';
+import '../../../../bloc/page_2_BLOC/openings/goods/goods_dialog_event.dart';
+import '../../../../bloc/page_2_BLOC/openings/goods/goods_dialog_state.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
 import 'add_goods_opening_screen.dart';
-
-void showGoodVariantsDialog(BuildContext context) {
-  // Получаем существующий блок из контекста
-  final bloc = context.read<GoodsOpeningsBloc>();
-  // Загружаем варианты товаров
-  bloc.add(LoadGoodsOpeningsGoodVariants());
-  
-  showDialog(
-    context: context,
-    barrierColor: Colors.black.withOpacity(0.5),
-    builder: (BuildContext dialogContext) {
-      return BlocProvider.value(
-        value: bloc,
-        child: const GoodVariantsDialog(),
-      );
-    },
-  );
-}
 
 class CreateGoodsOpeningDialog extends StatelessWidget {
   const CreateGoodsOpeningDialog({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Получаем существующий блок из контекста
-    final bloc = context.read<GoodsOpeningsBloc>();
-    // Загружаем варианты товаров
-    bloc.add(LoadGoodsOpeningsGoodVariants());
+    // Получаем оригинальный блок для передачи в AddGoodsOpeningScreen
+    final goodsOpeningsBloc = context.read<GoodsOpeningsBloc>();
     
-    return BlocProvider.value(
-      value: bloc,
-      child: const GoodVariantsDialog(),
+    return BlocProvider(
+      create: (context) => GoodsDialogBloc()..add(LoadGoodVariantsForDialog()),
+      child: GoodVariantsDialog(
+        goodsOpeningsBloc: goodsOpeningsBloc,
+      ),
     );
   }
 }
 
 class GoodVariantsDialog extends StatelessWidget {
-  const GoodVariantsDialog({super.key});
+  final GoodsOpeningsBloc goodsOpeningsBloc;
+  
+  const GoodVariantsDialog({
+    super.key,
+    required this.goodsOpeningsBloc,
+  });
 
   String _translate(BuildContext context, String key, String fallback) {
     return AppLocalizations.of(context)?.translate(key) ?? fallback;
@@ -98,9 +86,6 @@ class GoodVariantsDialog extends StatelessWidget {
   Widget _buildVariantCard(BuildContext context, good_variants.GoodVariantItem item) {
     return GestureDetector(
       onTap: () {
-        // Получаем блок из контекста перед закрытием диалога
-        final bloc = context.read<GoodsOpeningsBloc>();
-        
         // Закрываем диалог
         Navigator.pop(context);
         
@@ -109,7 +94,7 @@ class GoodVariantsDialog extends StatelessWidget {
           context,
           MaterialPageRoute(
             builder: (newContext) => BlocProvider.value(
-              value: bloc,
+              value: goodsOpeningsBloc,
               child: AddGoodsOpeningScreen(
                 goodName: item.fullName ?? item.good?.name ?? 'Неизвестный товар',
                 goodVariantId: item.id ?? 0,
@@ -220,9 +205,9 @@ class GoodVariantsDialog extends StatelessWidget {
 
             // Body
             Flexible(
-              child: BlocBuilder<GoodsOpeningsBloc, GoodsOpeningsState>(
+              child: BlocBuilder<GoodsDialogBloc, GoodsDialogState>(
                 builder: (context, state) {
-                  if (state is GoodsOpeningsGoodVariantsLoading) {
+                  if (state is GoodsDialogLoading) {
                     return Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -244,7 +229,7 @@ class GoodVariantsDialog extends StatelessWidget {
                     );
                   }
 
-                  if (state is GoodsOpeningsGoodVariantsError) {
+                  if (state is GoodsDialogError) {
                     return Center(
                       child: Padding(
                         padding: const EdgeInsets.all(24),
@@ -279,7 +264,7 @@ class GoodVariantsDialog extends StatelessWidget {
                             const SizedBox(height: 16),
                             ElevatedButton(
                               onPressed: () {
-                                context.read<GoodsOpeningsBloc>().add(RefreshGoodsOpeningsGoodVariants());
+                                context.read<GoodsDialogBloc>().add(LoadGoodVariantsForDialog());
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xff1E2E52),
@@ -304,7 +289,7 @@ class GoodVariantsDialog extends StatelessWidget {
                     );
                   }
 
-                  if (state is GoodsOpeningsGoodVariantsLoaded) {
+                  if (state is GoodsDialogLoaded) {
                     return SingleChildScrollView(
                       padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
                       child: _buildVariantsList(context, state.variants),

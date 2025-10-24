@@ -1,49 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../bloc/page_2_BLOC/openings/cash_register/cash_register_openings_bloc.dart';
-import '../../../../bloc/page_2_BLOC/openings/cash_register/cash_register_openings_event.dart';
-import '../../../../bloc/page_2_BLOC/openings/cash_register/cash_register_openings_state.dart';
+import '../../../../bloc/page_2_BLOC/openings/cash_register/cash_register_dialog_bloc.dart';
+import '../../../../bloc/page_2_BLOC/openings/cash_register/cash_register_dialog_event.dart';
+import '../../../../bloc/page_2_BLOC/openings/cash_register/cash_register_dialog_state.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
 import '../../../../models/page_2/openings/cash_register_openings_model.dart';
 import 'add_cash_register_opening_screen.dart';
-
-void showCashRegisterLeadsDialog(BuildContext context) {
-  // Получаем существующий блок из контекста
-  final bloc = context.read<CashRegisterOpeningsBloc>();
-  // Загружаем список leads
-  bloc.add(LoadCashRegisterLeads());
-  
-  showDialog(
-    context: context,
-    barrierColor: Colors.black.withOpacity(0.5),
-    builder: (BuildContext dialogContext) {
-      return BlocProvider.value(
-        value: bloc,
-        child: const CashRegisterLeadsDialog(),
-      );
-    },
-  );
-}
 
 class CreateCashRegisterOpeningDialog extends StatelessWidget {
   const CreateCashRegisterOpeningDialog({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Получаем существующий блок из контекста
-    final bloc = context.read<CashRegisterOpeningsBloc>();
-    // Загружаем список leads
-    bloc.add(LoadCashRegisterLeads());
+    // Получаем оригинальный блок для передачи в AddCashRegisterOpeningScreen
+    final cashRegisterOpeningsBloc = context.read<CashRegisterOpeningsBloc>();
     
-    return BlocProvider.value(
-      value: bloc,
-      child: const CashRegisterLeadsDialog(),
+    return BlocProvider(
+      create: (context) => CashRegisterDialogBloc()..add(LoadCashRegistersForDialog()),
+      child: CashRegisterLeadsDialog(
+        cashRegisterOpeningsBloc: cashRegisterOpeningsBloc,
+      ),
     );
   }
 }
 
 class CashRegisterLeadsDialog extends StatelessWidget {
-  const CashRegisterLeadsDialog({super.key});
+  final CashRegisterOpeningsBloc cashRegisterOpeningsBloc;
+  
+  const CashRegisterLeadsDialog({
+    super.key,
+    required this.cashRegisterOpeningsBloc,
+  });
 
   String _translate(BuildContext context, String key, String fallback) {
     return AppLocalizations.of(context)?.translate(key) ?? fallback;
@@ -77,9 +65,6 @@ class CashRegisterLeadsDialog extends StatelessWidget {
   Widget _buildCashRegisterCard(BuildContext context, CashRegister cashRegister) {
     return GestureDetector(
       onTap: () {
-        // Получаем блок из контекста перед закрытием диалога
-        final bloc = context.read<CashRegisterOpeningsBloc>();
-        
         // Закрываем диалог
         Navigator.pop(context);
         
@@ -88,7 +73,7 @@ class CashRegisterLeadsDialog extends StatelessWidget {
           context,
           MaterialPageRoute(
             builder: (newContext) => BlocProvider.value(
-              value: bloc,
+              value: cashRegisterOpeningsBloc,
               child: AddCashRegisterOpeningScreen(
                 cashRegisterName: cashRegister.name ?? '',
                 cashRegisterId: cashRegister.id ?? 0,
@@ -205,9 +190,9 @@ class CashRegisterLeadsDialog extends StatelessWidget {
 
             // Body
             Flexible(
-              child: BlocBuilder<CashRegisterOpeningsBloc, CashRegisterOpeningsState>(
+              child: BlocBuilder<CashRegisterDialogBloc, CashRegisterDialogState>(
                 builder: (context, state) {
-                  if (state is CashRegisterLeadsLoading) {
+                  if (state is CashRegisterDialogLoading) {
                     return Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -229,7 +214,7 @@ class CashRegisterLeadsDialog extends StatelessWidget {
                     );
                   }
 
-                  if (state is CashRegisterLeadsError) {
+                  if (state is CashRegisterDialogError) {
                     return Center(
                       child: Padding(
                         padding: const EdgeInsets.all(24),
@@ -264,7 +249,7 @@ class CashRegisterLeadsDialog extends StatelessWidget {
                             const SizedBox(height: 16),
                             ElevatedButton(
                               onPressed: () {
-                                context.read<CashRegisterOpeningsBloc>().add(RefreshCashRegisterLeads());
+                                context.read<CashRegisterDialogBloc>().add(LoadCashRegistersForDialog());
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xff1E2E52),
@@ -289,7 +274,7 @@ class CashRegisterLeadsDialog extends StatelessWidget {
                     );
                   }
 
-                  if (state is CashRegisterLeadsLoaded) {
+                  if (state is CashRegisterDialogLoaded) {
                     return SingleChildScrollView(
                       padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
                       child: _buildCashRegistersList(context, state.cashRegisters),

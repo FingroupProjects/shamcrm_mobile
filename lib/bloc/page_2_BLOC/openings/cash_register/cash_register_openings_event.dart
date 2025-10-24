@@ -1,15 +1,7 @@
 abstract class CashRegisterOpeningsEvent {}
 
 class LoadCashRegisterOpenings extends CashRegisterOpeningsEvent {
-  final int page;
-  final String? search;
-  final Map<String, dynamic>? filter;
-
-  LoadCashRegisterOpenings({
-    this.page = 1,
-    this.search,
-    this.filter,
-  });
+  LoadCashRegisterOpenings();
 }
 
 class RefreshCashRegisterOpenings extends CashRegisterOpeningsEvent {
@@ -27,10 +19,6 @@ class DeleteCashRegisterOpening extends CashRegisterOpeningsEvent {
 
   DeleteCashRegisterOpening({required this.id});
 }
-
-class LoadCashRegisterLeads extends CashRegisterOpeningsEvent {}
-
-class RefreshCashRegisterLeads extends CashRegisterOpeningsEvent {}
 
 class CreateCashRegisterOpening extends CashRegisterOpeningsEvent {
   final int cashRegisterId;

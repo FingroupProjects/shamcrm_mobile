@@ -2,54 +2,42 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/models/page_2/openings/client_openings_model.dart';
 import '../../../../bloc/page_2_BLOC/openings/client/client_openings_bloc.dart';
-import '../../../../bloc/page_2_BLOC/openings/client/client_openings_event.dart';
-import '../../../../bloc/page_2_BLOC/openings/client/client_openings_state.dart';
+import '../../../../bloc/page_2_BLOC/openings/client/client_dialog_bloc.dart';
+import '../../../../bloc/page_2_BLOC/openings/client/client_dialog_event.dart';
+import '../../../../bloc/page_2_BLOC/openings/client/client_dialog_state.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
 import 'add_client_opening_screen.dart';
-
-void showClientDialog(BuildContext context) {
-  // Получаем существующий блок из контекста
-  final bloc = context.read<ClientOpeningsBloc>();
-  // Загружаем список клиентов/лидов
-  bloc.add(LoadClientOpeningsLeads());
-  
-  showDialog(
-    context: context,
-    barrierColor: Colors.black.withOpacity(0.5),
-    builder: (BuildContext dialogContext) {
-      return BlocProvider.value(
-        value: bloc,
-        child: const ClientLeadsDialog(),
-      );
-    },
-  );
-}
 
 class CreateClientOpeningDialog extends StatelessWidget {
   const CreateClientOpeningDialog({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Получаем существующий блок из контекста
-    final bloc = context.read<ClientOpeningsBloc>();
-    // Загружаем список клиентов/лидов
-    bloc.add(LoadClientOpeningsLeads());
+    // Получаем оригинальный блок для передачи в AddClientOpeningScreen
+    final clientOpeningsBloc = context.read<ClientOpeningsBloc>();
     
-    return BlocProvider.value(
-      value: bloc,
-      child: const ClientLeadsDialog(),
+    return BlocProvider(
+      create: (context) => ClientDialogBloc()..add(LoadLeadsForDialog()),
+      child: ClientLeadsDialog(
+        clientOpeningsBloc: clientOpeningsBloc,
+      ),
     );
   }
 }
 
 class ClientLeadsDialog extends StatelessWidget {
-  const ClientLeadsDialog({super.key});
+  final ClientOpeningsBloc clientOpeningsBloc;
+  
+  const ClientLeadsDialog({
+    super.key,
+    required this.clientOpeningsBloc,
+  });
 
   String _translate(BuildContext context, String key, String fallback) {
     return AppLocalizations.of(context)?.translate(key) ?? fallback;
   }
 
-  Widget _buildLeadsList(BuildContext context, List<LeadForOpenings> items) {
+  Widget _buildLeadsList(BuildContext context, List<ClientOpening> items) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -95,12 +83,9 @@ class ClientLeadsDialog extends StatelessWidget {
     );
   }
 
-  Widget _buildLeadCard(BuildContext context, LeadForOpenings item) {
+  Widget _buildLeadCard(BuildContext context, ClientOpening item) {
     return GestureDetector(
       onTap: () {
-        // Получаем блок из контекста перед закрытием диалога
-        final bloc = context.read<ClientOpeningsBloc>();
-        
         // Закрываем диалог
         Navigator.pop(context);
         
@@ -109,9 +94,9 @@ class ClientLeadsDialog extends StatelessWidget {
           context,
           MaterialPageRoute(
             builder: (newContext) => BlocProvider.value(
-              value: bloc,
+              value: clientOpeningsBloc,
               child: AddClientOpeningScreen(
-                clientName: item.name ?? 'Неизвестный клиент',
+                clientName: item.counterparty?.name ?? 'Неизвестный клиент',
                 leadId: item.id ?? 0,
               ),
             ),
@@ -134,7 +119,7 @@ class ClientLeadsDialog extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              item.name ?? 'Неизвестный клиент',
+              item.counterparty?.name ?? 'Неизвестный клиент',
               style: const TextStyle(
                 fontFamily: 'Gilroy',
                 fontSize: 15,
@@ -142,11 +127,11 @@ class ClientLeadsDialog extends StatelessWidget {
                 color: Color(0xff1E2E52),
               ),
             ),
-            if (item.phone != null && item.phone!.isNotEmpty)
+            if ( item.counterparty?.phone != null)
               Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
-                  item.phone!,
+                  item.counterparty?.phone?? '',
                   style: const TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 13,
@@ -238,9 +223,9 @@ class ClientLeadsDialog extends StatelessWidget {
 
             // Body
             Flexible(
-              child: BlocBuilder<ClientOpeningsBloc, ClientOpeningsState>(
+              child: BlocBuilder<ClientDialogBloc, ClientDialogState>(
                 builder: (context, state) {
-                  if (state is ClientOpeningsLeadsLoading) {
+                  if (state is ClientDialogLoading) {
                     return Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -262,7 +247,7 @@ class ClientLeadsDialog extends StatelessWidget {
                     );
                   }
 
-                  if (state is ClientOpeningsLeadsError) {
+                  if (state is ClientDialogError) {
                     return Center(
                       child: Padding(
                         padding: const EdgeInsets.all(24),
@@ -297,7 +282,7 @@ class ClientLeadsDialog extends StatelessWidget {
                             const SizedBox(height: 16),
                             ElevatedButton(
                               onPressed: () {
-                                context.read<ClientOpeningsBloc>().add(RefreshClientOpeningsLeads());
+                                context.read<ClientDialogBloc>().add(LoadLeadsForDialog());
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xff1E2E52),
@@ -322,7 +307,7 @@ class ClientLeadsDialog extends StatelessWidget {
                     );
                   }
 
-                  if (state is ClientOpeningsLeadsLoaded) {
+                  if (state is ClientDialogLoaded) {
                     return SingleChildScrollView(
                       padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
                       child: _buildLeadsList(context, state.leads),

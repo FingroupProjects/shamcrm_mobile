@@ -8,13 +8,9 @@ class CashRegisterOpeningsLoading extends CashRegisterOpeningsState {}
 
 class CashRegisterOpeningsLoaded extends CashRegisterOpeningsState {
   final List<CashRegisterOpening> cashRegisters;
-  final bool hasReachedMax;
-  final Pagination pagination;
 
   CashRegisterOpeningsLoaded({
     required this.cashRegisters,
-    required this.hasReachedMax,
-    required this.pagination,
   });
 
   CashRegisterOpeningsLoaded copyWith({
@@ -24,8 +20,6 @@ class CashRegisterOpeningsLoaded extends CashRegisterOpeningsState {
   }) {
     return CashRegisterOpeningsLoaded(
       cashRegisters: cashRegisters ?? this.cashRegisters,
-      hasReachedMax: hasReachedMax ?? this.hasReachedMax,
-      pagination: pagination ?? this.pagination,
     );
   }
 }
@@ -40,20 +34,6 @@ class CashRegisterOpeningsPaginationError extends CashRegisterOpeningsState {
   final String message;
 
   CashRegisterOpeningsPaginationError({required this.message});
-}
-
-class CashRegisterLeadsLoading extends CashRegisterOpeningsState {}
-
-class CashRegisterLeadsLoaded extends CashRegisterOpeningsState {
-  final List<CashRegister> cashRegisters;
-
-  CashRegisterLeadsLoaded({required this.cashRegisters});
-}
-
-class CashRegisterLeadsError extends CashRegisterOpeningsState {
-  final String message;
-
-  CashRegisterLeadsError({required this.message});
 }
 
 class CashRegisterOpeningUpdateSuccess extends CashRegisterOpeningsState {}

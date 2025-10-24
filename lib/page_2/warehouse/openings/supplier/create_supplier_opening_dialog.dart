@@ -1,49 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../bloc/page_2_BLOC/openings/supplier/supplier_openings_bloc.dart';
-import '../../../../bloc/page_2_BLOC/openings/supplier/supplier_openings_event.dart';
-import '../../../../bloc/page_2_BLOC/openings/supplier/supplier_openings_state.dart';
+import '../../../../bloc/page_2_BLOC/openings/supplier/supplier_dialog_bloc.dart';
+import '../../../../bloc/page_2_BLOC/openings/supplier/supplier_dialog_event.dart';
+import '../../../../bloc/page_2_BLOC/openings/supplier/supplier_dialog_state.dart';
 import '../../../../models/page_2/supplier_model.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
 import 'add_supplier_opening_screen.dart';
-
-void showSupplierVariantsDialog(BuildContext context) {
-  // Получаем существующий блок из контекста
-  final bloc = context.read<SupplierOpeningsBloc>();
-  // Загружаем список поставщиков
-  bloc.add(LoadSupplierOpeningsSuppliers());
-  
-  showDialog(
-    context: context,
-    barrierColor: Colors.black.withOpacity(0.5),
-    builder: (BuildContext dialogContext) {
-      return BlocProvider.value(
-        value: bloc,
-        child: const SupplierVariantsDialog(),
-      );
-    },
-  );
-}
 
 class CreateSupplierOpeningDialog extends StatelessWidget {
   const CreateSupplierOpeningDialog({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Получаем существующий блок из контекста
-    final bloc = context.read<SupplierOpeningsBloc>();
-    // Загружаем список поставщиков
-    bloc.add(LoadSupplierOpeningsSuppliers());
+    // Получаем оригинальный блок для передачи в AddSupplierOpeningScreen
+    final supplierOpeningsBloc = context.read<SupplierOpeningsBloc>();
     
-    return BlocProvider.value(
-      value: bloc,
-      child: const SupplierVariantsDialog(),
+    return BlocProvider(
+      create: (context) => SupplierDialogBloc()..add(LoadSuppliersForDialog()),
+      child: SupplierVariantsDialog(
+        supplierOpeningsBloc: supplierOpeningsBloc,
+      ),
     );
   }
 }
 
 class SupplierVariantsDialog extends StatelessWidget {
-  const SupplierVariantsDialog({super.key});
+  final SupplierOpeningsBloc supplierOpeningsBloc;
+  
+  const SupplierVariantsDialog({
+    super.key,
+    required this.supplierOpeningsBloc,
+  });
 
   String _translate(BuildContext context, String key, String fallback) {
     return AppLocalizations.of(context)?.translate(key) ?? fallback;
@@ -98,9 +86,6 @@ class SupplierVariantsDialog extends StatelessWidget {
   Widget _buildSupplierCard(BuildContext context, Supplier item) {
     return GestureDetector(
       onTap: () {
-        // Получаем блок из контекста перед закрытием диалога
-        final bloc = context.read<SupplierOpeningsBloc>();
-        
         // Закрываем диалог
         Navigator.pop(context);
         
@@ -109,7 +94,7 @@ class SupplierVariantsDialog extends StatelessWidget {
           context,
           MaterialPageRoute(
             builder: (newContext) => BlocProvider.value(
-              value: bloc,
+              value: supplierOpeningsBloc,
               child: AddSupplierOpeningScreen(
                 supplierName: item.name,
                 supplierId: item.id,
@@ -237,9 +222,9 @@ class SupplierVariantsDialog extends StatelessWidget {
 
             // Body
             Flexible(
-              child: BlocBuilder<SupplierOpeningsBloc, SupplierOpeningsState>(
+              child: BlocBuilder<SupplierDialogBloc, SupplierDialogState>(
                 builder: (context, state) {
-                  if (state is SupplierOpeningsSuppliersLoading) {
+                  if (state is SupplierDialogLoading) {
                     return Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -261,7 +246,7 @@ class SupplierVariantsDialog extends StatelessWidget {
                     );
                   }
 
-                  if (state is SupplierOpeningsSuppliersError) {
+                  if (state is SupplierDialogError) {
                     return Center(
                       child: Padding(
                         padding: const EdgeInsets.all(24),
@@ -296,7 +281,7 @@ class SupplierVariantsDialog extends StatelessWidget {
                             const SizedBox(height: 16),
                             ElevatedButton(
                               onPressed: () {
-                                context.read<SupplierOpeningsBloc>().add(RefreshSupplierOpeningsSuppliers());
+                                context.read<SupplierDialogBloc>().add(LoadSuppliersForDialog());
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xff1E2E52),
@@ -321,7 +306,7 @@ class SupplierVariantsDialog extends StatelessWidget {
                     );
                   }
 
-                  if (state is SupplierOpeningsSuppliersLoaded) {
+                  if (state is SupplierDialogLoaded) {
                     return SingleChildScrollView(
                       padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
                       child: _buildSuppliersList(context, state.suppliers),
