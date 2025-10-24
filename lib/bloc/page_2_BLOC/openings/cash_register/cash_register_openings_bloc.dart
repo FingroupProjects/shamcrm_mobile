@@ -139,6 +139,7 @@ class CashRegisterOpeningsBloc extends Bloc<CashRegisterOpeningsEvent, CashRegis
   ) async {
     try {
       await _apiService.updateCashRegisterOpening(
+        id: event.id,
         cashRegisterId: event.cashRegisterId,
         sum: event.sum,
       );

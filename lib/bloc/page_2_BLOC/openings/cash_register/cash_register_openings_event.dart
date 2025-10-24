@@ -45,8 +45,10 @@ class CreateCashRegisterOpening extends CashRegisterOpeningsEvent {
 class UpdateCashRegisterOpening extends CashRegisterOpeningsEvent {
   final int cashRegisterId;
   final String sum;
+  final int id;
 
   UpdateCashRegisterOpening({
+    required this.id,
     required this.cashRegisterId,
     required this.sum,
   });

@@ -9,6 +9,9 @@ import '../../../../bloc/page_2_BLOC/goods/goods_event.dart';
 import '../../../../bloc/page_2_BLOC/goods/goods_state.dart';
 import '../../../../bloc/cash_register_list/cash_register_list_bloc.dart';
 import '../../../../bloc/cash_register_list/cash_register_list_event.dart';
+import '../../../../bloc/page_2_BLOC/openings/goods/goods_openings_bloc.dart';
+import '../../../../bloc/page_2_BLOC/openings/goods/goods_openings_event.dart';
+import '../../../../bloc/page_2_BLOC/openings/goods/goods_openings_state.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
 import '../../../../custom_widget/custom_button.dart';
 import '../../../../custom_widget/custom_textfield.dart';
@@ -78,33 +81,84 @@ class _EditGoodsOpeningScreenState extends State<EditGoodsOpeningScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        forceMaterialTransparency: true,
+    return BlocListener<GoodsOpeningsBloc, GoodsOpeningsState>(
+      listener: (context, state) {
+        if (state is GoodsOpeningUpdateSuccess) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(context)!.translate('successfully_updated'),
+                style: const TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              backgroundColor: Colors.green,
+              elevation: 3,
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+          Navigator.pop(context, true);
+        } else if (state is GoodsOpeningUpdateError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                state.message,
+                style: const TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              backgroundColor: Colors.red,
+              elevation: 3,
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      },
+      child: Scaffold(
         backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: Image.asset(
-            'assets/icons/arrow-left.png',
-            width: 24,
-            height: 24,
+        appBar: AppBar(
+          forceMaterialTransparency: true,
+          backgroundColor: Colors.white,
+          elevation: 0,
+          leading: IconButton(
+            icon: Image.asset(
+              'assets/icons/arrow-left.png',
+              width: 24,
+              height: 24,
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+            },
           ),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
-        title: Text(
-          AppLocalizations.of(context)!.translate('edit_goods_opening'),
-          style: const TextStyle(
-            fontSize: 18,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+          title: Text(
+            AppLocalizations.of(context)!.translate('edit_goods_opening'),
+            style: const TextStyle(
+              fontSize: 18,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w600,
+              color: Color(0xff1E2E52),
+            ),
           ),
         ),
-      ),
-      body: Form(
+        body: Form(
         key: _formKey,
         child: Column(
           children: [
@@ -222,8 +276,75 @@ class _EditGoodsOpeningScreenState extends State<EditGoodsOpeningScreen> {
                       textColor: Colors.white,
                       onPressed: () {
                         if (_formKey.currentState!.validate()) {
-                          // TODO: Implement save logic
-                          Navigator.pop(context);
+                          if (_selectedSupplierId == null ||
+                              _selectedWarehouseId == null ||
+                              _selectedUnitId == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  AppLocalizations.of(context)!.translate('fill_all_fields'),
+                                  style: const TextStyle(
+                                    fontFamily: 'Gilroy',
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                behavior: SnackBarBehavior.floating,
+                                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                backgroundColor: Colors.orange,
+                                elevation: 3,
+                                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                            return;
+                          }
+
+                          final documentGood = widget.goodsOpening.documentGoods?.isNotEmpty == true 
+                              ? widget.goodsOpening.documentGoods!.first 
+                              : null;
+
+                          if (widget.goodsOpening.id == null || documentGood?.goodVariantId == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Ошибка: неверные данные документа',
+                                  style: const TextStyle(
+                                    fontFamily: 'Gilroy',
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                behavior: SnackBarBehavior.floating,
+                                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                backgroundColor: Colors.red,
+                                elevation: 3,
+                                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                            return;
+                          }
+
+                          context.read<GoodsOpeningsBloc>().add(
+                            UpdateGoodsOpening(
+                              id: widget.goodsOpening.id!,
+                              goodVariantId: documentGood!.goodVariantId!,
+                              supplierId: int.parse(_selectedSupplierId!),
+                              price: double.parse(priceController.text),
+                              quantity: double.parse(quantityController.text),
+                              unitId: int.parse(_selectedUnitId!),
+                              storageId: int.parse(_selectedWarehouseId!),
+                            ),
+                          );
                         }
                       },
                     ),
@@ -233,6 +354,7 @@ class _EditGoodsOpeningScreenState extends State<EditGoodsOpeningScreen> {
             ),
           ],
         ),
+      ),
       ),
     );
   }
@@ -272,6 +394,21 @@ class _EditGoodsOpeningScreenState extends State<EditGoodsOpeningScreen> {
           List<Goods> goodsList = [];
           if (state is GoodsDataLoaded) {
             goodsList = state.goods;
+            
+            // Инициализируем выбранный товар при загрузке данных
+            if (_selectedGoods == null && 
+                widget.goodsOpening.documentGoods?.isNotEmpty == true) {
+              final documentGood = widget.goodsOpening.documentGoods!.first;
+              if (documentGood.goodVariant != null) {
+                try {
+                  _selectedGoods = goodsList.firstWhere(
+                    (good) => good.id == documentGood.goodVariantId,
+                  );
+                } catch (e) {
+                  // Товар не найден в списке
+                }
+              }
+            }
           }
 
           return Column(

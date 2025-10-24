@@ -43,6 +43,14 @@ class GoodsOpeningsPaginationError extends GoodsOpeningsState {
   GoodsOpeningsPaginationError({required this.message});
 }
 
+class GoodsOpeningUpdateSuccess extends GoodsOpeningsState {}
+
+class GoodsOpeningUpdateError extends GoodsOpeningsState {
+  final String message;
+
+  GoodsOpeningUpdateError({required this.message});
+}
+
 // States for good variants
 class GoodsOpeningsGoodVariantsInitial extends GoodsOpeningsState {}
 

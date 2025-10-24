@@ -46,6 +46,26 @@ class CreateGoodsOpening extends GoodsOpeningsEvent {
   });
 }
 
+class UpdateGoodsOpening extends GoodsOpeningsEvent {
+  final int id;
+  final int goodVariantId;
+  final int supplierId;
+  final double price;
+  final double quantity;
+  final int unitId;
+  final int storageId;
+
+  UpdateGoodsOpening({
+    required this.id,
+    required this.goodVariantId,
+    required this.supplierId,
+    required this.price,
+    required this.quantity,
+    required this.unitId,
+    required this.storageId,
+  });
+}
+
 // Events for good variants
 class LoadGoodsOpeningsGoodVariants extends GoodsOpeningsEvent {
   final int page;

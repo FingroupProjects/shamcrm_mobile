@@ -15,6 +15,7 @@ class GoodsOpeningsBloc extends Bloc<GoodsOpeningsEvent, GoodsOpeningsState> {
     on<RefreshGoodsOpenings>(_onRefreshGoodsOpenings);
     on<DeleteGoodsOpening>(_onDeleteGoodsOpening);
     on<CreateGoodsOpening>(_onCreateGoodsOpening);
+    on<UpdateGoodsOpening>(_onUpdateGoodsOpening);
     on<LoadGoodsOpeningsGoodVariants>(_onLoadGoodsOpeningsGoodVariants);
     on<RefreshGoodsOpeningsGoodVariants>(_onRefreshGoodsOpeningsGoodVariants);
   }
@@ -109,6 +110,30 @@ class GoodsOpeningsBloc extends Bloc<GoodsOpeningsEvent, GoodsOpeningsState> {
       add(LoadGoodsOpenings(page: 1));
     } catch (e) {
       emit(GoodsOpeningsError(message: e.toString()));
+    }
+  }
+
+  Future<void> _onUpdateGoodsOpening(
+    UpdateGoodsOpening event,
+    Emitter<GoodsOpeningsState> emit,
+  ) async {
+    try {
+      await _apiService.updateGoodsOpening(
+        id: event.id,
+        goodVariantId: event.goodVariantId,
+        supplierId: event.supplierId,
+        price: event.price,
+        quantity: event.quantity,
+        unitId: event.unitId,
+        storageId: event.storageId,
+      );
+      
+      emit(GoodsOpeningUpdateSuccess());
+      
+      // Reload the list after successful update
+      add(LoadGoodsOpenings(page: 1));
+    } catch (e) {
+      emit(GoodsOpeningUpdateError(message: e.toString()));
     }
   }
 

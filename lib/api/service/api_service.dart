@@ -15848,11 +15848,12 @@ Future<void> clearFieldConfigurationCache() async {
   }
 
   Future<Map<String, dynamic>> updateCashRegisterOpening({
+    required int id,
     required int cashRegisterId,
     required String sum,
   }) async {
     try {
-      String path = await _appendQueryParams('/cash-register-initial-balance');
+      String path = await _appendQueryParams('/cash-register-initial-balance/$id');
 
       final body = {'data' : [{
         'cash_register_id': cashRegisterId,
@@ -15989,6 +15990,49 @@ Future<void> clearFieldConfigurationCache() async {
         final message = _extractErrorMessageFromResponse(response);
         throw ApiException(
           message ?? "Ошибка создания остатка товара",
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Обновить первоначальный остаток товара
+  Future<Map<String, dynamic>> updateGoodsOpening({
+    required int id,
+    required int goodVariantId,
+    required int supplierId,
+    required double price,
+    required double quantity,
+    required int unitId,
+    required int storageId,
+  }) async {
+    try {
+      String path = await _appendQueryParams('/good-initial-balance/$id');
+
+      final body = {
+        "good_variant_id": goodVariantId,
+        "supplier_id": supplierId,
+        "price": price,
+        "quantity": quantity,
+        "unit_id": unitId,
+        "storage_id": storageId,
+      };
+
+      if (kDebugMode) {
+        print('ApiService: updateGoodsOpening - path: $path');
+        print('ApiService: updateGoodsOpening - body: $body');
+      }
+
+      final response = await _patchRequest(path, body);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {'result': 'Success'};
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? "Ошибка обновления остатка товара",
           response.statusCode,
         );
       }

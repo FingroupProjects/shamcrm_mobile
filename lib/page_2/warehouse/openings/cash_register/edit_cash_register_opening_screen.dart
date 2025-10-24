@@ -202,6 +202,7 @@ class _EditCashRegisterOpeningScreenState
                         if (_formKey.currentState!.validate()) {
                           context.read<CashRegisterOpeningsBloc>().add(
                             UpdateCashRegisterOpening(
+                              id: widget.cashRegisterOpening.id!,
                               cashRegisterId: int.parse(_selectedCashRegisterId!),
                               sum: balanceController.text,
                             ),
