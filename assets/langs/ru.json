@@ -1223,6 +1223,7 @@
   "delete_document": "Удалить документ",
   "delete_document_confirm": "Вы уверены, что хотите удалить этот документ?",
   "references": "Справочники",
+  "openings": "Первоначальный остаток",
   "reference_data": "Справочные данные",
   "select_reference_type": "Выберите тип справочника для работы с данными",
   "warehouse": "Склад",

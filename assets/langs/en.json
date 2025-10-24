@@ -1229,6 +1229,7 @@
   "delete_document": "Delete document",
   "delete_document_confirm": "Are you sure you want to delete this document?",
   "references": "References",
+  "openings": "Opening Balance",
   "reference_data": "Reference data",
   "select_reference_type": "Select reference type to work with data",
   "warehouse": "Warehouse",

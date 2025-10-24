@@ -88,6 +88,10 @@ import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryById.dart';
 import 'package:crm_task_manager/models/page_2/supplier_model.dart';
 import 'package:crm_task_manager/models/page_2/variant_model.dart';
+import 'package:crm_task_manager/models/page_2/openings/goods_openings_model.dart';
+import 'package:crm_task_manager/models/page_2/openings/supplier_openings_model.dart';
+import 'package:crm_task_manager/models/page_2/openings/client_openings_model.dart';
+import 'package:crm_task_manager/models/page_2/openings/cash_register_openings_model.dart';
 import 'package:crm_task_manager/models/price_type_model.dart';
 import 'package:crm_task_manager/models/project_task_model.dart';
 import 'package:crm_task_manager/models/sales_funnel_model.dart';
@@ -15612,4 +15616,164 @@ Future<void> clearFieldConfigurationCache() async {
 }
 
 // _______________________________END SECTION FOR FIELD CONFIGURATION _______________________________
+
+// _______________________________START SECTION FOR OPENINGS (Первоначальный остаток) _______________________________
+
+  /// Получить первоначальные остатки по товарам
+  Future<GoodsOpeningsResponse> getGoodsOpenings({
+    String? search,
+    Map<String, dynamic>? filter,
+  }) async {
+    String path = await _appendQueryParams('/good-initial-balance');
+
+    // Добавляем параметр поиска
+    if (search != null && search.isNotEmpty) {
+      path = path.contains('?') ? '$path&search=$search' : '$path?search=$search';
+    }
+
+    // Добавляем фильтры
+    if (filter != null && filter.isNotEmpty) {
+      filter.forEach((key, value) {
+        if (value != null && value.toString().isNotEmpty) {
+          path = path.contains('?') ? '$path&$key=$value' : '$path?$key=$value';
+        }
+      });
+    }
+
+    if (kDebugMode) {
+      print('ApiService: getGoodsOpenings - path: $path');
+    }
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return GoodsOpeningsResponse.fromJson(data);
+    } else {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка получения первоначальных остатков по товарам',
+        response.statusCode,
+      );
+    }
+  }
+
+  /// Получить первоначальные остатки по поставщикам
+  Future<SupplierOpeningsResponse> getSupplierOpenings({
+    String? search,
+    Map<String, dynamic>? filter,
+  }) async {
+    String path = await _appendQueryParams('/initial-balance/supplier');
+
+    // Добавляем параметр поиска
+    if (search != null && search.isNotEmpty) {
+      path = path.contains('?') ? '$path&search=$search' : '$path?search=$search';
+    }
+
+    // Добавляем фильтры
+    if (filter != null && filter.isNotEmpty) {
+      filter.forEach((key, value) {
+        if (value != null && value.toString().isNotEmpty) {
+          path = path.contains('?') ? '$path&$key=$value' : '$path?$key=$value';
+        }
+      });
+    }
+
+    if (kDebugMode) {
+      print('ApiService: getSupplierOpenings - path: $path');
+    }
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return SupplierOpeningsResponse.fromJson(data);
+    } else {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка получения первоначальных остатков по поставщикам',
+        response.statusCode,
+      );
+    }
+  }
+
+  /// Получить первоначальные остатки по клиентам
+  Future<ClientOpeningsResponse> getClientOpenings({
+    String? search,
+    Map<String, dynamic>? filter,
+  }) async {
+    String path = await _appendQueryParams('/initial-balance/lead');
+
+    // Добавляем параметр поиска
+    if (search != null && search.isNotEmpty) {
+      path = path.contains('?') ? '$path&search=$search' : '$path?search=$search';
+    }
+
+    // Добавляем фильтры
+    if (filter != null && filter.isNotEmpty) {
+      filter.forEach((key, value) {
+        if (value != null && value.toString().isNotEmpty) {
+          path = path.contains('?') ? '$path&$key=$value' : '$path?$key=$value';
+        }
+      });
+    }
+
+    if (kDebugMode) {
+      print('ApiService: getClientOpenings - path: $path');
+    }
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return ClientOpeningsResponse.fromJson(data);
+    } else {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка получения первоначальных остатков по клиентам',
+        response.statusCode,
+      );
+    }
+  }
+
+  /// Получить первоначальные остатки по кассам/складам
+  Future<CashRegisterOpeningsResponse> getCashRegisterOpenings({
+    String? search,
+    Map<String, dynamic>? filter,
+  }) async {
+    String path = await _appendQueryParams('/cash-register-initial-balance');
+
+    // Добавляем параметр поиска
+    if (search != null && search.isNotEmpty) {
+      path = path.contains('?') ? '$path&search=$search' : '$path?search=$search';
+    }
+
+    // Добавляем фильтры
+    if (filter != null && filter.isNotEmpty) {
+      filter.forEach((key, value) {
+        if (value != null && value.toString().isNotEmpty) {
+          path = path.contains('?') ? '$path&$key=$value' : '$path?$key=$value';
+        }
+      });
+    }
+
+    if (kDebugMode) {
+      print('ApiService: getCashRegisterOpenings - path: $path');
+    }
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return CashRegisterOpeningsResponse.fromJson(data);
+    } else {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка получения первоначальных остатков по кассам/складам',
+        response.statusCode,
+      );
+    }
+  }
+
+// _______________________________END SECTION FOR OPENINGS _______________________________
 }
