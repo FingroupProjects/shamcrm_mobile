@@ -14,6 +14,7 @@ class ClientOpeningsBloc extends Bloc<ClientOpeningsEvent, ClientOpeningsState> 
     on<RefreshClientOpenings>(_onRefreshClientOpenings);
     on<DeleteClientOpening>(_onDeleteClientOpening);
     on<CreateClientOpening>(_onCreateClientOpening);
+    on<UpdateClientOpening>(_onUpdateClientOpening);
   }
 
   Future<void> _onLoadClientOpenings(
@@ -63,6 +64,9 @@ class ClientOpeningsBloc extends Bloc<ClientOpeningsEvent, ClientOpeningsState> 
     Emitter<ClientOpeningsState> emit,
   ) async {
     try {
+      // Эмитим состояние загрузки
+      emit(ClientOpeningCreating());
+      
       await _apiService.createClientOpening(
         leadId: event.leadId,
         ourDuty: event.ourDuty,
@@ -72,10 +76,36 @@ class ClientOpeningsBloc extends Bloc<ClientOpeningsEvent, ClientOpeningsState> 
       // Reload the list after successful creation
       add(LoadClientOpenings());
     } catch (e) {
-      // Сохраняем текущее состояние и эмитим операционную ошибку
+      // Эмитим операционную ошибку для показа в snackbar
       emit(ClientOpeningsOperationError(
         message: e.toString(),
         previousState: state,
+      ));
+    }
+  }
+
+  Future<void> _onUpdateClientOpening(
+    UpdateClientOpening event,
+    Emitter<ClientOpeningsState> emit,
+  ) async {
+    try {
+      // Эмитим состояние загрузки
+      emit(ClientOpeningUpdating());
+      
+      await _apiService.updateClientOpening(
+        leadId: event.leadId,
+        ourDuty: event.ourDuty,
+        debtToUs: event.debtToUs,
+      );
+      
+      emit(ClientOpeningUpdateSuccess());
+      
+      // Reload the list after successful update
+      add(LoadClientOpenings());
+    } catch (e) {
+      // Эмитим ошибку обновления для показа в snackbar
+      emit(ClientOpeningUpdateError(
+        message: e.toString(),
       ));
     }
   }

@@ -13,6 +13,7 @@ import '../../../../screens/profile/languages/app_localizations.dart';
 import '../../../../custom_widget/custom_button.dart';
 import '../../../../custom_widget/custom_textfield.dart';
 import '../../../../custom_widget/price_input_formatter.dart';
+import '../../../../utils/global_fun.dart';
 
 class EditSupplierOpeningScreen extends StatefulWidget {
   final SupplierOpening supplierOpening;
@@ -42,10 +43,10 @@ class _EditSupplierOpeningScreenState extends State<EditSupplierOpeningScreen> {
     
     // Initialize controllers with existing values
     ourDebtController = TextEditingController(
-      text: widget.supplierOpening.ourDuty ?? '0',
+      text: parseNumberToString(widget.supplierOpening.ourDuty, nullValue: '0'),
     );
     theirDebtController = TextEditingController(
-      text: widget.supplierOpening.debtToUs ?? '0',
+      text: parseNumberToString(widget.supplierOpening.debtToUs, nullValue: '0'),
     );
     
     // Initialize selected supplier
@@ -66,11 +67,11 @@ class _EditSupplierOpeningScreenState extends State<EditSupplierOpeningScreen> {
   Widget build(BuildContext context) {
     return BlocListener<SupplierOpeningsBloc, SupplierOpeningsState>(
       listener: (context, state) {
-        if (state is SupplierOpeningsLoaded) {
+        if (state is SupplierOpeningUpdateSuccess) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                AppLocalizations.of(context)!.translate('success_update'),
+                AppLocalizations.of(context)!.translate('successfully_updated'),
                 style: const TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 16,
@@ -90,7 +91,7 @@ class _EditSupplierOpeningScreenState extends State<EditSupplierOpeningScreen> {
             ),
           );
           Navigator.pop(context, true);
-        } else if (state is SupplierOpeningsError) {
+        } else if (state is SupplierOpeningUpdateError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -199,34 +200,34 @@ class _EditSupplierOpeningScreenState extends State<EditSupplierOpeningScreen> {
                 ),
               ),
             ),
-            Container(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child:                     CustomButton(
-                      buttonText:
-                          AppLocalizations.of(context)!.translate('close'),
-                      buttonColor: const Color(0xffF4F7FD),
-                      textColor: Colors.black,
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: BlocBuilder<SupplierOpeningsBloc, SupplierOpeningsState>(
-                      builder: (context, state) {
-                        final isLoading = state is SupplierOpeningsLoading;
-                        
-                        return CustomButton(
+            BlocBuilder<SupplierOpeningsBloc, SupplierOpeningsState>(
+              builder: (context, state) {
+                final isUpdating = state is SupplierOpeningUpdating;
+                
+                return Container(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: CustomButton(
+                          buttonText:
+                              AppLocalizations.of(context)!.translate('close'),
+                          buttonColor: const Color(0xffF4F7FD),
+                          textColor: Colors.black,
+                          onPressed: isUpdating ? null : () {
+                            Navigator.pop(context);
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: CustomButton(
                           buttonText:
                               AppLocalizations.of(context)!.translate('save'),
                           buttonColor: const Color(0xff4759FF),
                           textColor: Colors.white,
-                          onPressed: () {
-                            if (isLoading) return;
+                          isLoading: isUpdating,
+                          onPressed: isUpdating ? null : () {
                             
                             if (_formKey.currentState!.validate()) {
                               if (_selectedSupplierId == null) {
@@ -273,15 +274,15 @@ class _EditSupplierOpeningScreenState extends State<EditSupplierOpeningScreen> {
                                       debtToUs: debtToUs,
                                     ),
                                   );
-                            }
-                          },
-                        );
-                      },
+                          }
+                        },
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ),
+                  ],
+                ),
+              );
+            },
+          ),
           ],
         ),
       ),

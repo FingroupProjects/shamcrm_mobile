@@ -64,6 +64,9 @@ class GoodsOpeningsBloc extends Bloc<GoodsOpeningsEvent, GoodsOpeningsState> {
     Emitter<GoodsOpeningsState> emit,
   ) async {
     try {
+      // Эмитим состояние загрузки
+      emit(GoodsOpeningCreating());
+      
       await _apiService.createGoodsOpening(
         goodVariantId: event.goodVariantId,
         supplierId: event.supplierId,
@@ -76,7 +79,7 @@ class GoodsOpeningsBloc extends Bloc<GoodsOpeningsEvent, GoodsOpeningsState> {
       // Reload the list after successful creation
       add(LoadGoodsOpenings());
     } catch (e) {
-      // Сохраняем текущее состояние и эмитим операционную ошибку
+      // Эмитим операционную ошибку для показа в snackbar
       emit(GoodsOpeningsOperationError(
         message: e.toString(),
         previousState: state,
@@ -89,6 +92,9 @@ class GoodsOpeningsBloc extends Bloc<GoodsOpeningsEvent, GoodsOpeningsState> {
     Emitter<GoodsOpeningsState> emit,
   ) async {
     try {
+      // Эмитим состояние загрузки
+      emit(GoodsOpeningUpdating());
+      
       await _apiService.updateGoodsOpening(
         id: event.id,
         goodVariantId: event.goodVariantId,
@@ -104,10 +110,9 @@ class GoodsOpeningsBloc extends Bloc<GoodsOpeningsEvent, GoodsOpeningsState> {
       // Reload the list after successful update
       add(LoadGoodsOpenings());
     } catch (e) {
-      // Сохраняем текущее состояние и эмитим операционную ошибку
-      emit(GoodsOpeningsOperationError(
+      // Эмитим ошибку обновления для показа в snackbar
+      emit(GoodsOpeningUpdateError(
         message: e.toString(),
-        previousState: state,
       ));
     }
   }

@@ -13,6 +13,7 @@ import '../../../../screens/profile/languages/app_localizations.dart';
 import '../../../../custom_widget/custom_button.dart';
 import '../../../../custom_widget/custom_textfield.dart';
 import '../../../../custom_widget/price_input_formatter.dart';
+import '../../../../utils/global_fun.dart';
 
 class EditCashRegisterOpeningScreen extends StatefulWidget {
   final CashRegisterOpening cashRegisterOpening;
@@ -42,7 +43,7 @@ class _EditCashRegisterOpeningScreenState
     
     // Initialize controller with existing value
     balanceController = TextEditingController(
-      text: widget.cashRegisterOpening.sum ?? '0',
+      text: parseNumberToString(widget.cashRegisterOpening.sum, nullValue: '0'),
     );
     
     // Initialize selected cash register
@@ -176,43 +177,50 @@ class _EditCashRegisterOpeningScreenState
                 ),
               ),
             ),
-            Container(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: CustomButton(
-                      buttonText:
-                          AppLocalizations.of(context)!.translate('close'),
-                      buttonColor: const Color(0xffF4F7FD),
-                      textColor: Colors.black,
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                    ),
+            BlocBuilder<CashRegisterOpeningsBloc, CashRegisterOpeningsState>(
+              builder: (context, state) {
+                final isUpdating = state is CashRegisterOpeningUpdating;
+                
+                return Container(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: CustomButton(
+                          buttonText:
+                              AppLocalizations.of(context)!.translate('close'),
+                          buttonColor: const Color(0xffF4F7FD),
+                          textColor: Colors.black,
+                          onPressed: isUpdating ? null : () {
+                            Navigator.pop(context);
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: CustomButton(
+                          buttonText:
+                              AppLocalizations.of(context)!.translate('save'),
+                          buttonColor: const Color(0xff4759FF),
+                          textColor: Colors.white,
+                          isLoading: isUpdating,
+                          onPressed: isUpdating ? null : () {
+                            if (_formKey.currentState!.validate()) {
+                              context.read<CashRegisterOpeningsBloc>().add(
+                                UpdateCashRegisterOpening(
+                                  id: widget.cashRegisterOpening.id!,
+                                  cashRegisterId: int.parse(_selectedCashRegisterId!),
+                                  sum: balanceController.text,
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: CustomButton(
-                      buttonText:
-                          AppLocalizations.of(context)!.translate('save'),
-                      buttonColor: const Color(0xff4759FF),
-                      textColor: Colors.white,
-                      onPressed: () {
-                        if (_formKey.currentState!.validate()) {
-                          context.read<CashRegisterOpeningsBloc>().add(
-                            UpdateCashRegisterOpening(
-                              id: widget.cashRegisterOpening.id!,
-                              cashRegisterId: int.parse(_selectedCashRegisterId!),
-                              sum: balanceController.text,
-                            ),
-                          );
-                        }
-                      },
-                    ),
-                  ),
-                ],
-              ),
+                );
+              },
             ),
           ],
         ),

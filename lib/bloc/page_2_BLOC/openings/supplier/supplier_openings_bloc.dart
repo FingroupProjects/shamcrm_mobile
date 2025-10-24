@@ -64,6 +64,9 @@ class SupplierOpeningsBloc extends Bloc<SupplierOpeningsEvent, SupplierOpeningsS
     Emitter<SupplierOpeningsState> emit,
   ) async {
     try {
+      // Эмитим состояние загрузки
+      emit(SupplierOpeningCreating());
+      
       await _apiService.createSupplierOpening(
         supplierId: event.supplierId,
         ourDuty: event.ourDuty,
@@ -73,7 +76,7 @@ class SupplierOpeningsBloc extends Bloc<SupplierOpeningsEvent, SupplierOpeningsS
       // Reload the list after successful creation
       add(LoadSupplierOpenings());
     } catch (e) {
-      // Сохраняем текущее состояние и эмитим операционную ошибку
+      // Эмитим операционную ошибку для показа в snackbar
       emit(SupplierOpeningsOperationError(
         message: e.toString(),
         previousState: state,
@@ -86,6 +89,9 @@ class SupplierOpeningsBloc extends Bloc<SupplierOpeningsEvent, SupplierOpeningsS
     Emitter<SupplierOpeningsState> emit,
   ) async {
     try {
+      // Эмитим состояние загрузки
+      emit(SupplierOpeningUpdating());
+      
       await _apiService.editSupplierOpening(
         id: event.id,
         supplierId: event.supplierId,
@@ -93,13 +99,14 @@ class SupplierOpeningsBloc extends Bloc<SupplierOpeningsEvent, SupplierOpeningsS
         debtToUs: event.debtToUs,
       );
       
+      emit(SupplierOpeningUpdateSuccess());
+      
       // Reload the list after successful edit
       add(LoadSupplierOpenings());
     } catch (e) {
-      // Сохраняем текущее состояние и эмитим операционную ошибку
-      emit(SupplierOpeningsOperationError(
+      // Эмитим ошибку обновления для показа в snackbar
+      emit(SupplierOpeningUpdateError(
         message: e.toString(),
-        previousState: state,
       ));
     }
   }

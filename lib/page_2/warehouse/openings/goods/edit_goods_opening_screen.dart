@@ -20,6 +20,7 @@ import '../../incoming/supplier_widget.dart';
 import '../../incoming/storage_widget.dart';
 import '../../incoming/units_widget.dart';
 import '../../../money/widgets/cash_register_radio_group.dart';
+import '../../../../utils/global_fun.dart';
 
 class EditGoodsOpeningScreen extends StatefulWidget {
   final GoodsOpeningDocument goodsOpening;
@@ -56,10 +57,10 @@ class _EditGoodsOpeningScreenState extends State<EditGoodsOpeningScreen> {
         : null;
         
     quantityController = TextEditingController(
-      text: documentGood?.quantity ?? '0',
+      text: parseNumberToString(documentGood?.quantity, nullValue: '0'),
     );
     priceController = TextEditingController(
-      text: documentGood?.price ?? '0',
+      text: parseNumberToString(documentGood?.price, nullValue: '0'),
     );
     
     // Initialize selections from existing data
@@ -252,29 +253,34 @@ class _EditGoodsOpeningScreenState extends State<EditGoodsOpeningScreen> {
                 ),
               ),
             ),
-            Container(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: CustomButton(
-                      buttonText:
-                          AppLocalizations.of(context)!.translate('close'),
-                      buttonColor: const Color(0xffF4F7FD),
-                      textColor: Colors.black,
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: CustomButton(
-                      buttonText:
-                          AppLocalizations.of(context)!.translate('save'),
-                      buttonColor: const Color(0xff4759FF),
-                      textColor: Colors.white,
-                      onPressed: () {
+            BlocBuilder<GoodsOpeningsBloc, GoodsOpeningsState>(
+              builder: (context, state) {
+                final isUpdating = state is GoodsOpeningUpdating;
+                
+                return Container(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: CustomButton(
+                          buttonText:
+                              AppLocalizations.of(context)!.translate('close'),
+                          buttonColor: const Color(0xffF4F7FD),
+                          textColor: Colors.black,
+                          onPressed: isUpdating ? null : () {
+                            Navigator.pop(context);
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: CustomButton(
+                          buttonText:
+                              AppLocalizations.of(context)!.translate('save'),
+                          buttonColor: const Color(0xff4759FF),
+                          textColor: Colors.white,
+                          isLoading: isUpdating,
+                          onPressed: isUpdating ? null : () {
                         if (_formKey.currentState!.validate()) {
                           if (_selectedSupplierId == null ||
                               _selectedWarehouseId == null ||
@@ -344,14 +350,16 @@ class _EditGoodsOpeningScreenState extends State<EditGoodsOpeningScreen> {
                               unitId: int.parse(_selectedUnitId!),
                               storageId: int.parse(_selectedWarehouseId!),
                             ),
-                          );
-                        }
-                      },
+                            );
+                          }
+                        },
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ),
+                  ],
+                ),
+              );
+            },
+          ),
           ],
         ),
       ),

@@ -46,6 +46,20 @@ class ClientOpeningsOperationError extends ClientOpeningsState {
   });
 }
 
+// Состояние загрузки для операции создания
+class ClientOpeningCreating extends ClientOpeningsState {}
+
+// Состояние загрузки для операции обновления
+class ClientOpeningUpdating extends ClientOpeningsState {}
+
+class ClientOpeningUpdateSuccess extends ClientOpeningsState {}
+
+class ClientOpeningUpdateError extends ClientOpeningsState {
+  final String message;
+
+  ClientOpeningUpdateError({required this.message});
+}
+
 // Состояния для загрузки списка клиентов/лидов (для диалога выбора)
 class ClientOpeningsLeadsLoading extends ClientOpeningsState {}
 

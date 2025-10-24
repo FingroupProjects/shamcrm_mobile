@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/openings/cash_register/cash_register_openings_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/openings/cash_register/cash_register_openings_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/openings/cash_register/cash_register_openings_state.dart';
+import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/models/page_2/openings/cash_register_openings_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -49,8 +50,8 @@ class _CashRegisterContentState extends State<CashRegisterContent> {
                 ? const Padding(
               padding: EdgeInsets.all(16.0),
               child: Center(
-                child: CircularProgressIndicator(
-                  color: Color(0xff1E2E52),
+                child: PlayStoreImageLoading(
+                  size: 48,
                 ),
               ),
             )
@@ -137,25 +138,9 @@ class _CashRegisterContentState extends State<CashRegisterContent> {
   }
 
   Widget _buildLoadingState() {
-    final localizations = AppLocalizations.of(context)!;
-    
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const CircularProgressIndicator(
-            color: Color(0xff1E2E52),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            localizations.translate('loading_data') ?? 'Загрузка данных',
-            style: const TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 16,
-              color: Color(0xff64748B),
-            ),
-          ),
-        ],
+    return const Center(
+      child: PlayStoreImageLoading(
+        size: 80,
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../custom_widget/animation.dart';
 import '../../../../models/page_2/openings/supplier_openings_model.dart';
 import '../../../../bloc/page_2_BLOC/openings/supplier/supplier_openings_bloc.dart';
 import '../../../../bloc/page_2_BLOC/openings/supplier/supplier_openings_event.dart';
@@ -119,25 +120,9 @@ class _SupplierContentState extends State<SupplierContent> {
   }
 
   Widget _buildLoadingState() {
-    final localizations = AppLocalizations.of(context)!;
-    
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const CircularProgressIndicator(
-            color: Color(0xff1E2E52),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            localizations.translate('loading_data') ?? 'Загрузка данных',
-            style: const TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 16,
-              color: Color(0xff64748B),
-            ),
-          ),
-        ],
+    return const Center(
+      child: PlayStoreImageLoading(
+        size: 80,
       ),
     );
   }

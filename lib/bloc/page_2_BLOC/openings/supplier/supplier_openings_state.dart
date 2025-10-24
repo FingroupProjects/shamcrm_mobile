@@ -47,6 +47,20 @@ class SupplierOpeningsOperationError extends SupplierOpeningsState {
   });
 }
 
+// Состояние загрузки для операции создания
+class SupplierOpeningCreating extends SupplierOpeningsState {}
+
+// Состояние загрузки для операции обновления
+class SupplierOpeningUpdating extends SupplierOpeningsState {}
+
+class SupplierOpeningUpdateSuccess extends SupplierOpeningsState {}
+
+class SupplierOpeningUpdateError extends SupplierOpeningsState {
+  final String message;
+
+  SupplierOpeningUpdateError({required this.message});
+}
+
 // Состояния для списка поставщиков (для диалога)
 class SupplierOpeningsSuppliersInitial extends SupplierOpeningsState {}
 

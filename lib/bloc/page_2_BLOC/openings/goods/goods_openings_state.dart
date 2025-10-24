@@ -47,6 +47,12 @@ class GoodsOpeningsOperationError extends GoodsOpeningsState {
   });
 }
 
+// Состояние загрузки для операции создания
+class GoodsOpeningCreating extends GoodsOpeningsState {}
+
+// Состояние загрузки для операции обновления
+class GoodsOpeningUpdating extends GoodsOpeningsState {}
+
 class GoodsOpeningUpdateSuccess extends GoodsOpeningsState {}
 
 // Deprecated: используйте GoodsOpeningsOperationError

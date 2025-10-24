@@ -75,16 +75,46 @@ class _AddGoodsOpeningScreenState extends State<AddGoodsOpeningScreen> {
             SnackBar(
               content: Text(
                 AppLocalizations.of(context)!.translate('goods_opening_created'),
+                style: const TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
               backgroundColor: Colors.green,
+              elevation: 3,
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: const Duration(seconds: 2),
             ),
           );
-        } else if (state is GoodsOpeningsError) {
-          // Показываем ошибку
+        } else if (state is GoodsOpeningsOperationError) {
+          // Показываем ошибку в красном snackbar
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(state.message),
+              content: Text(
+                state.message,
+                style: const TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               backgroundColor: Colors.red,
+              elevation: 3,
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: const Duration(seconds: 3),
             ),
           );
         }
@@ -209,29 +239,34 @@ class _AddGoodsOpeningScreenState extends State<AddGoodsOpeningScreen> {
                   ),
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: CustomButton(
-                        buttonText:
-                        AppLocalizations.of(context)!.translate('close'),
-                        buttonColor: const Color(0xffF4F7FD),
-                        textColor: Colors.black,
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: CustomButton(
-                        buttonText:
-                        AppLocalizations.of(context)!.translate('save'),
-                        buttonColor: const Color(0xff4759FF),
-                        textColor: Colors.white,
-                        onPressed: () {
+              BlocBuilder<GoodsOpeningsBloc, GoodsOpeningsState>(
+                builder: (context, state) {
+                  final isCreating = state is GoodsOpeningCreating;
+                  
+                  return Container(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: CustomButton(
+                            buttonText:
+                            AppLocalizations.of(context)!.translate('close'),
+                            buttonColor: const Color(0xffF4F7FD),
+                            textColor: Colors.black,
+                            onPressed: isCreating ? null : () {
+                              Navigator.pop(context);
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: CustomButton(
+                            buttonText:
+                            AppLocalizations.of(context)!.translate('save'),
+                            buttonColor: const Color(0xff4759FF),
+                            textColor: Colors.white,
+                            isLoading: isCreating,
+                            onPressed: isCreating ? null : () {
                           if (_formKey.currentState!.validate()) {
                             // Проверяем, что все обязательные поля заполнены
                             if (_selectedSupplierId == null) {
@@ -282,14 +317,16 @@ class _AddGoodsOpeningScreenState extends State<AddGoodsOpeningScreen> {
                               ),
                             );
 
-                            // BlocListener автоматически обработает успешное создание
-                          }
-                        },
+                              // BlocListener автоматически обработает успешное создание
+                            }
+                          },
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
+                    ],
+                  ),
+                );
+              },
+            ),
             ],
           ),
         ),

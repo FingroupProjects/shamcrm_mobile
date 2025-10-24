@@ -48,6 +48,12 @@ class CashRegisterOpeningsOperationError extends CashRegisterOpeningsState {
   });
 }
 
+// Состояние загрузки для операции создания
+class CashRegisterOpeningCreating extends CashRegisterOpeningsState {}
+
+// Состояние загрузки для операции обновления
+class CashRegisterOpeningUpdating extends CashRegisterOpeningsState {}
+
 class CashRegisterOpeningUpdateSuccess extends CashRegisterOpeningsState {}
 
 // Deprecated: используйте CashRegisterOpeningsOperationError

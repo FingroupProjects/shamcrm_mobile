@@ -61,6 +61,9 @@ class CashRegisterOpeningsBloc extends Bloc<CashRegisterOpeningsEvent, CashRegis
     Emitter<CashRegisterOpeningsState> emit,
   ) async {
     try {
+      // Эмитим состояние загрузки
+      emit(CashRegisterOpeningCreating());
+      
       await _apiService.createCashRegisterOpening(
         cashRegisterId: event.cashRegisterId,
         sum: event.sum,
@@ -69,7 +72,7 @@ class CashRegisterOpeningsBloc extends Bloc<CashRegisterOpeningsEvent, CashRegis
       // Reload the list after successful creation
       add(LoadCashRegisterOpenings());
     } catch (e) {
-      // Сохраняем текущее состояние и эмитим операционную ошибку
+      // Эмитим операционную ошибку для показа в snackbar
       emit(CashRegisterOpeningsOperationError(
         message: e.toString(),
         previousState: state,
@@ -82,6 +85,9 @@ class CashRegisterOpeningsBloc extends Bloc<CashRegisterOpeningsEvent, CashRegis
     Emitter<CashRegisterOpeningsState> emit,
   ) async {
     try {
+      // Эмитим состояние загрузки
+      emit(CashRegisterOpeningUpdating());
+      
       await _apiService.updateCashRegisterOpening(
         id: event.id,
         cashRegisterId: event.cashRegisterId,
@@ -93,10 +99,9 @@ class CashRegisterOpeningsBloc extends Bloc<CashRegisterOpeningsEvent, CashRegis
       // Reload the list after successful update
       add(LoadCashRegisterOpenings());
     } catch (e) {
-      // Сохраняем текущее состояние и эмитим операционную ошибку
-      emit(CashRegisterOpeningsOperationError(
+      // Эмитим ошибку обновления для показа в snackbar
+      emit(CashRegisterOpeningUpdateError(
         message: e.toString(),
-        previousState: state,
       ));
     }
   }

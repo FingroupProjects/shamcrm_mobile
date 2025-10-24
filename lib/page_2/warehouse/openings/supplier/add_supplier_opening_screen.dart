@@ -59,16 +59,46 @@ class _AddSupplierOpeningScreenState extends State<AddSupplierOpeningScreen> {
               content: Text(
                 AppLocalizations.of(context)?.translate('supplier_opening_created') ??
                     'Остаток поставщика создан',
+                style: const TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
               backgroundColor: Colors.green,
+              elevation: 3,
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: const Duration(seconds: 2),
             ),
           );
-        } else if (state is SupplierOpeningsError) {
-          // Показываем ошибку
+        } else if (state is SupplierOpeningsOperationError) {
+          // Показываем ошибку в красном snackbar
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(state.message),
+              content: Text(
+                state.message,
+                style: const TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               backgroundColor: Colors.red,
+              elevation: 3,
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: const Duration(seconds: 3),
             ),
           );
         }
@@ -166,29 +196,34 @@ class _AddSupplierOpeningScreenState extends State<AddSupplierOpeningScreen> {
                   ),
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: CustomButton(
-                        buttonText:
-                        AppLocalizations.of(context)?.translate('close') ?? 'Закрыть',
-                        buttonColor: const Color(0xffF4F7FD),
-                        textColor: Colors.black,
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: CustomButton(
-                        buttonText:
-                        AppLocalizations.of(context)?.translate('save') ?? 'Сохранить',
-                        buttonColor: const Color(0xff4759FF),
-                        textColor: Colors.white,
-                        onPressed: () {
+              BlocBuilder<SupplierOpeningsBloc, SupplierOpeningsState>(
+                builder: (context, state) {
+                  final isCreating = state is SupplierOpeningCreating;
+                  
+                  return Container(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: CustomButton(
+                            buttonText:
+                            AppLocalizations.of(context)?.translate('close') ?? 'Закрыть',
+                            buttonColor: const Color(0xffF4F7FD),
+                            textColor: Colors.black,
+                            onPressed: isCreating ? null : () {
+                              Navigator.pop(context);
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: CustomButton(
+                            buttonText:
+                            AppLocalizations.of(context)?.translate('save') ?? 'Сохранить',
+                            buttonColor: const Color(0xff4759FF),
+                            textColor: Colors.white,
+                            isLoading: isCreating,
+                            onPressed: isCreating ? null : () {
                           if (_formKey.currentState!.validate()) {
                             // Создаем событие для добавления остатка поставщика
                             context.read<SupplierOpeningsBloc>().add(
@@ -199,14 +234,16 @@ class _AddSupplierOpeningScreenState extends State<AddSupplierOpeningScreen> {
                               ),
                             );
 
-                            // BlocListener автоматически обработает успешное создание
-                          }
-                        },
+                              // BlocListener автоматически обработает успешное создание
+                            }
+                          },
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
+                    ],
+                  ),
+                );
+              },
+            ),
             ],
           ),
         ),

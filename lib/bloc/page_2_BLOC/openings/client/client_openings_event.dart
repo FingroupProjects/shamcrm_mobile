@@ -27,6 +27,20 @@ class CreateClientOpening extends ClientOpeningsEvent {
   });
 }
 
+class UpdateClientOpening extends ClientOpeningsEvent {
+  final int id;
+  final int leadId;
+  final double ourDuty;
+  final double debtToUs;
+
+  UpdateClientOpening({
+    required this.id,
+    required this.leadId,
+    required this.ourDuty,
+    required this.debtToUs,
+  });
+}
+
 class LoadClientOpeningsLeads extends ClientOpeningsEvent {}
 
 class RefreshClientOpeningsLeads extends ClientOpeningsEvent {}
