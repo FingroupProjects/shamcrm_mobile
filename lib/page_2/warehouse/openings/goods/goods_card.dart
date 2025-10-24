@@ -49,8 +49,39 @@ class GoodsCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // В карточке документа, только цена и склад оставлены
+                  // Text(
+                  //   'Название: ${firstGood?.goodVariant?.fullName ?? goods.docNumber ?? 'N/A'}',
+                  //   style: const TextStyle(
+                  //     fontSize: 14,
+                  //     fontFamily: 'Gilroy',
+                  //     fontWeight: FontWeight.w400,
+                  //     color: Color(0xff1E2E52),
+                  //   ),
+                  // ),
+                  // const SizedBox(height: 8),
+                  // Text(
+                  //   'Ед. изм.: ${firstGood?.unit?.shortName ?? ''}',
+                  //   style: const TextStyle(
+                  //     fontSize: 14,
+                  //     fontFamily: 'Gilroy',
+                  //     fontWeight: FontWeight.w400,
+                  //     color: Color(0xff99A4BA),
+                  //   ),
+                  // ),
+                  // const SizedBox(height: 8),
+                  // Text(
+                  //   'Поставщик: ${goods.model?.name ?? 'N/A'}',
+                  //   style: const TextStyle(
+                  //     fontSize: 14,
+                  //     fontFamily: 'Gilroy',
+                  //     fontWeight: FontWeight.w400,
+                  //     color: Color(0xff99A4BA),
+                  //   ),
+                  // ),
+                  // const SizedBox(height: 8),
                   Text(
-                    'Название: ${firstGood?.goodVariant?.fullName ?? goods.docNumber ?? 'N/A'}',
+                    'Склад: ${goods.storage?.name ?? 'N/A'}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
@@ -59,46 +90,16 @@ class GoodsCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    'Ед. изм.: ${firstGood?.unit?.shortName ?? ''}',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w400,
-                      color: Color(0xff99A4BA),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Поставщик: ${goods.model?.name ?? 'N/A'}',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w400,
-                      color: Color(0xff99A4BA),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Склад: ${goods.storage?.name ?? 'N/A'}',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w400,
-                      color: Color(0xff99A4BA),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Кол-во: ${firstGood?.quantity ?? '0'}',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w400,
-                      color: Color(0xff99A4BA),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
+                  // Text(
+                  //   'Кол-во: ${firstGood?.quantity ?? '0'}',
+                  //   style: const TextStyle(
+                  //     fontSize: 14,
+                  //     fontFamily: 'Gilroy',
+                  //     fontWeight: FontWeight.w400,
+                  //     color: Color(0xff99A4BA),
+                  //   ),
+                  // ),
+                  // const SizedBox(height: 8),
                   Text(
                     'Цена: ${_formatAmount(firstGood?.price ?? '0')}',
                     style: const TextStyle(

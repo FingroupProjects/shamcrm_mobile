@@ -7,7 +7,7 @@ import '../../../../bloc/page_2_BLOC/openings/client/client_openings_event.dart'
 import '../../../../bloc/page_2_BLOC/openings/client/client_openings_state.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
 import 'client_card.dart';
-import 'edit_client_opening_screen.dart';
+import 'client_details.dart';
 import '../opening_delete_dialog.dart';
 
 class ClientContent extends StatefulWidget {
@@ -90,8 +90,8 @@ class _ClientContentState extends State<ClientContent> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => EditClientOpeningScreen(
-                    clientOpening: client,
+                  builder: (context) => ClientOpeningDetailsScreen(
+                    opening: client,
                   ),
                 ),
               );

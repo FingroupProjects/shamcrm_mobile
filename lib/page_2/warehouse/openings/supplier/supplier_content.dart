@@ -7,7 +7,7 @@ import '../../../../bloc/page_2_BLOC/openings/supplier/supplier_openings_event.d
 import '../../../../bloc/page_2_BLOC/openings/supplier/supplier_openings_state.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
 import 'supplier_card.dart';
-import 'edit_supplier_opening_screen.dart';
+import 'supplier_details.dart';
 import '../opening_delete_dialog.dart';
 
 class SupplierContent extends StatefulWidget {
@@ -90,8 +90,8 @@ class _SupplierContentState extends State<SupplierContent> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => EditSupplierOpeningScreen(
-                    supplierOpening: supplier,
+                  builder: (context) => SupplierOpeningDetailsScreen(
+                    opening: supplier,
                   ),
                 ),
               );

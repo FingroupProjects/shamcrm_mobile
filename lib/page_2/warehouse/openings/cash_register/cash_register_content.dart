@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'cash_register_card.dart';
-import 'edit_cash_register_opening_screen.dart';
+import 'cash_register_details.dart';
 import '../opening_delete_dialog.dart';
 
 class CashRegisterContent extends StatefulWidget {
@@ -90,8 +90,8 @@ class _CashRegisterContentState extends State<CashRegisterContent> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => EditCashRegisterOpeningScreen(
-                    cashRegisterOpening: cashRegister,
+                  builder: (context) => CashRegisterOpeningDetailsScreen(
+                    opening: cashRegister,
                   ),
                 ),
               );

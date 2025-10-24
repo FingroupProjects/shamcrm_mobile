@@ -7,7 +7,7 @@ import '../../../../bloc/page_2_BLOC/openings/goods/goods_openings_event.dart';
 import '../../../../bloc/page_2_BLOC/openings/goods/goods_openings_state.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
 import 'goods_card.dart';
-import 'edit_goods_opening_screen.dart';
+import 'goods_details.dart';
 import '../opening_delete_dialog.dart';
 
 class GoodsContent extends StatefulWidget {
@@ -90,8 +90,8 @@ class _GoodsContentState extends State<GoodsContent> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => EditGoodsOpeningScreen(
-                    goodsOpening: goods,
+                  builder: (context) => GoodsOpeningDetailsScreen(
+                    document: goods,
                   ),
                 ),
               );
