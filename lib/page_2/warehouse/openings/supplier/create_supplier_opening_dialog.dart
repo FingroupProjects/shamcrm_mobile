@@ -204,7 +204,7 @@ class SupplierVariantsDialog extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      _translate(context, 'supplier_list', 'Список поставщиков'),
+                      _translate(context, 'choose_supplier', 'Выберите поставщика'),
                       style: const TextStyle(
                         fontFamily: 'Gilroy',
                         fontSize: 18,

@@ -187,7 +187,7 @@ class GoodVariantsDialog extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      _translate(context, 'product_variants', 'Варианты товаров'),
+                      _translate(context, 'choose_good', 'Выберите товар'),
                       style: const TextStyle(
                         fontFamily: 'Gilroy',
                         fontSize: 18,

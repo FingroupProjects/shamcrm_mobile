@@ -86,31 +86,14 @@ class _EditCashRegisterOpeningScreenState
               duration: const Duration(seconds: 2),
             ),
           );
-          Navigator.pop(context, true);
-        } else if (state is CashRegisterOpeningUpdateError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                state.message,
-                style: const TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-              behavior: SnackBarBehavior.floating,
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              backgroundColor: Colors.red,
-              elevation: 3,
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              duration: const Duration(seconds: 3),
-            ),
-          );
+          // Небольшая задержка перед закрытием экрана, чтобы SnackBar успел отобразиться
+          Future.delayed(const Duration(milliseconds: 300), () {
+            if (mounted) {
+              Navigator.pop(context, true);
+            }
+          });
         }
+        // Ошибки обновления обрабатываются в cash_register_content.dart через OperationError
       },
       child: Scaffold(
         backgroundColor: Colors.white,

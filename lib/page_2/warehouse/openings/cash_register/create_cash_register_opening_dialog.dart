@@ -170,9 +170,22 @@ class CashRegisterLeadsDialog extends StatelessWidget {
               ),
               child: Row(
                 children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.info_outline,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Выберите кассу',
+                      _translate(context, 'choose_cash_register', 'Выберите кассу'),
                       style: const TextStyle(
                         fontFamily: 'Gilroy',
                         fontSize: 18,
