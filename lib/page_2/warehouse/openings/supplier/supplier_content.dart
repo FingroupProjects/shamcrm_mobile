@@ -39,11 +39,16 @@ class _SupplierContentState extends State<SupplierContent> {
           return SupplierCard(
             supplier: suppliers[index],
             onClick: (supplier) {
+              final bloc = context.read<SupplierOpeningsBloc>();
+              
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => SupplierOpeningDetailsScreen(
-                    opening: supplier,
+                  builder: (context) => BlocProvider.value(
+                    value: bloc,
+                    child: SupplierOpeningDetailsScreen(
+                      opening: supplier,
+                    ),
                   ),
                 ),
               );

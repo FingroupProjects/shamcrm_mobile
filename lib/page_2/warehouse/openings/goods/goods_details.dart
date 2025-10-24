@@ -155,11 +155,18 @@ class _GoodsOpeningDetailsScreenState extends State<GoodsOpeningDetailsScreen> {
               ),
               onPressed: () async {
                 if (_isLoading) return;
+                
+                // Get the bloc from the current context
+                final openingsBloc = context.read<GoodsOpeningsBloc>();
+                
                 final result = await Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => EditGoodsOpeningScreen(
-                      goodsOpening: currentDocument,
+                    builder: (context) => BlocProvider.value(
+                      value: openingsBloc,
+                      child: EditGoodsOpeningScreen(
+                        goodsOpening: currentDocument,
+                      ),
                     ),
                   ),
                 );

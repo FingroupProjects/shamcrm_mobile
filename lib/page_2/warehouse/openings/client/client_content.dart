@@ -39,11 +39,16 @@ class _ClientContentState extends State<ClientContent> {
           return ClientCard(
             client: clients[index],
             onClick: (client) {
+              final bloc = context.read<ClientOpeningsBloc>();
+              
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => ClientOpeningDetailsScreen(
-                    opening: client,
+                  builder: (context) => BlocProvider.value(
+                    value: bloc,
+                    child: ClientOpeningDetailsScreen(
+                      opening: client,
+                    ),
                   ),
                 ),
               );

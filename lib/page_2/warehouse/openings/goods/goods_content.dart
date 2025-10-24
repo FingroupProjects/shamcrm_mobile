@@ -39,11 +39,16 @@ class _GoodsContentState extends State<GoodsContent> {
           return GoodsCard(
             goods: goods[index],
             onClick: (goods) {
+              final bloc = context.read<GoodsOpeningsBloc>();
+              
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => GoodsOpeningDetailsScreen(
-                    document: goods,
+                  builder: (context) => BlocProvider.value(
+                    value: bloc,
+                    child: GoodsOpeningDetailsScreen(
+                      document: goods,
+                    ),
                   ),
                 ),
               );

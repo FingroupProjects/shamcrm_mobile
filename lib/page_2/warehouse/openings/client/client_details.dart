@@ -138,11 +138,18 @@ class _ClientOpeningDetailsScreenState
               ),
               onPressed: () async {
                 if (_isLoading) return;
+                
+                // Get the bloc from the current context
+                final openingsBloc = context.read<ClientOpeningsBloc>();
+                
                 final result = await Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => EditClientOpeningScreen(
-                      clientOpening: currentOpening,
+                    builder: (context) => BlocProvider.value(
+                      value: openingsBloc,
+                      child: EditClientOpeningScreen(
+                        clientOpening: currentOpening,
+                      ),
                     ),
                   ),
                 );
