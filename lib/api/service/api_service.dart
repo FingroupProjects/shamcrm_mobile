@@ -15855,16 +15855,16 @@ Future<void> clearFieldConfigurationCache() async {
     try {
       String path = await _appendQueryParams('/cash-register-initial-balance/$id');
 
-      final body = {'data' : [{
+      final body = {
         'cash_register_id': cashRegisterId,
         'sum': sum,
-      }]};
+      };
 
       if (kDebugMode) {
         print('ApiService: createCashRegisterOpening - path: $path, body: $body');
       }
 
-      final response = await _postRequest(path, body);
+      final response = await _patchRequest(path, body);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = json.decode(response.body);
@@ -16077,6 +16077,45 @@ Future<void> clearFieldConfigurationCache() async {
       rethrow;
     }
   }
+
+
+  /// Создать первоначальный остаток клиента
+  Future<Map<String, dynamic>> updateClientOpening({
+    required int leadId,
+    required double ourDuty,
+    required double debtToUs,
+  }) async {
+    try {
+      String path = await _appendQueryParams('/initial-balance/$leadId');
+
+      final body = {
+        "type": "lead",
+        "counterparty_id": leadId,
+        "our_duty": ourDuty,
+        "debt_to_us": debtToUs,
+      };
+
+      if (kDebugMode) {
+        print('ApiService: createClientOpening - path: $path');
+        print('ApiService: createClientOpening - body: $body');
+      }
+
+      final response = await _patchRequest(path, body);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {'result': 'Success'};
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? "Ошибка создания остатка клиента",
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
 
   /// Создать первоначальный остаток поставщика
   Future<Map<String, dynamic>> createSupplierOpening({
