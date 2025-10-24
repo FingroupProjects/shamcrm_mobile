@@ -69,13 +69,15 @@ class CashRegisterOpeningsBloc extends Bloc<CashRegisterOpeningsEvent, CashRegis
         sum: event.sum,
       );
       
+      // Эмитим состояние успешного создания
+      emit(CashRegisterOpeningCreateSuccess());
+      
       // Reload the list after successful creation
       add(LoadCashRegisterOpenings());
     } catch (e) {
-      // Эмитим операционную ошибку для показа в snackbar
-      emit(CashRegisterOpeningsOperationError(
+      // Эмитим ошибку создания
+      emit(CashRegisterOpeningCreateError(
         message: e.toString(),
-        previousState: state,
       ));
     }
   }

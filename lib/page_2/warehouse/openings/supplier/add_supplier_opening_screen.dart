@@ -33,9 +33,9 @@ class _AddSupplierOpeningScreenState extends State<AddSupplierOpeningScreen> {
   void initState() {
     super.initState();
 
-    // Initialize controllers with default values
-    ourDutyController = TextEditingController(text: '0');
-    debtToUsController = TextEditingController(text: '0');
+    // Initialize controllers with empty values
+    ourDutyController = TextEditingController();
+    debtToUsController = TextEditingController();
   }
 
   @override
@@ -45,44 +45,55 @@ class _AddSupplierOpeningScreenState extends State<AddSupplierOpeningScreen> {
     super.dispose();
   }
 
+  void _showSnackBar(String message, {bool isSuccess = true}) {
+    if (!mounted || !context.mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: const TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
+          ),
+        ),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        backgroundColor: isSuccess ? Colors.green : Colors.red,
+        elevation: 3,
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        duration: Duration(seconds: isSuccess ? 2 : 3),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<SupplierOpeningsBloc, SupplierOpeningsState>(
       listener: (context, state) {
-        if (state is SupplierOpeningsLoaded) {
-          // Успешно создан остаток, показываем сообщение
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                AppLocalizations.of(context)?.translate('supplier_opening_created') ??
-                    'Остаток поставщика создан',
-                style: const TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-              behavior: SnackBarBehavior.floating,
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              backgroundColor: Colors.green,
-              elevation: 3,
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              duration: const Duration(seconds: 2),
-            ),
-          );
-          
-          // Небольшая задержка перед закрытием экрана, чтобы SnackBar успел отобразиться
-          Future.delayed(const Duration(milliseconds: 300), () {
-            if (mounted) {
-              Navigator.pop(context);
+        if (!mounted || !context.mounted) return;
+
+        if (state is SupplierOpeningCreateSuccess) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted && context.mounted) {
+              // Just pop - the parent screen will show the success message
+              Navigator.pop(context, true); // ✅ Return true to indicate success
+            }
+          });
+        } 
+        
+        if (state is SupplierOpeningCreateError) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted && context.mounted) {
+              _showSnackBar(state.message, isSuccess: false);
             }
           });
         }
-        // Ошибки создания обрабатываются в supplier_content.dart через OperationError
       },
       child: Scaffold(
         backgroundColor: Colors.white,
@@ -101,7 +112,7 @@ class _AddSupplierOpeningScreenState extends State<AddSupplierOpeningScreen> {
             },
           ),
           title: Text(
-            AppLocalizations.of(context)?.translate('add_supplier_opening') ?? 
+            AppLocalizations.of(context)?.translate('add_supplier_opening') ??
                 'Добавить остаток поставщика',
             style: const TextStyle(
               fontSize: 18,
@@ -129,9 +140,9 @@ class _AddSupplierOpeningScreenState extends State<AddSupplierOpeningScreen> {
                         const SizedBox(height: 16),
                         CustomTextField(
                           controller: ourDutyController,
-                          label: AppLocalizations.of(context)?.translate('our_duty') ?? 
+                          label: AppLocalizations.of(context)?.translate('our_duty') ??
                               'Наш долг',
-                          hintText: AppLocalizations.of(context)?.translate('enter_amount') ?? 
+                          hintText: AppLocalizations.of(context)?.translate('enter_amount') ??
                               'Введите сумму',
                           keyboardType: TextInputType.number,
                           inputFormatters: [
@@ -139,11 +150,11 @@ class _AddSupplierOpeningScreenState extends State<AddSupplierOpeningScreen> {
                           ],
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return AppLocalizations.of(context)?.translate('field_required') ?? 
+                              return AppLocalizations.of(context)?.translate('field_required') ??
                                   'Обязательное поле';
                             }
                             if (double.tryParse(value) == null) {
-                              return AppLocalizations.of(context)?.translate('enter_correct_number') ?? 
+                              return AppLocalizations.of(context)?.translate('enter_correct_number') ??
                                   'Введите корректное число';
                             }
                             return null;
@@ -152,9 +163,9 @@ class _AddSupplierOpeningScreenState extends State<AddSupplierOpeningScreen> {
                         const SizedBox(height: 16),
                         CustomTextField(
                           controller: debtToUsController,
-                          label: AppLocalizations.of(context)?.translate('debt_to_us') ?? 
+                          label: AppLocalizations.of(context)?.translate('debt_to_us') ??
                               'Долг поставщика',
-                          hintText: AppLocalizations.of(context)?.translate('enter_amount') ?? 
+                          hintText: AppLocalizations.of(context)?.translate('enter_amount') ??
                               'Введите сумму',
                           keyboardType: TextInputType.number,
                           inputFormatters: [
@@ -162,11 +173,11 @@ class _AddSupplierOpeningScreenState extends State<AddSupplierOpeningScreen> {
                           ],
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return AppLocalizations.of(context)?.translate('field_required') ?? 
+                              return AppLocalizations.of(context)?.translate('field_required') ??
                                   'Обязательное поле';
                             }
                             if (double.tryParse(value) == null) {
-                              return AppLocalizations.of(context)?.translate('enter_correct_number') ?? 
+                              return AppLocalizations.of(context)?.translate('enter_correct_number') ??
                                   'Введите корректное число';
                             }
                             return null;
@@ -180,7 +191,7 @@ class _AddSupplierOpeningScreenState extends State<AddSupplierOpeningScreen> {
               BlocBuilder<SupplierOpeningsBloc, SupplierOpeningsState>(
                 builder: (context, state) {
                   final isCreating = state is SupplierOpeningCreating;
-                  
+
                   return Container(
                     padding: const EdgeInsets.all(16),
                     child: Row(
@@ -205,26 +216,24 @@ class _AddSupplierOpeningScreenState extends State<AddSupplierOpeningScreen> {
                             textColor: Colors.white,
                             isLoading: isCreating,
                             onPressed: isCreating ? null : () {
-                          if (_formKey.currentState!.validate()) {
-                            // Создаем событие для добавления остатка поставщика
-                            context.read<SupplierOpeningsBloc>().add(
-                              CreateSupplierOpening(
-                                supplierId: widget.supplierId,
-                                ourDuty: double.parse(ourDutyController.text),
-                                debtToUs: double.parse(debtToUsController.text),
-                              ),
-                            );
-
-                              // BlocListener автоматически обработает успешное создание
-                            }
-                          },
+                              if (_formKey.currentState!.validate()) {
+                                // Create event for adding supplier opening
+                                context.read<SupplierOpeningsBloc>().add(
+                                  CreateSupplierOpening(
+                                    supplierId: widget.supplierId,
+                                    ourDuty: double.parse(ourDutyController.text),
+                                    debtToUs: double.parse(debtToUsController.text),
+                                  ),
+                                );
+                              }
+                            },
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
+                      ],
+                    ),
+                  );
+                },
+              ),
             ],
           ),
         ),
@@ -270,6 +279,4 @@ class _AddSupplierOpeningScreenState extends State<AddSupplierOpeningScreen> {
       ],
     );
   }
-
 }
-

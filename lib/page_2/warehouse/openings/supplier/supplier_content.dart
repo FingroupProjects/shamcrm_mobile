@@ -19,11 +19,41 @@ class SupplierContent extends StatefulWidget {
 }
 
 class _SupplierContentState extends State<SupplierContent> {
+  bool _isRefreshing = false;
+  // Keep track of ScaffoldMessengerState to avoid unsafe lookups
+  ScaffoldMessengerState? _scaffoldMessenger;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Cache the ScaffoldMessengerState safely
+    _scaffoldMessenger = ScaffoldMessenger.maybeOf(context);
+  }
+
+  @override
+  void dispose() {
+    _scaffoldMessenger = null;
+    super.dispose();
+  }
+
   Future<void> _onRefresh() async {
+    if (!mounted) return;
+
+    setState(() {
+      _isRefreshing = true;
+    });
+
     context.read<SupplierOpeningsBloc>().add(LoadSupplierOpenings());
+
     await context.read<SupplierOpeningsBloc>().stream.firstWhere(
-          (state) => state is! SupplierOpeningsLoading || state is SupplierOpeningsLoaded || state is SupplierOpeningsError,
+          (state) => state is SupplierOpeningsLoaded || state is SupplierOpeningsError,
     );
+
+    if (mounted) {
+      setState(() {
+        _isRefreshing = false;
+      });
+    }
   }
 
   Widget _buildSupplierList(List<SupplierOpening> suppliers) {
@@ -40,7 +70,7 @@ class _SupplierContentState extends State<SupplierContent> {
             supplier: suppliers[index],
             onClick: (supplier) {
               final bloc = context.read<SupplierOpeningsBloc>();
-              
+
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -54,7 +84,7 @@ class _SupplierContentState extends State<SupplierContent> {
               );
             },
             onLongPress: (supplier) {
-              // Handle supplier long press
+              // Handle supplier long press if needed
             },
             onDelete: (supplier) {
               final bloc = context.read<SupplierOpeningsBloc>();
@@ -79,7 +109,7 @@ class _SupplierContentState extends State<SupplierContent> {
 
   Widget _buildEmptyState() {
     final localizations = AppLocalizations.of(context)!;
-    
+
     return RefreshIndicator(
       onRefresh: _onRefresh,
       child: ListView(
@@ -98,7 +128,7 @@ class _SupplierContentState extends State<SupplierContent> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    localizations.translate('no_suppliers') ?? 'Нет поставщиков',
+                    localizations.translate('no_suppliers'),
                     style: const TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 18,
@@ -108,7 +138,7 @@ class _SupplierContentState extends State<SupplierContent> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    localizations.translate('no_suppliers_description') ?? 'Список поставщиков пуст',
+                    localizations.translate('no_suppliers_description'),
                     style: const TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 14,
@@ -134,7 +164,7 @@ class _SupplierContentState extends State<SupplierContent> {
 
   Widget _buildErrorState(String message) {
     final localizations = AppLocalizations.of(context)!;
-    
+
     return RefreshIndicator(
       onRefresh: _onRefresh,
       child: ListView(
@@ -166,7 +196,7 @@ class _SupplierContentState extends State<SupplierContent> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        localizations.translate('error_loading_dialog') ?? 'Ошибка загрузки',
+                        localizations.translate('error_loading_dialog'),
                         style: const TextStyle(
                           fontFamily: 'Gilroy',
                           fontSize: 18,
@@ -199,7 +229,7 @@ class _SupplierContentState extends State<SupplierContent> {
                           ),
                         ),
                         child: Text(
-                          localizations.translate('retry') ?? 'Повторить',
+                          localizations.translate('retry'),
                           style: const TextStyle(
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w600,
@@ -221,59 +251,90 @@ class _SupplierContentState extends State<SupplierContent> {
   Widget build(BuildContext context) {
     return BlocConsumer<SupplierOpeningsBloc, SupplierOpeningsState>(
       listener: (context, state) {
-        // Обработка операционных ошибок через snackbar
-        if (state is SupplierOpeningsOperationError) {
-          showCustomSnackBar(
-            context: context,
-            message: state.message,
-            isSuccess: false,
+        // ✅ Handle success messages
+        if (state is SupplierOpeningCreateSuccess) {
+          _showSnackBarSafely(
+            AppLocalizations.of(context)?.translate('supplier_opening_created') ??
+                'Остаток поставщика создан',
+            isSuccess: true,
           );
+          // Refresh data after create
+          context.read<SupplierOpeningsBloc>().add(LoadSupplierOpenings());
+        }
+
+        if (state is SupplierOpeningUpdateSuccess) {
+          _showSnackBarSafely(
+            AppLocalizations.of(context)?.translate('successfully_updated') ??
+                'Успешно обновлено',
+            isSuccess: true,
+          );
+          // Refresh data after update
+          context.read<SupplierOpeningsBloc>().add(LoadSupplierOpenings());
+        }
+
+        // ✅ Handle error messages
+        if (state is SupplierOpeningCreateError) {
+          _showSnackBarSafely(state.message, isSuccess: false);
+          // Refresh data to avoid white screen
+          context.read<SupplierOpeningsBloc>().add(LoadSupplierOpenings());
+        }
+
+        if (state is SupplierOpeningUpdateError) {
+          _showSnackBarSafely(state.message, isSuccess: false);
+          // Refresh data to avoid white screen
+          context.read<SupplierOpeningsBloc>().add(LoadSupplierOpenings());
         }
       },
       builder: (context, state) {
-        // Если это операционная ошибка, показываем предыдущее состояние
-        if (state is SupplierOpeningsOperationError) {
-          state = state.previousState;
+        // Show loading during refresh or initial load
+        if (state is SupplierOpeningsLoading || _isRefreshing) {
+          return _buildLoadingState();
         }
 
-        if (state is SupplierOpeningsLoading) {
-          return _buildLoadingState();
-        } else if (state is SupplierOpeningsError) {
+        // Show error state
+        if (state is SupplierOpeningsError) {
           return _buildErrorState(state.message);
-        } else if (state is SupplierOpeningsLoaded) {
+        }
+
+        // Show loaded data
+        if (state is SupplierOpeningsLoaded) {
           if (state.suppliers.isEmpty) {
             return _buildEmptyState();
           }
           return _buildSupplierList(state.suppliers);
         }
 
+        // Default empty state
         return _buildEmptyState();
       },
     );
   }
-}
 
-// Helper function for snackbar
-void showCustomSnackBar({
-  required BuildContext context,
-  required String message,
-  required bool isSuccess,
-}) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(
-        message,
-        style: const TextStyle(
-          fontFamily: 'Gilroy',
-          fontWeight: FontWeight.w600,
+  void _showSnackBarSafely(String message, {bool isSuccess = true}) {
+    // Use cached ScaffoldMessengerState to avoid unsafe lookups
+    if (!mounted || _scaffoldMessenger == null) return;
+
+    _scaffoldMessenger!.showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: const TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
+          ),
         ),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        backgroundColor: isSuccess ? Colors.green : Colors.red,
+        elevation: 3,
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        duration: Duration(seconds: isSuccess ? 2 : 3),
       ),
-      backgroundColor: isSuccess ? Colors.green : const Color(0xffEF4444),
-      behavior: SnackBarBehavior.floating,
-      margin: const EdgeInsets.all(16),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
-    ),
-  );
+    );
+  }
 }

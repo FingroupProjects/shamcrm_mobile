@@ -59,6 +59,7 @@ import 'package:crm_task_manager/models/page_2/call_statistics1_model.dart';
 import 'package:crm_task_manager/models/page_2/call_summary_stats_model.dart';
 import 'package:crm_task_manager/models/page_2/category_dashboard_warehouse_model.dart';
 import 'package:crm_task_manager/models/field_configuration.dart';
+import 'package:crm_task_manager/models/page_2/opening_supplier_model.dart' as opening_supplier;
 import 'package:crm_task_manager/models/page_2/order_status_warehouse_model.dart';
 import 'package:crm_task_manager/models/page_2/expense_article_dashboard_warehouse_model.dart';
 import 'package:crm_task_manager/models/page_2/category_model.dart';
@@ -16047,7 +16048,7 @@ Future<void> clearFieldConfigurationCache() async {
   }
 
   /// Получить список поставщиков для диалога выбора
-  Future<SuppliersForOpeningsResponse> getOpeningsSuppliers() async {
+  Future<opening_supplier.SuppliersForOpeningsResponse> getOpeningsSuppliers() async {
     try {
       String path = await _appendQueryParams('/initial-balance/get/suppliers');
       final response = await _getRequest(path);
@@ -16058,13 +16059,13 @@ Future<void> clearFieldConfigurationCache() async {
         // Проверяем, является ли ответ массивом (API возвращает массив напрямую)
         if (data is List) {
           // Преобразуем массив в ожидаемую структуру
-          return SuppliersForOpeningsResponse.fromJson({
+          return opening_supplier.SuppliersForOpeningsResponse.fromJson({
             'result': data,
             'errors': null,
           });
         } else {
           // Если ответ уже в правильном формате (с полем result)
-          return SuppliersForOpeningsResponse.fromJson(data);
+          return opening_supplier.SuppliersForOpeningsResponse.fromJson(data);
         }
       } else {
         final message = _extractErrorMessageFromResponse(response);

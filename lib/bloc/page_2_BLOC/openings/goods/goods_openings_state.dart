@@ -50,6 +50,16 @@ class GoodsOpeningsOperationError extends GoodsOpeningsState {
 // Состояние загрузки для операции создания
 class GoodsOpeningCreating extends GoodsOpeningsState {}
 
+// Состояние успешного создания
+class GoodsOpeningCreateSuccess extends GoodsOpeningsState {}
+
+// Состояние ошибки создания
+class GoodsOpeningCreateError extends GoodsOpeningsState {
+  final String message;
+
+  GoodsOpeningCreateError({required this.message});
+}
+
 // Состояние загрузки для операции обновления
 class GoodsOpeningUpdating extends GoodsOpeningsState {}
 

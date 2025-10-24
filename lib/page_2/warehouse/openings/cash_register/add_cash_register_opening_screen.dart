@@ -32,8 +32,8 @@ class _AddCashRegisterOpeningScreenState extends State<AddCashRegisterOpeningScr
   void initState() {
     super.initState();
 
-    // Initialize controller with default value
-    sumController = TextEditingController(text: '0');
+    // Initialize controller with empty value
+    sumController = TextEditingController();
   }
 
   @override
@@ -46,7 +46,7 @@ class _AddCashRegisterOpeningScreenState extends State<AddCashRegisterOpeningScr
   Widget build(BuildContext context) {
     return BlocListener<CashRegisterOpeningsBloc, CashRegisterOpeningsState>(
       listener: (context, state) {
-        if (state is CashRegisterOpeningsLoaded) {
+        if (state is CashRegisterOpeningCreateSuccess) {
           // Успешно создан остаток кассы, показываем сообщение
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -77,8 +77,31 @@ class _AddCashRegisterOpeningScreenState extends State<AddCashRegisterOpeningScr
               Navigator.pop(context);
             }
           });
+        } else if (state is CashRegisterOpeningCreateError) {
+          // Показываем ошибку создания
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                state.message,
+                style: const TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              backgroundColor: Colors.red,
+              elevation: 3,
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: const Duration(seconds: 3),
+            ),
+          );
         }
-        // Ошибки создания обрабатываются в cash_register_content.dart через OperationError
       },
       child: Scaffold(
         backgroundColor: Colors.white,
@@ -97,7 +120,7 @@ class _AddCashRegisterOpeningScreenState extends State<AddCashRegisterOpeningScr
             },
           ),
           title: Text(
-            AppLocalizations.of(context)!.translate('add_cash_register_opening') ?? 'Добавить остаток кассы',
+            AppLocalizations.of(context)!.translate('add_cash_register_opening'),
             style: const TextStyle(
               fontSize: 18,
               fontFamily: 'Gilroy',
@@ -124,18 +147,18 @@ class _AddCashRegisterOpeningScreenState extends State<AddCashRegisterOpeningScr
                         const SizedBox(height: 16),
                         CustomTextField(
                           controller: sumController,
-                          label: AppLocalizations.of(context)!.translate('sum') ?? 'Сумма',
-                          hintText: AppLocalizations.of(context)!.translate('enter_sum') ?? 'Введите сумму',
+                          label: AppLocalizations.of(context)!.translate('sum'),
+                          hintText: AppLocalizations.of(context)!.translate('enter_sum'),
                           keyboardType: TextInputType.number,
                           inputFormatters: [
                             PriceInputFormatter(),
                           ],
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return AppLocalizations.of(context)!.translate('field_required') ?? 'Поле обязательно для заполнения';
+                              return AppLocalizations.of(context)!.translate('field_required');
                             }
                             if (double.tryParse(value) == null) {
-                              return AppLocalizations.of(context)!.translate('enter_correct_number') ?? 'Введите корректное число';
+                              return AppLocalizations.of(context)!.translate('enter_correct_number');
                             }
                             return null;
                           },
@@ -156,7 +179,7 @@ class _AddCashRegisterOpeningScreenState extends State<AddCashRegisterOpeningScr
                         Expanded(
                           child: CustomButton(
                             buttonText:
-                            AppLocalizations.of(context)!.translate('close') ?? 'Закрыть',
+                            AppLocalizations.of(context)!.translate('close'),
                             buttonColor: const Color(0xffF4F7FD),
                             textColor: Colors.black,
                             onPressed: isCreating ? null : () {
@@ -168,7 +191,7 @@ class _AddCashRegisterOpeningScreenState extends State<AddCashRegisterOpeningScr
                         Expanded(
                           child: CustomButton(
                             buttonText:
-                            AppLocalizations.of(context)!.translate('save') ?? 'Сохранить',
+                            AppLocalizations.of(context)!.translate('save'),
                             buttonColor: const Color(0xff4759FF),
                             textColor: Colors.white,
                             isLoading: isCreating,
@@ -204,7 +227,7 @@ class _AddCashRegisterOpeningScreenState extends State<AddCashRegisterOpeningScr
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          AppLocalizations.of(context)!.translate('cash_register') ?? 'Касса',
+          AppLocalizations.of(context)!.translate('cash_register'),
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,

@@ -33,9 +33,9 @@ class _AddClientOpeningScreenState extends State<AddClientOpeningScreen> {
   void initState() {
     super.initState();
 
-    // Initialize controllers with default values
-    ourDutyController = TextEditingController(text: '0');
-    debtToUsController = TextEditingController(text: '0');
+    // Initialize controllers with empty values
+    ourDutyController = TextEditingController();
+    debtToUsController = TextEditingController();
   }
 
   @override
@@ -49,7 +49,7 @@ class _AddClientOpeningScreenState extends State<AddClientOpeningScreen> {
   Widget build(BuildContext context) {
     return BlocListener<ClientOpeningsBloc, ClientOpeningsState>(
       listener: (context, state) {
-        if (state is ClientOpeningsLoaded) {
+        if (state is ClientOpeningCreateSuccess) {
           // Успешно создан остаток клиента, показываем сообщение
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -80,8 +80,31 @@ class _AddClientOpeningScreenState extends State<AddClientOpeningScreen> {
               Navigator.pop(context);
             }
           });
+        } else if (state is ClientOpeningCreateError) {
+          // Показываем ошибку создания
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                state.message,
+                style: const TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              backgroundColor: Colors.red,
+              elevation: 3,
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: const Duration(seconds: 3),
+            ),
+          );
         }
-        // Ошибки создания обрабатываются в client_content.dart через OperationError
       },
       child: Scaffold(
         backgroundColor: Colors.white,

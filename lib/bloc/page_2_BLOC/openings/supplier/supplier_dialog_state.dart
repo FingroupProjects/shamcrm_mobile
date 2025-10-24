@@ -1,4 +1,4 @@
-import '../../../../models/page_2/supplier_model.dart';
+import '../../../../models/page_2/opening_supplier_model.dart';
 
 abstract class SupplierDialogState {}
 

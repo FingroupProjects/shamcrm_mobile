@@ -51,6 +51,16 @@ class CashRegisterOpeningsOperationError extends CashRegisterOpeningsState {
 // Состояние загрузки для операции создания
 class CashRegisterOpeningCreating extends CashRegisterOpeningsState {}
 
+// Состояние успешного создания
+class CashRegisterOpeningCreateSuccess extends CashRegisterOpeningsState {}
+
+// Состояние ошибки создания
+class CashRegisterOpeningCreateError extends CashRegisterOpeningsState {
+  final String message;
+
+  CashRegisterOpeningCreateError({required this.message});
+}
+
 // Состояние загрузки для операции обновления
 class CashRegisterOpeningUpdating extends CashRegisterOpeningsState {}
 

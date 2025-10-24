@@ -73,13 +73,15 @@ class SupplierOpeningsBloc extends Bloc<SupplierOpeningsEvent, SupplierOpeningsS
         debtToUs: event.debtToUs,
       );
       
+      // Эмитим состояние успешного создания
+      emit(SupplierOpeningCreateSuccess());
+      
       // Reload the list after successful creation
       add(LoadSupplierOpenings());
     } catch (e) {
-      // Эмитим операционную ошибку для показа в snackbar
-      emit(SupplierOpeningsOperationError(
+      // Эмитим ошибку создания
+      emit(SupplierOpeningCreateError(
         message: e.toString(),
-        previousState: state,
       ));
     }
   }

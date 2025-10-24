@@ -73,13 +73,15 @@ class ClientOpeningsBloc extends Bloc<ClientOpeningsEvent, ClientOpeningsState> 
         debtToUs: event.debtToUs,
       );
       
+      // Эмитим состояние успешного создания
+      emit(ClientOpeningCreateSuccess());
+      
       // Reload the list after successful creation
       add(LoadClientOpenings());
     } catch (e) {
-      // Эмитим операционную ошибку для показа в snackbar
-      emit(ClientOpeningsOperationError(
+      // Эмитим ошибку создания
+      emit(ClientOpeningCreateError(
         message: e.toString(),
-        previousState: state,
       ));
     }
   }

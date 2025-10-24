@@ -50,6 +50,16 @@ class SupplierOpeningsOperationError extends SupplierOpeningsState {
 // Состояние загрузки для операции создания
 class SupplierOpeningCreating extends SupplierOpeningsState {}
 
+// Состояние успешного создания
+class SupplierOpeningCreateSuccess extends SupplierOpeningsState {}
+
+// Состояние ошибки создания
+class SupplierOpeningCreateError extends SupplierOpeningsState {
+  final String message;
+
+  SupplierOpeningCreateError({required this.message});
+}
+
 // Состояние загрузки для операции обновления
 class SupplierOpeningUpdating extends SupplierOpeningsState {}
 

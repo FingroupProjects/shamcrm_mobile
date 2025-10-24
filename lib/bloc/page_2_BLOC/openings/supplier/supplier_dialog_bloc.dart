@@ -20,9 +20,9 @@ class SupplierDialogBloc extends Bloc<SupplierDialogEvent, SupplierDialogState> 
     try {
       emit(SupplierDialogLoading());
       
-      final suppliers = await _apiService.getSuppliers();
+      final suppliers = await _apiService.getOpeningsSuppliers();
       
-      emit(SupplierDialogLoaded(suppliers: suppliers));
+      emit(SupplierDialogLoaded(suppliers: suppliers.result ?? []));
     } catch (e) {
       emit(SupplierDialogError(message: e.toString()));
     }

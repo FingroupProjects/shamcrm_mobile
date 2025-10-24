@@ -4,7 +4,7 @@ import '../../../../bloc/page_2_BLOC/openings/supplier/supplier_openings_bloc.da
 import '../../../../bloc/page_2_BLOC/openings/supplier/supplier_dialog_bloc.dart';
 import '../../../../bloc/page_2_BLOC/openings/supplier/supplier_dialog_event.dart';
 import '../../../../bloc/page_2_BLOC/openings/supplier/supplier_dialog_state.dart';
-import '../../../../models/page_2/supplier_model.dart';
+import '../../../../models/page_2/opening_supplier_model.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
 import 'add_supplier_opening_screen.dart';
 
@@ -96,8 +96,8 @@ class SupplierVariantsDialog extends StatelessWidget {
             builder: (newContext) => BlocProvider.value(
               value: supplierOpeningsBloc,
               child: AddSupplierOpeningScreen(
-                supplierName: item.name,
-                supplierId: item.id,
+                supplierName: item.name ?? '',
+                supplierId: item.id ?? 0,
               ),
             ),
           ),
@@ -115,31 +115,14 @@ class SupplierVariantsDialog extends StatelessWidget {
             width: 1,
           ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              item.name,
-              style: const TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: Color(0xff1E2E52),
-              ),
-            ),
-            if (item.phone != null && item.phone!.isNotEmpty) ...[
-              const SizedBox(height: 4),
-              Text(
-                item.phone!,
-                style: const TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 13,
-                  fontWeight: FontWeight.w400,
-                  color: Color(0xff64748B),
-                ),
-              ),
-            ],
-          ],
+        child: Text(
+          item.name ?? '',
+          style: const TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: Color(0xff1E2E52),
+          ),
         ),
       ),
     );

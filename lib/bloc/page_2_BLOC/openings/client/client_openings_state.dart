@@ -49,6 +49,16 @@ class ClientOpeningsOperationError extends ClientOpeningsState {
 // Состояние загрузки для операции создания
 class ClientOpeningCreating extends ClientOpeningsState {}
 
+// Состояние успешного создания
+class ClientOpeningCreateSuccess extends ClientOpeningsState {}
+
+// Состояние ошибки создания
+class ClientOpeningCreateError extends ClientOpeningsState {
+  final String message;
+
+  ClientOpeningCreateError({required this.message});
+}
+
 // Состояние загрузки для операции обновления
 class ClientOpeningUpdating extends ClientOpeningsState {}
 

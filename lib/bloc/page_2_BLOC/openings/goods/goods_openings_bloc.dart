@@ -76,13 +76,15 @@ class GoodsOpeningsBloc extends Bloc<GoodsOpeningsEvent, GoodsOpeningsState> {
         storageId: event.storageId,
       );
       
+      // Эмитим состояние успешного создания
+      emit(GoodsOpeningCreateSuccess());
+      
       // Reload the list after successful creation
       add(LoadGoodsOpenings());
     } catch (e) {
-      // Эмитим операционную ошибку для показа в snackbar
-      emit(GoodsOpeningsOperationError(
+      // Эмитим ошибку создания
+      emit(GoodsOpeningCreateError(
         message: e.toString(),
-        previousState: state,
       ));
     }
   }
