@@ -179,6 +179,7 @@ class _OpeningsScreenState extends State<OpeningsScreen> with TickerProviderStat
                 children: [
                   const SizedBox(height: 15),
                   _buildCustomTabBar(),
+                  const SizedBox(height: 10),
                   Expanded(
                     child: _buildTabBarView(),
                   ),

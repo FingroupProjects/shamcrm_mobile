@@ -15833,7 +15833,7 @@ Future<void> clearFieldConfigurationCache() async {
   /// Удалить первоначальный остаток клиента
   Future<Map<String, dynamic>> deleteClientOpening(int id) async {
     try {
-      String path = await _appendQueryParams('/initial-balance/lead/$id');
+      String path = await _appendQueryParams('/initial-balance/$id');
       final response = await _deleteRequest(path);
 
       if (response.statusCode == 200 || response.statusCode == 204) {
