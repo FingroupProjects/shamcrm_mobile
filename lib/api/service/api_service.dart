@@ -15830,7 +15830,7 @@ Future<void> clearFieldConfigurationCache() async {
   /// Удалить первоначальный остаток товара
   Future<Map<String, dynamic>> deleteGoodsOpening(int id) async {
     try {
-      String path = await _appendQueryParams('/goods-opening-documents/$id');
+      String path = await _appendQueryParams('/good-initial-balance/$id');
       final response = await _deleteRequest(path);
 
       if (response.statusCode == 200 || response.statusCode == 204) {

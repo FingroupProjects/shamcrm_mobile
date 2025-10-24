@@ -1,4 +1,5 @@
 import '../../../../models/page_2/openings/goods_openings_model.dart';
+import '../../../../models/page_2/good_variants_model.dart' as good_variants;
 
 abstract class GoodsOpeningsState {}
 
@@ -40,6 +41,41 @@ class GoodsOpeningsPaginationError extends GoodsOpeningsState {
   final String message;
 
   GoodsOpeningsPaginationError({required this.message});
+}
+
+// States for good variants
+class GoodsOpeningsGoodVariantsInitial extends GoodsOpeningsState {}
+
+class GoodsOpeningsGoodVariantsLoading extends GoodsOpeningsState {}
+
+class GoodsOpeningsGoodVariantsLoaded extends GoodsOpeningsState {
+  final List<good_variants.GoodVariantItem> variants;
+  final good_variants.Pagination? pagination;
+  final int currentPage;
+
+  GoodsOpeningsGoodVariantsLoaded({
+    required this.variants,
+    this.pagination,
+    required this.currentPage,
+  });
+
+  GoodsOpeningsGoodVariantsLoaded copyWith({
+    List<good_variants.GoodVariantItem>? variants,
+    good_variants.Pagination? pagination,
+    int? currentPage,
+  }) {
+    return GoodsOpeningsGoodVariantsLoaded(
+      variants: variants ?? this.variants,
+      pagination: pagination ?? this.pagination,
+      currentPage: currentPage ?? this.currentPage,
+    );
+  }
+}
+
+class GoodsOpeningsGoodVariantsError extends GoodsOpeningsState {
+  final String message;
+
+  GoodsOpeningsGoodVariantsError({required this.message});
 }
 
 class Pagination {

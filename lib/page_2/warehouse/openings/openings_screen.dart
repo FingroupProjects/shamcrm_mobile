@@ -331,7 +331,10 @@ class _OpeningsScreenState extends State<OpeningsScreen> with TickerProviderStat
 
     showDialog(
       context: context,
-      builder: (context) => dialog,
+      builder: (context) => BlocProvider.value(
+        value: _goodsBloc,
+        child: dialog,
+      ),
     );
   }
 }

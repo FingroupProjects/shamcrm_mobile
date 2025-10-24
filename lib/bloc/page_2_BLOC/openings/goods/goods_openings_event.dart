@@ -45,3 +45,16 @@ class CreateGoodsOpening extends GoodsOpeningsEvent {
     required this.storageId,
   });
 }
+
+// Events for good variants
+class LoadGoodsOpeningsGoodVariants extends GoodsOpeningsEvent {
+  final int page;
+  final int perPage;
+
+  LoadGoodsOpeningsGoodVariants({
+    this.page = 1,
+    this.perPage = 15,
+  });
+}
+
+class RefreshGoodsOpeningsGoodVariants extends GoodsOpeningsEvent {}
