@@ -231,7 +231,6 @@ class _AddCashRegisterOpeningScreenState extends State<AddCashRegisterOpeningScr
       ],
     );
   }
-
 }
 
 /*

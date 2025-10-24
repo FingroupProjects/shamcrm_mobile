@@ -65,12 +65,17 @@ class _CashRegisterContentState extends State<CashRegisterContent> {
           return CashRegisterCard(
             cashRegister: cashRegisters[index],
             onClick: (cashRegister) {
+              final bloc = context.read<CashRegisterOpeningsBloc>();
+
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => CashRegisterOpeningDetailsScreen(
-                    opening: cashRegister,
+                  builder: (context) => BlocProvider.value(
+                    value: bloc,
+                    child: CashRegisterOpeningDetailsScreen(
+                      opening: cashRegister,
                   ),
+                      ),
                 ),
               );
             },

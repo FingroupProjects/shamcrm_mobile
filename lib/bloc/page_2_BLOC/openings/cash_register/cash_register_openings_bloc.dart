@@ -14,8 +14,10 @@ class CashRegisterOpeningsBloc extends Bloc<CashRegisterOpeningsEvent, CashRegis
     on<LoadCashRegisterOpenings>(_onLoadCashRegisterOpenings);
     on<RefreshCashRegisterOpenings>(_onRefreshCashRegisterOpenings);
     on<DeleteCashRegisterOpening>(_onDeleteCashRegisterOpening);
+
     on<LoadCashRegisterLeads>(_onLoadCashRegisterLeads);
     on<RefreshCashRegisterLeads>(_onRefreshCashRegisterLeads);
+
     on<CreateCashRegisterOpening>(_onCreateCashRegisterOpening);
     on<UpdateCashRegisterOpening>(_onUpdateCashRegisterOpening);
   }
@@ -141,10 +143,12 @@ class CashRegisterOpeningsBloc extends Bloc<CashRegisterOpeningsEvent, CashRegis
         sum: event.sum,
       );
 
+      emit(CashRegisterOpeningUpdateSuccess());
+      
       // Reload the list after successful update
       add(LoadCashRegisterOpenings(page: 1));
     } catch (e) {
-      emit(CashRegisterOpeningsError(message: e.toString()));
+      emit(CashRegisterOpeningUpdateError(message: e.toString()));
     }
   }
 }

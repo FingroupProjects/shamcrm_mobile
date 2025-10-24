@@ -7,6 +7,7 @@ import '../../../../models/page_2/openings/cash_register_openings_model.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
 import '../../../../bloc/page_2_BLOC/openings/cash_register/cash_register_openings_bloc.dart';
 import '../../../../bloc/page_2_BLOC/openings/cash_register/cash_register_openings_event.dart';
+import '../../../../bloc/cash_register_list/cash_register_list_bloc.dart';
 import '../opening_delete_dialog.dart';
 import 'edit_cash_register_opening_screen.dart';
 
@@ -25,8 +26,7 @@ class CashRegisterOpeningDetailsScreen extends StatefulWidget {
       _CashRegisterOpeningDetailsScreenState();
 }
 
-class _CashRegisterOpeningDetailsScreenState
-    extends State<CashRegisterOpeningDetailsScreen> {
+class _CashRegisterOpeningDetailsScreenState extends State<CashRegisterOpeningDetailsScreen> {
   late CashRegisterOpening currentOpening;
   List<Map<String, dynamic>> details = [];
   bool _isLoading = false;
@@ -45,17 +45,17 @@ class _CashRegisterOpeningDetailsScreenState
 
   void _updateDetails() {
     final localizations = AppLocalizations.of(context)!;
-    
+
     final cashRegisterName = currentOpening.cashRegister?.name;
     final displayName = (cashRegisterName == null || cashRegisterName.isEmpty) ? 'N/A' : cashRegisterName;
-    
+
     details = [
       {
-        'label': '${localizations.translate('name') ?? 'Название'}:',
+        'label': '${localizations.translate('name')}:',
         'value': displayName,
       },
       {
-        'label': '${localizations.translate('balance') ?? 'Баланс'}:',
+        'label': '${localizations.translate('balance')}:',
         'value': _formatAmount(currentOpening.sum ?? '0'),
       },
     ];
@@ -92,7 +92,7 @@ class _CashRegisterOpeningDetailsScreenState
 
   AppBar _buildAppBar(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    
+
     return AppBar(
       backgroundColor: Colors.white,
       forceMaterialTransparency: true,
@@ -116,7 +116,7 @@ class _CashRegisterOpeningDetailsScreenState
       title: Transform.translate(
         offset: const Offset(-10, 0),
         child: Text(
-          localizations.translate('cash_register_opening_details') ?? 'Остаток кассы',
+          localizations.translate('cash_register_opening_details'),
           style: const TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
@@ -139,14 +139,30 @@ class _CashRegisterOpeningDetailsScreenState
               ),
               onPressed: () async {
                 if (_isLoading) return;
+
+                // Get both blocs from the current context
+                final openingsBloc = context.read<CashRegisterOpeningsBloc>();
+                final cashRegisterBloc = context.read<GetAllCashRegisterBloc>();
+
                 final result = await Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => EditCashRegisterOpeningScreen(
-                      cashRegisterOpening: currentOpening,
+                    builder: (context) => MultiBlocProvider(
+                      providers: [
+                        BlocProvider.value(
+                          value: openingsBloc,
+                        ),
+                        BlocProvider.value(
+                          value: cashRegisterBloc,
+                        ),
+                      ],
+                      child: EditCashRegisterOpeningScreen(
+                        cashRegisterOpening: currentOpening,
+                      ),
                     ),
                   ),
                 );
+
                 if (result == true) {
                   Navigator.pop(context, true);
                   if (widget.onOpeningUpdated != null) {
@@ -238,4 +254,3 @@ class _CashRegisterOpeningDetailsScreenState
     );
   }
 }
-

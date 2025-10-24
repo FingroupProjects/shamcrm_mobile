@@ -310,41 +310,40 @@ class _OpeningsScreenState extends State<OpeningsScreen> with TickerProviderStat
 
   void _showCreateDialog() {
     final id = _tabTitles[_currentTabIndex]['id'];
-    
 
     if (id == 0) {
       showDialog(
-      context: context,
-      builder: (context) => BlocProvider.value(
-        value: _supplierBloc,
-        child: const CreateSupplierOpeningDialog(),
-      ),
-    );
+        context: context,
+        builder: (dialogContext) => BlocProvider.value(
+          value: _supplierBloc,
+          child: const CreateSupplierOpeningDialog(),
+        ),
+      );
     } else if (id == 1) {
       showDialog(
-      context: context,
-      builder: (context) => BlocProvider.value(
-        value: _clientBloc,
-        child: const CreateClientOpeningDialog(),
-      ),
-    );
+        context: context,
+        builder: (dialogContext) => BlocProvider.value(
+          value: _clientBloc,
+          child: const CreateClientOpeningDialog(),
+        ),
+      );
     } else if (id == 2) {
       showDialog(
-      context: context,
-      builder: (context) => BlocProvider.value(
-        value: _goodsBloc,
-        child: const CreateGoodsOpeningDialog(),
-      ),
-    );
+        context: context,
+        builder: (dialogContext) => BlocProvider.value(
+          value: _goodsBloc,
+          child: const CreateGoodsOpeningDialog(),
+        ),
+      );
     } else if (id == 3) {
       showDialog(
-      context: context,
-      builder: (context) => BlocProvider.value(
-        value: _cashRegisterBloc,
-        child: const CreateCashRegisterOpeningDialog(),
-      ),
-    );}
-    else {
+        context: context,
+        builder: (dialogContext) => BlocProvider.value(
+          value: _cashRegisterBloc,
+          child: const CreateCashRegisterOpeningDialog(),
+        ),
+      );
+    } else {
       return;
     }
   }

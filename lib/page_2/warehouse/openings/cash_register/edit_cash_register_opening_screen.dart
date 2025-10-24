@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/openings/cash_register/cash_register_openings_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/openings/cash_register/cash_register_openings_event.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/openings/cash_register/cash_register_openings_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
@@ -59,9 +60,60 @@ class _EditCashRegisterOpeningScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
+    return BlocListener<CashRegisterOpeningsBloc, CashRegisterOpeningsState>(
+      listener: (context, state) {
+        if (state is CashRegisterOpeningUpdateSuccess) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(context)!.translate('successfully_updated'),
+                style: const TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              backgroundColor: Colors.green,
+              elevation: 3,
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+          Navigator.pop(context, true);
+        } else if (state is CashRegisterOpeningUpdateError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                state.message,
+                style: const TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              backgroundColor: Colors.red,
+              elevation: 3,
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
         forceMaterialTransparency: true,
         backgroundColor: Colors.white,
         elevation: 0,
@@ -164,6 +216,7 @@ class _EditCashRegisterOpeningScreenState
           ],
         ),
       ),
+    ),
     );
   }
 

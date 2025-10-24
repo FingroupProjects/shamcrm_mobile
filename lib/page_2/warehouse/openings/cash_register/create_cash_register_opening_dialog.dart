@@ -50,48 +50,27 @@ class CashRegisterLeadsDialog extends StatelessWidget {
   }
 
   Widget _buildCashRegistersList(BuildContext context, List<CashRegister> cashRegisters) {
+    if (cashRegisters.isEmpty) {
+      return SizedBox(
+        height: 300,
+        child: Center(
+          child: Text(
+            _translate(context, 'no_data_to_display', 'Нет данных для отображения'),
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Color(0xff475569),
+            ),
+          ),
+        ),
+      );
+    }
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Отображаем список касс
-        if (cashRegisters.isEmpty)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: const Color(0xffF8FAFC),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: const Color(0xffE2E8F0),
-                width: 1,
-              ),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.account_balance_wallet_outlined,
-                  size: 48,
-                  color: Color(0xff64748B),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  _translate(context, 'no_data_to_display', 'Нет данных для отображения'),
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xff475569),
-                  ),
-                ),
-              ],
-            ),
-          )
-        else
-          ...cashRegisters.map((cashRegister) => _buildCashRegisterCard(context, cashRegister)).toList(),
-      ],
+      children: cashRegisters.map((cashRegister) => _buildCashRegisterCard(context, cashRegister)).toList(),
     );
   }
 
@@ -206,22 +185,9 @@ class CashRegisterLeadsDialog extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.account_balance_wallet_outlined,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      _translate(context, 'select_cash_register', 'Выберите кассу'),
+                      'Выберите кассу',
                       style: const TextStyle(
                         fontFamily: 'Gilroy',
                         fontSize: 18,

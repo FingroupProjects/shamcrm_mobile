@@ -56,6 +56,14 @@ class CashRegisterLeadsError extends CashRegisterOpeningsState {
   CashRegisterLeadsError({required this.message});
 }
 
+class CashRegisterOpeningUpdateSuccess extends CashRegisterOpeningsState {}
+
+class CashRegisterOpeningUpdateError extends CashRegisterOpeningsState {
+  final String message;
+
+  CashRegisterOpeningUpdateError({required this.message});
+}
+
 class Pagination {
   final int total;
   final int count;
