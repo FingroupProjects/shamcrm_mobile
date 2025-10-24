@@ -6,7 +6,6 @@ class CashRegisterCard extends StatelessWidget {
   final CashRegisterOpening cashRegister;
   final Function(CashRegisterOpening) onClick;
   final Function(CashRegisterOpening) onLongPress;
-  final Function(CashRegisterOpening)? onEdit;
   final Function(CashRegisterOpening)? onDelete;
   final bool isSelectionMode;
   final bool isSelected;
@@ -16,7 +15,6 @@ class CashRegisterCard extends StatelessWidget {
     required this.cashRegister,
     required this.onClick,
     required this.onLongPress,
-    this.onEdit,
     this.onDelete,
     this.isSelectionMode = false,
     this.isSelected = false,
@@ -48,7 +46,7 @@ class CashRegisterCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Название: ${cashRegister.cashRegister.name}',
+                    'Название: ${cashRegister.cashRegister?.name ?? 'N/A'}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
@@ -58,7 +56,7 @@ class CashRegisterCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Баланс: ${_formatAmount(cashRegister.sum)}',
+                    'Баланс: ${_formatAmount(cashRegister.sum ?? '0')}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
@@ -70,35 +68,15 @@ class CashRegisterCard extends StatelessWidget {
               ),
             ),
             // Action buttons
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (onEdit != null)
-                  GestureDetector(
-                    onTap: () => onEdit!(cashRegister),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      child: Icon(
-                        Icons.edit_outlined,
-                        color: const Color(0xff99A4BA),
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                if (onDelete != null)
-                  GestureDetector(
-                    onTap: () => onDelete!(cashRegister),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      child: Icon(
-                        Icons.delete_outline,
-                        color: const Color(0xff99A4BA),
-                        size: 20,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
+            if (onDelete != null)
+              GestureDetector(
+                child: Image.asset(
+                  'assets/icons/delete.png',
+                  width: 24,
+                  height: 24,
+                ),
+                onTap: () => onDelete!(cashRegister),
+              ),
             if (isSelectionMode) ...[
               Padding(
                 padding: const EdgeInsets.only(left: 8),

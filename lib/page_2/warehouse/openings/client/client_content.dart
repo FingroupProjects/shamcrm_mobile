@@ -7,6 +7,7 @@ import '../../../../bloc/page_2_BLOC/openings/client/client_openings_event.dart'
 import '../../../../bloc/page_2_BLOC/openings/client/client_openings_state.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
 import 'client_card.dart';
+import 'edit_client_opening_screen.dart';
 
 class ClientContent extends StatefulWidget {
   const ClientContent({super.key});
@@ -85,13 +86,17 @@ class _ClientContentState extends State<ClientContent> {
           return ClientCard(
             client: clients[index],
             onClick: (client) {
-              // Handle client click
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => EditClientOpeningScreen(
+                    clientOpening: client,
+                  ),
+                ),
+              );
             },
             onLongPress: (client) {
               // Handle client long press
-            },
-            onEdit: (client) {
-              // Handle edit action
             },
             onDelete: (client) {
               // Handle delete action

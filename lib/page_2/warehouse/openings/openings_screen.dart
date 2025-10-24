@@ -9,7 +9,7 @@ import '../../../bloc/page_2_BLOC/openings/goods/goods_openings_bloc.dart';
 import '../../../bloc/page_2_BLOC/openings/goods/goods_openings_event.dart';
 import '../../../bloc/page_2_BLOC/openings/cash_register/cash_register_openings_bloc.dart';
 import '../../../bloc/page_2_BLOC/openings/cash_register/cash_register_openings_event.dart';
-import '../../../custom_widget/custom_app_bar_reports.dart';
+import '../../../custom_widget/custom_app_bar_simple.dart';
 import '../../../screens/profile/languages/app_localizations.dart';
 import '../../../screens/profile/profile_screen.dart';
 import 'supplier/supplier_content.dart';
@@ -191,7 +191,7 @@ class _OpeningsScreenState extends State<OpeningsScreen> with TickerProviderStat
           elevation: 0,
           backgroundColor: Colors.white,
           automaticallyImplyLeading: !isClickAvatarIcon,
-          title: CustomAppBarReports(
+          title: CustomAppBarSimple(
             title: isClickAvatarIcon
                 ? localizations!.translate('appbar_settings')
                 : localizations!.translate('appbar_openings') ?? 'Первоначальный остаток',
@@ -200,19 +200,13 @@ class _OpeningsScreenState extends State<OpeningsScreen> with TickerProviderStat
                 isClickAvatarIcon = !isClickAvatarIcon;
               });
             },
-            clearButtonClickFilter: (isSearching) {},
-            showSearchIcon: !isClickAvatarIcon,
-            showFilterIcon: false, // No filters for now
-            currentTabIndex: _currentTabIndex,
+            showSearchIcon: false, // Скрыть поиск
             onChangedSearchInput: _onSearch,
             textEditingController: _searchController,
             focusNode: _searchFocusNode,
             clearButtonClick: (isSearching) {
               _resetSearch();
             },
-            currentFilters: {}, // No filters
-            onFilterSelected: (filters) {}, // No filters
-            onResetFilters: () {}, // No filters
           ),
         ),
         body: isClickAvatarIcon

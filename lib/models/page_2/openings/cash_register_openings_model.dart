@@ -25,22 +25,22 @@ class CashRegisterOpeningsResponse {
 }
 
 class CashRegisterOpening {
-  final int id;
-  final int cashRegisterId;
-  final String sum;
-  final DateTime createdAt;
-  final DateTime updatedAt;
-  final int cashId;
-  final CashRegister cashRegister;
+  final int? id;
+  final int? cashRegisterId;
+  final String? sum;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  final int? cashId;
+  final CashRegister? cashRegister;
 
   CashRegisterOpening({
-    required this.id,
-    required this.cashRegisterId,
-    required this.sum,
-    required this.createdAt,
-    required this.updatedAt,
-    required this.cashId,
-    required this.cashRegister,
+    this.id,
+    this.cashRegisterId,
+    this.sum,
+    this.createdAt,
+    this.updatedAt,
+    this.cashId,
+    this.cashRegister,
   });
 
   factory CashRegisterOpening.fromJson(Map<String, dynamic> json) =>
@@ -48,51 +48,61 @@ class CashRegisterOpening {
         id: json["id"],
         cashRegisterId: json["cash_register_id"],
         sum: json["sum"],
-        createdAt: DateTime.parse(json["created_at"]),
-        updatedAt: DateTime.parse(json["updated_at"]),
+        createdAt: json["created_at"] == null
+            ? null
+            : DateTime.parse(json["created_at"]),
+        updatedAt: json["updated_at"] == null
+            ? null
+            : DateTime.parse(json["updated_at"]),
         cashId: json["cash_id"],
-        cashRegister: CashRegister.fromJson(json["cash_register"]),
+        cashRegister: json["cash_register"] == null
+            ? null
+            : CashRegister.fromJson(json["cash_register"]),
       );
 
   Map<String, dynamic> toJson() => {
         "id": id,
         "cash_register_id": cashRegisterId,
         "sum": sum,
-        "created_at": createdAt.toIso8601String(),
-        "updated_at": updatedAt.toIso8601String(),
+        "created_at": createdAt?.toIso8601String(),
+        "updated_at": updatedAt?.toIso8601String(),
         "cash_id": cashId,
-        "cash_register": cashRegister.toJson(),
+        "cash_register": cashRegister?.toJson(),
       };
 }
 
 class CashRegister {
-  final int id;
-  final String name;
-  final int organizationId;
-  final DateTime createdAt;
-  final DateTime updatedAt;
+  final int? id;
+  final String? name;
+  final int? organizationId;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
 
   CashRegister({
-    required this.id,
-    required this.name,
-    required this.organizationId,
-    required this.createdAt,
-    required this.updatedAt,
+    this.id,
+    this.name,
+    this.organizationId,
+    this.createdAt,
+    this.updatedAt,
   });
 
   factory CashRegister.fromJson(Map<String, dynamic> json) => CashRegister(
         id: json["id"],
         name: json["name"],
         organizationId: json["organization_id"],
-        createdAt: DateTime.parse(json["created_at"]),
-        updatedAt: DateTime.parse(json["updated_at"]),
+        createdAt: json["created_at"] == null
+            ? null
+            : DateTime.parse(json["created_at"]),
+        updatedAt: json["updated_at"] == null
+            ? null
+            : DateTime.parse(json["updated_at"]),
       );
 
   Map<String, dynamic> toJson() => {
         "id": id,
         "name": name,
         "organization_id": organizationId,
-        "created_at": createdAt.toIso8601String(),
-        "updated_at": updatedAt.toIso8601String(),
+        "created_at": createdAt?.toIso8601String(),
+        "updated_at": updatedAt?.toIso8601String(),
       };
 }

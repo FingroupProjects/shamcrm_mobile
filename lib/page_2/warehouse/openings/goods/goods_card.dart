@@ -7,7 +7,6 @@ class GoodsCard extends StatelessWidget {
   final GoodsOpeningDocument goods;
   final Function(GoodsOpeningDocument) onClick;
   final Function(GoodsOpeningDocument) onLongPress;
-  final Function(GoodsOpeningDocument)? onEdit;
   final Function(GoodsOpeningDocument)? onDelete;
   final bool isSelectionMode;
   final bool isSelected;
@@ -17,7 +16,6 @@ class GoodsCard extends StatelessWidget {
     required this.goods,
     required this.onClick,
     required this.onLongPress,
-    this.onEdit,
     this.onDelete,
     this.isSelectionMode = false,
     this.isSelected = false,
@@ -32,7 +30,7 @@ class GoodsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     
     // Берем первый товар из документа для отображения основной информации
-    final firstGood = goods.documentGoods.isNotEmpty ? goods.documentGoods.first : null;
+    final firstGood = goods.documentGoods != null && goods.documentGoods!.isNotEmpty ? goods.documentGoods!.first : null;
 
     return GestureDetector(
       onTap: () => onClick(goods),
@@ -52,7 +50,7 @@ class GoodsCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Название: ${firstGood?.goodVariant.fullName ?? goods.docNumber}',
+                    'Название: ${firstGood?.goodVariant?.fullName ?? goods.docNumber ?? 'N/A'}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
@@ -62,7 +60,7 @@ class GoodsCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Ед. изм.: ${firstGood?.unit.shortName ?? ''}',
+                    'Ед. изм.: ${firstGood?.unit?.shortName ?? ''}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
@@ -72,7 +70,7 @@ class GoodsCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Поставщик: ${goods.model.name}',
+                    'Поставщик: ${goods.model?.name ?? 'N/A'}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
@@ -82,7 +80,7 @@ class GoodsCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Склад: ${goods.storage.name}',
+                    'Склад: ${goods.storage?.name ?? 'N/A'}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
@@ -114,35 +112,15 @@ class GoodsCard extends StatelessWidget {
               ),
             ),
             // Action buttons
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (onEdit != null)
-                  GestureDetector(
-                    onTap: () => onEdit!(goods),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      child: Icon(
-                        Icons.edit_outlined,
-                        color: const Color(0xff99A4BA),
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                if (onDelete != null)
-                  GestureDetector(
-                    onTap: () => onDelete!(goods),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      child: Icon(
-                        Icons.delete_outline,
-                        color: const Color(0xff99A4BA),
-                        size: 20,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
+            if (onDelete != null)
+              GestureDetector(
+                child: Image.asset(
+                  'assets/icons/delete.png',
+                  width: 24,
+                  height: 24,
+                ),
+                onTap: () => onDelete!(goods),
+              ),
             if (isSelectionMode) ...[
               Padding(
                 padding: const EdgeInsets.only(left: 8),

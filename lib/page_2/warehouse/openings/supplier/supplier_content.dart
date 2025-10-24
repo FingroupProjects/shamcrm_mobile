@@ -7,6 +7,7 @@ import '../../../../bloc/page_2_BLOC/openings/supplier/supplier_openings_event.d
 import '../../../../bloc/page_2_BLOC/openings/supplier/supplier_openings_state.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
 import 'supplier_card.dart';
+import 'edit_supplier_opening_screen.dart';
 
 class SupplierContent extends StatefulWidget {
   const SupplierContent({super.key});
@@ -85,13 +86,17 @@ class _SupplierContentState extends State<SupplierContent> {
           return SupplierCard(
             supplier: suppliers[index],
             onClick: (supplier) {
-              // Handle supplier click
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => EditSupplierOpeningScreen(
+                    supplierOpening: supplier,
+                  ),
+                ),
+              );
             },
             onLongPress: (supplier) {
               // Handle supplier long press
-            },
-            onEdit: (supplier) {
-              // Handle edit action
             },
             onDelete: (supplier) {
               // Handle delete action

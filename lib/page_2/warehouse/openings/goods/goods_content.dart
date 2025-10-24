@@ -7,6 +7,7 @@ import '../../../../bloc/page_2_BLOC/openings/goods/goods_openings_event.dart';
 import '../../../../bloc/page_2_BLOC/openings/goods/goods_openings_state.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
 import 'goods_card.dart';
+import 'edit_goods_opening_screen.dart';
 
 class GoodsContent extends StatefulWidget {
   const GoodsContent({super.key});
@@ -85,13 +86,17 @@ class _GoodsContentState extends State<GoodsContent> {
           return GoodsCard(
             goods: goods[index],
             onClick: (goods) {
-              // Handle goods click
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => EditGoodsOpeningScreen(
+                    goodsOpening: goods,
+                  ),
+                ),
+              );
             },
             onLongPress: (goods) {
               // Handle goods long press
-            },
-            onEdit: (goods) {
-              // Handle edit action
             },
             onDelete: (goods) {
               // Handle delete action

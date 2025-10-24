@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'cash_register_card.dart';
+import 'edit_cash_register_opening_screen.dart';
 
 class CashRegisterContent extends StatefulWidget {
   const CashRegisterContent({super.key});
@@ -85,13 +86,17 @@ class _CashRegisterContentState extends State<CashRegisterContent> {
           return CashRegisterCard(
             cashRegister: cashRegisters[index],
             onClick: (cashRegister) {
-              // Handle cash register click
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => EditCashRegisterOpeningScreen(
+                    cashRegisterOpening: cashRegister,
+                  ),
+                ),
+              );
             },
             onLongPress: (cashRegister) {
               // Handle cash register long press
-            },
-            onEdit: (cashRegister) {
-              // Handle edit action
             },
             onDelete: (cashRegister) {
               // Handle delete action

@@ -7,7 +7,6 @@ class ClientCard extends StatelessWidget {
   final ClientOpening client;
   final Function(ClientOpening) onClick;
   final Function(ClientOpening) onLongPress;
-  final Function(ClientOpening)? onEdit;
   final Function(ClientOpening)? onDelete;
   final bool isSelectionMode;
   final bool isSelected;
@@ -17,7 +16,6 @@ class ClientCard extends StatelessWidget {
     required this.client,
     required this.onClick,
     required this.onLongPress,
-    this.onEdit,
     this.onDelete,
     this.isSelectionMode = false,
     this.isSelected = false,
@@ -49,7 +47,7 @@ class ClientCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Название: ${client.counterparty.name}',
+                    'Название: ${client.counterparty?.name ?? 'N/A'}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
@@ -59,7 +57,7 @@ class ClientCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Наш долг: ${_formatAmount(client.ourDuty)}',
+                    'Наш долг: ${_formatAmount(client.ourDuty ?? '0')}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
@@ -69,7 +67,7 @@ class ClientCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Долг клиента: ${_formatAmount(client.debtToUs)}',
+                    'Долг клиента: ${_formatAmount(client.debtToUs ?? '0')}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
@@ -81,35 +79,15 @@ class ClientCard extends StatelessWidget {
               ),
             ),
             // Action buttons
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (onEdit != null)
-                  GestureDetector(
-                    onTap: () => onEdit!(client),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      child: Icon(
-                        Icons.edit_outlined,
-                        color: const Color(0xff99A4BA),
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                if (onDelete != null)
-                  GestureDetector(
-                    onTap: () => onDelete!(client),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      child: Icon(
-                        Icons.delete_outline,
-                        color: const Color(0xff99A4BA),
-                        size: 20,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
+            if (onDelete != null)
+              GestureDetector(
+                child: Image.asset(
+                  'assets/icons/delete.png',
+                  width: 24,
+                  height: 24,
+                ),
+                onTap: () => onDelete!(client),
+              ),
             if (isSelectionMode) ...[
               Padding(
                 padding: const EdgeInsets.only(left: 8),

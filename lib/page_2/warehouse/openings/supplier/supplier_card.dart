@@ -7,7 +7,6 @@ class SupplierCard extends StatelessWidget {
   final SupplierOpening supplier;
   final Function(SupplierOpening) onClick;
   final Function(SupplierOpening) onLongPress;
-  final Function(SupplierOpening)? onEdit;
   final Function(SupplierOpening)? onDelete;
   final bool isSelectionMode;
   final bool isSelected;
@@ -17,7 +16,6 @@ class SupplierCard extends StatelessWidget {
     required this.supplier,
     required this.onClick,
     required this.onLongPress,
-    this.onEdit,
     this.onDelete,
     this.isSelectionMode = false,
     this.isSelected = false,
@@ -49,7 +47,7 @@ class SupplierCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Название: ${supplier.counterparty.name}',
+                    'Название: ${supplier.counterparty?.name ?? 'N/A'}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
@@ -59,7 +57,7 @@ class SupplierCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Наш долг: ${_formatAmount(supplier.ourDuty)}',
+                    'Наш долг: ${_formatAmount(supplier.ourDuty ?? '0')}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
@@ -69,7 +67,7 @@ class SupplierCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Долг поставщика: ${_formatAmount(supplier.debtToUs)}',
+                    'Долг поставщика: ${_formatAmount(supplier.debtToUs ?? '0')}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
@@ -81,35 +79,15 @@ class SupplierCard extends StatelessWidget {
               ),
             ),
             // Action buttons
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (onEdit != null)
-                  GestureDetector(
-                    onTap: () => onEdit!(supplier),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      child: Icon(
-                        Icons.edit_outlined,
-                        color: const Color(0xff99A4BA),
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                if (onDelete != null)
-                  GestureDetector(
-                    onTap: () => onDelete!(supplier),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      child: Icon(
-                        Icons.delete_outline,
-                        color: const Color(0xff99A4BA),
-                        size: 20,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
+            if (onDelete != null)
+              GestureDetector(
+                child: Image.asset(
+                  'assets/icons/delete.png',
+                  width: 24,
+                  height: 24,
+                ),
+                onTap: () => onDelete!(supplier),
+              ),
             if (isSelectionMode) ...[
               Padding(
                 padding: const EdgeInsets.only(left: 8),
