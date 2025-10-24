@@ -21,3 +21,9 @@ class RefreshGoodsOpenings extends GoodsOpeningsEvent {
     this.filter,
   });
 }
+
+class DeleteGoodsOpening extends GoodsOpeningsEvent {
+  final int id;
+
+  DeleteGoodsOpening({required this.id});
+}

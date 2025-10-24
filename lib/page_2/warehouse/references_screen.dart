@@ -200,7 +200,7 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
       );
     }
 
-    if (false) {
+    if (_hasOpenings) {
       allReferences.add(
         ReferenceItem(
           title: AppLocalizations.of(context)!.translate('openings') ?? 'Первоначальный остаток',

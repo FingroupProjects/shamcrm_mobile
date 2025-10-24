@@ -8,6 +8,7 @@ import '../../../../bloc/page_2_BLOC/openings/goods/goods_openings_state.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
 import 'goods_card.dart';
 import 'edit_goods_opening_screen.dart';
+import '../opening_delete_dialog.dart';
 
 class GoodsContent extends StatefulWidget {
   const GoodsContent({super.key});
@@ -99,7 +100,19 @@ class _GoodsContentState extends State<GoodsContent> {
               // Handle goods long press
             },
             onDelete: (goods) {
-              // Handle delete action
+              final bloc = context.read<GoodsOpeningsBloc>();
+              showDialog(
+                context: context,
+                builder: (dialogContext) => OpeningDeleteDialog(
+                  openingId: goods.id ?? 0,
+                  openingType: OpeningType.goods,
+                  onConfirmDelete: () {
+                    bloc.add(
+                      DeleteGoodsOpening(id: goods.id ?? 0),
+                    );
+                  },
+                ),
+              );
             },
           );
         },

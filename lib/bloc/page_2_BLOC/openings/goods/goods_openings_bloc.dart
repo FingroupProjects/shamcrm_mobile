@@ -13,6 +13,7 @@ class GoodsOpeningsBloc extends Bloc<GoodsOpeningsEvent, GoodsOpeningsState> {
   GoodsOpeningsBloc() : super(GoodsOpeningsInitial()) {
     on<LoadGoodsOpenings>(_onLoadGoodsOpenings);
     on<RefreshGoodsOpenings>(_onRefreshGoodsOpenings);
+    on<DeleteGoodsOpening>(_onDeleteGoodsOpening);
   }
 
   Future<void> _onLoadGoodsOpenings(
@@ -71,5 +72,19 @@ class GoodsOpeningsBloc extends Bloc<GoodsOpeningsEvent, GoodsOpeningsState> {
       search: event.search,
       filter: event.filter,
     ));
+  }
+
+  Future<void> _onDeleteGoodsOpening(
+    DeleteGoodsOpening event,
+    Emitter<GoodsOpeningsState> emit,
+  ) async {
+    try {
+      await _apiService.deleteGoodsOpening(event.id);
+      
+      // Reload the list after successful deletion
+      add(LoadGoodsOpenings(page: 1));
+    } catch (e) {
+      emit(GoodsOpeningsError(message: e.toString()));
+    }
   }
 }

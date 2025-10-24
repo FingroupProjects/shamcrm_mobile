@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'cash_register_card.dart';
 import 'edit_cash_register_opening_screen.dart';
+import '../opening_delete_dialog.dart';
 
 class CashRegisterContent extends StatefulWidget {
   const CashRegisterContent({super.key});
@@ -99,7 +100,19 @@ class _CashRegisterContentState extends State<CashRegisterContent> {
               // Handle cash register long press
             },
             onDelete: (cashRegister) {
-              // Handle delete action
+              final bloc = context.read<CashRegisterOpeningsBloc>();
+              showDialog(
+                context: context,
+                builder: (dialogContext) => OpeningDeleteDialog(
+                  openingId: cashRegister.id ?? 0,
+                  openingType: OpeningType.cashRegister,
+                  onConfirmDelete: () {
+                    bloc.add(
+                      DeleteCashRegisterOpening(id: cashRegister.id ?? 0),
+                    );
+                  },
+                ),
+              );
             },
           );
         },

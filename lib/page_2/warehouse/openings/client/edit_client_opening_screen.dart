@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../../../models/page_2/openings/client_openings_model.dart';
+import '../../../../models/lead_list_model.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
+import '../../../../screens/deal/tabBar/lead_list.dart';
 import '../../../../custom_widget/custom_button.dart';
+import '../../../../custom_widget/custom_textfield.dart';
+import '../../../../custom_widget/price_input_formatter.dart';
 
 class EditClientOpeningScreen extends StatefulWidget {
   final ClientOpening clientOpening;
@@ -16,6 +20,41 @@ class EditClientOpeningScreen extends StatefulWidget {
 
 class _EditClientOpeningScreenState extends State<EditClientOpeningScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  
+  // Controllers for debt fields
+  late TextEditingController ourDebtController;
+  late TextEditingController theirDebtController;
+  
+  // Client selection
+  LeadData? _selectedLead;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    // Initialize controllers with existing values
+    ourDebtController = TextEditingController(
+      text: widget.clientOpening.ourDuty ?? '0',
+    );
+    theirDebtController = TextEditingController(
+      text: widget.clientOpening.debtToUs ?? '0',
+    );
+    
+    // Initialize selected client
+    if (widget.clientOpening.counterpartyId != null) {
+      _selectedLead = LeadData(
+        id: widget.clientOpening.counterpartyId!,
+        name: widget.clientOpening.counterparty?.name ?? '',
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    ourDebtController.dispose();
+    theirDebtController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -60,17 +99,48 @@ class _EditClientOpeningScreenState extends State<EditClientOpeningScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // TODO: Add form fields here
-                      const Center(
-                        child: Text(
-                          'Содержимое формы будет добавлено позже',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w400,
-                            color: Color(0xff99A4BA),
-                          ),
-                        ),
+                      LeadRadioGroupWidget(
+                        selectedLead: _selectedLead?.id.toString(),
+                        onSelectLead: (lead) => setState(() => _selectedLead = lead),
+                        showDebt: true,
+                      ),
+                      const SizedBox(height: 16),
+                      CustomTextField(
+                        controller: ourDebtController,
+                        label: AppLocalizations.of(context)!.translate('our_debt'),
+                        hintText: AppLocalizations.of(context)!.translate('enter_debt'),
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          PriceInputFormatter(),
+                        ],
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return AppLocalizations.of(context)!.translate('field_required');
+                          }
+                          if (double.tryParse(value) == null) {
+                            return AppLocalizations.of(context)!.translate('enter_correct_number');
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      CustomTextField(
+                        controller: theirDebtController,
+                        label: AppLocalizations.of(context)!.translate('their_debt'),
+                        hintText: AppLocalizations.of(context)!.translate('enter_debt'),
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          PriceInputFormatter(),
+                        ],
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return AppLocalizations.of(context)!.translate('field_required');
+                          }
+                          if (double.tryParse(value) == null) {
+                            return AppLocalizations.of(context)!.translate('enter_correct_number');
+                          }
+                          return null;
+                        },
                       ),
                     ],
                   ),

@@ -13,6 +13,7 @@ class ClientOpeningsBloc extends Bloc<ClientOpeningsEvent, ClientOpeningsState> 
   ClientOpeningsBloc() : super(ClientOpeningsInitial()) {
     on<LoadClientOpenings>(_onLoadClientOpenings);
     on<RefreshClientOpenings>(_onRefreshClientOpenings);
+    on<DeleteClientOpening>(_onDeleteClientOpening);
   }
 
   Future<void> _onLoadClientOpenings(
@@ -71,5 +72,19 @@ class ClientOpeningsBloc extends Bloc<ClientOpeningsEvent, ClientOpeningsState> 
       search: event.search,
       filter: event.filter,
     ));
+  }
+
+  Future<void> _onDeleteClientOpening(
+    DeleteClientOpening event,
+    Emitter<ClientOpeningsState> emit,
+  ) async {
+    try {
+      await _apiService.deleteClientOpening(event.id);
+      
+      // Reload the list after successful deletion
+      add(LoadClientOpenings(page: 1));
+    } catch (e) {
+      emit(ClientOpeningsError(message: e.toString()));
+    }
   }
 }

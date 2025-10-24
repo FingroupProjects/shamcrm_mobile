@@ -13,6 +13,7 @@ class SupplierOpeningsBloc extends Bloc<SupplierOpeningsEvent, SupplierOpeningsS
   SupplierOpeningsBloc() : super(SupplierOpeningsInitial()) {
     on<LoadSupplierOpenings>(_onLoadSupplierOpenings);
     on<RefreshSupplierOpenings>(_onRefreshSupplierOpenings);
+    on<DeleteSupplierOpening>(_onDeleteSupplierOpening);
   }
 
   Future<void> _onLoadSupplierOpenings(
@@ -71,5 +72,19 @@ class SupplierOpeningsBloc extends Bloc<SupplierOpeningsEvent, SupplierOpeningsS
       search: event.search,
       filter: event.filter,
     ));
+  }
+
+  Future<void> _onDeleteSupplierOpening(
+    DeleteSupplierOpening event,
+    Emitter<SupplierOpeningsState> emit,
+  ) async {
+    try {
+      await _apiService.deleteSupplierOpening(event.id);
+      
+      // Reload the list after successful deletion
+      add(LoadSupplierOpenings(page: 1));
+    } catch (e) {
+      emit(SupplierOpeningsError(message: e.toString()));
+    }
   }
 }

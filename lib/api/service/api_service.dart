@@ -92,6 +92,7 @@ import 'package:crm_task_manager/models/page_2/openings/goods_openings_model.dar
 import 'package:crm_task_manager/models/page_2/openings/supplier_openings_model.dart';
 import 'package:crm_task_manager/models/page_2/openings/client_openings_model.dart';
 import 'package:crm_task_manager/models/page_2/openings/cash_register_openings_model.dart';
+import 'package:crm_task_manager/models/page_2/good_variants_model.dart';
 import 'package:crm_task_manager/models/price_type_model.dart';
 import 'package:crm_task_manager/models/project_task_model.dart';
 import 'package:crm_task_manager/models/sales_funnel_model.dart';
@@ -15775,5 +15776,97 @@ Future<void> clearFieldConfigurationCache() async {
     }
   }
 
+  /// Удалить первоначальный остаток кассы
+  Future<Map<String, dynamic>> deleteCashRegisterOpening(int id) async {
+    try {
+      String path = await _appendQueryParams('/cash-register-initial-balance/$id');
+      final response = await _deleteRequest(path);
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return {'result': 'Success'};
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(message ?? "Ошибка удаления остатка кассы", response.statusCode);
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Удалить первоначальный остаток клиента
+  Future<Map<String, dynamic>> deleteClientOpening(int id) async {
+    try {
+      String path = await _appendQueryParams('/initial-balance/lead/$id');
+      final response = await _deleteRequest(path);
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return {'result': 'Success'};
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(message ?? "Ошибка удаления остатка клиента", response.statusCode);
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Удалить первоначальный остаток поставщика
+  Future<Map<String, dynamic>> deleteSupplierOpening(int id) async {
+    try {
+      String path = await _appendQueryParams('/initial-balance/counterparty/$id');
+      final response = await _deleteRequest(path);
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return {'result': 'Success'};
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(message ?? "Ошибка удаления остатка поставщика", response.statusCode);
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Удалить первоначальный остаток товара
+  Future<Map<String, dynamic>> deleteGoodsOpening(int id) async {
+    try {
+      String path = await _appendQueryParams('/goods-opening-documents/$id');
+      final response = await _deleteRequest(path);
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return {'result': 'Success'};
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(message ?? "Ошибка удаления остатка товара", response.statusCode);
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
 // _______________________________END SECTION FOR OPENINGS _______________________________
+
+  /// Получить варианты товаров
+  Future<GoodVariantsResponse> getOpeningsGoodVariants({
+    int page = 1,
+    int perPage = 15,
+  }) async {
+    try {
+      String path = await _appendQueryParams('/good/get/variant?page=$page&per_page=$perPage');
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return GoodVariantsResponse.fromJson(data);
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? "Ошибка получения вариантов товаров",
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

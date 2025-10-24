@@ -8,6 +8,7 @@ import '../../../../bloc/page_2_BLOC/openings/client/client_openings_state.dart'
 import '../../../../screens/profile/languages/app_localizations.dart';
 import 'client_card.dart';
 import 'edit_client_opening_screen.dart';
+import '../opening_delete_dialog.dart';
 
 class ClientContent extends StatefulWidget {
   const ClientContent({super.key});
@@ -99,7 +100,19 @@ class _ClientContentState extends State<ClientContent> {
               // Handle client long press
             },
             onDelete: (client) {
-              // Handle delete action
+              final bloc = context.read<ClientOpeningsBloc>();
+              showDialog(
+                context: context,
+                builder: (dialogContext) => OpeningDeleteDialog(
+                  openingId: client.id ?? 0,
+                  openingType: OpeningType.client,
+                  onConfirmDelete: () {
+                    bloc.add(
+                      DeleteClientOpening(id: client.id ?? 0),
+                    );
+                  },
+                ),
+              );
             },
           );
         },

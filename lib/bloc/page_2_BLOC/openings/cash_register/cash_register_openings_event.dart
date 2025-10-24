@@ -21,3 +21,9 @@ class RefreshCashRegisterOpenings extends CashRegisterOpeningsEvent {
     this.filter,
   });
 }
+
+class DeleteCashRegisterOpening extends CashRegisterOpeningsEvent {
+  final int id;
+
+  DeleteCashRegisterOpening({required this.id});
+}

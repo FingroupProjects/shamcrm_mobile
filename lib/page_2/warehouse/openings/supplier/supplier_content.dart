@@ -8,6 +8,7 @@ import '../../../../bloc/page_2_BLOC/openings/supplier/supplier_openings_state.d
 import '../../../../screens/profile/languages/app_localizations.dart';
 import 'supplier_card.dart';
 import 'edit_supplier_opening_screen.dart';
+import '../opening_delete_dialog.dart';
 
 class SupplierContent extends StatefulWidget {
   const SupplierContent({super.key});
@@ -99,7 +100,19 @@ class _SupplierContentState extends State<SupplierContent> {
               // Handle supplier long press
             },
             onDelete: (supplier) {
-              // Handle delete action
+              final bloc = context.read<SupplierOpeningsBloc>();
+              showDialog(
+                context: context,
+                builder: (dialogContext) => OpeningDeleteDialog(
+                  openingId: supplier.id ?? 0,
+                  openingType: OpeningType.supplier,
+                  onConfirmDelete: () {
+                    bloc.add(
+                      DeleteSupplierOpening(id: supplier.id ?? 0),
+                    );
+                  },
+                ),
+              );
             },
           );
         },

@@ -13,6 +13,7 @@ class CashRegisterOpeningsBloc extends Bloc<CashRegisterOpeningsEvent, CashRegis
   CashRegisterOpeningsBloc() : super(CashRegisterOpeningsInitial()) {
     on<LoadCashRegisterOpenings>(_onLoadCashRegisterOpenings);
     on<RefreshCashRegisterOpenings>(_onRefreshCashRegisterOpenings);
+    on<DeleteCashRegisterOpening>(_onDeleteCashRegisterOpening);
   }
 
   Future<void> _onLoadCashRegisterOpenings(
@@ -71,5 +72,19 @@ class CashRegisterOpeningsBloc extends Bloc<CashRegisterOpeningsEvent, CashRegis
       search: event.search,
       filter: event.filter,
     ));
+  }
+
+  Future<void> _onDeleteCashRegisterOpening(
+    DeleteCashRegisterOpening event,
+    Emitter<CashRegisterOpeningsState> emit,
+  ) async {
+    try {
+      await _apiService.deleteCashRegisterOpening(event.id);
+      
+      // Reload the list after successful deletion
+      add(LoadCashRegisterOpenings(page: 1));
+    } catch (e) {
+      emit(CashRegisterOpeningsError(message: e.toString()));
+    }
   }
 }

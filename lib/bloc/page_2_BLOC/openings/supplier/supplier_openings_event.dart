@@ -21,3 +21,9 @@ class RefreshSupplierOpenings extends SupplierOpeningsEvent {
     this.filter,
   });
 }
+
+class DeleteSupplierOpening extends SupplierOpeningsEvent {
+  final int id;
+
+  DeleteSupplierOpening({required this.id});
+}

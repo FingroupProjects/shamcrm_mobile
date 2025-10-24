@@ -21,3 +21,9 @@ class RefreshClientOpenings extends ClientOpeningsEvent {
     this.filter,
   });
 }
+
+class DeleteClientOpening extends ClientOpeningsEvent {
+  final int id;
+
+  DeleteClientOpening({required this.id});
+}
