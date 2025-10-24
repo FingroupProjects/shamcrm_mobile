@@ -50,30 +50,33 @@ class _GoodsOpeningDetailsScreenState extends State<GoodsOpeningDetailsScreen> {
         ? currentDocument.documentGoods!.first 
         : null;
 
-    // В карточке документа, только цена и склад оставлены
     details = [
-      // {
-      //   'label': '${localizations.translate('name') ?? 'Название'}:',
-      //   'value': firstGood?.goodVariant?.fullName ?? currentDocument.docNumber ?? 'N/A',
-      // },
-      // {
-      //   'label': '${localizations.translate('unit') ?? 'Ед. изм.'}:',
-      //   'value': firstGood?.unit?.shortName ?? '',
-      // },
-      // {
-      //   'label': '${localizations.translate('supplier') ?? 'Поставщик'}:',
-      //   'value': currentDocument.model?.name ?? 'N/A',
-      // },
       {
-        'label': '${localizations.translate('storage') ?? 'Склад'}:',
+        'label': 'ID:',
+        'value': currentDocument.id?.toString() ?? 'N/A',
+      },
+      {
+        'label': '${localizations.translate('name')}:',
+        'value': firstGood?.goodVariant?.fullName ?? currentDocument.docNumber ?? 'N/A',
+      },
+      {
+        'label': '${localizations.translate('unit')}:',
+        'value': firstGood?.unit?.shortName ?? 'N/A',
+      },
+      {
+        'label': '${localizations.translate('supplier')}:',
+        'value': currentDocument.model?.name ?? 'N/A',
+      },
+      {
+        'label': '${localizations.translate('storage')}:',
         'value': currentDocument.storage?.name ?? 'N/A',
       },
-      // {
-      //   'label': '${localizations.translate('quantity') ?? 'Кол-во'}:',
-      //   'value': firstGood?.quantity ?? '0',
-      // },
       {
-        'label': '${localizations.translate('price') ?? 'Цена'}:',
+        'label': '${localizations.translate('quantity')}:',
+        'value': firstGood?.quantity ?? '0',
+      },
+      {
+        'label': '${localizations.translate('price')}:',
         'value': _formatAmount(firstGood?.price ?? '0'),
       },
     ];
@@ -134,7 +137,7 @@ class _GoodsOpeningDetailsScreenState extends State<GoodsOpeningDetailsScreen> {
       title: Transform.translate(
         offset: const Offset(-10, 0),
         child: Text(
-          "${localizations.translate('goods_opening_details') ?? 'Остаток товара'} №${currentDocument.docNumber ?? ''}",
+          "${localizations.translate('goods_opening_details')} №${currentDocument.docNumber ?? ''}",
           style: const TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
