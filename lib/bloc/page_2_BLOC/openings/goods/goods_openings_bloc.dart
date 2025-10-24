@@ -86,7 +86,11 @@ class GoodsOpeningsBloc extends Bloc<GoodsOpeningsEvent, GoodsOpeningsState> {
       // Reload the list after successful deletion
       add(LoadGoodsOpenings(page: 1));
     } catch (e) {
-      emit(GoodsOpeningsError(message: e.toString()));
+      // Сохраняем текущее состояние и эмитим операционную ошибку
+      emit(GoodsOpeningsOperationError(
+        message: e.toString(),
+        previousState: state,
+      ));
     }
   }
 
@@ -107,7 +111,11 @@ class GoodsOpeningsBloc extends Bloc<GoodsOpeningsEvent, GoodsOpeningsState> {
       // Reload the list after successful creation
       add(LoadGoodsOpenings(page: 1));
     } catch (e) {
-      emit(GoodsOpeningsError(message: e.toString()));
+      // Сохраняем текущее состояние и эмитим операционную ошибку
+      emit(GoodsOpeningsOperationError(
+        message: e.toString(),
+        previousState: state,
+      ));
     }
   }
 
@@ -131,7 +139,11 @@ class GoodsOpeningsBloc extends Bloc<GoodsOpeningsEvent, GoodsOpeningsState> {
       // Reload the list after successful update
       add(LoadGoodsOpenings(page: 1));
     } catch (e) {
-      emit(GoodsOpeningUpdateError(message: e.toString()));
+      // Сохраняем текущее состояние и эмитим операционную ошибку
+      emit(GoodsOpeningsOperationError(
+        message: e.toString(),
+        previousState: state,
+      ));
     }
   }
 }

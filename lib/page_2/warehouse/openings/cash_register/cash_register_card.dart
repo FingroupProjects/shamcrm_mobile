@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/models/page_2/openings/cash_register_openings_model.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+
+import '../../../../utils/global_fun.dart';
 
 class CashRegisterCard extends StatelessWidget {
   final CashRegisterOpening cashRegister;
@@ -19,11 +20,6 @@ class CashRegisterCard extends StatelessWidget {
     this.isSelectionMode = false,
     this.isSelected = false,
   }) : super(key: key);
-
-  String _formatAmount(String amount) {
-    double amountValue = double.tryParse(amount.replaceAll(' ', '')) ?? 0.0;
-    return NumberFormat('#,##0.00', 'ru_RU').format(amountValue);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -56,7 +52,7 @@ class CashRegisterCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Баланс: ${_formatAmount(cashRegister.sum ?? '0')}',
+                    'Баланс: ${parseNumberToString(cashRegister.sum ?? '0')}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',

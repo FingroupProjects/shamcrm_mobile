@@ -160,6 +160,40 @@ bool areDatesEqual(String backendDateStr, String frontendDateStr) {
   }
 }
 
+/// Parses double, num, or string values to String
+/// Removes trailing zeros: 1.00 -> "1", 2.50 -> "2.5", 2.55 -> "2.55"
+/// Handles both comma and dot as decimal separator: "1,00" -> "1", "2,5" -> "2.5"
+String parseNumberToString(dynamic value, {String nullValue = ''}) {
+  if (value == null) return nullValue;
+  
+  try {
+    String stringValue = value.toString();
+    
+    // Replace comma with dot for parsing
+    stringValue = stringValue.replaceAll(',', '.');
+    
+    // Parse to double
+    double numValue = double.parse(stringValue);
+    
+    // Check if the number is an integer (no decimal part)
+    if (numValue == numValue.toInt()) {
+      return numValue.toInt().toString();
+    }
+    
+    // Remove trailing zeros from decimal part
+    String result = numValue.toString();
+    if (result.contains('.')) {
+      result = result.replaceAll(RegExp(r'0*$'), '');
+      result = result.replaceAll(RegExp(r'\.$'), '');
+    }
+    
+    return result;
+  } catch (e) {
+    debugPrint('Error parsing number to string: $e');
+    return value.toString();
+  }
+}
+
 /// used on money income/outcome forms to format money input
 class MoneyInputFormatter extends TextInputFormatter {
   final int decimalRange;

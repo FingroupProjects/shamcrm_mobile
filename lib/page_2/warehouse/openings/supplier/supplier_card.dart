@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 import '../../../../models/page_2/openings/supplier_openings_model.dart';
+import '../../../../utils/global_fun.dart';
 
 class SupplierCard extends StatelessWidget {
   final SupplierOpening supplier;
@@ -20,11 +20,6 @@ class SupplierCard extends StatelessWidget {
     this.isSelectionMode = false,
     this.isSelected = false,
   }) : super(key: key);
-
-  String _formatAmount(String amount) {
-    double amountValue = double.tryParse(amount.replaceAll(' ', '')) ?? 0.0;
-    return NumberFormat('#,##0.00', 'ru_RU').format(amountValue);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +52,7 @@ class SupplierCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Наш долг: ${_formatAmount(supplier.ourDuty ?? '0')}',
+                    'Наш долг: ${parseNumberToString(supplier.ourDuty ?? '0')}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
@@ -67,7 +62,7 @@ class SupplierCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Долг поставщика: ${_formatAmount(supplier.debtToUs ?? '0')}',
+                    'Долг поставщика: ${parseNumberToString(supplier.debtToUs ?? '0')}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',

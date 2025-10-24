@@ -42,6 +42,18 @@ class ClientOpeningsPaginationError extends ClientOpeningsState {
   ClientOpeningsPaginationError({required this.message});
 }
 
+// Состояние для ошибок операций (создание, редактирование, удаление)
+// Не влияет на отображение контента, используется только для snackbar
+class ClientOpeningsOperationError extends ClientOpeningsState {
+  final String message;
+  final ClientOpeningsState previousState;
+
+  ClientOpeningsOperationError({
+    required this.message,
+    required this.previousState,
+  });
+}
+
 // Состояния для загрузки списка клиентов/лидов (для диалога выбора)
 class ClientOpeningsLeadsLoading extends ClientOpeningsState {}
 

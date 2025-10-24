@@ -292,8 +292,31 @@ class _GoodsContentState extends State<GoodsContent> {
           );
           setState(() => _isLoadingMore = false);
         }
+
+        // Обработка операционных ошибок через snackbar
+        if (state is GoodsOpeningsOperationError) {
+          showCustomSnackBar(
+            context: context,
+            message: state.message,
+            isSuccess: false,
+          );
+        }
+
+        // Поддержка старого состояния ошибки обновления (deprecated)
+        if (state is GoodsOpeningUpdateError) {
+          showCustomSnackBar(
+            context: context,
+            message: state.message,
+            isSuccess: false,
+          );
+        }
       },
       builder: (context, state) {
+        // Если это операционная ошибка, показываем предыдущее состояние
+        if (state is GoodsOpeningsOperationError) {
+          state = state.previousState;
+        }
+
         if (state is GoodsOpeningsLoading) {
           return _buildLoadingState();
         } else if (state is GoodsOpeningsError) {

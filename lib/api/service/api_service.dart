@@ -16031,7 +16031,7 @@ Future<void> clearFieldConfigurationCache() async {
     required double debtToUs,
   }) async {
     try {
-      String path = await _appendQueryParams('/initial-balance/lead');
+      String path = await _appendQueryParams('/initial-balance');
 
       final body = {
         "type": "lead",
@@ -16107,7 +16107,7 @@ Future<void> clearFieldConfigurationCache() async {
     required double debtToUs,
   }) async {
     try {
-      String path = await _appendQueryParams('/initial-balance/supplier');
+      String path = await _appendQueryParams('/initial-balance');
 
       final body = {
         "type": "supplier",

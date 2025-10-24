@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 
 import '../../../../custom_widget/animation.dart';
 import '../../../../models/page_2/openings/client_openings_model.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
 import '../../../../bloc/page_2_BLOC/openings/client/client_openings_bloc.dart';
 import '../../../../bloc/page_2_BLOC/openings/client/client_openings_event.dart';
+import '../../../../utils/global_fun.dart';
 import '../opening_delete_dialog.dart';
 import 'edit_client_opening_screen.dart';
 
@@ -56,18 +56,13 @@ class _ClientOpeningDetailsScreenState
       },
       {
         'label': '${localizations.translate('our_duty') ?? 'Наш долг'}:',
-        'value': _formatAmount(currentOpening.ourDuty ?? '0'),
+        'value': parseNumberToString(currentOpening.ourDuty ?? '0'),
       },
       {
         'label': '${localizations.translate('client_debt') ?? 'Долг клиента'}:',
-        'value': _formatAmount(currentOpening.debtToUs ?? '0'),
+        'value': parseNumberToString(currentOpening.debtToUs ?? '0'),
       },
     ];
-  }
-
-  String _formatAmount(String amount) {
-    double amountValue = double.tryParse(amount.replaceAll(' ', '')) ?? 0.0;
-    return NumberFormat('#,##0.00', 'ru_RU').format(amountValue);
   }
 
   @override

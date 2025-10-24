@@ -36,8 +36,21 @@ class CashRegisterOpeningsPaginationError extends CashRegisterOpeningsState {
   CashRegisterOpeningsPaginationError({required this.message});
 }
 
+// Состояние для ошибок операций (создание, редактирование, удаление)
+// Не влияет на отображение контента, используется только для snackbar
+class CashRegisterOpeningsOperationError extends CashRegisterOpeningsState {
+  final String message;
+  final CashRegisterOpeningsState previousState;
+
+  CashRegisterOpeningsOperationError({
+    required this.message,
+    required this.previousState,
+  });
+}
+
 class CashRegisterOpeningUpdateSuccess extends CashRegisterOpeningsState {}
 
+// Deprecated: используйте CashRegisterOpeningsOperationError
 class CashRegisterOpeningUpdateError extends CashRegisterOpeningsState {
   final String message;
 

@@ -292,8 +292,22 @@ class _SupplierContentState extends State<SupplierContent> {
           );
           setState(() => _isLoadingMore = false);
         }
+
+        // Обработка операционных ошибок через snackbar
+        if (state is SupplierOpeningsOperationError) {
+          showCustomSnackBar(
+            context: context,
+            message: state.message,
+            isSuccess: false,
+          );
+        }
       },
       builder: (context, state) {
+        // Если это операционная ошибка, показываем предыдущее состояние
+        if (state is SupplierOpeningsOperationError) {
+          state = state.previousState;
+        }
+
         if (state is SupplierOpeningsLoading) {
           return _buildLoadingState();
         } else if (state is SupplierOpeningsError) {

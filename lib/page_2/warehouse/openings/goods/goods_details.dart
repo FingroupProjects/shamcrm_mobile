@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 
 import '../../../../custom_widget/animation.dart';
 import '../../../../models/page_2/openings/goods_openings_model.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
 import '../../../../bloc/page_2_BLOC/openings/goods/goods_openings_bloc.dart';
 import '../../../../bloc/page_2_BLOC/openings/goods/goods_openings_event.dart';
+import '../../../../utils/global_fun.dart';
 import '../opening_delete_dialog.dart';
 import 'edit_goods_opening_screen.dart';
 
@@ -77,14 +77,9 @@ class _GoodsOpeningDetailsScreenState extends State<GoodsOpeningDetailsScreen> {
       },
       {
         'label': '${localizations.translate('price')}:',
-        'value': _formatAmount(firstGood?.price ?? '0'),
+        'value': parseNumberToString(firstGood?.price ?? '0'),
       },
     ];
-  }
-  
-  String _formatAmount(String amount) {
-    double amountValue = double.tryParse(amount.replaceAll(' ', '')) ?? 0.0;
-    return NumberFormat('#,##0.00', 'ru_RU').format(amountValue);
   }
 
   @override

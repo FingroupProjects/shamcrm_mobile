@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 
 import '../../../../custom_widget/animation.dart';
 import '../../../../models/page_2/openings/supplier_openings_model.dart';
@@ -9,6 +8,7 @@ import '../../../../api/service/api_service.dart';
 import '../../../../bloc/page_2_BLOC/openings/supplier/supplier_openings_bloc.dart';
 import '../../../../bloc/page_2_BLOC/openings/supplier/supplier_openings_event.dart';
 import '../../../../bloc/page_2_BLOC/supplier_bloc/supplier_bloc.dart';
+import '../../../../utils/global_fun.dart';
 import '../opening_delete_dialog.dart';
 import 'edit_supplier_opening_screen.dart';
 
@@ -58,18 +58,13 @@ class _SupplierOpeningDetailsScreenState
       },
       {
         'label': '${localizations.translate('our_duty') ?? 'Наш долг'}:',
-        'value': _formatAmount(currentOpening.ourDuty ?? '0'),
+        'value': parseNumberToString(currentOpening.ourDuty ?? '0'),
       },
       {
         'label': '${localizations.translate('debt_to_us') ?? 'Долг поставщика'}:',
-        'value': _formatAmount(currentOpening.debtToUs ?? '0'),
+        'value': parseNumberToString(currentOpening.debtToUs ?? '0'),
       },
     ];
-  }
-
-  String _formatAmount(String amount) {
-    double amountValue = double.tryParse(amount.replaceAll(' ', '')) ?? 0.0;
-    return NumberFormat('#,##0.00', 'ru_RU').format(amountValue);
   }
 
   @override

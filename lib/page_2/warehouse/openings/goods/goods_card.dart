@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 import '../../../../models/page_2/openings/goods_openings_model.dart';
+import '../../../../utils/global_fun.dart';
 
 class GoodsCard extends StatelessWidget {
   final GoodsOpeningDocument goods;
@@ -20,11 +20,6 @@ class GoodsCard extends StatelessWidget {
     this.isSelectionMode = false,
     this.isSelected = false,
   }) : super(key: key);
-
-  String _formatAmount(String amount) {
-    double amountValue = double.tryParse(amount.replaceAll(' ', '')) ?? 0.0;
-    return NumberFormat('#,##0.00', 'ru_RU').format(amountValue);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -100,7 +95,7 @@ class GoodsCard extends StatelessWidget {
                   // ),
                   // const SizedBox(height: 8),
                   Text(
-                    'Цена: ${_formatAmount(firstGood?.price ?? '0')}',
+                    'Цена: ${parseNumberToString(firstGood?.price ?? '0')}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',

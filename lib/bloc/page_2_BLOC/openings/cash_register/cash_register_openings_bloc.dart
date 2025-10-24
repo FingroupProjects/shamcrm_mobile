@@ -48,7 +48,11 @@ class CashRegisterOpeningsBloc extends Bloc<CashRegisterOpeningsEvent, CashRegis
       
       add(LoadCashRegisterOpenings());
     } catch (e) {
-      emit(CashRegisterOpeningsError(message: e.toString()));
+      // Сохраняем текущее состояние и эмитим операционную ошибку
+      emit(CashRegisterOpeningsOperationError(
+        message: e.toString(),
+        previousState: state,
+      ));
     }
   }
 
@@ -65,7 +69,11 @@ class CashRegisterOpeningsBloc extends Bloc<CashRegisterOpeningsEvent, CashRegis
       // Reload the list after successful creation
       add(LoadCashRegisterOpenings());
     } catch (e) {
-      emit(CashRegisterOpeningsError(message: e.toString()));
+      // Сохраняем текущее состояние и эмитим операционную ошибку
+      emit(CashRegisterOpeningsOperationError(
+        message: e.toString(),
+        previousState: state,
+      ));
     }
   }
 
@@ -85,7 +93,11 @@ class CashRegisterOpeningsBloc extends Bloc<CashRegisterOpeningsEvent, CashRegis
       // Reload the list after successful update
       add(LoadCashRegisterOpenings());
     } catch (e) {
-      emit(CashRegisterOpeningUpdateError(message: e.toString()));
+      // Сохраняем текущее состояние и эмитим операционную ошибку
+      emit(CashRegisterOpeningsOperationError(
+        message: e.toString(),
+        previousState: state,
+      ));
     }
   }
 }

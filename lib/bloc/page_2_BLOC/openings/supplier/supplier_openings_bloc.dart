@@ -86,7 +86,11 @@ class SupplierOpeningsBloc extends Bloc<SupplierOpeningsEvent, SupplierOpeningsS
       // Reload the list after successful deletion
       add(LoadSupplierOpenings(page: 1));
     } catch (e) {
-      emit(SupplierOpeningsError(message: e.toString()));
+      // Сохраняем текущее состояние и эмитим операционную ошибку
+      emit(SupplierOpeningsOperationError(
+        message: e.toString(),
+        previousState: state,
+      ));
     }
   }
 
@@ -104,7 +108,11 @@ class SupplierOpeningsBloc extends Bloc<SupplierOpeningsEvent, SupplierOpeningsS
       // Reload the list after successful creation
       add(LoadSupplierOpenings(page: 1));
     } catch (e) {
-      emit(SupplierOpeningsError(message: e.toString()));
+      // Сохраняем текущее состояние и эмитим операционную ошибку
+      emit(SupplierOpeningsOperationError(
+        message: e.toString(),
+        previousState: state,
+      ));
     }
   }
 
@@ -123,7 +131,11 @@ class SupplierOpeningsBloc extends Bloc<SupplierOpeningsEvent, SupplierOpeningsS
       // Reload the list after successful edit
       add(LoadSupplierOpenings(page: 1));
     } catch (e) {
-      emit(SupplierOpeningsError(message: e.toString()));
+      // Сохраняем текущее состояние и эмитим операционную ошибку
+      emit(SupplierOpeningsOperationError(
+        message: e.toString(),
+        previousState: state,
+      ));
     }
   }
 }

@@ -85,7 +85,11 @@ class ClientOpeningsBloc extends Bloc<ClientOpeningsEvent, ClientOpeningsState> 
       // Reload the list after successful deletion
       add(LoadClientOpenings(page: 1));
     } catch (e) {
-      emit(ClientOpeningsError(message: e.toString()));
+      // Сохраняем текущее состояние и эмитим операционную ошибку
+      emit(ClientOpeningsOperationError(
+        message: e.toString(),
+        previousState: state,
+      ));
     }
   }
 
@@ -103,7 +107,11 @@ class ClientOpeningsBloc extends Bloc<ClientOpeningsEvent, ClientOpeningsState> 
       // Reload the list after successful creation
       add(LoadClientOpenings(page: 1));
     } catch (e) {
-      emit(ClientOpeningsError(message: e.toString()));
+      // Сохраняем текущее состояние и эмитим операционную ошибку
+      emit(ClientOpeningsOperationError(
+        message: e.toString(),
+        previousState: state,
+      ));
     }
   }
 }

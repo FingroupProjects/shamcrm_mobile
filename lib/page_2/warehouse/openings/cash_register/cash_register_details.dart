@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 
 import '../../../../custom_widget/animation.dart';
 import '../../../../models/page_2/openings/cash_register_openings_model.dart';
@@ -8,6 +7,7 @@ import '../../../../screens/profile/languages/app_localizations.dart';
 import '../../../../bloc/page_2_BLOC/openings/cash_register/cash_register_openings_bloc.dart';
 import '../../../../bloc/page_2_BLOC/openings/cash_register/cash_register_openings_event.dart';
 import '../../../../bloc/cash_register_list/cash_register_list_bloc.dart';
+import '../../../../utils/global_fun.dart';
 import '../opening_delete_dialog.dart';
 import 'edit_cash_register_opening_screen.dart';
 
@@ -56,14 +56,9 @@ class _CashRegisterOpeningDetailsScreenState extends State<CashRegisterOpeningDe
       },
       {
         'label': '${localizations.translate('balance')}:',
-        'value': _formatAmount(currentOpening.sum ?? '0'),
+        'value': parseNumberToString(currentOpening.sum ?? '0'),
       },
     ];
-  }
-
-  String _formatAmount(String amount) {
-    double amountValue = double.tryParse(amount.replaceAll(' ', '')) ?? 0.0;
-    return NumberFormat('#,##0.00', 'ru_RU').format(amountValue);
   }
 
   @override

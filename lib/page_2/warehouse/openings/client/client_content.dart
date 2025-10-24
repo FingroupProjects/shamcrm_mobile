@@ -292,8 +292,21 @@ class _ClientContentState extends State<ClientContent> {
           );
           setState(() => _isLoadingMore = false);
         }
+
+        // Обработка операционных ошибок через snackbar
+        if (state is ClientOpeningsOperationError) {
+          showCustomSnackBar(
+            context: context,
+            message: state.message,
+            isSuccess: false,
+          );
+        }
       },
       builder: (context, state) {
+        // Если это операционная ошибка, показываем предыдущее состояние
+        if (state is ClientOpeningsOperationError) {
+          state = state.previousState;
+        }
 
         debugPrint("ClientOpeningsState: $state");
 

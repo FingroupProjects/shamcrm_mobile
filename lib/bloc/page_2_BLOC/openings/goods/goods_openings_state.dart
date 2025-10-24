@@ -43,8 +43,21 @@ class GoodsOpeningsPaginationError extends GoodsOpeningsState {
   GoodsOpeningsPaginationError({required this.message});
 }
 
+// Состояние для ошибок операций (создание, редактирование, удаление)
+// Не влияет на отображение контента, используется только для snackbar
+class GoodsOpeningsOperationError extends GoodsOpeningsState {
+  final String message;
+  final GoodsOpeningsState previousState;
+
+  GoodsOpeningsOperationError({
+    required this.message,
+    required this.previousState,
+  });
+}
+
 class GoodsOpeningUpdateSuccess extends GoodsOpeningsState {}
 
+// Deprecated: используйте GoodsOpeningsOperationError
 class GoodsOpeningUpdateError extends GoodsOpeningsState {
   final String message;
 

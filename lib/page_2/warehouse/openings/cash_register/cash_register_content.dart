@@ -261,8 +261,30 @@ class _CashRegisterContentState extends State<CashRegisterContent> {
           );
           setState(() => _isLoadingMore = false);
         }
+
+        // Обработка операционных ошибок через snackbar
+        if (state is CashRegisterOpeningsOperationError) {
+          showCustomSnackBar(
+            context: context,
+            message: state.message,
+            isSuccess: false,
+          );
+        }
+
+        // Поддержка старого состояния ошибки обновления (deprecated)
+        if (state is CashRegisterOpeningUpdateError) {
+          showCustomSnackBar(
+            context: context,
+            message: state.message,
+            isSuccess: false,
+          );
+        }
       },
       builder: (context, state) {
+        // Если это операционная ошибка, показываем предыдущее состояние
+        if (state is CashRegisterOpeningsOperationError) {
+          state = state.previousState;
+        }
 
         debugPrint("state cash register openings: $state");
 
