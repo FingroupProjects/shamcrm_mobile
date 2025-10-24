@@ -5,8 +5,10 @@ import 'package:intl/intl.dart';
 import '../../../../custom_widget/animation.dart';
 import '../../../../models/page_2/openings/supplier_openings_model.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
+import '../../../../api/service/api_service.dart';
 import '../../../../bloc/page_2_BLOC/openings/supplier/supplier_openings_bloc.dart';
 import '../../../../bloc/page_2_BLOC/openings/supplier/supplier_openings_event.dart';
+import '../../../../bloc/page_2_BLOC/supplier_bloc/supplier_bloc.dart';
 import '../opening_delete_dialog.dart';
 import 'edit_supplier_opening_screen.dart';
 
@@ -146,8 +148,18 @@ class _SupplierOpeningDetailsScreenState
                 final result = await Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => EditSupplierOpeningScreen(
-                      supplierOpening: currentOpening,
+                    builder: (context) => MultiBlocProvider(
+                      providers: [
+                        BlocProvider(
+                          create: (context) => SupplierOpeningsBloc(),
+                        ),
+                        BlocProvider(
+                          create: (context) => SupplierBloc(ApiService()),
+                        ),
+                      ],
+                      child: EditSupplierOpeningScreen(
+                        supplierOpening: currentOpening,
+                      ),
                     ),
                   ),
                 );

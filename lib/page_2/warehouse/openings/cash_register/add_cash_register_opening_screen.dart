@@ -9,13 +9,13 @@ import '../../../../custom_widget/custom_textfield.dart';
 import '../../../../custom_widget/price_input_formatter.dart';
 
 class AddCashRegisterOpeningScreen extends StatefulWidget {
-  final String leadName;
-  final int leadId;
+  final String cashRegisterName;
+  final int cashRegisterId;
 
   const AddCashRegisterOpeningScreen({
     Key? key,
-    required this.leadName,
-    required this.leadId,
+    required this.cashRegisterName,
+    required this.cashRegisterId,
   }) : super(key: key);
 
   @override
@@ -109,7 +109,7 @@ class _AddCashRegisterOpeningScreenState extends State<AddCashRegisterOpeningScr
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildLeadNameField(),
+                        _buildCashRegisterNameField(),
                         const SizedBox(height: 16),
                         CustomTextField(
                           controller: sumController,
@@ -161,7 +161,7 @@ class _AddCashRegisterOpeningScreenState extends State<AddCashRegisterOpeningScr
                             // Создаем событие для добавления остатка кассы
                             context.read<CashRegisterOpeningsBloc>().add(
                               CreateCashRegisterOpening(
-                                leadId: widget.leadId,
+                                cashRegisterId: widget.cashRegisterId,
                                 sum: sumController.text,
                               ),
                             );
@@ -181,12 +181,12 @@ class _AddCashRegisterOpeningScreenState extends State<AddCashRegisterOpeningScr
     );
   }
 
-  Widget _buildLeadNameField() {
+  Widget _buildCashRegisterNameField() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          AppLocalizations.of(context)!.translate('client') ?? 'Клиент',
+          AppLocalizations.of(context)!.translate('cash_register') ?? 'Касса',
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
@@ -206,14 +206,26 @@ class _AddCashRegisterOpeningScreenState extends State<AddCashRegisterOpeningScr
               width: 1,
             ),
           ),
-          child: Text(
-            widget.leadName,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              fontFamily: 'Gilroy',
-              color: Color(0xff1E2E52),
-            ),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.account_balance_wallet_outlined,
+                color: Color(0xff1E2E52),
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  widget.cashRegisterName,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Gilroy',
+                    color: Color(0xff1E2E52),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -222,3 +234,6 @@ class _AddCashRegisterOpeningScreenState extends State<AddCashRegisterOpeningScr
 
 }
 
+/*
+TODO: edit, edit bo'lganda update qilish, (details va contentdagi listni), edit dan turib delete qilish.
+ */

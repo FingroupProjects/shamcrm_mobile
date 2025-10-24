@@ -40,6 +40,20 @@ class CreateSupplierOpening extends SupplierOpeningsEvent {
   });
 }
 
+class EditSupplierOpening extends SupplierOpeningsEvent {
+  final int id;
+  final int supplierId;
+  final double ourDuty;
+  final double debtToUs;
+
+  EditSupplierOpening({
+    required this.id,
+    required this.supplierId,
+    required this.ourDuty,
+    required this.debtToUs,
+  });
+}
+
 // События для списка поставщиков (для диалога)
 class LoadSupplierOpeningsSuppliers extends SupplierOpeningsEvent {}
 

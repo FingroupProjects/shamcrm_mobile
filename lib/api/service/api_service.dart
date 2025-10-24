@@ -91,7 +91,7 @@ import 'package:crm_task_manager/models/page_2/variant_model.dart';
 import 'package:crm_task_manager/models/page_2/openings/goods_openings_model.dart';
 import 'package:crm_task_manager/models/page_2/openings/supplier_openings_model.dart';
 import 'package:crm_task_manager/models/page_2/openings/client_openings_model.dart';
-import 'package:crm_task_manager/models/page_2/openings/cash_register_openings_model.dart';
+import 'package:crm_task_manager/models/page_2/openings/cash_register_openings_model.dart' as openings;
 import 'package:crm_task_manager/models/page_2/good_variants_model.dart';
 import 'package:crm_task_manager/models/price_type_model.dart';
 import 'package:crm_task_manager/models/project_task_model.dart';
@@ -15738,7 +15738,7 @@ Future<void> clearFieldConfigurationCache() async {
   }
 
   /// Получить первоначальные остатки по кассам/складам
-  Future<CashRegisterOpeningsResponse> getCashRegisterOpenings({
+  Future<openings.CashRegisterOpeningsResponse> getCashRegisterOpenings({
     String? search,
     Map<String, dynamic>? filter,
   }) async {
@@ -15766,7 +15766,7 @@ Future<void> clearFieldConfigurationCache() async {
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      return CashRegisterOpeningsResponse.fromJson(data);
+      return openings.CashRegisterOpeningsResponse.fromJson(data);
     } else {
       final message = _extractErrorMessageFromResponse(response);
       throw ApiException(
@@ -15776,13 +15776,13 @@ Future<void> clearFieldConfigurationCache() async {
     }
   }
 
-  /// Получить список leads для выбора при создании остатка кассы
-  Future<List<Lead>> getCashRegisterLeads() async {
+  /// Получить список касс для выбора при создании остатка кассы
+  Future<List<openings.CashRegister>> getCashRegisters() async {
     try {
-      String path = await _appendQueryParams('/initial-balance/get/leads');
+      String path = await _appendQueryParams('/initial-balance/get/cash-registers');
       
       if (kDebugMode) {
-        print('ApiService: getCashRegisterLeads - path: $path');
+        print('ApiService: getCashRegisters - path: $path');
       }
 
       final response = await _getRequest(path);
@@ -15791,20 +15791,20 @@ Future<void> clearFieldConfigurationCache() async {
         final data = json.decode(response.body);
         
         if (data is List) {
-          return data.map((json) => Lead.fromJson(json, -1)).toList();
+          return data.map((json) => openings.CashRegister.fromJson(json)).toList();
         } else {
           throw Exception('Неожиданный формат ответа API');
         }
       } else {
         final message = _extractErrorMessageFromResponse(response);
         throw ApiException(
-          message ?? 'Ошибка получения списка leads',
+          message ?? 'Ошибка получения списка касс',
           response.statusCode,
         );
       }
     } catch (e) {
       if (kDebugMode) {
-        print('ApiService: getCashRegisterLeads - Error: $e');
+        print('ApiService: getCashRegisters - Error: $e');
       }
       rethrow;
     }
@@ -15812,16 +15812,16 @@ Future<void> clearFieldConfigurationCache() async {
 
   /// Создать первоначальный остаток кассы
   Future<Map<String, dynamic>> createCashRegisterOpening({
-    required int leadId,
+    required int cashRegisterId,
     required String sum,
   }) async {
     try {
       String path = await _appendQueryParams('/cash-register-initial-balance');
       
-      final body = {
-        'lead_id': leadId,
+      final body = {'data': [{
+        'cash_register_id': cashRegisterId,
         'sum': sum,
-      };
+      }]};
 
       if (kDebugMode) {
         print('ApiService: createCashRegisterOpening - path: $path, body: $body');
@@ -15847,6 +15847,41 @@ Future<void> clearFieldConfigurationCache() async {
     }
   }
 
+  Future<Map<String, dynamic>> updateCashRegisterOpening({
+    required int cashRegisterId,
+    required String sum,
+  }) async {
+    try {
+      String path = await _appendQueryParams('/cash-register-initial-balance');
+
+      final body = {'data' : [{
+        'cash_register_id': cashRegisterId,
+        'sum': sum,
+      }]};
+
+      if (kDebugMode) {
+        print('ApiService: createCashRegisterOpening - path: $path, body: $body');
+      }
+
+      final response = await _postRequest(path, body);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = json.decode(response.body);
+        return data;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка создания остатка кассы',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('ApiService: createCashRegisterOpening - Error: $e');
+      }
+      rethrow;
+    }
+  }
 
   /// Удалить первоначальный остаток кассы
   Future<Map<String, dynamic>> deleteCashRegisterOpening(int id) async {
@@ -15972,7 +16007,7 @@ Future<void> clearFieldConfigurationCache() async {
       String path = await _appendQueryParams('/initial-balance/lead');
 
       final body = {
-        "counterparty_type": "lead",
+        "type": "lead",
         "counterparty_id": leadId,
         "our_duty": ourDuty,
         "debt_to_us": debtToUs,
@@ -16009,7 +16044,7 @@ Future<void> clearFieldConfigurationCache() async {
       String path = await _appendQueryParams('/initial-balance/supplier');
 
       final body = {
-        "counterparty_type": "supplier",
+        "type": "supplier",
         "counterparty_id": supplierId,
         "our_duty": ourDuty,
         "debt_to_us": debtToUs,
@@ -16028,6 +16063,44 @@ Future<void> clearFieldConfigurationCache() async {
         final message = _extractErrorMessageFromResponse(response);
         throw ApiException(
           message ?? "Ошибка создания остатка поставщика",
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Редактировать начальный остаток поставщика
+  Future<Map<String, dynamic>> editSupplierOpening({
+    required int id,
+    required int supplierId,
+    required double ourDuty,
+    required double debtToUs,
+  }) async {
+    try {
+      String path = await _appendQueryParams('/initial-balance/$id');
+
+      final body = {
+        "type": "supplier",
+        "counterparty_id": supplierId,
+        "our_duty": ourDuty,
+        "debt_to_us": debtToUs,
+      };
+
+      if (kDebugMode) {
+        print('ApiService: editSupplierOpening - path: $path');
+        print('ApiService: editSupplierOpening - body: $body');
+      }
+
+      final response = await _patchRequest(path, body);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {'result': 'Success'};
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? "Ошибка редактирования остатка поставщика",
           response.statusCode,
         );
       }
@@ -16070,7 +16143,18 @@ Future<void> clearFieldConfigurationCache() async {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        return SuppliersForOpeningsResponse.fromJson(data);
+        
+        // Проверяем, является ли ответ массивом (API возвращает массив напрямую)
+        if (data is List) {
+          // Преобразуем массив в ожидаемую структуру
+          return SuppliersForOpeningsResponse.fromJson({
+            'result': data,
+            'errors': null,
+          });
+        } else {
+          // Если ответ уже в правильном формате (с полем result)
+          return SuppliersForOpeningsResponse.fromJson(data);
+        }
       } else {
         final message = _extractErrorMessageFromResponse(response);
         throw ApiException(
@@ -16091,7 +16175,18 @@ Future<void> clearFieldConfigurationCache() async {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        return LeadsForOpeningsResponse.fromJson(data);
+        
+        // Проверяем, является ли ответ массивом (API возвращает массив напрямую)
+        if (data is List) {
+          // Преобразуем массив в ожидаемую структуру
+          return LeadsForOpeningsResponse.fromJson({
+            'result': data,
+            'errors': null,
+          });
+        } else {
+          // Если ответ уже в правильном формате (с полем result)
+          return LeadsForOpeningsResponse.fromJson(data);
+        }
       } else {
         final message = _extractErrorMessageFromResponse(response);
         throw ApiException(

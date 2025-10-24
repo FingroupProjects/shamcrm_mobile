@@ -6,6 +6,9 @@ import '../../../../models/page_2/supplier_model.dart';
 import '../../../../bloc/page_2_BLOC/supplier_bloc/supplier_bloc.dart';
 import '../../../../bloc/page_2_BLOC/supplier_bloc/supplier_event.dart';
 import '../../../../bloc/page_2_BLOC/supplier_bloc/supplier_state.dart';
+import '../../../../bloc/page_2_BLOC/openings/supplier/supplier_openings_bloc.dart';
+import '../../../../bloc/page_2_BLOC/openings/supplier/supplier_openings_event.dart';
+import '../../../../bloc/page_2_BLOC/openings/supplier/supplier_openings_state.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
 import '../../../../custom_widget/custom_button.dart';
 import '../../../../custom_widget/custom_textfield.dart';
@@ -61,9 +64,60 @@ class _EditSupplierOpeningScreenState extends State<EditSupplierOpeningScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
+    return BlocListener<SupplierOpeningsBloc, SupplierOpeningsState>(
+      listener: (context, state) {
+        if (state is SupplierOpeningsLoaded) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(context)!.translate('success_update'),
+                style: const TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              backgroundColor: Colors.green,
+              elevation: 3,
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+          Navigator.pop(context, true);
+        } else if (state is SupplierOpeningsError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                state.message,
+                style: const TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              backgroundColor: Colors.red,
+              elevation: 3,
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
         forceMaterialTransparency: true,
         backgroundColor: Colors.white,
         elevation: 0,
@@ -162,16 +216,66 @@ class _EditSupplierOpeningScreenState extends State<EditSupplierOpeningScreen> {
                   ),
                   const SizedBox(width: 16),
                   Expanded(
-                    child:                     CustomButton(
-                      buttonText:
-                          AppLocalizations.of(context)!.translate('save'),
-                      buttonColor: const Color(0xff4759FF),
-                      textColor: Colors.white,
-                      onPressed: () {
-                        if (_formKey.currentState!.validate()) {
-                          // TODO: Implement save logic
-                          Navigator.pop(context);
-                        }
+                    child: BlocBuilder<SupplierOpeningsBloc, SupplierOpeningsState>(
+                      builder: (context, state) {
+                        final isLoading = state is SupplierOpeningsLoading;
+                        
+                        return CustomButton(
+                          buttonText:
+                              AppLocalizations.of(context)!.translate('save'),
+                          buttonColor: const Color(0xff4759FF),
+                          textColor: Colors.white,
+                          onPressed: () {
+                            if (isLoading) return;
+                            
+                            if (_formKey.currentState!.validate()) {
+                              if (_selectedSupplierId == null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      AppLocalizations.of(context)!
+                                          .translate('select_supplier'),
+                                      style: const TextStyle(
+                                        fontFamily: 'Gilroy',
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    behavior: SnackBarBehavior.floating,
+                                    margin: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 8),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    backgroundColor: Colors.red,
+                                    elevation: 3,
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 12, horizontal: 16),
+                                    duration: const Duration(seconds: 2),
+                                  ),
+                                );
+                                return;
+                              }
+
+                              final ourDuty = double.tryParse(
+                                      ourDebtController.text.replaceAll(' ', '')) ??
+                                  0.0;
+                              final debtToUs = double.tryParse(
+                                      theirDebtController.text.replaceAll(' ', '')) ??
+                                  0.0;
+
+                              context.read<SupplierOpeningsBloc>().add(
+                                    EditSupplierOpening(
+                                      id: widget.supplierOpening.id!,
+                                      supplierId: int.parse(_selectedSupplierId!),
+                                      ourDuty: ourDuty,
+                                      debtToUs: debtToUs,
+                                    ),
+                                  );
+                            }
+                          },
+                        );
                       },
                     ),
                   ),
@@ -181,6 +285,7 @@ class _EditSupplierOpeningScreenState extends State<EditSupplierOpeningScreen> {
           ],
         ),
       ),
+    ),
     );
   }
 

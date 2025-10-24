@@ -33,11 +33,21 @@ class LoadCashRegisterLeads extends CashRegisterOpeningsEvent {}
 class RefreshCashRegisterLeads extends CashRegisterOpeningsEvent {}
 
 class CreateCashRegisterOpening extends CashRegisterOpeningsEvent {
-  final int leadId;
+  final int cashRegisterId;
   final String sum;
 
   CreateCashRegisterOpening({
-    required this.leadId,
+    required this.cashRegisterId,
+    required this.sum,
+  });
+}
+
+class UpdateCashRegisterOpening extends CashRegisterOpeningsEvent {
+  final int cashRegisterId;
+  final String sum;
+
+  UpdateCashRegisterOpening({
+    required this.cashRegisterId,
     required this.sum,
   });
 }

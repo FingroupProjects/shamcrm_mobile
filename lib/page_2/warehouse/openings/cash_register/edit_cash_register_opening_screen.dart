@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/bloc/page_2_BLOC/openings/cash_register/cash_register_openings_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/openings/cash_register/cash_register_openings_event.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
@@ -146,8 +148,12 @@ class _EditCashRegisterOpeningScreenState
                       textColor: Colors.white,
                       onPressed: () {
                         if (_formKey.currentState!.validate()) {
-                          // TODO: Implement save logic
-                          Navigator.pop(context);
+                          context.read<CashRegisterOpeningsBloc>().add(
+                            UpdateCashRegisterOpening(
+                              cashRegisterId: int.parse(_selectedCashRegisterId!),
+                              sum: balanceController.text,
+                            ),
+                          );
                         }
                       },
                     ),

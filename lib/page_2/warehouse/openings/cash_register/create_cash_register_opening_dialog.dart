@@ -4,7 +4,7 @@ import '../../../../bloc/page_2_BLOC/openings/cash_register/cash_register_openin
 import '../../../../bloc/page_2_BLOC/openings/cash_register/cash_register_openings_event.dart';
 import '../../../../bloc/page_2_BLOC/openings/cash_register/cash_register_openings_state.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
-import '../../../../models/lead_model.dart';
+import '../../../../models/page_2/openings/cash_register_openings_model.dart';
 import 'add_cash_register_opening_screen.dart';
 
 void showCashRegisterLeadsDialog(BuildContext context) {
@@ -49,12 +49,12 @@ class CashRegisterLeadsDialog extends StatelessWidget {
     return AppLocalizations.of(context)?.translate(key) ?? fallback;
   }
 
-  Widget _buildLeadsList(BuildContext context, List<Lead> leads) {
+  Widget _buildCashRegistersList(BuildContext context, List<CashRegister> cashRegisters) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Отображаем список leads
-        if (leads.isEmpty)
+        // Отображаем список касс
+        if (cashRegisters.isEmpty)
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(24),
@@ -71,7 +71,7 @@ class CashRegisterLeadsDialog extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 const Icon(
-                  Icons.people_outline,
+                  Icons.account_balance_wallet_outlined,
                   size: 48,
                   color: Color(0xff64748B),
                 ),
@@ -90,12 +90,12 @@ class CashRegisterLeadsDialog extends StatelessWidget {
             ),
           )
         else
-          ...leads.map((lead) => _buildLeadCard(context, lead)).toList(),
+          ...cashRegisters.map((cashRegister) => _buildCashRegisterCard(context, cashRegister)).toList(),
       ],
     );
   }
 
-  Widget _buildLeadCard(BuildContext context, Lead lead) {
+  Widget _buildCashRegisterCard(BuildContext context, CashRegister cashRegister) {
     return GestureDetector(
       onTap: () {
         // Получаем блок из контекста перед закрытием диалога
@@ -111,8 +111,8 @@ class CashRegisterLeadsDialog extends StatelessWidget {
             builder: (newContext) => BlocProvider.value(
               value: bloc,
               child: AddCashRegisterOpeningScreen(
-                leadName: lead.name,
-                leadId: lead.id,
+                cashRegisterName: cashRegister.name ?? '',
+                cashRegisterId: cashRegister.id ?? 0,
               ),
             ),
           ),
@@ -130,30 +130,32 @@ class CashRegisterLeadsDialog extends StatelessWidget {
             width: 1,
           ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
-            Text(
-              lead.name,
-              style: const TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xffF8FAFC),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.account_balance_wallet_outlined,
                 color: Color(0xff1E2E52),
+                size: 20,
               ),
             ),
-            if (lead.phone != null && lead.phone!.isNotEmpty) ...[
-              const SizedBox(height: 4),
-              Text(
-                lead.phone!,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                cashRegister.name ?? '',
                 style: const TextStyle(
                   fontFamily: 'Gilroy',
-                  fontSize: 13,
-                  fontWeight: FontWeight.w400,
-                  color: Color(0xff64748B),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xff1E2E52),
                 ),
               ),
-            ],
+            ),
           ],
         ),
       ),
@@ -168,6 +170,7 @@ class CashRegisterLeadsDialog extends StatelessWidget {
       insetPadding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
         constraints: BoxConstraints(
+          minHeight: 400,
           maxHeight: MediaQuery.of(context).size.height * 0.8,
           maxWidth: 420,
         ),
@@ -210,7 +213,7 @@ class CashRegisterLeadsDialog extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(
-                      Icons.people_outline,
+                      Icons.account_balance_wallet_outlined,
                       color: Colors.white,
                       size: 20,
                     ),
@@ -218,7 +221,7 @@ class CashRegisterLeadsDialog extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      _translate(context, 'select_lead', 'Выберите клиента'),
+                      _translate(context, 'select_cash_register', 'Выберите кассу'),
                       style: const TextStyle(
                         fontFamily: 'Gilroy',
                         fontSize: 18,
@@ -323,7 +326,7 @@ class CashRegisterLeadsDialog extends StatelessWidget {
                   if (state is CashRegisterLeadsLoaded) {
                     return SingleChildScrollView(
                       padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                      child: _buildLeadsList(context, state.leads),
+                      child: _buildCashRegistersList(context, state.cashRegisters),
                     );
                   }
 

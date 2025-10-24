@@ -294,6 +294,9 @@ class _ClientContentState extends State<ClientContent> {
         }
       },
       builder: (context, state) {
+
+        debugPrint("ClientOpeningsState: $state");
+
         if (state is ClientOpeningsLoading) {
           return _buildLoadingState();
         } else if (state is ClientOpeningsError) {

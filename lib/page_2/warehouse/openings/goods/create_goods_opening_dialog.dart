@@ -151,6 +151,7 @@ class GoodVariantsDialog extends StatelessWidget {
       insetPadding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
         constraints: BoxConstraints(
+          minHeight: 400,
           maxHeight: MediaQuery.of(context).size.height * 0.8,
           maxWidth: 420,
         ),

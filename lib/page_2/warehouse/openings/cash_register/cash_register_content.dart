@@ -24,33 +24,11 @@ class _CashRegisterContentState extends State<CashRegisterContent> {
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
-    _scrollController.removeListener(_onScroll);
-    _scrollController.dispose();
     super.dispose();
-  }
-
-  void _onScroll() {
-    if (_isBottomReached && !_isLoadingMore) {
-      final state = context.read<CashRegisterOpeningsBloc>().state;
-      if (state is CashRegisterOpeningsLoaded && !state.hasReachedMax) {
-        setState(() => _isLoadingMore = true);
-        context.read<CashRegisterOpeningsBloc>().add(
-          LoadCashRegisterOpenings(page: state.pagination.current_page + 1),
-        );
-      }
-    }
-  }
-
-  bool get _isBottomReached {
-    if (!_scrollController.hasClients) return false;
-    final maxScroll = _scrollController.position.maxScrollExtent;
-    final currentScroll = _scrollController.offset;
-    return currentScroll >= (maxScroll * 0.9);
   }
 
   Future<void> _onRefresh() async {

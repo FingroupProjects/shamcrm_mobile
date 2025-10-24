@@ -16,7 +16,7 @@ import 'supplier/supplier_content.dart';
 import 'client/client_content.dart';
 import 'goods/goods_content.dart';
 import 'cash_register/cash_register_content.dart';
-// import 'supplier/create_supplier_opening_dialog.dart';
+import 'supplier/create_supplier_opening_dialog.dart';
 import 'client/create_client_opening_dialog.dart';
 import 'goods/create_goods_opening_dialog.dart';
 import 'cash_register/create_cash_register_opening_dialog.dart';
@@ -317,10 +317,9 @@ class _OpeningsScreenState extends State<OpeningsScreen> with TickerProviderStat
       context: context,
       builder: (context) => BlocProvider.value(
         value: _supplierBloc,
-        child: const CreateGoodsOpeningDialog(),
+        child: const CreateSupplierOpeningDialog(),
       ),
     );
-      // dialog = const CreateSupplierOpeningDialog();
     } else if (id == 1) {
       showDialog(
       context: context,

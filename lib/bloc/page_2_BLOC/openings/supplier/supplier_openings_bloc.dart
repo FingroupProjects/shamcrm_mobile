@@ -15,6 +15,7 @@ class SupplierOpeningsBloc extends Bloc<SupplierOpeningsEvent, SupplierOpeningsS
     on<RefreshSupplierOpenings>(_onRefreshSupplierOpenings);
     on<DeleteSupplierOpening>(_onDeleteSupplierOpening);
     on<CreateSupplierOpening>(_onCreateSupplierOpening);
+    on<EditSupplierOpening>(_onEditSupplierOpening);
     on<LoadSupplierOpeningsSuppliers>(_onLoadSupplierOpeningsSuppliers);
     on<RefreshSupplierOpeningsSuppliers>(_onRefreshSupplierOpeningsSuppliers);
   }
@@ -103,6 +104,25 @@ class SupplierOpeningsBloc extends Bloc<SupplierOpeningsEvent, SupplierOpeningsS
       );
       
       // Reload the list after successful creation
+      add(LoadSupplierOpenings(page: 1));
+    } catch (e) {
+      emit(SupplierOpeningsError(message: e.toString()));
+    }
+  }
+
+  Future<void> _onEditSupplierOpening(
+    EditSupplierOpening event,
+    Emitter<SupplierOpeningsState> emit,
+  ) async {
+    try {
+      await _apiService.editSupplierOpening(
+        id: event.id,
+        supplierId: event.supplierId,
+        ourDuty: event.ourDuty,
+        debtToUs: event.debtToUs,
+      );
+      
+      // Reload the list after successful edit
       add(LoadSupplierOpenings(page: 1));
     } catch (e) {
       emit(SupplierOpeningsError(message: e.toString()));

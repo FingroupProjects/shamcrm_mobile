@@ -17,6 +17,7 @@ class CashRegisterOpeningsBloc extends Bloc<CashRegisterOpeningsEvent, CashRegis
     on<LoadCashRegisterLeads>(_onLoadCashRegisterLeads);
     on<RefreshCashRegisterLeads>(_onRefreshCashRegisterLeads);
     on<CreateCashRegisterOpening>(_onCreateCashRegisterOpening);
+    on<UpdateCashRegisterOpening>(_onUpdateCashRegisterOpening);
   }
 
   Future<void> _onLoadCashRegisterOpenings(
@@ -98,9 +99,9 @@ class CashRegisterOpeningsBloc extends Bloc<CashRegisterOpeningsEvent, CashRegis
     try {
       emit(CashRegisterLeadsLoading());
       
-      final leads = await _apiService.getCashRegisterLeads();
+      final cashRegisters = await _apiService.getCashRegisters();
       
-      emit(CashRegisterLeadsLoaded(leads: leads));
+      emit(CashRegisterLeadsLoaded(cashRegisters: List<CashRegister>.from(cashRegisters)));
     } catch (e) {
       emit(CashRegisterLeadsError(message: e.toString()));
     }
@@ -119,11 +120,28 @@ class CashRegisterOpeningsBloc extends Bloc<CashRegisterOpeningsEvent, CashRegis
   ) async {
     try {
       await _apiService.createCashRegisterOpening(
-        leadId: event.leadId,
+        cashRegisterId: event.cashRegisterId,
         sum: event.sum,
       );
       
       // Reload the list after successful creation
+      add(LoadCashRegisterOpenings(page: 1));
+    } catch (e) {
+      emit(CashRegisterOpeningsError(message: e.toString()));
+    }
+  }
+
+  Future<void> _onUpdateCashRegisterOpening(
+    UpdateCashRegisterOpening event,
+    Emitter<CashRegisterOpeningsState> emit,
+  ) async {
+    try {
+      await _apiService.updateCashRegisterOpening(
+        cashRegisterId: event.cashRegisterId,
+        sum: event.sum,
+      );
+
+      // Reload the list after successful update
       add(LoadCashRegisterOpenings(page: 1));
     } catch (e) {
       emit(CashRegisterOpeningsError(message: e.toString()));
