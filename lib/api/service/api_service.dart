@@ -15844,6 +15844,52 @@ Future<void> clearFieldConfigurationCache() async {
     }
   }
 
+  /// Создать первоначальный остаток товара
+  Future<Map<String, dynamic>> createGoodsOpening({
+    required int goodVariantId,
+    required int supplierId,
+    required double price,
+    required double quantity,
+    required int unitId,
+    required int storageId,
+  }) async {
+    try {
+      String path = await _appendQueryParams('/good-initial-balance');
+
+      final body = {
+        "data": [
+          {
+            "good_variant_id": goodVariantId,
+            "supplier_id": supplierId,
+            "price": price,
+            "quantity": quantity,
+            "unit_id": unitId,
+            "storage_id": storageId,
+          }
+        ],
+      };
+
+      if (kDebugMode) {
+        print('ApiService: createGoodsOpening - path: $path');
+        print('ApiService: createGoodsOpening - body: $body');
+      }
+
+      final response = await _postRequest(path, body);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {'result': 'Success'};
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? "Ошибка создания остатка товара",
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
 // _______________________________END SECTION FOR OPENINGS _______________________________
 
   /// Получить варианты товаров

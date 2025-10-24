@@ -1,14 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/models/page_2/good_variants_model.dart';
+import '../../../../bloc/page_2_BLOC/openings/goods/good_variants_bloc.dart';
+import '../../../../bloc/page_2_BLOC/openings/goods/good_variants_event.dart';
+import '../../../../bloc/page_2_BLOC/openings/goods/good_variants_state.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
+import 'add_goods_opening_screen.dart';
 
 void showGoodVariantsDialog(BuildContext context) {
   showDialog(
     context: context,
     barrierColor: Colors.black.withOpacity(0.5),
     builder: (BuildContext dialogContext) {
-      return const GoodVariantsDialog();
+      return BlocProvider(
+        create: (context) => GoodVariantsBloc()..add(LoadGoodVariants()),
+        child: const GoodVariantsDialog(),
+      );
     },
   );
 }
@@ -22,63 +29,14 @@ class CreateGoodsOpeningDialog extends StatelessWidget {
   }
 }
 
-class GoodVariantsDialog extends StatefulWidget {
+class GoodVariantsDialog extends StatelessWidget {
   const GoodVariantsDialog({super.key});
 
-  @override
-  State<GoodVariantsDialog> createState() => _GoodVariantsDialogState();
-}
-
-class _GoodVariantsDialogState extends State<GoodVariantsDialog> {
-  final ApiService _apiService = ApiService();
-  bool _isLoading = true;
-  String? _errorMessage;
-  List<GoodVariantItem> _variants = [];
-  int _currentPage = 1;
-
-  String _translate(String key, String fallback) {
+  String _translate(BuildContext context, String key, String fallback) {
     return AppLocalizations.of(context)?.translate(key) ?? fallback;
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _loadVariants();
-  }
-
-  Future<void> _loadVariants({int page = 1}) async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final response = await _apiService.getOpeningsGoodVariants(
-        page: page,
-        perPage: 15,
-      );
-
-      if (response.result != null) {
-        setState(() {
-          _variants = response.result!.data ?? [];
-          _currentPage = response.result!.pagination?.currentPage ?? 1;
-          _isLoading = false;
-        });
-      } else {
-        setState(() {
-          _errorMessage = 'Не удалось загрузить данные';
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _errorMessage = e.toString();
-        _isLoading = false;
-      });
-    }
-  }
-
-  Widget _buildVariantsList(List<GoodVariantItem> items) {
+  Widget _buildVariantsList(BuildContext context, List<GoodVariantItem> items) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -106,7 +64,7 @@ class _GoodVariantsDialogState extends State<GoodVariantsDialog> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  _translate('no_data_to_display', 'Нет данных для отображения'),
+                  _translate(context, 'no_data_to_display', 'Нет данных для отображения'),
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontFamily: 'Gilroy',
@@ -119,31 +77,45 @@ class _GoodVariantsDialogState extends State<GoodVariantsDialog> {
             ),
           )
         else
-          ...items.map((item) => _buildVariantCard(item)).toList(),
+          ...items.map((item) => _buildVariantCard(context, item)).toList(),
       ],
     );
   }
 
-  Widget _buildVariantCard(GoodVariantItem item) {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: const Color(0xffE2E8F0),
-          width: 1,
+  Widget _buildVariantCard(BuildContext context, GoodVariantItem item) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.pop(context);
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => AddGoodsOpeningScreen(
+              goodName: item.fullName ?? item.good?.name ?? 'Неизвестный товар',
+              goodVariantId: item.id ?? 0,
+            ),
+          ),
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: const Color(0xffE2E8F0),
+            width: 1,
+          ),
         ),
-      ),
-      child: Text(
-        item.fullName ?? item.good?.name ?? 'Неизвестный товар',
-        style: const TextStyle(
-          fontFamily: 'Gilroy',
-          fontSize: 15,
-          fontWeight: FontWeight.w600,
-          color: Color(0xff1E2E52),
+        child: Text(
+          item.fullName ?? item.good?.name ?? 'Неизвестный товар',
+          style: const TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: Color(0xff1E2E52),
+          ),
         ),
       ),
     );
@@ -207,7 +179,7 @@ class _GoodVariantsDialogState extends State<GoodVariantsDialog> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      _translate('product_variants', 'Варианты товаров'),
+                      _translate(context, 'product_variants', 'Варианты товаров'),
                       style: const TextStyle(
                         fontFamily: 'Gilroy',
                         fontSize: 18,
@@ -225,8 +197,10 @@ class _GoodVariantsDialogState extends State<GoodVariantsDialog> {
 
             // Body
             Flexible(
-              child: _isLoading
-                  ? Center(
+              child: BlocBuilder<GoodVariantsBloc, GoodVariantsState>(
+                builder: (context, state) {
+                  if (state is GoodVariantsLoading) {
+                    return Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -235,7 +209,7 @@ class _GoodVariantsDialogState extends State<GoodVariantsDialog> {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            _translate('loading_data_dialog', 'Загрузка данных...'),
+                            _translate(context, 'loading_data_dialog', 'Загрузка данных...'),
                             style: const TextStyle(
                               fontFamily: 'Gilroy',
                               fontSize: 16,
@@ -244,69 +218,79 @@ class _GoodVariantsDialogState extends State<GoodVariantsDialog> {
                           ),
                         ],
                       ),
-                    )
-                  : _errorMessage != null
-                      ? Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(24),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(
-                                  Icons.error_outline,
-                                  size: 48,
-                                  color: Color(0xffEF4444),
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  _translate('error_loading_dialog', 'Ошибка загрузки'),
-                                  style: const TextStyle(
-                                    fontFamily: 'Gilroy',
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xff1E2E52),
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  _errorMessage!,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    fontFamily: 'Gilroy',
-                                    fontSize: 14,
-                                    color: Color(0xff64748B),
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                ElevatedButton(
-                                  onPressed: () {
-                                    _loadVariants(page: _currentPage);
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xff1E2E52),
-                                    foregroundColor: Colors.white,
-                                    elevation: 0,
-                                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                  ),
-                                  child: Text(
-                                    _translate('retry_dialog', 'Повторить'),
-                                    style: const TextStyle(
-                                      fontFamily: 'Gilroy',
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                    );
+                  }
+
+                  if (state is GoodVariantsError) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.error_outline,
+                              size: 48,
+                              color: Color(0xffEF4444),
                             ),
-                          ),
-                        )
-                      : SingleChildScrollView(
-                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                          child: _buildVariantsList(_variants),
+                            const SizedBox(height: 16),
+                            Text(
+                              _translate(context, 'error_loading_dialog', 'Ошибка загрузки'),
+                              style: const TextStyle(
+                                fontFamily: 'Gilroy',
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xff1E2E52),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              state.message,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontFamily: 'Gilroy',
+                                fontSize: 14,
+                                color: Color(0xff64748B),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: () {
+                                context.read<GoodVariantsBloc>().add(RefreshGoodVariants());
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xff1E2E52),
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              child: Text(
+                                _translate(context, 'retry_dialog', 'Повторить'),
+                                style: const TextStyle(
+                                  fontFamily: 'Gilroy',
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
+                      ),
+                    );
+                  }
+
+                  if (state is GoodVariantsLoaded) {
+                    return SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                      child: _buildVariantsList(context, state.variants),
+                    );
+                  }
+
+                  return const SizedBox.shrink();
+                },
+              ),
             ),
             
             const SizedBox(height: 16),

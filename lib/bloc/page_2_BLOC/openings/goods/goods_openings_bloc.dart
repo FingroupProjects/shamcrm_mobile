@@ -14,6 +14,7 @@ class GoodsOpeningsBloc extends Bloc<GoodsOpeningsEvent, GoodsOpeningsState> {
     on<LoadGoodsOpenings>(_onLoadGoodsOpenings);
     on<RefreshGoodsOpenings>(_onRefreshGoodsOpenings);
     on<DeleteGoodsOpening>(_onDeleteGoodsOpening);
+    on<CreateGoodsOpening>(_onCreateGoodsOpening);
   }
 
   Future<void> _onLoadGoodsOpenings(
@@ -82,6 +83,27 @@ class GoodsOpeningsBloc extends Bloc<GoodsOpeningsEvent, GoodsOpeningsState> {
       await _apiService.deleteGoodsOpening(event.id);
       
       // Reload the list after successful deletion
+      add(LoadGoodsOpenings(page: 1));
+    } catch (e) {
+      emit(GoodsOpeningsError(message: e.toString()));
+    }
+  }
+
+  Future<void> _onCreateGoodsOpening(
+    CreateGoodsOpening event,
+    Emitter<GoodsOpeningsState> emit,
+  ) async {
+    try {
+      await _apiService.createGoodsOpening(
+        goodVariantId: event.goodVariantId,
+        supplierId: event.supplierId,
+        price: event.price,
+        quantity: event.quantity,
+        unitId: event.unitId,
+        storageId: event.storageId,
+      );
+      
+      // Reload the list after successful creation
       add(LoadGoodsOpenings(page: 1));
     } catch (e) {
       emit(GoodsOpeningsError(message: e.toString()));

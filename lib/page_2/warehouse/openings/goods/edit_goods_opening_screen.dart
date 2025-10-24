@@ -9,7 +9,6 @@ import '../../../../bloc/page_2_BLOC/goods/goods_event.dart';
 import '../../../../bloc/page_2_BLOC/goods/goods_state.dart';
 import '../../../../bloc/cash_register_list/cash_register_list_bloc.dart';
 import '../../../../bloc/cash_register_list/cash_register_list_event.dart';
-import '../../../../bloc/cash_register_list/cash_register_list_state.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
 import '../../../../custom_widget/custom_button.dart';
 import '../../../../custom_widget/custom_textfield.dart';
@@ -17,6 +16,7 @@ import '../../../../custom_widget/price_input_formatter.dart';
 import '../../incoming/supplier_widget.dart';
 import '../../incoming/storage_widget.dart';
 import '../../incoming/units_widget.dart';
+import '../../../money/widgets/cash_register_radio_group.dart';
 
 class EditGoodsOpeningScreen extends StatefulWidget {
   final GoodsOpeningDocument goodsOpening;
@@ -138,7 +138,14 @@ class _EditGoodsOpeningScreenState extends State<EditGoodsOpeningScreen> {
                         },
                       ),
                       const SizedBox(height: 16),
-                      _buildCashRegisterDropdown(),
+                      CashRegisterGroupWidget(
+                        selectedCashRegisterId: _selectedCashRegister?.id.toString(),
+                        onSelectCashRegister: (CashRegisterData cashRegister) {
+                          setState(() {
+                            _selectedCashRegister = cashRegister;
+                          });
+                        },
+                      ),
                       const SizedBox(height: 16),
                       UnitsWidget(
                         selectedUnit: _selectedUnitId,
@@ -411,175 +418,4 @@ class _EditGoodsOpeningScreenState extends State<EditGoodsOpeningScreen> {
     );
   }
 
-  Widget _buildCashRegisterDropdown() {
-    return BlocListener<GetAllCashRegisterBloc, GetAllCashRegisterState>(
-      listener: (context, state) {
-        if (state is GetAllCashRegisterError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                state.message,
-                style: const TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-              behavior: SnackBarBehavior.floating,
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              backgroundColor: Colors.red,
-              elevation: 3,
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              duration: const Duration(seconds: 3),
-            ),
-          );
-        }
-      },
-      child: BlocBuilder<GetAllCashRegisterBloc, GetAllCashRegisterState>(
-        builder: (context, state) {
-          final isLoading = state is GetAllCashRegisterLoading;
-
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                AppLocalizations.of(context)!.translate('cash_register'),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
-                ),
-              ),
-              const SizedBox(height: 8),
-              CustomDropdown<CashRegisterData>.search(
-                closeDropDownOnClearFilterSearch: true,
-                items: state is GetAllCashRegisterSuccess 
-                    ? (state.dataCashRegisters.result ?? [])
-                    : [],
-                searchHintText: AppLocalizations.of(context)!.translate('search'),
-                overlayHeight: 400,
-                enabled: !isLoading,
-                decoration: CustomDropdownDecoration(
-                  closedFillColor: const Color(0xffF4F7FD),
-                  expandedFillColor: Colors.white,
-                  closedBorder: Border.all(
-                    color: const Color(0xffF4F7FD),
-                    width: 1,
-                  ),
-                  closedBorderRadius: BorderRadius.circular(12),
-                  expandedBorder: Border.all(
-                    color: const Color(0xffF4F7FD),
-                    width: 1,
-                  ),
-                  expandedBorderRadius: BorderRadius.circular(12),
-                ),
-                listItemBuilder: (context, item, isSelected, onItemSelect) {
-                  return Text(
-                    item.name,
-                    style: const TextStyle(
-                      color: Color(0xff1E2E52),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  );
-                },
-                headerBuilder: (context, selectedItem, enabled) {
-                  if (isLoading) {
-                    return const Center(
-                      child: SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
-                        ),
-                      ),
-                    );
-                  }
-                  
-                  return Text(
-                    selectedItem.name,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
-                      color: Color(0xff1E2E52),
-                    ),
-                  );
-                },
-                hintBuilder: (context, hint, enabled) {
-                  if (isLoading) {
-                    return const Center(
-                      child: SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
-                        ),
-                      ),
-                    );
-                  }
-                  
-                  return Text(
-                    AppLocalizations.of(context)!.translate('select_cash_register'),
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
-                      color: Color(0xff1E2E52),
-                    ),
-                  );
-                },
-                noResultFoundBuilder: (context, text) {
-                  if (isLoading) {
-                    return const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(20.0),
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
-                        ),
-                      ),
-                    );
-                  }
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(20.0),
-                      child: Text(
-                        AppLocalizations.of(context)!.translate('no_results'),
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontFamily: 'Gilroy',
-                          color: Color(0xff1E2E52),
-                        ),
-                      ),
-                    ),
-                  );
-                },
-                excludeSelected: false,
-                initialItem: _selectedCashRegister,
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() {
-                      _selectedCashRegister = value;
-                    });
-                    FocusScope.of(context).unfocus();
-                  }
-                },
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
 }

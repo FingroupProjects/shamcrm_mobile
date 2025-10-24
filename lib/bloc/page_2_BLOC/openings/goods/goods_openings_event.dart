@@ -27,3 +27,21 @@ class DeleteGoodsOpening extends GoodsOpeningsEvent {
 
   DeleteGoodsOpening({required this.id});
 }
+
+class CreateGoodsOpening extends GoodsOpeningsEvent {
+  final int goodVariantId;
+  final int supplierId;
+  final double price;
+  final double quantity;
+  final int unitId;
+  final int storageId;
+
+  CreateGoodsOpening({
+    required this.goodVariantId,
+    required this.supplierId,
+    required this.price,
+    required this.quantity,
+    required this.unitId,
+    required this.storageId,
+  });
+}

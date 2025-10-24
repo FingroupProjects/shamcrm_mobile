@@ -16,10 +16,10 @@ import 'supplier/supplier_content.dart';
 import 'client/client_content.dart';
 import 'goods/goods_content.dart';
 import 'cash_register/cash_register_content.dart';
-import 'supplier/create_supplier_opening_dialog.dart';
-import 'client/create_client_opening_dialog.dart';
+// import 'supplier/create_supplier_opening_dialog.dart';
+// import 'client/create_client_opening_dialog.dart';
 import 'goods/create_goods_opening_dialog.dart';
-import 'cash_register/create_cash_register_opening_dialog.dart';
+// import 'cash_register/create_cash_register_opening_dialog.dart';
 
 class TaskStyles {
   static const Color activeColor = Color(0xff1E2E52);
@@ -314,13 +314,17 @@ class _OpeningsScreenState extends State<OpeningsScreen> with TickerProviderStat
     
     Widget dialog;
     if (id == 0) {
-      dialog = const CreateSupplierOpeningDialog();
+      dialog = const CreateGoodsOpeningDialog();
+
+      // dialog = const CreateSupplierOpeningDialog();
     } else if (id == 1) {
-      dialog = const CreateClientOpeningDialog();
+      dialog = const CreateGoodsOpeningDialog();
+      // dialog = const CreateClientOpeningDialog();
     } else if (id == 2) {
       dialog = const CreateGoodsOpeningDialog();
     } else if (id == 3) {
-      dialog = const CreateCashRegisterOpeningDialog();
+      dialog = const CreateGoodsOpeningDialog();
+      // dialog = const CreateCashRegisterOpeningDialog();
     } else {
       return;
     }
