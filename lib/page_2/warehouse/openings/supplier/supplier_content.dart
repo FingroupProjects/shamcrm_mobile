@@ -18,72 +18,23 @@ class SupplierContent extends StatefulWidget {
 }
 
 class _SupplierContentState extends State<SupplierContent> {
-  final ScrollController _scrollController = ScrollController();
-  bool _isLoadingMore = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController.addListener(_onScroll);
-  }
-
-  @override
-  void dispose() {
-    _scrollController.removeListener(_onScroll);
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  void _onScroll() {
-    if (_isBottomReached && !_isLoadingMore) {
-      final state = context.read<SupplierOpeningsBloc>().state;
-      if (state is SupplierOpeningsLoaded && !state.hasReachedMax) {
-        setState(() => _isLoadingMore = true);
-        context.read<SupplierOpeningsBloc>().add(
-          LoadSupplierOpenings(page: state.pagination.current_page + 1),
-        );
-      }
-    }
-  }
-
-  bool get _isBottomReached {
-    if (!_scrollController.hasClients) return false;
-    final maxScroll = _scrollController.position.maxScrollExtent;
-    final currentScroll = _scrollController.offset;
-    return currentScroll >= (maxScroll * 0.9);
-  }
-
   Future<void> _onRefresh() async {
-    context.read<SupplierOpeningsBloc>().add(LoadSupplierOpenings(page: 1));
+    context.read<SupplierOpeningsBloc>().add(LoadSupplierOpenings());
     await context.read<SupplierOpeningsBloc>().stream.firstWhere(
           (state) => state is! SupplierOpeningsLoading || state is SupplierOpeningsLoaded || state is SupplierOpeningsError,
     );
   }
 
-  Widget _buildSupplierList(List<SupplierOpening> suppliers, bool hasReachedMax) {
+  Widget _buildSupplierList(List<SupplierOpening> suppliers) {
     return RefreshIndicator(
       onRefresh: _onRefresh,
       color: const Color(0xff1E2E52),
       child: ListView.separated(
         separatorBuilder: (context, index) => const SizedBox(height: 12),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        controller: _scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
-        itemCount: suppliers.length + (hasReachedMax ? 0 : 1),
+        itemCount: suppliers.length,
         itemBuilder: (context, index) {
-          if (index >= suppliers.length) {
-            return _isLoadingMore
-                ? const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Center(
-                child: CircularProgressIndicator(
-                  color: Color(0xff1E2E52),
-                ),
-              ),
-            )
-                : const SizedBox.shrink();
-          }
-
           return SupplierCard(
             supplier: suppliers[index],
             onClick: (supplier) {
@@ -280,19 +231,6 @@ class _SupplierContentState extends State<SupplierContent> {
   Widget build(BuildContext context) {
     return BlocConsumer<SupplierOpeningsBloc, SupplierOpeningsState>(
       listener: (context, state) {
-        if (state is SupplierOpeningsLoaded) {
-          setState(() => _isLoadingMore = false);
-        }
-
-        if (state is SupplierOpeningsPaginationError) {
-          showCustomSnackBar(
-            context: context,
-            message: state.message,
-            isSuccess: false,
-          );
-          setState(() => _isLoadingMore = false);
-        }
-
         // Обработка операционных ошибок через snackbar
         if (state is SupplierOpeningsOperationError) {
           showCustomSnackBar(
@@ -316,7 +254,7 @@ class _SupplierContentState extends State<SupplierContent> {
           if (state.suppliers.isEmpty) {
             return _buildEmptyState();
           }
-          return _buildSupplierList(state.suppliers, state.hasReachedMax);
+          return _buildSupplierList(state.suppliers);
         }
 
         return _buildEmptyState();

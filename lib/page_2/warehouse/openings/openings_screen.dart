@@ -72,11 +72,9 @@ class _OpeningsScreenState extends State<OpeningsScreen> with TickerProviderStat
   ];
   late List<GlobalKey> _tabKeys;
   late int _currentTabIndex;
+  bool isClickAvatarIcon = false;
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
-  bool isClickAvatarIcon = false;
-
-  String _currentSearch = '';
 
   // Store bloc instances
   late SupplierOpeningsBloc _supplierBloc;
@@ -131,38 +129,6 @@ class _OpeningsScreenState extends State<OpeningsScreen> with TickerProviderStat
     super.dispose();
   }
 
-  void _onSearch(String query) {
-    setState(() {
-      _currentSearch = query;
-    });
-    _reloadCurrentTabData();
-  }
-
-  void _resetSearch() {
-    _searchController.clear();
-    setState(() {
-      _currentSearch = '';
-    });
-    _reloadCurrentTabData();
-  }
-
-  void _reloadCurrentTabData() {
-    final id = _tabTitles[_currentTabIndex]['id'];
-    final search = _currentSearch;
-
-    debugPrint("OpeningsScreen._reloadCurrentTabData: search: $search");
-
-    if (id == 0) {
-      _supplierBloc.add(LoadSupplierOpenings(page: 1, search: search));
-    } else if (id == 1) {
-      _clientBloc.add(LoadClientOpenings(page: 1, search: search));
-    } else if (id == 2) {
-      _goodsBloc.add(LoadGoodsOpenings(page: 1, search: search));
-    } else if (id == 3) {
-      _cashRegisterBloc.add(LoadCashRegisterOpenings());
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
@@ -200,13 +166,11 @@ class _OpeningsScreenState extends State<OpeningsScreen> with TickerProviderStat
                 isClickAvatarIcon = !isClickAvatarIcon;
               });
             },
-            showSearchIcon: false, // Скрыть поиск
-            onChangedSearchInput: _onSearch,
+            showSearchIcon: false,
+            onChangedSearchInput: (value) {},
             textEditingController: _searchController,
             focusNode: _searchFocusNode,
-            clearButtonClick: (isSearching) {
-              _resetSearch();
-            },
+            clearButtonClick: (isSearching) {},
           ),
         ),
         body: isClickAvatarIcon

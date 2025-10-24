@@ -18,72 +18,23 @@ class GoodsContent extends StatefulWidget {
 }
 
 class _GoodsContentState extends State<GoodsContent> {
-  final ScrollController _scrollController = ScrollController();
-  bool _isLoadingMore = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController.addListener(_onScroll);
-  }
-
-  @override
-  void dispose() {
-    _scrollController.removeListener(_onScroll);
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  void _onScroll() {
-    if (_isBottomReached && !_isLoadingMore) {
-      final state = context.read<GoodsOpeningsBloc>().state;
-      if (state is GoodsOpeningsLoaded && !state.hasReachedMax) {
-        setState(() => _isLoadingMore = true);
-        context.read<GoodsOpeningsBloc>().add(
-          LoadGoodsOpenings(page: state.pagination.current_page + 1),
-        );
-      }
-    }
-  }
-
-  bool get _isBottomReached {
-    if (!_scrollController.hasClients) return false;
-    final maxScroll = _scrollController.position.maxScrollExtent;
-    final currentScroll = _scrollController.offset;
-    return currentScroll >= (maxScroll * 0.9);
-  }
-
   Future<void> _onRefresh() async {
-    context.read<GoodsOpeningsBloc>().add(LoadGoodsOpenings(page: 1));
+    context.read<GoodsOpeningsBloc>().add(LoadGoodsOpenings());
     await context.read<GoodsOpeningsBloc>().stream.firstWhere(
           (state) => state is! GoodsOpeningsLoading || state is GoodsOpeningsLoaded || state is GoodsOpeningsError,
     );
   }
 
-  Widget _buildGoodsList(List<GoodsOpeningDocument> goods, bool hasReachedMax) {
+  Widget _buildGoodsList(List<GoodsOpeningDocument> goods) {
     return RefreshIndicator(
       onRefresh: _onRefresh,
       color: const Color(0xff1E2E52),
       child: ListView.separated(
         separatorBuilder: (context, index) => const SizedBox(height: 12),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        controller: _scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
-        itemCount: goods.length + (hasReachedMax ? 0 : 1),
+        itemCount: goods.length,
         itemBuilder: (context, index) {
-          if (index >= goods.length) {
-            return _isLoadingMore
-                ? const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Center(
-                child: CircularProgressIndicator(
-                  color: Color(0xff1E2E52),
-                ),
-              ),
-            )
-                : const SizedBox.shrink();
-          }
-
           return GoodsCard(
             goods: goods[index],
             onClick: (goods) {
@@ -280,19 +231,6 @@ class _GoodsContentState extends State<GoodsContent> {
   Widget build(BuildContext context) {
     return BlocConsumer<GoodsOpeningsBloc, GoodsOpeningsState>(
       listener: (context, state) {
-        if (state is GoodsOpeningsLoaded) {
-          setState(() => _isLoadingMore = false);
-        }
-
-        if (state is GoodsOpeningsPaginationError) {
-          showCustomSnackBar(
-            context: context,
-            message: state.message,
-            isSuccess: false,
-          );
-          setState(() => _isLoadingMore = false);
-        }
-
         // Обработка операционных ошибок через snackbar
         if (state is GoodsOpeningsOperationError) {
           showCustomSnackBar(
@@ -325,7 +263,7 @@ class _GoodsContentState extends State<GoodsContent> {
           if (state.goods.isEmpty) {
             return _buildEmptyState();
           }
-          return _buildGoodsList(state.goods, state.hasReachedMax);
+          return _buildGoodsList(state.goods);
         }
 
         return _buildEmptyState();

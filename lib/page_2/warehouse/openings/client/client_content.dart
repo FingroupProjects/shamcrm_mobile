@@ -18,72 +18,23 @@ class ClientContent extends StatefulWidget {
 }
 
 class _ClientContentState extends State<ClientContent> {
-  final ScrollController _scrollController = ScrollController();
-  bool _isLoadingMore = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController.addListener(_onScroll);
-  }
-
-  @override
-  void dispose() {
-    _scrollController.removeListener(_onScroll);
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  void _onScroll() {
-    if (_isBottomReached && !_isLoadingMore) {
-      final state = context.read<ClientOpeningsBloc>().state;
-      if (state is ClientOpeningsLoaded && !state.hasReachedMax) {
-        setState(() => _isLoadingMore = true);
-        context.read<ClientOpeningsBloc>().add(
-          LoadClientOpenings(page: state.pagination.current_page + 1),
-        );
-      }
-    }
-  }
-
-  bool get _isBottomReached {
-    if (!_scrollController.hasClients) return false;
-    final maxScroll = _scrollController.position.maxScrollExtent;
-    final currentScroll = _scrollController.offset;
-    return currentScroll >= (maxScroll * 0.9);
-  }
-
   Future<void> _onRefresh() async {
-    context.read<ClientOpeningsBloc>().add(LoadClientOpenings(page: 1));
+    context.read<ClientOpeningsBloc>().add(LoadClientOpenings());
     await context.read<ClientOpeningsBloc>().stream.firstWhere(
           (state) => state is! ClientOpeningsLoading || state is ClientOpeningsLoaded || state is ClientOpeningsError,
     );
   }
 
-  Widget _buildClientList(List<ClientOpening> clients, bool hasReachedMax) {
+  Widget _buildClientList(List<ClientOpening> clients) {
     return RefreshIndicator(
       onRefresh: _onRefresh,
       color: const Color(0xff1E2E52),
       child: ListView.separated(
         separatorBuilder: (context, index) => const SizedBox(height: 12),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        controller: _scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
-        itemCount: clients.length + (hasReachedMax ? 0 : 1),
+        itemCount: clients.length,
         itemBuilder: (context, index) {
-          if (index >= clients.length) {
-            return _isLoadingMore
-                ? const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Center(
-                child: CircularProgressIndicator(
-                  color: Color(0xff1E2E52),
-                ),
-              ),
-            )
-                : const SizedBox.shrink();
-          }
-
           return ClientCard(
             client: clients[index],
             onClick: (client) {
@@ -280,19 +231,6 @@ class _ClientContentState extends State<ClientContent> {
   Widget build(BuildContext context) {
     return BlocConsumer<ClientOpeningsBloc, ClientOpeningsState>(
       listener: (context, state) {
-        if (state is ClientOpeningsLoaded) {
-          setState(() => _isLoadingMore = false);
-        }
-
-        if (state is ClientOpeningsPaginationError) {
-          showCustomSnackBar(
-            context: context,
-            message: state.message,
-            isSuccess: false,
-          );
-          setState(() => _isLoadingMore = false);
-        }
-
         // Обработка операционных ошибок через snackbar
         if (state is ClientOpeningsOperationError) {
           showCustomSnackBar(
@@ -318,7 +256,7 @@ class _ClientContentState extends State<ClientContent> {
           if (state.clients.isEmpty) {
             return _buildEmptyState();
           }
-          return _buildClientList(state.clients, state.hasReachedMax);
+          return _buildClientList(state.clients);
         }
 
         return _buildEmptyState();

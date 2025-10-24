@@ -15622,25 +15622,8 @@ Future<void> clearFieldConfigurationCache() async {
 
   //==================== OPENING GOOD SECTION ================
   /// Получить первоначальные остатки по товарам
-  Future<GoodsOpeningsResponse> getGoodsOpenings({
-    String? search,
-    Map<String, dynamic>? filter,
-  }) async {
+  Future<GoodsOpeningsResponse> getGoodsOpenings() async {
     String path = await _appendQueryParams('/good-initial-balance');
-
-    // Добавляем параметр поиска
-    if (search != null && search.isNotEmpty) {
-      path = path.contains('?') ? '$path&search=$search' : '$path?search=$search';
-    }
-
-    // Добавляем фильтры
-    if (filter != null && filter.isNotEmpty) {
-      filter.forEach((key, value) {
-        if (value != null && value.toString().isNotEmpty) {
-          path = path.contains('?') ? '$path&$key=$value' : '$path?$key=$value';
-        }
-      });
-    }
 
     if (kDebugMode) {
       print('ApiService: getGoodsOpenings - path: $path');
@@ -15793,25 +15776,8 @@ Future<void> clearFieldConfigurationCache() async {
   //========= OPENING CLIENT SECTION ==========
 
   /// Получить первоначальные остатки по клиентам
-  Future<ClientOpeningsResponse> getClientOpenings({
-    String? search,
-    Map<String, dynamic>? filter,
-  }) async {
+  Future<ClientOpeningsResponse> getClientOpenings() async {
     String path = await _appendQueryParams('/initial-balance/lead');
-
-    // Добавляем параметр поиска
-    if (search != null && search.isNotEmpty) {
-      path = path.contains('?') ? '$path&search=$search' : '$path?search=$search';
-    }
-
-    // Добавляем фильтры
-    if (filter != null && filter.isNotEmpty) {
-      filter.forEach((key, value) {
-        if (value != null && value.toString().isNotEmpty) {
-          path = path.contains('?') ? '$path&$key=$value' : '$path?$key=$value';
-        }
-      });
-    }
 
     if (kDebugMode) {
       print('ApiService: getClientOpenings - path: $path');
@@ -15963,25 +15929,8 @@ Future<void> clearFieldConfigurationCache() async {
   //========= OPENING SUPPLIER SECTION ==========
 
   /// Получить первоначальные остатки по поставщикам
-  Future<SupplierOpeningsResponse> getSupplierOpenings({
-    String? search,
-    Map<String, dynamic>? filter,
-  }) async {
+  Future<SupplierOpeningsResponse> getSupplierOpenings() async {
     String path = await _appendQueryParams('/initial-balance/supplier');
-
-    // Добавляем параметр поиска
-    if (search != null && search.isNotEmpty) {
-      path = path.contains('?') ? '$path&search=$search' : '$path?search=$search';
-    }
-
-    // Добавляем фильтры
-    if (filter != null && filter.isNotEmpty) {
-      filter.forEach((key, value) {
-        if (value != null && value.toString().isNotEmpty) {
-          path = path.contains('?') ? '$path&$key=$value' : '$path?$key=$value';
-        }
-      });
-    }
 
     if (kDebugMode) {
       print('ApiService: getSupplierOpenings - path: $path');

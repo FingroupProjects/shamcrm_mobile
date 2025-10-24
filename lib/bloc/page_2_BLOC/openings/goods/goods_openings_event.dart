@@ -1,25 +1,11 @@
 abstract class GoodsOpeningsEvent {}
 
 class LoadGoodsOpenings extends GoodsOpeningsEvent {
-  final int page;
-  final String? search;
-  final Map<String, dynamic>? filter;
-
-  LoadGoodsOpenings({
-    this.page = 1,
-    this.search,
-    this.filter,
-  });
+  LoadGoodsOpenings();
 }
 
 class RefreshGoodsOpenings extends GoodsOpeningsEvent {
-  final String? search;
-  final Map<String, dynamic>? filter;
-
-  RefreshGoodsOpenings({
-    this.search,
-    this.filter,
-  });
+  RefreshGoodsOpenings();
 }
 
 class DeleteGoodsOpening extends GoodsOpeningsEvent {
