@@ -645,16 +645,6 @@ Future<void> _initializeBaseUrl() async {
                                 ),
                             ],
                           ),
-                          Text(
-                            AppLocalizations.of(context)!.translate('comment'),
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              fontFamily: 'Gilroy',
-                              color: Color(0xff1E2E52),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
                           CustomTextField(
                             controller: _commentController,
                             hintText: AppLocalizations.of(context)!.translate('please_enter_comment'),

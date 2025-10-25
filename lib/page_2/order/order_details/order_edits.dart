@@ -50,6 +50,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   Branch? _selectedBranch;
   DeliveryAddress? _selectedDeliveryAddress;
   String? selectedDialCode;
+  String? _fullPhoneNumber; // Полный номер телефона с кодом страны
   String? baseUrl;
   List<Branch> branches = [];
     final ApiService _apiService = ApiService();
@@ -96,6 +97,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
     }
 
     String phoneText = widget.order.phone;
+    _fullPhoneNumber = phoneText; // Сохраняем полный номер
     if (RegExp(r'^\+?\d{2,}$').hasMatch(phoneText)) {
       for (var country in countries) {
         if (phoneText.startsWith(country.dialCode)) {
@@ -241,9 +243,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
 
   void _navigateToAddProduct() async {
     final Order tempOrder = widget.order.copyWith(
-      phone: selectedDialCode != null
-          ? '$selectedDialCode${_phoneController.text}'
-          : _phoneController.text,
+      phone: _fullPhoneNumber ?? widget.order.phone,
       delivery: _deliveryMethod == AppLocalizations.of(context)!.translate('delivery'),
       deliveryAddress: _selectedDeliveryAddress?.address,
       deliveryAddressId: _selectedDeliveryAddress?.id,
@@ -251,9 +251,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
         id: int.tryParse(selectedLead ?? '0') ?? 0,
         name: widget.order.lead.name,
         channels: widget.order.lead.channels,
-        phone: selectedDialCode != null
-            ? '$selectedDialCode${_phoneController.text}'
-            : _phoneController.text,
+        phone: _fullPhoneNumber ?? widget.order.phone,
       ),
       goods: _items.map((item) {
         final goodItem = GoodItem(
@@ -468,7 +466,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                             controller: _phoneController,
                             onInputChanged: (String number) {
                               if (mounted) {
-                                setState(() => selectedDialCode = number);
+                                setState(() => _fullPhoneNumber = number);
                               }
                             },
                             validator: (value) {
@@ -917,9 +915,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                   final isPickup = _deliveryMethod == AppLocalizations.of(context)!.translate('self_delivery');
                   context.read<OrderBloc>().add(UpdateOrder(
                         orderId: widget.order.id,
-                        phone: selectedDialCode != null
-                            ? '$selectedDialCode${_phoneController.text}'
-                            : _phoneController.text,
+                          phone: _fullPhoneNumber ?? widget.order.phone,
                         leadId: int.parse(selectedLead ?? '0'),
                         delivery: !isPickup,
                         deliveryAddress: isPickup ? null : _selectedDeliveryAddress?.address,

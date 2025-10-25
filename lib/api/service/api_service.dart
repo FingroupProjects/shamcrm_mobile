@@ -9272,7 +9272,7 @@ Future<String> _appendQueryParams(String path) async {
       if (token == null) throw Exception('Токен не найден');
 
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-      final path = await _appendQueryParams('/order');
+      final path = await _appendQueryParams('/order/store/from-online-shop');
       if (kDebugMode) {
         //print('ApiService: createOrder - Generated path: $path');
       }
