@@ -1430,6 +1430,8 @@
   "select_storage": "Omborni tanlang",
   "select_unit": "O'lchov birligini tanlang",
   "select_storage_first": "Avval omborni tanlang",
+  "select_good_first": "Avval tovarni tanlang",
+  "no_units_for_good": "Tovar uchun o'lchov birliklari yo'q",
   "inn": "STIR",
   "enter_inn": "STIRni kiriting",
   "note": "Izoh",

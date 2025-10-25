@@ -1410,6 +1410,8 @@
   "select_storage": "Select storage",
   "select_unit": "Select unit of measurement",
   "select_storage_first": "Select storage first",
+  "select_good_first": "Select the good first",
+  "no_units_for_good": "No units for the good",
   "inn": "TIN",
   "enter_inn": "Enter TIN",
   "note": "Note",

@@ -160,14 +160,14 @@ class _GoodsOpeningDetailsScreenState extends State<GoodsOpeningDetailsScreen> {
                 
                 // Get the bloc from the current context
                 final openingsBloc = context.read<GoodsOpeningsBloc>();
-                
+
                 final result = await Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => MultiBlocProvider(
                       providers: [
                         BlocProvider.value(value: openingsBloc),
-                        BlocProvider(create: (context) => GetAllGoodsListBloc()),
+                        BlocProvider.value(value: GetAllGoodsListBloc()),
                         BlocProvider(create: (context) => GetAllCashRegisterBloc()),
                       ],
                       child: EditGoodsOpeningScreen(

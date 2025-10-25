@@ -1245,6 +1245,8 @@
   "select_storage": "Выберите склад",
   "select_unit": "Выберите единицу измерения",
   "select_storage_first": "Сначала выберите склад",
+  "select_good_first": "Сначала выберите товар",
+  "no_units_for_good": "Нет единиц для товара",
   "inn": "ИНН",
   "enter_inn": "Введите ИНН",
   "note": "Примечание",
