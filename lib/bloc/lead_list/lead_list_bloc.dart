@@ -8,13 +8,19 @@ import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:flutter/foundation.dart';
 
 class GetAllLeadBloc extends Bloc<GetAllLeadEvent, GetAllLeadState> {
-  LeadsDataResponse? _cachedLeads;
-  DateTime? _lastLoadTime;
+  // ИСПРАВЛЕНО: Два отдельных кэша для разных типов данных
+  LeadsDataResponse? _cachedLeadsWithoutDebt;
+  DateTime? _lastLoadTimeWithoutDebt;
+
+  LeadsDataResponse? _cachedLeadsWithDebt;
+  DateTime? _lastLoadTimeWithDebt;
+
   static const Duration _cacheExpiration = Duration(minutes: 5);
   final apiService = ApiService();
 
-  // Флаг для отслеживания фоновой загрузки
-  bool _isBackgroundLoading = false;
+  // Флаги для отслеживания фоновой загрузки
+  bool _isBackgroundLoadingWithoutDebt = false;
+  bool _isBackgroundLoadingWithDebt = false;
 
   GetAllLeadBloc() : super(GetAllLeadInitial()) {
     on<GetAllLeadEv>(_getLeads);
@@ -22,20 +28,25 @@ class GetAllLeadBloc extends Bloc<GetAllLeadEvent, GetAllLeadState> {
     on<UpdateLeadsInBackground>(_updateLeadsInBackground);
   }
 
-  bool get _isCacheValid {
-    if (_cachedLeads == null || _lastLoadTime == null) {
+  // ИСПРАВЛЕНО: Проверка валидности кэша с учетом showDebt
+  bool _isCacheValid(bool showDebt) {
+    final cachedData = showDebt ? _cachedLeadsWithDebt : _cachedLeadsWithoutDebt;
+    final lastLoadTime = showDebt ? _lastLoadTimeWithDebt : _lastLoadTimeWithoutDebt;
+
+    if (cachedData == null || lastLoadTime == null) {
       return false;
     }
-    return DateTime.now().difference(_lastLoadTime!) < _cacheExpiration;
+    return DateTime.now().difference(lastLoadTime) < _cacheExpiration;
   }
 
   Future<void> _getLeads(GetAllLeadEv event, Emitter<GetAllLeadState> emit) async {
-    // Если у нас есть валидный кэш, используем его
-    if (_isCacheValid && _cachedLeads != null) {
+    // ИСПРАВЛЕНО: Используем правильный кэш в зависимости от showDebt
+    if (_isCacheValid(event.showDebt)) {
+      final cachedData = event.showDebt ? _cachedLeadsWithDebt : _cachedLeadsWithoutDebt;
       if (kDebugMode) {
-        print('GetAllLeadBloc: Using cached leads data');
+        print('GetAllLeadBloc: Using cached leads data (showDebt=${event.showDebt})');
       }
-      emit(GetAllLeadSuccess(dataLead: _cachedLeads!));
+      emit(GetAllLeadSuccess(dataLead: cachedData!));
       return;
     }
 
@@ -43,9 +54,15 @@ class GetAllLeadBloc extends Bloc<GetAllLeadEvent, GetAllLeadState> {
   }
 
   Future<void> _refreshLeads(RefreshAllLeadEv event, Emitter<GetAllLeadState> emit) async {
-    _cachedLeads = null;
-    _lastLoadTime = null;
-    await _loadLeadsProgressive(emit, false);
+    // ИСПРАВЛЕНО: Очищаем правильный кэш
+    if (event.showDebt) {
+      _cachedLeadsWithDebt = null;
+      _lastLoadTimeWithDebt = null;
+    } else {
+      _cachedLeadsWithoutDebt = null;
+      _lastLoadTimeWithoutDebt = null;
+    }
+    await _loadLeadsProgressive(emit, event.showDebt);
   }
 
   Future<void> _loadLeadsProgressive(Emitter<GetAllLeadState> emit, bool showDebt) async {
@@ -60,19 +77,25 @@ class GetAllLeadBloc extends Bloc<GetAllLeadEvent, GetAllLeadState> {
       emit(GetAllLeadLoading());
 
       if (kDebugMode) {
-        print('GetAllLeadBloc: Loading first page of leads...');
+        print('GetAllLeadBloc: Loading first page of leads (showDebt=$showDebt)...');
       }
 
       // Загружаем только первую страницу
       var firstPageRes = await apiService.getLeadPage(1, showDebt: showDebt);
 
       if (kDebugMode) {
-        print('GetAllLeadBloc: First page loaded with ${firstPageRes.result?.length ?? 0} leads');
+        print('GetAllLeadBloc: First page loaded with ${firstPageRes.result?.length ?? 0} leads (showDebt=$showDebt)');
       }
 
-      // Сразу показываем первую страницу пользователю
-      _cachedLeads = firstPageRes;
-      _lastLoadTime = DateTime.now();
+      // ИСПРАВЛЕНО: Сохраняем в правильный кэш
+      if (showDebt) {
+        _cachedLeadsWithDebt = firstPageRes;
+        _lastLoadTimeWithDebt = DateTime.now();
+      } else {
+        _cachedLeadsWithoutDebt = firstPageRes;
+        _lastLoadTimeWithoutDebt = DateTime.now();
+      }
+
       emit(GetAllLeadSuccess(dataLead: firstPageRes));
 
       // Проверяем, есть ли еще страницы
@@ -81,9 +104,12 @@ class GetAllLeadBloc extends Bloc<GetAllLeadEvent, GetAllLeadState> {
           firstPageRes.pagination!.totalPages != null &&
           firstPageRes.pagination!.currentPage! < firstPageRes.pagination!.totalPages!;
 
-      if (hasMorePages && !_isBackgroundLoading) {
+      // ИСПРАВЛЕНО: Проверяем правильный флаг в зависимости от showDebt
+      final isCurrentlyLoading = showDebt ? _isBackgroundLoadingWithDebt : _isBackgroundLoadingWithoutDebt;
+
+      if (hasMorePages && !isCurrentlyLoading) {
         if (kDebugMode) {
-          print('GetAllLeadBloc: Starting background loading of remaining pages...');
+          print('GetAllLeadBloc: Starting background loading of remaining pages (showDebt=$showDebt)...');
         }
         // Загружаем остальные страницы в фоне
         _loadRemainingPagesInBackground(showDebt);
@@ -98,32 +124,48 @@ class GetAllLeadBloc extends Bloc<GetAllLeadEvent, GetAllLeadState> {
   }
 
   void _loadRemainingPagesInBackground(bool showDebt) {
-    _isBackgroundLoading = true;
+    // ИСПРАВЛЕНО: Устанавливаем правильный флаг
+    if (showDebt) {
+      _isBackgroundLoadingWithDebt = true;
+    } else {
+      _isBackgroundLoadingWithoutDebt = true;
+    }
 
     // Запускаем асинхронную загрузку без await
     _fetchRemainingPages(showDebt).then((_) {
       if (kDebugMode) {
-        print('GetAllLeadBloc: Background loading completed. Total leads: ${_cachedLeads?.result?.length ?? 0}');
+        final cachedData = showDebt ? _cachedLeadsWithDebt : _cachedLeadsWithoutDebt;
+        print('GetAllLeadBloc: Background loading completed (showDebt=$showDebt). Total leads: ${cachedData?.result?.length ?? 0}');
       }
-      _isBackgroundLoading = false;
+      if (showDebt) {
+        _isBackgroundLoadingWithDebt = false;
+      } else {
+        _isBackgroundLoadingWithoutDebt = false;
+      }
     }).catchError((error) {
       if (kDebugMode) {
-        print('GetAllLeadBloc: Error in background loading: $error');
+        print('GetAllLeadBloc: Error in background loading (showDebt=$showDebt): $error');
       }
-      _isBackgroundLoading = false;
+      if (showDebt) {
+        _isBackgroundLoadingWithDebt = false;
+      } else {
+        _isBackgroundLoadingWithoutDebt = false;
+      }
     });
   }
 
   Future<void> _fetchRemainingPages(bool showDebt) async {
     try {
-      List<LeadData> allLeads = List.from(_cachedLeads?.result ?? []);
+      // ИСПРАВЛЕНО: Берем данные из правильного кэша
+      final cachedData = showDebt ? _cachedLeadsWithDebt : _cachedLeadsWithoutDebt;
+      List<LeadData> allLeads = List.from(cachedData?.result ?? []);
       int currentPage = 2;
       bool hasMorePages = true;
 
       while (hasMorePages) {
         try {
           if (kDebugMode) {
-            print('GetAllLeadBloc: Loading page $currentPage in background...');
+            print('GetAllLeadBloc: Loading page $currentPage in background (showDebt=$showDebt)...');
           }
 
           final pageResponse = await apiService.getLeadPage(currentPage, showDebt: showDebt);
@@ -131,15 +173,21 @@ class GetAllLeadBloc extends Bloc<GetAllLeadEvent, GetAllLeadState> {
           if (pageResponse.result != null && pageResponse.result!.isNotEmpty) {
             allLeads.addAll(pageResponse.result!);
 
-            // Обновляем кэш
-            _cachedLeads = LeadsDataResponse(
+            // ИСПРАВЛЕНО: Обновляем правильный кэш
+            final updatedCache = LeadsDataResponse(
               result: allLeads,
               errors: null,
               pagination: pageResponse.pagination,
             );
 
+            if (showDebt) {
+              _cachedLeadsWithDebt = updatedCache;
+            } else {
+              _cachedLeadsWithoutDebt = updatedCache;
+            }
+
             // Отправляем событие для обновления UI (необязательно)
-            add(UpdateLeadsInBackground(_cachedLeads!));
+            add(UpdateLeadsInBackground(updatedCache, showDebt));
 
             if (pageResponse.result!.length < 20 ||
                 (pageResponse.pagination?.currentPage != null &&
@@ -151,7 +199,7 @@ class GetAllLeadBloc extends Bloc<GetAllLeadEvent, GetAllLeadState> {
             }
 
             if (kDebugMode) {
-              print('GetAllLeadBloc: Background loaded page $currentPage, total: ${allLeads.length}');
+              print('GetAllLeadBloc: Background loaded page $currentPage, total: ${allLeads.length} (showDebt=$showDebt)');
             }
           } else {
             hasMorePages = false;
@@ -170,7 +218,12 @@ class GetAllLeadBloc extends Bloc<GetAllLeadEvent, GetAllLeadState> {
         }
       }
 
-      _lastLoadTime = DateTime.now();
+      // ИСПРАВЛЕНО: Обновляем правильное время загрузки
+      if (showDebt) {
+        _lastLoadTimeWithDebt = DateTime.now();
+      } else {
+        _lastLoadTimeWithoutDebt = DateTime.now();
+      }
 
     } catch (e) {
       if (kDebugMode) {
@@ -193,7 +246,9 @@ class GetAllLeadBloc extends Bloc<GetAllLeadEvent, GetAllLeadState> {
     }
   }
 
-  LeadsDataResponse? getCachedLeads() {
-    return _isCacheValid ? _cachedLeads : null;
+  // ИСПРАВЛЕНО: Метод теперь принимает параметр showDebt
+  LeadsDataResponse? getCachedLeads(bool showDebt) {
+    if (!_isCacheValid(showDebt)) return null;
+    return showDebt ? _cachedLeadsWithDebt : _cachedLeadsWithoutDebt;
   }
 }
