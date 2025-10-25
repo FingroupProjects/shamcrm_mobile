@@ -221,6 +221,16 @@ class _ClientContentState extends State<ClientContent> {
   Widget build(BuildContext context) {
     return BlocConsumer<ClientOpeningsBloc, ClientOpeningsState>(
       listener: (context, state) {
+        // Обработка успешного удаления
+        if (state is ClientOpeningDeleteSuccess) {
+          showCustomSnackBar(
+            context: context,
+            message: AppLocalizations.of(context)?.translate('deleted_successfully') ??
+                'Успешно удалено',
+            isSuccess: true,
+          );
+        }
+
         // Обработка операционных ошибок через snackbar
         if (state is ClientOpeningsOperationError) {
           showCustomSnackBar(
@@ -228,6 +238,8 @@ class _ClientContentState extends State<ClientContent> {
             message: state.message,
             isSuccess: false,
           );
+          // Refresh data after delete error
+          context.read<ClientOpeningsBloc>().add(LoadClientOpenings());
         }
       },
       builder: (context, state) {

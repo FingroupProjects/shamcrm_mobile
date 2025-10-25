@@ -48,6 +48,9 @@ class ClientOpeningsBloc extends Bloc<ClientOpeningsEvent, ClientOpeningsState> 
     try {
       await _apiService.deleteClientOpening(event.id);
       
+      // Emit success state
+      emit(ClientOpeningDeleteSuccess());
+      
       // Reload the list after successful deletion
       add(LoadClientOpenings());
     } catch (e) {

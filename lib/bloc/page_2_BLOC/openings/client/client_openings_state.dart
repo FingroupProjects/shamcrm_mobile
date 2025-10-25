@@ -70,6 +70,9 @@ class ClientOpeningUpdateError extends ClientOpeningsState {
   ClientOpeningUpdateError({required this.message});
 }
 
+// Состояние успешного удаления
+class ClientOpeningDeleteSuccess extends ClientOpeningsState {}
+
 // Состояния для загрузки списка клиентов/лидов (для диалога выбора)
 class ClientOpeningsLeadsLoading extends ClientOpeningsState {}
 

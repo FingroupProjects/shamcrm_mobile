@@ -1764,6 +1764,7 @@
   "add_cash_register_opening": "Добавить остаток кассы",
   "enter_sum": "Введите сумму",
   "successfully_updated": "Успешно обновлено",
+  "deleted_successfully": "Успешно удалено",
   "edit_cash_register_opening": "Редактировать остаток кассы",
   "enter_balance": "Введите баланс",
   "no_results": "Нет результатов",

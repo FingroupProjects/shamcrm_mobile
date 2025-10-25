@@ -247,26 +247,14 @@ class _AddCashRegisterOpeningScreenState extends State<AddCashRegisterOpeningScr
               width: 1,
             ),
           ),
-          child: Row(
-            children: [
-              const Icon(
-                Icons.account_balance_wallet_outlined,
-                color: Color(0xff1E2E52),
-                size: 20,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  widget.cashRegisterName,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
-                  ),
-                ),
-              ),
-            ],
+          child: Text(
+            widget.cashRegisterName,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              fontFamily: 'Gilroy',
+              color: Color(0xff1E2E52),
+            ),
           ),
         ),
       ],

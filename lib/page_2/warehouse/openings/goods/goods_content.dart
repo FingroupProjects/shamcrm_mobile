@@ -262,10 +262,13 @@ class _GoodsContentState extends State<GoodsContent> {
           context.read<GoodsOpeningsBloc>().add(LoadGoodsOpenings());
         }
 
-        // if (state is GoodsOpeningDeleteError) {
-        //   _showSnackBarSafely(state.message, isSuccess: false);
-        //   context.read<GoodsOpeningsBloc>().add(LoadGoodsOpenings());
-        // }
+        if (state is GoodsOpeningDeleteSuccess) {
+          _showSnackBarSafely(
+            AppLocalizations.of(context)?.translate('deleted_successfully') ??
+                'Успешно удалено',
+            isSuccess: true,
+          );
+        }
 
         if (state is GoodsOpeningUpdateSuccess) {
           _showSnackBarSafely(
@@ -293,6 +296,8 @@ class _GoodsContentState extends State<GoodsContent> {
         // Support for operational error state (if exists)
         if (state is GoodsOpeningsOperationError) {
           _showSnackBarSafely(state.message, isSuccess: false);
+          // Refresh data after delete error
+          context.read<GoodsOpeningsBloc>().add(LoadGoodsOpenings());
         }
       },
       builder: (context, state) {

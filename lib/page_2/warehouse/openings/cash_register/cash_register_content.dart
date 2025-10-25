@@ -247,6 +247,16 @@ class _CashRegisterContentState extends State<CashRegisterContent> {
           setState(() => _isLoadingMore = false);
         }
 
+        // Обработка успешного удаления
+        if (state is CashRegisterOpeningDeleteSuccess) {
+          showCustomSnackBar(
+            context: context,
+            message: AppLocalizations.of(context)?.translate('deleted_successfully') ??
+                'Успешно удалено',
+            isSuccess: true,
+          );
+        }
+
         // Обработка операционных ошибок через snackbar
         if (state is CashRegisterOpeningsOperationError) {
           showCustomSnackBar(
@@ -254,6 +264,8 @@ class _CashRegisterContentState extends State<CashRegisterContent> {
             message: state.message,
             isSuccess: false,
           );
+          // Refresh data after delete error
+          context.read<CashRegisterOpeningsBloc>().add(LoadCashRegisterOpenings());
         }
 
         // Поддержка старого состояния ошибки обновления (deprecated)

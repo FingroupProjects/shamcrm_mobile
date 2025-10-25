@@ -94,23 +94,7 @@ class CashRegisterLeadsDialog extends StatelessWidget {
             width: 1,
           ),
         ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: const Color(0xffF8FAFC),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(
-                Icons.account_balance_wallet_outlined,
-                color: Color(0xff1E2E52),
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
+        child: Text(
                 cashRegister.name ?? '',
                 style: const TextStyle(
                   fontFamily: 'Gilroy',
@@ -119,9 +103,7 @@ class CashRegisterLeadsDialog extends StatelessWidget {
                   color: Color(0xff1E2E52),
                 ),
               ),
-            ),
-          ],
-        ),
+
       ),
     );
   }

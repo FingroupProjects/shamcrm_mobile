@@ -69,6 +69,9 @@ class SupplierOpeningUpdateError extends SupplierOpeningsState {
   SupplierOpeningUpdateError({required this.message});
 }
 
+// Состояние успешного удаления
+class SupplierOpeningDeleteSuccess extends SupplierOpeningsState {}
+
 // Состояния для списка поставщиков (для диалога)
 class SupplierOpeningsSuppliersInitial extends SupplierOpeningsState {}
 

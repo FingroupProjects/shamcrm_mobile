@@ -48,6 +48,9 @@ class GoodsOpeningsBloc extends Bloc<GoodsOpeningsEvent, GoodsOpeningsState> {
     try {
       await _apiService.deleteGoodsOpening(event.id);
       
+      // Emit success state
+      emit(GoodsOpeningDeleteSuccess());
+      
       // Reload the list after successful deletion
       add(LoadGoodsOpenings());
     } catch (e) {

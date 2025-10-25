@@ -262,6 +262,14 @@ class _SupplierContentState extends State<SupplierContent> {
           context.read<SupplierOpeningsBloc>().add(LoadSupplierOpenings());
         }
 
+        if (state is SupplierOpeningDeleteSuccess) {
+          _showSnackBarSafely(
+            AppLocalizations.of(context)?.translate('deleted_successfully') ??
+                'Успешно удалено',
+            isSuccess: true,
+          );
+        }
+
         if (state is SupplierOpeningDeleteError) {
           _showSnackBarSafely(state.message, isSuccess: false);
           context.read<SupplierOpeningsBloc>().add(LoadSupplierOpenings());

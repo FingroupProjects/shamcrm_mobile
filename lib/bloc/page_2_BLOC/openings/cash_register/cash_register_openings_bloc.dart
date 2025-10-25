@@ -46,6 +46,9 @@ class CashRegisterOpeningsBloc extends Bloc<CashRegisterOpeningsEvent, CashRegis
     try {
       await _apiService.deleteCashRegisterOpening(event.id);
       
+      // Emit success state
+      emit(CashRegisterOpeningDeleteSuccess());
+      
       add(LoadCashRegisterOpenings());
     } catch (e) {
       // Сохраняем текущее состояние и эмитим операционную ошибку

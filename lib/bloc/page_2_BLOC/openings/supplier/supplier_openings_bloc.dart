@@ -50,6 +50,10 @@ class SupplierOpeningsBloc extends Bloc<SupplierOpeningsEvent, SupplierOpeningsS
       await _apiService.deleteSupplierOpening(event.id);
 
       debugPrint("Supplier opening with ID ${event.id} deleted successfully.");
+      
+      // Emit success state
+      emit(SupplierOpeningDeleteSuccess());
+      
       // Reload the list after successful deletion
       add(LoadSupplierOpenings());
     } catch (e) {

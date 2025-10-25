@@ -1762,6 +1762,7 @@
   "add_cash_register_opening": "Add cash register balance",
   "enter_sum": "Enter amount",
   "successfully_updated": "Successfully updated",
+  "deleted_successfully": "Successfully deleted",
   "edit_cash_register_opening": "Edit cash register balance",
   "enter_balance": "Enter balance",
   "no_results": "No results",

@@ -73,6 +73,9 @@ class CashRegisterOpeningUpdateError extends CashRegisterOpeningsState {
   CashRegisterOpeningUpdateError({required this.message});
 }
 
+// Состояние успешного удаления
+class CashRegisterOpeningDeleteSuccess extends CashRegisterOpeningsState {}
+
 class Pagination {
   final int total;
   final int count;

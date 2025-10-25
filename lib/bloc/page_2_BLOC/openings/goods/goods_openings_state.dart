@@ -72,6 +72,9 @@ class GoodsOpeningUpdateError extends GoodsOpeningsState {
   GoodsOpeningUpdateError({required this.message});
 }
 
+// Состояние успешного удаления
+class GoodsOpeningDeleteSuccess extends GoodsOpeningsState {}
+
 // States for good variants
 class GoodsOpeningsGoodVariantsInitial extends GoodsOpeningsState {}
 

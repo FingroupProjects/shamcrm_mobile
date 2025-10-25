@@ -106,6 +106,8 @@ class _OpeningsScreenState extends State<OpeningsScreen> with TickerProviderStat
         _currentTabIndex = _tabController.index;
       });
       _scrollToActiveTab();
+      // Reload data when tab changes
+      _loadDataForCurrentTab();
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -270,6 +272,24 @@ class _OpeningsScreenState extends State<OpeningsScreen> with TickerProviderStat
           curve: Curves.easeInOut,
         );
       }
+    }
+  }
+
+  void _loadDataForCurrentTab() {
+    final id = _tabTitles[_currentTabIndex]['id'];
+    
+    if (id == 0) {
+      // Supplier tab
+      _supplierBloc.add(LoadSupplierOpenings());
+    } else if (id == 1) {
+      // Client tab
+      _clientBloc.add(LoadClientOpenings());
+    } else if (id == 2) {
+      // Goods tab
+      _goodsBloc.add(LoadGoodsOpenings());
+    } else if (id == 3) {
+      // Cash register tab
+      _cashRegisterBloc.add(LoadCashRegisterOpenings());
     }
   }
 
