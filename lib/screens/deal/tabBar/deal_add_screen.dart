@@ -10,6 +10,7 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
+import 'package:crm_task_manager/custom_widget/file_picker_dialog.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
@@ -68,171 +69,184 @@ class _DealAddScreenState extends State<DealAddScreen> {
     _fetchAndAddCustomFields();
   }
 
-  Future<void> _pickFile() async {
-    try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(allowMultiple: true);
-      //print('DealAddScreen: FilePicker result: ${result?.files.map((f) => f.name).toList()}');
-      if (result != null) {
-        double totalSize = selectedFiles.fold<double>(
-          0.0,
-          (sum, file) => sum + File(file).lengthSync() / (1024 * 1024),
-        );
-        double newFilesSize = result.files.fold<double>(
-          0.0,
-          (sum, file) => sum + file.size / (1024 * 1024),
-        );
-        //print('DealAddScreen: Total size: $totalSize MB, New files size: $newFilesSize MB');
+ Future<void> _pickFile() async {
+  // Вычисляем текущий общий размер файлов
+  double totalSize = selectedFiles.fold<double>(
+    0.0,
+    (sum, file) => sum + File(file).lengthSync() / (1024 * 1024),
+  );
 
-        if (totalSize + newFilesSize > 50) {
-          //print('DealAddScreen: File size exceeds 50MB limit');
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                AppLocalizations.of(context)!.translate('file_size_too_large'),
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              backgroundColor: Colors.red,
-              elevation: 3,
-              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              duration: Duration(seconds: 3),
-            ),
-          );
-          return;
-        }
+  // Показываем диалог выбора типа файла
+  final List<PickedFileInfo>? pickedFiles = await FilePickerDialog.show(
+    context: context,
+    allowMultiple: true,
+    maxSizeMB: 50.0,
+    currentTotalSizeMB: totalSize,
+    fileLabel: AppLocalizations.of(context)!.translate('file'),
+    galleryLabel: AppLocalizations.of(context)!.translate('gallery'),
+    cameraLabel: AppLocalizations.of(context)!.translate('camera'),
+    cancelLabel: AppLocalizations.of(context)!.translate('cancel'),
+    fileSizeTooLargeMessage: AppLocalizations.of(context)!.translate('file_size_too_large'),
+    errorPickingFileMessage: AppLocalizations.of(context)!.translate('error_picking_file'),
+  );
 
-        setState(() {
-          for (var file in result.files) {
-            selectedFiles.add(file.path!);
-            fileNames.add(file.name);
-            fileSizes.add('${(file.size / 1024).toStringAsFixed(3)}KB');
-          }
-          //print('DealAddScreen: Added files: $fileNames');
-        });
+  // Если файлы выбраны, добавляем их
+  if (pickedFiles != null && pickedFiles.isNotEmpty) {
+    setState(() {
+      for (var file in pickedFiles) {
+        selectedFiles.add(file.path);
+        fileNames.add(file.name);
+        fileSizes.add(file.sizeKB);
       }
-    } catch (e) {
-      //print('DealAddScreen: Error picking file: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Ошибка при выборе файла!"), backgroundColor: Colors.red),
-      );
-    }
+    });
   }
-
-  Widget _buildFileSelection() {
-    //print('DealAddScreen: Building file selection with ${fileNames.length} files');
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          AppLocalizations.of(context)!.translate('file'),
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
-          ),
+}
+Widget _buildFileIcon(String fileName, String fileExtension) {
+  // Проверяем, является ли файл изображением
+  final imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'heic', 'heif'];
+  
+  if (imageExtensions.contains(fileExtension)) {
+    // Для изображений показываем превью
+    final filePath = selectedFiles[fileNames.indexOf(fileName)];
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: Image.file(
+        File(filePath),
+        width: 60,
+        height: 60,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Image.asset('assets/icons/files/file.png', width: 60, height: 60);
+        },
+      ),
+    );
+  } else {
+    // Для остальных файлов показываем иконку по типу
+    return Image.asset(
+      'assets/icons/files/$fileExtension.png',
+      width: 60,
+      height: 60,
+      errorBuilder: (context, error, stackTrace) {
+        return Image.asset('assets/icons/files/file.png', width: 60, height: 60);
+      },
+    );
+  }
+}
+ Widget _buildFileSelection() {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        AppLocalizations.of(context)!.translate('file'),
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+          fontFamily: 'Gilroy',
+          color: Color(0xff1E2E52),
         ),
-        SizedBox(height: 16),
-        Container(
-          height: 120,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: fileNames.isEmpty ? 1 : fileNames.length + 1,
-            itemBuilder: (context, index) {
-              if (fileNames.isEmpty || index == fileNames.length) {
-                return Padding(
-                  padding: EdgeInsets.only(right: 16),
-                  child: GestureDetector(
-                    onTap: _pickFile,
-                    child: Container(
-                      width: 100,
-                      child: Column(
-                        children: [
-                          Image.asset('assets/icons/files/add.png', width: 60, height: 60),
-                          SizedBox(height: 8),
-                          Text(
-                            AppLocalizations.of(context)!.translate('add_file'),
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontFamily: 'Gilroy',
-                              color: Color(0xff1E2E52),
-                            ),
+      ),
+      SizedBox(height: 16),
+      Container(
+        height: 120,
+        child: ListView.builder(
+          scrollDirection: Axis.horizontal,
+          itemCount: fileNames.isEmpty ? 1 : fileNames.length + 1,
+          itemBuilder: (context, index) {
+            // Кнопка добавления файла
+            if (fileNames.isEmpty || index == fileNames.length) {
+              return Padding(
+                padding: EdgeInsets.only(right: 16),
+                child: GestureDetector(
+                  onTap: _pickFile,
+                  child: Container(
+                    width: 100,
+                    child: Column(
+                      children: [
+                        Image.asset('assets/icons/files/add.png', width: 60, height: 60),
+                        SizedBox(height: 8),
+                        Text(
+                          AppLocalizations.of(context)!.translate('add_file'),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontFamily: 'Gilroy',
+                            color: Color(0xff1E2E52),
                           ),
-                        ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }
+            
+            // Отображение выбранных файлов
+            final fileName = fileNames[index];
+            final fileExtension = fileName.split('.').last.toLowerCase();
+            
+            return Padding(
+              padding: EdgeInsets.only(right: 16),
+              child: Stack(
+                children: [
+                  Container(
+                    width: 100,
+                    child: Column(
+                      children: [
+                        // НОВОЕ: Используем метод _buildFileIcon для показа превью или иконки
+                        _buildFileIcon(fileName, fileExtension),
+                        SizedBox(height: 8),
+                        Text(
+                          fileName,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontFamily: 'Gilroy',
+                            color: Color(0xff1E2E52),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Кнопка удаления файла
+                  Positioned(
+                    right: -2,
+                    top: -6,
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          selectedFiles.removeAt(index);
+                          fileNames.removeAt(index);
+                          fileSizes.removeAt(index);
+                        });
+                      },
+                      child: Container(
+                        padding: EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 4,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Icon(Icons.close, size: 16, color: Color(0xff1E2E52)),
                       ),
                     ),
                   ),
-                );
-              }
-              final fileName = fileNames[index];
-              final fileExtension = fileName.split('.').last.toLowerCase();
-              //print('DealAddScreen: Displaying file: $fileName');
-              return Padding(
-                padding: EdgeInsets.only(right: 16),
-                child: Stack(
-                  children: [
-                    Container(
-                      width: 100,
-                      child: Column(
-                        children: [
-                          Image.asset(
-                            'assets/icons/files/$fileExtension.png',
-                            width: 60,
-                            height: 60,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Image.asset('assets/icons/files/file.png', width: 60, height: 60);
-                            },
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            fileName,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontFamily: 'Gilroy',
-                              color: Color(0xff1E2E52),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Positioned(
-                      right: -2,
-                      top: -6,
-                      child: GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            selectedFiles.removeAt(index);
-                            fileNames.removeAt(index);
-                            fileSizes.removeAt(index);
-                            //print('DealAddScreen: Removed file: $fileName');
-                          });
-                        },
-                        child: Container(
-                          padding: EdgeInsets.all(4),
-                          child: Icon(Icons.close, size: 16, color: Color(0xff1E2E52)),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
+                ],
+              ),
+            );
+          },
         ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
+}
 
   void _fetchAndAddCustomFields() async {
     try {

@@ -12,6 +12,7 @@ import 'package:crm_task_manager/bloc/notes/notes_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
+import 'package:crm_task_manager/custom_widget/file_picker_dialog.dart';
 import 'package:crm_task_manager/models/event_by_Id_model.dart';
 import 'package:crm_task_manager/screens/event/event_details/managers_event.dart';
 import 'package:crm_task_manager/screens/event/event_details/notice_subject_list.dart';
@@ -275,102 +276,35 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
     );
   }
 Future<void> _pickFile() async {
-  try {
-    //print('NoticeEditScreen: Starting file picker');
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-      type: FileType.any,
-      allowMultiple: true,
-    );
-    if (result != null && result.files.isNotEmpty) {
-      for (var file in result.files) {
-        if (file.path != null && file.name != null) {
-          final filePath = file.path!;
-          //print('NoticeEditScreen: Picked file path: $filePath');
-          final fileObject = File(filePath);
-          if (await fileObject.exists()) {
-            final fileName = file.name;
-            // Проверяем, не существует ли файл уже в existingFiles или newFiles
-            if (!existingFiles.any((f) => f.name == fileName) &&
-                !newFiles.contains(filePath)) {
-              final fileSize = await fileObject.length();
-              // //print(
-              //     'NoticeEditScreen: Adding new file, name: $fileName, size: $fileSize bytes');
-              setState(() {
-                newFiles.add(filePath); // Добавляем в newFiles
-                fileNames.add(fileName);
-                fileSizes.add('${(fileSize / 1024).toStringAsFixed(3)}KB');
-                selectedFiles.add(filePath); // Для отображения в UI
-              });
-            } else {
-              //print('NoticeEditScreen: File $fileName already exists, skipping');
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    AppLocalizations.of(context)!.translate('file_already_exists'),
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  behavior: SnackBarBehavior.floating,
-                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  backgroundColor: Colors.red,
-                  elevation: 3,
-                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  duration: Duration(seconds: 3),
-                ),
-              );
-            }
-          } else {
-            //print('NoticeEditScreen: File does not exist at path: $filePath');
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  AppLocalizations.of(context)!.translate('file_not_found'),
-                  style: TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
-                  ),
-                ),
-                behavior: SnackBarBehavior.floating,
-                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                backgroundColor: Colors.red,
-                elevation: 3,
-                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                duration: Duration(seconds: 3),
-              ),
-            );
-          }
-        } else {
-          // //print(
-          //     'NoticeEditScreen: File path or name is null for file: ${file.name}');
-        }
+  // Вычисляем текущий общий размер файлов
+  double totalSize = selectedFiles.fold<double>(
+    0.0,
+    (sum, file) => sum + File(file).lengthSync() / (1024 * 1024),
+  );
+
+  // Показываем диалог выбора типа файла
+  final List<PickedFileInfo>? pickedFiles = await FilePickerDialog.show(
+    context: context,
+    allowMultiple: true,
+    maxSizeMB: 50.0,
+    currentTotalSizeMB: totalSize,
+    fileLabel: AppLocalizations.of(context)!.translate('file'),
+    galleryLabel: AppLocalizations.of(context)!.translate('gallery'),
+    cameraLabel: AppLocalizations.of(context)!.translate('camera'),
+    cancelLabel: AppLocalizations.of(context)!.translate('cancel'),
+    fileSizeTooLargeMessage: AppLocalizations.of(context)!.translate('file_size_too_large'),
+    errorPickingFileMessage: AppLocalizations.of(context)!.translate('error_picking_file'),
+  );
+
+  // Если файлы выбраны, добавляем их
+  if (pickedFiles != null && pickedFiles.isNotEmpty) {
+    setState(() {
+      for (var file in pickedFiles) {
+        selectedFiles.add(file.path);
+        fileNames.add(file.name);
+        fileSizes.add(file.sizeKB);
       }
-    } else {
-      //print('NoticeEditScreen: File picker cancelled or no files selected');
-    }
-  } catch (e, stackTrace) {
-    //print('NoticeEditScreen: Error picking file: $e');
-    //print('Stack trace: $stackTrace');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          AppLocalizations.of(context)!.translate('error_picking_file'),
-          style: TextStyle(color: Colors.white),
-        ),
-        backgroundColor: Colors.red,
-      ),
-    );
+    });
   }
 }
 
@@ -394,6 +328,7 @@ Widget _buildFileSelection() {
           scrollDirection: Axis.horizontal,
           itemCount: fileNames.isEmpty ? 1 : fileNames.length + 1,
           itemBuilder: (context, index) {
+            // Кнопка добавления файла
             if (fileNames.isEmpty || index == fileNames.length) {
               return Padding(
                 padding: EdgeInsets.only(right: 16),
@@ -403,11 +338,7 @@ Widget _buildFileSelection() {
                     width: 100,
                     child: Column(
                       children: [
-                        Image.asset(
-                          'assets/icons/files/add.png',
-                          width: 60,
-                          height: 60,
-                        ),
+                        Image.asset('assets/icons/files/add.png', width: 60, height: 60),
                         SizedBox(height: 8),
                         Text(
                           AppLocalizations.of(context)!.translate('add_file'),
@@ -424,11 +355,11 @@ Widget _buildFileSelection() {
                 ),
               );
             }
-
+            
+            // Отображение выбранных файлов
             final fileName = fileNames[index];
             final fileExtension = fileName.split('.').last.toLowerCase();
-            final isExistingFile = index < existingFiles.length;
-
+            
             return Padding(
               padding: EdgeInsets.only(right: 16),
               child: Stack(
@@ -437,18 +368,8 @@ Widget _buildFileSelection() {
                     width: 100,
                     child: Column(
                       children: [
-                        Image.asset(
-                          'assets/icons/files/$fileExtension.png',
-                          width: 60,
-                          height: 60,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Image.asset(
-                              'assets/icons/files/file.png',
-                              width: 60,
-                              height: 60,
-                            );
-                          },
-                        ),
+                        // НОВОЕ: Используем метод _buildFileIcon для показа превью или иконки
+                        _buildFileIcon(fileName, fileExtension),
                         SizedBox(height: 8),
                         Text(
                           fileName,
@@ -464,141 +385,32 @@ Widget _buildFileSelection() {
                       ],
                     ),
                   ),
+                  // Кнопка удаления файла
                   Positioned(
                     right: -2,
                     top: -6,
                     child: GestureDetector(
-                      onTap: () async {
-                        bool? confirmed = await showDialog<bool>(
-                          context: context,
-                          builder: (BuildContext context) {
-                            return AlertDialog(
-                              backgroundColor: Colors.white,
-                              title: Center(
-                                child: Text(
-                                  AppLocalizations.of(context)!
-                                      .translate('delete_file'),
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    fontFamily: 'Gilroy',
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xff1E2E52),
-                                  ),
-                                ),
-                              ),
-                              content: Text(
-                                AppLocalizations.of(context)!
-                                    .translate('confirm_delete_file'),
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontFamily: 'Gilroy',
-                                  fontWeight: FontWeight.w500,
-                                  color: Color(0xff1E2E52),
-                                ),
-                              ),
-                              actions: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  children: [
-                                    Expanded(
-                                      child: CustomButton(
-                                        buttonText: AppLocalizations.of(context)!
-                                            .translate('cancel'),
-                                        onPressed: () =>
-                                            Navigator.of(context).pop(false),
-                                        buttonColor: Colors.red,
-                                        textColor: Colors.white,
-                                      ),
-                                    ),
-                                    SizedBox(width: 8),
-                                    Expanded(
-                                      child: CustomButton(
-                                        buttonText: AppLocalizations.of(context)!
-                                            .translate('unpin'),
-                                        onPressed: () async {
-                                          if (isExistingFile) {
-                                            try {
-                                              final result = await _apiService
-                                                  .deleteTaskFile(
-                                                      existingFiles[index].id);
-                                              if (result['result'] ==
-                                                  'Success') {
-                                                setState(() {
-                                                  existingFiles.removeAt(index);
-                                                  fileNames.removeAt(index);
-                                                  selectedFiles.remove(
-                                                      existingFiles[index].path);
-                                                });
-                                                Navigator.of(context).pop(true);
-                                                ScaffoldMessenger.of(context)
-                                                    .showSnackBar(
-                                                  SnackBar(
-                                                    content: Text(
-                                                      AppLocalizations.of(
-                                                              context)!
-                                                          .translate(
-                                                              'file_deleted_successfully'),
-                                                      style: TextStyle(
-                                                        fontFamily: 'Gilroy',
-                                                        fontSize: 16,
-                                                        fontWeight:
-                                                            FontWeight.w500,
-                                                        color: Colors.white,
-                                                      ),
-                                                    ),
-                                                    backgroundColor:
-                                                        Colors.green,
-                                                  ),
-                                                );
-                                              }
-                                            } catch (e) {
-                                              Navigator.of(context).pop(false);
-                                              ScaffoldMessenger.of(context)
-                                                  .showSnackBar(
-                                                SnackBar(
-                                                  content: Text(
-                                                    AppLocalizations.of(context)!
-                                                        .translate(
-                                                            'failed_to_delete_file'),
-                                                    style: TextStyle(
-                                                        color: Colors.white),
-                                                  ),
-                                                  backgroundColor: Colors.red,
-                                                ),
-                                              );
-                                            }
-                                          } else {
-                                            setState(() {
-                                              final newFileIndex =
-                                                  index - existingFiles.length;
-                                              newFiles.removeAt(newFileIndex);
-                                              fileNames.removeAt(index);
-                                              fileSizes.removeAt(newFileIndex);
-                                              selectedFiles.removeAt(index);
-                                            });
-                                            Navigator.of(context).pop(true);
-                                          }
-                                        },
-                                        buttonColor: Color(0xff1E2E52),
-                                        textColor: Colors.white,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            );
-                          },
-                        );
-
-                        if (confirmed != true) return;
+                      onTap: () {
+                        setState(() {
+                          selectedFiles.removeAt(index);
+                          fileNames.removeAt(index);
+                          fileSizes.removeAt(index);
+                        });
                       },
                       child: Container(
                         padding: EdgeInsets.all(4),
-                        child: Icon(
-                          Icons.close,
-                          size: 16,
-                          color: Color(0xff1E2E52),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 4,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
                         ),
+                        child: Icon(Icons.close, size: 16, color: Color(0xff1E2E52)),
                       ),
                     ),
                   ),
@@ -610,6 +422,54 @@ Widget _buildFileSelection() {
       ),
     ],
   );
+}
+
+// ==========================================
+// НОВЫЙ ВСПОМОГАТЕЛЬНЫЙ МЕТОД
+// Добавьте этот метод в класс _DealAddScreenState
+// ==========================================
+
+/// Строит иконку файла или превью изображения
+Widget _buildFileIcon(String fileName, String fileExtension) {
+  // Список расширений изображений
+  final imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'heic', 'heif'];
+  
+  // Если файл - изображение, показываем превью
+  if (imageExtensions.contains(fileExtension)) {
+    final filePath = selectedFiles[fileNames.indexOf(fileName)];
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: Image.file(
+        File(filePath),
+        width: 60,
+        height: 60,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          // Если не удалось загрузить превью, показываем иконку
+          return Image.asset(
+            'assets/icons/files/file.png',
+            width: 60,
+            height: 60,
+          );
+        },
+      ),
+    );
+  } else {
+    // Для остальных типов файлов показываем иконку по расширению
+    return Image.asset(
+      'assets/icons/files/$fileExtension.png',
+      width: 60,
+      height: 60,
+      errorBuilder: (context, error, stackTrace) {
+        // Если нет иконки для этого типа, показываем общую иконку файла
+        return Image.asset(
+          'assets/icons/files/file.png',
+          width: 60,
+          height: 60,
+        );
+      },
+    );
+  }
 }
   void _submitForm() {
     if (_formKey.currentState!.validate()) {
