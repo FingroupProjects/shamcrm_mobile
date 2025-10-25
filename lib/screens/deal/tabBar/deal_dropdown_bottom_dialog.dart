@@ -2,116 +2,167 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/custom_bottom_dropdown.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
+import 'package:crm_task_manager/models/dealById_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-void DropdownBottomSheet(
+void showDealStatusBottomSheet(
     BuildContext context,
     String defaultValue,
-    Function(String, int) onSelect,
+    Function(String, List<int>) onSelect,
     Deal deal,
+    ApiService apiService,
     ) async {
-  // НОВОЕ: Читаем флаг мультивыбора из настроек
+  // Check permissions first
+  final canEdit = await apiService.hasPermission('deal.update');
+  final canDelete = await apiService.hasPermission('deal.delete');
+  final canRead = await apiService.hasPermission('deal.read');
+
+  if (!canEdit && !canDelete && !canRead) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context)!.translate('no_permission'),
+            style: const TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
+          ),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          backgroundColor: Colors.red,
+          elevation: 3,
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+    return;
+  }
+
+  // Read multi-select flag from preferences
   final prefs = await SharedPreferences.getInstance();
   final bool isMultiSelectEnabled = prefs.getBool('managing_deal_status_visibility') ?? false;
 
   String selectedValue = defaultValue;
   List<int> selectedStatusIds = [];
   bool isLoading = false;
+  bool isInitializing = true;
+
   print('DropdownBottomSheet: managing_deal_status_visibility = $isMultiSelectEnabled');
   print('DropdownBottomSheet: Режим работы = ${isMultiSelectEnabled ? "МУЛЬТИВЫБОР" : "ОДИНОЧНЫЙ"}');
 
-  showModalBottomSheet(
-    context: context,
-    backgroundColor: Colors.white,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-    ),
-    builder: (BuildContext context) {
-      return StatefulBuilder(
-        builder: (BuildContext context, StateSetter setState) {
-          return Container(
-            height: 700,
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                Container(
-                  width: 100,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 7),
-                  decoration: BoxDecoration(
-                    color: Color(0xfffDFE3EC),
-                    borderRadius: BorderRadius.circular(1200),
+  // Initialize selected statuses from API
+  try {
+    final dealData = await apiService.getDealById(deal.id);
+    if (dealData?.dealStatuses != null && dealData!.dealStatuses!.isNotEmpty) {
+      selectedStatusIds = dealData.dealStatuses!.map((s) => s.id).toList();
+      print('✅ Initialized from API: $selectedStatusIds');
+    } else {
+      selectedStatusIds = [deal.statusId];
+      print('⚠️ Using current statusId: ${deal.statusId}');
+    }
+  } catch (e) {
+    print('❌ Error loading deal statuses: $e');
+    selectedStatusIds = [deal.statusId];
+  }
+  isInitializing = false;
+
+  if (context.mounted) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return Container(
+              height: 700,
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Container(
+                    width: 100,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 7),
+                    decoration: BoxDecoration(
+                      color: Color(0xfffDFE3EC),
+                      borderRadius: BorderRadius.circular(1200),
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: FutureBuilder<List<DealStatus>>(
-                    future: ApiService().getDealStatuses(includeAll: true), // ← Добавили параметр
-                    builder: (context, snapshot) {
-                      if (snapshot.hasError) {
-                        return Center(child: Text(AppLocalizations.of(context)!.translate('error_text')));
-                      } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                        return Center(child: Text(AppLocalizations.of(context)!.translate('loading')));
-                      }
+                  Expanded(
+                    child: FutureBuilder<List<DealStatus>>(
+                      future: apiService.getDealStatuses(includeAll: true),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasError) {
+                          return Center(child: Text(AppLocalizations.of(context)!.translate('error_text')));
+                        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                          return Center(child: Text(AppLocalizations.of(context)!.translate('loading')));
+                        }
 
-                      List<DealStatus> statuses = snapshot.data!;
+                        List<DealStatus> statuses = snapshot.data!;
 
-                      return ListView(
-                        children: statuses.map((DealStatus status) {
-                          bool isSelected = selectedStatusIds.contains(status.id);
+                        return ListView(
+                          children: statuses.map((DealStatus status) {
+                            bool isSelected = selectedStatusIds.contains(status.id);
 
-                          return GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                // НОВОЕ: Условная логика на основе флага
-                                if (isMultiSelectEnabled) {
-                                  // Режим мультивыбора
-                                  if (isSelected) {
-                                    selectedStatusIds.remove(status.id);
-                                    if (selectedStatusIds.isEmpty) {
-                                      selectedValue = '';
+                            return GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  if (isMultiSelectEnabled) {
+                                    // Multi-select mode
+                                    if (isSelected) {
+                                      selectedStatusIds.remove(status.id);
+                                      if (selectedStatusIds.isEmpty) {
+                                        selectedValue = '';
+                                      }
+                                    } else {
+                                      selectedStatusIds.add(status.id);
+                                      selectedValue = status.title;
                                     }
                                   } else {
+                                    // Single-select mode
+                                    selectedStatusIds.clear();
                                     selectedStatusIds.add(status.id);
                                     selectedValue = status.title;
                                   }
-                                } else {
-                                  // Режим одиночного выбора
-                                  selectedStatusIds.clear();
-                                  selectedStatusIds.add(status.id);
-                                  selectedValue = status.title;
-                                }
-                              });
-                            },
-                            child: buildDropDownStyles(
-                              text: status.title,
-                              isSelected: isSelected,
-                            ),
-                          );
-                        }).toList(),
-                      );
-                    },
+                                });
+                              },
+                              child: buildDropDownStyles(
+                                text: status.title,
+                                isSelected: isSelected,
+                              ),
+                            );
+                          }).toList(),
+                        );
+                      },
+                    ),
                   ),
-                ),
-                isLoading
-                    ? Center(
-                  child: CircularProgressIndicator(
-                    color: Color(0xff1E2E52),
-                  ),
-                )
-                    : CustomButton(
-                  buttonText: AppLocalizations.of(context)!.translate('save'),
-                  buttonColor: Color(0xfff4F40EC),
-                  textColor: Colors.white,
-                  onPressed: () {
-                    if (selectedStatusIds.isNotEmpty) {
+                  isLoading
+                      ? Center(
+                    child: CircularProgressIndicator(
+                      color: Color(0xff1E2E52),
+                    ),
+                  )
+                      : CustomButton(
+                    buttonText: AppLocalizations.of(context)!.translate('save'),
+                    buttonColor: Color(0xfff4F40EC),
+                    textColor: Colors.white,
+                    onPressed: selectedStatusIds.isEmpty ? null : () {
                       setState(() {
                         isLoading = true;
                       });
 
-                      // Отправка всегда массивом (не изменяется)
-                      ApiService().updateDealStatus(deal.id, deal.statusId, selectedStatusIds).then((_) {
+                      apiService.updateDealStatus(deal.id, deal.statusId, selectedStatusIds).then((_) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
@@ -138,15 +189,15 @@ void DropdownBottomSheet(
                           isLoading = false;
                         });
 
+                        print('✅ Deal status updated: $selectedStatusIds');
                         Navigator.pop(context);
-                        onSelect(selectedValue, selectedStatusIds.first);
+                        onSelect(selectedValue, selectedStatusIds);
                       }).catchError((error) {
                         setState(() {
                           isLoading = false;
                         });
 
-                        if (error is DealStatusUpdateException &&
-                            error.code == 422) {
+                        if (error is DealStatusUpdateException && error.code == 422) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(
@@ -170,19 +221,42 @@ void DropdownBottomSheet(
                             ),
                           );
                           Navigator.pop(context);
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                AppLocalizations.of(context)!.translate('error_text'),
+                                style: TextStyle(
+                                  fontFamily: 'Gilroy',
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              behavior: SnackBarBehavior.floating,
+                              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              backgroundColor: Colors.red,
+                              elevation: 3,
+                              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                              duration: Duration(seconds: 3),
+                            ),
+                          );
                         }
                       });
-                    }
-                  },
-                ),
-                SizedBox(height: 16),
-              ],
-            ),
-          );
-        },
-      );
-    },
-  );
+                    },
+                  ),
+                  SizedBox(height: 16),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
 }
 
 class DealStatusUpdateException implements Exception {
@@ -192,5 +266,5 @@ class DealStatusUpdateException implements Exception {
   DealStatusUpdateException(this.code, this.message);
 
   @override
-  String toString() => 'DealtatusUpdateException($code, $message)';
+  String toString() => 'DealStatusUpdateException($code, $message)';
 }

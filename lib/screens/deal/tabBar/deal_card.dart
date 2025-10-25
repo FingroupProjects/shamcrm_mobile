@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
@@ -187,10 +188,11 @@ class _DealCardState extends State<DealCard> {
                       Flexible(
                         child: GestureDetector(
                           onTap: () {
-                            DropdownBottomSheet(
-                              context,
-                              dropdownValue,
-                                  (String newValue, int newStatusId) {
+                            showDealStatusBottomSheet(
+                                  context,
+                                  dropdownValue,
+                                  (String newValue, List<int> newStatusIds) {
+                                final newStatusId = newStatusIds.isNotEmpty ? newStatusIds.first : statusId;
                                 setState(() {
                                   dropdownValue = newValue;
                                   statusId = newStatusId;
@@ -199,6 +201,7 @@ class _DealCardState extends State<DealCard> {
                                 widget.onStatusUpdated();
                               },
                               widget.deal,
+                              ApiService(),
                             );
                           },
                           child: Container(
