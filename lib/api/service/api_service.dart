@@ -60,6 +60,7 @@ import 'package:crm_task_manager/models/page_2/call_summary_stats_model.dart';
 import 'package:crm_task_manager/models/page_2/category_dashboard_warehouse_model.dart';
 import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/models/page_2/opening_supplier_model.dart' as opening_supplier;
+import 'package:crm_task_manager/models/page_2/openings/client_dialog_model.dart' as opening_lead;
 import 'package:crm_task_manager/models/page_2/order_status_warehouse_model.dart';
 import 'package:crm_task_manager/models/page_2/expense_article_dashboard_warehouse_model.dart';
 import 'package:crm_task_manager/models/page_2/category_model.dart';
@@ -15800,7 +15801,7 @@ Future<void> clearFieldConfigurationCache() async {
 
 
   /// Получить список клиентов/лидов для диалога выбора
-  Future<LeadsForOpeningsResponse> getOpeningsClients() async {
+  Future<List<opening_lead.Lead>> getClientOpeningsForDialog() async {
     try {
       String path = await _appendQueryParams('/initial-balance/get/leads');
       final response = await _getRequest(path);
@@ -15811,13 +15812,9 @@ Future<void> clearFieldConfigurationCache() async {
         // Проверяем, является ли ответ массивом (API возвращает массив напрямую)
         if (data is List) {
           // Преобразуем массив в ожидаемую структуру
-          return LeadsForOpeningsResponse.fromJson({
-            'result': data,
-            'errors': null,
-          });
+          return data.map<opening_lead.Lead>((item) => opening_lead.Lead.fromJson(item)).toList();
         } else {
-          // Если ответ уже в правильном формате (с полем result)
-          return LeadsForOpeningsResponse.fromJson(data);
+          return [];
         }
       } else {
         final message = _extractErrorMessageFromResponse(response);
@@ -15892,12 +15889,13 @@ Future<void> clearFieldConfigurationCache() async {
 
   /// Создать первоначальный остаток клиента
   Future<Map<String, dynamic>> updateClientOpening({
+    required int id,
     required int leadId,
     required double ourDuty,
     required double debtToUs,
   }) async {
     try {
-      String path = await _appendQueryParams('/initial-balance/$leadId');
+      String path = await _appendQueryParams('/initial-balance/$id');
 
       final body = {
         "type": "lead",

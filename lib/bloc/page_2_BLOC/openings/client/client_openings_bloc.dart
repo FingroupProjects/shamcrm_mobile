@@ -95,6 +95,7 @@ class ClientOpeningsBloc extends Bloc<ClientOpeningsEvent, ClientOpeningsState> 
       emit(ClientOpeningUpdating());
       
       await _apiService.updateClientOpening(
+        id: event.id,
         leadId: event.leadId,
         ourDuty: event.ourDuty,
         debtToUs: event.debtToUs,

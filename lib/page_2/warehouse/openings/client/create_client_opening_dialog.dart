@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/models/page_2/openings/client_dialog_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/models/page_2/openings/client_openings_model.dart';
@@ -37,7 +38,7 @@ class ClientLeadsDialog extends StatelessWidget {
     return AppLocalizations.of(context)?.translate(key) ?? fallback;
   }
 
-  Widget _buildLeadsList(BuildContext context, List<ClientOpening> items) {
+  Widget _buildLeadsList(BuildContext context, List<Lead> items) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -65,7 +66,7 @@ class ClientLeadsDialog extends StatelessWidget {
     );
   }
 
-  Widget _buildLeadCard(BuildContext context, ClientOpening item) {
+  Widget _buildLeadCard(BuildContext context, Lead item) {
     return GestureDetector(
       onTap: () {
         // Закрываем диалог
@@ -78,7 +79,7 @@ class ClientLeadsDialog extends StatelessWidget {
             builder: (newContext) => BlocProvider.value(
               value: clientOpeningsBloc,
               child: AddClientOpeningScreen(
-                clientName: item.counterparty?.name ?? 'Неизвестный клиент',
+                clientName: item.name ?? 'N/A',
                 leadId: item.id ?? 0,
               ),
             ),
@@ -101,7 +102,7 @@ class ClientLeadsDialog extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              item.counterparty?.name ?? 'Неизвестный клиент',
+              item.name ?? 'N/A',
               style: const TextStyle(
                 fontFamily: 'Gilroy',
                 fontSize: 15,
@@ -109,19 +110,6 @@ class ClientLeadsDialog extends StatelessWidget {
                 color: Color(0xff1E2E52),
               ),
             ),
-            if ( item.counterparty?.phone != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  item.counterparty?.phone?? '',
-                  style: const TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 13,
-                    fontWeight: FontWeight.w400,
-                    color: Color(0xff64748B),
-                  ),
-                ),
-              ),
           ],
         ),
       ),

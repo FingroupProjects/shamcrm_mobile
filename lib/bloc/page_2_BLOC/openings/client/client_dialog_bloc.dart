@@ -20,9 +20,9 @@ class ClientDialogBloc extends Bloc<ClientDialogEvent, ClientDialogState> {
     try {
       emit(ClientDialogLoading());
       
-      final leads = await _apiService.getClientOpenings();
+      final leads = await _apiService.getClientOpeningsForDialog();
       
-      emit(ClientDialogLoaded(leads: leads?.result ?? []));
+      emit(ClientDialogLoaded(leads: leads));
     } catch (e) {
       emit(ClientDialogError(message: e.toString()));
     }

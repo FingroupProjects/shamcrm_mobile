@@ -23,6 +23,7 @@ class EditClientOpeningScreen extends StatefulWidget {
 }
 
 class _EditClientOpeningScreenState extends State<EditClientOpeningScreen> {
+
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   
   // Controllers for debt fields
@@ -62,6 +63,9 @@ class _EditClientOpeningScreenState extends State<EditClientOpeningScreen> {
 
   @override
   Widget build(BuildContext context) {
+
+    debugPrint("Editing Client Opening: ${widget.clientOpening.id}");
+
     return BlocListener<ClientOpeningsBloc, ClientOpeningsState>(
       listener: (context, state) {
         if (state is ClientOpeningUpdateSuccess) {
