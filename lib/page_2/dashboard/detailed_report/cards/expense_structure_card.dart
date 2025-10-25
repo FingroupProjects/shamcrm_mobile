@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/expense_structure_content.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/utils/global_fun.dart';
 
 class ExpenseStructureCard extends StatelessWidget {
   final ExpenseItem expenseItem;
@@ -39,7 +40,7 @@ class ExpenseStructureCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '${localizations.translate('amount')}: ${expenseItem.formattedSum}',
+                  '${localizations.translate('amount')}: ${parseNumberToString(expenseItem.formattedSum)}',
                   style: const TextStyle(
                     fontSize: 14,
                     fontFamily: 'Gilroy',
