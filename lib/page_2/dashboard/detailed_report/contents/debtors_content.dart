@@ -39,25 +39,23 @@ class _DebtorsContentState extends State<DebtorsContent> {
   }
 
   Widget _buildDebtorsList(DebtorsResponse data) {
-    return Expanded(
-      child: data.result?.debtors.isNotEmpty == true
-          ? ListView.separated(
-              separatorBuilder: (context, index) => SizedBox(height: 12),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              itemCount: data.result!.debtors.length,
-              itemBuilder: (context, index) {
-                final debtor = data.result!.debtors[index];
-                return DebtorsCard(
-                  debtor: debtor,
-                  onClick: _onDebtorTap,
-                  onLongPress: _onDebtorLongPress,
-                  isSelectionMode: isSelectionMode,
-                  isSelected: selectedDebtors.contains(debtor.id),
-                );
-              },
-            )
-          : _buildEmptyState(),
-    );
+    return data.result?.debtors.isNotEmpty == true
+        ? ListView.separated(
+            separatorBuilder: (context, index) => SizedBox(height: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            itemCount: data.result!.debtors.length,
+            itemBuilder: (context, index) {
+              final debtor = data.result!.debtors[index];
+              return DebtorsCard(
+                debtor: debtor,
+                onClick: _onDebtorTap,
+                onLongPress: _onDebtorLongPress,
+                isSelectionMode: isSelectionMode,
+                isSelected: selectedDebtors.contains(debtor.id),
+              );
+            },
+          )
+        : _buildEmptyState();
   }
 
   Widget _buildEmptyState() {
