@@ -59,6 +59,8 @@ import 'package:crm_task_manager/models/page_2/call_statistics1_model.dart';
 import 'package:crm_task_manager/models/page_2/call_summary_stats_model.dart';
 import 'package:crm_task_manager/models/page_2/category_dashboard_warehouse_model.dart';
 import 'package:crm_task_manager/models/field_configuration.dart';
+import 'package:crm_task_manager/models/page_2/opening_supplier_model.dart' as opening_supplier;
+import 'package:crm_task_manager/models/page_2/openings/client_dialog_model.dart' as opening_lead;
 import 'package:crm_task_manager/models/page_2/order_status_warehouse_model.dart';
 import 'package:crm_task_manager/models/page_2/expense_article_dashboard_warehouse_model.dart';
 import 'package:crm_task_manager/models/page_2/category_model.dart';
@@ -88,6 +90,11 @@ import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryById.dart';
 import 'package:crm_task_manager/models/page_2/supplier_model.dart';
 import 'package:crm_task_manager/models/page_2/variant_model.dart';
+import 'package:crm_task_manager/models/page_2/openings/goods_openings_model.dart';
+import 'package:crm_task_manager/models/page_2/openings/supplier_openings_model.dart';
+import 'package:crm_task_manager/models/page_2/openings/client_openings_model.dart';
+import 'package:crm_task_manager/models/page_2/openings/cash_register_openings_model.dart' as openings;
+import 'package:crm_task_manager/models/page_2/good_variants_model.dart';
 import 'package:crm_task_manager/models/price_type_model.dart';
 import 'package:crm_task_manager/models/project_task_model.dart';
 import 'package:crm_task_manager/models/sales_funnel_model.dart';
@@ -15612,4 +15619,654 @@ Future<void> clearFieldConfigurationCache() async {
 }
 
 // _______________________________END SECTION FOR FIELD CONFIGURATION _______________________________
+
+// _______________________________START SECTION FOR OPENINGS (Первоначальный остаток) _______________________________
+
+  //==================== OPENING GOOD SECTION ================
+  /// Получить первоначальные остатки по товарам
+  Future<GoodsOpeningsResponse> getGoodsOpenings() async {
+    String path = await _appendQueryParams('/good-initial-balance');
+
+    if (kDebugMode) {
+      print('ApiService: getGoodsOpenings - path: $path');
+    }
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return GoodsOpeningsResponse.fromJson(data);
+    } else {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка получения первоначальных остатков по товарам',
+        response.statusCode,
+      );
+    }
+  }
+
+  /// Получить варианты товаров
+  Future<GoodVariantsResponse> getOpeningsGoodVariants({
+    int page = 1,
+    int perPage = 15,
+  }) async {
+    try {
+      String path = await _appendQueryParams('/good/get/variant?page=$page&per_page=$perPage');
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return GoodVariantsResponse.fromJson(data);
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? "Ошибка получения вариантов товаров",
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Удалить первоначальный остаток товара
+  Future<Map<String, dynamic>> deleteGoodsOpening(int id) async {
+    try {
+      String path = await _appendQueryParams('/good-initial-balance/$id');
+      final response = await _deleteRequest(path);
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return {'result': 'Success'};
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(message ?? "Ошибка удаления остатка товара", response.statusCode);
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Создать первоначальный остаток товара
+  Future<Map<String, dynamic>> createGoodsOpening({
+    required int goodVariantId,
+    required int supplierId,
+    required double price,
+    required double quantity,
+    required int unitId,
+    required int storageId,
+  }) async {
+    try {
+      String path = await _appendQueryParams('/good-initial-balance');
+
+      final body = {
+        "data": [
+          {
+            "good_variant_id": goodVariantId,
+            "supplier_id": supplierId,
+            "price": price,
+            "quantity": quantity,
+            "unit_id": unitId,
+            "storage_id": storageId,
+          }
+        ],
+      };
+
+      if (kDebugMode) {
+        print('ApiService: createGoodsOpening - path: $path');
+        print('ApiService: createGoodsOpening - body: $body');
+      }
+
+      final response = await _postRequest(path, body);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {'result': 'Success'};
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? "Ошибка создания остатка товара",
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Обновить первоначальный остаток товара
+  Future<Map<String, dynamic>> updateGoodsOpening({
+    required int id,
+    required int goodVariantId,
+    required int supplierId,
+    required double price,
+    required double quantity,
+    required int unitId,
+    required int storageId,
+  }) async {
+    try {
+      String path = await _appendQueryParams('/good-initial-balance/$id');
+
+      final body = {
+        "good_variant_id": goodVariantId,
+        "supplier_id": supplierId,
+        "price": price,
+        "quantity": quantity,
+        "unit_id": unitId,
+        "storage_id": storageId,
+      };
+
+      if (kDebugMode) {
+        print('ApiService: updateGoodsOpening - path: $path');
+        print('ApiService: updateGoodsOpening - body: $body');
+      }
+
+      final response = await _patchRequest(path, body);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {'result': 'Success'};
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? "Ошибка обновления остатка товара",
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  //========= OPENING CLIENT SECTION ==========
+
+  /// Получить первоначальные остатки по клиентам
+  Future<ClientOpeningsResponse> getClientOpenings() async {
+    String path = await _appendQueryParams('/initial-balance/lead');
+
+    if (kDebugMode) {
+      print('ApiService: getClientOpenings - path: $path');
+    }
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return ClientOpeningsResponse.fromJson(data);
+    } else {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка получения первоначальных остатков по клиентам',
+        response.statusCode,
+      );
+    }
+  }
+
+
+  /// Получить список клиентов/лидов для диалога выбора
+  Future<List<opening_lead.Lead>> getClientOpeningsForDialog() async {
+    try {
+      String path = await _appendQueryParams('/initial-balance/get/leads');
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        // Проверяем, является ли ответ массивом (API возвращает массив напрямую)
+        if (data is List) {
+          // Преобразуем массив в ожидаемую структуру
+          return data.map<opening_lead.Lead>((item) => opening_lead.Lead.fromJson(item)).toList();
+        } else {
+          return [];
+        }
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? "Ошибка получения списка клиентов",
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Удалить первоначальный остаток клиента
+  Future<Map<String, dynamic>> deleteClientOpening(int id) async {
+    try {
+      String path = await _appendQueryParams('/initial-balance/$id');
+      final response = await _deleteRequest(path);
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return {'result': 'Success'};
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(message ?? "Ошибка удаления остатка клиента", response.statusCode);
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Создать первоначальный остаток клиента
+  Future<Map<String, dynamic>> createClientOpening({
+    required int leadId,
+    required double ourDuty,
+    required double debtToUs,
+  }) async {
+    try {
+      String path = await _appendQueryParams('/initial-balance');
+
+      final body = {
+        'data' : [
+          {
+            "type": "lead",
+            "counterparty_id": leadId,
+            "our_duty": ourDuty,
+            "debt_to_us": debtToUs,
+          }
+        ]
+      };
+
+      if (kDebugMode) {
+        print('ApiService: createClientOpening - path: $path');
+        print('ApiService: createClientOpening - body: $body');
+      }
+
+      final response = await _postRequest(path, body);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {'result': 'Success'};
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? "Ошибка создания остатка клиента",
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+
+  /// Создать первоначальный остаток клиента
+  Future<Map<String, dynamic>> updateClientOpening({
+    required int id,
+    required int leadId,
+    required double ourDuty,
+    required double debtToUs,
+  }) async {
+    try {
+      String path = await _appendQueryParams('/initial-balance/$id');
+
+      final body = {
+        "type": "lead",
+        "counterparty_id": leadId,
+        "our_duty": ourDuty,
+        "debt_to_us": debtToUs,
+      };
+
+      if (kDebugMode) {
+        print('ApiService: createClientOpening - path: $path');
+        print('ApiService: createClientOpening - body: $body');
+      }
+
+      final response = await _patchRequest(path, body);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {'result': 'Success'};
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? "Ошибка создания остатка клиента",
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  //========= OPENING SUPPLIER SECTION ==========
+
+  /// Получить первоначальные остатки по поставщикам
+  Future<SupplierOpeningsResponse> getSupplierOpenings() async {
+    String path = await _appendQueryParams('/initial-balance/supplier');
+
+    if (kDebugMode) {
+      print('ApiService: getSupplierOpenings - path: $path');
+    }
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return SupplierOpeningsResponse.fromJson(data);
+    } else {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка получения первоначальных остатков по поставщикам',
+        response.statusCode,
+      );
+    }
+  }
+
+  /// Создать первоначальный остаток поставщика
+  Future<Map<String, dynamic>> createSupplierOpening({
+    required int supplierId,
+    required double ourDuty,
+    required double debtToUs,
+  }) async {
+    try {
+      String path = await _appendQueryParams('/initial-balance');
+
+      final body = {
+        'data' : [
+          {
+            "type": "supplier",
+            "counterparty_id": supplierId,
+            "our_duty": ourDuty,
+            "debt_to_us": debtToUs,
+          }
+        ]
+      };
+
+      if (kDebugMode) {
+        print('ApiService: createSupplierOpening - path: $path');
+        print('ApiService: createSupplierOpening - body: $body');
+      }
+
+      final response = await _postRequest(path, body);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {'result': 'Success'};
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? "Ошибка создания остатка поставщика",
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Редактировать начальный остаток поставщика
+  Future<Map<String, dynamic>> editSupplierOpening({
+    required int id,
+    required int supplierId,
+    required double ourDuty,
+    required double debtToUs,
+  }) async {
+    try {
+      String path = await _appendQueryParams('/initial-balance/$id');
+
+      final body = {
+        "type": "supplier",
+        "counterparty_id": supplierId,
+        "our_duty": ourDuty,
+        "debt_to_us": debtToUs,
+      };
+
+      if (kDebugMode) {
+        print('ApiService: editSupplierOpening - path: $path');
+        print('ApiService: editSupplierOpening - body: $body');
+      }
+
+      final response = await _patchRequest(path, body);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {'result': 'Success'};
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? "Ошибка редактирования остатка поставщика",
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Удалить первоначальный остаток поставщика
+  Future<Map<String, dynamic>> deleteSupplierOpening(int id) async {
+    try {
+      String path = await _appendQueryParams('/initial-balance/$id');
+      final response = await _deleteRequest(path);
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return {'result': 'Success'};
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(message ?? "Ошибка удаления остатка поставщика", response.statusCode);
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Получить список поставщиков для диалога выбора
+  Future<opening_supplier.SuppliersForOpeningsResponse> getOpeningsSuppliers() async {
+    try {
+      String path = await _appendQueryParams('/initial-balance/get/suppliers');
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        // Проверяем, является ли ответ массивом (API возвращает массив напрямую)
+        if (data is List) {
+          // Преобразуем массив в ожидаемую структуру
+          return opening_supplier.SuppliersForOpeningsResponse.fromJson({
+            'result': data,
+            'errors': null,
+          });
+        } else {
+          // Если ответ уже в правильном формате (с полем result)
+          return opening_supplier.SuppliersForOpeningsResponse.fromJson(data);
+        }
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? "Ошибка получения списка поставщиков",
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+
+  // ========== OPENING Cash Register =========
+  /// Получить первоначальные остатки по кассам/складам
+  Future<openings.CashRegisterOpeningsResponse> getCashRegisterOpenings() async {
+    String path = await _appendQueryParams('/cash-register-initial-balance');
+
+    if (kDebugMode) {
+      print('ApiService: getCashRegisterOpenings - path: $path');
+    }
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return openings.CashRegisterOpeningsResponse.fromJson(data);
+    } else {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка получения первоначальных остатков по кассам/складам',
+        response.statusCode,
+      );
+    }
+  }
+
+  /// Получить список касс для выбора при создании остатка кассы
+  Future<List<openings.CashRegister>> getCashRegisters() async {
+    try {
+      String path = await _appendQueryParams('/initial-balance/get/cash-registers');
+
+      if (kDebugMode) {
+        print('ApiService: getCashRegisters - path: $path');
+      }
+
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        if (data is List) {
+          return data.map((json) => openings.CashRegister.fromJson(json)).toList();
+        } else {
+          throw Exception('Неожиданный формат ответа API');
+        }
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка получения списка касс',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('ApiService: getCashRegisters - Error: $e');
+      }
+      rethrow;
+    }
+  }
+
+  /// Создать первоначальный остаток кассы
+  Future<Map<String, dynamic>> createCashRegisterOpening({
+    required int cashRegisterId,
+    required String sum,
+  }) async {
+    try {
+      String path = await _appendQueryParams('/cash-register-initial-balance');
+
+      final body = {'data': [{
+        'cash_register_id': cashRegisterId,
+        'sum': sum,
+      }]};
+
+      if (kDebugMode) {
+        print('ApiService: createCashRegisterOpening - path: $path, body: $body');
+      }
+
+      final response = await _postRequest(path, body);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = json.decode(response.body);
+        return data;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка создания остатка кассы',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('ApiService: createCashRegisterOpening - Error: $e');
+      }
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> updateCashRegisterOpening({
+    required int id,
+    required int cashRegisterId,
+    required String sum,
+  }) async {
+    try {
+      String path = await _appendQueryParams('/cash-register-initial-balance/$id');
+
+      final body = {
+        'cash_register_id': cashRegisterId,
+        'sum': sum,
+      };
+
+      if (kDebugMode) {
+        print('ApiService: createCashRegisterOpening - path: $path, body: $body');
+      }
+
+      final response = await _patchRequest(path, body);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = json.decode(response.body);
+        return data;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка создания остатка кассы',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('ApiService: createCashRegisterOpening - Error: $e');
+      }
+      rethrow;
+    }
+  }
+
+  /// Удалить первоначальный остаток кассы
+  Future<Map<String, dynamic>> deleteCashRegisterOpening(int id) async {
+    try {
+      String path = await _appendQueryParams('/cash-register-initial-balance/$id');
+      final response = await _deleteRequest(path);
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return {'result': 'Success'};
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(message ?? "Ошибка удаления остатка кассы", response.statusCode);
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+// ======================================== END SECTION FOR OPENINGS ========================================
+
+  Future<GoodVariantsResponse> getGoodVariantsForDropdown({
+    int page = 1,
+    int perPage = 20,
+    String? search,
+  }) async {
+    String path = '/good/get/variant?page=$page&per_page=$perPage';
+    if (search != null && search.isNotEmpty) {
+      path += '&search=$search';
+    }
+
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    path = await _appendQueryParams(path);
+    if (kDebugMode) {
+      print('ApiService: getGoodVariantsForDropdown - Generated path: $path');
+    }
+
+    final response = await _getRequest(path);
+    if (kDebugMode) {
+      print('ApiService: Ответ сервера: statusCode=${response.statusCode}');
+    }
+    
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = json.decode(response.body);
+      final variantsResponse = GoodVariantsResponse.fromJson(data);
+      
+      if (kDebugMode) {
+        print('ApiService: Успешно получено ${variantsResponse.result?.data?.length ?? 0} вариантов товаров');
+        if (variantsResponse.result?.pagination != null) {
+          print('ApiService: Pagination - current: ${variantsResponse.result!.pagination!.currentPage}, total pages: ${variantsResponse.result!.pagination!.totalPages}');
+        }
+      }
+      
+      return variantsResponse;
+    } else {
+      if (kDebugMode) {
+        print('ApiService: Ошибка загрузки вариантов товаров: ${response.statusCode}');
+      }
+      throw Exception('Ошибка загрузки вариантов товаров: ${response.statusCode}');
+    }
+  }
+
 }

@@ -7,6 +7,7 @@ import 'package:crm_task_manager/page_2/money/money_references/cash_desk/cash_de
 import 'package:crm_task_manager/page_2/money/money_references/expense/expense_screen.dart';
 import 'package:crm_task_manager/page_2/money/money_references/income/income_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/measure_units/measue_units_screen.dart';
+import 'package:crm_task_manager/page_2/warehouse/openings/openings_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/price_type/pricetype_creen.dart';
 import 'package:crm_task_manager/page_2/warehouse/ware_house/ware_house_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/supplier/supplier_creen.dart';
@@ -38,6 +39,7 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
   bool _hasPkoArticle = false;
   bool _hasCategory = false; // Новое право для категорий
   bool _hasLead = false; // TODO, проверка права для лидов
+  bool _hasOpenings = false; // TODO, проверка права для первоначальных остатков
 
   @override
   void initState() {
@@ -70,6 +72,7 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
       _hasPkoArticle = await _apiService.hasPermission('pko_article.read');
       _hasCategory = await _apiService.hasPermission('category.read'); // Проверка права для категорий
       _hasLead = await _apiService.hasPermission('lead.read');
+      _hasOpenings = await _apiService.hasPermission('initial_balance.read'); // TODO: Проверить правильное имя права
 
     } catch (e) {
       debugPrint('Ошибка при проверке прав доступа: $e');
@@ -83,6 +86,7 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
       _hasPkoArticle = false;
       _hasCategory = false;
       _hasLead = false;
+      _hasOpenings = false;
     } finally {
       setState(() {
         _isLoading = false;
@@ -196,6 +200,16 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
       );
     }
 
+    if (_hasOpenings) {
+      allReferences.add(
+        ReferenceItem(
+          title: AppLocalizations.of(context)!.translate('openings') ?? 'Первоначальный остаток',
+          icon: Icons.account_balance_outlined,
+          color: refColor,
+        ),
+      );
+    }
+
     setState(() {
       _references = allReferences;
     });
@@ -251,6 +265,11 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => LeadScreen()),
+      );
+    } else if (reference.title == (AppLocalizations.of(context)!.translate('openings') ?? 'Первоначальный остаток')) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const OpeningsScreen()),
       );
     }
   }
