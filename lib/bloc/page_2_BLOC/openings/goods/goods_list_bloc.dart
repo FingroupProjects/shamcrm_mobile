@@ -12,7 +12,7 @@ class GetAllGoodsListBloc extends Bloc<GetAllGoodsListEvent, GetAllGoodsListStat
   int _currentPage = 1;
   int _totalPages = 1;
   DateTime? _lastLoadTime;
-  static const Duration _cacheExpiration = Duration(minutes: 5);
+  static const Duration _cacheExpiration = Duration(minutes: 1);
   final apiService = ApiService();
 
   // Флаг для отслеживания фоновой загрузки

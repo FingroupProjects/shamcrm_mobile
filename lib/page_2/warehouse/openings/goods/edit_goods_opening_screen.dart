@@ -44,7 +44,6 @@ class _EditGoodsOpeningScreenState extends State<EditGoodsOpeningScreen> {
   String? _selectedUnitId;
   
   GoodVariantItem? _selectedGoods;
-  CashRegisterData? _selectedCashRegister;
 
   @override
   void initState() {
@@ -220,15 +219,6 @@ class _EditGoodsOpeningScreenState extends State<EditGoodsOpeningScreen> {
                         onChanged: (value) {
                           setState(() {
                             _selectedWarehouseId = value;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      CashRegisterGroupWidget(
-                        selectedCashRegisterId: _selectedCashRegister?.id.toString(),
-                        onSelectCashRegister: (CashRegisterData cashRegister) {
-                          setState(() {
-                            _selectedCashRegister = cashRegister;
                           });
                         },
                       ),

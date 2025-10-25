@@ -37,7 +37,13 @@ class GoodVariantsDialog extends StatelessWidget {
     return AppLocalizations.of(context)?.translate(key) ?? fallback;
   }
 
-  Widget _buildVariantsList(BuildContext context, List<good_variants.GoodVariantItem> items) {
+  Widget _buildVariantsList(
+    BuildContext context,
+    List<good_variants.GoodVariantItem> items,
+    int currentPage,
+    int totalPages,
+    bool isLoadingMore,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -77,8 +83,38 @@ class GoodVariantsDialog extends StatelessWidget {
               ],
             ),
           )
-        else
+        else ...[
           ...items.map((item) => _buildVariantCard(context, item)).toList(),
+          
+          // Индикатор загрузки дополнительных страниц
+          if (currentPage < totalPages || isLoadingMore)
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              alignment: Alignment.center,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Загрузка страницы $currentPage из $totalPages...',
+                    style: const TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 13,
+                      color: Color(0xff64748B),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
       ],
     );
   }
@@ -292,7 +328,13 @@ class GoodVariantsDialog extends StatelessWidget {
                   if (state is GoodsDialogLoaded) {
                     return SingleChildScrollView(
                       padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                      child: _buildVariantsList(context, state.variants),
+                      child: _buildVariantsList(
+                        context,
+                        state.variants,
+                        state.currentPage,
+                        state.totalPages,
+                        state.isLoadingMore,
+                      ),
                     );
                   }
 

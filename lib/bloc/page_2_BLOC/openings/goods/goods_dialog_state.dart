@@ -8,8 +8,16 @@ class GoodsDialogLoading extends GoodsDialogState {}
 
 class GoodsDialogLoaded extends GoodsDialogState {
   final List<GoodVariantItem> variants;
+  final int currentPage;
+  final int totalPages;
+  final bool isLoadingMore;
 
-  GoodsDialogLoaded({required this.variants});
+  GoodsDialogLoaded({
+    required this.variants,
+    required this.currentPage,
+    required this.totalPages,
+    this.isLoadingMore = false,
+  });
 }
 
 class GoodsDialogError extends GoodsDialogState {
@@ -17,4 +25,3 @@ class GoodsDialogError extends GoodsDialogState {
 
   GoodsDialogError({required this.message});
 }
-

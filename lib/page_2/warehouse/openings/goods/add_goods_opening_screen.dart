@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../models/cash_register_list_model.dart';
 import '../../../../bloc/cash_register_list/cash_register_list_bloc.dart';
 import '../../../../bloc/cash_register_list/cash_register_list_event.dart';
 import '../../../../bloc/page_2_BLOC/openings/goods/goods_openings_bloc.dart';
@@ -13,7 +12,6 @@ import '../../../../custom_widget/price_input_formatter.dart';
 import '../../incoming/supplier_widget.dart';
 import '../../incoming/storage_widget.dart';
 import '../../incoming/units_widget.dart';
-import '../../../money/widgets/cash_register_radio_group.dart';
 
 class AddGoodsOpeningScreen extends StatefulWidget {
   final String goodName;
@@ -40,8 +38,6 @@ class _AddGoodsOpeningScreenState extends State<AddGoodsOpeningScreen> {
   String? _selectedSupplierId;
   String? _selectedWarehouseId;
   String? _selectedUnitId;
-
-  CashRegisterData? _selectedCashRegister;
 
   @override
   void initState() {
@@ -183,14 +179,7 @@ class _AddGoodsOpeningScreenState extends State<AddGoodsOpeningScreen> {
                           },
                         ),
                         const SizedBox(height: 16),
-                        CashRegisterGroupWidget(
-                          selectedCashRegisterId: _selectedCashRegister?.id.toString(),
-                          onSelectCashRegister: (CashRegisterData cashRegister) {
-                            setState(() {
-                              _selectedCashRegister = cashRegister;
-                            });
-                          },
-                        ),
+
                         const SizedBox(height: 16),
                         UnitsWidget(
                           selectedUnit: _selectedUnitId,

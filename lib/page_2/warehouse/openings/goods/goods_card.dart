@@ -94,15 +94,15 @@ class GoodsCard extends StatelessWidget {
                   //   ),
                   // ),
                   // const SizedBox(height: 8),
-                  Text(
-                    'Цена: ${parseNumberToString(firstGood?.price ?? '0')}',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w400,
-                      color: Color(0xff99A4BA),
-                    ),
-                  ),
+                  // Text(
+                  //   'Цена: ${parseNumberToString(firstGood?.price ?? '0')}',
+                  //   style: const TextStyle(
+                  //     fontSize: 14,
+                  //     fontFamily: 'Gilroy',
+                  //     fontWeight: FontWeight.w400,
+                  //     color: Color(0xff99A4BA),
+                  //   ),
+                  // ),
                 ],
               ),
             ),
