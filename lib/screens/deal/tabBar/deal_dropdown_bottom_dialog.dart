@@ -7,11 +7,11 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void DropdownBottomSheet(
-  BuildContext context,
-  String defaultValue,
-  Function(String, int) onSelect, 
-  Deal deal,
-) async {
+    BuildContext context,
+    String defaultValue,
+    Function(String, int) onSelect,
+    Deal deal,
+    ) async {
   // НОВОЕ: Читаем флаг мультивыбора из настроек
   final prefs = await SharedPreferences.getInstance();
   final bool isMultiSelectEnabled = prefs.getBool('managing_deal_status_visibility') ?? false;
@@ -19,7 +19,7 @@ void DropdownBottomSheet(
   String selectedValue = defaultValue;
   List<int> selectedStatusIds = [];
   bool isLoading = false;
-print('DropdownBottomSheet: managing_deal_status_visibility = $isMultiSelectEnabled');
+  print('DropdownBottomSheet: managing_deal_status_visibility = $isMultiSelectEnabled');
   print('DropdownBottomSheet: Режим работы = ${isMultiSelectEnabled ? "МУЛЬТИВЫБОР" : "ОДИНОЧНЫЙ"}');
 
   showModalBottomSheet(
@@ -47,7 +47,7 @@ print('DropdownBottomSheet: managing_deal_status_visibility = $isMultiSelectEnab
                 ),
                 Expanded(
                   child: FutureBuilder<List<DealStatus>>(
-                    future: ApiService().getDealStatuses(),
+                    future: ApiService().getDealStatuses(includeAll: true), // ← Добавили параметр
                     builder: (context, snapshot) {
                       if (snapshot.hasError) {
                         return Center(child: Text(AppLocalizations.of(context)!.translate('error_text')));
@@ -60,7 +60,7 @@ print('DropdownBottomSheet: managing_deal_status_visibility = $isMultiSelectEnab
                       return ListView(
                         children: statuses.map((DealStatus status) {
                           bool isSelected = selectedStatusIds.contains(status.id);
-                          
+
                           return GestureDetector(
                             onTap: () {
                               setState(() {
@@ -96,85 +96,85 @@ print('DropdownBottomSheet: managing_deal_status_visibility = $isMultiSelectEnab
                 ),
                 isLoading
                     ? Center(
-                        child: CircularProgressIndicator(
-                          color: Color(0xff1E2E52),
-                        ),
-                      )
+                  child: CircularProgressIndicator(
+                    color: Color(0xff1E2E52),
+                  ),
+                )
                     : CustomButton(
-                        buttonText: AppLocalizations.of(context)!.translate('save'),
-                        buttonColor: Color(0xfff4F40EC),
-                        textColor: Colors.white,
-                        onPressed: () {
-                          if (selectedStatusIds.isNotEmpty) {
-                            setState(() {
-                              isLoading = true;
-                            });
+                  buttonText: AppLocalizations.of(context)!.translate('save'),
+                  buttonColor: Color(0xfff4F40EC),
+                  textColor: Colors.white,
+                  onPressed: () {
+                    if (selectedStatusIds.isNotEmpty) {
+                      setState(() {
+                        isLoading = true;
+                      });
 
-                            // Отправка всегда массивом (не изменяется)
-                            ApiService().updateDealStatus(deal.id, deal.statusId, selectedStatusIds).then((_) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                 SnackBar(
-                                   content: Text(
-                                     AppLocalizations.of(context)!.translate('status_changed_successfully'),
-                                     style: TextStyle(
-                                       fontFamily: 'Gilroy',
-                                       fontSize: 16,
-                                       fontWeight: FontWeight.w500,
-                                       color: Colors.white,
-                                     ),
-                                   ),
-                                   behavior: SnackBarBehavior.floating,
-                                   margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                   shape: RoundedRectangleBorder(
-                                     borderRadius: BorderRadius.circular(12),
-                                   ),
-                                   backgroundColor: Colors.green,
-                                   elevation: 3,
-                                   padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                                   duration: Duration(seconds: 3),
-                                 ),
-                               );
-                              setState(() {
-                                isLoading = false;
-                              });
+                      // Отправка всегда массивом (не изменяется)
+                      ApiService().updateDealStatus(deal.id, deal.statusId, selectedStatusIds).then((_) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              AppLocalizations.of(context)!.translate('status_changed_successfully'),
+                              style: TextStyle(
+                                fontFamily: 'Gilroy',
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.white,
+                              ),
+                            ),
+                            behavior: SnackBarBehavior.floating,
+                            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            backgroundColor: Colors.green,
+                            elevation: 3,
+                            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                            duration: Duration(seconds: 3),
+                          ),
+                        );
+                        setState(() {
+                          isLoading = false;
+                        });
 
-                              Navigator.pop(context);
-                              onSelect(selectedValue, selectedStatusIds.first);
-                            }).catchError((error) {
-                              setState(() {
-                                isLoading = false;
-                              });
+                        Navigator.pop(context);
+                        onSelect(selectedValue, selectedStatusIds.first);
+                      }).catchError((error) {
+                        setState(() {
+                          isLoading = false;
+                        });
 
-                              if (error is DealStatusUpdateException &&
-                                  error.code == 422) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                     AppLocalizations.of(context)!.translate('cannot_move_deal_to_status'),
-                                      style: TextStyle(
-                                        fontFamily: 'Gilroy',
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                    behavior: SnackBarBehavior.floating,
-                                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    backgroundColor: Colors.red,
-                                    elevation: 3,
-                                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                                    duration: Duration(seconds: 3),
-                                  ),
-                                );
-                                Navigator.pop(context);
-                              }
-                            });
-                          }
-                        },
-                      ),
+                        if (error is DealStatusUpdateException &&
+                            error.code == 422) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                AppLocalizations.of(context)!.translate('cannot_move_deal_to_status'),
+                                style: TextStyle(
+                                  fontFamily: 'Gilroy',
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              behavior: SnackBarBehavior.floating,
+                              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              backgroundColor: Colors.red,
+                              elevation: 3,
+                              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                              duration: Duration(seconds: 3),
+                            ),
+                          );
+                          Navigator.pop(context);
+                        }
+                      });
+                    }
+                  },
+                ),
                 SizedBox(height: 16),
               ],
             ),
