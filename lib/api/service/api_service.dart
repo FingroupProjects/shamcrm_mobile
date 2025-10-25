@@ -16227,4 +16227,46 @@ Future<void> clearFieldConfigurationCache() async {
   }
 
 // ======================================== END SECTION FOR OPENINGS ========================================
+
+  Future<GoodVariantsResponse> getGoodVariantsForDropdown({
+    int page = 1,
+    int perPage = 20,
+    String? search,
+  }) async {
+    String path = '/good/get/variant?page=$page&per_page=$perPage';
+    if (search != null && search.isNotEmpty) {
+      path += '&search=$search';
+    }
+
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    path = await _appendQueryParams(path);
+    if (kDebugMode) {
+      print('ApiService: getGoodVariantsForDropdown - Generated path: $path');
+    }
+
+    final response = await _getRequest(path);
+    if (kDebugMode) {
+      print('ApiService: Ответ сервера: statusCode=${response.statusCode}');
+    }
+    
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = json.decode(response.body);
+      final variantsResponse = GoodVariantsResponse.fromJson(data);
+      
+      if (kDebugMode) {
+        print('ApiService: Успешно получено ${variantsResponse.result?.data?.length ?? 0} вариантов товаров');
+        if (variantsResponse.result?.pagination != null) {
+          print('ApiService: Pagination - current: ${variantsResponse.result!.pagination!.currentPage}, total pages: ${variantsResponse.result!.pagination!.totalPages}');
+        }
+      }
+      
+      return variantsResponse;
+    } else {
+      if (kDebugMode) {
+        print('ApiService: Ошибка загрузки вариантов товаров: ${response.statusCode}');
+      }
+      throw Exception('Ошибка загрузки вариантов товаров: ${response.statusCode}');
+    }
+  }
+
 }

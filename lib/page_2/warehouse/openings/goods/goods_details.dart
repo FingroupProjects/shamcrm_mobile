@@ -6,6 +6,8 @@ import '../../../../models/page_2/openings/goods_openings_model.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
 import '../../../../bloc/page_2_BLOC/openings/goods/goods_openings_bloc.dart';
 import '../../../../bloc/page_2_BLOC/openings/goods/goods_openings_event.dart';
+import '../../../../bloc/page_2_BLOC/openings/goods/goods_list_bloc.dart';
+import '../../../../bloc/cash_register_list/cash_register_list_bloc.dart';
 import '../../../../utils/global_fun.dart';
 import '../opening_delete_dialog.dart';
 import 'edit_goods_opening_screen.dart';
@@ -162,8 +164,12 @@ class _GoodsOpeningDetailsScreenState extends State<GoodsOpeningDetailsScreen> {
                 final result = await Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => BlocProvider.value(
-                      value: openingsBloc,
+                    builder: (context) => MultiBlocProvider(
+                      providers: [
+                        BlocProvider.value(value: openingsBloc),
+                        BlocProvider(create: (context) => GetAllGoodsListBloc()),
+                        BlocProvider(create: (context) => GetAllCashRegisterBloc()),
+                      ],
                       child: EditGoodsOpeningScreen(
                         goodsOpening: currentDocument,
                       ),

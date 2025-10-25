@@ -1,17 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import '../../../../models/page_2/openings/goods_openings_model.dart';
-import '../../../../models/page_2/goods_model.dart';
+import '../../../../models/page_2/good_variants_model.dart';
 import '../../../../models/cash_register_list_model.dart';
-import '../../../../bloc/page_2_BLOC/goods/goods_bloc.dart';
-import '../../../../bloc/page_2_BLOC/goods/goods_event.dart';
-import '../../../../bloc/page_2_BLOC/goods/goods_state.dart';
 import '../../../../bloc/cash_register_list/cash_register_list_bloc.dart';
 import '../../../../bloc/cash_register_list/cash_register_list_event.dart';
 import '../../../../bloc/page_2_BLOC/openings/goods/goods_openings_bloc.dart';
 import '../../../../bloc/page_2_BLOC/openings/goods/goods_openings_event.dart';
 import '../../../../bloc/page_2_BLOC/openings/goods/goods_openings_state.dart';
+import '../../../../bloc/page_2_BLOC/openings/goods/goods_list_bloc.dart';
+import '../../../../bloc/page_2_BLOC/openings/goods/goods_list_event.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
 import '../../../../custom_widget/custom_button.dart';
 import '../../../../custom_widget/custom_textfield.dart';
@@ -21,6 +19,7 @@ import '../../incoming/storage_widget.dart';
 import '../../incoming/units_widget.dart';
 import '../../../money/widgets/cash_register_radio_group.dart';
 import '../../../../utils/global_fun.dart';
+import 'goods_list.dart';
 
 class EditGoodsOpeningScreen extends StatefulWidget {
   final GoodsOpeningDocument goodsOpening;
@@ -44,7 +43,7 @@ class _EditGoodsOpeningScreenState extends State<EditGoodsOpeningScreen> {
   String? _selectedWarehouseId;
   String? _selectedUnitId;
   
-  Goods? _selectedGoods;
+  GoodVariantItem? _selectedGoods;
   CashRegisterData? _selectedCashRegister;
 
   @override
@@ -68,8 +67,23 @@ class _EditGoodsOpeningScreenState extends State<EditGoodsOpeningScreen> {
     _selectedWarehouseId = widget.goodsOpening.storage?.id?.toString();
     _selectedUnitId = documentGood?.unit?.id?.toString();
     
+    // Initialize selected goods from existing data - use goodVariantId as the ID
+    if (documentGood?.goodVariant != null) {
+      _selectedGoods = GoodVariantItem(
+        id: documentGood!.goodVariantId,
+        goodId: documentGood.goodVariant?.goodId,
+        fullName: documentGood.goodVariant?.fullName,
+        good: documentGood.goodVariant?.good != null
+            ? VariantGood(
+                id: documentGood.goodVariant!.good!.id,
+                name: documentGood.goodVariant!.good!.name,
+              )
+            : null,
+      );
+    }
+    
     // Load required data
-    context.read<GoodsBloc>().add(FetchGoods(page: 1));
+    context.read<GetAllGoodsListBloc>().add(GetAllGoodsListEv());
     context.read<GetAllCashRegisterBloc>().add(GetAllCashRegisterEv());
   }
 
@@ -82,6 +96,9 @@ class _EditGoodsOpeningScreenState extends State<EditGoodsOpeningScreen> {
 
   @override
   Widget build(BuildContext context) {
+
+    debugPrint("EditGoodsOpeningScreen: Building edit screen for Goods Opening ID: ${widget.goodsOpening.id}");
+
     return BlocListener<GoodsOpeningsBloc, GoodsOpeningsState>(
       listener: (context, state) {
         if (state is GoodsOpeningUpdateSuccess) {
@@ -179,7 +196,15 @@ class _EditGoodsOpeningScreenState extends State<EditGoodsOpeningScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildGoodsDropdown(),
+                      GoodsRadioGroupWidget(
+                        selectedGood: _selectedGoods?.id.toString(),
+                        showPrice: false,
+                        onSelectGood: (GoodVariantItem goods) {
+                          setState(() {
+                            _selectedGoods = goods;
+                          });
+                        },
+                      ),
                       const SizedBox(height: 16),
                       SupplierWidget(
                         selectedSupplier: _selectedSupplierId,
@@ -287,8 +312,9 @@ class _EditGoodsOpeningScreenState extends State<EditGoodsOpeningScreen> {
                           textColor: Colors.white,
                           isLoading: isUpdating,
                           onPressed: isUpdating ? null : () {
-                        if (_formKey.currentState!.validate()) {
-                          if (_selectedSupplierId == null ||
+                          if (_formKey.currentState!.validate()) {
+                          if (_selectedGoods == null ||
+                              _selectedSupplierId == null ||
                               _selectedWarehouseId == null ||
                               _selectedUnitId == null) {
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -316,11 +342,7 @@ class _EditGoodsOpeningScreenState extends State<EditGoodsOpeningScreen> {
                             return;
                           }
 
-                          final documentGood = widget.goodsOpening.documentGoods?.isNotEmpty == true 
-                              ? widget.goodsOpening.documentGoods!.first 
-                              : null;
-
-                          if (widget.goodsOpening.id == null || documentGood?.goodVariantId == null) {
+                          if (widget.goodsOpening.id == null) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(
@@ -349,7 +371,7 @@ class _EditGoodsOpeningScreenState extends State<EditGoodsOpeningScreen> {
                           context.read<GoodsOpeningsBloc>().add(
                             UpdateGoodsOpening(
                               id: widget.goodsOpening.id!,
-                              goodVariantId: documentGood!.goodVariantId!,
+                              goodVariantId: _selectedGoods!.id!,
                               supplierId: int.parse(_selectedSupplierId!),
                               price: double.parse(priceController.text),
                               quantity: double.parse(quantityController.text),
@@ -369,202 +391,6 @@ class _EditGoodsOpeningScreenState extends State<EditGoodsOpeningScreen> {
           ],
         ),
       ),
-      ),
-    );
-  }
-
-  Widget _buildGoodsDropdown() {
-    return BlocListener<GoodsBloc, GoodsState>(
-      listener: (context, state) {
-        if (state is GoodsError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                state.message,
-                style: const TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-              behavior: SnackBarBehavior.floating,
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              backgroundColor: Colors.red,
-              elevation: 3,
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              duration: const Duration(seconds: 3),
-            ),
-          );
-        }
-      },
-      child: BlocBuilder<GoodsBloc, GoodsState>(
-        builder: (context, state) {
-          final isLoading = state is GoodsLoading;
-          
-          List<Goods> goodsList = [];
-          if (state is GoodsDataLoaded) {
-            goodsList = state.goods;
-            
-            // Инициализируем выбранный товар при загрузке данных
-            if (_selectedGoods == null && 
-                widget.goodsOpening.documentGoods?.isNotEmpty == true) {
-              final documentGood = widget.goodsOpening.documentGoods!.first;
-              if (documentGood.goodVariant != null) {
-                try {
-                  _selectedGoods = goodsList.firstWhere(
-                    (good) => good.id == documentGood.goodVariantId,
-                  );
-                } catch (e) {
-                  // Товар не найден в списке
-                }
-              }
-            }
-          }
-
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                AppLocalizations.of(context)!.translate('goods'),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
-                ),
-              ),
-              const SizedBox(height: 8),
-              CustomDropdown<Goods>.search(
-                closeDropDownOnClearFilterSearch: true,
-                items: goodsList,
-                searchHintText: AppLocalizations.of(context)!.translate('search'),
-                overlayHeight: 400,
-                enabled: !isLoading,
-                decoration: CustomDropdownDecoration(
-                  closedFillColor: const Color(0xffF4F7FD),
-                  expandedFillColor: Colors.white,
-                  closedBorder: Border.all(
-                    color: const Color(0xffF4F7FD),
-                    width: 1,
-                  ),
-                  closedBorderRadius: BorderRadius.circular(12),
-                  expandedBorder: Border.all(
-                    color: const Color(0xffF4F7FD),
-                    width: 1,
-                  ),
-                  expandedBorderRadius: BorderRadius.circular(12),
-                ),
-                listItemBuilder: (context, item, isSelected, onItemSelect) {
-                  return Text(
-                    item.name,
-                    style: const TextStyle(
-                      color: Color(0xff1E2E52),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  );
-                },
-                headerBuilder: (context, selectedItem, enabled) {
-                  if (isLoading) {
-                    return const Center(
-                      child: SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
-                        ),
-                      ),
-                    );
-                  }
-                  
-                  return Text(
-                    selectedItem.name,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
-                      color: Color(0xff1E2E52),
-                    ),
-                  );
-                },
-                hintBuilder: (context, hint, enabled) {
-                  if (isLoading) {
-                    return const Center(
-                      child: SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
-                        ),
-                      ),
-                    );
-                  }
-                  
-                  return Text(
-                    AppLocalizations.of(context)!.translate('select_goods'),
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
-                      color: Color(0xff1E2E52),
-                    ),
-                  );
-                },
-                noResultFoundBuilder: (context, text) {
-                  if (isLoading) {
-                    return const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(20.0),
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
-                        ),
-                      ),
-                    );
-                  }
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(20.0),
-                      child: Text(
-                        AppLocalizations.of(context)!.translate('no_results'),
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontFamily: 'Gilroy',
-                          color: Color(0xff1E2E52),
-                        ),
-                      ),
-                    ),
-                  );
-                },
-                excludeSelected: false,
-                initialItem: _selectedGoods,
-                validator: (value) {
-                  if (value == null) {
-                    return AppLocalizations.of(context)!.translate('field_required');
-                  }
-                  return null;
-                },
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() {
-                      _selectedGoods = value;
-                    });
-                    FocusScope.of(context).unfocus();
-                  }
-                },
-              ),
-            ],
-          );
-        },
       ),
     );
   }
