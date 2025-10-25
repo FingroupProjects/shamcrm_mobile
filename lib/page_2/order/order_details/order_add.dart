@@ -5,6 +5,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_state.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/deliviry_adress/delivery_address_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/deliviry_adress/delivery_address_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_state.dart';
@@ -336,6 +337,85 @@ Future<void> _initializeBaseUrl() async {
     }
   }
 
+  void _showAddAddressDialog(BuildContext context) {
+    final TextEditingController addressController = TextEditingController();
+    
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CustomTextField(
+              controller: addressController,
+              hintText: AppLocalizations.of(context)!
+                  .translate('enter_delivery_address'),
+              label: AppLocalizations.of(context)!.translate('delivery_address'),
+              maxLines: 3,
+              keyboardType: TextInputType.text,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(
+              AppLocalizations.of(context)!.translate('cancel'),
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Gilroy',
+                color: Color(0xff99A4BA),
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (addressController.text.trim().isEmpty) {
+                showCustomSnackBar(
+                  context: context,
+                  message: AppLocalizations.of(context)!.translate('field_required'),
+                  isSuccess: false,
+                );
+                return;
+              }
+              
+              Navigator.of(dialogContext).pop();
+              
+              // Вызываем bloc событие для добавления адреса
+              context.read<OrderBloc>().add(
+                    AddMiniAppAddress(
+                      address: addressController.text.trim(),
+                      leadId: int.parse(selectedLead ?? '0'),
+                    ),
+                  );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xff4759FF),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            ),
+            child: Text(
+              AppLocalizations.of(context)!.translate('add'),
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Gilroy',
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
@@ -363,6 +443,24 @@ Future<void> _initializeBaseUrl() async {
               showCustomSnackBar(
                 context: context,
                 message: AppLocalizations.of(context)!.translate(state.message),
+                isSuccess: false,
+              );
+            } else if (state is OrderCreateAddressSuccess) {
+              showCustomSnackBar(
+                context: context,
+                message: state.message,
+                isSuccess: true,
+              );
+              // Обновляем список адресов доставки
+              context.read<DeliveryAddressBloc>().add(
+                    FetchDeliveryAddresses(
+                      leadId: int.parse(selectedLead ?? '0'),
+                    ),
+                  );
+            } else if (state is OrderCreateAddressError) {
+              showCustomSnackBar(
+                context: context,
+                message: state.message,
                 isSuccess: false,
               );
             } else if (state is OrderLoaded &&
@@ -452,18 +550,6 @@ Future<void> _initializeBaseUrl() async {
                               },
                             ),
                           if (widget.leadId == null) const SizedBox(height: 8),
-                          ManagerForLead(
-                            selectedManager: selectedManager,
-                            onSelectManager: (ManagerData selectedManagerData) {
-                              setState(() {
-                                selectedManager = selectedManagerData.id.toString();
-                                isManagerInvalid = false;
-                                isManagerManuallySelected = true;
-                              });
-                            },
-                            hasError: isManagerInvalid,
-                          ),
-                          const SizedBox(height: 16),
                           CustomPhoneNumberInput(
                             controller: _phoneController,
                             onInputChanged: (String number) {
@@ -485,6 +571,27 @@ Future<void> _initializeBaseUrl() async {
                             label: AppLocalizations.of(context)!.translate('phone'),
                           ),
                           const SizedBox(height: 16),
+                          BranchRadioGroupWidget(
+                            selectedStatus: _selectedBranch?.toString(),
+                            onSelectStatus: (Branch selectedStatusData) {
+                              setState(() {
+                                _selectedBranch = selectedStatusData;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          ManagerForLead(
+                            selectedManager: selectedManager,
+                            onSelectManager: (ManagerData selectedManagerData) {
+                              setState(() {
+                                selectedManager = selectedManagerData.id.toString();
+                                isManagerInvalid = false;
+                                isManagerManuallySelected = true;
+                              });
+                            },
+                            hasError: isManagerInvalid,
+                          ),
+                          const SizedBox(height: 16),
                           _buildItemsSection(),
                           const SizedBox(height: 16),
                           DeliveryMethodDropdown(
@@ -495,7 +602,6 @@ Future<void> _initializeBaseUrl() async {
                                 if (mounted) {
                                   setState(() {
                                     _deliveryMethod = value;
-                                    _selectedBranch = null;
                                     _selectedDeliveryAddress = null;
                                     _deliveryAddressController.clear();
                                   });
@@ -504,16 +610,6 @@ Future<void> _initializeBaseUrl() async {
                             },
                           ),
                           const SizedBox(height: 8),
-                          if (_deliveryMethod ==
-                              AppLocalizations.of(context)!.translate('self_delivery'))
-                            BranchRadioGroupWidget(
-                              selectedStatus: _selectedBranch?.toString(),
-                              onSelectStatus: (Branch selectedStatusData) {
-                                setState(() {
-                                  _selectedBranch = selectedStatusData;
-                                });
-                              },
-                            ),
                           if (_deliveryMethod ==
                               AppLocalizations.of(context)!.translate('delivery'))
                             DeliveryAddressDropdown(
@@ -525,16 +621,44 @@ Future<void> _initializeBaseUrl() async {
                                   _selectedDeliveryAddress = address;
                                 });
                               },
-                            )
-                          else
-                            const SizedBox(),
+                            ),
                           const SizedBox(height: 16),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Spacer(),
+                              if (_deliveryMethod ==
+                                  AppLocalizations.of(context)!.translate('delivery'))
+                                GestureDetector(
+                                  onTap: () => _showAddAddressDialog(context),
+                                  child: Text(
+                                    AppLocalizations.of(context)!
+                                        .translate('add_address'),
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      fontFamily: 'Gilroy',
+                                      color: Color(0xff4759FF),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          Text(
+                            AppLocalizations.of(context)!.translate('comment'),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              fontFamily: 'Gilroy',
+                              color: Color(0xff1E2E52),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
                           CustomTextField(
                             controller: _commentController,
-                            hintText: AppLocalizations.of(context)!
-                                .translate('please_enter_comment'),
-                            label: AppLocalizations.of(context)!
-                                .translate('comment_client'),
+                            hintText: AppLocalizations.of(context)!.translate('please_enter_comment'),
+                            label: AppLocalizations.of(context)!.translate('comment'),
                             maxLines: 5,
                             keyboardType: TextInputType.multiline,
                           ),
@@ -856,10 +980,7 @@ Future<void> _initializeBaseUrl() async {
                     );
                     return;
                   }
-                  if (_deliveryMethod ==
-                          AppLocalizations.of(context)!
-                              .translate('self_delivery') &&
-                      _selectedBranch == null) {
+                  if (_selectedBranch == null) {
                     showCustomSnackBar(
                       context: context,
                       message: AppLocalizations.of(context)!
@@ -900,7 +1021,7 @@ Future<void> _initializeBaseUrl() async {
                         .toList(),
                     organizationId: widget.organizationId ?? 1,
                     statusId: selectedStatusId ?? 1,
-                    branchId: isPickup ? _selectedBranch?.id : null,
+                    branchId: _selectedBranch?.id,
                     commentToCourier: _commentController.text.isNotEmpty
                         ? _commentController.text
                         : null,

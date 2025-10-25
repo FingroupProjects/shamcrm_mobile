@@ -1,12 +1,13 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/deliviry_adress/delivery_address_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/deliviry_adress/delivery_address_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/deliviry_adress/delivery_address_state.dart';
 import 'package:crm_task_manager/models/page_2/delivery_address_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-class DeliveryAddressDropdown extends StatelessWidget {
+class DeliveryAddressDropdown extends StatefulWidget {
   final int leadId;
   final int organizationId;
   final DeliveryAddress? selectedAddress;
@@ -21,6 +22,34 @@ class DeliveryAddressDropdown extends StatelessWidget {
   });
 
   @override
+  State<DeliveryAddressDropdown> createState() => _DeliveryAddressDropdownState();
+}
+
+class _DeliveryAddressDropdownState extends State<DeliveryAddressDropdown> {
+
+  @override
+  void initState() {
+    super.initState();
+    // Fetch addresses on initialization
+    _fetchAddresses();
+  }
+
+  @override
+  void didUpdateWidget(DeliveryAddressDropdown oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Fetch addresses when leadId changes
+    if (oldWidget.leadId != widget.leadId) {
+      _fetchAddresses();
+    }
+  }
+
+  void _fetchAddresses() {
+    context.read<DeliveryAddressBloc>().add(
+      FetchDeliveryAddresses(leadId: widget.leadId),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     return BlocBuilder<DeliveryAddressBloc, DeliveryAddressState>(
       builder: (context, state) {
@@ -28,18 +57,66 @@ class DeliveryAddressDropdown extends StatelessWidget {
         DeliveryAddress? initialAddress;
 
         if (state is DeliveryAddressLoading) {
-          return const Center(child: CircularProgressIndicator());
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                AppLocalizations.of(context)!.translate('delivery_address'),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'Gilroy',
+                  color: Color(0xff1E2E52),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xffF4F7FD),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Center(child: CircularProgressIndicator()),
+              ),
+            ],
+          );
         } else if (state is DeliveryAddressLoaded) {
           addresses = state.addresses;
-          // Проверяем, есть ли selectedAddress в списке addresses
-          if (selectedAddress != null) {
-            initialAddress = addresses.firstWhere(
-              (address) => address.id == selectedAddress!.id,
-              orElse: () => selectedAddress!,
-            );
+          // Check if selectedAddress exists in the addresses list
+          if (widget.selectedAddress != null) {
+            try {
+              initialAddress = addresses.firstWhere(
+                    (address) => address.id == widget.selectedAddress!.id,
+              );
+            } catch (e) {
+              // If selectedAddress is not found, set initialAddress to null
+              initialAddress = null;
+            }
           }
         } else if (state is DeliveryAddressError) {
-          return Text(state.message);
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                AppLocalizations.of(context)!.translate('delivery_address'),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'Gilroy',
+                  color: Color(0xff1E2E52),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                state.message,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.red,
+                  fontFamily: 'Gilroy',
+                ),
+              ),
+            ],
+          );
         }
 
         return Column(
@@ -56,6 +133,7 @@ class DeliveryAddressDropdown extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             CustomDropdown<DeliveryAddress>.search(
+              key: ValueKey(widget.leadId), // Force rebuild when leadId changes
               closeDropDownOnClearFilterSearch: true,
               items: addresses,
               searchHintText: AppLocalizations.of(context)!.translate('search'),
@@ -87,17 +165,6 @@ class DeliveryAddressDropdown extends StatelessWidget {
                 );
               },
               headerBuilder: (context, selectedItem, enabled) {
-                if (state is DeliveryAddressLoading) {
-                  return Text(
-                    AppLocalizations.of(context)!.translate('select_delivery_address'),
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
-                      color: Color(0xff1E2E52),
-                    ),
-                  );
-                }
                 return Text(
                   selectedItem?.address ??
                       AppLocalizations.of(context)!.translate('select_delivery_address'),
@@ -129,7 +196,7 @@ class DeliveryAddressDropdown extends StatelessWidget {
               },
               onChanged: (value) {
                 if (value != null) {
-                  onSelectAddress(value);
+                  widget.onSelectAddress(value);
                   FocusScope.of(context).unfocus();
                 }
               },

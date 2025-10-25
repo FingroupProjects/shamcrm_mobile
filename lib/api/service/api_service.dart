@@ -9301,10 +9301,11 @@ Future<String> _appendQueryParams(String path) async {
         body['delivery_address_id'] = deliveryAddressId;
       } else {
         body['delivery_address_id'] = null;
-        if (branchId != null) {
-          body['branch_id'] = branchId;
-        }
       }
+      
+      // Всегда отправляем branch_id, если он указан
+      body['branch_id'] = branchId;
+    
 
       ////print('ApiService: Тело запроса для создания заказа: ${jsonEncode(body)}');
 
@@ -9404,10 +9405,10 @@ Future<String> _appendQueryParams(String path) async {
       } else {
         body['delivery_address'] = null;
         body['delivery_address_id'] = null;
-        if (branchId != null) {
-          body['branch_id'] = branchId.toString();
-        }
       }
+      
+      // Всегда отправляем branch_id, если он указан
+      body['branch_id'] = branchId;
 
       ////print('ApiService: Тело запроса для обновления заказа: ${jsonEncode(body)}');
 
@@ -9481,6 +9482,31 @@ Future<String> _appendQueryParams(String path) async {
     } catch (e) {
       throw Exception('Ошибка при получении адресов доставки: ');
     }
+  }
+
+  Future<http.Response> createDeliveryAddress({
+    required String address,
+    required int leadId,
+  }) async {
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/mini-app/delivery-address');
+    if (kDebugMode) {
+      print('ApiService: createDeliveryAddress - Generated path: $path');
+    }
+
+    final response = await _postRequest(
+      path,
+      {
+        'address': address,
+        'lead_id': leadId,
+      },
+    );
+    
+    if (kDebugMode) {
+      print('ApiService: createDeliveryAddress - Response status: ${response.statusCode}');
+    }
+    
+    return response;
   }
 
   Future<http.Response> createOrderStatus({

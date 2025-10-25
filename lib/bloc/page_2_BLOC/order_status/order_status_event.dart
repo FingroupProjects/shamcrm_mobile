@@ -160,3 +160,13 @@ class DeleteOrderStatus extends OrderEvent {
 
   DeleteOrderStatus({required this.statusId});
 }
+
+class AddMiniAppAddress extends OrderEvent {
+  final String address;
+  final int leadId;
+
+  AddMiniAppAddress({
+    required this.address,
+    required this.leadId,
+  });
+}
