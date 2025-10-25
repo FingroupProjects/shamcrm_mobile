@@ -279,15 +279,20 @@ void showCustomSnackBar({
         message,
         style: const TextStyle(
           fontFamily: 'Gilroy',
-          fontWeight: FontWeight.w600,
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+          color: Colors.white,
         ),
       ),
-      backgroundColor: isSuccess ? Colors.green : const Color(0xffEF4444),
       behavior: SnackBarBehavior.floating,
-      margin: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
       ),
+      backgroundColor: isSuccess ? Colors.green : Colors.red,
+      elevation: 3,
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      duration: Duration(seconds: isSuccess ? 2 : 3),
     ),
   );
 }
