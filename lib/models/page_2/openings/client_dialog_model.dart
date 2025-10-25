@@ -99,7 +99,8 @@ class Lead {
       birthday: json['birthday'] as String?,
       description: json['description'] as String?,
       leadStatusId: json['lead_status_id'] as int?,
-      position: json['position'] as String?,
+      // Fix: position can be int or null in JSON
+      position: json['position']?.toString(),
       managerId: json['manager_id'] as int?,
       waName: json['wa_name'] as String?,
       waPhone: json['wa_phone'] as String?,
@@ -121,7 +122,8 @@ class Lead {
           ? DateTime.parse(json['deleted_at'] as String)
           : null,
       authorId: json['author_id'] as int?,
-      processingSpeed: json['processing_speed'] as String?,
+      // Fix: processing_speed can be int or null in JSON
+      processingSpeed: json['processing_speed']?.toString(),
       isClient: json['is_client'] as int?,
       messageStatus: json['messageStatus'] as String?,
       firstResponseAt: json['first_response_at'] != null
