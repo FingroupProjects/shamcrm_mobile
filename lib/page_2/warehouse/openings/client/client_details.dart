@@ -51,7 +51,7 @@ class _ClientOpeningDetailsScreenState
     
     details = [
       {
-        'label': '${localizations.translate('name') ?? 'Название'}:',
+        'label': localizations.translate('title_with_two_dots'),
         'value': displayName,
       },
       {

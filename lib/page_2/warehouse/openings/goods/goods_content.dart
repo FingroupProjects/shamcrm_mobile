@@ -19,11 +19,41 @@ class GoodsContent extends StatefulWidget {
 }
 
 class _GoodsContentState extends State<GoodsContent> {
+  bool _isRefreshing = false;
+  // Keep track of ScaffoldMessengerState to avoid unsafe lookups
+  ScaffoldMessengerState? _scaffoldMessenger;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Cache the ScaffoldMessengerState safely
+    _scaffoldMessenger = ScaffoldMessenger.maybeOf(context);
+  }
+
+  @override
+  void dispose() {
+    _scaffoldMessenger = null;
+    super.dispose();
+  }
+
   Future<void> _onRefresh() async {
+    if (!mounted) return;
+
+    setState(() {
+      _isRefreshing = true;
+    });
+
     context.read<GoodsOpeningsBloc>().add(LoadGoodsOpenings());
+
     await context.read<GoodsOpeningsBloc>().stream.firstWhere(
-          (state) => state is! GoodsOpeningsLoading || state is GoodsOpeningsLoaded || state is GoodsOpeningsError,
+          (state) => state is GoodsOpeningsLoaded || state is GoodsOpeningsError,
     );
+
+    if (mounted) {
+      setState(() {
+        _isRefreshing = false;
+      });
+    }
   }
 
   Widget _buildGoodsList(List<GoodsOpeningDocument> goods) {
@@ -40,7 +70,7 @@ class _GoodsContentState extends State<GoodsContent> {
             goods: goods[index],
             onClick: (goods) {
               final bloc = context.read<GoodsOpeningsBloc>();
-              
+
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -79,7 +109,7 @@ class _GoodsContentState extends State<GoodsContent> {
 
   Widget _buildEmptyState() {
     final localizations = AppLocalizations.of(context)!;
-    
+
     return RefreshIndicator(
       onRefresh: _onRefresh,
       child: ListView(
@@ -134,7 +164,7 @@ class _GoodsContentState extends State<GoodsContent> {
 
   Widget _buildErrorState(String message) {
     final localizations = AppLocalizations.of(context)!;
-    
+
     return RefreshIndicator(
       onRefresh: _onRefresh,
       child: ListView(
@@ -221,68 +251,100 @@ class _GoodsContentState extends State<GoodsContent> {
   Widget build(BuildContext context) {
     return BlocConsumer<GoodsOpeningsBloc, GoodsOpeningsState>(
       listener: (context, state) {
-        // Обработка операционных ошибок через snackbar
-        if (state is GoodsOpeningsOperationError) {
-          showCustomSnackBar(
-            context: context,
-            message: state.message,
-            isSuccess: false,
+        // ✅ Handle success messages
+        if (state is GoodsOpeningCreateSuccess) {
+          _showSnackBarSafely(
+            AppLocalizations.of(context)?.translate('goods_opening_created') ??
+                'Остаток товара создан',
+            isSuccess: true,
           );
+          // Refresh data after create
+          context.read<GoodsOpeningsBloc>().add(LoadGoodsOpenings());
         }
 
-        // Поддержка старого состояния ошибки обновления (deprecated)
-        if (state is GoodsOpeningUpdateError) {
-          showCustomSnackBar(
-            context: context,
-            message: state.message,
-            isSuccess: false,
+        // if (state is GoodsOpeningDeleteError) {
+        //   _showSnackBarSafely(state.message, isSuccess: false);
+        //   context.read<GoodsOpeningsBloc>().add(LoadGoodsOpenings());
+        // }
+
+        if (state is GoodsOpeningUpdateSuccess) {
+          _showSnackBarSafely(
+            AppLocalizations.of(context)?.translate('successfully_updated') ??
+                'Успешно обновлено',
+            isSuccess: true,
           );
+          // Refresh data after update
+          context.read<GoodsOpeningsBloc>().add(LoadGoodsOpenings());
+        }
+
+        // ✅ Handle error messages
+        if (state is GoodsOpeningCreateError) {
+          _showSnackBarSafely(state.message, isSuccess: false);
+          // Refresh data to avoid white screen
+          context.read<GoodsOpeningsBloc>().add(LoadGoodsOpenings());
+        }
+
+        if (state is GoodsOpeningUpdateError) {
+          _showSnackBarSafely(state.message, isSuccess: false);
+          // Refresh data to avoid white screen
+          context.read<GoodsOpeningsBloc>().add(LoadGoodsOpenings());
+        }
+
+        // Support for operational error state (if exists)
+        if (state is GoodsOpeningsOperationError) {
+          _showSnackBarSafely(state.message, isSuccess: false);
         }
       },
       builder: (context, state) {
-        // Если это операционная ошибка, показываем предыдущее состояние
-        if (state is GoodsOpeningsOperationError) {
-          state = state.previousState;
+        // Show loading during refresh or initial load
+        if (state is GoodsOpeningsLoading || _isRefreshing) {
+          return _buildLoadingState();
         }
 
-        if (state is GoodsOpeningsLoading) {
-          return _buildLoadingState();
-        } else if (state is GoodsOpeningsError) {
+        // Show error state
+        if (state is GoodsOpeningsError) {
           return _buildErrorState(state.message);
-        } else if (state is GoodsOpeningsLoaded) {
+        }
+
+        // Show loaded data
+        if (state is GoodsOpeningsLoaded) {
           if (state.goods.isEmpty) {
             return _buildEmptyState();
           }
           return _buildGoodsList(state.goods);
         }
 
+        // Default empty state
         return _buildEmptyState();
       },
     );
   }
-}
 
-// Helper function for snackbar
-void showCustomSnackBar({
-  required BuildContext context,
-  required String message,
-  required bool isSuccess,
-}) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(
-        message,
-        style: const TextStyle(
-          fontFamily: 'Gilroy',
-          fontWeight: FontWeight.w600,
+  void _showSnackBarSafely(String message, {bool isSuccess = true}) {
+    // Use cached ScaffoldMessengerState to avoid unsafe lookups
+    if (!mounted || _scaffoldMessenger == null) return;
+
+    _scaffoldMessenger!.showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: const TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
+          ),
         ),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        backgroundColor: isSuccess ? Colors.green : Colors.red,
+        elevation: 3,
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        duration: Duration(seconds: isSuccess ? 2 : 3),
       ),
-      backgroundColor: isSuccess ? Colors.green : const Color(0xffEF4444),
-      behavior: SnackBarBehavior.floating,
-      margin: const EdgeInsets.all(16),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
-    ),
-  );
+    );
+  }
 }

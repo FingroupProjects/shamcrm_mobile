@@ -63,36 +63,7 @@ class _AddGoodsOpeningScreenState extends State<AddGoodsOpeningScreen> {
     return BlocListener<GoodsOpeningsBloc, GoodsOpeningsState>(
       listener: (context, state) {
         if (state is GoodsOpeningCreateSuccess) {
-          // Успешно создан товар, показываем сообщение
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                AppLocalizations.of(context)!.translate('goods_opening_created'),
-                style: const TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-              behavior: SnackBarBehavior.floating,
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              backgroundColor: Colors.green,
-              elevation: 3,
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              duration: const Duration(seconds: 2),
-            ),
-          );
-          
-          // Небольшая задержка перед закрытием экрана, чтобы SnackBar успел отобразиться
-          Future.delayed(const Duration(milliseconds: 300), () {
-            if (mounted) {
-              Navigator.pop(context);
-            }
-          });
+          Navigator.pop(context, true);
         } else if (state is GoodsOpeningCreateError) {
           // Показываем ошибку создания
           ScaffoldMessenger.of(context).showSnackBar(
@@ -178,8 +149,6 @@ class _AddGoodsOpeningScreenState extends State<AddGoodsOpeningScreen> {
                             });
                           },
                         ),
-                        const SizedBox(height: 16),
-
                         const SizedBox(height: 16),
                         UnitsWidget(
                           selectedUnit: _selectedUnitId,

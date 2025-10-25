@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../models/page_2/openings/client_openings_model.dart';
+import '../../../../screens/profile/languages/app_localizations.dart';
 import '../../../../utils/global_fun.dart';
 
 class ClientCard extends StatelessWidget {
@@ -23,6 +24,7 @@ class ClientCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
 
     return GestureDetector(
       onTap: () => onClick(client),
@@ -42,7 +44,7 @@ class ClientCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Название: ${client.counterparty?.name ?? 'N/A'}',
+                    '${localizations.translate('title_with_two_dots')}${client.counterparty?.name ?? 'N/A'}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',

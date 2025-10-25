@@ -1802,5 +1802,6 @@
   "balance_colon": "Balance:",
   "price_colon": "Price:",
   "product_variants": "Product variants",
-  "n_a": "N/A"
+  "n_a": "N/A",
+  "title_with_two_dots": "Title: "
 }

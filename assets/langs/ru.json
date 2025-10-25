@@ -1804,5 +1804,7 @@
   "balance_colon": "Баланс:",
   "price_colon": "Цена:",
   "product_variants": "Варианты товаров",
-  "n_a": "N/A"
+  "n_a": "N/A",
+  "title_with_two_dots": "Название: ",
+  "no_goods": "Нет товаров"
 }

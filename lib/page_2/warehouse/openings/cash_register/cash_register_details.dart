@@ -51,7 +51,7 @@ class _CashRegisterOpeningDetailsScreenState extends State<CashRegisterOpeningDe
 
     details = [
       {
-        'label': '${localizations.translate('name')}:',
+        'label': '${localizations.translate('title')}:',
         'value': displayName,
       },
       {

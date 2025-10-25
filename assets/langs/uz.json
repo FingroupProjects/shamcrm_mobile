@@ -1802,5 +1802,7 @@
   "balance_colon": "Balans:",
   "price_colon": "Narx:",
   "product_variants": "Mahsulot variantlari",
-  "n_a": "N/A"
+  "n_a": "N/A",
+  "title_with_two_dots": "Nomi: ",
+  "no_goods": "Mahsulotlar yo'q"
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../models/page_2/openings/goods_openings_model.dart';
-import '../../../../utils/global_fun.dart';
+import '../../../../screens/profile/languages/app_localizations.dart';
 
 class GoodsCard extends StatelessWidget {
   final GoodsOpeningDocument goods;
@@ -23,6 +23,7 @@ class GoodsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
     
     // Берем первый товар из документа для отображения основной информации
     final firstGood = goods.documentGoods != null && goods.documentGoods!.isNotEmpty ? goods.documentGoods!.first : null;
@@ -45,7 +46,7 @@ class GoodsCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Название: ${firstGood?.goodVariant?.fullName ?? goods.docNumber ?? 'N/A'}',
+                    '${localizations.translate('title_with_two_dots') ?? 'Название: '}${firstGood?.goodVariant?.fullName ?? goods.docNumber ?? 'N/A'}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',

@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/models/page_2/openings/cash_register_openings_model.dart';
 import 'package:flutter/material.dart';
 
+import '../../../../screens/profile/languages/app_localizations.dart';
 import '../../../../utils/global_fun.dart';
 
 class CashRegisterCard extends StatelessWidget {
@@ -23,6 +24,7 @@ class CashRegisterCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
 
     return GestureDetector(
       onTap: () => onClick(cashRegister),
@@ -42,7 +44,7 @@ class CashRegisterCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Название: ${cashRegister.cashRegister?.name ?? 'N/A'}',
+                    '${localizations.translate('title_with_two_dots')}${cashRegister.cashRegister?.name ?? 'N/A'}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',

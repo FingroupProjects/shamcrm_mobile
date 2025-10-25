@@ -266,7 +266,7 @@ class _OpeningsScreenState extends State<OpeningsScreen> with TickerProviderStat
 
         _scrollController.animateTo(
           targetOffset,
-          duration: const Duration(milliseconds: 300),
+          duration: const Duration(milliseconds: 100),
           curve: Curves.easeInOut,
         );
       }

@@ -77,7 +77,7 @@ class _AddClientOpeningScreenState extends State<AddClientOpeningScreen> {
           // Небольшая задержка перед закрытием экрана, чтобы SnackBar успел отобразиться
           Future.delayed(const Duration(milliseconds: 300), () {
             if (mounted) {
-              Navigator.pop(context);
+              Navigator.pop(context, true);
             }
           });
         } else if (state is ClientOpeningCreateError) {
