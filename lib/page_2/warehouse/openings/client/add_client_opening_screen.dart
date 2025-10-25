@@ -29,6 +29,10 @@ class _AddClientOpeningScreenState extends State<AddClientOpeningScreen> {
   late TextEditingController ourDutyController;
   late TextEditingController debtToUsController;
 
+  // Флаги для отслеживания состояния полей
+  bool isOurDutyEnabled = true;
+  bool isDebtToUsEnabled = true;
+
   @override
   void initState() {
     super.initState();
@@ -36,6 +40,24 @@ class _AddClientOpeningScreenState extends State<AddClientOpeningScreen> {
     // Initialize controllers with empty values
     ourDutyController = TextEditingController();
     debtToUsController = TextEditingController();
+
+    // Добавляем слушатели для отслеживания изменений в полях
+    ourDutyController.addListener(_onOurDutyChanged);
+    debtToUsController.addListener(_onDebtToUsChanged);
+  }
+
+  void _onOurDutyChanged() {
+    setState(() {
+      // Если поле "наш долг" заполнено, отключаем "долг клиента"
+      isDebtToUsEnabled = ourDutyController.text.isEmpty;
+    });
+  }
+
+  void _onDebtToUsChanged() {
+    setState(() {
+      // Если поле "долг клиента" заполнено, отключаем "наш долг"
+      isOurDutyEnabled = debtToUsController.text.isEmpty;
+    });
   }
 
   @override
@@ -148,42 +170,72 @@ class _AddClientOpeningScreenState extends State<AddClientOpeningScreen> {
                       children: [
                         _buildClientNameField(),
                         const SizedBox(height: 16),
-                        CustomTextField(
-                          controller: ourDutyController,
-                          label: AppLocalizations.of(context)!.translate('our_duty'),
-                          hintText: AppLocalizations.of(context)!.translate('enter_our_duty'),
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [
-                            PriceInputFormatter(),
-                          ],
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return AppLocalizations.of(context)!.translate('field_required');
+                        GestureDetector(
+                          onTap: () {
+                            if (!isOurDutyEnabled) {
+                              _showFieldLockedSnackBar('client_debt');
                             }
-                            if (double.tryParse(value) == null) {
-                              return AppLocalizations.of(context)!.translate('enter_correct_number');
-                            }
-                            return null;
                           },
+                          child: AbsorbPointer(
+                            absorbing: !isOurDutyEnabled,
+                            child: CustomTextField(
+                              controller: ourDutyController,
+                              label: AppLocalizations.of(context)!.translate('our_duty'),
+                              hintText: AppLocalizations.of(context)!.translate('enter_our_duty'),
+                              keyboardType: TextInputType.number,
+                              enabled: isOurDutyEnabled,
+                              inputFormatters: [
+                                PriceInputFormatter(),
+                              ],
+                              validator: (value) {
+                                // Валидация только если поле активно
+                                if (!isOurDutyEnabled) {
+                                  return null;
+                                }
+                                if (value == null || value.isEmpty) {
+                                  return AppLocalizations.of(context)!.translate('field_required');
+                                }
+                                if (double.tryParse(value) == null) {
+                                  return AppLocalizations.of(context)!.translate('enter_correct_number');
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
                         ),
                         const SizedBox(height: 16),
-                        CustomTextField(
-                          controller: debtToUsController,
-                          label: AppLocalizations.of(context)!.translate('client_debt'),
-                          hintText: AppLocalizations.of(context)!.translate('enter_client_debt'),
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [
-                            PriceInputFormatter(),
-                          ],
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return AppLocalizations.of(context)!.translate('field_required');
+                        GestureDetector(
+                          onTap: () {
+                            if (!isDebtToUsEnabled) {
+                              _showFieldLockedSnackBar('our_duty');
                             }
-                            if (double.tryParse(value) == null) {
-                              return AppLocalizations.of(context)!.translate('enter_correct_number');
-                            }
-                            return null;
                           },
+                          child: AbsorbPointer(
+                            absorbing: !isDebtToUsEnabled,
+                            child: CustomTextField(
+                              controller: debtToUsController,
+                              label: AppLocalizations.of(context)!.translate('client_debt'),
+                              hintText: AppLocalizations.of(context)!.translate('enter_client_debt'),
+                              keyboardType: TextInputType.number,
+                              enabled: isDebtToUsEnabled,
+                              inputFormatters: [
+                                PriceInputFormatter(),
+                              ],
+                              validator: (value) {
+                                // Валидация только если поле активно
+                                if (!isDebtToUsEnabled) {
+                                  return null;
+                                }
+                                if (value == null || value.isEmpty) {
+                                  return AppLocalizations.of(context)!.translate('field_required');
+                                }
+                                if (double.tryParse(value) == null) {
+                                  return AppLocalizations.of(context)!.translate('enter_correct_number');
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -220,11 +272,19 @@ class _AddClientOpeningScreenState extends State<AddClientOpeningScreen> {
                             onPressed: isCreating ? null : () {
                           if (_formKey.currentState!.validate()) {
                             // Создаем событие для добавления остатка клиента
+                            // Если поле пустое или отключено, отправляем 0
+                            final ourDuty = ourDutyController.text.isEmpty 
+                                ? 0.0 
+                                : double.parse(ourDutyController.text);
+                            final debtToUs = debtToUsController.text.isEmpty 
+                                ? 0.0 
+                                : double.parse(debtToUsController.text);
+                            
                             context.read<ClientOpeningsBloc>().add(
                               CreateClientOpening(
                                 leadId: widget.leadId,
-                                ourDuty: double.parse(ourDutyController.text),
-                                debtToUs: double.parse(debtToUsController.text),
+                                ourDuty: ourDuty,
+                                debtToUs: debtToUs,
                               ),
                             );
 
@@ -241,6 +301,36 @@ class _AddClientOpeningScreenState extends State<AddClientOpeningScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _showFieldLockedSnackBar(String fieldKey) {
+    final fieldName = AppLocalizations.of(context)!.translate(fieldKey);
+    
+    // Закрываем текущий SnackBar перед показом нового
+    ScaffoldMessenger.of(context).clearSnackBars();
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Сначала очистите поле "$fieldName"',
+          style: const TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
+          ),
+        ),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        backgroundColor: Colors.orange,
+        elevation: 3,
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        duration: const Duration(seconds: 2),
       ),
     );
   }

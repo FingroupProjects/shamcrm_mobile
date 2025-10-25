@@ -1,7 +1,7 @@
 import 'package:crm_task_manager/models/page_2/dashboard/creditors_model.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-import 'package:intl/intl.dart';
+import 'package:crm_task_manager/utils/global_fun.dart';
 
 class CreditorCard extends StatelessWidget {
   final Creditor creditor;
@@ -18,11 +18,6 @@ class CreditorCard extends StatelessWidget {
     required this.isSelectionMode,
     required this.isSelected,
   }) : super(key: key);
-
-  String _formatAmount(String amount) {
-    double amountValue = double.tryParse(amount.replaceAll(' ', '')) ?? 0.0;
-    return NumberFormat('#,##0.00', 'ru_RU').format(amountValue);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -56,7 +51,7 @@ class CreditorCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${localizations.translate('debt_amount') ?? 'debt_amount'}: ${creditor.debtAmount}',
+                    '${localizations.translate('debt_amount') ?? 'debt_amount'}: ${parseNumberToString(creditor.debtAmount)}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',

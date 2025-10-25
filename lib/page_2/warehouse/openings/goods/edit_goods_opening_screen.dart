@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../models/page_2/openings/goods_openings_model.dart';
 import '../../../../models/page_2/good_variants_model.dart';
-import '../../../../models/cash_register_list_model.dart';
 import '../../../../bloc/cash_register_list/cash_register_list_bloc.dart';
 import '../../../../bloc/cash_register_list/cash_register_list_event.dart';
 import '../../../../bloc/page_2_BLOC/openings/goods/goods_openings_bloc.dart';
@@ -16,10 +15,9 @@ import '../../../../custom_widget/custom_textfield.dart';
 import '../../../../custom_widget/price_input_formatter.dart';
 import '../../incoming/supplier_widget.dart';
 import '../../incoming/storage_widget.dart';
-import '../../incoming/units_widget.dart';
-import '../../../money/widgets/cash_register_radio_group.dart';
 import '../../../../utils/global_fun.dart';
 import 'goods_list.dart';
+import 'goods_units_dropdown.dart';
 
 class EditGoodsOpeningScreen extends StatefulWidget {
   final GoodsOpeningDocument goodsOpening;
@@ -201,6 +199,8 @@ class _EditGoodsOpeningScreenState extends State<EditGoodsOpeningScreen> {
                         onSelectGood: (GoodVariantItem goods) {
                           setState(() {
                             _selectedGoods = goods;
+                            // Сбрасываем выбранную единицу измерения при смене товара
+                            _selectedUnitId = null;
                           });
                         },
                       ),
@@ -223,11 +223,12 @@ class _EditGoodsOpeningScreenState extends State<EditGoodsOpeningScreen> {
                         },
                       ),
                       const SizedBox(height: 16),
-                      UnitsWidget(
-                        selectedUnit: _selectedUnitId,
-                        onChanged: (value) {
+                      GoodUnitsDropdown(
+                        selectedGood: _selectedGoods,
+                        selectedUnitId: _selectedUnitId,
+                        onUnitSelected: (unitId) {
                           setState(() {
-                            _selectedUnitId = value;
+                            _selectedUnitId = unitId;
                           });
                         },
                       ),

@@ -5,6 +5,7 @@ import '../../../../bloc/page_2_BLOC/openings/goods/goods_openings_bloc.dart';
 import '../../../../bloc/page_2_BLOC/openings/goods/goods_dialog_bloc.dart';
 import '../../../../bloc/page_2_BLOC/openings/goods/goods_dialog_event.dart';
 import '../../../../bloc/page_2_BLOC/openings/goods/goods_dialog_state.dart';
+import '../../../../bloc/page_2_BLOC/openings/goods/goods_list_bloc.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
 import 'add_goods_opening_screen.dart';
 
@@ -13,41 +14,30 @@ class CreateGoodsOpeningDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Получаем оригинальный блок для передачи в AddGoodsOpeningScreen
-    final goodsOpeningsBloc = context.read<GoodsOpeningsBloc>();
-    
     return BlocProvider(
       create: (context) => GoodsDialogBloc()..add(LoadGoodVariantsForDialog()),
-      child: GoodVariantsDialog(
-        goodsOpeningsBloc: goodsOpeningsBloc,
-      ),
+      child: const GoodVariantsDialog(),
     );
   }
 }
 
 class GoodVariantsDialog extends StatelessWidget {
-  final GoodsOpeningsBloc goodsOpeningsBloc;
-  
-  const GoodVariantsDialog({
-    super.key,
-    required this.goodsOpeningsBloc,
-  });
+  const GoodVariantsDialog({super.key});
 
   String _translate(BuildContext context, String key, String fallback) {
     return AppLocalizations.of(context)?.translate(key) ?? fallback;
   }
 
   Widget _buildVariantsList(
-    BuildContext context,
-    List<good_variants.GoodVariantItem> items,
-    int currentPage,
-    int totalPages,
-    bool isLoadingMore,
-  ) {
+      BuildContext context,
+      List<good_variants.GoodVariantItem> items,
+      int currentPage,
+      int totalPages,
+      bool isLoadingMore,
+      ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Отображаем список вариантов
         if (items.isEmpty)
           Container(
             width: double.infinity,
@@ -85,8 +75,7 @@ class GoodVariantsDialog extends StatelessWidget {
           )
         else ...[
           ...items.map((item) => _buildVariantCard(context, item)).toList(),
-          
-          // Индикатор загрузки дополнительных страниц
+
           if (currentPage < totalPages || isLoadingMore)
             Container(
               padding: const EdgeInsets.symmetric(vertical: 16),
@@ -122,22 +111,27 @@ class GoodVariantsDialog extends StatelessWidget {
   Widget _buildVariantCard(BuildContext context, good_variants.GoodVariantItem item) {
     return GestureDetector(
       onTap: () {
-        // Закрываем диалог
-        Navigator.pop(context);
-        
-        // Открываем экран добавления с существующим блоком
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (newContext) => BlocProvider.value(
-              value: goodsOpeningsBloc,
-              child: AddGoodsOpeningScreen(
-                goodName: item.fullName ?? item.good?.name ?? 'Неизвестный товар',
-                goodVariantId: item.id ?? 0,
+          final goodsOpeningsBloc = context.read<GoodsOpeningsBloc>();
+
+          // Now close the dialog
+          Navigator.pop(context);
+
+          // Navigate to the add screen with the captured blocs
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (newContext) => MultiBlocProvider(
+                providers: [
+                  BlocProvider.value(value: goodsOpeningsBloc),
+                  BlocProvider.value(value: GetAllGoodsListBloc()),
+                ],
+                child: AddGoodsOpeningScreen(
+                  goodName: item.fullName ?? item.good?.name ?? 'Неизвестный товар',
+                  goodVariantId: item.id ?? 0,
+                ),
               ),
             ),
-          ),
-        );
+          );
       },
       child: Container(
         width: double.infinity,
@@ -342,7 +336,7 @@ class GoodVariantsDialog extends StatelessWidget {
                 },
               ),
             ),
-            
+
             const SizedBox(height: 16),
           ],
         ),
