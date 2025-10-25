@@ -765,19 +765,21 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                   Positioned(
                                     top: 8,
                                     left: 8,
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: Colors.black.withOpacity(0.5),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Text(
-                                        '${_imagePaths.length} ${AppLocalizations.of(context)!.translate('image_message')}',
-                                        style: const TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w500,
-                                          fontFamily: 'Gilroy',
-                                          color: Colors.white,
+                                    child: IgnorePointer(
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withOpacity(0.5),
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: Text(
+                                          '${_imagePaths.length} ${AppLocalizations.of(context)!.translate('image_message')}',
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500,
+                                            fontFamily: 'Gilroy',
+                                            color: Colors.white,
+                                          ),
                                         ),
                                       ),
                                     ),

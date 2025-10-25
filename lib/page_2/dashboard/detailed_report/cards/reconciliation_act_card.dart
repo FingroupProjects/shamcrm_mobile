@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:intl/intl.dart';
+import 'package:crm_task_manager/utils/global_fun.dart';
 
 import '../../../../models/page_2/dashboard/act_of_reconciliation_model.dart';
 
@@ -19,17 +20,6 @@ class ReconciliationActCard extends StatelessWidget {
     required this.isSelectionMode,
     required this.isSelected,
   }) : super(key: key);
-
-  String _formatAmount(String? amount) {
-    if (amount == null || amount.isEmpty) return '0.00';
-    
-    try {
-      double amountValue = double.parse(amount);
-      return NumberFormat('#,##0.00', 'ru_RU').format(amountValue);
-    } catch (e) {
-      return amount;
-    }
-  }
 
   String _formatDate(DateTime? date, AppLocalizations localizations) {
     if (date == null) return localizations.translate('not_updated');
@@ -141,16 +131,16 @@ class ReconciliationActCard extends StatelessWidget {
                           fontWeight: FontWeight.w400,
                           color: Color(0xff99A4BA),
                         ),
-                      ),
-                      Text(
-                        _formatAmount(reconciliationItem.sum),
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xff1E2E52),
                         ),
-                      ),
+                        Text(
+                          parseNumberToString(reconciliationItem.sum, nullValue: ''),
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xff1E2E52),
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -169,7 +159,7 @@ class ReconciliationActCard extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          _formatAmount(reconciliationItem.saleSum),
+                          parseNumberToString(reconciliationItem.saleSum, nullValue: ''),
                           style: TextStyle(
                             fontSize: 14,
                             fontFamily: 'Gilroy',

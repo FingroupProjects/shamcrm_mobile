@@ -44,3 +44,17 @@ class OrderStatusDeleted extends OrderState {
 
   OrderStatusDeleted({required this.message});
 }
+
+class OrderCreateAddressLoading extends OrderState {}
+
+class OrderCreateAddressSuccess extends OrderState {
+  final String message;
+
+  OrderCreateAddressSuccess({this.message = 'Адрес доставки успешно создан'});
+}
+
+class OrderCreateAddressError extends OrderState {
+  final String message;
+
+  OrderCreateAddressError(this.message);
+}

@@ -1,4 +1,3 @@
-
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/gestures.dart';
@@ -9,6 +8,12 @@ import 'package:html/parser.dart' show parse;
 import 'package:html/dom.dart' as dom;
 import 'package:crm_task_manager/utils/app_colors.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+// Регулярное выражение для поиска URL в тексте
+final RegExp _urlRegex = RegExp(
+  r'https?://[^\s]+|www\.[^\s]+',
+  caseSensitive: false,
+);
 
 class MessageBubble extends StatelessWidget {
   final String message;
@@ -167,18 +172,176 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
+  // Метод для парсинга текста с ссылками (без HTML)
+  List<TextSpan> _parseTextWithLinks(BuildContext context, String text, TextStyle baseStyle) {
+    final List<TextSpan> spans = [];
+    final matches = _urlRegex.allMatches(text);
+    
+    if (matches.isEmpty) {
+      // Нет ссылок — возвращаем обычный текст
+      return [TextSpan(text: text, style: baseStyle)];
+    }
+    
+    int currentPosition = 0;
+    
+    for (final match in matches) {
+      // Добавляем текст до ссылки
+      if (match.start > currentPosition) {
+        spans.add(TextSpan(
+          text: text.substring(currentPosition, match.start),
+          style: baseStyle,
+        ));
+      }
+      
+      // Добавляем саму ссылку
+      String url = match.group(0)!;
+      String displayUrl = url;
+      
+      // Добавляем https:// если ссылка начинается с www.
+      if (!url.startsWith('http')) {
+        url = 'https://$url';
+      }
+      
+      spans.add(
+        TextSpan(
+          text: displayUrl,
+          style: baseStyle.copyWith(
+            color: isSender ? Colors.white : Colors.blue,
+            decoration: TextDecoration.underline,
+          ),
+          recognizer: TapGestureRecognizer()
+            ..onTap = () => _handleLinkTap(context, url),
+        ),
+      );
+      
+      currentPosition = match.end;
+    }
+    
+    // Добавляем оставшийся текст
+    if (currentPosition < text.length) {
+      spans.add(TextSpan(
+        text: text.substring(currentPosition),
+        style: baseStyle,
+      ));
+    }
+    
+    return spans;
+  }
+
+  // Универсальный обработчик клика по ссылке
+  void _handleLinkTap(BuildContext context, String url) {
+    // Вариант 1: Показываем меню с опциями (текущая логика)
+    final RenderBox overlay =
+        Overlay.of(context).context.findRenderObject() as RenderBox;
+    final RenderBox messageBox =
+        context.findRenderObject() as RenderBox;
+    final Offset position =
+        messageBox.localToGlobal(Offset.zero, ancestor: overlay);
+
+    showMenu(
+      context: context,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(6),
+      ),
+      position: RelativeRect.fromLTRB(
+        position.dx + messageBox.size.width / 2.5,
+        position.dy,
+        position.dx + messageBox.size.width / 2 + 1,
+        position.dy + messageBox.size.height,
+      ),
+      items: [
+        _buildMenuItem(
+          icon: 'assets/icons/chats/menu_icons/open.svg',
+          text: AppLocalizations.of(context)!
+              .translate('open_url_source'),
+          iconColor: Colors.black,
+          textColor: Colors.black,
+          onTap: () async {
+            Navigator.pop(context);
+            launchUrl(Uri.parse(url),
+                mode: LaunchMode.externalApplication);
+          },
+        ),
+        _buildMenuItem(
+          icon: 'assets/icons/chats/menu_icons/copy.svg',
+          text: AppLocalizations.of(context)!.translate('copy'),
+          iconColor: Colors.black,
+          textColor: Colors.black,
+          onTap: () {
+            Navigator.pop(context);
+            Clipboard.setData(ClipboardData(text: url));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  AppLocalizations.of(context)!
+                      .translate('copy_url_source_text'),
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+                behavior: SnackBarBehavior.floating,
+                margin: EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                backgroundColor: Colors.green,
+                elevation: 3,
+                padding: EdgeInsets.symmetric(
+                    vertical: 12, horizontal: 16),
+                duration: Duration(seconds: 3),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+    
+    // Вариант 2: Прямой переход (раскомментируйте, если нужно)
+    // launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+  }
+
   Widget _buildMessageWithHtml(BuildContext context, String text) {
     final double maxWidth = MediaQuery.of(context).size.width * 0.7;
 
-    // Парсим HTML
+    // Проверяем, содержит ли текст HTML-теги
+    final bool isHtml = text.contains('<') && text.contains('>');
+    
+    // Определяем базовый стиль текста в зависимости от isNote
+    final baseStyle = isNote
+        ? ChatSmsStyles.messageTextStyle.copyWith(color: Colors.black)
+        : isSender
+            ? ChatSmsStyles.senderMessageTextStyle
+            : ChatSmsStyles.receiverMessageTextStyle;
+    
+    if (!isHtml) {
+      // Простой текст — ищем ссылки регуляркой
+      final spans = _parseTextWithLinks(context, text, baseStyle);
+      
+      return Container(
+        constraints: BoxConstraints(maxWidth: maxWidth),
+        child: RichText(
+          text: TextSpan(style: baseStyle, children: spans),
+          maxLines: 10000000,
+          overflow: TextOverflow.ellipsis,
+        ),
+      );
+    }
+
+    // Оригинальная логика для HTML
     final document = parse(text);
     List<TextSpan> spans = [];
 
-    void parseNode(dom.Node node, TextStyle baseStyle) {
+    void parseNode(dom.Node node, TextStyle currentStyle) {
       if (node is dom.Text) {
-        spans.add(TextSpan(text: node.text, style: baseStyle));
+        // Парсим текстовые узлы на предмет ссылок
+        spans.addAll(_parseTextWithLinks(context, node.text, currentStyle));
       } else if (node is dom.Element) {
-        TextStyle newStyle = baseStyle;
+        TextStyle newStyle = currentStyle;
         if (node.localName == 'strong') {
           newStyle = newStyle.copyWith(fontWeight: FontWeight.bold);
         } else if (node.localName == 'em') {
@@ -195,77 +358,7 @@ class MessageBubble extends StatelessWidget {
                 decoration: TextDecoration.underline,
               ),
               recognizer: TapGestureRecognizer()
-                ..onTap = () {
-                  final RenderBox overlay =
-                      Overlay.of(context).context.findRenderObject() as RenderBox;
-                  final RenderBox messageBox =
-                      context.findRenderObject() as RenderBox;
-                  final Offset position =
-                      messageBox.localToGlobal(Offset.zero, ancestor: overlay);
-
-                  showMenu(
-                    context: context,
-                    color: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    position: RelativeRect.fromLTRB(
-                      position.dx + messageBox.size.width / 2.5,
-                      position.dy,
-                      position.dx + messageBox.size.width / 2 + 1,
-                      position.dy + messageBox.size.height,
-                    ),
-                    items: [
-                      _buildMenuItem(
-                        icon: 'assets/icons/chats/menu_icons/open.svg',
-                        text: AppLocalizations.of(context)!
-                            .translate('open_url_source'),
-                        iconColor: Colors.black,
-                        textColor: Colors.black,
-                        onTap: () async {
-                          Navigator.pop(context);
-                          launchUrl(Uri.parse(url),
-                              mode: LaunchMode.externalApplication);
-                        },
-                      ),
-                      _buildMenuItem(
-                        icon: 'assets/icons/chats/menu_icons/copy.svg',
-                        text: AppLocalizations.of(context)!.translate('copy'),
-                        iconColor: Colors.black,
-                        textColor: Colors.black,
-                        onTap: () {
-                          Navigator.pop(context);
-                          Clipboard.setData(ClipboardData(text: url));
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                AppLocalizations.of(context)!
-                                    .translate('copy_url_source_text'),
-                                style: TextStyle(
-                                  fontFamily: 'Gilroy',
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              behavior: SnackBarBehavior.floating,
-                              margin: EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 8),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              backgroundColor: Colors.green,
-                              elevation: 3,
-                              padding: EdgeInsets.symmetric(
-                                  vertical: 12, horizontal: 16),
-                              duration: Duration(seconds: 3),
-                            ),
-                          );
-                        },
-                      ),
-                    ],
-                  );
-                },
+                ..onTap = () => _handleLinkTap(context, url),
             ),
           );
           return;
@@ -276,13 +369,6 @@ class MessageBubble extends StatelessWidget {
         }
       }
     }
-
-    // Определяем базовый стиль текста в зависимости от isNote
-    final baseStyle = isNote
-        ? ChatSmsStyles.messageTextStyle.copyWith(color: Colors.black)
-        : isSender
-            ? ChatSmsStyles.senderMessageTextStyle
-            : ChatSmsStyles.receiverMessageTextStyle;
 
     for (var node in document.body!.nodes) {
       parseNode(node, baseStyle);

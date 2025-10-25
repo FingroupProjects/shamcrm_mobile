@@ -21,8 +21,10 @@ class Supplier {
     return Supplier(
       id: json['id'],
       name: json['name'],
-      phone: json['phone'], // This will now handle null values
-      inn: json['inn'], // This will now handle null values
+      phone: json['phone'],
+      // This will now handle null values
+      inn: json['inn'],
+      // This will now handle null values
       note: json['note'],
       createdAt: json['created_at'],
       updatedAt: json['updated_at'],

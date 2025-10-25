@@ -17,19 +17,15 @@ class SubCategoryAddBottomSheet {
     final GlobalKey<FormState> formKey = GlobalKey<FormState>();
     final TextEditingController categoryNameController = TextEditingController();
     File? _image;
-    bool _isImageSelected = true;
-        bool isActive = false;
+    bool isActive = false;
     List<CustomField> customFields = [];
-    String selectedType = 'a'; 
+    String selectedType = 'a';
     bool isAffectingPrice = false;
 
     Future<void> _pickImage() async {
       final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
       if (pickedFile != null) {
         _image = File(pickedFile.path);
-        _isImageSelected = true;
-      } else {
-        _isImageSelected = false;
       }
     }
 
@@ -152,85 +148,73 @@ class SubCategoryAddBottomSheet {
                                         color: const Color(0xffF4F7FD),
                                         borderRadius: BorderRadius.circular(12),
                                         border: Border.all(
-                                          color: !_isImageSelected ? Colors.red : const Color(0xffF4F7FD),
+                                          color: const Color(0xffF4F7FD),
                                           width: 1.5,
                                         ),
                                       ),
                                       child: _image == null
                                           ? Center(
-                                              child: Row(
-                                                mainAxisAlignment: MainAxisAlignment.center,
-                                                children: [
-                                                  Icon(
-                                                    Icons.camera_alt,
-                                                    color: Color(0xff99A4BA),
-                                                    size: 24,
-                                                  ),
-                                                  const SizedBox(width: 8),
-                                                  Text(
-                                                    AppLocalizations.of(context)!.translate('pick_image'),
-                                                    style: TextStyle(
-                                                      fontSize: 14,
-                                                      fontWeight: FontWeight.w500,
-                                                      fontFamily: 'Gilroy',
-                                                      color: Color(0xff99A4BA),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            )
-                                          : Padding(
-                                              padding: const EdgeInsets.symmetric(horizontal: 16),
-                                              child: Row(
-                                                children: [
-                                                  Container(
-                                                    width: 54,
-                                                    height: 54,
-                                                    decoration: BoxDecoration(
-                                                      borderRadius: BorderRadius.circular(8),
-                                                      image: DecorationImage(
-                                                        image: FileImage(_image!),
-                                                        fit: BoxFit.cover,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  const SizedBox(width: 8),
-                                                  Expanded(
-                                                    child: Text(
-                                                      _image!.path.split('/').last,
-                                                      style: TextStyle(
-                                                        fontSize: 14,
-                                                        fontWeight: FontWeight.w500,
-                                                        fontFamily: 'Gilroy',
-                                                        color: Color(0xff1E2E52),
-                                                      ),
-                                                      overflow: TextOverflow.ellipsis,
-                                                    ),
-                                                  ),
-                                                  IconButton(
-                                                    icon: Icon(Icons.close, color: Color(0xff1E2E52)),
-                                                    onPressed: () {
-                                                      setState(() {
-                                                        _image = null;
-                                                      });
-                                                    },
-                                                  ),
-                                                ],
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(
+                                              Icons.camera_alt,
+                                              color: Color(0xff99A4BA),
+                                              size: 24,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              AppLocalizations.of(context)!.translate('pick_image'),
+                                              style: TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w500,
+                                                fontFamily: 'Gilroy',
+                                                color: Color(0xff99A4BA),
                                               ),
                                             ),
-                                    ),
-                                    if (!_isImageSelected)
-                                      Padding(
-                                        padding: const EdgeInsets.only(top: 4),
-                                        child: Text(
-                                          AppLocalizations.of(context)!.translate('required_image'),
-                                          style: const TextStyle(
-                                            fontSize: 14,
-                                            color: Colors.red,
-                                            fontWeight: FontWeight.w400,
-                                          ),
+                                          ],
+                                        ),
+                                      )
+                                          : Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                                        child: Row(
+                                          children: [
+                                            Container(
+                                              width: 54,
+                                              height: 54,
+                                              decoration: BoxDecoration(
+                                                borderRadius: BorderRadius.circular(8),
+                                                image: DecorationImage(
+                                                  image: FileImage(_image!),
+                                                  fit: BoxFit.cover,
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: Text(
+                                                _image!.path.split('/').last,
+                                                style: TextStyle(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w500,
+                                                  fontFamily: 'Gilroy',
+                                                  color: Color(0xff1E2E52),
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                            IconButton(
+                                              icon: Icon(Icons.close, color: Color(0xff1E2E52)),
+                                              onPressed: () {
+                                                setState(() {
+                                                  _image = null;
+                                                });
+                                              },
+                                            ),
+                                          ],
                                         ),
                                       ),
+                                    ),
                                   ],
                                 ),
                               ),
@@ -303,7 +287,7 @@ class SubCategoryAddBottomSheet {
                             buttonColor: const Color(0xff4759FF),
                             textColor: Colors.white,
                             onPressed: () {
-                              if (formKey.currentState!.validate() && _image != null) {
+                              if (formKey.currentState!.validate()) {
                                 _createCategory(
                                   categoryNameController.text,
                                   categoryId,
@@ -314,10 +298,6 @@ class SubCategoryAddBottomSheet {
                                   selectedType,
                                   isAffectingPrice,
                                 );
-                              } else {
-                                setState(() {
-                                  _isImageSelected = _image != null;
-                                });
                               }
                             },
                           ),
@@ -336,24 +316,24 @@ class SubCategoryAddBottomSheet {
   }
 
   static void _createCategory(
-    String name,
-    int categoryId,
-    File? image,
-        bool isActive,
+      String name,
+      int categoryId,
+      File? image,
+      bool isActive,
 
-    BuildContext context,
-    List<CustomField> customFields,
-    String selectedType,
-    bool isAffectingPrice,
-  ) async {
+      BuildContext context,
+      List<CustomField> customFields,
+      String selectedType,
+      bool isAffectingPrice,
+      ) async {
     try {
       final categoryBloc = BlocProvider.of<CategoryBloc>(context);
 
       List<Map<String, dynamic>> attributes = customFields
           .map((field) => {
-                'name': field.name,
-                'is_individual': field.isIndividual,
-              })
+        'name': field.name,
+        'is_individual': field.isIndividual,
+      })
           .toList();
 
       Navigator.pop(context);
@@ -361,25 +341,25 @@ class SubCategoryAddBottomSheet {
       categoryBloc.add(CreateCategory(
         name: name,
         parentId: categoryId,
-        attributes: attributes, 
+        attributes: attributes,
         image: image,
         displayType: selectedType,
         hasPriceCharacteristics: isAffectingPrice,
         isParent: isActive, // Передаём isActive как isParent
       ));
     } catch (e) {
-        showCustomSnackBar(
-             context: context,
-             message: AppLocalizations.of(context)!.translate('error_create_category'),
-             isSuccess: false,
-           );
+      showCustomSnackBar(
+        context: context,
+        message: AppLocalizations.of(context)!.translate('error_create_category'),
+        isSuccess: false,
+      );
     }
   }
 }
 
 class CustomField {
   final String name;
-  final bool isIndividual; 
+  final bool isIndividual;
 
   CustomField({
     required this.name,

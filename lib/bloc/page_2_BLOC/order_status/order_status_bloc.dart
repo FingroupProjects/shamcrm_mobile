@@ -31,6 +31,7 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
     on<CreateOrderStatus>(_createOrderStatus);
     on<UpdateOrderStatus>(_updateOrderStatus);
     on<DeleteOrderStatus>(_deleteOrderStatus);
+    on<AddMiniAppAddress>(_addMiniAppAddress);
   }
 
 Future<void> _fetchOrderStatuses(FetchOrderStatuses event, Emitter<OrderState> emit) async {
@@ -183,15 +184,18 @@ Future<void> _createOrder(CreateOrder event, Emitter<OrderState> emit) async {
       'status_id': event.statusId,
       'comment_to_courier': event.commentToCourier,
       'manager_id': event.managerId?.toString(),
+      'integration': null,
     };
 
     if (event.delivery) {
       body['delivery_address_id'] = event.deliveryAddressId?.toString();
     } else {
       body['delivery_address_id'] = null;
-      if (event.branchId != null) {
-        body['branch_id'] = event.branchId.toString();
-      }
+    }
+    
+    // Всегда отправляем branch_id, если он указан
+    if (event.branchId != null) {
+      body['branch_id'] = event.branchId.toString();
     }
 
     //print('OrderBloc: Тело запроса для создания заказа: ${jsonEncode(body)}');
@@ -208,6 +212,7 @@ Future<void> _createOrder(CreateOrder event, Emitter<OrderState> emit) async {
       branchId: event.branchId,
       commentToCourier: event.commentToCourier,
       managerId: event.managerId,
+      integration: 1,
     );
     //print('OrderBloc: Результат создания заказа: $result');
 
@@ -248,9 +253,11 @@ Future<void> _updateOrder(UpdateOrder event, Emitter<OrderState> emit) async {
     } else {
       body['delivery_address'] = null;
       body['delivery_address_id'] = null;
-      if (event.branchId != null) {
-        body['branch_id'] = event.branchId.toString();
-      }
+    }
+    
+    // Всегда отправляем branch_id, если он указан
+    if (event.branchId != null) {
+      body['branch_id'] = event.branchId.toString();
     }
 
     //print('OrderBloc: Тело запроса для обновления заказа: ${jsonEncode(body)}');
@@ -555,6 +562,23 @@ Future<void> _updateOrder(UpdateOrder event, Emitter<OrderState> emit) async {
       }
     } catch (e) {
       emit(OrderError('Ошибка удаления статуса: $e'));
+    }
+  }
+
+  Future<void> _addMiniAppAddress(AddMiniAppAddress event, Emitter<OrderState> emit) async {
+    emit(OrderCreateAddressLoading());
+
+    try {
+      final response = await apiService.createDeliveryAddress(
+        address: event.address,
+        leadId: event.leadId,
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        emit(OrderCreateAddressSuccess());
+      }
+    } catch (e) {
+      emit(OrderCreateAddressError('Ошибка создания адреса доставки: $e'));
     }
   }
 }

@@ -56,8 +56,10 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
 
  Future<void> _fetchGoods(FetchGoods event, Emitter<GoodsState> emit) async {
     emit(GoodsLoading());
+    // Сбрасываем поисковый запрос при начальной загрузке
+    _currentQuery = null;
     if (kDebugMode) {
-      print('GoodsBloc: Загрузка товаров, страница: ${event.page}, поиск: $_currentQuery, фильтры: $_currentFilters');
+      print('GoodsBloc: Загрузка товаров, страница: ${event.page}, фильтры: $_currentFilters');
     }
 
     if (await _checkInternetConnection()) {
@@ -65,7 +67,7 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
         allGoods = [];
         final goods = await apiService.getGoods(
           page: event.page,
-          search: _currentQuery,
+          search: null,
           filters: _currentFilters,
         );
 

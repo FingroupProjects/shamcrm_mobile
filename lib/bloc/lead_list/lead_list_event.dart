@@ -7,18 +7,20 @@ sealed class GetAllLeadEvent {}
 
 class GetAllLeadEv extends GetAllLeadEvent {
   final bool showDebt;
-  
+
   GetAllLeadEv({this.showDebt = false});
 }
 
 class RefreshAllLeadEv extends GetAllLeadEvent {
   final bool showDebt;
-  
+
   RefreshAllLeadEv({this.showDebt = false});
 }
 
-// Внутреннее событие для обновления данных в фоне
+// ИСПРАВЛЕНО: Добавлен параметр showDebt для корректного обновления кэша
 class UpdateLeadsInBackground extends GetAllLeadEvent {
   final LeadsDataResponse data;
-  UpdateLeadsInBackground(this.data);
+  final bool showDebt;
+
+  UpdateLeadsInBackground(this.data, this.showDebt);
 }

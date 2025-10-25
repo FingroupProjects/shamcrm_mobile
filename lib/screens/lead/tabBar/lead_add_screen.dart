@@ -9,6 +9,7 @@ import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/custom_widget/custom_phone_number_input.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
+import 'package:crm_task_manager/custom_widget/file_picker_dialog.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
@@ -76,65 +77,38 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
     _fetchAndAddCustomFields();
   }
 Future<void> _pickFile() async {
-  try {
-    FilePickerResult? result =
-        await FilePicker.platform.pickFiles(allowMultiple: true);
+  // Вычисляем текущий общий размер файлов
+  double totalSize = selectedFiles.fold<double>(
+    0.0,
+    (sum, file) => sum + File(file).lengthSync() / (1024 * 1024),
+  );
 
-    if (result != null) {
-      double totalSize = selectedFiles.fold<double>(
-        0.0,
-        (sum, file) => sum + File(file).lengthSync() / (1024 * 1024), // MB
-      );
+  // Показываем диалог выбора типа файла
+  final List<PickedFileInfo>? pickedFiles = await FilePickerDialog.show(
+    context: context,
+    allowMultiple: true,
+    maxSizeMB: 50.0,
+    currentTotalSizeMB: totalSize,
+    fileLabel: AppLocalizations.of(context)!.translate('file'),
+    galleryLabel: AppLocalizations.of(context)!.translate('gallery'),
+    cameraLabel: AppLocalizations.of(context)!.translate('camera'),
+    cancelLabel: AppLocalizations.of(context)!.translate('cancel'),
+    fileSizeTooLargeMessage: AppLocalizations.of(context)!.translate('file_size_too_large'),
+    errorPickingFileMessage: AppLocalizations.of(context)!.translate('error_picking_file'),
+  );
 
-      double newFilesSize = result.files.fold<double>(
-        0.0,
-        (sum, file) => sum + file.size / (1024 * 1024), // MB
-      );
-
-      if (totalSize + newFilesSize > 50) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              AppLocalizations.of(context)!.translate('file_size_too_large'),
-              style: TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.white,
-              ),
-            ),
-            behavior: SnackBarBehavior.floating,
-            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            backgroundColor: Colors.red,
-            elevation: 3,
-            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            duration: Duration(seconds: 3),
-          ),
-        );
-        return;
+  // Если файлы выбраны, добавляем их
+  if (pickedFiles != null && pickedFiles.isNotEmpty) {
+    setState(() {
+      for (var file in pickedFiles) {
+        selectedFiles.add(file.path);
+        fileNames.add(file.name);
+        fileSizes.add(file.sizeKB);
       }
-
-      setState(() {
-        for (var file in result.files) {
-          selectedFiles.add(file.path!);
-          fileNames.add(file.name);
-          fileSizes.add('${(file.size / 1024).toStringAsFixed(3)}KB');
-        }
-      });
-    }
-  } catch (e) {
-    //print('Ошибка при выборе файла: $e');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text("Ошибка при выборе файла!"),
-        backgroundColor: Colors.red,
-      ),
-    );
+    });
   }
 }
+
   void _fetchAndAddCustomFields() async {
     try {
       //print('Загрузка кастомных полей и справочников для лида');
@@ -267,7 +241,8 @@ void _addCustomField(String fieldName, {bool isDirectory = false, int? directory
   }
 
   @override
-  Widget _buildFileSelection() {
+
+Widget _buildFileSelection() {
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
@@ -287,6 +262,7 @@ void _addCustomField(String fieldName, {bool isDirectory = false, int? directory
           scrollDirection: Axis.horizontal,
           itemCount: fileNames.isEmpty ? 1 : fileNames.length + 1,
           itemBuilder: (context, index) {
+            // Кнопка добавления файла
             if (fileNames.isEmpty || index == fileNames.length) {
               return Padding(
                 padding: EdgeInsets.only(right: 16),
@@ -296,11 +272,7 @@ void _addCustomField(String fieldName, {bool isDirectory = false, int? directory
                     width: 100,
                     child: Column(
                       children: [
-                        Image.asset(
-                          'assets/icons/files/add.png',
-                          width: 60,
-                          height: 60,
-                        ),
+                        Image.asset('assets/icons/files/add.png', width: 60, height: 60),
                         SizedBox(height: 8),
                         Text(
                           AppLocalizations.of(context)!.translate('add_file'),
@@ -317,10 +289,11 @@ void _addCustomField(String fieldName, {bool isDirectory = false, int? directory
                 ),
               );
             }
-
+            
+            // Отображение выбранных файлов
             final fileName = fileNames[index];
             final fileExtension = fileName.split('.').last.toLowerCase();
-
+            
             return Padding(
               padding: EdgeInsets.only(right: 16),
               child: Stack(
@@ -329,18 +302,8 @@ void _addCustomField(String fieldName, {bool isDirectory = false, int? directory
                     width: 100,
                     child: Column(
                       children: [
-                        Image.asset(
-                          'assets/icons/files/$fileExtension.png',
-                          width: 60,
-                          height: 60,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Image.asset(
-                              'assets/icons/files/file.png',
-                              width: 60,
-                              height: 60,
-                            );
-                          },
-                        ),
+                        // НОВОЕ: Используем метод _buildFileIcon для показа превью или иконки
+                        _buildFileIcon(fileName, fileExtension),
                         SizedBox(height: 8),
                         Text(
                           fileName,
@@ -356,6 +319,7 @@ void _addCustomField(String fieldName, {bool isDirectory = false, int? directory
                       ],
                     ),
                   ),
+                  // Кнопка удаления файла
                   Positioned(
                     right: -2,
                     top: -6,
@@ -369,11 +333,18 @@ void _addCustomField(String fieldName, {bool isDirectory = false, int? directory
                       },
                       child: Container(
                         padding: EdgeInsets.all(4),
-                        child: Icon(
-                          Icons.close,
-                          size: 16,
-                          color: Color(0xff1E2E52),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 4,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
                         ),
+                        child: Icon(Icons.close, size: 16, color: Color(0xff1E2E52)),
                       ),
                     ),
                   ),
@@ -386,6 +357,50 @@ void _addCustomField(String fieldName, {bool isDirectory = false, int? directory
     ],
   );
 }
+
+Widget _buildFileIcon(String fileName, String fileExtension) {
+  // Список расширений изображений
+  final imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'heic', 'heif'];
+  
+  // Если файл - изображение, показываем превью
+  if (imageExtensions.contains(fileExtension)) {
+    final filePath = selectedFiles[fileNames.indexOf(fileName)];
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: Image.file(
+        File(filePath),
+        width: 60,
+        height: 60,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          // Если не удалось загрузить превью, показываем иконку
+          return Image.asset(
+            'assets/icons/files/file.png',
+            width: 60,
+            height: 60,
+          );
+        },
+      ),
+    );
+  } else {
+    // Для остальных типов файлов показываем иконку по расширению
+    return Image.asset(
+      'assets/icons/files/$fileExtension.png',
+      width: 60,
+      height: 60,
+      errorBuilder: (context, error, stackTrace) {
+        // Если нет иконки для этого типа, показываем общую иконку файла
+        return Image.asset(
+          'assets/icons/files/file.png',
+          width: 60,
+          height: 60,
+        );
+      },
+    );
+  }
+}
+
+
  @override
 Widget build(BuildContext context) {
   return Scaffold(

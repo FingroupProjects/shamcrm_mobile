@@ -79,18 +79,18 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
     }
   }
 
-Future<void> _initializeBaseUrl() async {
-  try {
-    final staticBaseUrl = await _apiService.getStaticBaseUrl();
-    setState(() {
-      baseUrl = staticBaseUrl;
-    });
-  } catch (error) {
-    setState(() {
-      baseUrl = 'https://shamcrm.com/storage';
-    });
+  Future<void> _initializeBaseUrl() async {
+    try {
+      final staticBaseUrl = await _apiService.getStaticBaseUrl();
+      setState(() {
+        baseUrl = staticBaseUrl;
+      });
+    } catch (error) {
+      setState(() {
+        baseUrl = 'https://shamcrm.com/storage';
+      });
+    }
   }
-}
 
   @override
   void didChangeDependencies() {
@@ -127,6 +127,28 @@ Future<void> _initializeBaseUrl() async {
           listener: (context, state) {
             if (state is CategorySuccess) {
               //print('SubCategoryDetailsScreen: Успешное действие с категорией, обновление данных');
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    AppLocalizations.of(context)!.translate('subcategory_updated_successfully'),
+                    style: const TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                  behavior: SnackBarBehavior.floating,
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  backgroundColor: Colors.green,
+                  elevation: 3,
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  duration: const Duration(seconds: 3),
+                ),
+              );
               context.read<CategoryByIdBloc>().add(FetchCategoryByIdEvent(categoryId: widget.ctgId));
             }
           },
@@ -135,7 +157,7 @@ Future<void> _initializeBaseUrl() async {
           listener: (context, state) {
             if (state is CategoryByIdLoaded) {
               final updatedSubCategory = state.category.categories.firstWhere(
-                (c) => c.id == _currentCategory.id,
+                    (c) => c.id == _currentCategory.id,
                 orElse: () => _currentCategory,
               );
               setState(() {
@@ -177,8 +199,8 @@ Future<void> _initializeBaseUrl() async {
                       onPressed: () {
                         //print('SubCategoryDetailsScreen: Повторная попытка загрузки данных');
                         context.read<CategoryByIdBloc>().add(
-                              FetchCategoryByIdEvent(categoryId: widget.ctgId),
-                            );
+                          FetchCategoryByIdEvent(categoryId: widget.ctgId),
+                        );
                       },
                       child: Text(AppLocalizations.of(context)!.translate('retry')),
                     ),
@@ -198,44 +220,44 @@ Future<void> _initializeBaseUrl() async {
                         borderRadius: BorderRadius.circular(12),
                         child: _cachedImageFile != null
                             ? Image.file(
-                                _cachedImageFile!,
-                                width: double.infinity,
-                                height: 200,
-                                fit: BoxFit.contain,
-                              )
+                          _cachedImageFile!,
+                          width: double.infinity,
+                          height: 200,
+                          fit: BoxFit.contain,
+                        )
                             : Image.network(
-                                '$baseUrl/${_currentCategory.image!}',
-                                width: double.infinity,
-                                height: 200,
-                                fit: BoxFit.contain,
-                                errorBuilder: (context, error, stackTrace) {
-                                  //print('SubCategoryDetailsScreen: Ошибка загрузки изображения: $error');
-                                  return Container(
-                                    width: double.infinity,
-                                    height: 200,
-                                    color: Colors.white,
-                                    child: Icon(Icons.image_not_supported, size: 50, color: Colors.black),
-                                  );
-                                },
-                                loadingBuilder: (context, child, loadingProgress) {
-                                  if (loadingProgress == null) return child;
-                                  //print('SubCategoryDetailsScreen: Загрузка изображения...');
-                                  return Container(
-                                    width: double.infinity,
-                                    height: 200,
-                                    color: Colors.white,
-                                    child: Center(
-                                      child: CircularProgressIndicator(
-                                        value: loadingProgress.expectedTotalBytes != null
-                                            ? loadingProgress.cumulativeBytesLoaded /
-                                                loadingProgress.expectedTotalBytes!
-                                            : null,
-                                        color: Colors.black,
-                                      ),
-                                    ),
-                                  );
-                                },
+                          '$baseUrl/${_currentCategory.image!}',
+                          width: double.infinity,
+                          height: 200,
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) {
+                            //print('SubCategoryDetailsScreen: Ошибка загрузки изображения: $error');
+                            return Container(
+                              width: double.infinity,
+                              height: 200,
+                              color: Colors.white,
+                              child: Icon(Icons.image_not_supported, size: 50, color: Colors.black),
+                            );
+                          },
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            //print('SubCategoryDetailsScreen: Загрузка изображения...');
+                            return Container(
+                              width: double.infinity,
+                              height: 200,
+                              color: Colors.white,
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  value: loadingProgress.expectedTotalBytes != null
+                                      ? loadingProgress.cumulativeBytesLoaded /
+                                      loadingProgress.expectedTotalBytes!
+                                      : null,
+                                  color: Colors.black,
+                                ),
                               ),
+                            );
+                          },
+                        ),
                       ),
                     ),
                   _buildDetailsList(),
@@ -318,13 +340,13 @@ Future<void> _initializeBaseUrl() async {
                 ),
                 child: category.image != null
                     ? ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          '$baseUrl/${category.image}',
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => _buildNoPhotoPlaceholder(),
-                        ),
-                      )
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    '$baseUrl/${category.image}',
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _buildNoPhotoPlaceholder(),
+                  ),
+                )
                     : _buildNoPhotoPlaceholder(),
               ),
               SizedBox(width: 16),
@@ -361,19 +383,19 @@ Future<void> _initializeBaseUrl() async {
                             runSpacing: 4,
                             children: [
                               ...category.attributes.take(4).map((attr) => Container(
-                                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Text(
-                                      attr.name.length > 10 ? '${attr.name.substring(0, 7)}...' : attr.name,
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        color: Color(0xff1E2E52),
-                                      ),
-                                    ),
-                                  )),
+                                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  attr.name.length > 10 ? '${attr.name.substring(0, 7)}...' : attr.name,
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: Color(0xff1E2E52),
+                                  ),
+                                ),
+                              )),
                               if (category.attributes.length > 3)
                                 Container(
                                   padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -555,53 +577,53 @@ Future<void> _initializeBaseUrl() async {
       ),
       actions: _canUpdateCategory
           ? [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: Image.asset(
-                      'assets/icons/edit.png',
-                      width: 24,
-                      height: 24,
-                    ),
-                    onPressed: () async {
-                      //print('SubCategoryDetailsScreen: Нажата кнопка редактирования');
-                     await SubCategoryEditBottomSheet.show(
-  context,
-  initialSubCategoryId: widget.category.id,
-  initialName: _currentCategory.name,
-  initialImage: _cachedImageFile,
-  initialAttributes: _currentCategory.attributes,
-  initialDisplayType: _currentCategory.displayType ?? 'a', // Убедимся, что поле существует
-  initialHasPriceCharacteristics: _currentCategory.hasPriceCharacteristics,
-);
-                    },
-                  ),
-                  IconButton(
-                    padding: EdgeInsets.only(right: 8),
-                    constraints: BoxConstraints(),
-                    icon: Image.asset(
-                      'assets/icons/delete.png',
-                      width: 24,
-                      height: 24,
-                    ),
-                    onPressed: () {
-                      //print('SubCategoryDetailsScreen: Нажата кнопка удаления');
-                      showDialog(
-                        context: context,
-                        builder: (context) => DeleteSubCategoryDialog(categoryId: widget.category.id),
-                      ).then((deleted) {
-                        if (deleted == true) {
-                          //print('SubCategoryDetailsScreen: Подкатегория удалена, обновление данных');
-                          context.read<CategoryByIdBloc>().add(FetchCategoryByIdEvent(categoryId: widget.ctgId));
-                          Navigator.of(context).pop(true);
-                        }
-                      });
-                    },
-                  ),
-                ],
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: Image.asset(
+                'assets/icons/edit.png',
+                width: 24,
+                height: 24,
               ),
-            ]
+              onPressed: () async {
+                //print('SubCategoryDetailsScreen: Нажата кнопка редактирования');
+                await SubCategoryEditBottomSheet.show(
+                  context,
+                  initialSubCategoryId: widget.category.id,
+                  initialName: _currentCategory.name,
+                  initialImage: _cachedImageFile,
+                  initialAttributes: _currentCategory.attributes,
+                  initialDisplayType: _currentCategory.displayType ?? 'a', // Убедимся, что поле существует
+                  initialHasPriceCharacteristics: _currentCategory.hasPriceCharacteristics,
+                );
+              },
+            ),
+            IconButton(
+              padding: EdgeInsets.only(right: 8),
+              constraints: BoxConstraints(),
+              icon: Image.asset(
+                'assets/icons/delete.png',
+                width: 24,
+                height: 24,
+              ),
+              onPressed: () {
+                //print('SubCategoryDetailsScreen: Нажата кнопка удаления');
+                showDialog(
+                  context: context,
+                  builder: (context) => DeleteSubCategoryDialog(categoryId: widget.category.id),
+                ).then((deleted) {
+                  if (deleted == true) {
+                    //print('SubCategoryDetailsScreen: Подкатегория удалена, обновление данных');
+                    context.read<CategoryByIdBloc>().add(FetchCategoryByIdEvent(categoryId: widget.ctgId));
+                    Navigator.of(context).pop(true);
+                  }
+                });
+              },
+            ),
+          ],
+        ),
+      ]
           : null,
     );
   }
@@ -635,12 +657,12 @@ Future<void> _initializeBaseUrl() async {
             Expanded(
               child: label == AppLocalizations.of(context)!.translate('description_details')
                   ? GestureDetector(
-                      onTap: () {
-                        //print('SubCategoryDetailsScreen: Нажато на элемент деталей: $label');
-                        _showFullTextDialog(AppLocalizations.of(context)!.translate('description_details'), value);
-                      },
-                      child: _buildValue(value, label, maxLines: 2),
-                    )
+                onTap: () {
+                  //print('SubCategoryDetailsScreen: Нажато на элемент деталей: $label');
+                  _showFullTextDialog(AppLocalizations.of(context)!.translate('description_details'), value);
+                },
+                child: _buildValue(value, label, maxLines: 2),
+              )
                   : _buildValue(value, label, maxLines: 2),
             ),
           ],
