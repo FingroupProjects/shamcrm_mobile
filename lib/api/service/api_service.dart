@@ -2853,62 +2853,94 @@ Future<List<Deal>> getDeals(
 }
 
 // Метод для получения статусов Сделок
-  Future<List<DealStatus>> getDealStatuses() async {
+  Future<List<DealStatus>> getDealStatuses({bool includeAll = false}) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final organizationId = await getSelectedOrganization();
 
+    // Определяем базовый путь и ключ кэша в зависимости от типа запроса
+    final basePath = includeAll ? '/deal/statuses/all' : '/deal/statuses';
+    final cacheKey = includeAll
+        ? 'cachedDealStatuses_all_$organizationId'
+        : 'cachedDealStatuses_$organizationId';
+
     try {
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-      final path = await _appendQueryParams('/deal/statuses');
+      final path = await _appendQueryParams(basePath);
       if (kDebugMode) {
-        //print('ApiService: getDealStatuses - Generated path: $path');
+        debugPrint('ApiService: getDealStatuses(includeAll: $includeAll) - Generated path: $path');
       }
 
       final response = await _getRequest(path);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        if (data['result'] != null) {
+
+        // 🔍 ДЕБАГ: Выводим полный ответ для анализа
+        if (kDebugMode) {
+          debugPrint('ApiService: getDealStatuses - Full response body: ${response.body}');
+          debugPrint('ApiService: getDealStatuses - Response type: ${data.runtimeType}');
+        }
+
+        // 📦 Определяем, откуда брать данные
+        List<dynamic>? statusList;
+
+        if (data is List) {
+          // Если ответ — это сразу массив
+          statusList = data;
+          debugPrint('ApiService: getDealStatuses - Data is direct List');
+        } else if (data is Map) {
+          // Если ответ — объект, ищем данные в разных полях
+          if (data['result'] != null) {
+            statusList = data['result'] as List;
+            debugPrint('ApiService: getDealStatuses - Data found in "result" field');
+          } else if (data['data'] != null) {
+            statusList = data['data'] as List;
+            debugPrint('ApiService: getDealStatuses - Data found in "data" field');
+          } else if (data['statuses'] != null) {
+            statusList = data['statuses'] as List;
+            debugPrint('ApiService: getDealStatuses - Data found in "statuses" field');
+          }
+        }
+
+        // ✅ Обрабатываем найденные данные
+        if (statusList != null && statusList.isNotEmpty) {
           // Принт старых кэшированных данных (если они есть)
-          final cachedStatuses =
-              prefs.getString('cachedDealStatuses_$organizationId');
-          if (cachedStatuses != null) {
-            final decodedData = json.decode(cachedStatuses);
+          final cachedStatuses = prefs.getString(cacheKey);
+          if (cachedStatuses != null && kDebugMode) {
+            debugPrint('ApiService: getDealStatuses - Старые данные из кэша найдены');
           }
 
           // Обновляем кэш новыми данными
-          await prefs.setString('cachedDealStatuses_$organizationId',
-              json.encode(data['result']));
-          // ////print(
-          //     '------------------------------------ Новые данные, которые сохраняются в кэш ---------------------------------');
-          // ////print(data['result']); // Новые данные, которые будут сохранены в кэш
+          await prefs.setString(cacheKey, json.encode(statusList));
 
-          // ////print(
-          //     '----p---------------¿-----UPDATE CACHE DEALSTATUS----------------------------');
-          // ////print('Статусы сделок обновлены в кэше');
+          if (kDebugMode) {
+            debugPrint('ApiService: getDealStatuses(includeAll: $includeAll) - Статусы обновлены в кэше (${statusList.length} шт.)');
+          }
 
           debugPrint("ApiService: getDealStatuses - Deal statuses loaded successfully from API.");
-          return (data['result'] as List)
+          return statusList
               .map((status) => DealStatus.fromJson(status))
               .toList();
         } else {
-          debugPrint("ApiService: getDealStatuses - No result found in response.");
-          throw Exception('Результат отсутствует в ответе');
+          debugPrint("ApiService: getDealStatuses - No valid data found in response. Available keys: ${data is Map ? data.keys.toList() : 'N/A'}");
+          throw Exception('Результат отсутствует в ответе или пустой');
         }
       } else {
         debugPrint("ApiService: getDealStatuses - Failed to load deal statuses from API. Status code: ${response.statusCode}");
         throw Exception('Ошибка ${response.statusCode}!');
       }
     } catch (e) {
-      ////print('Ошибка загрузки статусов сделок. Используем кэшированные данные.');
+      debugPrint('ApiService: getDealStatuses - Ошибка загрузки статусов сделок. Используем кэшированные данные.');
+
       // Если запрос не удался, пытаемся загрузить данные из кэша
-      final cachedStatuses =
-          prefs.getString('cachedDealStatuses_$organizationId');
+      final cachedStatuses = prefs.getString(cacheKey);
       if (cachedStatuses != null) {
         final decodedData = json.decode(cachedStatuses);
         final cachedList = (decodedData as List)
             .map((status) => DealStatus.fromJson(status))
             .toList();
+
+        debugPrint('ApiService: getDealStatuses - Загружено ${cachedList.length} статусов из кэша');
         return cachedList;
       } else {
         throw Exception(

@@ -39,25 +39,23 @@ class _CreditorsContentState extends State<CreditorsContent> {
   }
 
   Widget _buildCreditorsList(CreditorsResponse data) {
-    return Expanded(
-      child: data.result?.creditors.isNotEmpty == true
-          ? ListView.separated(
-        separatorBuilder: (context, index) => SizedBox(height: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        itemCount: data.result!.creditors.length,
-        itemBuilder: (context, index) {
-          final creditor = data.result!.creditors[index];
-          return CreditorCard(
-            creditor: creditor,
-            onClick: _onCreditorTap,
-            onLongPress: _onCreditorLongPress,
-            isSelectionMode: isSelectionMode,
-            isSelected: selectedCreditors.contains(creditor.id),
-          );
-        },
-      )
-          : _buildEmptyState(),
-    );
+    return data.result?.creditors.isNotEmpty == true
+        ? ListView.separated(
+      separatorBuilder: (context, index) => SizedBox(height: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      itemCount: data.result!.creditors.length,
+      itemBuilder: (context, index) {
+        final creditor = data.result!.creditors[index];
+        return CreditorCard(
+          creditor: creditor,
+          onClick: _onCreditorTap,
+          onLongPress: _onCreditorLongPress,
+          isSelectionMode: isSelectionMode,
+          isSelected: selectedCreditors.contains(creditor.id),
+        );
+      },
+    )
+        : _buildEmptyState();
   }
 
   Widget _buildEmptyState() {
