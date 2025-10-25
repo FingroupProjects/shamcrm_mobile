@@ -16033,7 +16033,7 @@ Future<void> clearFieldConfigurationCache() async {
   /// Удалить первоначальный остаток поставщика
   Future<Map<String, dynamic>> deleteSupplierOpening(int id) async {
     try {
-      String path = await _appendQueryParams('/initial-balance/counterparty/$id');
+      String path = await _appendQueryParams('/initial-balance/$id');
       final response = await _deleteRequest(path);
 
       if (response.statusCode == 200 || response.statusCode == 204) {

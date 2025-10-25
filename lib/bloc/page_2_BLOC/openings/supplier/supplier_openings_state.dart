@@ -37,13 +37,11 @@ class SupplierOpeningsPaginationError extends SupplierOpeningsState {
 
 // Состояние для ошибок операций (создание, редактирование, удаление)
 // Не влияет на отображение контента, используется только для snackbar
-class SupplierOpeningsOperationError extends SupplierOpeningsState {
+class SupplierOpeningDeleteError extends SupplierOpeningsState {
   final String message;
-  final SupplierOpeningsState previousState;
 
-  SupplierOpeningsOperationError({
+  SupplierOpeningDeleteError({
     required this.message,
-    required this.previousState,
   });
 }
 

@@ -45,7 +45,8 @@ class _AddSupplierOpeningScreenState extends State<AddSupplierOpeningScreen> {
     super.dispose();
   }
 
-  void _showSnackBar(String message, {bool isSuccess = true}) {
+  void _showSnackBar(String message, bool isSuccess) {
+    debugPrint("SHOW _showSnackBar: $message");
     if (!mounted || !context.mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -59,15 +60,11 @@ class _AddSupplierOpeningScreenState extends State<AddSupplierOpeningScreen> {
             color: Colors.white,
           ),
         ),
+        backgroundColor: isSuccess ? Colors.green : Colors.red,
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        backgroundColor: isSuccess ? Colors.green : Colors.red,
-        elevation: 3,
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        duration: Duration(seconds: isSuccess ? 2 : 3),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 3),
       ),
     );
   }
@@ -85,12 +82,12 @@ class _AddSupplierOpeningScreenState extends State<AddSupplierOpeningScreen> {
               Navigator.pop(context, true); // ✅ Return true to indicate success
             }
           });
-        } 
-        
+        }
+
         if (state is SupplierOpeningCreateError) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted && context.mounted) {
-              _showSnackBar(state.message, isSuccess: false);
+              _showSnackBar(state.message, false);
             }
           });
         }
@@ -112,8 +109,7 @@ class _AddSupplierOpeningScreenState extends State<AddSupplierOpeningScreen> {
             },
           ),
           title: Text(
-            AppLocalizations.of(context)?.translate('add_supplier_opening') ??
-                'Добавить остаток поставщика',
+            AppLocalizations.of(context)?.translate('add_supplier_opening') ?? 'Добавить остаток поставщика',
             style: const TextStyle(
               fontSize: 18,
               fontFamily: 'Gilroy',
@@ -140,18 +136,15 @@ class _AddSupplierOpeningScreenState extends State<AddSupplierOpeningScreen> {
                         const SizedBox(height: 16),
                         CustomTextField(
                           controller: ourDutyController,
-                          label: AppLocalizations.of(context)?.translate('our_duty') ??
-                              'Наш долг',
-                          hintText: AppLocalizations.of(context)?.translate('enter_amount') ??
-                              'Введите сумму',
+                          label: AppLocalizations.of(context)?.translate('our_duty') ?? 'Наш долг',
+                          hintText: AppLocalizations.of(context)?.translate('enter_amount') ?? 'Введите сумму',
                           keyboardType: TextInputType.number,
                           inputFormatters: [
                             PriceInputFormatter(),
                           ],
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return AppLocalizations.of(context)?.translate('field_required') ??
-                                  'Обязательное поле';
+                              return AppLocalizations.of(context)?.translate('field_required') ?? 'Обязательное поле';
                             }
                             if (double.tryParse(value) == null) {
                               return AppLocalizations.of(context)?.translate('enter_correct_number') ??
@@ -163,18 +156,15 @@ class _AddSupplierOpeningScreenState extends State<AddSupplierOpeningScreen> {
                         const SizedBox(height: 16),
                         CustomTextField(
                           controller: debtToUsController,
-                          label: AppLocalizations.of(context)?.translate('debt_to_us') ??
-                              'Долг поставщика',
-                          hintText: AppLocalizations.of(context)?.translate('enter_amount') ??
-                              'Введите сумму',
+                          label: AppLocalizations.of(context)?.translate('debt_to_us') ?? 'Долг поставщика',
+                          hintText: AppLocalizations.of(context)?.translate('enter_amount') ?? 'Введите сумму',
                           keyboardType: TextInputType.number,
                           inputFormatters: [
                             PriceInputFormatter(),
                           ],
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return AppLocalizations.of(context)?.translate('field_required') ??
-                                  'Обязательное поле';
+                              return AppLocalizations.of(context)?.translate('field_required') ?? 'Обязательное поле';
                             }
                             if (double.tryParse(value) == null) {
                               return AppLocalizations.of(context)?.translate('enter_correct_number') ??
@@ -198,35 +188,37 @@ class _AddSupplierOpeningScreenState extends State<AddSupplierOpeningScreen> {
                       children: [
                         Expanded(
                           child: CustomButton(
-                            buttonText:
-                            AppLocalizations.of(context)?.translate('close') ?? 'Закрыть',
+                            buttonText: AppLocalizations.of(context)?.translate('close') ?? 'Закрыть',
                             buttonColor: const Color(0xffF4F7FD),
                             textColor: Colors.black,
-                            onPressed: isCreating ? null : () {
-                              Navigator.pop(context);
-                            },
+                            onPressed: isCreating
+                                ? null
+                                : () {
+                                    Navigator.pop(context);
+                                  },
                           ),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
                           child: CustomButton(
-                            buttonText:
-                            AppLocalizations.of(context)?.translate('save') ?? 'Сохранить',
+                            buttonText: AppLocalizations.of(context)?.translate('save') ?? 'Сохранить',
                             buttonColor: const Color(0xff4759FF),
                             textColor: Colors.white,
                             isLoading: isCreating,
-                            onPressed: isCreating ? null : () {
-                              if (_formKey.currentState!.validate()) {
-                                // Create event for adding supplier opening
-                                context.read<SupplierOpeningsBloc>().add(
-                                  CreateSupplierOpening(
-                                    supplierId: widget.supplierId,
-                                    ourDuty: double.parse(ourDutyController.text),
-                                    debtToUs: double.parse(debtToUsController.text),
-                                  ),
-                                );
-                              }
-                            },
+                            onPressed: isCreating
+                                ? null
+                                : () {
+                                    if (_formKey.currentState!.validate()) {
+                                      // Create event for adding supplier opening
+                                      context.read<SupplierOpeningsBloc>().add(
+                                            CreateSupplierOpening(
+                                              supplierId: widget.supplierId,
+                                              ourDuty: double.parse(ourDutyController.text),
+                                              debtToUs: double.parse(debtToUsController.text),
+                                            ),
+                                          );
+                                    }
+                                  },
                           ),
                         ),
                       ],

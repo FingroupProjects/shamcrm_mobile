@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:bloc/bloc.dart';
 
@@ -47,14 +48,14 @@ class SupplierOpeningsBloc extends Bloc<SupplierOpeningsEvent, SupplierOpeningsS
   ) async {
     try {
       await _apiService.deleteSupplierOpening(event.id);
-      
+
+      debugPrint("Supplier opening with ID ${event.id} deleted successfully.");
       // Reload the list after successful deletion
       add(LoadSupplierOpenings());
     } catch (e) {
       // Сохраняем текущее состояние и эмитим операционную ошибку
-      emit(SupplierOpeningsOperationError(
+      emit(SupplierOpeningDeleteError(
         message: e.toString(),
-        previousState: state,
       ));
     }
   }
