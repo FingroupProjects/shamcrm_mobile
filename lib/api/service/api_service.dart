@@ -9265,6 +9265,7 @@ Future<String> _appendQueryParams(String path) async {
     int? branchId,
     String? commentToCourier,
     int? managerId,
+    int? integration,
   }) async {
     try {
       final token = await getToken();
@@ -9293,6 +9294,7 @@ Future<String> _appendQueryParams(String path) async {
         'comment_to_courier': commentToCourier,
         'payment_type': 'cash',
         'manager_id': managerId,
+        'integration_id': null, //  otpravim null
       };
 
       if (delivery) {

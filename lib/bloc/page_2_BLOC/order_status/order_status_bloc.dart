@@ -183,6 +183,7 @@ Future<void> _createOrder(CreateOrder event, Emitter<OrderState> emit) async {
       'status_id': event.statusId,
       'comment_to_courier': event.commentToCourier,
       'manager_id': event.managerId?.toString(),
+      'integration': null,
     };
 
     if (event.delivery) {
@@ -208,6 +209,7 @@ Future<void> _createOrder(CreateOrder event, Emitter<OrderState> emit) async {
       branchId: event.branchId,
       commentToCourier: event.commentToCourier,
       managerId: event.managerId,
+      integration: 1,
     );
     //print('OrderBloc: Результат создания заказа: $result');
 
