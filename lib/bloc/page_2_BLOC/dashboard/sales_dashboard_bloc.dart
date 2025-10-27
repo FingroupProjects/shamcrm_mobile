@@ -224,6 +224,42 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
       }
     });
 
+    // Reload profitability data for specific period
+    on<ReloadProfitabilityData>((event, emit) async {
+      debugPrint("🔄 Reloading profitability data for period: ${event.period.name}");
+      
+      try {
+        final currentState = state;
+        
+        // Загружаем данные для нового периода
+        final newPeriodData = await apiService.getProfitabilityForPeriod(event.period);
+        
+        // Обновляем только если состояние SalesDashboardFullyLoaded
+        if (currentState is SalesDashboardFullyLoaded) {
+          final updatedProfitabilityData = _updateProfitabilityData(
+            currentState.profitabilityData, 
+            newPeriodData,
+          );
+          
+          emit(SalesDashboardFullyLoaded(
+            salesDashboardTopPart: currentState.salesDashboardTopPart,
+            topSellingData: currentState.topSellingData,
+            illiquidGoodsData: currentState.illiquidGoodsData,
+            salesData: currentState.salesData,
+            netProfitData: currentState.netProfitData,
+            orderDashboardData: currentState.orderDashboardData,
+            expenseStructureData: currentState.expenseStructureData,
+            profitabilityData: updatedProfitabilityData,
+          ));
+        }
+        
+        debugPrint("✅ Profitability data reloaded for period: ${event.period.name}");
+      } catch (e) {
+        debugPrint("❌ Error reloading profitability data for period ${event.period.name}: $e");
+        // Не показываем ошибку пользователю, просто логируем
+      }
+    });
+
     // Start loading on initialization
     add(LoadPriorityData());
   }
@@ -251,6 +287,25 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
   List<AllSalesDynamicsData> _updateSalesDynamicsData(
     List<AllSalesDynamicsData> currentData,
     AllSalesDynamicsData newData,
+  ) {
+    final updatedList = [...currentData];
+    final index = updatedList.indexWhere((item) => item.period == newData.period);
+    
+    if (index != -1) {
+      // Заменяем существующие данные
+      updatedList[index] = newData;
+    } else {
+      // Добавляем новые данные
+      updatedList.add(newData);
+    }
+    
+    return updatedList;
+  }
+
+  /// Обновляет список profitabilityData новыми данными для периода
+  List<AllProfitabilityData> _updateProfitabilityData(
+    List<AllProfitabilityData> currentData,
+    AllProfitabilityData newData,
   ) {
     final updatedList = [...currentData];
     final index = updatedList.indexWhere((item) => item.period == newData.period);

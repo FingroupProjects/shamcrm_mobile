@@ -14975,6 +14975,38 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     return allProfitabilityData;
   }
 
+  /// Загрузка данных profitability для конкретного периода
+  Future<AllProfitabilityData> getProfitabilityForPeriod(
+    ProfitabilityTimePeriod period,
+  ) async {
+    final path = await _appendQueryParams('/dashboard/profitability?period=${period.name}');
+    
+    debugPrint("ApiService: getProfitabilityForPeriod path: $path for period: ${period.name}");
+
+    try {
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final profitabilityResponse = ProfitabilityDashboard.fromJson(data);
+
+        return AllProfitabilityData(
+          period: period,
+          data: profitabilityResponse,
+        );
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка загрузки данных для периода ${period.name}',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      debugPrint("Error fetching profitability for period $period: $e");
+      rethrow;
+    }
+  }
+
   Future<List<AllTopSellingData>> getTopSellingGoodsDashboard({int perPage = 7}) async {
     // Define all periods to fetch
     final periods = [
