@@ -28,7 +28,15 @@ class StatCard extends StatelessWidget {
   }) : assert(amount != null || amountText != null, 'Need amount or amountText');
 
   String _formatNumber(num value) {
-    final s = value.toString();
+    // Конвертируем в строку
+    String s = value.toString();
+    
+    // Удаляем незначащие нули после точки (например, 10.0 -> 10, 10.00 -> 10)
+    if (s.contains('.')) {
+      s = s.replaceAll(RegExp(r'\.0+$'), ''); // удаляем .0, .00, .000 и т.д.
+    }
+    
+    // Добавляем пробелы между тысячами
     final reg = RegExp(r'\B(?=(\d{3})+(?!\d))');
     return s.replaceAllMapped(reg, (m) => ' ');
   }

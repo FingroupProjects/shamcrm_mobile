@@ -112,17 +112,25 @@ class _ProfitabilityChartState extends State<ProfitabilityChart> {
     calculatedMin = (calculatedMin / 5).floor() * 5.0;
     calculatedMax = (calculatedMax / 5).ceil() * 5.0;
 
-    // Calculate appropriate interval
+    // Calculate appropriate interval - более детальные интервалы для красивого UI
     final totalRange = calculatedMax - calculatedMin;
     double interval;
-    if (totalRange <= 20) {
+    if (totalRange <= 5) {
+      interval = 1;
+    } else if (totalRange <= 10) {
+      interval = 2;
+    } else if (totalRange <= 20) {
       interval = 5;
     } else if (totalRange <= 50) {
       interval = 10;
     } else if (totalRange <= 100) {
       interval = 20;
-    } else {
+    } else if (totalRange <= 200) {
+      interval = 25;
+    } else if (totalRange <= 500) {
       interval = 50;
+    } else {
+      interval = 100;
     }
 
     return {

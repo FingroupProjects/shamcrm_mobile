@@ -83,6 +83,144 @@ class _NetProfitChartState extends State<NetProfitChart> {
     }
   }
 
+  Widget _buildMockChart(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+    
+    // Mock data for empty state visualization (12 months)
+    final List<double> mockData = [150, 50, 200, 100, 30, 250, 180, 120, 20, 300, 220, 280];
+    final List<String> mockMonthNames = [
+      localizations.translate('january'),
+      localizations.translate('february'),
+      localizations.translate('march'),
+      localizations.translate('april'),
+      localizations.translate('may'),
+      localizations.translate('june'),
+      localizations.translate('july'),
+      localizations.translate('august'),
+      localizations.translate('september'),
+      localizations.translate('october'),
+      localizations.translate('november'),
+      localizations.translate('december'),
+    ];
+    
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(right: 16, top: 16),
+          child: BarChart(
+            BarChartData(
+              alignment: BarChartAlignment.spaceAround,
+              maxY: 350,
+              minY: 0,
+              groupsSpace: 12,
+              backgroundColor: Colors.transparent,
+              barTouchData: BarTouchData(enabled: false),
+              titlesData: FlTitlesData(
+                show: true,
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    getTitlesWidget: (value, meta) {
+                      if (value < 0 || value >= mockMonthNames.length) {
+                        return const SizedBox.shrink();
+                      }
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Transform.rotate(
+                          angle: -0.5,
+                          child: Text(
+                            mockMonthNames[value.toInt()],
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black54,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                    reservedSize: 50,
+                  ),
+                ),
+                leftTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    getTitlesWidget: (value, meta) {
+                      return Text(
+                        _formatAxisValue(value),
+                        style: const TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black54,
+                        ),
+                      );
+                    },
+                    reservedSize: 40,
+                    interval: 50,
+                  ),
+                ),
+                rightTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+                topTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+              ),
+              gridData: FlGridData(
+                show: true,
+                drawHorizontalLine: true,
+                drawVerticalLine: false,
+                horizontalInterval: 50,
+                getDrawingHorizontalLine: (value) {
+                  return FlLine(
+                    color: Colors.grey.withOpacity(0.2),
+                    strokeWidth: 1,
+                  );
+                },
+              ),
+              borderData: FlBorderData(show: false),
+              barGroups: List.generate(
+                mockData.length,
+                (index) {
+                  final value = mockData[index];
+                  return BarChartGroupData(
+                    x: index,
+                    barRods: [
+                      BarChartRodData(
+                        toY: value,
+                        color: Colors.grey[300],
+                        width: 16,
+                        borderRadius: BorderRadius.only(
+                          topLeft: const Radius.circular(8),
+                          topRight: const Radius.circular(8),
+                          bottomLeft: value < 0 ? const Radius.circular(8) : Radius.zero,
+                          bottomRight: value < 0 ? const Radius.circular(8) : Radius.zero,
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+        Text(
+          localizations.translate('no_data_to_display'),
+          style: const TextStyle(
+            fontSize: 16,
+            fontFamily: "Gilroy",
+            fontWeight: FontWeight.w500,
+            color: Colors.black54,
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
@@ -163,18 +301,8 @@ class _NetProfitChartState extends State<NetProfitChart> {
 
           SizedBox(
             height: 300,
-            child: months.isEmpty
-                ? Center(
-              child: Text(
-                localizations.translate('no_data_to_display'),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontFamily: "Gilroy",
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black54,
-                ),
-              ),
-            )
+            child: months.isEmpty || months.every((m) => _parseNetProfit(m.netProfit) == 0)
+                ? _buildMockChart(context)
                 : Padding(
               padding: const EdgeInsets.only(right: 16, top: 16),
               child: BarChart(
@@ -370,13 +498,20 @@ class _NetProfitChartState extends State<NetProfitChart> {
     final maxValue = values.reduce((a, b) => a > b ? a : b);
     final range = (maxValue - minValue).abs();
 
+    // Более детальные интервалы для красивого UI
+    if (range <= 5) return 1;
     if (range <= 10) return 2;
+    if (range <= 20) return 5;
     if (range <= 50) return 10;
-    if (range <= 150) return 20;
+    if (range <= 100) return 20;
+    if (range <= 200) return 25;
     if (range <= 500) return 50;
     if (range <= 1000) return 100;
+    if (range <= 2000) return 200;
     if (range <= 5000) return 500;
-    return 1000;
+    if (range <= 10000) return 1000;
+    if (range <= 20000) return 2000;
+    return 5000;
   }
 
   String _formatValue(double value) {

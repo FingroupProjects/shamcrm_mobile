@@ -19,7 +19,7 @@ class ExpenseStructureChart extends StatefulWidget {
 }
 
 class _ExpenseStructureChartState extends State<ExpenseStructureChart> with SingleTickerProviderStateMixin {
-  ExpensePeriodEnum selectedPeriod = ExpensePeriodEnum.month;
+  ExpensePeriodEnum selectedPeriod = ExpensePeriodEnum.year;
   bool isDownloading = false;
   int touchedIndex = -1;
 

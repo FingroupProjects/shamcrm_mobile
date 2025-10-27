@@ -20,44 +20,83 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
 
   SalesDashboardBloc() : super(SalesDashboardInitial()) {
 
-    // Wave 1: Load priority data first
+    // Wave 1 & 2: Load both in parallel, but emit progressively
     on<LoadPriorityData>((event, emit) async {
-      debugPrint("📊 Wave 1: Loading priority dashboard data...");
+      debugPrint("📊 Starting parallel data loading...");
       emit(SalesDashboardLoading());
 
-      try {
-        // Load critical data in parallel (Wave 1)
-        final results = await Future.wait([
-          apiService.getSalesDashboardTopPart(),
-          apiService.getTopSellingGoodsDashboard(),
-          apiService.getIlliquidGoods(),
-        ]);
+      // Запускаем обе волны параллельно
+      final wave1Future = Future.wait([
+        apiService.getSalesDashboardTopPart(),
+        apiService.getTopSellingGoodsDashboard(),
+        apiService.getIlliquidGoods(),
+      ]);
 
-        final salesDashboardTopResponse = results[0] as DashboardTopPart;
-        final topSellingData = results[1] as List<AllTopSellingData>;
-        final illiquidGoodsData = results[2] as IlliquidGoodsResponse;
+      final wave2Future = Future.wait([
+        apiService.getNetProfitData(),
+        apiService.getOrderDashboard(),
+        apiService.getExpenseStructure(),
+        apiService.getProfitability(),
+        apiService.getSalesDynamics(),
+      ]);
+
+      try {
+        // Ждем завершения Wave 1, но Wave 2 уже загружается в фоне
+        final wave1Results = await wave1Future;
+
+        final salesDashboardTopResponse = wave1Results[0] as DashboardTopPart;
+        final topSellingData = wave1Results[1] as List<AllTopSellingData>;
+        final illiquidGoodsData = wave1Results[2] as IlliquidGoodsResponse;
 
         debugPrint("✅ Wave 1: Priority data loaded successfully");
 
-        // Emit priority data immediately
+        // Сразу показываем пользователю Wave 1 данные
         emit(SalesDashboardPriorityLoaded(
           salesDashboardTopPart: salesDashboardTopResponse,
           topSellingData: topSellingData,
           illiquidGoodsData: illiquidGoodsData,
         ));
 
-        // Automatically trigger Wave 2
-        add(LoadSecondaryData());
+        // Показываем индикатор загрузки Wave 2 (которая уже грузится)
+        emit(SalesDashboardLoadingSecondary(
+          salesDashboardTopPart: salesDashboardTopResponse,
+          topSellingData: topSellingData,
+          illiquidGoodsData: illiquidGoodsData,
+        ));
 
-      } catch (e) {
-        debugPrint("❌ Wave 1: Error loading priority data: $e");
+        // Теперь ждем завершения Wave 2
+        final wave2Results = await wave2Future;
+
+        final netProfitData = wave2Results[0] as List<AllNetProfitData>;
+        final orderDashboardData = wave2Results[1] as List<AllOrdersData>;
+        final expenseStructureData = wave2Results[2] as List<AllExpensesData>;
+        final profitabilityData = wave2Results[3] as List<AllProfitabilityData>;
+        final salesData = wave2Results[4] as List<AllSalesDynamicsData>;
+
+        debugPrint("✅ Wave 2: Secondary data loaded successfully");
+
+        // Показываем все данные
+        emit(SalesDashboardFullyLoaded(
+          salesDashboardTopPart: salesDashboardTopResponse,
+          topSellingData: topSellingData,
+          illiquidGoodsData: illiquidGoodsData,
+          netProfitData: netProfitData,
+          orderDashboardData: orderDashboardData,
+          expenseStructureData: expenseStructureData,
+          profitabilityData: profitabilityData,
+          salesData: salesData,
+        ));
+
+      } catch (e, stackTrace) {
+        debugPrint("❌ Error loading dashboard data: $e");
+        debugPrint("Stack trace: $stackTrace");
         emit(SalesDashboardError("Failed to load dashboard data: $e"));
       }
     });
 
-    // Wave 2: Load secondary data in background
+    // Wave 2: Load secondary data (fallback for manual trigger)
     on<LoadSecondaryData>((event, emit) async {
-      debugPrint("📊 Wave 2: Loading secondary dashboard data...");
+      debugPrint("📊 Wave 2: Loading secondary dashboard data (manual)...");
 
       // Get current priority data from state
       final currentState = state;
