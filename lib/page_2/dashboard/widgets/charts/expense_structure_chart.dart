@@ -84,23 +84,23 @@ class _ExpenseStructureChartState extends State<ExpenseStructureChart> with Sing
     }
   }
 
-  void _handleDownload(DownloadFormat format) async {
-    setState(() {
-      isDownloading = true;
-    });
-
-    try {
-      await Future.delayed(const Duration(seconds: 2));
-    } catch (e) {
-      // Handle error silently
-    } finally {
-      if (mounted) {
-        setState(() {
-          isDownloading = false;
-        });
-      }
-    }
-  }
+  // void _handleDownload(DownloadFormat format) async {
+  //   setState(() {
+  //     isDownloading = true;
+  //   });
+  //
+  //   try {
+  //     await Future.delayed(const Duration(seconds: 2));
+  //   } catch (e) {
+  //     // Handle error silently
+  //   } finally {
+  //     if (mounted) {
+  //       setState(() {
+  //         isDownloading = false;
+  //       });
+  //     }
+  //   }
+  // }
 
   Widget _buildPeriodDropdown() {
     return CustomDropdown<ExpensePeriodEnum>(
@@ -306,18 +306,18 @@ class _ExpenseStructureChartState extends State<ExpenseStructureChart> with Sing
                   color: Colors.black,
                 ),
               ),
-              Transform.translate(
-                offset: const Offset(16, 0),
-                child: DownloadPopupMenu(
-                  onDownload: _handleDownload,
-                  loading: isDownloading,
-                  formats: const [
-                    DownloadFormat.png,
-                    DownloadFormat.svg,
-                    DownloadFormat.csv,
-                  ],
-                ),
-              ),
+              // Transform.translate(
+              //   offset: const Offset(16, 0),
+              //   child: DownloadPopupMenu(
+              //     onDownload: _handleDownload,
+              //     loading: isDownloading,
+              //     formats: const [
+              //       DownloadFormat.png,
+              //       DownloadFormat.svg,
+              //       DownloadFormat.csv,
+              //     ],
+              //   ),
+              // ),
             ],
           ),
 

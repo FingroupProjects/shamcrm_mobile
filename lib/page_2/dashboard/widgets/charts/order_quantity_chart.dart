@@ -114,23 +114,23 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
     );
   }
 
-  void _handleDownload(DownloadFormat format) async {
-    setState(() {
-      isDownloading = true;
-    });
-
-    try {
-      await Future.delayed(const Duration(seconds: 2));
-    } catch (e) {
-      // Handle error silently
-    } finally {
-      if (mounted) {
-        setState(() {
-          isDownloading = false;
-        });
-      }
-    }
-  }
+  // void _handleDownload(DownloadFormat format) async {
+  //   setState(() {
+  //     isDownloading = true;
+  //   });
+  //
+  //   try {
+  //     await Future.delayed(const Duration(seconds: 2));
+  //   } catch (e) {
+  //     // Handle error silently
+  //   } finally {
+  //     if (mounted) {
+  //       setState(() {
+  //         isDownloading = false;
+  //       });
+  //     }
+  //   }
+  // }
 
   double _calculateInterval(double maxY) {
     // Более детальные интервалы для красивого UI
@@ -417,18 +417,18 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
                   color: Colors.black,
                 ),
               ),
-              Transform.translate(
-                offset: const Offset(16, 0),
-                child: DownloadPopupMenu(
-                  onDownload: _handleDownload,
-                  loading: isDownloading,
-                  formats: const [
-                    DownloadFormat.png,
-                    DownloadFormat.svg,
-                    DownloadFormat.csv,
-                  ],
-                ),
-              ),
+              // Transform.translate(
+              //   offset: const Offset(16, 0),
+              //   child: DownloadPopupMenu(
+              //     onDownload: _handleDownload,
+              //     loading: isDownloading,
+              //     formats: const [
+              //       DownloadFormat.png,
+              //       DownloadFormat.svg,
+              //       DownloadFormat.csv,
+              //     ],
+              //   ),
+              // ),
             ],
           ),
           const SizedBox(height: 16),

@@ -137,10 +137,10 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
                   color: Colors.black,
                 ),
               ),
-              Transform.translate(
-                offset: const Offset(16, 0),
-                child: DownloadPopupMenu(onDownload: (DownloadFormat type) {}),
-              ),
+              // Transform.translate(
+              //   offset: const Offset(16, 0),
+              //   child: DownloadPopupMenu(onDownload: (DownloadFormat type) {}),
+              // ),
             ],
           ),
           const SizedBox(height: 16),
