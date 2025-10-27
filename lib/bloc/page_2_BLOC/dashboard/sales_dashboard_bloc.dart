@@ -260,7 +260,47 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
       }
     });
 
-    // Start loading on initialization
+    // Reload order quantity data for specific period
+    on<ReloadOrderQuantityData>((event, emit) async {
+      debugPrint("🔄 Reloading order quantity data for period: ${event.period.name}");
+      
+      try {
+        final currentState = state;
+        
+        // Загружаем данные для нового периода
+        final newPeriodData = await apiService.getOrderDashboardForPeriod(event.period);
+        
+        // Обновляем только если состояние SalesDashboardFullyLoaded
+        if (currentState is SalesDashboardFullyLoaded) {
+          final updatedOrderDashboardData = _updateOrderDashboardData(
+            currentState.orderDashboardData, 
+            newPeriodData,
+          );
+          
+          emit(SalesDashboardFullyLoaded(
+            salesDashboardTopPart: currentState.salesDashboardTopPart,
+            topSellingData: currentState.topSellingData,
+            illiquidGoodsData: currentState.illiquidGoodsData,
+            salesData: currentState.salesData,
+            netProfitData: currentState.netProfitData,
+            orderDashboardData: updatedOrderDashboardData,
+            expenseStructureData: currentState.expenseStructureData,
+            profitabilityData: currentState.profitabilityData,
+          ));
+        }
+        
+        debugPrint("✅ Order quantity data reloaded for period: ${event.period.name}");
+      } catch (e) {
+        debugPrint("❌ Error reloading order quantity data for period ${event.period.name}: $e");
+        // Не показываем ошибку пользователю, просто логируем
+      }
+    });
+
+
+
+
+
+    // Start loading on initialization after all updates are implemented
     add(LoadPriorityData());
   }
 
@@ -306,6 +346,25 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
   List<AllProfitabilityData> _updateProfitabilityData(
     List<AllProfitabilityData> currentData,
     AllProfitabilityData newData,
+  ) {
+    final updatedList = [...currentData];
+    final index = updatedList.indexWhere((item) => item.period == newData.period);
+    
+    if (index != -1) {
+      // Заменяем существующие данные
+      updatedList[index] = newData;
+    } else {
+      // Добавляем новые данные
+      updatedList.add(newData);
+    }
+    
+    return updatedList;
+  }
+
+  /// Обновляет список orderDashboardData новыми данными для периода
+  List<AllOrdersData> _updateOrderDashboardData(
+    List<AllOrdersData> currentData,
+    AllOrdersData newData,
   ) {
     final updatedList = [...currentData];
     final index = updatedList.indexWhere((item) => item.period == newData.period);

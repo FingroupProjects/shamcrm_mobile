@@ -14931,6 +14931,37 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     return allOrdersData;
   }
 
+  /// Загрузка данных order dashboard для конкретного периода
+  Future<AllOrdersData> getOrderDashboardForPeriod(
+    OrderTimePeriod period,
+  ) async {
+    final path = await _appendQueryParams('/order/dashboard?period=${period.name}');
+    
+    debugPrint("ApiService: getOrderDashboardForPeriod path: $path for period: ${period.name}");
+
+    try {
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final orderDashboardResponse = OrderDashboardResponse.fromJson(data);
+
+        return AllOrdersData(
+          period: period,
+          data: orderDashboardResponse.result,
+        );
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка загрузки данных для периода ${period.name}',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      debugPrint("Error fetching order dashboard for period $period: $e");
+      rethrow;
+    }
+  }
 
 // API request function
   Future<List<AllProfitabilityData>> getProfitability() async {

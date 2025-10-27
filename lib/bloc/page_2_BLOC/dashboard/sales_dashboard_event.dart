@@ -52,6 +52,16 @@ class ReloadProfitabilityData extends SalesDashboardEvent {
   List<Object> get props => [period];
 }
 
+/// Reload order quantity data for specific period
+class ReloadOrderQuantityData extends SalesDashboardEvent {
+  final OrderTimePeriod period;
+  
+  const ReloadOrderQuantityData(this.period);
+  
+  @override
+  List<Object> get props => [period];
+}
+
 /// Legacy event for backward compatibility
 class LoadInitialData extends SalesDashboardEvent {
   @override
