@@ -212,73 +212,14 @@ class IncomingDocument extends Equatable {
         final price = double.tryParse(good.price ?? '0') ?? 0;
 
         // Коэффициент по умолчанию = 1 (для базовых единиц)
-        double unitMultiplier = 1.0;
+        num unitMultiplier = 1.0;
 
         debugPrint("=== Processing DocumentGood ===");
         debugPrint("DocumentGood.unitId: ${good.unitId}");
         debugPrint("DocumentGood.unit (object): ${good.unit?.toJson()}");
         debugPrint("Good.units array: ${good.good?.units?.map((u) => u.toJson()).toList()}");
 
-        // Сначала: Проверяем массив units в товаре
-        if (good.good?.units != null && good.unitId != null) {
-          try {
-            debugPrint("Searching in ${good.good!.units!.length} units...");
-            for (var unit in good.good!.units!) {
-              debugPrint("  Unit: id=${unit.id}, name=${unit.name}, amount=${unit.amount} (type: ${unit.amount.runtimeType})");
-
-              // ВАЖНО: Сравниваем с unitId из DocumentGood
-              if (unit.id == good.unitId) {
-                debugPrint("  ✓ MATCH FOUND! unit.id (${unit.id}) == good.unitId (${good.unitId})");
-
-                // Если у единицы есть amount, получаем его значение
-                if (unit.amount != null) {
-                  final amountStr = unit.amount.toString();
-                  unitMultiplier = double.tryParse(amountStr) ?? 1.0;
-                  debugPrint("  ✓ Amount found: $amountStr -> multiplier: $unitMultiplier");
-                } else {
-                  debugPrint("  ⚠ Amount is null, using default multiplier 1.0");
-                }
-                break;
-              } else {
-                debugPrint("  ✗ No match: unit.id (${unit.id}) != good.unitId (${good.unitId})");
-              }
-            }
-          } catch (e) {
-            debugPrint('❌ Error processing units: $e');
-          }
-        } else {
-          debugPrint("⚠ Skipping units check: units=${good.good?.units != null}, unitId=${good.unitId != null}");
-        }
-
-        // Запасной вариант: Проверяем массив measurements, если не найдено в units
-        if (unitMultiplier == 1.0 && good.good?.measurements != null && good.unitId != null) {
-          try {
-            debugPrint("Checking measurements as fallback...");
-            final measurements = good.good!.measurements as List<dynamic>?;
-            if (measurements != null) {
-              for (var measurement in measurements) {
-                if (measurement is Map<String, dynamic>) {
-                  final unit = measurement['unit'];
-                  if (unit != null && unit is Map<String, dynamic>) {
-                    debugPrint("  Measurement unit: id=${unit['id']}, amount=${measurement['amount']}");
-
-                    // Сопоставляем по unit_id
-                    if (unit['id'] == good.unitId) {
-                      final amountStr = measurement['amount'];
-                      if (amountStr != null) {
-                        unitMultiplier = double.tryParse(amountStr.toString()) ?? 1.0;
-                        debugPrint("  ✓ Found in measurements with multiplier $unitMultiplier");
-                      }
-                      break;
-                    }
-                  }
-                }
-              }
-            }
-          } catch (e) {
-            debugPrint('❌ Error processing measurements: $e');
-          }
-        }
+        unitMultiplier = good.good?.unit?.amount ?? 1.0;
 
         debugPrint("FINAL: price=$price, quantity=$quantity, multiplier=$unitMultiplier");
         debugPrint("Item total: ${quantity * price * unitMultiplier}");
@@ -693,13 +634,15 @@ class Good {
 
   factory Good.fromJson(Map<String, dynamic> json) {
     return Good(
+      units: json['units'] != null ? (json['units'] as List).map((i) => Unit.fromJson(i)).toList() : null,
+      unitId: json['unit_id'] is int ? json['unit_id']
+          : (json['unit_id'] is String ? int.tryParse(json['unit_id']) : null),
       id: _parseInt(json['id']),
       oneCId: json['one_c_id'],
       name: json['name'],
       categoryId: _parseInt(json['category_id']),
       description: json['description'],
       price: json['price'],
-      unitId: _parseInt(json['unit_id']),
       quantity: _parseInt(json['quantity']),
       deletedAt: _parseDate(json['deleted_at']),
       createdAt: _parseDate(json['created_at']),
@@ -712,9 +655,6 @@ class Good {
       packageCode: json['package_code'],
       files: json['files'] != null
           ? (json['files'] as List).map((i) => GoodFile.fromJson(i)).toList()
-          : null,
-      units: json['units'] != null
-          ? (json['units'] as List).map((i) => Unit.fromJson(i)).toList()
           : null,
       measurements: json['measurements'] as List<dynamic>?,
       category: json['category'],

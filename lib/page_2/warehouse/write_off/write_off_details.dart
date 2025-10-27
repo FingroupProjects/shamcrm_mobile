@@ -679,15 +679,11 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
   }
 
   Widget _buildGoodsItem(DocumentGood good) {
-    final availableUnits = good.good?.units ?? [];
+    final selectedUnit = good.good?.unit ?? Unit(id: null, name: '', shortName: '');
+    final amount = selectedUnit.amount ?? 1.0;
+    final unitShortName = selectedUnit.shortName ?? selectedUnit.name ?? '';
 
-    final selectedUnit = good.unit ??
-        availableUnits.firstWhere(
-              (unit) => unit.id == good.unitId,
-          orElse: () => Unit(id: null, name: 'шт'),
-        );
-
-    final unitShortName = selectedUnit.shortName ?? selectedUnit.name ?? 'шт';
+    debugPrint("selectedUnit: $selectedUnit");
 
     return GestureDetector(
       onTap: () {
@@ -772,35 +768,67 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
                               ],
                             ),
                           ),
-                          Expanded(
-                            flex: 3,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  AppLocalizations.of(context)!.translate('price') ?? 'Цена',
-                                  style: const TextStyle(
-                                    fontSize: 10,
-                                    fontFamily: 'Gilroy',
-                                    fontWeight: FontWeight.w400,
-                                    color: Color(0xff99A4BA),
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  '${(double.tryParse(good.price ?? '0.00') ?? 0.00).toStringAsFixed(2)}',
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontFamily: 'Gilroy',
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xff1E2E52),
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ),
-                          ),
+                          // Expanded(
+                          //   flex: 3,
+                          //   child: Column(
+                          //     crossAxisAlignment: CrossAxisAlignment.start,
+                          //     children: [
+                          //       Text(
+                          //         AppLocalizations.of(context)!.translate('price') ?? 'Цена',
+                          //         style: const TextStyle(
+                          //           fontSize: 10,
+                          //           fontFamily: 'Gilroy',
+                          //           fontWeight: FontWeight.w400,
+                          //           color: Color(0xff99A4BA),
+                          //         ),
+                          //       ),
+                          //       const SizedBox(height: 2),
+                          //       Text(
+                          //         (amount * (double.tryParse(good.price ?? '0.00') ?? 0.00)).toStringAsFixed(2),
+                          //         style: const TextStyle(
+                          //           fontSize: 12,
+                          //           fontFamily: 'Gilroy',
+                          //           fontWeight: FontWeight.w600,
+                          //           color: Color(0xff1E2E52),
+                          //         ),
+                          //         overflow: TextOverflow.ellipsis,
+                          //       ),
+                          //     ],
+                          //   ),
+                          // ),
                         ],
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF4F7FD),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                            Text(
+                              AppLocalizations.of(context)!.translate('total') ?? 'Итого',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xff1E2E52),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '${((good.quantity ?? 0) * amount * (double.tryParse(good.price ?? '0') ?? 0)).toStringAsFixed(2)} ${currentDocument!.currency?.symbolCode ?? ''}',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xff4CAF50),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
