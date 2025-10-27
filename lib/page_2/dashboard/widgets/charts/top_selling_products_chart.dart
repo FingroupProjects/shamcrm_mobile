@@ -18,7 +18,7 @@ class TopSellingProductsChart extends StatefulWidget {
 }
 
 class _TopSellingProductsChartState extends State<TopSellingProductsChart> {
-  TopSellingTimePeriod selectedPeriod = TopSellingTimePeriod.day;
+  TopSellingTimePeriod selectedPeriod = TopSellingTimePeriod.year;
 
   List<TopSellingData> _getDataForSelectedPeriod() {
     try {
