@@ -206,10 +206,87 @@ class IncomingDocument extends Equatable {
   double get totalSum {
     if (documentGoods == null || documentGoods!.isEmpty) return 0.0;
     return documentGoods!.fold(
-        0.0,
-        (sum, good) =>
-            sum +
-            (good.quantity ?? 0) * (double.tryParse(good.price ?? '0') ?? 0));
+      0.0,
+          (sum, good) {
+        final quantity = good.quantity ?? 0;
+        final price = double.tryParse(good.price ?? '0') ?? 0;
+
+        // Коэффициент по умолчанию = 1 (для базовых единиц)
+        double unitMultiplier = 1.0;
+
+        debugPrint("=== Processing DocumentGood ===");
+        debugPrint("DocumentGood.unitId: ${good.unitId}");
+        debugPrint("DocumentGood.unit (object): ${good.unit?.toJson()}");
+        debugPrint("Good.units array: ${good.good?.units?.map((u) => u.toJson()).toList()}");
+
+        // Сначала: Проверяем массив units в товаре
+        if (good.good?.units != null && good.unitId != null) {
+          try {
+            debugPrint("Searching in ${good.good!.units!.length} units...");
+            for (var unit in good.good!.units!) {
+              debugPrint("  Unit: id=${unit.id}, name=${unit.name}, amount=${unit.amount} (type: ${unit.amount.runtimeType})");
+
+              // ВАЖНО: Сравниваем с unitId из DocumentGood
+              if (unit.id == good.unitId) {
+                debugPrint("  ✓ MATCH FOUND! unit.id (${unit.id}) == good.unitId (${good.unitId})");
+
+                // Если у единицы есть amount, получаем его значение
+                if (unit.amount != null) {
+                  final amountStr = unit.amount.toString();
+                  unitMultiplier = double.tryParse(amountStr) ?? 1.0;
+                  debugPrint("  ✓ Amount found: $amountStr -> multiplier: $unitMultiplier");
+                } else {
+                  debugPrint("  ⚠ Amount is null, using default multiplier 1.0");
+                }
+                break;
+              } else {
+                debugPrint("  ✗ No match: unit.id (${unit.id}) != good.unitId (${good.unitId})");
+              }
+            }
+          } catch (e) {
+            debugPrint('❌ Error processing units: $e');
+          }
+        } else {
+          debugPrint("⚠ Skipping units check: units=${good.good?.units != null}, unitId=${good.unitId != null}");
+        }
+
+        // Запасной вариант: Проверяем массив measurements, если не найдено в units
+        if (unitMultiplier == 1.0 && good.good?.measurements != null && good.unitId != null) {
+          try {
+            debugPrint("Checking measurements as fallback...");
+            final measurements = good.good!.measurements as List<dynamic>?;
+            if (measurements != null) {
+              for (var measurement in measurements) {
+                if (measurement is Map<String, dynamic>) {
+                  final unit = measurement['unit'];
+                  if (unit != null && unit is Map<String, dynamic>) {
+                    debugPrint("  Measurement unit: id=${unit['id']}, amount=${measurement['amount']}");
+
+                    // Сопоставляем по unit_id
+                    if (unit['id'] == good.unitId) {
+                      final amountStr = measurement['amount'];
+                      if (amountStr != null) {
+                        unitMultiplier = double.tryParse(amountStr.toString()) ?? 1.0;
+                        debugPrint("  ✓ Found in measurements with multiplier $unitMultiplier");
+                      }
+                      break;
+                    }
+                  }
+                }
+              }
+            }
+          } catch (e) {
+            debugPrint('❌ Error processing measurements: $e');
+          }
+        }
+
+        debugPrint("FINAL: price=$price, quantity=$quantity, multiplier=$unitMultiplier");
+        debugPrint("Item total: ${quantity * price * unitMultiplier}");
+        debugPrint("=== End DocumentGood ===\n");
+
+        return sum + (quantity * price * unitMultiplier);
+      },
+    );
   }
 
   int get totalQuantity {
@@ -519,28 +596,32 @@ class Currency {
   });
 
   factory DocumentGood.fromJson(Map<String, dynamic> json) {
+    // Parse the unit object first
+    final unitObj = json['unit'] != null ? Unit.fromJson(json['unit']) : null;
+
     return DocumentGood(
       id: IncomingDocument._parseInt(json['id']),
       documentId: IncomingDocument._parseInt(json['document_id']),
       variantId: IncomingDocument._parseInt(json['variant_id']),
       good: json['good'] != null ? Good.fromJson(json['good']) : null,
-      quantity: IncomingDocument._parseNum(json['quantity']), // Используем num для поддержки int и double
+      quantity: IncomingDocument._parseNum(json['quantity']),
       price: json['price'],
       createdAt: IncomingDocument._parseDate(json['created_at']),
       updatedAt: IncomingDocument._parseDate(json['updated_at']),
       attributes: json['attributes'] != null
           ? (json['attributes'] as List)
-              .map((i) => Attribute.fromJson(i))
-              .toList()
+          .map((i) => Attribute.fromJson(i))
+          .toList()
           : null,
       fullName: json['full_name'] as String?,
-      unitId: IncomingDocument._parseInt(json['unit_id']), // Правильно
+      // FIXED: Extract unit_id from the unit object if unit_id field doesn't exist
+      unitId: IncomingDocument._parseInt(json['unit_id']) ?? unitObj?.id,
       goodVariant: json['good_variant'] != null
           ? GoodVariant.fromJson(json['good_variant'])
           : null,
       goodVariantId: IncomingDocument._parseInt(json['good_variant_id']),
       sum: json['sum'] as String?,
-      unit: json['unit'] != null ? Unit.fromJson(json['unit']) : null,
+      unit: unitObj,
     );
   }
 
