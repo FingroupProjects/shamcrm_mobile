@@ -63,23 +63,23 @@ class _ProfitabilityChartState extends State<ProfitabilityChart> {
     }
   }
 
-  void _handleDownload(DownloadFormat format) async {
-    setState(() {
-      isDownloading = true;
-    });
-
-    try {
-      await Future.delayed(const Duration(seconds: 2));
-    } catch (e) {
-      // Handle error silently
-    } finally {
-      if (mounted) {
-        setState(() {
-          isDownloading = false;
-        });
-      }
-    }
-  }
+  // void _handleDownload(DownloadFormat format) async {
+  //   setState(() {
+  //     isDownloading = true;
+  //   });
+  //
+  //   try {
+  //     await Future.delayed(const Duration(seconds: 2));
+  //   } catch (e) {
+  //     // Handle error silently
+  //   } finally {
+  //     if (mounted) {
+  //       setState(() {
+  //         isDownloading = false;
+  //       });
+  //     }
+  //   }
+  // }
 
   // Calculate dynamic Y-axis range based on actual data
   Map<String, double> _calculateYAxisRange(List<ProfitabilityMonth> months) {
@@ -176,18 +176,18 @@ class _ProfitabilityChartState extends State<ProfitabilityChart> {
                   color: Colors.black,
                 ),
               ),
-              Transform.translate(
-                offset: const Offset(16, 0),
-                child: DownloadPopupMenu(
-                  onDownload: _handleDownload,
-                  loading: isDownloading,
-                  formats: const [
-                    DownloadFormat.png,
-                    DownloadFormat.svg,
-                    DownloadFormat.csv,
-                  ],
-                ),
-              ),
+              // Transform.translate(
+              //   offset: const Offset(16, 0),
+              //   child: DownloadPopupMenu(
+              //     onDownload: _handleDownload,
+              //     loading: isDownloading,
+              //     formats: const [
+              //       DownloadFormat.png,
+              //       DownloadFormat.svg,
+              //       DownloadFormat.csv,
+              //     ],
+              //   ),
+              // ),
             ],
           ),
 
