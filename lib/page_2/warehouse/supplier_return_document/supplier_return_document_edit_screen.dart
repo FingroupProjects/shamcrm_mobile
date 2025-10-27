@@ -84,14 +84,26 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
         final variantId = good.variantId ?? good.good?.id ?? 0;
         final quantity = good.quantity ?? 0;
         final price = double.tryParse(good.price ?? '0') ?? 0.0;
-        // ✅ NEW: Try multiple sources for units
-        final availableUnits = good.good?.units ?? 
-                              (good.unit != null ? [good.unit!] : []);
-        
-        // ✅ NEW: Get selected unit from document_goods level first
-        final selectedUnitObj = good.unit ?? 
-                               (availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: 'шт'));
-        final amount = selectedUnitObj.amount ?? 1;
+        // ✅ Get available units
+        final availableUnits = good.good?.units ?? (good.unit != null ? [good.unit!] : []);
+        // ✅ Find the correct unit by matching unitId (same logic as totalSum)
+        Unit? selectedUnitObj;
+        double amount = 1.0;
+        if (good.good?.units != null && good.unitId != null) {
+          // Search in good.good.units array for matching unit
+          for (var unit in good.good!.units!) {
+            if (unit.id == good.unitId) {
+              selectedUnitObj = unit;
+              amount = (unit.amount != null)
+                  ? double.tryParse(unit.amount.toString()) ?? 1.0
+                  : 1.0;
+              break;
+            }
+          }
+        }
+        // Fallback if not found
+        selectedUnitObj ??= good.unit ?? (availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: 'шт'));
+        debugPrint("amount of unit '${selectedUnitObj.name}': $amount");
 
         _items.add({
           'id': good.good?.id ?? 0,
@@ -106,7 +118,7 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
           'availableUnits': availableUnits,
         });
 
-        _priceControllers[variantId] = TextEditingController(text: price > 0 ? price.toStringAsFixed(3) : '');
+        _priceControllers[variantId] = TextEditingController(text: (price * amount).toStringAsFixed(3));
         _quantityControllers[variantId] = TextEditingController(text: quantity.toString());
         _quantityFocusNodes[variantId] = FocusNode();
         _priceFocusNodes[variantId] = FocusNode();
@@ -119,38 +131,37 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
   void _handleVariantSelection(Map<String, dynamic>? newItem) {
     if (mounted && newItem != null) {
       setState(() {
-        final existingIndex = _items.indexWhere((item) => item['variantId'] == newItem['variantId']);
+        final existingIndex = _items
+            .indexWhere((item) => item['variantId'] == newItem['variantId']);
 
         if (existingIndex == -1) {
-          // Сворачиваем все предыдущие карточки
           for (var item in _items) {
             final variantId = item['variantId'] as int;
             _collapsedItems[variantId] = true;
           }
 
-          _items.add(newItem);
+          // ✅ Don't use the price from newItem - let user enter it
+          final modifiedItem = Map<String, dynamic>.from(newItem);
+          modifiedItem['price'] = 0.0; // Set to 0 instead of using default price
+
+          _items.add(modifiedItem);
 
           final variantId = newItem['variantId'] as int;
 
-          final initialPrice = newItem['price'] ?? 0.0;
-          _priceControllers[variantId] = TextEditingController(
-              text: initialPrice > 0 ? initialPrice.toStringAsFixed(3) : ''
-          );
+          // ✅ Initialize price controller with empty string (no default price)
+          _priceControllers[variantId] = TextEditingController(text: '');
 
           _quantityControllers[variantId] = TextEditingController(text: '');
 
           _quantityFocusNodes[variantId] = FocusNode();
           _priceFocusNodes[variantId] = FocusNode();
 
-          _items.last['price'] = initialPrice;
-
-          final amount = newItem['amount'] ?? 1;
-          _items.last['total'] = (initialPrice * amount).round();
+          // ✅ Set price to 0 in the item
+          _items.last['price'] = 0.0;
 
           _priceErrors[variantId] = false;
           _quantityErrors[variantId] = false;
 
-          // Разворачиваем новую карточку
           _collapsedItems[variantId] = false;
 
           if (!newItem.containsKey('amount')) {
@@ -173,6 +184,58 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
               _quantityFocusNodes[variantId]?.requestFocus();
             }
           });
+        }
+      });
+    }
+  }
+
+  void _updateItemUnit(int variantId, String newUnit, int? newUnitId) {
+    setState(() {
+      final index = _items.indexWhere((item) => item['variantId'] == variantId);
+      if (index != -1) {
+        final availableUnits = _items[index]['availableUnits'] as List<Unit>? ?? [];
+        final selectedUnitObj = availableUnits.firstWhere(
+              (unit) => (unit.name) == newUnit,
+          orElse: () => availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: '', amount: 1),
+        );
+
+        final previousAmount = _items[index]['amount'] ?? 1;
+        final newAmount = selectedUnitObj.amount ?? 1;
+
+        _items[index]['selectedUnit'] = newUnit;
+        _items[index]['unit_id'] = newUnitId;
+        _items[index]['amount'] = newAmount;
+
+        // ✅ Update the displayed price in the text field (multiply by new amount)
+        final basePrice = _items[index]['price'] ?? 0.0;
+        final displayPrice = basePrice * newAmount;
+        _priceControllers[variantId]?.text = displayPrice > 0 ? displayPrice.toStringAsFixed(3) : '';
+
+        // ✅ Recalculate total
+        _items[index]['total'] = (_items[index]['quantity'] * basePrice * newAmount).round();
+      }
+    });
+  }
+
+  void _updateItemPrice(int variantId, String value) {
+    final displayPrice = double.tryParse(value);
+    if (displayPrice != null && displayPrice >= 0) {
+      setState(() {
+        final index = _items.indexWhere((item) => item['variantId'] == variantId);
+        if (index != -1) {
+          final amount = _items[index]['amount'] ?? 1;
+          // ✅ Store base price (divide by amount to get price per base unit)
+          _items[index]['price'] = displayPrice / amount;
+          _items[index]['total'] = (_items[index]['quantity'] * displayPrice).round();
+        }
+        _priceErrors[variantId] = false;
+      });
+    } else if (value.isEmpty) {
+      setState(() {
+        final index = _items.indexWhere((item) => item['variantId'] == variantId);
+        if (index != -1) {
+          _items[index]['price'] = 0.0;
+          _items[index]['total'] = 0.0;
         }
       });
     }
@@ -258,50 +321,6 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
         }
       });
     }
-  }
-
-  void _updateItemPrice(int variantId, String value) {
-    final price = double.tryParse(value);
-    if (price != null && price >= 0) {
-      setState(() {
-        final index = _items.indexWhere((item) => item['variantId'] == variantId);
-        if (index != -1) {
-          _items[index]['price'] = price;
-          final amount = _items[index]['amount'] ?? 1;
-          _items[index]['total'] = (_items[index]['quantity'] * _items[index]['price'] * amount).round();
-        }
-        _priceErrors[variantId] = false;
-      });
-    } else if (value.isEmpty) {
-      setState(() {
-        final index = _items.indexWhere((item) => item['variantId'] == variantId);
-        if (index != -1) {
-          _items[index]['price'] = 0.0;
-          _items[index]['total'] = 0.0;
-        }
-      });
-    }
-  }
-
-  void _updateItemUnit(int variantId, String newUnit, int? newUnitId) {
-    setState(() {
-      final index = _items.indexWhere((item) => item['variantId'] == variantId);
-      if (index != -1) {
-        _items[index]['selectedUnit'] = newUnit;
-        _items[index]['unit_id'] = newUnitId;
-
-        final availableUnits = _items[index]['availableUnits'] as List<Unit>? ?? [];
-        final selectedUnitObj = availableUnits.firstWhere(
-              (unit) => (unit.name) == newUnit,
-          orElse: () => availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: '', amount: 1),
-        );
-
-        _items[index]['amount'] = selectedUnitObj.amount ?? 1;
-
-        final amount = _items[index]['amount'] ?? 1;
-        _items[index]['total'] = (_items[index]['quantity'] * _items[index]['price'] * amount).round();
-      }
-    });
   }
 
   // ✅ НОВОЕ: Функция для перехода к следующему пустому полю
