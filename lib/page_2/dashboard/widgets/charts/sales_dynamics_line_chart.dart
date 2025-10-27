@@ -389,13 +389,20 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
 
   double _calculateInterval() {
     final maxY = _calculateMaxY();
+    // Более детальные интервалы для красивого UI
+    if (maxY <= 5) return 1;
     if (maxY <= 10) return 2;
+    if (maxY <= 20) return 5;
     if (maxY <= 50) return 10;
-    if (maxY <= 150) return 20;
+    if (maxY <= 100) return 20;
+    if (maxY <= 200) return 25;
     if (maxY <= 500) return 50;
     if (maxY <= 1000) return 100;
     if (maxY <= 2000) return 200;
-    return 500;
+    if (maxY <= 5000) return 500;
+    if (maxY <= 10000) return 1000;
+    if (maxY <= 20000) return 2000;
+    return 5000;
   }
 
   String _formatValue(double value) {

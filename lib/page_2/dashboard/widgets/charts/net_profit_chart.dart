@@ -370,13 +370,20 @@ class _NetProfitChartState extends State<NetProfitChart> {
     final maxValue = values.reduce((a, b) => a > b ? a : b);
     final range = (maxValue - minValue).abs();
 
+    // Более детальные интервалы для красивого UI
+    if (range <= 5) return 1;
     if (range <= 10) return 2;
+    if (range <= 20) return 5;
     if (range <= 50) return 10;
-    if (range <= 150) return 20;
+    if (range <= 100) return 20;
+    if (range <= 200) return 25;
     if (range <= 500) return 50;
     if (range <= 1000) return 100;
+    if (range <= 2000) return 200;
     if (range <= 5000) return 500;
-    return 1000;
+    if (range <= 10000) return 1000;
+    if (range <= 20000) return 2000;
+    return 5000;
   }
 
   String _formatValue(double value) {

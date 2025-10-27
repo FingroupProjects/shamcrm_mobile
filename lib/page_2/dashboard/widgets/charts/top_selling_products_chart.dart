@@ -79,6 +79,135 @@ class _TopSellingProductsChartState extends State<TopSellingProductsChart> {
     );
   }
 
+  Widget _buildMockChart(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+    
+    // Mock data for empty state visualization
+    final List<double> mockData = [45, 30, 65, 25, 55, 35];
+    final List<String> mockNames = [
+      localizations.translate('product') + ' A',
+      localizations.translate('product') + ' B',
+      localizations.translate('product') + ' C',
+      localizations.translate('product') + ' D',
+      localizations.translate('product') + ' E',
+      localizations.translate('product') + ' F',
+    ];
+    
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(right: 16, top: 16),
+          child: BarChart(
+            BarChartData(
+              alignment: BarChartAlignment.spaceAround,
+              maxY: 80,
+              minY: 0,
+              groupsSpace: 20,
+              backgroundColor: Colors.transparent,
+              barTouchData: BarTouchData(enabled: false),
+              titlesData: FlTitlesData(
+                show: true,
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    getTitlesWidget: (value, meta) {
+                      if (value < 0 || value >= mockNames.length) {
+                        return const SizedBox.shrink();
+                      }
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Transform.rotate(
+                          angle: -0.5,
+                          child: Text(
+                            mockNames[value.toInt()],
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black54,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                    reservedSize: 50,
+                  ),
+                ),
+                leftTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    getTitlesWidget: (value, meta) {
+                      return Text(
+                        value.toInt().toString(),
+                        style: const TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black54,
+                        ),
+                      );
+                    },
+                    reservedSize: 40,
+                    interval: 20,
+                  ),
+                ),
+                rightTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+                topTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+              ),
+              gridData: FlGridData(
+                show: true,
+                drawHorizontalLine: true,
+                drawVerticalLine: false,
+                horizontalInterval: 20,
+                getDrawingHorizontalLine: (value) {
+                  return FlLine(
+                    color: Colors.grey.withOpacity(0.2),
+                    strokeWidth: 1,
+                  );
+                },
+              ),
+              borderData: FlBorderData(
+                show: false,
+              ),
+              barGroups: List.generate(
+                mockData.length,
+                (index) => BarChartGroupData(
+                  x: index,
+                  barRods: [
+                    BarChartRodData(
+                      toY: mockData[index],
+                      color: Colors.grey[300],
+                      width: 28,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(8),
+                        topRight: Radius.circular(8),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        Text(
+          AppLocalizations.of(context)!.translate('no_data_to_display'),
+          style: const TextStyle(
+            fontSize: 16,
+            fontFamily: "Gilroy",
+            fontWeight: FontWeight.w500,
+            color: Colors.black54,
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
@@ -145,17 +274,7 @@ class _TopSellingProductsChartState extends State<TopSellingProductsChart> {
           SizedBox(
             height: 300,
             child: productsData.isEmpty
-                ? Center(
-                    child: Text(
-                      localizations.translate('no_data_to_display'),
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontFamily: "Gilroy",
-                        fontWeight: FontWeight.w500,
-                        color: Colors.black54,
-                      ),
-                    ),
-                  )
+                ? _buildMockChart(context)
                 : Padding(
                     padding: const EdgeInsets.only(right: 16, top: 16),
                     child: BarChart(
@@ -317,17 +436,22 @@ class _TopSellingProductsChartState extends State<TopSellingProductsChart> {
 
   double _getIntervalForPeriod() {
     final productsData = _getDataForSelectedPeriod();
-    if (productsData.isEmpty) return 1; // ← Changed from 100 to 1
+    if (productsData.isEmpty) return 1;
 
     final maxValue = productsData.map((e) => e.totalQuantity.toDouble()).reduce((a, b) => a > b ? a : b);
 
-    // ← Added more granular intervals for small values
+    // Более детальные интервалы для красивого UI
+    if (maxValue <= 5) return 1;
     if (maxValue <= 10) return 2;
+    if (maxValue <= 20) return 5;
     if (maxValue <= 50) return 10;
     if (maxValue <= 100) return 20;
+    if (maxValue <= 200) return 25;
     if (maxValue <= 500) return 50;
     if (maxValue <= 1000) return 100;
     if (maxValue <= 2000) return 200;
-    return 500;
+    if (maxValue <= 5000) return 500;
+    if (maxValue <= 10000) return 1000;
+    return 2000;
   }
 }
