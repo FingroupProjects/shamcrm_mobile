@@ -14931,6 +14931,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
   Future<List<AllTopSellingData>> getTopSellingGoodsDashboard({int perPage = 7}) async {
     // Define all periods to fetch
     final periods = [
+      TopSellingTimePeriod.day,
       TopSellingTimePeriod.week,
       TopSellingTimePeriod.month,
       TopSellingTimePeriod.year,
@@ -14973,6 +14974,40 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     }
 
     return allTopSellingData;
+  }
+
+  /// Загрузка данных топ-продаж для конкретного периода
+  Future<AllTopSellingData> getTopSellingGoodsForPeriod(
+    TopSellingTimePeriod period, {
+    int perPage = 7,
+  }) async {
+    final query = ['per_page=$perPage', 'period=${period.name}'].join('&');
+    final path = await _appendQueryParams('/dashboard/top-selling-goods?$query');
+    
+    debugPrint("ApiService: getTopSellingGoodsForPeriod path: $path for period: ${period.name}");
+
+    try {
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final topSellingResponse = TopSellingGoodsResponse.fromJson(data);
+
+        return AllTopSellingData(
+          period: period,
+          data: topSellingResponse.result,
+        );
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка загрузки данных для периода ${period.name}',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      debugPrint("Error fetching data for period $period: $e");
+      rethrow;
+    }
   }
 
   Future<List<TopSellingCardModel>> getTopSellingCardsByFilter({

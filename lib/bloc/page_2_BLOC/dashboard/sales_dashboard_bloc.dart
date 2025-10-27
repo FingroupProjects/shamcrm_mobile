@@ -125,7 +125,89 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
       add(ReloadAllData());
     });
 
+    // Reload top selling data for specific period
+    on<ReloadTopSellingData>((event, emit) async {
+      debugPrint("🔄 Reloading top selling data for period: ${event.period.name}");
+      
+      try {
+        final currentState = state;
+        
+        // Загружаем данные для нового периода
+        final newPeriodData = await apiService.getTopSellingGoodsForPeriod(event.period);
+        
+        // Обновляем в зависимости от текущего состояния
+        if (currentState is SalesDashboardFullyLoaded) {
+          final updatedTopSellingData = _updateTopSellingData(
+            currentState.topSellingData, 
+            newPeriodData,
+          );
+          
+          emit(SalesDashboardFullyLoaded(
+            salesDashboardTopPart: currentState.salesDashboardTopPart,
+            topSellingData: updatedTopSellingData,
+            illiquidGoodsData: currentState.illiquidGoodsData,
+            salesData: currentState.salesData,
+            netProfitData: currentState.netProfitData,
+            orderDashboardData: currentState.orderDashboardData,
+            expenseStructureData: currentState.expenseStructureData,
+            profitabilityData: currentState.profitabilityData,
+          ));
+        } else if (currentState is SalesDashboardPriorityLoaded) {
+          final updatedTopSellingData = _updateTopSellingData(
+            currentState.topSellingData, 
+            newPeriodData,
+          );
+          
+          emit(SalesDashboardPriorityLoaded(
+            salesDashboardTopPart: currentState.salesDashboardTopPart,
+            topSellingData: updatedTopSellingData,
+            illiquidGoodsData: currentState.illiquidGoodsData,
+          ));
+        } else if (currentState is SalesDashboardLoaded) {
+          final updatedTopSellingData = _updateTopSellingData(
+            currentState.topSellingData, 
+            newPeriodData,
+          );
+          
+          emit(SalesDashboardLoaded(
+            salesDashboardTopPart: currentState.salesDashboardTopPart,
+            salesData: currentState.salesData,
+            netProfitData: currentState.netProfitData,
+            orderDashboardData: currentState.orderDashboardData,
+            expenseStructureData: currentState.expenseStructureData,
+            profitabilityData: currentState.profitabilityData,
+            topSellingData: updatedTopSellingData,
+            illiquidGoodsData: currentState.illiquidGoodsData,
+          ));
+        }
+        
+        debugPrint("✅ Top selling data reloaded for period: ${event.period.name}");
+      } catch (e) {
+        debugPrint("❌ Error reloading top selling data for period ${event.period.name}: $e");
+        // Не показываем ошибку пользователю, просто логируем
+      }
+    });
+
     // Start loading on initialization
     add(LoadPriorityData());
+  }
+
+  /// Обновляет список topSellingData новыми данными для периода
+  List<AllTopSellingData> _updateTopSellingData(
+    List<AllTopSellingData> currentData,
+    AllTopSellingData newData,
+  ) {
+    final updatedList = [...currentData];
+    final index = updatedList.indexWhere((item) => item.period == newData.period);
+    
+    if (index != -1) {
+      // Заменяем существующие данные
+      updatedList[index] = newData;
+    } else {
+      // Добавляем новые данные
+      updatedList.add(newData);
+    }
+    
+    return updatedList;
   }
 }

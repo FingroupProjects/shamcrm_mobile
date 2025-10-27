@@ -22,6 +22,16 @@ class ReloadAllData extends SalesDashboardEvent {
   List<Object> get props => [];
 }
 
+/// Reload top selling data for specific period
+class ReloadTopSellingData extends SalesDashboardEvent {
+  final TopSellingTimePeriod period;
+  
+  const ReloadTopSellingData(this.period);
+  
+  @override
+  List<Object> get props => [period];
+}
+
 /// Legacy event for backward compatibility
 class LoadInitialData extends SalesDashboardEvent {
   @override
