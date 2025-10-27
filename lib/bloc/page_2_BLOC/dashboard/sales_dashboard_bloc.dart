@@ -87,7 +87,7 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
         final orderDashboardData = results[1] as List<AllOrdersData>;
         final expenseStructureData = results[2] as List<AllExpensesData>;
         final profitabilityData = results[3] as List<AllProfitabilityData>;
-        final salesData = results[4] as SalesResponse;
+        final salesData = results[4] as List<AllSalesDynamicsData>;
 
         debugPrint("✅ Wave 2: Secondary data loaded successfully");
 
@@ -188,6 +188,42 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
       }
     });
 
+    // Reload sales dynamics data for specific period
+    on<ReloadSalesDynamicsData>((event, emit) async {
+      debugPrint("🔄 Reloading sales dynamics data for period: ${event.period.name}");
+      
+      try {
+        final currentState = state;
+        
+        // Загружаем данные для нового периода
+        final newPeriodData = await apiService.getSalesDynamicsForPeriod(event.period);
+        
+        // Обновляем только если состояние SalesDashboardFullyLoaded
+        if (currentState is SalesDashboardFullyLoaded) {
+          final updatedSalesDynamicsData = _updateSalesDynamicsData(
+            currentState.salesData, 
+            newPeriodData,
+          );
+          
+          emit(SalesDashboardFullyLoaded(
+            salesDashboardTopPart: currentState.salesDashboardTopPart,
+            topSellingData: currentState.topSellingData,
+            illiquidGoodsData: currentState.illiquidGoodsData,
+            salesData: updatedSalesDynamicsData,
+            netProfitData: currentState.netProfitData,
+            orderDashboardData: currentState.orderDashboardData,
+            expenseStructureData: currentState.expenseStructureData,
+            profitabilityData: currentState.profitabilityData,
+          ));
+        }
+        
+        debugPrint("✅ Sales dynamics data reloaded for period: ${event.period.name}");
+      } catch (e) {
+        debugPrint("❌ Error reloading sales dynamics data for period ${event.period.name}: $e");
+        // Не показываем ошибку пользователю, просто логируем
+      }
+    });
+
     // Start loading on initialization
     add(LoadPriorityData());
   }
@@ -196,6 +232,25 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
   List<AllTopSellingData> _updateTopSellingData(
     List<AllTopSellingData> currentData,
     AllTopSellingData newData,
+  ) {
+    final updatedList = [...currentData];
+    final index = updatedList.indexWhere((item) => item.period == newData.period);
+    
+    if (index != -1) {
+      // Заменяем существующие данные
+      updatedList[index] = newData;
+    } else {
+      // Добавляем новые данные
+      updatedList.add(newData);
+    }
+    
+    return updatedList;
+  }
+
+  /// Обновляет список salesDynamicsData новыми данными для периода
+  List<AllSalesDynamicsData> _updateSalesDynamicsData(
+    List<AllSalesDynamicsData> currentData,
+    AllSalesDynamicsData newData,
   ) {
     final updatedList = [...currentData];
     final index = updatedList.indexWhere((item) => item.period == newData.period);

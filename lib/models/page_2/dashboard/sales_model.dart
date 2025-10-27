@@ -135,3 +135,14 @@ class Summary {
     };
   }
 }
+
+// Enum для периодов sales dynamics
+enum SalesDynamicsTimePeriod { year, previousYear }
+
+// Обертка для sales dynamics с информацией о периоде
+class AllSalesDynamicsData {
+  final SalesDynamicsTimePeriod period;
+  final SalesResponse data;
+
+  AllSalesDynamicsData({required this.period, required this.data});
+}

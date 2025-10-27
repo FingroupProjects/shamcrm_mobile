@@ -56,7 +56,7 @@ class SalesDashboardFullyLoaded extends SalesDashboardState {
   final DashboardTopPart salesDashboardTopPart;
   final List<AllTopSellingData> topSellingData;
   final IlliquidGoodsResponse illiquidGoodsData;
-  final SalesResponse salesData;
+  final List<AllSalesDynamicsData> salesData;
   final List<AllNetProfitData> netProfitData;
   final List<AllOrdersData> orderDashboardData;
   final List<AllExpensesData> expenseStructureData;
@@ -89,7 +89,7 @@ class SalesDashboardFullyLoaded extends SalesDashboardState {
 /// Legacy state for backward compatibility
 class SalesDashboardLoaded extends SalesDashboardState {
   final DashboardTopPart? salesDashboardTopPart;
-  final SalesResponse? salesData;
+  final List<AllSalesDynamicsData>? salesData;
   final List<AllNetProfitData> netProfitData;
   final List<AllOrdersData> orderDashboardData;
   final List<AllExpensesData> expenseStructureData;

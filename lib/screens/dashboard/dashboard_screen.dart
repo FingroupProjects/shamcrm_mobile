@@ -865,7 +865,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 TopPart(
                   state: SalesDashboardLoaded(
                     salesDashboardTopPart: state.salesDashboardTopPart,
-                    salesData: state.salesData,
+                    salesData: state.salesData, // TopPart не использует salesData
                     netProfitData: state.netProfitData,
                     orderDashboardData: state.orderDashboardData,
                     expenseStructureData: state.expenseStructureData,
@@ -919,9 +919,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(height: 16),
                 TopSellingProductsChart(state.topSellingData),
                 const SizedBox(height: 16),
-                if (state.salesData != null)
+                if (state.salesData != null && state.salesData!.isNotEmpty)
                   SalesDynamicsLineChart(state.salesData!),
-                if (state.salesData != null)
+                if (state.salesData != null && state.salesData!.isNotEmpty)
                   const SizedBox(height: 16),
                 NetProfitChart(state.netProfitData),
                 const SizedBox(height: 16),

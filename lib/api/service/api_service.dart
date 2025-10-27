@@ -14781,23 +14781,70 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     return allExpensesData;
   }
 
-  Future<SalesResponse> getSalesDynamics() async {
-    // Формируем параметры запроса
-    var path = await _appendQueryParams('/dashboard/sales-dynamics');
+  Future<List<AllSalesDynamicsData>> getSalesDynamics() async {
+    // Define all periods to fetch
+    final periods = [
+      SalesDynamicsTimePeriod.year,
+      SalesDynamicsTimePeriod.previousYear,
+    ];
 
-    debugPrint("ApiService: getSalesDynamics path: $path");
+    // List to store results
+    final List<AllSalesDynamicsData> allSalesDynamicsData = [];
 
-    final response = await _getRequest(path);
+    // Iterate through each period
+    for (final period in periods) {
+      try {
+        final periodData = await getSalesDynamicsForPeriod(period);
+        allSalesDynamicsData.add(periodData);
+      } catch (e) {
+        debugPrint("Error fetching sales dynamics for period $period: $e");
+        // Продолжаем загрузку других периодов даже при ошибке
+      }
+    }
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      return SalesResponse.fromJson(data);
-    } else {
-      final message = _extractErrorMessageFromResponse(response);
-      throw ApiException(
-        message ?? 'Ошибка',
-        response.statusCode,
-      );
+    return allSalesDynamicsData;
+  }
+
+  /// Загрузка данных sales dynamics для конкретного периода
+  Future<AllSalesDynamicsData> getSalesDynamicsForPeriod(
+    SalesDynamicsTimePeriod period,
+  ) async {
+    // Формируем параметры в зависимости от периода
+    String periodParam;
+    switch (period) {
+      case SalesDynamicsTimePeriod.year:
+        periodParam = 'year';
+        break;
+      case SalesDynamicsTimePeriod.previousYear:
+        periodParam = 'last_year';
+        break;
+    }
+
+    var path = await _appendQueryParams('/dashboard/sales-dynamics?period=$periodParam');
+    
+    debugPrint("ApiService: getSalesDynamicsForPeriod path: $path for period: ${period.name}");
+
+    try {
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final salesResponse = SalesResponse.fromJson(data);
+
+        return AllSalesDynamicsData(
+          period: period,
+          data: salesResponse,
+        );
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка загрузки данных для периода ${period.name}',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      debugPrint("Error fetching sales dynamics for period $period: $e");
+      rethrow;
     }
   }
 
