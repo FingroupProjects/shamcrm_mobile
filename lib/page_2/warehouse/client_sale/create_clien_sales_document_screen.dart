@@ -19,6 +19,8 @@ import 'package:intl/intl.dart';
 
 import '../../../bloc/page_2_BLOC/variant_bloc/variant_bloc.dart';
 import '../../../bloc/page_2_BLOC/variant_bloc/variant_event.dart';
+import '../../../bloc/lead_list/lead_list_bloc.dart';
+import '../../../bloc/lead_list/lead_list_event.dart';
 
 class CreateClienSalesDocumentScreen extends StatefulWidget {
   final int? organizationId;
@@ -60,8 +62,22 @@ class CreateClienSalesDocumentScreenState
     super.initState();
     _dateController.text =
         DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
+    
+    // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Принудительно сбрасываем кэш лидов
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        // Вариант 1: Если есть событие ResetLeadState
+        // context.read<GetAllLeadBloc>().add(ResetLeadState());
+        
+        // Вариант 2: Принудительно загружаем заново (даже если есть кэш)
+        context.read<GetAllLeadBloc>().add(GetAllLeadEv(
+          showDebt: true,
+          // forceRefresh: true, // Если ваш BLoC поддерживает этот параметры
+        ));
+      }
+    });
+    
     context.read<VariantBloc>().add(FetchVariants());
-
     _tabController = TabController(length: 2, vsync: this);
   }
 
@@ -490,7 +506,6 @@ class CreateClienSalesDocumentScreenState
                     child: TabBarView(
                       controller: _tabController,
                       children: [
-                        // ✅ Оборачиваем вкладки в KeepAliveWrapper
                         _KeepAliveWrapper(child: _buildMainTab(localizations)),
                         _KeepAliveWrapper(child: _buildGoodsTab(localizations)),
                       ],
@@ -1127,7 +1142,6 @@ class CreateClienSalesDocumentScreenState
   }
 }
 
-// ✅ НОВЫЙ ВИДЖЕТ: Обёртка для сохранения состояния вкладок
 class _KeepAliveWrapper extends StatefulWidget {
   final Widget child;
 
@@ -1144,7 +1158,7 @@ class _KeepAliveWrapperState extends State<_KeepAliveWrapper>
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // ← Обязательно вызываем super.build
+    super.build(context);
     return widget.child;
   }
 }

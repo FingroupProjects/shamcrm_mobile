@@ -366,6 +366,7 @@ Future<void> _initializeFirebaseMessaging(ApiService apiService) async {
 // ПОЛУЧЕНИЕ FCM ТОКЕНА
 // =============================================================================
 
+// В main.dart - ИЗМЕНЯЕМ функцию getFCMTokens
 Future<void> getFCMTokens(ApiService apiService) async {
   try {
     print('FCM Token: Начало получения');
@@ -389,9 +390,15 @@ Future<void> getFCMTokens(ApiService apiService) async {
     
     if (fcmToken != null && fcmToken.isNotEmpty) {
       print('FCM Token: Успешно получен (${fcmToken.substring(0, 20)}...)');
+      print('FCM Token: Полный токен: $fcmToken');
       
-      // Можно отправить на сервер если нужно
-      // await apiService.saveFCMToken(fcmToken);
+      // ✅ ОТПРАВЛЯЕМ ТОКЕН НА СЕРВЕР
+      try {
+        await apiService.sendDeviceToken(fcmToken);
+        print('FCM Token: Успешно отправлен на сервер');
+      } catch (e) {
+        print('FCM Token: Ошибка отправки на сервер: $e');
+      }
       
     } else {
       print('FCM Token: Токен не получен (null или пустой)');
@@ -399,7 +406,6 @@ Future<void> getFCMTokens(ApiService apiService) async {
     
   } catch (e) {
     print('FCM Token: Ошибка получения: $e');
-    // НЕ критично - продолжаем без токена
   }
 }
 

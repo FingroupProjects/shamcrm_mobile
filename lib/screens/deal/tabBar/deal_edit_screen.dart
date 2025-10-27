@@ -295,12 +295,21 @@ class _DealEditScreenState extends State<DealEditScreen> {
     );
   }
 
- Future<void> _pickFile() async {
-  // Вычисляем текущий общий размер файлов
-  double totalSize = selectedFiles.fold<double>(
-    0.0,
-    (sum, file) => sum + File(file).lengthSync() / (1024 * 1024),
-  );
+Future<void> _pickFile() async {
+  // ✅ ИСПРАВЛЕНИЕ: Вычисляем размер только для НОВЫХ файлов
+  double totalSize = 0.0;
+  
+  // Считаем размер только новых файлов (которые есть локально)
+  for (var filePath in newFiles) {
+    try {
+      final file = File(filePath);
+      if (await file.exists()) {
+        totalSize += file.lengthSync() / (1024 * 1024);
+      }
+    } catch (e) {
+      print('Error calculating file size: $e');
+    }
+  }
 
   // Показываем диалог выбора типа файла
   final List<PickedFileInfo>? pickedFiles = await FilePickerDialog.show(
@@ -323,6 +332,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
         selectedFiles.add(file.path);
         fileNames.add(file.name);
         fileSizes.add(file.sizeKB);
+        newFiles.add(file.path);
       }
     });
   }
@@ -378,65 +388,76 @@ Widget _buildFileSelection() {
             
             // Отображение выбранных файлов
             final fileName = fileNames[index];
+            final filePath = selectedFiles[index];
             final fileExtension = fileName.split('.').last.toLowerCase();
             
-            return Padding(
-              padding: EdgeInsets.only(right: 16),
-              child: Stack(
-                children: [
-                  Container(
-                    width: 100,
-                    child: Column(
-                      children: [
-                        // НОВОЕ: Используем метод _buildFileIcon для показа превью или иконки
-                        _buildFileIcon(fileName, fileExtension),
-                        SizedBox(height: 8),
-                        Text(
-                          fileName,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontFamily: 'Gilroy',
-                            color: Color(0xff1E2E52),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Кнопка удаления файла
-                  Positioned(
-                    right: -2,
-                    top: -6,
-                    child: GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          selectedFiles.removeAt(index);
-                          fileNames.removeAt(index);
-                          fileSizes.removeAt(index);
-                        });
-                      },
-                      child: Container(
-                        padding: EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 4,
-                              offset: Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Icon(Icons.close, size: 16, color: Color(0xff1E2E52)),
-                      ),
-                    ),
-                  ),
-                ],
+       return Padding(
+  padding: EdgeInsets.only(right: 24), // ✅ Увеличили с 16 до 24
+  child: Stack(
+    clipBehavior: Clip.none,
+    children: [
+      Container(
+        width: 100,
+        child: Column(
+          children: [
+            _buildFileIcon(fileName, fileExtension),
+            SizedBox(height: 8),
+            Text(
+              fileName,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                fontFamily: 'Gilroy',
+                color: Color(0xff1E2E52),
               ),
-            );
+            ),
+          ],
+        ),
+      ),
+      // Кнопка удаления файла
+      Positioned(
+        right: -2,  // Оставляем как было
+        top: -6,    // Оставляем как было
+        child: GestureDetector(
+          onTap: () {
+            setState(() {
+              final removedPath = selectedFiles[index];
+              
+              bool isExistingFile = existingFiles.any((f) => f.path == removedPath);
+              
+              if (isExistingFile) {
+                existingFiles.removeWhere((f) => f.path == removedPath);
+              } else {
+                newFiles.remove(removedPath);
+              }
+              
+              selectedFiles.removeAt(index);
+              fileNames.removeAt(index);
+              fileSizes.removeAt(index);
+            });
+          },
+          child: Container(
+            padding: EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 4,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Icon(Icons.close, size: 16, color: Color(0xff1E2E52)),
+          ),
+        ),
+      ),
+    ],
+  ),
+);
           },
         ),
       ),

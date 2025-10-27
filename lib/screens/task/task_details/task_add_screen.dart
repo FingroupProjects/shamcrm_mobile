@@ -227,7 +227,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     });
   }
 
- Widget _buildFileSelection() {
+Widget _buildFileSelection() {
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
@@ -247,7 +247,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
           scrollDirection: Axis.horizontal,
           itemCount: fileNames.isEmpty ? 1 : fileNames.length + 1,
           itemBuilder: (context, index) {
-            // Кнопка добавления файла
             if (fileNames.isEmpty || index == fileNames.length) {
               return Padding(
                 padding: EdgeInsets.only(right: 16),
@@ -275,7 +274,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
               );
             }
             
-            // Отображение выбранных файлов
             final fileName = fileNames[index];
             final fileExtension = fileName.split('.').last.toLowerCase();
             
@@ -287,8 +285,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                     width: 100,
                     child: Column(
                       children: [
-                        // НОВОЕ: Используем метод _buildFileIcon для показа превью или иконки
-                        _buildFileIcon(fileName, fileExtension),
+                        // ✅ КРИТИЧЕСКИ ВАЖНО: Передаем INDEX, а не fileName!
+                        _buildFileIcon(index, fileExtension),
                         SizedBox(height: 8),
                         Text(
                           fileName,
@@ -304,13 +302,16 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                       ],
                     ),
                   ),
-                  // Кнопка удаления файла
                   Positioned(
                     right: -2,
                     top: -6,
                     child: GestureDetector(
                       onTap: () {
                         setState(() {
+                          // Для deal_edit и других *_edit файлов:
+                          // ДОБАВЬТЕ проверку на existingFiles!
+                          // (см. отдельный блок ниже)
+                          
                           selectedFiles.removeAt(index);
                           fileNames.removeAt(index);
                           fileSizes.removeAt(index);
@@ -343,19 +344,28 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   );
 }
 
+
 // ==========================================
 // НОВЫЙ ВСПОМОГАТЕЛЬНЫЙ МЕТОД
 // Добавьте этот метод в класс _DealAddScreenState
 // ==========================================
 
 /// Строит иконку файла или превью изображения
-Widget _buildFileIcon(String fileName, String fileExtension) {
-  // Список расширений изображений
+Widget _buildFileIcon(int index, String fileExtension) {
+  // ✅ ВАЖНО: Проверка валидности индекса!
+  if (index < 0 || index >= selectedFiles.length) {
+    return Image.asset(
+      'assets/icons/files/file.png',
+      width: 60,
+      height: 60,
+    );
+  }
+
   final imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'heic', 'heif'];
   
-  // Если файл - изображение, показываем превью
   if (imageExtensions.contains(fileExtension)) {
-    final filePath = selectedFiles[fileNames.indexOf(fileName)];
+    // ✅ ИСПРАВЛЕНИЕ: Используем index напрямую, БЕЗ indexOf()!
+    final filePath = selectedFiles[index];
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
       child: Image.file(
@@ -364,7 +374,6 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
         height: 60,
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
-          // Если не удалось загрузить превью, показываем иконку
           return Image.asset(
             'assets/icons/files/file.png',
             width: 60,
@@ -374,13 +383,11 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
       ),
     );
   } else {
-    // Для остальных типов файлов показываем иконку по расширению
     return Image.asset(
       'assets/icons/files/$fileExtension.png',
       width: 60,
       height: 60,
       errorBuilder: (context, error, stackTrace) {
-        // Если нет иконки для этого типа, показываем общую иконку файла
         return Image.asset(
           'assets/icons/files/file.png',
           width: 60,
@@ -390,6 +397,7 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
     );
   }
 }
+
 
  Future<void> _pickFile() async {
   // Вычисляем текущий общий размер файлов

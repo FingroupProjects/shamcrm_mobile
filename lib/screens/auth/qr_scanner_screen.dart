@@ -68,7 +68,24 @@ void _onDetect(BarcodeCapture barcodeCapture) async {
 
         final apiService = context.read<ApiService>();
 
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => PinSetupScreen()));
+       Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => PinSetupScreen()));
+
+// Отправка FCM токена с улучшенной обработкой ошибок
+try {
+  print('QrScanner: Получение FCM токена');
+  String? fcmToken = await FirebaseMessaging.instance.getToken();
+  
+  if (fcmToken != null && fcmToken.isNotEmpty) {
+    print('QrScanner: FCM токен получен: ${fcmToken.substring(0, 20)}...');
+    await apiService.sendDeviceToken(fcmToken);
+    print('QrScanner: FCM токен успешно отправлен');
+  } else {
+    print('QrScanner: FCM токен null или пустой');
+  }
+} catch (e, stackTrace) {
+  print('QrScanner: Ошибка отправки FCM токена: $e');
+  print('QrScanner: StackTrace: $stackTrace');
+}
         
         String? fcmToken = await FirebaseMessaging.instance.getToken();
         if (fcmToken != null) {
@@ -139,6 +156,23 @@ Future<void> _pickFile() async {
             final apiService = context.read<ApiService>();
 
             Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => PinSetupScreen()));
+
+// Отправка FCM токена с улучшенной обработкой ошибок
+try {
+  print('QrScanner: Получение FCM токена');
+  String? fcmToken = await FirebaseMessaging.instance.getToken();
+  
+  if (fcmToken != null && fcmToken.isNotEmpty) {
+    print('QrScanner: FCM токен получен: ${fcmToken.substring(0, 20)}...');
+    await apiService.sendDeviceToken(fcmToken);
+    print('QrScanner: FCM токен успешно отправлен');
+  } else {
+    print('QrScanner: FCM токен null или пустой');
+  }
+} catch (e, stackTrace) {
+  print('QrScanner: Ошибка отправки FCM токена: $e');
+  print('QrScanner: StackTrace: $stackTrace');
+}
             
             String? fcmToken = await FirebaseMessaging.instance.getToken();
             if (fcmToken != null) {
