@@ -772,15 +772,22 @@ Future<http.Response> _patchRequest(
   //_________________________________ START___API__METHOD__POST__DEVICE__TOKEN_________________________________________________//
 
   // Добавление метода для отправки токена устройства
-  Future<void> sendDeviceToken(String deviceToken) async {
-    final token =
-        await getToken(); // Получаем токен пользователя (если он есть)
-    // Эндпоинт /add-fcm-token входит в _excludedEndpoints, поэтому не используем _appendQueryParams
+Future<void> sendDeviceToken(String deviceToken) async {
+  try {
+    print('sendDeviceToken: Начало отправки токена');
+    
+    final token = await getToken();
     final organizationId = await getSelectedOrganization();
+    
+    print('sendDeviceToken: User token: ${token != null ? "exists" : "null"}');
+    print('sendDeviceToken: Organization ID: $organizationId');
+    print('sendDeviceToken: BaseUrl: $baseUrl');
+    
+    final url = '$baseUrl/add-fcm-token${organizationId != null ? '?organization_id=$organizationId' : ''}';
+    print('sendDeviceToken: Full URL: $url');
 
     final response = await http.post(
-      Uri.parse(
-          '$baseUrl/add-fcm-token${organizationId != null ? '?organization_id=$organizationId' : ''}'), // Используем оригинальный путь, так как исключён
+      Uri.parse(url),
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -788,19 +795,55 @@ Future<http.Response> _patchRequest(
         'Device': 'mobile'
       },
       body: json.encode({
-        'type': 'mobile', // Указываем тип устройства
-        'token': deviceToken, // Передаем FCM-токен устройства
+        'type': 'mobile',
+        'token': deviceToken,
       }),
     );
 
-    if (response.statusCode == 200) {
-      ////print('FCM-токен успешно отправлен!');
-    } else {
-      ////print('Ошибка при отправке FCM-токена!');
-      throw Exception('Ошибка!');
-    }
-  }
+    print('sendDeviceToken: Response status: ${response.statusCode}');
+    print('sendDeviceToken: Response body: ${response.body}');
 
+    if (response.statusCode == 200) {
+      print('sendDeviceToken: ✅ FCM-токен успешно отправлен!');
+    } else {
+      print('sendDeviceToken: ❌ Ошибка ${response.statusCode}: ${response.body}');
+      throw Exception('Ошибка отправки FCM-токена: ${response.statusCode}');
+    }
+  } catch (e, stackTrace) {
+    print('sendDeviceToken: ❌ Exception: $e');
+    print('sendDeviceToken: StackTrace: $stackTrace');
+    rethrow;
+  }
+}Future<void> sendPendingFCMToken() async {
+  try {
+    print('ApiService: Проверка отложенного FCM токена');
+    
+    final prefs = await SharedPreferences.getInstance();
+    final pendingToken = prefs.getString('pending_fcm_token');
+    
+    if (pendingToken != null && pendingToken.isNotEmpty) {
+      print('ApiService: Найден отложенный FCM токен, отправляем на сервер');
+      
+      // Проверяем что baseUrl инициализирован
+      // if (baseUrl.isEmpty) {
+      //   print('ApiService: baseUrl не инициализирован, пропускаем отправку');
+      //   return;
+      // }
+      
+      await sendDeviceToken(pendingToken);
+      
+      // Удаляем токен после успешной отправки
+      await prefs.remove('pending_fcm_token');
+      print('ApiService: FCM токен успешно отправлен и удалён из локального хранилища');
+      
+    } else {
+      print('ApiService: Отложенный FCM токен не найден');
+    }
+    
+  } catch (e) {
+    print('ApiService: Ошибка отправки отложенного FCM токена: $e');
+  }
+}
 //_________________________________ END___API__METHOD__POST__DEVICE__TOKEN_________________________________________________//
   // Новый метод для получения домена из QR данных
   Future<String?> _getQrDomain() async {

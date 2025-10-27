@@ -96,6 +96,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   bool _canUpdateTask = false;
   bool _hasTaskCreateForMySelfPermission = false;
   int? _currentUserId;
+  List<String> newFiles = []; // Список для отслеживания новых файлов
 
   @override
   void initState() {
@@ -404,20 +405,26 @@ Widget _buildFileSelection() {
               );
             }
             
+            // ✅ ИСПРАВЛЕНИЕ: Проверка границ
+            if (index < 0 || index >= fileNames.length) {
+              return SizedBox.shrink();
+            }
+            
             // Отображение выбранных файлов
             final fileName = fileNames[index];
             final fileExtension = fileName.split('.').last.toLowerCase();
             
             return Padding(
-              padding: EdgeInsets.only(right: 16),
+              padding: EdgeInsets.only(right: 24),
               child: Stack(
+                clipBehavior: Clip.none,
                 children: [
                   Container(
                     width: 100,
                     child: Column(
                       children: [
-                        // НОВОЕ: Используем метод _buildFileIcon для показа превью или иконки
-                        _buildFileIcon(fileName, fileExtension),
+                        // ✅ ИСПРАВЛЕНИЕ: Передаём index
+                        _buildFileIcon(fileName, fileExtension, index),
                         SizedBox(height: 8),
                         Text(
                           fileName,
@@ -433,16 +440,28 @@ Widget _buildFileSelection() {
                       ],
                     ),
                   ),
-                  // Кнопка удаления файла
                   Positioned(
                     right: -2,
                     top: -6,
                     child: GestureDetector(
                       onTap: () {
                         setState(() {
-                          selectedFiles.removeAt(index);
-                          fileNames.removeAt(index);
-                          fileSizes.removeAt(index);
+                          // ✅ ИСПРАВЛЕНИЕ: Дополнительная проверка
+                          if (index >= 0 && index < selectedFiles.length) {
+                            final removedPath = selectedFiles[index];
+                            
+                            bool isExistingFile = existingFiles.any((f) => f.path == removedPath);
+                            
+                            if (isExistingFile) {
+                              existingFiles.removeWhere((f) => f.path == removedPath);
+                            } else {
+                              newFiles.remove(removedPath);
+                            }
+                            
+                            selectedFiles.removeAt(index);
+                            fileNames.removeAt(index);
+                            fileSizes.removeAt(index);
+                          }
                         });
                       },
                       child: Container(
@@ -478,38 +497,64 @@ Widget _buildFileSelection() {
 // ==========================================
 
 /// Строит иконку файла или превью изображения
-Widget _buildFileIcon(String fileName, String fileExtension) {
-  // Список расширений изображений
+/// Строит иконку файла или превью изображения
+/// Строит иконку файла или превью изображения
+Widget _buildFileIcon(String fileName, String fileExtension, int index) {
   final imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'heic', 'heif'];
   
-  // Если файл - изображение, показываем превью
   if (imageExtensions.contains(fileExtension)) {
-    final filePath = selectedFiles[fileNames.indexOf(fileName)];
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: Image.file(
-        File(filePath),
+    // ✅ ИСПРАВЛЕНИЕ: Проверяем, что index не выходит за границы
+    if (index < 0 || index >= selectedFiles.length) {
+      return Image.asset(
+        'assets/icons/files/file.png',
         width: 60,
         height: 60,
-        fit: BoxFit.cover,
+      );
+    }
+    
+    final filePath = selectedFiles[index];
+    final file = File(filePath);
+    
+    // Проверяем, существует ли файл локально
+    if (file.existsSync()) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.file(
+          file,
+          width: 60,
+          height: 60,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return Image.asset(
+              'assets/icons/files/file.png',
+              width: 60,
+              height: 60,
+            );
+          },
+        ),
+      );
+    } else {
+      // Файл с сервера - показываем иконку
+      return Image.asset(
+        'assets/icons/files/$fileExtension.png',
+        width: 60,
+        height: 60,
         errorBuilder: (context, error, stackTrace) {
-          // Если не удалось загрузить превью, показываем иконку
           return Image.asset(
             'assets/icons/files/file.png',
             width: 60,
             height: 60,
           );
         },
-      ),
-    );
+      );
+    }
   } else {
-    // Для остальных типов файлов показываем иконку по расширению
+    // Для остальных типов файлов
     return Image.asset(
       'assets/icons/files/$fileExtension.png',
       width: 60,
       height: 60,
       errorBuilder: (context, error, stackTrace) {
-        // Если нет иконки для этого типа, показываем общую иконку файла
         return Image.asset(
           'assets/icons/files/file.png',
           width: 60,
@@ -520,14 +565,21 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
   }
 }
 
-  Future<void> _pickFile() async {
-  // Вычисляем текущий общий размер файлов
-  double totalSize = selectedFiles.fold<double>(
-    0.0,
-    (sum, file) => sum + File(file).lengthSync() / (1024 * 1024),
-  );
+ Future<void> _pickFile() async {
+  // ✅ ИСПРАВЛЕНИЕ: Считаем размер только новых файлов
+  double totalSize = 0.0;
+  
+  for (var filePath in newFiles) {
+    try {
+      final file = File(filePath);
+      if (await file.exists()) {
+        totalSize += file.lengthSync() / (1024 * 1024);
+      }
+    } catch (e) {
+      print('Error calculating file size: $e');
+    }
+  }
 
-  // Показываем диалог выбора типа файла
   final List<PickedFileInfo>? pickedFiles = await FilePickerDialog.show(
     context: context,
     allowMultiple: true,
@@ -541,13 +593,14 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
     errorPickingFileMessage: AppLocalizations.of(context)!.translate('error_picking_file'),
   );
 
-  // Если файлы выбраны, добавляем их
   if (pickedFiles != null && pickedFiles.isNotEmpty) {
     setState(() {
       for (var file in pickedFiles) {
         selectedFiles.add(file.path);
         fileNames.add(file.name);
         fileSizes.add(file.sizeKB);
+        // ✅ ВАЖНО: Добавляем в список новых файлов
+        newFiles.add(file.path);
       }
     });
   }

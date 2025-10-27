@@ -55,24 +55,44 @@ class LoginScreen extends StatelessWidget {
               print('Saved hasMiniApp: $hasMiniApp');
 
               // Получение и отправка FCM-токена с проверкой APNS
-              try {
-                String? fcmToken;
-                if (Platform.isIOS) {
-                  String? apnsToken = await FirebaseMessaging.instance.getAPNSToken();
-                  if (apnsToken == null) {
-                    //print('APNS token is not available yet. Skipping FCM token retrieval.');
-                  } else {
-                    fcmToken = await FirebaseMessaging.instance.getToken();
-                  }
-                } else {
-                  fcmToken = await FirebaseMessaging.instance.getToken();
-                }
-                if (fcmToken != null) {
-                  await apiService.sendDeviceToken(fcmToken);
-                } else {
-                  //print('Failed to get FCM token');
-                }
-              } catch (e) {
+              // Получение и отправка FCM-токена с проверкой APNS
+// Получение и отправка FCM-токена
+try {
+  print('LoginScreen: Начало получения FCM токена');
+  
+  String? fcmToken;
+  
+  if (Platform.isIOS) {
+    // Для iOS сначала проверяем APNS
+    String? apnsToken = await FirebaseMessaging.instance.getAPNSToken();
+    print('LoginScreen: APNS token: ${apnsToken != null ? "получен" : "null"}');
+    
+    if (apnsToken != null) {
+      fcmToken = await FirebaseMessaging.instance.getToken();
+    } else {
+      print('LoginScreen: APNS токен недоступен, пробуем получить FCM без него');
+      // Пробуем получить FCM токен даже без APNS
+      fcmToken = await FirebaseMessaging.instance.getToken();
+    }
+  } else {
+    // Для Android
+    fcmToken = await FirebaseMessaging.instance.getToken();
+  }
+  
+  if (fcmToken != null && fcmToken.isNotEmpty) {
+    print('LoginScreen: FCM токен получен: ${fcmToken.substring(0, 20)}...');
+    await apiService.sendDeviceToken(fcmToken);
+    print('LoginScreen: FCM токен отправлен на сервер');
+  } else {
+    print('LoginScreen: ❌ Не удалось получить FCM токен');
+  }
+} catch (e, stackTrace) {
+  print('LoginScreen: Ошибка получения/отправки FCM токена: $e');
+  print('LoginScreen: StackTrace: $stackTrace');
+}catch (e) {
+  print('LoginScreen: Ошибка с FCM токеном, пробуем отложенный: $e');
+  await apiService.sendPendingFCMToken();
+}catch (e) {
                 //print('Error getting FCM token: $e');
               }
 

@@ -107,7 +107,6 @@ class CreateDeal extends DealEvent {
     required this.localizations,
   });
 }
-
 class UpdateDeal extends DealEvent {
   final int dealId;
   final String name;

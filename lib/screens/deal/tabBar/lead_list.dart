@@ -32,40 +32,55 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
   void initState() {
     super.initState();
     if (kDebugMode) {
-      //print('🟢 LeadWidget: initState - showDebt=${widget.showDebt}');
+      print('🟢 LeadWidget: initState - showDebt=${widget.showDebt}');
     }
 
+    // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Всегда загружаем данные заново
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        final state = context.read<GetAllLeadBloc>().state;
-
         if (kDebugMode) {
-          //print('🟢 LeadWidget: postFrameCallback - state=${state.runtimeType}');
+          print('🔥 LeadWidget: Принудительная загрузка данных (игнорируем кэш)');
         }
-
-        if (state is GetAllLeadSuccess) {
-          leadsList = state.dataLead.result ?? [];
-          if (kDebugMode) {
-            //print('🟢 LeadWidget: Found cached data - ${leadsList.length} leads');
-          }
-          _updateSelectedLeadData();
-        }
-
-        if (state is! GetAllLeadSuccess) {
-          if (kDebugMode) {
-            //print('🟢 LeadWidget: Dispatching GetAllLeadEv(showDebt=${widget.showDebt})');
-          }
-          context.read<GetAllLeadBloc>().add(GetAllLeadEv(showDebt: widget.showDebt));
-        }
+        
+        // Вариант 1: Если в вашем BLoC есть параметр forceRefresh
+        context.read<GetAllLeadBloc>().add(GetAllLeadEv(
+          showDebt: widget.showDebt,
+          // forceRefresh: true, // Раскомментируйте если есть такой параметр
+        ));
+        
+        // Вариант 2: Если нужно сбросить состояние, используйте:
+        // context.read<GetAllLeadBloc>().add(ResetLeadState());
+        // await Future.delayed(Duration(milliseconds: 50));
+        // context.read<GetAllLeadBloc>().add(GetAllLeadEv(showDebt: widget.showDebt));
       }
     });
   }
 
+  @override
+  void didUpdateWidget(LeadRadioGroupWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    
+    // ✅ Перезагружаем данные если изменился параметр showDebt
+    if (oldWidget.showDebt != widget.showDebt) {
+      if (kDebugMode) {
+        print('🔄 LeadWidget: showDebt изменился, перезагружаем данные');
+      }
+      context.read<GetAllLeadBloc>().add(GetAllLeadEv(showDebt: widget.showDebt));
+    }
+    
+    // Обновляем выбранный лид если изменился извне
+    if (oldWidget.selectedLead != widget.selectedLead && leadsList.isNotEmpty) {
+      _updateSelectedLeadData();
+    }
+  }
+
   void _updateSelectedLeadData() {
-    debugPrint("_updateSelectedLeadData started");
+    if (kDebugMode) {
+      print('🔄 LeadWidget: _updateSelectedLeadData started');
+    }
+    
     if (widget.selectedLead != null && leadsList.isNotEmpty) {
       try {
-        // ИСПРАВЛЕНО: Ищем в текущем списке leadsList
         selectedLeadData = leadsList.firstWhere(
           (lead) => lead.id.toString() == widget.selectedLead,
         );
@@ -73,18 +88,20 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
           print('🟢 LeadWidget: Selected lead found - ${selectedLeadData?.name}');
         }
       } catch (e) {
-        selectedLeadData = null; // ИСПРАВЛЕНО: обнуляем если не найден
+        selectedLeadData = null;
         if (kDebugMode) {
           print('🔴 LeadWidget: Selected lead NOT found - searching for ${widget.selectedLead}');
         }
       }
+    } else {
+      selectedLeadData = null;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     if (kDebugMode) {
-      //print('🟡 LeadWidget: build() called');
+      print('🟡 LeadWidget: build() called');
     }
 
     return Column(
@@ -103,7 +120,7 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
         BlocBuilder<GetAllLeadBloc, GetAllLeadState>(
           builder: (context, state) {
             if (kDebugMode) {
-              //print('🔵 LeadWidget BlocBuilder: state=${state.runtimeType}');
+              print('🔵 LeadWidget BlocBuilder: state=${state.runtimeType}');
             }
 
             final isLoading = state is GetAllLeadLoading;
@@ -111,39 +128,31 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
             if (state is GetAllLeadSuccess) {
               leadsList = state.dataLead.result ?? [];
               if (kDebugMode) {
-                //print('🔵 LeadWidget BlocBuilder: SUCCESS - ${leadsList.length} leads loaded');
+                print('🔵 LeadWidget BlocBuilder: SUCCESS - ${leadsList.length} leads loaded');
                 if (leadsList.isNotEmpty) {
-                  //print('🔵 LeadWidget BlocBuilder: First lead = ${leadsList.first.name}, debt=${leadsList.first.debt}');
+                  print('🔵 LeadWidget BlocBuilder: First lead = ${leadsList.first.name}');
                 }
               }
-              // ИСПРАВЛЕНО: Обновляем selectedLeadData из текущего списка
               _updateSelectedLeadData();
             }
 
             if (state is GetAllLeadError) {
               if (kDebugMode) {
-                //print('🔴 LeadWidget BlocBuilder: ERROR - ${state.message}');
+                print('🔴 LeadWidget BlocBuilder: ERROR - ${state.message}');
               }
             }
 
-            if (kDebugMode) {
-              //print('🔵 LeadWidget BlocBuilder: Rendering dropdown - items=${leadsList.length}, isLoading=$isLoading');
-              //print('🔵 LeadWidget BlocBuilder: selectedLeadData=${selectedLeadData?.name}, id=${selectedLeadData?.id}');
-            }
-
-            // ИСПРАВЛЕНО: Проверяем что selectedLeadData действительно в списке
-            final actualInitialItem = (selectedLeadData != null && leadsList.contains(selectedLeadData))
+            // Проверяем что selectedLeadData действительно в списке
+            final actualInitialItem = (selectedLeadData != null && 
+                                      leadsList.isNotEmpty && 
+                                      leadsList.contains(selectedLeadData))
                 ? selectedLeadData
                 : null;
 
-            if (kDebugMode && selectedLeadData != null && !leadsList.contains(selectedLeadData)) {
-              //print('⚠️ LeadWidget: selectedLeadData not in list, resetting to null');
+            if (kDebugMode) {
+              print('🔵 LeadWidget: Rendering dropdown - items=${leadsList.length}, isLoading=$isLoading');
+              print('🔵 LeadWidget: actualInitialItem=${actualInitialItem?.name}');
             }
-
-            debugPrint("LeadWidget dropdown items count: ${leadsList.length}");
-            debugPrint("leadlist ids : ${leadsList.map((e) => e.id).toList()}");
-            debugPrint("LeadWidget selectedLeadData: ${selectedLeadData?.toString()}");
-            debugPrint("leadsList contains selectedLeadData: ${leadsList.contains(selectedLeadData)}");
 
             return CustomDropdown<LeadData>.search(
               closeDropDownOnClearFilterSearch: true,
@@ -166,10 +175,6 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                 expandedBorderRadius: BorderRadius.circular(12),
               ),
               listItemBuilder: (context, item, isSelected, onItemSelect) {
-                if (kDebugMode) {
-                  //print('🟣 LeadWidget: listItemBuilder called for ${item.name}');
-                }
-
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -199,10 +204,6 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                 );
               },
               headerBuilder: (context, selectedItem, enabled) {
-                if (kDebugMode) {
-                  //print('🟣 LeadWidget: headerBuilder called - isLoading=$isLoading, selected=${selectedItem?.name}');
-                }
-
                 if (isLoading) {
                   return const Center(
                     child: SizedBox(
@@ -244,10 +245,6 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                 );
               },
               hintBuilder: (context, hint, enabled) {
-                if (kDebugMode) {
-                  //print('🟣 LeadWidget: hintBuilder called - isLoading=$isLoading');
-                }
-
                 if (isLoading) {
                   return const Center(
                     child: SizedBox(
@@ -272,10 +269,6 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                 );
               },
               noResultFoundBuilder: (context, text) {
-                if (kDebugMode) {
-                  //print('🟣 LeadWidget: noResultFoundBuilder called - isLoading=$isLoading, text=$text');
-                }
-
                 if (isLoading) {
                   return const Center(
                     child: Padding(
@@ -302,7 +295,6 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                 );
               },
               excludeSelected: false,
-              // ИСПРАВЛЕНО: Используем actualInitialItem вместо прямой проверки
               initialItem: actualInitialItem,
               validator: (value) {
                 if (value == null) {
@@ -312,7 +304,7 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
               },
               onChanged: (value) {
                 if (kDebugMode) {
-                  //print('🟢 LeadWidget: onChanged - selected ${value?.name}');
+                  print('🟢 LeadWidget: onChanged - selected ${value?.name}');
                 }
 
                 if (value != null) {
