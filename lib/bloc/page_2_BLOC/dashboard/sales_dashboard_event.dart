@@ -62,6 +62,26 @@ class ReloadOrderQuantityData extends SalesDashboardEvent {
   List<Object> get props => [period];
 }
 
+/// Reload net profit data for specific period
+class ReloadNetProfitData extends SalesDashboardEvent {
+  final NetProfitPeriod period;
+  
+  const ReloadNetProfitData(this.period);
+  
+  @override
+  List<Object> get props => [period];
+}
+
+/// Reload expense structure data for specific period
+class ReloadExpenseStructureData extends SalesDashboardEvent {
+  final ExpensePeriodEnum period;
+  
+  const ReloadExpenseStructureData(this.period);
+  
+  @override
+  List<Object> get props => [period];
+}
+
 /// Legacy event for backward compatibility
 class LoadInitialData extends SalesDashboardEvent {
   @override

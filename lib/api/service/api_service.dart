@@ -14781,6 +14781,38 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     return allExpensesData;
   }
 
+  /// Загрузка данных expense structure для конкретного периода
+  Future<AllExpensesData> getExpenseStructureForPeriod(
+    ExpensePeriodEnum period,
+  ) async {
+    final path = await _appendQueryParams('/fin/dashboard/expense-structure?period=${period.name}');
+    
+    debugPrint("ApiService: getExpenseStructureForPeriod path: $path for period: ${period.name}");
+
+    try {
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final expenseDashboard = ExpenseDashboard.fromJson(data);
+
+        return AllExpensesData(
+          period: period,
+          data: expenseDashboard,
+        );
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка загрузки данных для периода ${period.name}',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      debugPrint("Error fetching expense structure for period $period: $e");
+      rethrow;
+    }
+  }
+
   Future<List<AllSalesDynamicsData>> getSalesDynamics() async {
     // Define all periods to fetch
     final periods = [
@@ -14886,6 +14918,38 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     }
 
     return allNetProfitData;
+  }
+
+  /// Загрузка данных net profit для конкретного периода
+  Future<AllNetProfitData> getNetProfitDataForPeriod(
+    NetProfitPeriod period,
+  ) async {
+    final path = await _appendQueryParams('/dashboard/net-profit?period=${period.name}');
+    
+    debugPrint("ApiService: getNetProfitDataForPeriod path: $path for period: ${period.name}");
+
+    try {
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final netProfitDashboard = NetProfitDashboard.fromJson(data);
+
+        return AllNetProfitData(
+          period: period,
+          data: netProfitDashboard,
+        );
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка загрузки данных для периода ${period.name}',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      debugPrint("Error fetching net profit for period $period: $e");
+      rethrow;
+    }
   }
 
   Future<List<AllOrdersData>> getOrderDashboard() async {

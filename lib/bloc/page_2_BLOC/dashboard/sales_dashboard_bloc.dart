@@ -296,9 +296,77 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
       }
     });
 
+    // Reload net profit data for specific period
+    on<ReloadNetProfitData>((event, emit) async {
+      debugPrint("🔄 Reloading net profit data for period: ${event.period.name}");
+      
+      try {
+        final currentState = state;
+        
+        // Загружаем данные для нового периода
+        final newPeriodData = await apiService.getNetProfitDataForPeriod(event.period);
+        
+        // Обновляем только если состояние SalesDashboardFullyLoaded
+        if (currentState is SalesDashboardFullyLoaded) {
+          final updatedNetProfitData = _updateNetProfitData(
+            currentState.netProfitData, 
+            newPeriodData,
+          );
+          
+          emit(SalesDashboardFullyLoaded(
+            salesDashboardTopPart: currentState.salesDashboardTopPart,
+            topSellingData: currentState.topSellingData,
+            illiquidGoodsData: currentState.illiquidGoodsData,
+            salesData: currentState.salesData,
+            netProfitData: updatedNetProfitData,
+            orderDashboardData: currentState.orderDashboardData,
+            expenseStructureData: currentState.expenseStructureData,
+            profitabilityData: currentState.profitabilityData,
+          ));
+        }
+        
+        debugPrint("✅ Net profit data reloaded for period: ${event.period.name}");
+      } catch (e) {
+        debugPrint("❌ Error reloading net profit data for period ${event.period.name}: $e");
+        // Не показываем ошибку пользователю, просто логируем
+      }
+    });
 
-
-
+    // Reload expense structure data for specific period
+    on<ReloadExpenseStructureData>((event, emit) async {
+      debugPrint("🔄 Reloading expense structure data for period: ${event.period.name}");
+      
+      try {
+        final currentState = state;
+        
+        // Загружаем данные для нового периода
+        final newPeriodData = await apiService.getExpenseStructureForPeriod(event.period);
+        
+        // Обновляем только если состояние SalesDashboardFullyLoaded
+        if (currentState is SalesDashboardFullyLoaded) {
+          final updatedExpenseStructureData = _updateExpenseStructureData(
+            currentState.expenseStructureData, 
+            newPeriodData,
+          );
+          
+          emit(SalesDashboardFullyLoaded(
+            salesDashboardTopPart: currentState.salesDashboardTopPart,
+            topSellingData: currentState.topSellingData,
+            illiquidGoodsData: currentState.illiquidGoodsData,
+            salesData: currentState.salesData,
+            netProfitData: currentState.netProfitData,
+            orderDashboardData: currentState.orderDashboardData,
+            expenseStructureData: updatedExpenseStructureData,
+            profitabilityData: currentState.profitabilityData,
+          ));
+        }
+        
+        debugPrint("✅ Expense structure data reloaded for period: ${event.period.name}");
+      } catch (e) {
+        debugPrint("❌ Error reloading expense structure data for period ${event.period.name}: $e");
+        // Не показываем ошибку пользователю, просто логируем
+      }
+    });
 
     // Start loading on initialization after all updates are implemented
     add(LoadPriorityData());
@@ -365,6 +433,44 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
   List<AllOrdersData> _updateOrderDashboardData(
     List<AllOrdersData> currentData,
     AllOrdersData newData,
+  ) {
+    final updatedList = [...currentData];
+    final index = updatedList.indexWhere((item) => item.period == newData.period);
+    
+    if (index != -1) {
+      // Заменяем существующие данные
+      updatedList[index] = newData;
+    } else {
+      // Добавляем новые данные
+      updatedList.add(newData);
+    }
+    
+    return updatedList;
+  }
+
+  /// Обновляет список netProfitData новыми данными для периода
+  List<AllNetProfitData> _updateNetProfitData(
+    List<AllNetProfitData> currentData,
+    AllNetProfitData newData,
+  ) {
+    final updatedList = [...currentData];
+    final index = updatedList.indexWhere((item) => item.period == newData.period);
+    
+    if (index != -1) {
+      // Заменяем существующие данные
+      updatedList[index] = newData;
+    } else {
+      // Добавляем новые данные
+      updatedList.add(newData);
+    }
+    
+    return updatedList;
+  }
+
+  /// Обновляет список expenseStructureData новыми данными для периода
+  List<AllExpensesData> _updateExpenseStructureData(
+    List<AllExpensesData> currentData,
+    AllExpensesData newData,
   ) {
     final updatedList = [...currentData];
     final index = updatedList.indexWhere((item) => item.period == newData.period);

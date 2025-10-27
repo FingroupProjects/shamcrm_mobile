@@ -2,8 +2,10 @@ import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/net_profit_model.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
+import '../../../../bloc/page_2_BLOC/dashboard/sales_dashboard_bloc.dart';
 import '../../detailed_report/detailed_report_screen.dart';
 import 'download_popup_menu.dart';
 
@@ -40,6 +42,9 @@ class _NetProfitChartState extends State<NetProfitChart> {
       setState(() {
         selectedPeriod = period;
       });
+      
+      // Вызываем перезагрузку данных через Bloc
+      context.read<SalesDashboardBloc>().add(ReloadNetProfitData(period));
     }
   }
 
