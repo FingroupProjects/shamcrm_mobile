@@ -280,6 +280,8 @@ class CreateClienSalesDocumentScreenState
         _items[index]['total'] =
             (_items[index]['quantity'] * _items[index]['price'] * amount)
                 .round();
+
+        _priceControllers[variantId]?.text = (amount * _items[index]['price'] ?? 0.0).toStringAsFixed(3);
       }
     });
   }

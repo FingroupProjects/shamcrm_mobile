@@ -78,20 +78,24 @@ class CreateClientReturnDocumentScreenState extends State<CreateClientReturnDocu
             _collapsedItems[variantId] = true;
           }
 
-          _items.add(newItem);
+          // ✅ Don't use the price from newItem - let user enter it
+          final modifiedItem = Map<String, dynamic>.from(newItem);
+          modifiedItem['price'] = 0.0; // Set to 0 instead of using default price
+
+          _items.add(modifiedItem);
 
           final variantId = newItem['variantId'] as int;
 
-          final initialPrice = newItem['price'] ?? 0.0;
-          _priceControllers[variantId] = TextEditingController(
-              text: initialPrice > 0 ? initialPrice.toStringAsFixed(3) : '');
+          // ✅ Initialize price controller with empty string (no default price)
+          _priceControllers[variantId] = TextEditingController(text: '');
 
           _quantityControllers[variantId] = TextEditingController(text: '');
 
           _quantityFocusNodes[variantId] = FocusNode();
           _priceFocusNodes[variantId] = FocusNode();
 
-          _items.last['price'] = initialPrice;
+          // ✅ Set price to 0 in the item
+          _items.last['price'] = 0.0;
 
           _priceErrors[variantId] = false;
           _quantityErrors[variantId] = false;
@@ -100,7 +104,6 @@ class CreateClientReturnDocumentScreenState extends State<CreateClientReturnDocu
 
           if (!newItem.containsKey('amount')) {
             _items.last['amount'] = 1;
-            _items.last['price'] = initialPrice;
           }
 
           _listKey.currentState?.insertItem(
@@ -119,6 +122,58 @@ class CreateClientReturnDocumentScreenState extends State<CreateClientReturnDocu
               _quantityFocusNodes[variantId]?.requestFocus();
             }
           });
+        }
+      });
+    }
+  }
+
+  void _updateItemUnit(int variantId, String newUnit, int? newUnitId) {
+    setState(() {
+      final index = _items.indexWhere((item) => item['variantId'] == variantId);
+      if (index != -1) {
+        final availableUnits = _items[index]['availableUnits'] as List<Unit>? ?? [];
+        final selectedUnitObj = availableUnits.firstWhere(
+              (unit) => (unit.name) == newUnit,
+          orElse: () => availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: '', amount: 1),
+        );
+
+        final previousAmount = _items[index]['amount'] ?? 1;
+        final newAmount = selectedUnitObj.amount ?? 1;
+
+        _items[index]['selectedUnit'] = newUnit;
+        _items[index]['unit_id'] = newUnitId;
+        _items[index]['amount'] = newAmount;
+
+        // ✅ Update the displayed price in the text field (multiply by new amount)
+        final basePrice = _items[index]['price'] ?? 0.0;
+        final displayPrice = basePrice * newAmount;
+        _priceControllers[variantId]?.text = displayPrice > 0 ? displayPrice.toStringAsFixed(3) : '';
+
+        // ✅ Recalculate total
+        _items[index]['total'] = (_items[index]['quantity'] * basePrice * newAmount).round();
+      }
+    });
+  }
+
+  void _updateItemPrice(int variantId, String value) {
+    final displayPrice = double.tryParse(value);
+    if (displayPrice != null && displayPrice >= 0) {
+      setState(() {
+        final index = _items.indexWhere((item) => item['variantId'] == variantId);
+        if (index != -1) {
+          final amount = _items[index]['amount'] ?? 1;
+          // ✅ Store base price (divide by amount to get price per base unit)
+          _items[index]['price'] = displayPrice / amount;
+          _items[index]['total'] = (_items[index]['quantity'] * displayPrice).round();
+        }
+        _priceErrors[variantId] = false;
+      });
+    } else if (value.isEmpty) {
+      setState(() {
+        final index = _items.indexWhere((item) => item['variantId'] == variantId);
+        if (index != -1) {
+          _items[index]['price'] = 0.0;
+          _items[index]['total'] = 0.0;
         }
       });
     }
@@ -235,61 +290,6 @@ class CreateClientReturnDocumentScreenState extends State<CreateClientReturnDocu
     }
   }
 
-  void _updateItemPrice(int variantId, String value) {
-    final price = double.tryParse(value);
-    if (price != null && price >= 0) {
-      setState(() {
-        final index =
-            _items.indexWhere((item) => item['variantId'] == variantId);
-        if (index != -1) {
-          _items[index]['price'] = price;
-          // Пересчитываем total с учётом amount
-          final amount = _items[index]['amount'] ?? 1;
-          _items[index]['total'] =
-              (_items[index]['quantity'] * _items[index]['price'] * amount)
-                  .round();
-        }
-        // Убираем ошибку если поле заполнено корректно
-        _priceErrors[variantId] = false;
-      });
-    } else if (value.isEmpty) {
-      setState(() {
-        final index =
-            _items.indexWhere((item) => item['variantId'] == variantId);
-        if (index != -1) {
-          _items[index]['price'] = 0.0;
-          _items[index]['total'] = 0.0;
-        }
-      });
-    }
-  }
-
-  void _updateItemUnit(int variantId, String newUnit, int? newUnitId) {
-    setState(() {
-      final index = _items.indexWhere((item) => item['variantId'] == variantId);
-      if (index != -1) {
-        _items[index]['selectedUnit'] = newUnit;
-        _items[index]['unit_id'] = newUnitId;
-
-        final availableUnits =
-            _items[index]['availableUnits'] as List<Unit>? ?? [];
-        final selectedUnitObj = availableUnits.firstWhere(
-          (unit) => (unit.name) == newUnit,
-          orElse: () => availableUnits.isNotEmpty
-              ? availableUnits.first
-              : Unit(id: 0, name: '', amount: 1),
-        );
-
-        _items[index]['amount'] = selectedUnitObj.amount ?? 1;
-
-        final amount = _items[index]['amount'] ?? 1;
-        _items[index]['total'] =
-            (_items[index]['quantity'] * _items[index]['price'] * amount)
-                .round();
-      }
-    });
-  }
- // ✅ НОВОЕ: Функция для перехода к следующему пустому полю
   void _moveToNextEmptyField() {
     // Собираем все поля в правильном порядке
     for (var item in _items) {
