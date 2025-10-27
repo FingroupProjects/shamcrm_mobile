@@ -722,15 +722,11 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
   }
 
   Widget _buildGoodsItem(DocumentGood good) {
-    final availableUnits = good.good?.units ?? [];
+    final selectedUnit = good.good?.unit ?? Unit(id: null, name: '', shortName: '');
+    final amount = selectedUnit.amount ?? 1.0;
+    final unitShortName = selectedUnit.shortName ?? selectedUnit.name ?? '';
 
-    final selectedUnit = good.unit ??
-        availableUnits.firstWhere(
-              (unit) => unit.id == good.unitId,
-          orElse: () => Unit(id: null, name: 'шт'),
-        );
-
-    final unitShortName = selectedUnit.shortName ?? selectedUnit.name ?? 'шт';
+    debugPrint("selectedUnit: $selectedUnit");
 
     return GestureDetector(
       onTap: () {
@@ -831,7 +827,7 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  '${(double.tryParse(good.price ?? '0.00') ?? 0.00).toStringAsFixed(2)}',
+                                  (amount * (double.tryParse(good.price ?? '0.00') ?? 0.00)).toStringAsFixed(2),
                                   style: const TextStyle(
                                     fontSize: 12,
                                     fontFamily: 'Gilroy',
@@ -866,7 +862,7 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              '${((good.quantity ?? 0) * (double.tryParse(good.price ?? '0') ?? 0)).toStringAsFixed(2)} ${currentDocument!.currency?.symbolCode ?? ''}',
+                              '${((good.quantity ?? 0) * amount * (double.tryParse(good.price ?? '0') ?? 0)).toStringAsFixed(2)} ${currentDocument!.currency?.symbolCode ?? ''}',
                               style: const TextStyle(
                                 fontSize: 14,
                                 fontFamily: 'Gilroy',
@@ -887,6 +883,7 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
       ),
     );
   }
+
 
   Widget _buildImageWidget(DocumentGood good) {
     if (baseUrl == null || good.good == null || good.good!.files == null || good.good!.files!.isEmpty) {

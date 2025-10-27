@@ -132,6 +132,10 @@ class Unit {
     }
     return null;
   }
+
+  toString() {
+    return 'Unit(id: $id, name: $name, shortName: $shortName, isBase: $isBase, amount: $amount, createdAt: $createdAt, updatedAt: $updatedAt)';
+  }
 }
 
 class Measurement {

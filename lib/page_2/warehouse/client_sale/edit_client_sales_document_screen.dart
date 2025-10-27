@@ -92,15 +92,26 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
         final quantity = good.quantity ?? 0;
         final price = double.tryParse(good.price ?? '0') ?? 0.0;
 
-        // ✅ NEW: Try multiple sources for units
-        final availableUnits = good.good?.units ??
-                              (good.unit != null ? [good.unit!] : []);
-
-        // ✅ NEW: Get selected unit from document_goods level first
-        final selectedUnitObj = good.unit ??
-                               (availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: 'шт'));
-
-        final amount = selectedUnitObj.amount ?? 1;
+        // ✅ Get available units
+        final availableUnits = good.good?.units ?? (good.unit != null ? [good.unit!] : []);
+        // ✅ Find the correct unit by matching unitId (same logic as totalSum)
+        Unit? selectedUnitObj;
+        double amount = 1.0;
+        if (good.good?.units != null && good.unitId != null) {
+          // Search in good.good.units array for matching unit
+          for (var unit in good.good!.units!) {
+            if (unit.id == good.unitId) {
+              selectedUnitObj = unit;
+              amount = (unit.amount != null)
+                  ? double.tryParse(unit.amount.toString()) ?? 1.0
+                  : 1.0;
+              break;
+            }
+          }
+        }
+        // Fallback if not found
+        selectedUnitObj ??= good.unit ?? (availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: 'шт'));
+        debugPrint("amount of unit '${selectedUnitObj.name}': $amount");
 
         _items.add({
           'id': good.good?.id ?? 0,
@@ -115,7 +126,7 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
           'availableUnits': availableUnits,
         });
 
-        _priceControllers[variantId] = TextEditingController(text: price.toStringAsFixed(3));
+        _priceControllers[variantId] = TextEditingController(text: (price * amount).toStringAsFixed(3));
         _quantityControllers[variantId] = TextEditingController(text: quantity.toString());
         
         // ✅ НОВОЕ: Создаём FocusNode для существующих товаров
@@ -333,6 +344,7 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
 
         final amount = _items[index]['amount'] ?? 1;
         _items[index]['total'] = (_items[index]['quantity'] * _items[index]['price'] * amount).round();
+        _priceControllers[variantId]?.text = (amount * _items[index]['price'] ?? 0.0).toStringAsFixed(3);
       }
     });
   }

@@ -206,10 +206,28 @@ class IncomingDocument extends Equatable {
   double get totalSum {
     if (documentGoods == null || documentGoods!.isEmpty) return 0.0;
     return documentGoods!.fold(
-        0.0,
-        (sum, good) =>
-            sum +
-            (good.quantity ?? 0) * (double.tryParse(good.price ?? '0') ?? 0));
+      0.0,
+          (sum, good) {
+        final quantity = good.quantity ?? 0;
+        final price = double.tryParse(good.price ?? '0') ?? 0;
+
+        // Коэффициент по умолчанию = 1 (для базовых единиц)
+        num unitMultiplier = 1.0;
+
+        debugPrint("=== Processing DocumentGood ===");
+        debugPrint("DocumentGood.unitId: ${good.unitId}");
+        debugPrint("DocumentGood.unit (object): ${good.unit?.toJson()}");
+        debugPrint("Good.units array: ${good.good?.units?.map((u) => u.toJson()).toList()}");
+
+        unitMultiplier = good.good?.unit?.amount ?? 1.0;
+
+        debugPrint("FINAL: price=$price, quantity=$quantity, multiplier=$unitMultiplier");
+        debugPrint("Item total: ${quantity * price * unitMultiplier}");
+        debugPrint("=== End DocumentGood ===\n");
+
+        return sum + (quantity * price * unitMultiplier);
+      },
+    );
   }
 
   int get totalQuantity {
@@ -519,28 +537,32 @@ class Currency {
   });
 
   factory DocumentGood.fromJson(Map<String, dynamic> json) {
+    // Parse the unit object first
+    final unitObj = json['unit'] != null ? Unit.fromJson(json['unit']) : null;
+
     return DocumentGood(
       id: IncomingDocument._parseInt(json['id']),
       documentId: IncomingDocument._parseInt(json['document_id']),
       variantId: IncomingDocument._parseInt(json['variant_id']),
       good: json['good'] != null ? Good.fromJson(json['good']) : null,
-      quantity: IncomingDocument._parseNum(json['quantity']), // Используем num для поддержки int и double
+      quantity: IncomingDocument._parseNum(json['quantity']),
       price: json['price'],
       createdAt: IncomingDocument._parseDate(json['created_at']),
       updatedAt: IncomingDocument._parseDate(json['updated_at']),
       attributes: json['attributes'] != null
           ? (json['attributes'] as List)
-              .map((i) => Attribute.fromJson(i))
-              .toList()
+          .map((i) => Attribute.fromJson(i))
+          .toList()
           : null,
       fullName: json['full_name'] as String?,
-      unitId: IncomingDocument._parseInt(json['unit_id']), // Правильно
+      // FIXED: Extract unit_id from the unit object if unit_id field doesn't exist
+      unitId: IncomingDocument._parseInt(json['unit_id']) ?? unitObj?.id,
       goodVariant: json['good_variant'] != null
           ? GoodVariant.fromJson(json['good_variant'])
           : null,
       goodVariantId: IncomingDocument._parseInt(json['good_variant_id']),
       sum: json['sum'] as String?,
-      unit: json['unit'] != null ? Unit.fromJson(json['unit']) : null,
+      unit: unitObj,
     );
   }
 
@@ -612,13 +634,15 @@ class Good {
 
   factory Good.fromJson(Map<String, dynamic> json) {
     return Good(
+      units: json['units'] != null ? (json['units'] as List).map((i) => Unit.fromJson(i)).toList() : null,
+      unitId: json['unit_id'] is int ? json['unit_id']
+          : (json['unit_id'] is String ? int.tryParse(json['unit_id']) : null),
       id: _parseInt(json['id']),
       oneCId: json['one_c_id'],
       name: json['name'],
       categoryId: _parseInt(json['category_id']),
       description: json['description'],
       price: json['price'],
-      unitId: _parseInt(json['unit_id']),
       quantity: _parseInt(json['quantity']),
       deletedAt: _parseDate(json['deleted_at']),
       createdAt: _parseDate(json['created_at']),
@@ -631,9 +655,6 @@ class Good {
       packageCode: json['package_code'],
       files: json['files'] != null
           ? (json['files'] as List).map((i) => GoodFile.fromJson(i)).toList()
-          : null,
-      units: json['units'] != null
-          ? (json['units'] as List).map((i) => Unit.fromJson(i)).toList()
           : null,
       measurements: json['measurements'] as List<dynamic>?,
       category: json['category'],
