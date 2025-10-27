@@ -23,7 +23,7 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
   int? selectedIndex;
   int? selectedLineIndex;
   final Map<String, bool> _lineVisibility = {};
-  OrderTimePeriod selectedPeriod = OrderTimePeriod.week;
+  OrderTimePeriod selectedPeriod = OrderTimePeriod.year;
 
   // Generate colors based on index
   final List<Color> lineColors = [
@@ -212,8 +212,9 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
       maxY = 1; // Default scale when no data
     }
 
+    // Вычисляем интервал на основе оригинального maxY, а не adjustedMaxY
+    double horizontalInterval = _calculateInterval(maxY);
     double adjustedMaxY = maxY * 1.1;
-    double horizontalInterval = _calculateInterval(adjustedMaxY);
 
     return LineChartData(
       gridData: FlGridData(
