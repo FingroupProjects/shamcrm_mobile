@@ -7,7 +7,7 @@ import 'package:crm_task_manager/custom_widget/compact_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/custom_widget/keyboard_dismissible.dart';
-// import 'package:crm_task_manager/custom_widget/price_input_formatter.dart'; // Не используется - цена скрыта
+import 'package:crm_task_manager/custom_widget/price_input_formatter.dart';
 import 'package:crm_task_manager/custom_widget/quantity_input_formatter.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/storage_widget.dart';
@@ -227,30 +227,29 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
     }
   }
 
-  // Цена скрыта - функция не используется
-  // void _updateItemPrice(int variantId, String value) {
-  //   final price = double.tryParse(value);
-  //   if (price != null && price >= 0) {
-  //     setState(() {
-  //       final index = _items.indexWhere((item) => item['variantId'] == variantId);
-  //       if (index != -1) {
-  //         _items[index]['price'] = price;
-  //         final amount = _items[index]['amount'] ?? 1;
-  //         final num total = _items[index]['quantity'] * _items[index]['price'] * amount;
-  //         _items[index]['total'] = total.round().toInt();
-  //       }
-  //       _priceErrors[variantId] = false;
-  //     });
-  //   } else if (value.isEmpty) {
-  //     setState(() {
-  //       final index = _items.indexWhere((item) => item['variantId'] == variantId);
-  //       if (index != -1) {
-  //         _items[index]['price'] = 0.0;
-  //         _items[index]['total'] = 0.0;
-  //       }
-  //     });
-  //   }
-  // }
+  void _updateItemPrice(int variantId, String value) {
+    final price = double.tryParse(value);
+    if (price != null && price >= 0) {
+      setState(() {
+        final index = _items.indexWhere((item) => item['variantId'] == variantId);
+        if (index != -1) {
+          _items[index]['price'] = price;
+          final amount = _items[index]['amount'] ?? 1;
+          final num total = _items[index]['quantity'] * _items[index]['price'] * amount;
+          _items[index]['total'] = total.round().toInt();
+        }
+        _priceErrors[variantId] = false;
+      });
+    } else if (value.isEmpty) {
+      setState(() {
+        final index = _items.indexWhere((item) => item['variantId'] == variantId);
+        if (index != -1) {
+          _items[index]['price'] = 0.0;
+          _items[index]['total'] = 0.0;
+        }
+      });
+    }
+  }
 
   void _updateItemUnit(int variantId, String newUnit, int? newUnitId) {
     setState(() {
@@ -729,10 +728,10 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
   Widget _buildSelectedItemCard(int index, Map<String, dynamic> item, Animation<double> animation) {
     final availableUnits = item['availableUnits'] as List<Unit>? ?? [];
     final variantId = item['variantId'] as int;
-    // final priceController = _priceControllers[variantId]; // Не используется - цена скрыта
+    final priceController = _priceControllers[variantId];
     final quantityController = _quantityControllers[variantId];
     final quantityFocusNode = _quantityFocusNodes[variantId];
-    // final priceFocusNode = _priceFocusNodes[variantId]; // Не используется - цена скрыта
+    final priceFocusNode = _priceFocusNodes[variantId];
 
     final isCollapsed = _collapsedItems[variantId] ?? false;
 
@@ -939,49 +938,48 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
                         ],
                       ),
                     ),
-                  // if (availableUnits.isNotEmpty) const SizedBox(width: 8),
-                  // Цена скрыта согласно требованиям
-                  // Expanded(
-                  //   flex: 25,
-                  //   child: Column(
-                  //       crossAxisAlignment: CrossAxisAlignment.start,
-                  //       children: [
-                  //         Text(
-                  //           AppLocalizations.of(context)!.translate('price') ??
-                  //               'Цена',
-                  //           style: const TextStyle(
-                  //             fontSize: 11,
-                  //             fontFamily: 'Gilroy',
-                  //             fontWeight: FontWeight.w400,
-                  //             color: Color(0xff99A4BA),
-                  //           ),
-                  //         ),
-                  //         const SizedBox(height: 4),
-                  //         CompactTextField(
-                  //           controller:
-                  //               priceController ?? TextEditingController(),
-                  //           focusNode: priceFocusNode,
-                  //           hintText: AppLocalizations.of(context)!
-                  //                   .translate('price') ??
-                  //               'Цена',
-                  //           keyboardType: const TextInputType.numberWithOptions(
-                  //               decimal: true),
-                  //           inputFormatters: [
-                  //             PriceInputFormatter(),
-                  //           ],
-                  //           style: const TextStyle(
-                  //             fontSize: 13,
-                  //             fontFamily: 'Gilroy',
-                  //             fontWeight: FontWeight.w600,
-                  //             color: Color(0xff1E2E52),
-                  //           ),
-                  //           hasError: _priceErrors[variantId] == true,
-                  //           onChanged: (value) =>
-                  //               _updateItemPrice(variantId, value),
-                  //           onDone: _moveToNextEmptyField,
-                  //         ),
-                  //       ]),
-                  // ),
+                  if (availableUnits.isNotEmpty) const SizedBox(width: 8),
+                  Expanded(
+                    flex: 25,
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            AppLocalizations.of(context)!.translate('price') ??
+                                'Цена',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w400,
+                              color: Color(0xff99A4BA),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          CompactTextField(
+                            controller:
+                                priceController ?? TextEditingController(),
+                            focusNode: priceFocusNode,
+                            hintText: AppLocalizations.of(context)!
+                                    .translate('price') ??
+                                'Цена',
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
+                            inputFormatters: [
+                              PriceInputFormatter(),
+                            ],
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xff1E2E52),
+                            ),
+                            hasError: _priceErrors[variantId] == true,
+                            onChanged: (value) =>
+                                _updateItemPrice(variantId, value),
+                            onDone: _moveToNextEmptyField,
+                          ),
+                        ]),
+                  ),
                 ]),
               ],
             ],
