@@ -30,7 +30,7 @@ class ProfitabilityCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${localizations.translate('month')}: ${monthData.monthName}',
+                  monthData.monthName,
                   style: const TextStyle(
                     fontSize: 14,
                     fontFamily: 'Gilroy',

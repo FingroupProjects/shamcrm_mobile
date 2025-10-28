@@ -40,7 +40,7 @@ class NetProfitCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '${localizations.translate('profit')}: ${parseNumberToString(monthData.netProfit)}',
+                  '${localizations.translate('profit')}${parseNumberToString(monthData.netProfit)}',
                   style: const TextStyle(
                     fontSize: 14,
                     fontFamily: 'Gilroy',

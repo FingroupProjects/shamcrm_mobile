@@ -165,7 +165,7 @@ class _AddSupplierScreenState extends State<AddSupplierScreen> {
                           hintText: AppLocalizations.of(context)!
                               .translate('enter_supplier_name') ??
                               'Введите название поставщика',
-                          label: AppLocalizations.of(context)!.translate('title_without_dots') ?? 'Название',
+                          label: AppLocalizations.of(context)!.translate('supplier') ?? 'Поставщик',
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return AppLocalizations.of(context)!

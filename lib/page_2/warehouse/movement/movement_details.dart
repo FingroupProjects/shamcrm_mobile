@@ -763,38 +763,38 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
                           // ),
                         ],
                       ),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF4F7FD),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            Text(
-                              AppLocalizations.of(context)!.translate('total') ?? 'Итого',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontFamily: 'Gilroy',
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xff1E2E52),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              '${((good.quantity ?? 0) * amount * (double.tryParse(good.price ?? '0') ?? 0)).toStringAsFixed(2)} ${currentDocument!.currency?.symbolCode ?? ''}',
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontFamily: 'Gilroy',
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xff4CAF50),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      // const SizedBox(height: 8),
+                      // Container(
+                      //   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      //   decoration: BoxDecoration(
+                      //     color: const Color(0xFFF4F7FD),
+                      //     borderRadius: BorderRadius.circular(6),
+                      //   ),
+                      //   child: Row(
+                      //     mainAxisAlignment: MainAxisAlignment.start,
+                      //     children: [
+                      //       Text(
+                      //         AppLocalizations.of(context)!.translate('total') ?? 'Итого',
+                      //         style: const TextStyle(
+                      //           fontSize: 12,
+                      //           fontFamily: 'Gilroy',
+                      //           fontWeight: FontWeight.w500,
+                      //           color: Color(0xff1E2E52),
+                      //         ),
+                      //       ),
+                      //       const SizedBox(width: 8),
+                      //       Text(
+                      //         '${((good.quantity ?? 0) * amount * (double.tryParse(good.price ?? '0') ?? 0)).toStringAsFixed(2)} ${currentDocument!.currency?.symbolCode ?? ''}',
+                      //         style: const TextStyle(
+                      //           fontSize: 14,
+                      //           fontFamily: 'Gilroy',
+                      //           fontWeight: FontWeight.w700,
+                      //           color: Color(0xff4CAF50),
+                      //         ),
+                      //       ),
+                      //     ],
+                      //   ),
+                      // ),
                     ],
                   ),
                 ),

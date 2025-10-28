@@ -774,7 +774,7 @@ class _ClientSalesDocumentDetailsScreenState
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  (amount * (double.tryParse(good.price ?? '0.00') ?? 0.00)).toStringAsFixed(2),
+                                  parseNumberToString((amount * (double.tryParse(good.price ?? '0.00') ?? 0.00)).toStringAsFixed(2)),
                                   style: const TextStyle(
                                     fontSize: 12,
                                     fontFamily: 'Gilroy',
@@ -809,7 +809,7 @@ class _ClientSalesDocumentDetailsScreenState
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              '${((good.quantity ?? 0) * amount * (double.tryParse(good.price ?? '0') ?? 0)).toStringAsFixed(2)} ${currentDocument!.currency?.symbolCode ?? ''}',
+                              '${parseNumberToString(((good.quantity ?? 0) * amount * (double.tryParse(good.price ?? '0') ?? 0)).toStringAsFixed(2))} ${currentDocument!.currency?.symbolCode ?? ''}',
                               style: const TextStyle(
                                 fontSize: 14,
                                 fontFamily: 'Gilroy',
