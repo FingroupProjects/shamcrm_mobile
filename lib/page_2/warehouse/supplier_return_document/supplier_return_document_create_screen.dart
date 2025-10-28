@@ -77,22 +77,22 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
 
           // ✅ Don't use the price from newItem - let user enter it
           final modifiedItem = Map<String, dynamic>.from(newItem);
-          modifiedItem['price'] = 0.0; // Set to 0 instead of using default price
+          modifiedItem['price'] = 0.0;
+
+          // ✅ ВАЖНО: НЕ устанавливаем quantity в item вообще
+          // Убираем quantity из modifiedItem, если он там есть
+          modifiedItem.remove('quantity');
 
           _items.add(modifiedItem);
 
           final variantId = newItem['variantId'] as int;
 
-          // ✅ Initialize price controller with empty string (no default price)
+          // ✅ Initialize controllers with empty strings
           _priceControllers[variantId] = TextEditingController(text: '');
-
           _quantityControllers[variantId] = TextEditingController(text: '');
 
           _quantityFocusNodes[variantId] = FocusNode();
           _priceFocusNodes[variantId] = FocusNode();
-
-          // ✅ Set price to 0 in the item
-          _items.last['price'] = 0.0;
 
           _priceErrors[variantId] = false;
           _quantityErrors[variantId] = false;
@@ -133,9 +133,9 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
 
         final availableUnits = _items[index]['availableUnits'] as List<Unit>? ?? [];
         final selectedUnitObj = availableUnits.firstWhere(
-          (unit) => (unit.name) == newUnit,
-          orElse: () => availableUnits.isNotEmpty 
-              ? availableUnits.first 
+              (unit) => (unit.name) == newUnit,
+          orElse: () => availableUnits.isNotEmpty
+              ? availableUnits.first
               : Unit(id: null, name: '', amount: 1),
         );
 
@@ -144,10 +144,11 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
 
         // ✅ Базовая цена НЕ меняется
         final basePrice = _items[index]['price'] ?? 0.0;
-        
+
         // ✅ Пересчитываем total
-        _items[index]['total'] = (_items[index]['quantity'] * basePrice * newAmount).round();
-        
+        final quantity = _items[index]['quantity'] ?? 0;
+        _items[index]['total'] = (quantity * basePrice * newAmount).round();
+
         // ✅ Показываем в контроллере: basePrice * newAmount
         _priceControllers[variantId]?.text = parseNumberToString(basePrice * newAmount);
       }
@@ -271,7 +272,7 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
           _items[index]['quantity'] = quantity;
           final price = _items[index]['price'] ?? 0.0;
           final amount = _items[index]['amount'] ?? 1;
-          
+
           // ✅ Total = количество * базовая_цена * amount
           _items[index]['total'] = (quantity * price * amount).round();
         }
@@ -281,8 +282,9 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
       setState(() {
         final index = _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
-          _items[index]['quantity'] = 0;
-          _items[index]['total'] = 0;
+          // ✅ ВАЖНО: Удаляем quantity из item, а не устанавливаем в 0
+          _items[index].remove('quantity');
+          _items[index]['total'] = 0.0;
         }
       });
     }

@@ -94,19 +94,30 @@ class CreateClienSalesDocumentScreenState
             _collapsedItems[variantId] = true;
           }
 
-          _items.add(newItem);
+          // ✅ Создаем копию item
+          final modifiedItem = Map<String, dynamic>.from(newItem);
+
+          // ✅ ВАЖНО: Удаляем quantity из item (должно быть пустым)
+          modifiedItem.remove('quantity');
+
+          _items.add(modifiedItem);
 
           final variantId = newItem['variantId'] as int;
 
+          // ✅ Цена берется из товара и отображается
           final initialPrice = newItem['price'] ?? 0.0;
-          _priceControllers[variantId] = TextEditingController(
-              text: initialPrice > 0 ? parseNumberToString(initialPrice) : '');
+          final amount = newItem['amount'] ?? 1;
 
+          _priceControllers[variantId] = TextEditingController(
+              text: initialPrice > 0 ? parseNumberToString(initialPrice * amount) : '');
+
+          // ✅ Количество НЕ устанавливается - пустое поле
           _quantityControllers[variantId] = TextEditingController(text: '');
 
           _quantityFocusNodes[variantId] = FocusNode();
           _priceFocusNodes[variantId] = FocusNode();
 
+          // ✅ Сохраняем базовую цену в item
           _items.last['price'] = initialPrice;
 
           _priceErrors[variantId] = false;
@@ -116,7 +127,6 @@ class CreateClienSalesDocumentScreenState
 
           if (!newItem.containsKey('amount')) {
             _items.last['amount'] = 1;
-            _items.last['price'] = initialPrice;
           }
 
           _listKey.currentState?.insertItem(
@@ -239,7 +249,8 @@ class CreateClienSalesDocumentScreenState
       setState(() {
         final index = _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
-          _items[index]['quantity'] = 0;
+          // ✅ ВАЖНО: Удаляем quantity из item, а не устанавливаем в 0
+          _items[index].remove('quantity');
           _items[index]['total'] = 0.0;
         }
       });
@@ -298,7 +309,8 @@ class CreateClienSalesDocumentScreenState
         final basePrice = _items[index]['price'] ?? 0.0;
 
         // Обновляем итоговую сумму
-        _items[index]['total'] = (_items[index]['quantity'] * basePrice * newAmount).round();
+        final quantity = _items[index]['quantity'] ?? 0;
+        _items[index]['total'] = (quantity * basePrice * newAmount).round();
 
         // ✅ В контроллере показываем: basePrice * newAmount
         _priceControllers[variantId]?.text = parseNumberToString(basePrice * newAmount);
