@@ -15,6 +15,7 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../models/api_exception_model.dart';
+import '../../../utils/global_fun.dart';
 import '../../money/widgets/error_dialog.dart';
 
 class ClientReturnDocumentDetailsScreen extends StatefulWidget {
@@ -151,7 +152,7 @@ class _ClientReturnDocumentDetailsScreenState
       },
       {
         'label': '${AppLocalizations.of(context)!.translate('total_sum') ?? 'Общая сумма'}:',
-        'value': '${document.totalSum.toStringAsFixed(2)} ${document.currency?.symbolCode ?? ''}',
+        'value': '${parseNumberToString(document.totalSum.toStringAsFixed(2))} ${document.currency?.symbolCode ?? ''}',
       },
       {
         'label': '${AppLocalizations.of(context)!.translate('status') ?? 'Статус'}:',

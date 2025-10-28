@@ -1809,5 +1809,6 @@
   "price_colon": "Price:",
   "product_variants": "Product variants",
   "n_a": "N/A",
-  "title_with_two_dots": "Title: "
+  "title_with_two_dots": "Title: ",
+  "title_without_dots": "Title"
 }

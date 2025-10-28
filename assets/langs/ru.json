@@ -1812,5 +1812,6 @@
   "product_variants": "Варианты товаров",
   "n_a": "N/A",
   "title_with_two_dots": "Название: ",
-  "no_goods": "Нет товаров"
+  "no_goods": "Нет товаров",
+  "title_without_dots": "Название"
 }

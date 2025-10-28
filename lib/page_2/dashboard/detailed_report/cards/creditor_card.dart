@@ -41,7 +41,7 @@ class CreditorCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '${localizations.translate('creditor_name_details') ?? 'Название'}: ${creditor.name}',
+                    '${localizations.translate('client') ?? 'Клиент'} ${creditor.name}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',

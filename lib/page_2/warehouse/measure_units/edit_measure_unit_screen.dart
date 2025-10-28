@@ -212,9 +212,7 @@ class _EditMeasureUnitScreenState extends State<EditMeasureUnitScreen> {
                           hintText: AppLocalizations.of(context)!
                                   .translate('enter_measure_unit_name') ??
                               'Введите название единицы измерения',
-                          label:
-                              AppLocalizations.of(context)!.translate('name') ??
-                                  'Название',
+                          label: AppLocalizations.of(context)!.translate('title_without_dots') ?? 'Название',
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return AppLocalizations.of(context)!
