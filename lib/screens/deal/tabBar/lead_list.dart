@@ -35,23 +35,13 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
       print('🟢 LeadWidget: initState - showDebt=${widget.showDebt}');
     }
 
-    // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Всегда загружаем данные заново
+    // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Используем RefreshAllLeadEv для загрузки свежих данных
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         if (kDebugMode) {
-          print('🔥 LeadWidget: Принудительная загрузка данных (игнорируем кэш)');
+          print('🔥 LeadWidget: Forcing fresh data load (ignoring cache)');
         }
-        
-        // Вариант 1: Если в вашем BLoC есть параметр forceRefresh
-        context.read<GetAllLeadBloc>().add(GetAllLeadEv(
-          showDebt: widget.showDebt,
-          // forceRefresh: true, // Раскомментируйте если есть такой параметр
-        ));
-        
-        // Вариант 2: Если нужно сбросить состояние, используйте:
-        // context.read<GetAllLeadBloc>().add(ResetLeadState());
-        // await Future.delayed(Duration(milliseconds: 50));
-        // context.read<GetAllLeadBloc>().add(GetAllLeadEv(showDebt: widget.showDebt));
+        context.read<GetAllLeadBloc>().add(RefreshAllLeadEv(showDebt: widget.showDebt));
       }
     });
   }
@@ -59,15 +49,15 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
   @override
   void didUpdateWidget(LeadRadioGroupWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    
+
     // ✅ Перезагружаем данные если изменился параметр showDebt
     if (oldWidget.showDebt != widget.showDebt) {
       if (kDebugMode) {
-        print('🔄 LeadWidget: showDebt изменился, перезагружаем данные');
+        print('🔄 LeadWidget: showDebt changed, reloading data');
       }
-      context.read<GetAllLeadBloc>().add(GetAllLeadEv(showDebt: widget.showDebt));
+      context.read<GetAllLeadBloc>().add(RefreshAllLeadEv(showDebt: widget.showDebt));
     }
-    
+
     // Обновляем выбранный лид если изменился извне
     if (oldWidget.selectedLead != widget.selectedLead && leadsList.isNotEmpty) {
       _updateSelectedLeadData();
@@ -78,11 +68,11 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
     if (kDebugMode) {
       print('🔄 LeadWidget: _updateSelectedLeadData started');
     }
-    
+
     if (widget.selectedLead != null && leadsList.isNotEmpty) {
       try {
         selectedLeadData = leadsList.firstWhere(
-          (lead) => lead.id.toString() == widget.selectedLead,
+              (lead) => lead.id.toString() == widget.selectedLead,
         );
         if (kDebugMode) {
           print('🟢 LeadWidget: Selected lead found - ${selectedLeadData?.name}');
@@ -125,6 +115,7 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
 
             final isLoading = state is GetAllLeadLoading;
 
+            // ✅ ИСПРАВЛЕНИЕ: Обновляем список только при Success
             if (state is GetAllLeadSuccess) {
               leadsList = state.dataLead.result ?? [];
               if (kDebugMode) {
@@ -142,10 +133,13 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
               }
             }
 
-            // Проверяем что selectedLeadData действительно в списке
-            final actualInitialItem = (selectedLeadData != null && 
-                                      leadsList.isNotEmpty && 
-                                      leadsList.contains(selectedLeadData))
+            // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Если загрузка, не показываем initialItem
+            // Это предотвращает ошибку "initialItem must match with one of the item in items list"
+            final actualInitialItem = isLoading
+                ? null
+                : (selectedLeadData != null &&
+                leadsList.isNotEmpty &&
+                leadsList.contains(selectedLeadData))
                 ? selectedLeadData
                 : null;
 
@@ -156,7 +150,7 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
 
             return CustomDropdown<LeadData>.search(
               closeDropDownOnClearFilterSearch: true,
-              items: isLoading ? [] : leadsList,
+              items: leadsList, // ✅ Всегда показываем текущий список (не пустой во время загрузки)
               searchHintText: AppLocalizations.of(context)!.translate('search'),
               overlayHeight: 400,
               enabled: !isLoading,
@@ -295,7 +289,7 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                 );
               },
               excludeSelected: false,
-              initialItem: actualInitialItem,
+              initialItem: actualInitialItem, // ✅ null во время загрузки
               validator: (value) {
                 if (value == null) {
                   return AppLocalizations.of(context)!.translate('field_required_project');

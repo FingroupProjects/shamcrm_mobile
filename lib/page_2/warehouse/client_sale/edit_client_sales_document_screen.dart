@@ -12,6 +12,7 @@ import 'package:crm_task_manager/page_2/warehouse/incoming/storage_widget.dart';
 import 'package:crm_task_manager/page_2/widgets/confirm_exit_dialog.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -126,7 +127,7 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
           'availableUnits': availableUnits,
         });
 
-        _priceControllers[variantId] = TextEditingController(text: (price * amount).toStringAsFixed(3));
+        _priceControllers[variantId] = TextEditingController(text: parseNumberToString(price * amount));
         _quantityControllers[variantId] = TextEditingController(text: quantity.toString());
         
         // ✅ НОВОЕ: Создаём FocusNode для существующих товаров
@@ -157,7 +158,7 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
 
           final initialPrice = newItem['price'] ?? 0.0;
           _priceControllers[variantId] = TextEditingController(
-              text: initialPrice > 0 ? initialPrice.toStringAsFixed(3) : '');
+              text: initialPrice > 0 ? parseNumberToString(initialPrice) : '');
 
           _quantityControllers[variantId] = TextEditingController(text: '');
 
@@ -281,38 +282,22 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
   }
   }
 
-  void _updateItemQuantity(int variantId, String value) {
-    final quantity = int.tryParse(value);
-    if (quantity != null && quantity > 0) {
-      setState(() {
-        final index = _items.indexWhere((item) => item['variantId'] == variantId);
-        if (index != -1) {
-          _items[index]['quantity'] = quantity;
-          final amount = _items[index]['amount'] ?? 1;
-          _items[index]['total'] = (_items[index]['quantity'] * _items[index]['price'] * amount).round();
-        }
-        _quantityErrors[variantId] = false;
-      });
-    } else if (value.isEmpty) {
-      setState(() {
-        final index = _items.indexWhere((item) => item['variantId'] == variantId);
-        if (index != -1) {
-          _items[index]['quantity'] = 0;
-          _items[index]['total'] = 0.0;
-        }
-      });
-    }
-  }
-
+// ✅ ИСПРАВЛЕНО: функция _updateItemPrice
   void _updateItemPrice(int variantId, String value) {
-    final price = double.tryParse(value);
-    if (price != null && price >= 0) {
+    final inputPrice = double.tryParse(value);
+    if (inputPrice != null && inputPrice >= 0) {
       setState(() {
         final index = _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
-          _items[index]['price'] = price;
           final amount = _items[index]['amount'] ?? 1;
-          _items[index]['total'] = (_items[index]['quantity'] * _items[index]['price'] * amount).round();
+
+          // ✅ ГЛАВНОЕ ИЗМЕНЕНИЕ: сохраняем price разделив на amount
+          // Потому что price - это цена за одну базовую единицу (например: 1 штуку)
+          _items[index]['price'] = inputPrice / amount;
+
+          // Обновляем итоговую сумму
+          final quantity = _items[index]['quantity'] ?? 0;
+          _items[index]['total'] = (quantity * inputPrice).round();
         }
         _priceErrors[variantId] = false;
       });
@@ -327,6 +312,7 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
     }
   }
 
+// ✅ ИСПРАВЛЕНО: функция _updateItemUnit
   void _updateItemUnit(int variantId, String newUnit, int? newUnitId) {
     setState(() {
       final index = _items.indexWhere((item) => item['variantId'] == variantId);
@@ -336,17 +322,51 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
 
         final availableUnits = _items[index]['availableUnits'] as List<Unit>? ?? [];
         final selectedUnitObj = availableUnits.firstWhere(
-          (unit) => (unit.name) == newUnit,
+              (unit) => (unit.name) == newUnit,
           orElse: () => availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: '', amount: 1),
         );
 
-        _items[index]['amount'] = selectedUnitObj.amount ?? 1;
+        final newAmount = selectedUnitObj.amount ?? 1;
+        _items[index]['amount'] = newAmount;
 
-        final amount = _items[index]['amount'] ?? 1;
-        _items[index]['total'] = (_items[index]['quantity'] * _items[index]['price'] * amount).round();
-        _priceControllers[variantId]?.text = (amount * _items[index]['price'] ?? 0.0).toStringAsFixed(3);
+        // ✅ ГЛАВНОЕ ИЗМЕНЕНИЕ: price не меняется (это цена за 1 штуку)
+        // Только отображаемое значение в контроллере нужно изменить
+        final basePrice = _items[index]['price'] ?? 0.0;
+
+        // Обновляем итоговую сумму
+        _items[index]['total'] = (_items[index]['quantity'] * basePrice * newAmount).round();
+
+        // ✅ В контроллере показываем: basePrice * newAmount
+        _priceControllers[variantId]?.text = parseNumberToString(basePrice * newAmount);
       }
     });
+  }
+
+// ✅ УЛУЧШЕНО: функция _updateItemQuantity
+  void _updateItemQuantity(int variantId, String value) {
+    final quantity = int.tryParse(value);
+    if (quantity != null && quantity > 0) {
+      setState(() {
+        final index = _items.indexWhere((item) => item['variantId'] == variantId);
+        if (index != -1) {
+          _items[index]['quantity'] = quantity;
+          final price = _items[index]['price'] ?? 0.0;
+          final amount = _items[index]['amount'] ?? 1;
+
+          // ✅ Total = количество * базовая_цена * amount
+          _items[index]['total'] = (quantity * price * amount).round();
+        }
+        _quantityErrors[variantId] = false;
+      });
+    } else if (value.isEmpty) {
+      setState(() {
+        final index = _items.indexWhere((item) => item['variantId'] == variantId);
+        if (index != -1) {
+          _items[index]['quantity'] = 0;
+          _items[index]['total'] = 0.0;
+        }
+      });
+    }
   }
 
   // ✅ НОВОЕ: Функция для перехода к следующему пустому полю
