@@ -941,6 +941,7 @@
   "week": "Неделя",
   "month": "Месяц",
   "profitability": "Рентабельность",
+  "profit": "Прибыль: ",
   "year": "Год",
   "enter_price": "Введите цену",
   "branch": "Филиал",
@@ -1486,7 +1487,7 @@
   "pieces": "шт",
   "storages_must_be_different": "Склад-отправитель и склад-получатель должны быть разными",
   "owed_to_us": "Нам должны",
-  "illiquid_goods": "Товары/Неликвидными товары",
+  "illiquid_goods": "Товары/Неликвидные товары",
   "cash_balance": "Остаток кассы",
   "our_debts": "Наши долги",
   "error_toggling_approval": "Ошибка изменения статуса проведения",
@@ -1697,7 +1698,7 @@
   "no_sales_dynamics_data": "Нет данных о динамике продаж",
   "no_sales_data": "Нет данных о продажах",
   "top_selling_products_list_empty": "Список самых продаваемых товаров пуст",
-  "tab_goods_illiquid": "Товары / Неликвидный товары",
+  "tab_goods_illiquid": "Товары / Неликвидные товары",
   "tab_reconciliation_act": "Акт сверки",
   "tab_cash_balance": "Остаток кассы",
   "tab_our_debts": "Наши долги",
@@ -1812,5 +1813,6 @@
   "product_variants": "Варианты товаров",
   "n_a": "N/A",
   "title_with_two_dots": "Название: ",
-  "no_goods": "Нет товаров"
+  "no_goods": "Нет товаров",
+  "title_without_dots": "Название"
 }

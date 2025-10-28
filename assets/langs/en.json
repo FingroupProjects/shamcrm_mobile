@@ -943,6 +943,7 @@
   "week": "Week",
   "month": "Month",
   "profitability": "Profitability",
+  "profit": "Profit: ",
   "year": "Year",
   "enter_price": "Enter price",
   "branch": "Branch",
@@ -1809,5 +1810,6 @@
   "price_colon": "Price:",
   "product_variants": "Product variants",
   "n_a": "N/A",
-  "title_with_two_dots": "Title: "
+  "title_with_two_dots": "Title: ",
+  "title_without_dots": "Title"
 }

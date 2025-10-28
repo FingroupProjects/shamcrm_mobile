@@ -585,7 +585,7 @@ void _onStatusUpdated(int newStatusId) {
                         perPage: 20,
                         forceRefresh: true,
                       ));
-                      if (newTabIndex != _currentTabIndex) {
+                      if (newTabIndex == _currentTabIndex) {
                         _orderBloc.add(FetchOrders(
                           statusId: _statuses[_currentTabIndex].id,
                           page: 1,

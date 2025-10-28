@@ -2,12 +2,14 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/client_return/client_return_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
+import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/goods_details_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_return/client_return_delete.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_return/client_return_edit.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/styled_action_button.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -15,6 +17,7 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../models/api_exception_model.dart';
+import '../../../utils/global_fun.dart';
 import '../../money/widgets/error_dialog.dart';
 
 class ClientReturnDocumentDetailsScreen extends StatefulWidget {
@@ -151,7 +154,7 @@ class _ClientReturnDocumentDetailsScreenState
       },
       {
         'label': '${AppLocalizations.of(context)!.translate('total_sum') ?? 'Общая сумма'}:',
-        'value': '${document.totalSum.toStringAsFixed(2)} ${document.currency?.symbolCode ?? ''}',
+        'value': '${parseNumberToString(document.totalSum.toStringAsFixed(2))} ${document.currency?.symbolCode ?? ''}',
       },
       {
         'label': '${AppLocalizations.of(context)!.translate('status') ?? 'Статус'}:',
@@ -608,8 +611,48 @@ class _ClientReturnDocumentDetailsScreenState
   }
 
   Widget _buildDetailItem(String label, String value) {
-    if (label == AppLocalizations.of(context)!.translate('comment') ||
-        label == AppLocalizations.of(context)!.translate('client')) {
+    // Обработка клиента с навигацией на экран лида
+    if (label == AppLocalizations.of(context)!.translate('client') && value.isNotEmpty) {
+      return GestureDetector(
+        onTap: () {
+          if (currentDocument?.model?.id != null) {
+            navigatorKey.currentState?.push(
+              MaterialPageRoute(
+                builder: (context) => LeadDetailsScreen(
+                  leadId: currentDocument!.model!.id.toString(),
+                  leadName: value,
+                  leadStatus: "",
+                  statusId: 0,
+                ),
+              ),
+            );
+          }
+        },
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildLabel(label),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xff1E2E52),
+                  decoration: TextDecoration.underline,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (label == AppLocalizations.of(context)!.translate('comment')) {
       return GestureDetector(
         onTap: () {
           if (value.isNotEmpty) {
@@ -799,7 +842,7 @@ class _ClientReturnDocumentDetailsScreenState
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  (amount * (double.tryParse(good.price ?? '0.00') ?? 0.00)).toStringAsFixed(2),
+                                  parseNumberToString((amount * (double.tryParse(good.price ?? '0.00') ?? 0.00)).toStringAsFixed(2)),
                                   style: const TextStyle(
                                     fontSize: 12,
                                     fontFamily: 'Gilroy',
@@ -834,7 +877,7 @@ class _ClientReturnDocumentDetailsScreenState
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              '${((good.quantity ?? 0) * amount * (double.tryParse(good.price ?? '0') ?? 0)).toStringAsFixed(2)} ${currentDocument!.currency?.symbolCode ?? ''}',
+                              '${parseNumberToString(((good.quantity ?? 0) * amount * (double.tryParse(good.price ?? '0') ?? 0)).toStringAsFixed(2))} ${currentDocument!.currency?.symbolCode ?? ''}',
                               style: const TextStyle(
                                 fontSize: 14,
                                 fontFamily: 'Gilroy',
