@@ -405,7 +405,10 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                 message: AppLocalizations.of(context)!.translate('order_updated_successfully'),
                 isSuccess: true,
               );
-              Navigator.pop(context, true);
+              Navigator.pop(context, {
+                'success': true,
+                'statusId': state.statusId ?? widget.order.orderStatus.id,
+              });
             } else if (state is OrderError) {
               showCustomSnackBar(
                 context: context,
@@ -933,6 +936,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                             ? _commentController.text
                             : null,
                         managerId: selectedManager != null ? int.parse(selectedManager!) : null,
+                        statusId: widget.order.orderStatus.id, // Передаем текущий statusId
                       ));
                 } else {
                   showCustomSnackBar(
