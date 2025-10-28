@@ -149,6 +149,7 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
           // ✅ Don't use the price from newItem - let user enter it
           final modifiedItem = Map<String, dynamic>.from(newItem);
           modifiedItem['price'] = 0.0; // Set to 0 instead of using default price
+          modifiedItem.remove('quantity');
 
           _items.add(modifiedItem);
 
@@ -217,7 +218,8 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
         final basePrice = _items[index]['price'] ?? 0.0;
         
         // ✅ Пересчитываем total
-        _items[index]['total'] = (_items[index]['quantity'] * basePrice * newAmount).round();
+        final quantity = _items[index]['quantity'] ?? 0;
+        _items[index]['total'] = (quantity * basePrice * newAmount).round();
         
         // ✅ Показываем в контроллере: basePrice * newAmount
         _priceControllers[variantId]?.text = parseNumberToString(basePrice * newAmount);

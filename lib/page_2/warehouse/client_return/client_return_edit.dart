@@ -154,6 +154,7 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
           // ✅ Don't use the price from newItem - let user enter it
           final modifiedItem = Map<String, dynamic>.from(newItem);
           modifiedItem['price'] = 0.0; // Set to 0 instead of using default price
+          modifiedItem.remove('quantity');
 
           _items.add(modifiedItem);
 
@@ -222,7 +223,8 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
         final basePrice = _items[index]['price'] ?? 0.0;
         
         // ✅ Пересчитываем total
-        _items[index]['total'] = (_items[index]['quantity'] * basePrice * newAmount).round();
+        final quantity = _items[index]['quantity'] ?? 0;
+        _items[index]['total'] = (quantity * basePrice * newAmount).round();
         
         // ✅ Показываем в контроллере: basePrice * newAmount
         _priceControllers[variantId]?.text = parseNumberToString(basePrice * newAmount);
@@ -242,6 +244,7 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
           _items[index]['price'] = inputPrice / amount;
           
           // ✅ Total = quantity * введенная_цена (не базовая!)
+          debugPrint("quantity = ${_items[index]['quantity']}, inputPrice = $inputPrice");
           final quantity = _items[index]['quantity'] ?? 0;
           _items[index]['total'] = (quantity * inputPrice).round();
         }
@@ -342,7 +345,7 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
 
   void _updateItemQuantity(int variantId, String value) {
     final quantity = int.tryParse(value);
-    if (quantity != null && quantity > 0) {
+    if (quantity != null && quantity > 0 && value.isNotEmpty) {
       setState(() {
         final index = _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
