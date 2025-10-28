@@ -16,6 +16,7 @@ import 'package:crm_task_manager/page_2/warehouse/incoming/supplier_widget.dart'
 import 'package:crm_task_manager/page_2/warehouse/incoming/variant_selection_bottom_sheet.dart';
 import 'package:crm_task_manager/page_2/widgets/confirm_exit_dialog.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -118,7 +119,7 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
           'availableUnits': availableUnits,
         });
 
-        _priceControllers[variantId] = TextEditingController(text: (price * amount).toStringAsFixed(3));
+        _priceControllers[variantId] = TextEditingController(text: parseNumberToString(price * amount));
         _quantityControllers[variantId] = TextEditingController(text: quantity.toString());
         _quantityFocusNodes[variantId] = FocusNode();
         _priceFocusNodes[variantId] = FocusNode();
@@ -193,40 +194,46 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
     setState(() {
       final index = _items.indexWhere((item) => item['variantId'] == variantId);
       if (index != -1) {
-        final availableUnits = _items[index]['availableUnits'] as List<Unit>? ?? [];
-        final selectedUnitObj = availableUnits.firstWhere(
-              (unit) => (unit.name) == newUnit,
-          orElse: () => availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: '', amount: 1),
-        );
-
-        final previousAmount = _items[index]['amount'] ?? 1;
-        final newAmount = selectedUnitObj.amount ?? 1;
-
         _items[index]['selectedUnit'] = newUnit;
         _items[index]['unit_id'] = newUnitId;
+
+        final availableUnits = _items[index]['availableUnits'] as List<Unit>? ?? [];
+        final selectedUnitObj = availableUnits.firstWhere(
+          (unit) => (unit.name) == newUnit,
+          orElse: () => availableUnits.isNotEmpty 
+              ? availableUnits.first 
+              : Unit(id: null, name: '', amount: 1),
+        );
+
+        final newAmount = selectedUnitObj.amount ?? 1;
         _items[index]['amount'] = newAmount;
 
-        // ✅ Update the displayed price in the text field (multiply by new amount)
+        // ✅ Базовая цена НЕ меняется
         final basePrice = _items[index]['price'] ?? 0.0;
-        final displayPrice = basePrice * newAmount;
-        _priceControllers[variantId]?.text = displayPrice > 0 ? displayPrice.toStringAsFixed(3) : '';
-
-        // ✅ Recalculate total
+        
+        // ✅ Пересчитываем total
         _items[index]['total'] = (_items[index]['quantity'] * basePrice * newAmount).round();
+        
+        // ✅ Показываем в контроллере: basePrice * newAmount
+        _priceControllers[variantId]?.text = parseNumberToString(basePrice * newAmount);
       }
     });
   }
 
   void _updateItemPrice(int variantId, String value) {
-    final displayPrice = double.tryParse(value);
-    if (displayPrice != null && displayPrice >= 0) {
+    final inputPrice = double.tryParse(value);
+    if (inputPrice != null && inputPrice >= 0) {
       setState(() {
         final index = _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
           final amount = _items[index]['amount'] ?? 1;
-          // ✅ Store base price (divide by amount to get price per base unit)
-          _items[index]['price'] = displayPrice / amount;
-          _items[index]['total'] = (_items[index]['quantity'] * displayPrice).round();
+          
+          // ✅ ГЛАВНОЕ: price = введенная_цена / amount (базовая цена за 1 штуку)
+          _items[index]['price'] = inputPrice / amount;
+          
+          // ✅ Total = quantity * введенная_цена (не базовая!)
+          final quantity = _items[index]['quantity'] ?? 0;
+          _items[index]['total'] = (quantity * inputPrice).round();
         }
         _priceErrors[variantId] = false;
       });
@@ -307,8 +314,11 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
         final index = _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
           _items[index]['quantity'] = quantity;
+          final price = _items[index]['price'] ?? 0.0;
           final amount = _items[index]['amount'] ?? 1;
-          _items[index]['total'] = (_items[index]['quantity'] * _items[index]['price'] * amount).round();
+          
+          // ✅ Total = количество * базовая_цена * amount
+          _items[index]['total'] = (quantity * price * amount).round();
         }
         _quantityErrors[variantId] = false;
       });
