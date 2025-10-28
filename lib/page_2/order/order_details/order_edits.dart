@@ -94,7 +94,16 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
         address: '',
         isActive: 0,
       );
+    } else if (widget.order.storageId != null) {
+      _selectedBranch = Branch(
+        id: widget.order.storageId!,
+        name: widget.order.branchName ?? '',
+        address: '',
+        isActive: 0,
+      );
     }
+
+    debugPrint('storage id : ${widget.order.storageId}');
 
     String phoneText = widget.order.phone;
     _fullPhoneNumber = phoneText; // Сохраняем полный номер
@@ -388,6 +397,9 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
 
   @override
   Widget build(BuildContext context) {
+
+    debugPrint("selectedBranch ID  : ${_selectedBranch?.id}");
+
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (context) => OrderBloc(context.read<ApiService>())),
@@ -483,7 +495,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                           ),
                           const SizedBox(height: 16),
                           BranchRadioGroupWidget(
-                            selectedStatus: _selectedBranch?.toString(),
+                            selectedStatus: _selectedBranch?.id.toString(),
                             onSelectStatus: (Branch selectedStatusData) {
                               setState(() {
                                 _selectedBranch = selectedStatusData;
