@@ -9,6 +9,7 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../models/page_2/expense_document_model.dart';
 import '../../../models/page_2/incoming_document_model.dart';
 import '../../../widgets/snackbar_widget.dart';
 import '../../money/widgets/error_dialog.dart';
@@ -564,7 +565,7 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
                 );
               }
 
-              final List<IncomingDocument> currentData = state is ClientSaleLoaded ? state.data : [];
+              final List<ExpenseDocument> currentData = state is ClientSaleLoaded ? state.data : [];
 
               if (currentData.isEmpty && state is ClientSaleLoaded) {
                 return Center(

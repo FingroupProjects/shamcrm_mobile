@@ -3,9 +3,9 @@ import 'dart:convert';
 
 class MiniAppSettings {
   final int id;
-  final int active;
-  final int branch;
-  final int delivery;
+  final bool active;
+  final bool branch;
+  final bool delivery;
   final String deliverySum;
   final String name;
   final String startDate;
@@ -18,8 +18,8 @@ class MiniAppSettings {
   final String? createdAt;
   final String updatedAt;
   final String phone;
-  final int hasBonus;
-  final int identifyByPhone;
+  final bool hasBonus;
+  final bool identifyByPhone;
   final int countryId;
   final String? country;
 
@@ -49,9 +49,9 @@ class MiniAppSettings {
   factory MiniAppSettings.fromJson(Map<String, dynamic> json) {
     return MiniAppSettings(
       id: json['id'] ?? 0,
-      active: json['active'] ?? 0,
-      branch: json['branch'] ?? 0,
-      delivery: json['delivery'] ?? 0,
+      active: json['active'] ?? false,
+      branch: json['branch'] ?? false,
+      delivery: json['delivery'] ?? false,
       deliverySum: json['delivery_sum'] ?? '0.00',
       name: json['name'] ?? '',
       startDate: json['start_date'] ?? '',
@@ -64,8 +64,8 @@ class MiniAppSettings {
       createdAt: json['created_at'],
       updatedAt: json['updated_at'] ?? '',
       phone: json['phone'] ?? '',
-      hasBonus: json['has_bonus'] ?? 0,
-      identifyByPhone: json['identify_by_phone'] ?? 0,
+      hasBonus: json['has_bonus'] ?? false,
+      identifyByPhone: json['identify_by_phone'] ?? false,
       countryId: json['country_id'] ?? 0,
       country: json['country'],
     );

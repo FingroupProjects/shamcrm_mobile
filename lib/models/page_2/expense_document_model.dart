@@ -5,19 +5,19 @@ import 'package:flutter/material.dart';
 
 import 'goods_model.dart';
 
-// ================ Incoming Document Models ==================
+// ================ Expense Document Models ==================
 
-class IncomingResponse {
-  final List<IncomingDocument>? data;
+class ExpenseResponse {
+  final List<ExpenseDocument>? data;
   final Pagination? pagination;
 
-  IncomingResponse({this.data, this.pagination});
+  ExpenseResponse({this.data, this.pagination});
 
-  factory IncomingResponse.fromJson(Map<String, dynamic> json) {
-    return IncomingResponse(
+  factory ExpenseResponse.fromJson(Map<String, dynamic> json) {
+    return ExpenseResponse(
       data: json['data'] != null
           ? (json['data'] as List)
-              .map((i) => IncomingDocument.fromJson(i))
+              .map((i) => ExpenseDocument.fromJson(i))
               .toList()
           : null,
       pagination: json['pagination'] != null
@@ -34,7 +34,7 @@ class IncomingResponse {
   }
 }
 
-class IncomingDocument extends Equatable {
+class ExpenseDocument extends Equatable {
   final int? id;
   final DateTime? date;
   final String? modelType;
@@ -60,7 +60,7 @@ class IncomingDocument extends Equatable {
   final String? docNumber;
   final int? approved;
 
-  const IncomingDocument({
+  const ExpenseDocument({
     this.id,
     this.date,
     this.modelType,
@@ -95,8 +95,8 @@ class IncomingDocument extends Equatable {
     updatedAt
   ];
 
-  factory IncomingDocument.fromJson(Map<String, dynamic> json) {
-    return IncomingDocument(
+  factory ExpenseDocument.fromJson(Map<String, dynamic> json) {
+    return ExpenseDocument(
       id: parseInt(json['id']),
       date: parseDate(json['date']),
       modelType: json['model_type'],
@@ -162,31 +162,10 @@ class IncomingDocument extends Equatable {
         final quantity = documentGood.quantity ?? 0;
         final price = double.tryParse(documentGood.price ?? '0') ?? 0;
 
-        // Default multiplier = 1 (for base units)
-        num unitMultiplier = 1.0;
+        num unitMultiplier = documentGood.selectedUnit.amount ?? 1;
 
-        debugPrint("=== Processing IncomingDocumentGood ===");
-        debugPrint("DocumentGood.unitId: ${documentGood.unitId}");
-
-        final good = documentGood.good;
-
-        if (good != null && good.units != null && documentGood.unitId != null) {
-          // Find the unit with matching id in good.units array
-          try {
-            final matchingUnit = good.units!.firstWhere(
-              (unit) => unit.id == documentGood.unitId,
-            );
-            unitMultiplier = matchingUnit.amount ?? 1.0;
-            debugPrint("Found matching unit: id=${matchingUnit.id}, amount=${matchingUnit.amount}");
-          } catch (e) {
-            debugPrint("Unit not found in good.units array, using default multiplier 1.0");
-          }
-        }
-
-        debugPrint("Good.units array: ${good?.units?.map((u) => 'id:${u.id}, amount:${u.amount}').toList()}");
-        debugPrint("FINAL: price=$price, quantity=$quantity, multiplier=$unitMultiplier");
-        debugPrint("Item total: ${quantity * price * unitMultiplier}");
-        debugPrint("=== End IncomingDocumentGood ===\n");
+        debugPrint("selected unit = ${documentGood.selectedUnit.name}, amount=${documentGood.selectedUnit.amount}");
+        debugPrint('Calculating sum for documentGood id=${documentGood.id}: quantity=$quantity, price=$price, unitMultiplier=$unitMultiplier');
 
         return sum + (quantity * price * unitMultiplier);
       },
@@ -212,7 +191,7 @@ class IncomingDocument extends Equatable {
     return approved == 1 ? Colors.green : Colors.orange;
   }
 
-  IncomingDocument copyWith({
+  ExpenseDocument copyWith({
     int? id,
     DateTime? date,
     String? modelType,
@@ -238,7 +217,7 @@ class IncomingDocument extends Equatable {
     WareHouse? sender_storage_id,
     WareHouse? recipient_storage_id,
   }) {
-    return IncomingDocument(
+    return ExpenseDocument(
       id: id ?? this.id,
       date: date ?? this.date,
       modelType: modelType ?? this.modelType,
@@ -473,18 +452,11 @@ class Currency {
   final GoodVariant? goodVariant;
 
   Unit get selectedUnit {
-    if (unit?.id  != null && good?.units != null) {
-      final value = good!.units!.firstWhere(
-            (u) => u.id == unit!.id,
-        orElse: () => Unit(id: unit!.id, name: unit!.name, amount: 1),
-      );
-
-      debugPrint("Selected unit for DocumentGood id=$id: id=${value.id}, name=${value.name}, amount=${value.amount}");
-
-      return value;
+    if (unitId != null && goodVariant?.good?.units != null) {
+      return goodVariant!.good!.units!
+          .firstWhere((u) => u.id == unitId, orElse: () => Unit(id: unitId, name: 'Шт', amount: 1));
     }
-
-    return Unit(id: unit?.id, name: unit?.name, amount: 1);
+    return Unit(id: unit?.id, name: 'Шт', amount: 1);
   }
 
   DocumentGood({

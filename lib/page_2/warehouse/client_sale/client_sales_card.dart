@@ -7,8 +7,10 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../models/page_2/expense_document_model.dart';
+
 class ClientSalesCard extends StatefulWidget {
-  final IncomingDocument document;
+  final ExpenseDocument document;
   final VoidCallback? onUpdate;
   final Function() onLongPress;
   final bool isSelectionMode;

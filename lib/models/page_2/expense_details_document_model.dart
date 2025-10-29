@@ -5,19 +5,19 @@ import 'package:flutter/material.dart';
 
 import 'goods_model.dart';
 
-// ================ Incoming Document Models ==================
+// ================ Expense Document Models ==================
 
-class IncomingResponse {
-  final List<IncomingDocument>? data;
+class ExpenseResponse {
+  final List<ExpenseDocumentDetail>? data;
   final Pagination? pagination;
 
-  IncomingResponse({this.data, this.pagination});
+  ExpenseResponse({this.data, this.pagination});
 
-  factory IncomingResponse.fromJson(Map<String, dynamic> json) {
-    return IncomingResponse(
+  factory ExpenseResponse.fromJson(Map<String, dynamic> json) {
+    return ExpenseResponse(
       data: json['data'] != null
           ? (json['data'] as List)
-              .map((i) => IncomingDocument.fromJson(i))
+              .map((i) => ExpenseDocumentDetail.fromJson(i))
               .toList()
           : null,
       pagination: json['pagination'] != null
@@ -34,7 +34,7 @@ class IncomingResponse {
   }
 }
 
-class IncomingDocument extends Equatable {
+class ExpenseDocumentDetail extends Equatable {
   final int? id;
   final DateTime? date;
   final String? modelType;
@@ -60,7 +60,7 @@ class IncomingDocument extends Equatable {
   final String? docNumber;
   final int? approved;
 
-  const IncomingDocument({
+  const ExpenseDocumentDetail({
     this.id,
     this.date,
     this.modelType,
@@ -95,8 +95,8 @@ class IncomingDocument extends Equatable {
     updatedAt
   ];
 
-  factory IncomingDocument.fromJson(Map<String, dynamic> json) {
-    return IncomingDocument(
+  factory ExpenseDocumentDetail.fromJson(Map<String, dynamic> json) {
+    return ExpenseDocumentDetail(
       id: parseInt(json['id']),
       date: parseDate(json['date']),
       modelType: json['model_type'],
@@ -165,7 +165,7 @@ class IncomingDocument extends Equatable {
         // Default multiplier = 1 (for base units)
         num unitMultiplier = 1.0;
 
-        debugPrint("=== Processing IncomingDocumentGood ===");
+        debugPrint("=== Processing ExpenseDocumentGood ===");
         debugPrint("DocumentGood.unitId: ${documentGood.unitId}");
 
         final good = documentGood.good;
@@ -186,7 +186,7 @@ class IncomingDocument extends Equatable {
         debugPrint("Good.units array: ${good?.units?.map((u) => 'id:${u.id}, amount:${u.amount}').toList()}");
         debugPrint("FINAL: price=$price, quantity=$quantity, multiplier=$unitMultiplier");
         debugPrint("Item total: ${quantity * price * unitMultiplier}");
-        debugPrint("=== End IncomingDocumentGood ===\n");
+        debugPrint("=== End ExpenseDocumentGood ===\n");
 
         return sum + (quantity * price * unitMultiplier);
       },
@@ -212,7 +212,7 @@ class IncomingDocument extends Equatable {
     return approved == 1 ? Colors.green : Colors.orange;
   }
 
-  IncomingDocument copyWith({
+  ExpenseDocumentDetail copyWith({
     int? id,
     DateTime? date,
     String? modelType,
@@ -238,7 +238,7 @@ class IncomingDocument extends Equatable {
     WareHouse? sender_storage_id,
     WareHouse? recipient_storage_id,
   }) {
-    return IncomingDocument(
+    return ExpenseDocumentDetail(
       id: id ?? this.id,
       date: date ?? this.date,
       modelType: modelType ?? this.modelType,
@@ -473,18 +473,10 @@ class Currency {
   final GoodVariant? goodVariant;
 
   Unit get selectedUnit {
-    if (unit?.id  != null && good?.units != null) {
-      final value = good!.units!.firstWhere(
-            (u) => u.id == unit!.id,
-        orElse: () => Unit(id: unit!.id, name: unit!.name, amount: 1),
-      );
-
-      debugPrint("Selected unit for DocumentGood id=$id: id=${value.id}, name=${value.name}, amount=${value.amount}");
-
-      return value;
+    if (good?.units != null && unit?.id != null) {
+      return good!.units!.firstWhere((u) => u.id == unit?.id, orElse: () => Unit(id: unitId, name: 'Шт', amount: 1));
     }
-
-    return Unit(id: unit?.id, name: unit?.name, amount: 1);
+    return Unit(id: unit?.id, name: 'Шт', amount: 1);
   }
 
   DocumentGood({
@@ -572,7 +564,6 @@ class Good {
   final String? packageCode;
   final List<GoodFile>? files;
   final List<Unit>? units;
-  final List<dynamic>? measurements;
   final dynamic category;
   final Unit? unit;
 
@@ -596,7 +587,6 @@ class Good {
     this.packageCode,
     this.files,
     this.units,
-    this.measurements,
     this.category,
     this.unit,
   });
@@ -625,7 +615,6 @@ class Good {
       files: json['files'] != null
           ? (json['files'] as List).map((i) => GoodFile.fromJson(i)).toList()
           : null,
-      measurements: json['measurements'] as List<dynamic>?,
       category: json['category'],
       unit: json['unit'] != null ? Unit.fromJson(json['unit']) : null,
     );
@@ -652,7 +641,6 @@ class Good {
       'package_code': packageCode,
       'files': files?.map((e) => e.toJson()).toList(),
       'units': units?.map((e) => e.toJson()).toList(),
-      'measurements': measurements,
       'category': category,
       'unit': unit?.toJson(),
     };

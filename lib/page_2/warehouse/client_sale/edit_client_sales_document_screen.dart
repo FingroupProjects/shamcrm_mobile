@@ -5,8 +5,9 @@ import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/custom_widget/keyboard_dismissible.dart';
 import 'package:crm_task_manager/custom_widget/price_input_formatter.dart';
 import 'package:crm_task_manager/custom_widget/quantity_input_formatter.dart';
+import 'package:crm_task_manager/models/page_2/expense_details_document_model.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
-import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
+// import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/storage_widget.dart';
 import 'package:crm_task_manager/page_2/widgets/confirm_exit_dialog.dart';
@@ -23,7 +24,7 @@ import '../../../bloc/page_2_BLOC/variant_bloc/variant_event.dart';
 import '../incoming/variant_selection_bottom_sheet.dart';
 
 class EditClientSalesDocumentScreen extends StatefulWidget {
-  final IncomingDocument document;
+  final ExpenseDocumentDetail document;
 
   const EditClientSalesDocumentScreen({
     required this.document,

@@ -3,6 +3,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/document/client_sale/bloc/clie
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/main.dart';
+import 'package:crm_task_manager/models/page_2/expense_details_document_model.dart' as expDoc;
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/goods_details_screen.dart';
@@ -45,7 +46,7 @@ class ClientSalesDocumentDetailsScreen extends StatefulWidget {
 class _ClientSalesDocumentDetailsScreenState
     extends State<ClientSalesDocumentDetailsScreen> {
   final ApiService _apiService = ApiService();
-  IncomingDocument? currentDocument;
+  expDoc.ExpenseDocumentDetail? currentDocument;
   List<Map<String, dynamic>> details = [];
   bool _isLoading = false;
   bool _isButtonLoading = false;
@@ -55,6 +56,8 @@ class _ClientSalesDocumentDetailsScreenState
 
   @override
   void initState() {
+    debugPrint("documentId; ${widget.documentId}");
+
     super.initState();
     _initializeBaseUrl();
     _fetchDocumentDetails();
@@ -105,7 +108,7 @@ class _ClientSalesDocumentDetailsScreenState
     }
   }
 
-  void _updateDetails(IncomingDocument? document) {
+  void _updateDetails(expDoc.ExpenseDocumentDetail? document) {
     if (document == null) {
       details.clear();
       return;
@@ -160,7 +163,7 @@ class _ClientSalesDocumentDetailsScreenState
     ];
   }
 
-  String _getLocalizedStatus(IncomingDocument document) {
+  String _getLocalizedStatus(expDoc.ExpenseDocumentDetail document) {
     final localizations = AppLocalizations.of(context)!;
 
     if (document.deletedAt != null) {
@@ -669,7 +672,7 @@ class _ClientSalesDocumentDetailsScreenState
     );
   }
 
-  Widget _buildGoodsList(List<DocumentGood> goods) {
+  Widget _buildGoodsList(List<expDoc.DocumentGood> goods) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -710,9 +713,9 @@ class _ClientSalesDocumentDetailsScreenState
     );
   }
 
-  Widget _buildGoodsItem(DocumentGood good) {
-    final selectedUnit = good.good?.unit ?? Unit(id: null, name: '', shortName: '');
-    final amount = selectedUnit.amount ?? 1.0;
+  Widget _buildGoodsItem(expDoc.DocumentGood good) {
+    final selectedUnit = good.selectedUnit;
+    final amount = selectedUnit.amount ?? 1;
     final unitShortName = selectedUnit.shortName ?? selectedUnit.name ?? '';
 
     debugPrint("selectedUnit: $selectedUnit");
@@ -816,7 +819,7 @@ class _ClientSalesDocumentDetailsScreenState
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  parseNumberToString((amount * (double.tryParse(good.price ?? '0.00') ?? 0.00)).toStringAsFixed(2)),
+                                  parseNumberToString(((amount ?? 1) * (double.tryParse(good.price ?? '0.00') ?? 0.00)).toStringAsFixed(2)),
                                   style: const TextStyle(
                                     fontSize: 12,
                                     fontFamily: 'Gilroy',
@@ -851,7 +854,7 @@ class _ClientSalesDocumentDetailsScreenState
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              '${parseNumberToString(((good.quantity ?? 0) * amount * (double.tryParse(good.price ?? '0') ?? 0)).toStringAsFixed(2))} ${currentDocument!.currency?.symbolCode ?? ''}',
+                              '${parseNumberToString(((good.quantity ?? 0) * (amount ?? 1) * (double.tryParse(good.price ?? '0') ?? 0)).toStringAsFixed(2))} ${currentDocument!.currency?.symbolCode ?? ''}',
                               style: const TextStyle(
                                 fontSize: 14,
                                 fontFamily: 'Gilroy',
@@ -873,7 +876,7 @@ class _ClientSalesDocumentDetailsScreenState
     );
   }
 
-  Widget _buildImageWidget(DocumentGood good) {
+  Widget _buildImageWidget(expDoc.DocumentGood good) {
     if (baseUrl == null || good.good == null || good.good!.files == null || good.good!.files!.isEmpty) {
       return _buildPlaceholderImage();
     }
@@ -910,7 +913,7 @@ class _ClientSalesDocumentDetailsScreenState
     );
   }
 
-  void _navigateToGoodsDetails(DocumentGood good) {
+  void _navigateToGoodsDetails(expDoc.DocumentGood good) {
     final goodId = good.good?.id;
     if (goodId == null || goodId == 0) {
       _showSnackBar('Ошибка: Не удалось определить ID товара', false);
