@@ -59,6 +59,8 @@ import 'package:crm_task_manager/models/page_2/call_statistics1_model.dart';
 import 'package:crm_task_manager/models/page_2/call_summary_stats_model.dart';
 import 'package:crm_task_manager/models/page_2/category_dashboard_warehouse_model.dart';
 import 'package:crm_task_manager/models/field_configuration.dart';
+import 'package:crm_task_manager/models/page_2/expense_details_document_model.dart' as expDoc;
+import 'package:crm_task_manager/models/page_2/expense_document_model.dart' as expense;
 import 'package:crm_task_manager/models/page_2/opening_supplier_model.dart' as opening_supplier;
 import 'package:crm_task_manager/models/page_2/openings/client_dialog_model.dart' as opening_lead;
 import 'package:crm_task_manager/models/page_2/order_status_warehouse_model.dart';
@@ -10909,7 +10911,7 @@ Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
 //______________________________end incoming documents____________________________//
 
 //______________________________start client sales____________________________//
-  Future<IncomingResponse> getClientSales({
+  Future<expense.ExpenseResponse> getClientSales({
     int page = 1,
     int perPage = 20,
     String? query,
@@ -10965,7 +10967,7 @@ Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
       final response = await _getRequest(path);
       if (response.statusCode == 200) {
         final rawData = json.decode(response.body)['result']; // Как в JSON
-        return IncomingResponse.fromJson(rawData);
+        return expense.ExpenseResponse.fromJson(rawData);
       } else {
         final message = _extractErrorMessageFromResponse(response);
         throw ApiException(message ?? 'Ошибка сервера', response.statusCode);
@@ -10977,7 +10979,7 @@ Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
 
 
 
-  Future<IncomingDocument> getClienSalesById(int documentId) async {
+  Future<expDoc.ExpenseDocumentDetail> getClienSalesById(int documentId) async {
     String url = '/expense-documents/$documentId';
 
     final path = await _appendQueryParams(url);
@@ -10989,7 +10991,7 @@ Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
       final response = await _getRequest(path);
       if (response.statusCode == 200) {
         final rawData = json.decode(response.body)['result'];
-        return IncomingDocument.fromJson(rawData);
+        return expDoc.ExpenseDocumentDetail.fromJson(rawData);
       } else {
         final message = _extractErrorMessageFromResponse(response);
         throw ApiException(message ?? 'Ошибка сервера', response.statusCode);
