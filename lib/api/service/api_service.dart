@@ -15461,7 +15461,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     }
   }
 
-  Future<ExpenseResponse> getExpenseStructureByFilter(
+  Future<DashboardExpenseResponse> getExpenseStructureByFilter(
     Map<String, dynamic>? filters,
     String? search,
   ) async {
@@ -15507,7 +15507,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      return ExpenseResponse.fromJson(data);
+      return DashboardExpenseResponse.fromJson(data);
     } else {
       final message = _extractErrorMessageFromResponse(response);
       throw ApiException(
