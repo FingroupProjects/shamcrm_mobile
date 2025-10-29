@@ -169,7 +169,7 @@ class ApiService {
     '/login',
     '/get-user-by-email',
     '/checkDomain',
-    '/add-fcm-token',
+    // '/add-fcm-token',
   ];
   ApiService() {
     _initializeIfDomainExists();
@@ -776,12 +776,15 @@ Future<void> sendDeviceToken(String deviceToken) async {
   try {
     print('sendDeviceToken: Начало отправки токена');
     
+    // ← ДОБАВЬ ПРОВЕРКУ
+    if (baseUrl == null || baseUrl!.isEmpty) {
+      print('sendDeviceToken: baseUrl не инициализирован! Пропускаем отправку.');
+      await _savePendingToken(deviceToken); // ← сохраняем на потом
+      return;
+    }
+
     final token = await getToken();
     final organizationId = await getSelectedOrganization();
-    
-    print('sendDeviceToken: User token: ${token != null ? "exists" : "null"}');
-    print('sendDeviceToken: Organization ID: $organizationId');
-    print('sendDeviceToken: BaseUrl: $baseUrl');
     
     final url = '$baseUrl/add-fcm-token${organizationId != null ? '?organization_id=$organizationId' : ''}';
     print('sendDeviceToken: Full URL: $url');
@@ -800,21 +803,33 @@ Future<void> sendDeviceToken(String deviceToken) async {
       }),
     );
 
-    print('sendDeviceToken: Response status: ${response.statusCode}');
-    print('sendDeviceToken: Response body: ${response.body}');
-
     if (response.statusCode == 200) {
-      print('sendDeviceToken: ✅ FCM-токен успешно отправлен!');
+      print('sendDeviceToken: FCM-токен успешно отправлен!');
     } else {
-      print('sendDeviceToken: ❌ Ошибка ${response.statusCode}: ${response.body}');
-      throw Exception('Ошибка отправки FCM-токена: ${response.statusCode}');
+      print('sendDeviceToken: Ошибка ${response.statusCode}: ${response.body}');
+      await _savePendingToken(deviceToken);
     }
   } catch (e, stackTrace) {
-    print('sendDeviceToken: ❌ Exception: $e');
-    print('sendDeviceToken: StackTrace: $stackTrace');
+    print('sendDeviceToken: Exception: $e');
+    await _savePendingToken(deviceToken); // ← сохраняем при ошибке
     rethrow;
   }
-}Future<void> sendPendingFCMToken() async {
+}
+
+// ← ДОБАВЬ ЭТОТ МЕТОД
+Future<void> _savePendingToken(String token) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString('pending_fcm_token', token);
+  print('sendDeviceToken: Токен сохранён как отложенный');
+}
+
+Future<void> ensureInitialized() async {
+  if (baseUrl == null) {
+    await _initializeIfDomainExists();
+  }
+}
+
+Future<void> sendPendingFCMToken() async {
   try {
     print('ApiService: Проверка отложенного FCM токена');
     
@@ -921,7 +936,7 @@ Future<void> sendDeviceToken(String deviceToken) async {
     };
   }
 
-//_________________________________ START___API__DOMAIN_CHECK____________________________________________//
+//_________________________________ START___API__MARK:DOMAIN_CHECK____________________________________________//
 
   Future<http.Response> _postRequestDomain(
       String path, Map<String, dynamic> body) async {

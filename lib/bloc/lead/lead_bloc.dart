@@ -135,7 +135,11 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
       );
 
       // Кэшируем лиды БЕЗ изменения постоянных счетчиков
-      await LeadCache.cacheLeadsForStatus(event.statusId, leads);
+      await LeadCache.cacheLeadsForStatus(
+  event.statusId,
+  leads,
+  updatePersistentCount: event.ignoreCache, // ← только при ignoreCache обновляем счётчик
+);
       
       // ВАЖНО: НЕ ПЕРЕЗАПИСЫВАЕМ счетчики значениями из пагинации!
       // Счетчики остаются такими, какими были в постоянном кэше

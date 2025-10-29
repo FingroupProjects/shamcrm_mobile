@@ -8,24 +8,21 @@ class NoticeHistory {
   final String title;
   final List<HistoryItem> history;
 
-  NoticeHistory({
-    required this.id,
-    required this.title,
-    required this.history,
-  });
+  NoticeHistory({required this.id, required this.title, required this.history});
 
   factory NoticeHistory.fromJson(Map<String, dynamic> json) {
+    final historyJson = json['history'] as List<dynamic>? ?? [];
+    final history = historyJson
+        .map((e) => HistoryItem.fromJson(e as Map<String, dynamic>))
+        .toList();
+
     return NoticeHistory(
       id: json['id'] ?? 0,
-      title: json['title'] ?? '',
-      history: (json['history'] as List?)
-              ?.map((item) => HistoryItem.fromJson(item))
-              .toList() ??
-          [],
+      title: json['title'] ?? 'Без названия',
+      history: history,
     );
   }
 }
-
 // models/deal_history.dart
 class DealHistoryLead {
   final int id;
@@ -55,7 +52,7 @@ class HistoryItem {
   final User? user;
   final String status;
   final DateTime date;
-  final List<ChangesLead> changes;  // используем ChangesLead для сделок
+  final List<ChangeItem> changes;
 
   HistoryItem({
     required this.id,
@@ -66,20 +63,24 @@ class HistoryItem {
   });
 
   factory HistoryItem.fromJson(Map<String, dynamic> json) {
+    final userJson = json['user'];
+    final user = userJson != null ? User.fromJson(userJson) : null;
+
+    final changesJson = json['changes'] as List<dynamic>? ?? [];
+    final changes = changesJson
+        .map((e) => ChangeItem.fromJson(e as Map<String, dynamic>))
+        .where((c) => c.body.isNotEmpty)
+        .toList();
+
     return HistoryItem(
       id: json['id'] ?? 0,
-      user: User.fromJson(json['user'] ?? {}),
+      user: user,
       status: json['status'] ?? '',
-      date: DateTime.tryParse(json['date'] ?? '') ?? DateTime.now(),
-      changes: (json['changes'] is List)
-          ? (json['changes'] as List)
-              .map((item) => ChangesLead.fromJson(item))
-              .toList()
-          : [],
+      date: json['date'] != null ? DateTime.parse(json['date']) : DateTime.now(),
+      changes: changes,
     );
   }
-}
-// models/changes_lead.dart
+}// models/changes_lead.dart
 class ChangesLead {
   final int id;
   final Map<String, dynamic> body;
