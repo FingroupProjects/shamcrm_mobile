@@ -1101,7 +1101,7 @@ class TopPart extends StatelessWidget {
                 leading: const Icon(Icons.inventory_2, color: Colors.orange),
                 amountText: "${illiquidGoodsData.result?.liquidGoods ?? 0}/${illiquidGoodsData.result?.nonLiquidGoods ?? 0}",
                 showCurrencySymbol: false,
-                isUp: illiquidGoodsData.result?.liquidChangeFormatted.startsWith("+") ?? true,
+                isUp: illiquidGoodsData.result?.liquidChangeFormatted?.startsWith("+") ?? true,
                 trendText: "${illiquidGoodsData.result?.liquidChangeFormatted ?? '0.0%'}/${illiquidGoodsData.result?.nonLiquidChangeFormatted ?? '0.0%'}",
               ),
             ),

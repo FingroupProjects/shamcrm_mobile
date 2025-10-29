@@ -723,7 +723,7 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
   }
 
   Widget _buildGoodsItem(DocumentGood good) {
-    final selectedUnit = good.good?.unit ?? Unit(id: null, name: '', shortName: '');
+    final selectedUnit = good.selectedUnit;
     final amount = selectedUnit.amount ?? 1.0;
     final unitShortName = selectedUnit.shortName ?? selectedUnit.name ?? '';
 

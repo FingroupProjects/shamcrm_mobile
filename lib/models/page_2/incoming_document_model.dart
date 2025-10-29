@@ -472,6 +472,21 @@ class Currency {
   final Unit? unit;
   final GoodVariant? goodVariant;
 
+  Unit get selectedUnit {
+    if (unit?.id  != null && good?.units != null) {
+      final value = good!.units!.firstWhere(
+            (u) => u.id == unit!.id,
+        orElse: () => Unit(id: unit!.id, name: unit!.name, amount: 1),
+      );
+
+      debugPrint("Selected unit for DocumentGood id=$id: id=${value.id}, name=${value.name}, amount=${value.amount}");
+
+      return value;
+    }
+
+    return Unit(id: unit?.id, name: unit?.name, amount: 1);
+  }
+
   DocumentGood({
     this.id,
     this.documentId,

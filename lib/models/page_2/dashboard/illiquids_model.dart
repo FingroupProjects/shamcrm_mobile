@@ -30,12 +30,12 @@ class IlliquidGoodsResponse extends Equatable {
 }
 
 class IlliquidGoodsResult extends Equatable {
-  final int nonLiquidGoods;
-  final int liquidGoods;
-  final int nonLiquidChange;
-  final int liquidChange;
-  final String nonLiquidChangeFormatted;
-  final String liquidChangeFormatted;
+  final int? nonLiquidGoods;
+  final int? liquidGoods;
+  final int? nonLiquidChange;
+  final int? liquidChange;
+  final String? nonLiquidChangeFormatted;
+  final String? liquidChangeFormatted;
 
   const IlliquidGoodsResult({
     required this.nonLiquidGoods,
@@ -48,12 +48,12 @@ class IlliquidGoodsResult extends Equatable {
 
   factory IlliquidGoodsResult.fromJson(Map<String, dynamic> json) {
     return IlliquidGoodsResult(
-      nonLiquidGoods: json['nonLiquidGoods'] as int,
-      liquidGoods: json['liquidGoods'] as int,
-      nonLiquidChange: json['nonLiquidChange'] as int,
-      liquidChange: json['liquidChange'] as int,
-      nonLiquidChangeFormatted: json['nonLiquidChangeFormatted'] as String,
-      liquidChangeFormatted: json['liquidChangeFormatted'] as String,
+      nonLiquidGoods: json['nonLiquidGoods'] as int?,
+      liquidGoods: json['liquidGoods'] as int?,
+      nonLiquidChange: json['nonLiquidChange'] as int?,
+      liquidChange: json['liquidChange'] as int?,
+      nonLiquidChangeFormatted: json['nonLiquidChangeFormatted'] as String?,
+      liquidChangeFormatted: json['liquidChangeFormatted'] as String?,
     );
   }
 
@@ -69,12 +69,12 @@ class IlliquidGoodsResult extends Equatable {
   }
 
   @override
-  List<Object> get props => [
-    nonLiquidGoods,
-    liquidGoods,
-    nonLiquidChange,
-    liquidChange,
-    nonLiquidChangeFormatted,
-    liquidChangeFormatted,
-  ];
+  List<Object?> get props => [
+        nonLiquidGoods,
+        liquidGoods,
+        nonLiquidChange,
+        liquidChange,
+        nonLiquidChangeFormatted,
+        liquidChangeFormatted,
+      ];
 }
