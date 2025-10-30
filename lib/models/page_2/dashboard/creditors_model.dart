@@ -28,10 +28,10 @@ class CreditorsResponse extends Equatable {
 }
 
 class CreditorsResult extends Equatable {
-  final int totalDebt;
+  final num totalDebt;
   final List<Creditor> creditors;
   final Period period;
-  final double percentageChange;
+  final num percentageChange;
   final bool isPositiveChange;
 
   const CreditorsResult({
@@ -44,7 +44,7 @@ class CreditorsResult extends Equatable {
 
   factory CreditorsResult.fromJson(Map<String, dynamic> json) {
     return CreditorsResult(
-      totalDebt: json['total_debt'] as int,
+      totalDebt: json['total_debt'] as num,
       creditors: (json['creditors'] as List<dynamic>).map((e) => Creditor.fromJson(e as Map<String, dynamic>)).toList(),
       period: Period.fromJson(json['period'] as Map<String, dynamic>),
       percentageChange: (json['percentage_change'] as num).toDouble(), // Handle int or double
@@ -70,7 +70,7 @@ class Creditor extends Equatable {
   final int id;
   final String name;
   final String? phone;
-  final int debtAmount;
+  final num debtAmount;
 
   const Creditor({
     required this.id,
@@ -84,7 +84,7 @@ class Creditor extends Equatable {
       id: json['id'] as int,
       name: json['name'] as String,
       phone: json['phone'] as String?,
-      debtAmount: json['debt_amount'] as int,
+      debtAmount: json['debt_amount'] as num,
     );
   }
 
