@@ -89,19 +89,19 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
         final availableUnits = good.good?.units ?? (good.unit != null ? [good.unit!] : []);
         // ✅ Find the correct unit by matching unitId (same logic as totalSum)
         Unit? selectedUnitObj;
-        double amount = 1.0;
-        if (good.good?.units != null && good.unitId != null) {
-          // Search in good.good.units array for matching unit
-          for (var unit in good.good!.units!) {
-            if (unit.id == good.unitId) {
-              selectedUnitObj = unit;
-              amount = (unit.amount != null)
-                  ? double.tryParse(unit.amount.toString()) ?? 1.0
-                  : 1.0;
-              break;
-            }
-          }
-        }
+        double amount = 1.0; /// USE 1 for amount DO NOT CALCULATE FROM UNIT
+        // if (good.good?.units != null && good.unitId != null) {
+        //   // Search in good.good.units array for matching unit
+        //   for (var unit in good.good!.units!) {
+        //     if (unit.id == good.unitId) {
+        //       selectedUnitObj = unit;
+        //       amount = (unit.amount != null)
+        //           ? double.tryParse(unit.amount.toString()) ?? 1.0
+        //           : 1.0;
+        //       break;
+        //     }
+        //   }
+        // }
         // Fallback if not found
         selectedUnitObj ??= good.unit ?? (availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: 'шт'));
         debugPrint("amount of unit '${selectedUnitObj.name}': $amount");
@@ -191,65 +191,6 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
     }
   }
 
-  void _updateItemUnit(int variantId, String newUnit, int? newUnitId) {
-    setState(() {
-      final index = _items.indexWhere((item) => item['variantId'] == variantId);
-      if (index != -1) {
-        _items[index]['selectedUnit'] = newUnit;
-        _items[index]['unit_id'] = newUnitId;
-
-        final availableUnits = _items[index]['availableUnits'] as List<Unit>? ?? [];
-        final selectedUnitObj = availableUnits.firstWhere(
-          (unit) => (unit.name) == newUnit,
-          orElse: () => availableUnits.isNotEmpty 
-              ? availableUnits.first 
-              : Unit(id: null, name: '', amount: 1),
-        );
-
-        final newAmount = selectedUnitObj.amount ?? 1;
-        _items[index]['amount'] = newAmount;
-
-        // ✅ Базовая цена НЕ меняется
-        final basePrice = _items[index]['price'] ?? 0.0;
-        
-        // ✅ Пересчитываем total
-        final quantity = _items[index]['quantity'] ?? 0;
-        _items[index]['total'] = (quantity * basePrice * newAmount).round();
-        
-        // ✅ Показываем в контроллере: basePrice * newAmount
-        _priceControllers[variantId]?.text = parseNumberToString(basePrice * newAmount);
-      }
-    });
-  }
-
-  void _updateItemPrice(int variantId, String value) {
-    final inputPrice = double.tryParse(value);
-    if (inputPrice != null && inputPrice >= 0) {
-      setState(() {
-        final index = _items.indexWhere((item) => item['variantId'] == variantId);
-        if (index != -1) {
-          final amount = _items[index]['amount'] ?? 1;
-          
-          // ✅ ГЛАВНОЕ: price = введенная_цена / amount (базовая цена за 1 штуку)
-          _items[index]['price'] = inputPrice / amount;
-          
-          // ✅ Total = quantity * введенная_цена (не базовая!)
-          final quantity = _items[index]['quantity'] ?? 0;
-          _items[index]['total'] = (quantity * inputPrice).round();
-        }
-        _priceErrors[variantId] = false;
-      });
-    } else if (value.isEmpty) {
-      setState(() {
-        final index = _items.indexWhere((item) => item['variantId'] == variantId);
-        if (index != -1) {
-          _items[index]['price'] = 0.0;
-          _items[index]['total'] = 0.0;
-        }
-      });
-    }
-  }
-
   void _removeItem(int index) {
     if (mounted) {
       final removedItem = _items[index];
@@ -309,6 +250,64 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
     }
   }
 
+  void _updateItemUnit(int variantId, String newUnit, int? newUnitId) {
+    setState(() {
+      final index = _items.indexWhere((item) => item['variantId'] == variantId);
+      if (index != -1) {
+        _items[index]['selectedUnit'] = newUnit;
+        _items[index]['unit_id'] = newUnitId;
+
+        final availableUnits = _items[index]['availableUnits'] as List<Unit>? ?? [];
+        final selectedUnitObj = availableUnits.firstWhere(
+              (unit) => (unit.name) == newUnit,
+          orElse: () => availableUnits.isNotEmpty
+              ? availableUnits.first
+              : Unit(id: null, name: '', amount: 1),
+        );
+
+        final newAmount = selectedUnitObj.amount ?? 1;
+        _items[index]['amount'] = newAmount;
+
+        // ✅ Get the current price from the controller (user input)
+        final priceController = _priceControllers[variantId];
+        final currentDisplayPrice = double.tryParse(priceController?.text ?? '0') ?? 0.0;
+
+        // ✅ Update price in item
+        _items[index]['price'] = currentDisplayPrice;
+
+        // ✅ Recalculate total WITHOUT amount: quantity * price
+        final quantity = _items[index]['quantity'] ?? 0;
+        _items[index]['total'] = (quantity * currentDisplayPrice).round();
+      }
+    });
+  }
+
+  void _updateItemPrice(int variantId, String value) {
+    final inputPrice = double.tryParse(value);
+    if (inputPrice != null && inputPrice >= 0) {
+      setState(() {
+        final index = _items.indexWhere((item) => item['variantId'] == variantId);
+        if (index != -1) {
+          // ✅ Store the price as entered
+          _items[index]['price'] = inputPrice;
+
+          // ✅ Calculate total WITHOUT amount: quantity * price
+          final quantity = _items[index]['quantity'] ?? 0;
+          _items[index]['total'] = (quantity * inputPrice).round();
+        }
+        _priceErrors[variantId] = false;
+      });
+    } else if (value.isEmpty) {
+      setState(() {
+        final index = _items.indexWhere((item) => item['variantId'] == variantId);
+        if (index != -1) {
+          _items[index]['price'] = 0.0;
+          _items[index]['total'] = 0.0;
+        }
+      });
+    }
+  }
+
   void _updateItemQuantity(int variantId, String value) {
     final quantity = int.tryParse(value);
     if (quantity != null && quantity > 0) {
@@ -317,10 +316,9 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
         if (index != -1) {
           _items[index]['quantity'] = quantity;
           final price = _items[index]['price'] ?? 0.0;
-          final amount = _items[index]['amount'] ?? 1;
-          
-          // ✅ Total = количество * базовая_цена * amount
-          _items[index]['total'] = (quantity * price * amount).round();
+
+          // ✅ Total WITHOUT amount: quantity * price
+          _items[index]['total'] = (quantity * price).round();
         }
         _quantityErrors[variantId] = false;
       });
@@ -328,7 +326,8 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
       setState(() {
         final index = _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
-          _items[index]['quantity'] = 0;
+          // ✅ Remove quantity from item
+          _items[index].remove('quantity');
           _items[index]['total'] = 0.0;
         }
       });

@@ -187,7 +187,7 @@ class _IncomingCardState extends State<IncomingCard> {
                       ),
                       // show price from documentGoods
                       Text(
-                        '${localizations.translate('total') ?? 'Итого'} ${parseNumberToString(doc.totalSum.toStringAsFixed(0))}',
+                        '${localizations.translate('total') ?? 'Итого'} ${parseNumberToString(doc.totalSum.toStringAsFixed(2))}',
                         style: const TextStyle(
                           fontSize: 16,
                           fontFamily: 'Gilroy',

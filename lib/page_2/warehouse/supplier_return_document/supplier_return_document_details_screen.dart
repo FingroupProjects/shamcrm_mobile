@@ -724,7 +724,7 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
 
   Widget _buildGoodsItem(DocumentGood good) {
     final selectedUnit = good.selectedUnit;
-    final amount = selectedUnit.amount ?? 1.0;
+    final amount = 1.0; // USE 1 for amount DO NOT USE selectedUnit.amount ?? 1.0;
     final unitShortName = selectedUnit.shortName ?? selectedUnit.name ?? '';
 
     debugPrint("selectedUnit: $selectedUnit");
