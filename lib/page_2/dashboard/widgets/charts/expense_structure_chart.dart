@@ -2,8 +2,10 @@ import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/expense_structure.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
+import '../../../../bloc/page_2_BLOC/dashboard/sales_dashboard_bloc.dart';
 import '../../detailed_report/detailed_report_screen.dart';
 import 'download_popup_menu.dart';
 
@@ -17,7 +19,7 @@ class ExpenseStructureChart extends StatefulWidget {
 }
 
 class _ExpenseStructureChartState extends State<ExpenseStructureChart> with SingleTickerProviderStateMixin {
-  ExpensePeriodEnum selectedPeriod = ExpensePeriodEnum.month;
+  ExpensePeriodEnum selectedPeriod = ExpensePeriodEnum.year;
   bool isDownloading = false;
   int touchedIndex = -1;
 
@@ -60,6 +62,9 @@ class _ExpenseStructureChartState extends State<ExpenseStructureChart> with Sing
         selectedPeriod = period;
         touchedIndex = -1;
       });
+      
+      // Вызываем перезагрузку данных через Bloc
+      context.read<SalesDashboardBloc>().add(ReloadExpenseStructureData(period));
     }
   }
 
@@ -79,23 +84,23 @@ class _ExpenseStructureChartState extends State<ExpenseStructureChart> with Sing
     }
   }
 
-  void _handleDownload(DownloadFormat format) async {
-    setState(() {
-      isDownloading = true;
-    });
-
-    try {
-      await Future.delayed(const Duration(seconds: 2));
-    } catch (e) {
-      // Handle error silently
-    } finally {
-      if (mounted) {
-        setState(() {
-          isDownloading = false;
-        });
-      }
-    }
-  }
+  // void _handleDownload(DownloadFormat format) async {
+  //   setState(() {
+  //     isDownloading = true;
+  //   });
+  //
+  //   try {
+  //     await Future.delayed(const Duration(seconds: 2));
+  //   } catch (e) {
+  //     // Handle error silently
+  //   } finally {
+  //     if (mounted) {
+  //       setState(() {
+  //         isDownloading = false;
+  //       });
+  //     }
+  //   }
+  // }
 
   Widget _buildPeriodDropdown() {
     return CustomDropdown<ExpensePeriodEnum>(
@@ -301,18 +306,18 @@ class _ExpenseStructureChartState extends State<ExpenseStructureChart> with Sing
                   color: Colors.black,
                 ),
               ),
-              Transform.translate(
-                offset: const Offset(16, 0),
-                child: DownloadPopupMenu(
-                  onDownload: _handleDownload,
-                  loading: isDownloading,
-                  formats: const [
-                    DownloadFormat.png,
-                    DownloadFormat.svg,
-                    DownloadFormat.csv,
-                  ],
-                ),
-              ),
+              // Transform.translate(
+              //   offset: const Offset(16, 0),
+              //   child: DownloadPopupMenu(
+              //     onDownload: _handleDownload,
+              //     loading: isDownloading,
+              //     formats: const [
+              //       DownloadFormat.png,
+              //       DownloadFormat.svg,
+              //       DownloadFormat.csv,
+              //     ],
+              //   ),
+              // ),
             ],
           ),
 

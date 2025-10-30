@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../models/page_2/dashboard/creditors_model.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/creditors/sales_dashboard_creditors_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/sales_dashboard_bloc.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
 import '../../detailed_report/detailed_report_screen.dart';
 
@@ -447,14 +448,25 @@ class _CreditorsDialogState extends State<CreditorsDialog> {
                       // Кнопка "Подробнее"
                       Expanded(
                         child: ElevatedButton(
-                          onPressed: () {
+                          onPressed: () async {
                             debugPrint("Подробнее pressed");
-                            Navigator.of(context).pop(); // Сначала закрываем диалог
-                            Navigator.of(context).push(
+                            
+                            // Сохраняем BLoC перед закрытием диалога
+                            final dashboardBloc = context.read<SalesDashboardBloc>();
+                            
+                            Navigator.of(context).pop(); // Закрываем диалог
+                            
+                            // Переходим на экран отчетов и ждем результат
+                            final shouldReload = await Navigator.of(context).push<bool>(
                               MaterialPageRoute(
                                 builder: (context) => DetailedReportScreen(currentTabIndex: 3),
                               ),
                             );
+                            
+                            // Если вернулось true - перезагружаем
+                            if (shouldReload == true) {
+                              dashboardBloc.add(ReloadAllData());
+                            }
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white,

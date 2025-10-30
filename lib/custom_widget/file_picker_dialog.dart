@@ -7,19 +7,6 @@ import 'dart:io';
 /// Поддерживает: Файлы, Галерея, Камера
 class FilePickerDialog {
   /// Показывает диалог выбора и возвращает выбранные файлы
-  /// 
-  /// [context] - контекст для показа диалога
-  /// [allowMultiple] - разрешить множественный выбор
-  /// [maxSizeMB] - максимальный размер файлов в МБ
-  /// [currentTotalSizeMB] - текущий размер уже выбранных файлов
-  /// [fileLabel] - метка "Файл" (для локализации)
-  /// [galleryLabel] - метка "Галерея" (для локализации)
-  /// [cameraLabel] - метка "Камера" (для локализации)
-  /// [cancelLabel] - метка "Отмена" (для локализации)
-  /// [fileSizeTooLargeMessage] - сообщение об ошибке размера
-  /// [errorPickingFileMessage] - сообщение об ошибке выбора
-  /// 
-  /// Возвращает List<PickedFileInfo> или null если отменено
   static Future<List<PickedFileInfo>?> show({
     required BuildContext context,
     bool allowMultiple = true,
@@ -32,7 +19,8 @@ class FilePickerDialog {
     String? fileSizeTooLargeMessage,
     String? errorPickingFileMessage,
   }) async {
-    return showModalBottomSheet<List<PickedFileInfo>>(
+    // Показываем диалог выбора типа
+    final String? selectedType = await showModalBottomSheet<String>(
       context: context,
       backgroundColor: Colors.white,
       shape: RoundedRectangleBorder(
@@ -61,20 +49,7 @@ class FilePickerDialog {
                 icon: Icons.insert_drive_file_outlined,
                 label: fileLabel,
                 iconColor: Color(0xff4759FF),
-                onTap: () async {
-                  Navigator.pop(context);
-                  final result = await _pickFiles(
-                    allowMultiple: allowMultiple,
-                    maxSizeMB: maxSizeMB,
-                    currentTotalSizeMB: currentTotalSizeMB,
-                    context: context,
-                    fileSizeTooLargeMessage: fileSizeTooLargeMessage,
-                    errorPickingFileMessage: errorPickingFileMessage,
-                  );
-                  if (result != null) {
-                    Navigator.pop(context, result);
-                  }
-                },
+                onTap: () => Navigator.pop(context, 'file'),
               ),
               
               Divider(height: 1, color: Color(0xffF0F0F0)),
@@ -85,20 +60,7 @@ class FilePickerDialog {
                 icon: Icons.photo_library_outlined,
                 label: galleryLabel,
                 iconColor: Color(0xff10B981),
-                onTap: () async {
-                  Navigator.pop(context);
-                  final result = await _pickFromGallery(
-                    allowMultiple: allowMultiple,
-                    maxSizeMB: maxSizeMB,
-                    currentTotalSizeMB: currentTotalSizeMB,
-                    context: context,
-                    fileSizeTooLargeMessage: fileSizeTooLargeMessage,
-                    errorPickingFileMessage: errorPickingFileMessage,
-                  );
-                  if (result != null) {
-                    Navigator.pop(context, result);
-                  }
-                },
+                onTap: () => Navigator.pop(context, 'gallery'),
               ),
               
               Divider(height: 1, color: Color(0xffF0F0F0)),
@@ -109,19 +71,7 @@ class FilePickerDialog {
                 icon: Icons.camera_alt_outlined,
                 label: cameraLabel,
                 iconColor: Color(0xffF59E0B),
-                onTap: () async {
-                  Navigator.pop(context);
-                  final result = await _pickFromCamera(
-                    maxSizeMB: maxSizeMB,
-                    currentTotalSizeMB: currentTotalSizeMB,
-                    context: context,
-                    fileSizeTooLargeMessage: fileSizeTooLargeMessage,
-                    errorPickingFileMessage: errorPickingFileMessage,
-                  );
-                  if (result != null) {
-                    Navigator.pop(context, result);
-                  }
-                },
+                onTap: () => Navigator.pop(context, 'camera'),
               ),
               
               SizedBox(height: 8),
@@ -157,6 +107,44 @@ class FilePickerDialog {
         );
       },
     );
+
+    // Если пользователь отменил - выходим
+    if (selectedType == null) return null;
+
+    // В зависимости от выбора - открываем нужный picker
+    switch (selectedType) {
+      case 'file':
+        return await _pickFiles(
+          allowMultiple: allowMultiple,
+          maxSizeMB: maxSizeMB,
+          currentTotalSizeMB: currentTotalSizeMB,
+          context: context,
+          fileSizeTooLargeMessage: fileSizeTooLargeMessage,
+          errorPickingFileMessage: errorPickingFileMessage,
+        );
+      
+      case 'gallery':
+        return await _pickFromGallery(
+          allowMultiple: allowMultiple,
+          maxSizeMB: maxSizeMB,
+          currentTotalSizeMB: currentTotalSizeMB,
+          context: context,
+          fileSizeTooLargeMessage: fileSizeTooLargeMessage,
+          errorPickingFileMessage: errorPickingFileMessage,
+        );
+      
+      case 'camera':
+        return await _pickFromCamera(
+          maxSizeMB: maxSizeMB,
+          currentTotalSizeMB: currentTotalSizeMB,
+          context: context,
+          fileSizeTooLargeMessage: fileSizeTooLargeMessage,
+          errorPickingFileMessage: errorPickingFileMessage,
+        );
+      
+      default:
+        return null;
+    }
   }
 
   /// Вспомогательный метод для создания опции
@@ -229,10 +217,12 @@ class FilePickerDialog {
         );
 
         if (currentTotalSizeMB + newFilesSize > maxSizeMB) {
-          _showError(
-            context,
-            fileSizeTooLargeMessage ?? 'Размер файлов превышает $maxSizeMB МБ',
-          );
+          if (context.mounted) {
+            _showError(
+              context,
+              fileSizeTooLargeMessage ?? 'Размер файлов превышает $maxSizeMB МБ',
+            );
+          }
           return null;
         }
 
@@ -245,10 +235,12 @@ class FilePickerDialog {
         }).toList();
       }
     } catch (e) {
-      _showError(
-        context,
-        errorPickingFileMessage ?? 'Ошибка при выборе файла!',
-      );
+      if (context.mounted) {
+        _showError(
+          context,
+          errorPickingFileMessage ?? 'Ошибка при выборе файла!',
+        );
+      }
     }
     return null;
   }
@@ -283,10 +275,12 @@ class FilePickerDialog {
           newFilesSize += fileSize / (1024 * 1024);
 
           if (currentTotalSizeMB + newFilesSize > maxSizeMB) {
-            _showError(
-              context,
-              fileSizeTooLargeMessage ?? 'Размер файлов превышает $maxSizeMB МБ',
-            );
+            if (context.mounted) {
+              _showError(
+                context,
+                fileSizeTooLargeMessage ?? 'Размер файлов превышает $maxSizeMB МБ',
+              );
+            }
             return null;
           }
 
@@ -300,10 +294,12 @@ class FilePickerDialog {
         return pickedFiles;
       }
     } catch (e) {
-      _showError(
-        context,
-        errorPickingFileMessage ?? 'Ошибка при выборе из галереи!',
-      );
+      if (context.mounted) {
+        _showError(
+          context,
+          errorPickingFileMessage ?? 'Ошибка при выборе из галереи!',
+        );
+      }
     }
     return null;
   }
@@ -326,10 +322,12 @@ class FilePickerDialog {
         final fileSizeMB = fileSize / (1024 * 1024);
 
         if (currentTotalSizeMB + fileSizeMB > maxSizeMB) {
-          _showError(
-            context,
-            fileSizeTooLargeMessage ?? 'Размер файла превышает $maxSizeMB МБ',
-          );
+          if (context.mounted) {
+            _showError(
+              context,
+              fileSizeTooLargeMessage ?? 'Размер файла превышает $maxSizeMB МБ',
+            );
+          }
           return null;
         }
 
@@ -342,10 +340,12 @@ class FilePickerDialog {
         ];
       }
     } catch (e) {
-      _showError(
-        context,
-        errorPickingFileMessage ?? 'Ошибка при съемке фото!',
-      );
+      if (context.mounted) {
+        _showError(
+          context,
+          errorPickingFileMessage ?? 'Ошибка при съемке фото!',
+        );
+      }
     }
     return null;
   }

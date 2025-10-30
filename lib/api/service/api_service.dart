@@ -772,15 +772,22 @@ Future<http.Response> _patchRequest(
   //_________________________________ START___API__METHOD__POST__DEVICE__TOKEN_________________________________________________//
 
   // Добавление метода для отправки токена устройства
-  Future<void> sendDeviceToken(String deviceToken) async {
-    final token =
-        await getToken(); // Получаем токен пользователя (если он есть)
-    // Эндпоинт /add-fcm-token входит в _excludedEndpoints, поэтому не используем _appendQueryParams
+Future<void> sendDeviceToken(String deviceToken) async {
+  try {
+    print('sendDeviceToken: Начало отправки токена');
+    
+    final token = await getToken();
     final organizationId = await getSelectedOrganization();
+    
+    print('sendDeviceToken: User token: ${token != null ? "exists" : "null"}');
+    print('sendDeviceToken: Organization ID: $organizationId');
+    print('sendDeviceToken: BaseUrl: $baseUrl');
+    
+    final url = '$baseUrl/add-fcm-token${organizationId != null ? '?organization_id=$organizationId' : ''}';
+    print('sendDeviceToken: Full URL: $url');
 
     final response = await http.post(
-      Uri.parse(
-          '$baseUrl/add-fcm-token${organizationId != null ? '?organization_id=$organizationId' : ''}'), // Используем оригинальный путь, так как исключён
+      Uri.parse(url),
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -788,19 +795,55 @@ Future<http.Response> _patchRequest(
         'Device': 'mobile'
       },
       body: json.encode({
-        'type': 'mobile', // Указываем тип устройства
-        'token': deviceToken, // Передаем FCM-токен устройства
+        'type': 'mobile',
+        'token': deviceToken,
       }),
     );
 
-    if (response.statusCode == 200) {
-      ////print('FCM-токен успешно отправлен!');
-    } else {
-      ////print('Ошибка при отправке FCM-токена!');
-      throw Exception('Ошибка!');
-    }
-  }
+    print('sendDeviceToken: Response status: ${response.statusCode}');
+    print('sendDeviceToken: Response body: ${response.body}');
 
+    if (response.statusCode == 200) {
+      print('sendDeviceToken: ✅ FCM-токен успешно отправлен!');
+    } else {
+      print('sendDeviceToken: ❌ Ошибка ${response.statusCode}: ${response.body}');
+      throw Exception('Ошибка отправки FCM-токена: ${response.statusCode}');
+    }
+  } catch (e, stackTrace) {
+    print('sendDeviceToken: ❌ Exception: $e');
+    print('sendDeviceToken: StackTrace: $stackTrace');
+    rethrow;
+  }
+}Future<void> sendPendingFCMToken() async {
+  try {
+    print('ApiService: Проверка отложенного FCM токена');
+    
+    final prefs = await SharedPreferences.getInstance();
+    final pendingToken = prefs.getString('pending_fcm_token');
+    
+    if (pendingToken != null && pendingToken.isNotEmpty) {
+      print('ApiService: Найден отложенный FCM токен, отправляем на сервер');
+      
+      // Проверяем что baseUrl инициализирован
+      // if (baseUrl.isEmpty) {
+      //   print('ApiService: baseUrl не инициализирован, пропускаем отправку');
+      //   return;
+      // }
+      
+      await sendDeviceToken(pendingToken);
+      
+      // Удаляем токен после успешной отправки
+      await prefs.remove('pending_fcm_token');
+      print('ApiService: FCM токен успешно отправлен и удалён из локального хранилища');
+      
+    } else {
+      print('ApiService: Отложенный FCM токен не найден');
+    }
+    
+  } catch (e) {
+    print('ApiService: Ошибка отправки отложенного FCM токена: $e');
+  }
+}
 //_________________________________ END___API__METHOD__POST__DEVICE__TOKEN_________________________________________________//
   // Новый метод для получения домена из QR данных
   Future<String?> _getQrDomain() async {
@@ -14781,23 +14824,102 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     return allExpensesData;
   }
 
-  Future<SalesResponse> getSalesDynamics() async {
-    // Формируем параметры запроса
-    var path = await _appendQueryParams('/dashboard/sales-dynamics');
+  /// Загрузка данных expense structure для конкретного периода
+  Future<AllExpensesData> getExpenseStructureForPeriod(
+    ExpensePeriodEnum period,
+  ) async {
+    final path = await _appendQueryParams('/fin/dashboard/expense-structure?period=${period.name}');
+    
+    debugPrint("ApiService: getExpenseStructureForPeriod path: $path for period: ${period.name}");
 
-    debugPrint("ApiService: getSalesDynamics path: $path");
+    try {
+      final response = await _getRequest(path);
 
-    final response = await _getRequest(path);
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final expenseDashboard = ExpenseDashboard.fromJson(data);
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      return SalesResponse.fromJson(data);
-    } else {
-      final message = _extractErrorMessageFromResponse(response);
-      throw ApiException(
-        message ?? 'Ошибка',
-        response.statusCode,
-      );
+        return AllExpensesData(
+          period: period,
+          data: expenseDashboard,
+        );
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка загрузки данных для периода ${period.name}',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      debugPrint("Error fetching expense structure for period $period: $e");
+      rethrow;
+    }
+  }
+
+  Future<List<AllSalesDynamicsData>> getSalesDynamics() async {
+    // Define all periods to fetch
+    final periods = [
+      SalesDynamicsTimePeriod.year,
+      SalesDynamicsTimePeriod.previousYear,
+    ];
+
+    // List to store results
+    final List<AllSalesDynamicsData> allSalesDynamicsData = [];
+
+    // Iterate through each period
+    for (final period in periods) {
+      try {
+        final periodData = await getSalesDynamicsForPeriod(period);
+        allSalesDynamicsData.add(periodData);
+      } catch (e) {
+        debugPrint("Error fetching sales dynamics for period $period: $e");
+        // Продолжаем загрузку других периодов даже при ошибке
+      }
+    }
+
+    return allSalesDynamicsData;
+  }
+
+  /// Загрузка данных sales dynamics для конкретного периода
+  Future<AllSalesDynamicsData> getSalesDynamicsForPeriod(
+    SalesDynamicsTimePeriod period,
+  ) async {
+    // Формируем параметры в зависимости от периода
+    String periodParam;
+    switch (period) {
+      case SalesDynamicsTimePeriod.year:
+        periodParam = 'year';
+        break;
+      case SalesDynamicsTimePeriod.previousYear:
+        periodParam = 'last_year';
+        break;
+    }
+
+    var path = await _appendQueryParams('/dashboard/sales-dynamics?period=$periodParam');
+    
+    debugPrint("ApiService: getSalesDynamicsForPeriod path: $path for period: ${period.name}");
+
+    try {
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final salesResponse = SalesResponse.fromJson(data);
+
+        return AllSalesDynamicsData(
+          period: period,
+          data: salesResponse,
+        );
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка загрузки данных для периода ${period.name}',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      debugPrint("Error fetching sales dynamics for period $period: $e");
+      rethrow;
     }
   }
 
@@ -14839,6 +14961,38 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     }
 
     return allNetProfitData;
+  }
+
+  /// Загрузка данных net profit для конкретного периода
+  Future<AllNetProfitData> getNetProfitDataForPeriod(
+    NetProfitPeriod period,
+  ) async {
+    final path = await _appendQueryParams('/dashboard/net-profit?period=${period.name}');
+    
+    debugPrint("ApiService: getNetProfitDataForPeriod path: $path for period: ${period.name}");
+
+    try {
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final netProfitDashboard = NetProfitDashboard.fromJson(data);
+
+        return AllNetProfitData(
+          period: period,
+          data: netProfitDashboard,
+        );
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка загрузки данных для периода ${period.name}',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      debugPrint("Error fetching net profit for period $period: $e");
+      rethrow;
+    }
   }
 
   Future<List<AllOrdersData>> getOrderDashboard() async {
@@ -14884,6 +15038,37 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     return allOrdersData;
   }
 
+  /// Загрузка данных order dashboard для конкретного периода
+  Future<AllOrdersData> getOrderDashboardForPeriod(
+    OrderTimePeriod period,
+  ) async {
+    final path = await _appendQueryParams('/order/dashboard?period=${period.name}');
+    
+    debugPrint("ApiService: getOrderDashboardForPeriod path: $path for period: ${period.name}");
+
+    try {
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final orderDashboardResponse = OrderDashboardResponse.fromJson(data);
+
+        return AllOrdersData(
+          period: period,
+          data: orderDashboardResponse.result,
+        );
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка загрузки данных для периода ${period.name}',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      debugPrint("Error fetching order dashboard for period $period: $e");
+      rethrow;
+    }
+  }
 
 // API request function
   Future<List<AllProfitabilityData>> getProfitability() async {
@@ -14928,9 +15113,42 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     return allProfitabilityData;
   }
 
+  /// Загрузка данных profitability для конкретного периода
+  Future<AllProfitabilityData> getProfitabilityForPeriod(
+    ProfitabilityTimePeriod period,
+  ) async {
+    final path = await _appendQueryParams('/dashboard/profitability?period=${period.name}');
+    
+    debugPrint("ApiService: getProfitabilityForPeriod path: $path for period: ${period.name}");
+
+    try {
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final profitabilityResponse = ProfitabilityDashboard.fromJson(data);
+
+        return AllProfitabilityData(
+          period: period,
+          data: profitabilityResponse,
+        );
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка загрузки данных для периода ${period.name}',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      debugPrint("Error fetching profitability for period $period: $e");
+      rethrow;
+    }
+  }
+
   Future<List<AllTopSellingData>> getTopSellingGoodsDashboard({int perPage = 7}) async {
     // Define all periods to fetch
     final periods = [
+      TopSellingTimePeriod.day,
       TopSellingTimePeriod.week,
       TopSellingTimePeriod.month,
       TopSellingTimePeriod.year,
@@ -14973,6 +15191,40 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     }
 
     return allTopSellingData;
+  }
+
+  /// Загрузка данных топ-продаж для конкретного периода
+  Future<AllTopSellingData> getTopSellingGoodsForPeriod(
+    TopSellingTimePeriod period, {
+    int perPage = 7,
+  }) async {
+    final query = ['per_page=$perPage', 'period=${period.name}'].join('&');
+    final path = await _appendQueryParams('/dashboard/top-selling-goods?$query');
+    
+    debugPrint("ApiService: getTopSellingGoodsForPeriod path: $path for period: ${period.name}");
+
+    try {
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final topSellingResponse = TopSellingGoodsResponse.fromJson(data);
+
+        return AllTopSellingData(
+          period: period,
+          data: topSellingResponse.result,
+        );
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка загрузки данных для периода ${period.name}',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      debugPrint("Error fetching data for period $period: $e");
+      rethrow;
+    }
   }
 
   Future<List<TopSellingCardModel>> getTopSellingCardsByFilter({
