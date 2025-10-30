@@ -65,7 +65,7 @@ class _EmptyScreenState extends State<EmptyScreen> {
                     textAlign: TextAlign.center,
                   ),
                   SizedBox(height: 10),
-                  Image.asset('assets/icons/shamCRM.jpg', height: 80),
+                  Image.asset('assets/images/new_icon_shamCRM.jpg', height: 80),
                 ],
               ),
             ),
