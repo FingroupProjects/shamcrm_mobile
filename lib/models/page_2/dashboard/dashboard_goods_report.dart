@@ -45,8 +45,6 @@ class DashboardGoods {
   final String category;
   final String totalQuantity; // Renamed from quantity
   final List<Storage> storages; // New field for storages array
-  final String daysWithoutMovement;
-  final String sum;
 
   DashboardGoods({
     required this.id,
@@ -55,8 +53,6 @@ class DashboardGoods {
     required this.category,
     required this.totalQuantity,
     required this.storages,
-    required this.daysWithoutMovement,
-    required this.sum,
   });
 
   factory DashboardGoods.fromJson(Map<String, dynamic> json) {
@@ -67,8 +63,6 @@ class DashboardGoods {
       category: json['category'] as String? ?? '',
       totalQuantity: json['total_quantity'] as String? ?? '0',
       storages: (json['storages'] as List?)?.map((i) => Storage.fromJson(i)).toList() ?? [],
-      daysWithoutMovement: json['days_without_movement'] as String? ?? '0',
-      sum: json['sum'] as String? ?? '0',
     );
   }
 }
