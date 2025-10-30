@@ -259,7 +259,9 @@ class Chats {
       'telegram_account': 'assets/icons/leads/telegram.png',
       'whatsapp': 'assets/icons/leads/whatsapp.png',
       'instagram': 'assets/icons/leads/instagram.png',
-      'facebook': 'assets/icons/leads/facebook.png',
+      'facebook': 'assets/icons/leads/messenger.png',
+      'messenger': 'assets/icons/leads/messenger.png',
+      'phone': 'assets/icons/leads/telefon.png',
       'email': 'assets/icons/leads/email.png',
     };
     return channelIconMap[channel] ?? 'assets/icons/leads/default.png';

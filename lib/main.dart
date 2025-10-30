@@ -16,6 +16,7 @@ import 'package:crm_task_manager/bloc/chats/delete_message/delete_message_bloc.d
 import 'package:crm_task_manager/bloc/chats/groupe_chat/group_chat_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/template_bloc/template_bloc.dart';
 import 'package:crm_task_manager/bloc/contact_person/contact_person_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard/charts/overdue_tasks/overdue_tasks_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/user_task/user_task_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/process_speed/ProcessSpeed_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/conversion/conversion_bloc.dart';
@@ -799,6 +800,11 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => SalesDashboardCreditorsBloc()),
         BlocProvider(create: (context) => SalesDashboardDebtorsBloc()),
         BlocProvider(create: (context) => FieldConfigurationBloc(widget.apiService)),
+        BlocProvider<OverdueTasksBloc>(
+            create: (context) => OverdueTasksBloc(
+              apiService: context.read<ApiService>(),
+            ),
+          ),
      ],
       child: MaterialApp(
         locale: _locale ?? const Locale('ru'),
