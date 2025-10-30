@@ -1,11 +1,37 @@
+
+
+import 'package:crm_task_manager/models/lead_history_model.dart';
 import 'package:crm_task_manager/models/notice_history_model.dart';
+
+class DealHistoryLead {
+  final int id;
+  final String title;
+  final List<HistoryItem> history;
+
+  DealHistoryLead({
+    required this.id,
+    required this.title,
+    required this.history,
+  });
+
+  factory DealHistoryLead.fromJson(Map<String, dynamic> json) {
+    return DealHistoryLead(
+      id: json['id'] ?? 0,
+      title: json['name'] ?? '',
+      history: (json['history'] as List?)
+              ?.map((item) => HistoryItem.fromJson(item))
+              .toList() ??
+          [],
+    );
+  }
+}
 
 class DealHistory {
   final int id;
   final User user;
   final String status;
   final DateTime date;
-  final List<ChangesLead> changes; // Теперь список!
+  final List<ChangeItem> changes;
 
   DealHistory({
     required this.id,
@@ -18,12 +44,14 @@ class DealHistory {
   factory DealHistory.fromJson(Map<String, dynamic> json) {
     try {
       final userJson = json['user'];
-      final user = userJson != null ? User.fromJson(userJson) : User(id: 0, name: 'Система', email: '', phone: '');
+      final user = userJson != null 
+          ? User.fromJson(userJson) 
+          : User(id: 0, name: 'Система', email: '', phone: '');
 
       final changesJson = json['changes'] as List<dynamic>? ?? [];
+      // Убрали фильтрацию - сохраняем все changes
       final changes = changesJson
-          .map((item) => ChangesLead.fromJson(item))
-          .where((c) => c.body.isNotEmpty)
+          .map((item) => ChangeItem.fromJson(item))
           .toList();
 
       return DealHistory(
@@ -42,31 +70,5 @@ class DealHistory {
         changes: [],
       );
     }
-  }
-}
-class User {
-  final int id;
-  final String name;
-  final String lastname;
-  final String email;
-  final String phone;
-  final String full_name;
-
-  User({
-    required this.id,
-    required this.name,
-    this.lastname = '',
-    required this.email,
-    required this.phone,
-  }) : full_name = '$name $lastname'.trim();
-
-  factory User.fromJson(Map<String, dynamic> json) {
-    return User(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? 'Система',
-      lastname: json['lastname'] ?? '',
-      email: json['email'] ?? '',
-      phone: json['phone'] ?? '',
-    );
   }
 }

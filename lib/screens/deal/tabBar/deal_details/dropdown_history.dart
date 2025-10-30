@@ -179,45 +179,44 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
     );
   }
 
-  // MARK: - Формирование истории
-  List<String> _buildActionHistoryItems(List<DealHistoryLead> history) {
-    return history.expand((deal) {
-      return deal.history.map((item) {
-        final userName = item.user?.name ?? 'Система';
-        final date = DateFormat('dd.MM.yyyy HH:mm').format(item.date.toLocal());
-        final header = '${item.status}\n$userName $date';
+ // MARK: - Формирование истории
+List<String> _buildActionHistoryItems(List<DealHistoryLead> history) {
+  return history.expand((deal) {
+    return deal.history.map((item) {
+      final userName = item.user?.fullName ?? 'Система'; // Используем fullName!
+      final date = DateFormat('dd.MM.yyyy HH:mm').format(item.date.toLocal());
+      final header = '${item.status}\n$userName $date';
 
-        if (item.changes.isEmpty) return header;
+      if (item.changes.isEmpty) return header;
 
-        final lines = <String>[];
+      final lines = <String>[];
 
-        for (final change in item.changes) {
-          for (final MapEntry(:key, :value) in change.body.entries) {
-            if (value is! ChangeValue) continue;
+      for (final change in item.changes) {
+        for (final MapEntry(:key, :value) in change.body.entries) {
+          if (value is! ChangeValue) continue; // Добавляем проверку типа
 
-            final prev = value.previousValue?.toString() ?? '';
-            final next = value.newValue?.toString() ?? '';
+          final prev = value.previousValue?.toString() ?? '';
+          final next = value.newValue?.toString() ?? '';
 
-            final prevText = prev.isEmpty ? '—' : prev;
-            final nextText = next.isEmpty ? '—' : next;
+          final prevText = prev.isEmpty ? '—' : prev;
+          final nextText = next.isEmpty ? '—' : next;
 
-            final field = _formatFieldName(key);
+          final field = _formatFieldName(key);
 
-            if (key == 'start_date' || key == 'end_date' || key == 'status_update_date') {
-              final prevDate = _formatDate(prev);
-              final nextDate = _formatDate(next);
-              lines.add('$field: $prevDate → $nextDate');
-            } else {
-              lines.add('$field: $prevText → $nextText');
-            }
+          if (key == 'start_date' || key == 'end_date' || key == 'status_update_date') {
+            final prevDate = _formatDate(prev);
+            final nextDate = _formatDate(next);
+            lines.add('$field: $prevDate → $nextDate');
+          } else {
+            lines.add('$field: $prevText → $nextText');
           }
         }
+      }
 
-        return lines.isEmpty ? header : '$header\n${lines.join('\n')}';
-      });
-    }).toList();
-  }
-
+      return lines.isEmpty ? header : '$header\n${lines.join('\n')}';
+    });
+  }).toList();
+}
   // MARK: - Названия полей
   String _formatFieldName(String key) {
     return switch (key) {

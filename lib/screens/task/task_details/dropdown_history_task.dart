@@ -2,6 +2,7 @@ import 'package:crm_task_manager/bloc/history_task/task_history_bloc.dart';
 import 'package:crm_task_manager/bloc/history_task/task_history_event.dart';
 import 'package:crm_task_manager/bloc/history_task/task_history_state.dart';
 import 'package:crm_task_manager/models/history_model_task.dart';
+import 'package:crm_task_manager/models/lead_history_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -203,45 +204,46 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidgetTask> {
     );
   }
 
-  // MARK: - Формирование истории
-  List<String> _buildActionHistoryItems(List<TaskHistory> history) {
-    return history.map((entry) {
-      final userName = entry.user.name;
-      final date = DateFormat('dd.MM.yyyy HH:mm').format(entry.date.toLocal());
-      final header = '${entry.status}\n$userName $date';
+// MARK: - Формирование истории
+List<String> _buildActionHistoryItems(List<TaskHistory> history) {
+  return history.map((entry) {
+    final userName = entry.user.fullName; // Используем fullName!
+    final date = DateFormat('dd.MM.yyyy HH:mm').format(entry.date.toLocal());
+    final header = '${entry.status}\n$userName $date';
 
-      if (entry.changes.isEmpty) return header;
+    if (entry.changes.isEmpty) return header;
 
-      final lines = <String>[];
+    final lines = <String>[];
 
-      for (final change in entry.changes) {
-        for (final MapEntry(:key, :value) in change.body.entries) {
-          final prev = value['previous_value']?.toString() ?? '';
-          final next = value['new_value']?.toString() ?? '';
+    for (final change in entry.changes) {
+      for (final MapEntry(:key, :value) in change.body.entries) {
+        if (value is! ChangeValue) continue; // Добавляем проверку типа
 
-          final prevText = prev.isEmpty ? '—' : prev;
-          final nextText = next.isEmpty ? '—' : next;
+        final prev = value.previousValue?.toString() ?? '';
+        final next = value.newValue?.toString() ?? '';
 
-          final field = _formatFieldName(key);
+        final prevText = prev.isEmpty ? '—' : prev;
+        final nextText = next.isEmpty ? '—' : next;
 
-          if (key == 'from' || key == 'to') {
-            final prevDate = _formatDate(prev);
-            final nextDate = _formatDate(next);
-            lines.add('$field: $prevDate → $nextDate');
-          } else if (key == 'is_finished') {
-            final prevBool = _formatBool(prev);
-            final nextBool = _formatBool(next);
-            lines.add('$field: $prevBool → $nextBool');
-          } else {
-            lines.add('$field: $prevText → $nextText');
-          }
+        final field = _formatFieldName(key);
+
+        if (key == 'from' || key == 'to') {
+          final prevDate = _formatDate(prev);
+          final nextDate = _formatDate(next);
+          lines.add('$field: $prevDate → $nextDate');
+        } else if (key == 'is_finished') {
+          final prevBool = _formatBool(prev);
+          final nextBool = _formatBool(next);
+          lines.add('$field: $prevBool → $nextBool');
+        } else {
+          lines.add('$field: $prevText → $nextText');
         }
       }
+    }
 
-      return lines.isEmpty ? header : '$header\n${lines.join('\n')}';
-    }).toList();
-  }
-
+    return lines.isEmpty ? header : '$header\n${lines.join('\n')}';
+  }).toList();
+}
   // MARK: - Названия полей
   String _formatFieldName(String key) {
     return switch (key) {

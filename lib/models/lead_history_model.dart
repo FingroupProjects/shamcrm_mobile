@@ -1,11 +1,13 @@
-// lead_history_model.dart
+// ==========================================
+// models/lead_history_model.dart
+// ==========================================
 
 class LeadHistory {
   final int id;
   final User? user;
   final String status;
   final DateTime date;
-  final List<ChangeItem> changes; // ← ChangeItem
+  final List<ChangeItem> changes;
 
   LeadHistory({
     required this.id,
@@ -21,9 +23,9 @@ class LeadHistory {
       final user = userJson != null ? User.fromJson(userJson) : null;
 
       final changesJson = json['changes'] as List<dynamic>? ?? [];
+      // Убрали фильтрацию - сохраняем все changes
       final changes = changesJson
           .map((e) => ChangeItem.fromJson(e as Map<String, dynamic>))
-          .where((c) => c.body.isNotEmpty)
           .toList();
 
       return LeadHistory(
@@ -80,13 +82,37 @@ class ChangeItem {
   ChangeItem({required this.id, required this.body});
 
   factory ChangeItem.fromJson(Map<String, dynamic> json) {
-    final bodyJson = json['body'] as Map<String, dynamic>? ?? {};
-    final body = bodyJson.map((key, value) {
-      return MapEntry(key, ChangeValue.fromJson(value));
-    });
+    final rawBody = json['body'];
+    Map<String, ChangeValue> bodyMap = {};
+
+    if (rawBody is Map<String, dynamic>) {
+      // Преобразуем каждое поле в ChangeValue
+      bodyMap = rawBody.map((key, value) {
+        if (value is Map<String, dynamic>) {
+          return MapEntry(key, ChangeValue.fromJson(value));
+        } else {
+          // Если не Map, создаём пустой ChangeValue
+          return MapEntry(key, ChangeValue(newValue: null, previousValue: null));
+        }
+      });
+    } else if (rawBody is List) {
+      // Если body - массив (может быть пустым)
+      if (rawBody.isNotEmpty && rawBody.first is Map<String, dynamic>) {
+        final firstMap = rawBody.first as Map<String, dynamic>;
+        bodyMap = firstMap.map((key, value) {
+          if (value is Map<String, dynamic>) {
+            return MapEntry(key, ChangeValue.fromJson(value));
+          } else {
+            return MapEntry(key, ChangeValue(newValue: null, previousValue: null));
+          }
+        });
+      }
+      // Если массив пустой, оставляем bodyMap пустым
+    }
+
     return ChangeItem(
       id: json['id'] ?? 0,
-      body: body,
+      body: bodyMap,
     );
   }
 }
@@ -97,10 +123,13 @@ class ChangeValue {
 
   ChangeValue({this.newValue, this.previousValue});
 
-  factory ChangeValue.fromJson(Map<String, dynamic> json) {
-    return ChangeValue(
-      newValue: json['new_value']?.toString(),
-      previousValue: json['previous_value']?.toString(),
-    );
+  factory ChangeValue.fromJson(dynamic json) {
+    if (json is Map<String, dynamic>) {
+      return ChangeValue(
+        newValue: json['new_value']?.toString(),
+        previousValue: json['previous_value']?.toString(),
+      );
+    }
+    return ChangeValue(newValue: null, previousValue: null);
   }
 }
