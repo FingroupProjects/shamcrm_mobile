@@ -41,7 +41,7 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
     'telegram_account': 'assets/icons/leads/telegram.png',
     'telegram_bot': 'assets/icons/leads/telegram.png',
     'whatsapp': 'assets/icons/leads/whatsapp.png',
-    'facebook': 'assets/icons/leads/facebook.png',
+    'facebook': 'assets/icons/leads/messenger.png',
     'instagram': 'assets/icons/leads/instagram.png',
   };
 
