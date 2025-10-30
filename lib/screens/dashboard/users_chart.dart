@@ -126,13 +126,16 @@ class _TaskCompletionChartState extends State<TaskCompletionChart> {
                         children: [
                           Expanded(
                             child: Text(
-                              user.name,
-                              style: const TextStyle(
-                                fontSize: 16.0,
-                                fontFamily: "Gilroy",
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
+  user.name,
+  style: const TextStyle(
+    fontSize: 16.0,
+    fontFamily: "Gilroy",
+    fontWeight: FontWeight.w500,
+    // color: Color(0xFF3935E7), // синий цвет ссылки
+    decoration: TextDecoration.underline,
+    // decorationColor: Color(0xFF3935E7),
+  ),
+),
                           ),
                           Text(
                             "${user.finishedTasksprocent.toInt()}%",
