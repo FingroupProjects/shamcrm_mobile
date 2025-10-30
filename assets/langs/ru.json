@@ -1622,9 +1622,9 @@
   "cash_register_updated": "Касса успешно обновлена",
   "cash_register_created": "Касса успешно создана",
   "error_creating_cash_register": "Ошибка при создании кассы",
-  "warehouse_visible_off": "Показывать склад: Выкл",
-  "warehouse_visible_on": "Показывать склад: Вкл",
-  "warehouse_visibility": "Показывать склад в интернет магазине  как филиал",
+  "warehouse_visible_off": "Показать склад: Выкл",
+  "warehouse_visible_on": "Показать склад: Вкл",
+  "warehouse_visibility": "Показать склад в интернет магазине  как филиал",
   "delete_warehouse": "Удалить склад",
   "delete_warehouse_confirm": "Вы уверены, что хотите удалить этот склад?",
   "warehouse_created_successfully": "Склад успешно создан",
@@ -1814,5 +1814,7 @@
   "n_a": "N/A",
   "title_with_two_dots": "Название: ",
   "no_goods": "Нет товаров",
-  "title_without_dots": "Название"
+  "title_without_dots": "Название",
+  "goods_added_go_to_main": "Товары добавлены. Перейдите в «Основное» для сохранения.",
+  "go": "Перейти"
 }

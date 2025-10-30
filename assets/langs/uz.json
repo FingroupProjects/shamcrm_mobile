@@ -1810,5 +1810,7 @@
   "n_a": "N/A",
   "title_with_two_dots": "Nomi: ",
   "title_without_dots": "Nomi",
-  "no_goods": "Mahsulotlar yo'q"
+  "no_goods": "Mahsulotlar yo'q",
+  "goods_added_go_to_main": "Mahsulotlar qo'shildi. Saqlash uchun 'Asosiy'ga o'ting.",
+  "go": "O'tish"
 }
