@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/screens/dashboard/dialogs/user_overdue_task_dialog.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -107,50 +108,55 @@ class _TaskCompletionChartState extends State<TaskCompletionChart> {
               final user = state.data[index];
               final progressBarColor = _getProgressBarColor(user.finishedTasksprocent);
 
-              return Container(
-                padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 0.0),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            user.name,
-                            style: const TextStyle(
-                              fontSize: 16.0,
-                              fontFamily: "Gilroy",
-                              fontWeight: FontWeight.w500,
+              return InkWell(
+                onTap: () {
+                  showUserOverdueTasksDialog(context, user.id ?? 0, user.name);
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 0.0),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              user.name,
+                              style: const TextStyle(
+                                fontSize: 16.0,
+                                fontFamily: "Gilroy",
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
-                        ),
-                        Text(
-                          "${user.finishedTasksprocent.toInt()}%",
-                          style: TextStyle(
-                            fontSize: 16.0,
-                            fontFamily: "Gilroy",
-                            fontWeight: FontWeight.w600,
-                            color: progressBarColor,
+                          Text(
+                            "${user.finishedTasksprocent.toInt()}%",
+                            style: TextStyle(
+                              fontSize: 16.0,
+                              fontFamily: "Gilroy",
+                              fontWeight: FontWeight.w600,
+                              color: progressBarColor,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: user.finishedTasksprocent / 100,
-                        backgroundColor: Colors.grey[200],
-                        color: progressBarColor,
-                        minHeight: 8,
+                        ],
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 2),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: user.finishedTasksprocent / 100,
+                          backgroundColor: Colors.grey[200],
+                          color: progressBarColor,
+                          minHeight: 8,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               );
             },
