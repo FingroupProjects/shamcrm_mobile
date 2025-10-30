@@ -51,6 +51,7 @@ import 'package:crm_task_manager/models/notice_subject_model.dart';
 import 'package:crm_task_manager/models/notifications_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/task_chart_model.dart';
 import 'package:crm_task_manager/models/organization_model.dart';
+import 'package:crm_task_manager/models/overdue_task_response.dart';
 import 'package:crm_task_manager/models/page_2/branch_model.dart';
 import 'package:crm_task_manager/models/page_2/call_analytics_model.dart';
 import 'package:crm_task_manager/models/page_2/call_center_by_id_model.dart';
@@ -5097,6 +5098,34 @@ Future<List<Deal>> getDeals(
       throw ('Ошибка загрузки данных графика Выполнение целей!');
     }
   }
+
+  Future<OverdueTasksResponse> getUsersOverdueTaskData(
+  {required int userId}
+      ) async {
+    // Use _appendQueryParams to include organization_id, etc.
+    final path = await _appendQueryParams('/dashboard/user/$userId/overdue-tasks');
+
+    if (kDebugMode) {
+      // print('ApiService: getUserOverdueTasksData - Generated path: $path');
+    }
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = json.decode(response.body);
+
+      if (data['result'] != null) {
+        return OverdueTasksResponse.fromJson(data);
+      } else {
+        throw ('Нет данных в ответе "Просроченные задачи"');
+      }
+    } else if (response.statusCode == 500) {
+      throw ('Ошибка сервера: 500');
+    } else {
+      throw ('Ошибка загрузки данных "Просроченные задачи"!');
+    }
+  }
+
 
 //_________________________________ END_____API_SCREEN__DASHBOARD____________________________________________//
 
