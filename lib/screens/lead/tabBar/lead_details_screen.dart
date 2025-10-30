@@ -597,11 +597,19 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       //     'LeadDetailsScreen: Adding custom field - key: ${field.key}, value: ${field.value}');
       details.add({'label': '${field.key}:', 'value': field.value});
     }
-    for (var dirValue in lead.directoryValues) {
-      final directoryName = dirValue.entry?.directory.name;
-      final value = dirValue.entry?.values['value'] ?? '';
-      details.add({'label': '$directoryName:', 'value': value});
+   for (var dirValue in lead.directoryValues) {
+  if (dirValue.entry != null) {
+    final directoryName = dirValue.entry!.directory.name;
+    
+    // Проходим по всем полям в values
+    for (var fieldValue in dirValue.entry!.values) {
+      details.add({
+        'label': '$directoryName',
+        'value': fieldValue.value
+      });
     }
+  }
+}
   }
 
   Widget _buildExpandableText(String label, String value, double maxWidth) {

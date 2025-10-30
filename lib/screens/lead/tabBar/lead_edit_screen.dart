@@ -199,7 +199,11 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
       if (dirValue.entry != null) {
         customFields.add(CustomField(
           fieldName: dirValue.entry!.directory.name,
-          controller: TextEditingController(text: dirValue.entry!.values['value'] ?? ''),
+          controller: TextEditingController(
+  text: dirValue.entry!.values.isNotEmpty 
+      ? dirValue.entry!.values.first.value 
+      : ''
+),
           isDirectoryField: true,
           directoryId: dirValue.entry!.directory.id,
           entryId: dirValue.entry!.id,
@@ -324,7 +328,9 @@ Future<void> _pickFile() async {
               int? entryId;
 
               if (existingValue != null && existingValue.entry != null) {
-                controllerText = existingValue.entry!.values['value'] ?? '';
+                controllerText = existingValue.entry!.values.isNotEmpty 
+    ? existingValue.entry!.values.first.value 
+    : '';
                 entryId = existingValue.entry!.id != 0 ? existingValue.entry!.id : null;
               }
 

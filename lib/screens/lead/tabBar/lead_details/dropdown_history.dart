@@ -2,7 +2,6 @@ import 'package:crm_task_manager/bloc/history_lead/history_bloc.dart';
 import 'package:crm_task_manager/bloc/history_lead/history_event.dart';
 import 'package:crm_task_manager/bloc/history_lead/history_state.dart';
 import 'package:crm_task_manager/models/lead_history_model.dart';
-import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -10,7 +9,7 @@ import 'package:intl/intl.dart';
 class ActionHistoryWidget extends StatefulWidget {
   final int leadId;
 
-  ActionHistoryWidget({required this.leadId});
+  const ActionHistoryWidget({required this.leadId, Key? key}) : super(key: key);
 
   @override
   _ActionHistoryWidgetState createState() => _ActionHistoryWidgetState();
@@ -31,51 +30,45 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
     return BlocBuilder<HistoryBloc, HistoryState>(
       builder: (context, state) {
         if (state is HistoryLoading) {
-          // return Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+          // Можно показать лоадер
         } else if (state is HistoryLoaded) {
           actionHistory = state.leadHistory;
         } else if (state is HistoryError) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
-                        style: TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white,
-                        ),
-                      ),
-                      behavior: SnackBarBehavior.floating,
-                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      backgroundColor: Colors.red,
-                      elevation: 3,
-                      padding:
-                          EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                      duration: Duration(seconds: 3),
-                    ),
-                  );
-                });
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  state.message,
+                  style: const TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+                behavior: SnackBarBehavior.floating,
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                backgroundColor: Colors.red,
+                elevation: 3,
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                duration: const Duration(seconds: 3),
+              ),
+            );
+          });
         }
 
         return _buildExpandableActionContainer(
-          AppLocalizations.of(context)!.translate('action_history'),
+          'История действий',
           _buildActionHistoryItems(actionHistory),
           isActionHistoryExpanded,
-          () {
-            setState(() {
-              isActionHistoryExpanded = !isActionHistoryExpanded;
-            });
-          },
+          () => setState(() => isActionHistoryExpanded = !isActionHistoryExpanded),
         );
       },
     );
   }
 
+  // MARK: - Контейнер
   Widget _buildExpandableActionContainer(
     String title,
     List<String> items,
@@ -85,26 +78,26 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: EdgeInsets.only(right: 16, left: 16, top: 16, bottom: 8),
+        padding: const EdgeInsets.only(right: 16, left: 16, top: 16, bottom: 8),
         decoration: BoxDecoration(
-          color: Color(0xFFF4F7FD),
+          color: const Color(0xFFF4F7FD),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildTitleRow(title),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             AnimatedSize(
               duration: const Duration(milliseconds: 200),
               child: isExpanded
                   ? SizedBox(
-                      height: 250, // Ограничиваем высоту для прокрутки
+                      height: 250,
                       child: SingleChildScrollView(
                         child: _buildItemList(items),
                       ),
                     )
-                  : SizedBox.shrink(),
+                  : const SizedBox.shrink(),
             ),
           ],
         ),
@@ -118,11 +111,11 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
       children: [
         Text(
           title,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 16,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w500,
-            color: Color(0xfff1E2E52),
+            color: Color(0xff1E2E52),
           ),
         ),
         Image.asset(
@@ -134,187 +127,132 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
     );
   }
 
-Column _buildItemList(List<String> items) {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: items.map((item) {
-      return _buildActionItem(item);
-    }).toList(),
-  );
-}
-
-Widget _buildActionItem(String item) {
-  final parts = item.split('\n');
-  final status = parts[0];
-  final userName = parts.length > 1 ? parts[1] : '';
-  final additionalDetails = parts.sublist(2); 
-
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 6),
-    child: Column(
+  Column _buildItemList(List<String> items) {
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildStatusRow(status, userName),
-        SizedBox(height: 10),
-        if (additionalDetails.isNotEmpty) _buildAdditionalDetails(additionalDetails),
-      ],
-    ),
-  );
-}
+      children: items.map((item) => _buildActionItem(item)).toList(),
+    );
+  }
 
+  // MARK: - Элемент действия
+  Widget _buildActionItem(String item) {
+    final parts = item.split('\n');
+    final status = parts[0];
+    final userAndDate = parts.length > 1 ? parts[1] : '';
+    final details = parts.sublist(2).where((d) => d.isNotEmpty).toList();
 
-  Row _buildStatusRow(String status, String userName) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildStatusRow(status, userAndDate),
+          if (details.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            ...details.map((d) => Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(
+                    d,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w400,
+                      color: Color(0xff1E2E52),
+                    ),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                )),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Row _buildStatusRow(String status, String userAndDate) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Expanded(
           child: Text(
             status,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 14,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
-              color: Color(0xfff1E2E52),
-              overflow: TextOverflow.ellipsis,
+              color: Color(0xff1E2E52),
             ),
-            maxLines: 3,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
-        SizedBox(width: 8),
+        const SizedBox(width: 8),
         Expanded(
           child: Text(
-            userName,
-            style: TextStyle(
+            userAndDate,
+            style: const TextStyle(
               fontSize: 14,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
-              color: Color(0xfff1E2E52),
-              overflow: TextOverflow.ellipsis,
+              color: Color(0xff1E2E52),
             ),
-            maxLines: 3,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.end,
           ),
         ),
       ],
     );
   }
 
-  Column _buildAdditionalDetails(List<String> details) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: details.where((detail) => detail.isNotEmpty).map((detail) {
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Text(
-                detail,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w400,
-                  color: Color(0xff1E2E52),
-                  overflow: TextOverflow.ellipsis, // Ensures long text is truncated
-                ),
-                maxLines: 2,
-              ),
-            ),
-          ],
-        );
-      }).toList(),
-    );
-  }
+  // MARK: - Формирование строк
+  List<String> _buildActionHistoryItems(List<LeadHistory> history) {
+    return history.map((entry) {
+      final userName = entry.user?.fullName ?? 'Система';
+      final date = DateFormat('dd.MM.yyyy HH:mm').format(entry.date.toLocal());
+      final header = '${entry.status}\n$userName $date';
 
-List<String> _buildActionHistoryItems(List<LeadHistory> history) {
-  return history.map((entry) {
-    final changes = entry.changes;
-
-    String formatBirthday(String? birthdayString) {
-  if (birthdayString == null || birthdayString == AppLocalizations.of(context)!.translate('')) {
-    return AppLocalizations.of(context)!.translate('');
-  }
-
-  try {
-    DateTime birthday = DateTime.parse(birthdayString);
-    return DateFormat('dd.MM.yyyy').format(birthday);
-  } catch (e) {
-    return AppLocalizations.of(context)!.translate(''); 
-  }
-}
-
-    final formattedDate = DateFormat('dd.MM.yyyy HH:mm').format(entry.date.toLocal());
-    String actionDetail = '${entry.status}\n${entry.user.name} $formattedDate';
-
-    if (changes != null) {
-      // Позиция
-      // Статус клиента
-      if (changes.leadStatusNewValue != null || changes.leadStatusPreviousValue != null) {
-        actionDetail +=
-            '\n${AppLocalizations.of(context)!.translate('status_history')}${changes.leadStatusPreviousValue ?? AppLocalizations.of(context)!.translate('')} > ${changes.leadStatusNewValue ?? AppLocalizations.of(context)!.translate('')}';
+      if (entry.changes.isEmpty) {
+        return header;
       }
 
-      // Название
-      if (changes.historyNamePreviousValue != null || changes.historyNameNewValue != null) {
-        actionDetail +=
-            '\n${AppLocalizations.of(context)!.translate('name_history')}${changes.historyNamePreviousValue ?? AppLocalizations.of(context)!.translate('')} > ${changes.historyNameNewValue ?? AppLocalizations.of(context)!.translate('')}';
-      }
-      
-      // Email
-      if (changes.emailPreviousValue != null || changes.emailNewValue != null) {
-        actionDetail +=
-            '\nEmail: ${changes.emailPreviousValue ?? AppLocalizations.of(context)!.translate('')} > ${changes.emailNewValue ?? AppLocalizations.of(context)!.translate('')}';
-      }
+      final lines = <String>[];
 
-      // Телефон
-      if (changes.phonePreviousValue != null || changes.phoneNewValue != null) {
-        actionDetail +=
-            '\n${AppLocalizations.of(context)!.translate('phone_history')}${changes.phonePreviousValue ?? AppLocalizations.of(context)!.translate('')} > ${changes.phoneNewValue ?? AppLocalizations.of(context)!.translate('')}';
-      }
+      for (final change in entry.changes) {
+        for (final MapEntry(:key, :value) in change.body.entries) {
+          final prev = value.previousValue ?? '';
+          final next = value.newValue ?? '';
+          final field = _formatFieldName(key);
 
-      // Регион
-      if (changes.regionPreviousValue != null || changes.regionNewValue != null) {
-        actionDetail +=
-            '\n${AppLocalizations.of(context)!.translate('region_history')}${changes.regionPreviousValue ?? AppLocalizations.of(context)!.translate('')} > ${changes.regionNewValue ?? AppLocalizations.of(context)!.translate('')}';
-      }
+          final prevText = prev.isEmpty ? '—' : prev;
+          final nextText = next.isEmpty ? '—' : next;
 
-      // Менеджер
-      if (changes.managerNewValue != null || changes.managerPreviousValue != null) {
-        actionDetail +=
-            '\n${AppLocalizations.of(context)!.translate('manager_history')}${changes.managerPreviousValue ?? AppLocalizations.of(context)!.translate('')} > ${changes.managerNewValue ?? AppLocalizations.of(context)!.translate('')}';
-      }
-      
-      // Дата рождения
-        if (changes.birthdayNewValue != null || changes.birthdayPreviousValue != null) {
-          actionDetail +=
-          '\n${AppLocalizations.of(context)!.translate('birthday_history')}${formatBirthday(changes.birthdayPreviousValue)} > ${formatBirthday(changes.birthdayNewValue)}';
+          lines.add('$field: $prevText → $nextText');
         }
-
-      // TG Никнейм
-      if (changes.tgNickNewValue != null || changes.tgNickPreviousValue != null) {
-        actionDetail +=
-          '\nTelegram: ${changes.tgNickPreviousValue ?? AppLocalizations.of(context)!.translate('')} > ${changes.tgNickNewValue ?? AppLocalizations.of(context)!.translate('')}';
       }
 
-      // Instagram логин
-      if (changes.instaLoginNewValue != null || changes.instaLoginPreviousValue != null) {
-        actionDetail +=
-          '\nInstagram: ${changes.instaLoginPreviousValue ?? AppLocalizations.of(context)!.translate('')} > ${changes.instaLoginNewValue ?? AppLocalizations.of(context)!.translate('')}';
-      }
+      return lines.isEmpty ? header : '$header\n${lines.join('\n')}';
+    }).toList();
+  }
 
-      // Facebook логин
-      if (changes.facebookLoginNewValue != null || changes.facebookLoginPreviousValue != null) {
-        actionDetail +=
-          '\nFacebook: ${changes.facebookLoginPreviousValue ?? AppLocalizations.of(context)!.translate('')} > ${changes.facebookLoginNewValue ?? AppLocalizations.of(context)!.translate('')}';
-      }
-      
-      // Описание
-      if (changes.descriptionNewValue != null || changes.descriptionPreviousValue != null) {
-        actionDetail +=
-          '\n${AppLocalizations.of(context)!.translate('description')}${changes.descriptionPreviousValue ?? AppLocalizations.of(context)!.translate('')} > ${changes.descriptionNewValue ?? AppLocalizations.of(context)!.translate('')}';
-      }
-    }
-
-    return actionDetail;
-  }).toList();
-}
-
+  // MARK: - Названия полей
+  String _formatFieldName(String key) {
+    return switch (key) {
+      'lead_status' => 'Статус',
+      'name' => 'Имя',
+      'phone' => 'Телефон',
+      'email' => 'Email',
+      'region' => 'Регион',
+      'manager' => 'Менеджер',
+      'tg_nick' => 'Telegram',
+      'wa_name' => 'WhatsApp',
+      'source' => 'Источник',
+      'birthday' => 'День рождения',
+      'description' => 'Описание',
+      'insta_login' => 'Instagram',
+      'facebook_login' => 'Facebook',
+      'Телефон' => 'Телефон',
+      _ => key[0].toUpperCase() + key.substring(1).replaceAll('_', ' '),
+    };
+  }
 }

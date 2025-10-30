@@ -1,150 +1,135 @@
+// ==========================================
+// models/lead_history_model.dart
+// ==========================================
+
 class LeadHistory {
   final int id;
-  final User user;
+  final User? user;
   final String status;
   final DateTime date;
-  final Changes? changes;
+  final List<ChangeItem> changes;
 
   LeadHistory({
     required this.id,
-    required this.user,
+    this.user,
     required this.status,
     required this.date,
-    this.changes,
+    required this.changes,
   });
 
   factory LeadHistory.fromJson(Map<String, dynamic> json) {
-  try {
-    final userJson = json['user'];
-    final user = userJson != null ? User.fromJson(userJson) : User(id: 0, name: 'Система', email: '', phone: '');
+    try {
+      final userJson = json['user'];
+      final user = userJson != null ? User.fromJson(userJson) : null;
 
-    return LeadHistory(
-      id: json['id'] ?? 0,
-      user: user,
-      status: json['status'] ?? '',
-      date: json['date'] != null ? DateTime.parse(json['date']) : DateTime.now(),
-      changes: _parseChanges(json['changes']),
-    );
-  } catch (e) {
-    print('Ошибка при парсинге LeadHistory!');
-    return LeadHistory(
-      id: 0,
-      user: User(id: 0, name: 'Система', email: 'Не указано', phone: 'Не указано'),
-      status: 'Создан',
-      date: DateTime.now(),
-      changes: null,
-    );
-  }
-}
+      final changesJson = json['changes'] as List<dynamic>? ?? [];
+      // Убрали фильтрацию - сохраняем все changes
+      final changes = changesJson
+          .map((e) => ChangeItem.fromJson(e as Map<String, dynamic>))
+          .toList();
 
-
- static Changes? _parseChanges(dynamic changesJson) {
-  if (changesJson is List && changesJson.isNotEmpty) {
-    final body = changesJson[0]['body'];
-    if (body != null && body is Map<String, dynamic>) {
-      return Changes.fromJson(body);
+      return LeadHistory(
+        id: json['id'] ?? 0,
+        user: user,
+        status: json['status'] ?? '',
+        date: json['date'] != null ? DateTime.parse(json['date']) : DateTime.now(),
+        changes: changes,
+      );
+    } catch (e) {
+      print('Ошибка парсинга LeadHistory: $e');
+      return LeadHistory(
+        id: 0,
+        user: null,
+        status: 'Создан',
+        date: DateTime.now(),
+        changes: [],
+      );
     }
   }
-  return null;
-}
 }
 
 class User {
   final int id;
   final String name;
+  final String lastname;
   final String email;
   final String phone;
+  final String fullName;
 
   User({
     required this.id,
     required this.name,
+    this.lastname = '',
     required this.email,
     required this.phone,
-  });
+  }) : fullName = '$name $lastname'.trim();
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       id: json['id'] ?? 0,
-      name: json['name'] ?? 'Система', 
-      email: json['email'] ?? 'Не указано', 
-      phone: json['phone'] ?? 'Не указано', 
+      name: json['name'] ?? 'Система',
+      lastname: json['lastname'] ?? '',
+      email: json['email'] ?? '',
+      phone: json['phone'] ?? '',
     );
   }
 }
-class Changes {
-  final String? leadStatusNewValue;
-  final String? leadStatusPreviousValue;
-  final String? historyNameNewValue;
-  final String? historyNamePreviousValue;
-  final String? phoneNewValue;
-  final String? phonePreviousValue;
-  final String? emailNewValue;
-  final String? emailPreviousValue;
-  final String? regionNewValue;
-  final String? regionPreviousValue;
-  final String? managerNewValue; 
-  final String? managerPreviousValue;
-  final String? tgNickNewValue;  
-  final String? tgNickPreviousValue;
-  final String? birthdayNewValue; 
-  final String? birthdayPreviousValue;
-  final String? descriptionNewValue; 
-  final String? descriptionPreviousValue;
-  final String? instaLoginNewValue;  
-  final String? instaLoginPreviousValue;
-  final String? facebookLoginNewValue; 
-  final String? facebookLoginPreviousValue;
 
-  Changes({
-    this.leadStatusNewValue,
-    this.leadStatusPreviousValue,
-    this.historyNameNewValue,
-    this.historyNamePreviousValue,
-    this.phoneNewValue,
-    this.phonePreviousValue,
-    this.emailNewValue,
-    this.emailPreviousValue,
-    this.regionNewValue,
-    this.regionPreviousValue,
-    this.managerNewValue,
-    this.managerPreviousValue,
-    this.tgNickNewValue,
-    this.tgNickPreviousValue,
-    this.birthdayNewValue,
-    this.birthdayPreviousValue,
-    this.descriptionNewValue,
-    this.descriptionPreviousValue,
-    this.instaLoginNewValue,
-    this.instaLoginPreviousValue,
-    this.facebookLoginNewValue,
-    this.facebookLoginPreviousValue,
-  });
+class ChangeItem {
+  final int id;
+  final Map<String, ChangeValue> body;
 
-  factory Changes.fromJson(Map<String, dynamic> json) {
-  return Changes(
-    leadStatusNewValue: json['lead_status']?['new_value'] as String?,
-    leadStatusPreviousValue: json['lead_status']?['previous_value'] as String?,
-    historyNameNewValue: json['name']?['new_value'] as String?,
-    historyNamePreviousValue: json['name']?['previous_value'] as String?,
-    phoneNewValue: json['phone']?['new_value'] as String?,
-    phonePreviousValue: json['phone']?['previous_value'] as String?,
-    emailNewValue: json['email']?['new_value'] as String?,
-    emailPreviousValue: json['email']?['previous_value'] as String?,
-    regionNewValue: json['region']?['new_value'] as String?,
-    regionPreviousValue: json['region']?['previous_value'] as String?,
-    managerNewValue: json['manager']?['new_value'] as String?,
-    managerPreviousValue: json['manager']?['previous_value'] as String?,
-    tgNickNewValue: json['tg_nick']?['new_value'] as String?,
-    tgNickPreviousValue: json['tg_nick']?['previous_value'] as String?,
-    birthdayNewValue: json['birthday']?['new_value'] as String?,
-    birthdayPreviousValue: json['birthday']?['previous_value'] as String?,
-    descriptionNewValue: json['description']?['new_value'] as String?,
-    descriptionPreviousValue: json['description']?['previous_value'] as String?,
-    instaLoginNewValue: json['insta_login']?['new_value'] as String?,
-    instaLoginPreviousValue: json['insta_login']?['previous_value'] as String?,
-    facebookLoginNewValue: json['facebook_login']?['new_value'] as String?,
-    facebookLoginPreviousValue: json['facebook_login']?['previous_value'] as String?,
-  );
+  ChangeItem({required this.id, required this.body});
+
+  factory ChangeItem.fromJson(Map<String, dynamic> json) {
+    final rawBody = json['body'];
+    Map<String, ChangeValue> bodyMap = {};
+
+    if (rawBody is Map<String, dynamic>) {
+      // Преобразуем каждое поле в ChangeValue
+      bodyMap = rawBody.map((key, value) {
+        if (value is Map<String, dynamic>) {
+          return MapEntry(key, ChangeValue.fromJson(value));
+        } else {
+          // Если не Map, создаём пустой ChangeValue
+          return MapEntry(key, ChangeValue(newValue: null, previousValue: null));
+        }
+      });
+    } else if (rawBody is List) {
+      // Если body - массив (может быть пустым)
+      if (rawBody.isNotEmpty && rawBody.first is Map<String, dynamic>) {
+        final firstMap = rawBody.first as Map<String, dynamic>;
+        bodyMap = firstMap.map((key, value) {
+          if (value is Map<String, dynamic>) {
+            return MapEntry(key, ChangeValue.fromJson(value));
+          } else {
+            return MapEntry(key, ChangeValue(newValue: null, previousValue: null));
+          }
+        });
+      }
+      // Если массив пустой, оставляем bodyMap пустым
+    }
+
+    return ChangeItem(
+      id: json['id'] ?? 0,
+      body: bodyMap,
+    );
+  }
 }
 
+class ChangeValue {
+  final String? newValue;
+  final String? previousValue;
+
+  ChangeValue({this.newValue, this.previousValue});
+
+  factory ChangeValue.fromJson(dynamic json) {
+    if (json is Map<String, dynamic>) {
+      return ChangeValue(
+        newValue: json['new_value']?.toString(),
+        previousValue: json['previous_value']?.toString(),
+      );
+    }
+    return ChangeValue(newValue: null, previousValue: null);
+  }
 }
