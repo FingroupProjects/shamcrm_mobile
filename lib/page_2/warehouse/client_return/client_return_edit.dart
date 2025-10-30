@@ -92,23 +92,22 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
         final quantity = good.quantity ?? 0;
         final price = double.tryParse(good.price ?? '0') ?? 0.0;
 
-        // ✅ Get available units
         final availableUnits = good.good?.units ?? (good.unit != null ? [good.unit!] : []);
-        // ✅ Find the correct unit by matching unitId (same logic as totalSum)
         Unit? selectedUnitObj;
-        double amount = 1.0;
-        if (good.good?.units != null && good.unitId != null) {
-          // Search in good.good.units array for matching unit
-          for (var unit in good.good!.units!) {
-            if (unit.id == good.unitId) {
-              selectedUnitObj = unit;
-              amount = (unit.amount != null)
-                  ? double.tryParse(unit.amount.toString()) ?? 1.0
-                  : 1.0;
-              break;
-            }
-          }
-        }
+        double amount = 1.0; // USE 1 for amount DO NOT USE good.amount directly
+
+        // if (good.good?.units != null && good.unitId != null) {
+        //   // Search in good.good.units array for matching unit
+        //   for (var unit in good.good!.units!) {
+        //     if (unit.id == good.unitId) {
+        //       selectedUnitObj = unit;
+        //       amount = (unit.amount != null)
+        //           ? double.tryParse(unit.amount.toString()) ?? 1.0
+        //           : 1.0;
+        //       break;
+        //     }
+        //   }
+        // }
         // Fallback if not found
         selectedUnitObj ??= good.unit ?? (availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: 'шт'));
         debugPrint("amount of unit '${selectedUnitObj.name}': $amount");
@@ -210,24 +209,25 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
 
         final availableUnits = _items[index]['availableUnits'] as List<Unit>? ?? [];
         final selectedUnitObj = availableUnits.firstWhere(
-          (unit) => (unit.name) == newUnit,
-          orElse: () => availableUnits.isNotEmpty 
-              ? availableUnits.first 
+              (unit) => (unit.name) == newUnit,
+          orElse: () => availableUnits.isNotEmpty
+              ? availableUnits.first
               : Unit(id: null, name: '', amount: 1),
         );
 
         final newAmount = selectedUnitObj.amount ?? 1;
         _items[index]['amount'] = newAmount;
 
-        // ✅ Базовая цена НЕ меняется
-        final basePrice = _items[index]['price'] ?? 0.0;
-        
-        // ✅ Пересчитываем total
+        // ✅ Get the current price from the controller (user input)
+        final priceController = _priceControllers[variantId];
+        final currentDisplayPrice = double.tryParse(priceController?.text ?? '0') ?? 0.0;
+
+        // ✅ Update price in item
+        _items[index]['price'] = currentDisplayPrice;
+
+        // ✅ Recalculate total WITHOUT amount: quantity * price
         final quantity = _items[index]['quantity'] ?? 0;
-        _items[index]['total'] = (quantity * basePrice * newAmount).round();
-        
-        // ✅ Показываем в контроллере: basePrice * newAmount
-        _priceControllers[variantId]?.text = parseNumberToString(basePrice * newAmount);
+        _items[index]['total'] = (quantity * currentDisplayPrice).round();
       }
     });
   }
@@ -238,13 +238,10 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
       setState(() {
         final index = _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
-          final amount = _items[index]['amount'] ?? 1;
-          
-          // ✅ ГЛАВНОЕ: price = введенная_цена / amount (базовая цена за 1 штуку)
-          _items[index]['price'] = inputPrice / amount;
-          
-          // ✅ Total = quantity * введенная_цена (не базовая!)
-          debugPrint("quantity = ${_items[index]['quantity']}, inputPrice = $inputPrice");
+          // ✅ Store the price as entered
+          _items[index]['price'] = inputPrice;
+
+          // ✅ Calculate total WITHOUT amount: quantity * price
           final quantity = _items[index]['quantity'] ?? 0;
           _items[index]['total'] = (quantity * inputPrice).round();
         }
@@ -255,6 +252,32 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
         final index = _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
           _items[index]['price'] = 0.0;
+          _items[index]['total'] = 0.0;
+        }
+      });
+    }
+  }
+
+  void _updateItemQuantity(int variantId, String value) {
+    final quantity = int.tryParse(value);
+    if (quantity != null && quantity > 0) {
+      setState(() {
+        final index = _items.indexWhere((item) => item['variantId'] == variantId);
+        if (index != -1) {
+          _items[index]['quantity'] = quantity;
+          final price = _items[index]['price'] ?? 0.0;
+
+          // ✅ Total WITHOUT amount: quantity * price
+          _items[index]['total'] = (quantity * price).round();
+        }
+        _quantityErrors[variantId] = false;
+      });
+    } else if (value.isEmpty) {
+      setState(() {
+        final index = _items.indexWhere((item) => item['variantId'] == variantId);
+        if (index != -1) {
+          // ✅ Remove quantity from item
+          _items[index].remove('quantity');
           _items[index]['total'] = 0.0;
         }
       });
@@ -340,32 +363,6 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
       FocusScope.of(context).unfocus();
     } else {
       _handleVariantSelection(result);
-    }
-  }
-
-  void _updateItemQuantity(int variantId, String value) {
-    final quantity = int.tryParse(value);
-    if (quantity != null && quantity > 0 && value.isNotEmpty) {
-      setState(() {
-        final index = _items.indexWhere((item) => item['variantId'] == variantId);
-        if (index != -1) {
-          _items[index]['quantity'] = quantity;
-          final price = _items[index]['price'] ?? 0.0;
-          final amount = _items[index]['amount'] ?? 1;
-          
-          // ✅ Total = количество * базовая_цена * amount
-          _items[index]['total'] = (quantity * price * amount).round();
-        }
-        _quantityErrors[variantId] = false;
-      });
-    } else if (value.isEmpty) {
-      setState(() {
-        final index = _items.indexWhere((item) => item['variantId'] == variantId);
-        if (index != -1) {
-          _items[index]['quantity'] = 0;
-          _items[index]['total'] = 0.0;
-        }
-      });
     }
   }
 

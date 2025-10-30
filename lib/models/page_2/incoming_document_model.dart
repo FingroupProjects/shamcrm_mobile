@@ -162,31 +162,30 @@ class IncomingDocument extends Equatable {
         final quantity = documentGood.quantity ?? 0;
         final price = double.tryParse(documentGood.price ?? '0') ?? 0;
 
-        // Default multiplier = 1 (for base units)
-        num unitMultiplier = 1.0;
+        num unitMultiplier = 1.0; // USE 1 for amount, DO NOT CALCULATE BASED ON unitId
 
-        debugPrint("=== Processing IncomingDocumentGood ===");
-        debugPrint("DocumentGood.unitId: ${documentGood.unitId}");
-
-        final good = documentGood.good;
-
-        if (good != null && good.units != null && documentGood.unitId != null) {
-          // Find the unit with matching id in good.units array
-          try {
-            final matchingUnit = good.units!.firstWhere(
-              (unit) => unit.id == documentGood.unitId,
-            );
-            unitMultiplier = matchingUnit.amount ?? 1.0;
-            debugPrint("Found matching unit: id=${matchingUnit.id}, amount=${matchingUnit.amount}");
-          } catch (e) {
-            debugPrint("Unit not found in good.units array, using default multiplier 1.0");
-          }
-        }
-
-        debugPrint("Good.units array: ${good?.units?.map((u) => 'id:${u.id}, amount:${u.amount}').toList()}");
-        debugPrint("FINAL: price=$price, quantity=$quantity, multiplier=$unitMultiplier");
-        debugPrint("Item total: ${quantity * price * unitMultiplier}");
-        debugPrint("=== End IncomingDocumentGood ===\n");
+        // debugPrint("=== Processing IncomingDocumentGood ===");
+        // debugPrint("DocumentGood.unitId: ${documentGood.unitId}");
+        //
+        // final good = documentGood.good;
+        //
+        // if (good != null && good.units != null && documentGood.unitId != null) {
+        //   // Find the unit with matching id in good.units array
+        //   try {
+        //     final matchingUnit = good.units!.firstWhere(
+        //       (unit) => unit.id == documentGood.unitId,
+        //     );
+        //     unitMultiplier = matchingUnit.amount ?? 1.0;
+        //     debugPrint("Found matching unit: id=${matchingUnit.id}, amount=${matchingUnit.amount}");
+        //   } catch (e) {
+        //     debugPrint("Unit not found in good.units array, using default multiplier 1.0");
+        //   }
+        // }
+        //
+        // debugPrint("Good.units array: ${good?.units?.map((u) => 'id:${u.id}, amount:${u.amount}').toList()}");
+        // debugPrint("FINAL: price=$price, quantity=$quantity, multiplier=$unitMultiplier");
+        // debugPrint("Item total: ${quantity * price * unitMultiplier}");
+        // debugPrint("=== End IncomingDocumentGood ===\n");
 
         return sum + (quantity * price * unitMultiplier);
       },
