@@ -165,23 +165,6 @@ class _InfoDialogState extends State<InfoDialog> {
             ),
             child: Row(
               children: [
-                // Container(
-                //   padding: EdgeInsets.all(6),
-                //   decoration: BoxDecoration(
-                //     color: Color(0xff1E2E52).withOpacity(0.1),
-                //     borderRadius: BorderRadius.circular(6),
-                //   ),
-                //   child: Text(
-                //     item.article,
-                //     style: TextStyle(
-                //       fontFamily: 'Gilroy',
-                //       fontSize: 12,
-                //       fontWeight: FontWeight.w700,
-                //       color: Color(0xff1E2E52),
-                //     ),
-                //   ),
-                // ),
-                // SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     item.name,
@@ -197,107 +180,9 @@ class _InfoDialogState extends State<InfoDialog> {
             ),
           ),
 
-          // Детали: первая строка (категория и дни)
+          // Детали: первая строка (Количество и Категория)
           Padding(
             padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Row(
-              children: [
-                // Категория
-                Expanded(
-                  child: Container(
-                    padding: EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Color(0xffF1F5F9),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: Color(0xffCBD5E1),
-                        width: 1,
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Builder(
-                          builder: (context) => Text(
-                            '${AppLocalizations.of(context)!.translate('category')}:',
-                            style: TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xff475569),
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        FittedBox(
-                          child: Text(
-                            item.category,
-                            style: TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xff1E2E52),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                SizedBox(width: 12),
-
-                // Дней без движения
-                Expanded(
-                  child: Container(
-                    padding: EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Color(0xffF1F5F9),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: Color(0xffCBD5E1),
-                        width: 1,
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        FittedBox(
-                          child: Builder(
-                            builder: (context) => Text(
-                              '${AppLocalizations.of(context)!.translate('days_without_movement')}:',
-                              style: TextStyle(
-                                fontFamily: 'Gilroy',
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xff475569),
-                              ),
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        FittedBox(
-                          child: Text(
-                            item.daysWithoutMovement,
-                            style: TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xff1E2E52),
-                            ),
-                          ),
-                        )
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Детали: вторая строка (количество и сумма)
-          Padding(
-            padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
             child: Row(
               children: [
                 // Количество
@@ -331,7 +216,7 @@ class _InfoDialogState extends State<InfoDialog> {
                           item.totalQuantity,
                           style: TextStyle(
                             fontFamily: 'Gilroy',
-                            fontSize: 16,
+                            fontSize: 14,
                             fontWeight: FontWeight.w700,
                             color: Color(0xff1E2E52),
                           ),
@@ -343,7 +228,7 @@ class _InfoDialogState extends State<InfoDialog> {
 
                 SizedBox(width: 12),
 
-                // Сумма
+                // Категория
                 Expanded(
                   child: Container(
                     padding: EdgeInsets.all(12),
@@ -360,7 +245,7 @@ class _InfoDialogState extends State<InfoDialog> {
                       children: [
                         Builder(
                           builder: (context) => Text(
-                            '${AppLocalizations.of(context)!.translate('amount')}:',
+                            '${AppLocalizations.of(context)!.translate('category')}:',
                             style: TextStyle(
                               fontFamily: 'Gilroy',
                               fontSize: 11,
@@ -370,13 +255,15 @@ class _InfoDialogState extends State<InfoDialog> {
                           ),
                         ),
                         SizedBox(height: 4),
-                        Text(
-                          item.sum,
-                          style: TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xff1E2E52),
+                        FittedBox(
+                          child: Text(
+                            item.category,
+                            style: TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xff1E2E52),
+                            ),
                           ),
                         ),
                       ],
@@ -384,6 +271,49 @@ class _InfoDialogState extends State<InfoDialog> {
                   ),
                 ),
               ],
+            ),
+          ),
+
+          // Детали: вторая строка (Склады в одном контейнере)
+          Padding(
+            padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Container(
+              width: double.infinity,
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Color(0xffF1F5F9),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: Color(0xffCBD5E1),
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Builder(
+                    builder: (context) => Text(
+                      '${AppLocalizations.of(context)!.translate('storages')}:',
+                      style: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff475569),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    item.storages.map((s) => '${s.name} (${s.quantity})').join(', '),
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xff1E2E52),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],

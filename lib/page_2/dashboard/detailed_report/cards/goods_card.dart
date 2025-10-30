@@ -62,7 +62,7 @@ class GoodsCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${localizations.translate('days_without_movement') ?? 'Дней без движения'}: ${goods.daysWithoutMovement}',
+                    '${localizations.translate('storages') ?? 'Склады'}: ${goods.storages.map((s) => '${s.name}(${s.quantity})').join(', ')}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
@@ -73,16 +73,6 @@ class GoodsCard extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     '${localizations.translate('quantity') ?? 'Количество'}: ${goods.totalQuantity}',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w400,
-                      color: Color(0xff99A4BA),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${localizations.translate('sum') ?? 'Сумма'}: ${parseNumberToString(goods.sum)}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',

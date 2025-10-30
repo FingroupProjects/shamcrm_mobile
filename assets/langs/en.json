@@ -1201,6 +1201,7 @@
   "error_no_good_id": "Error: Could not determine product ID",
   "document_number": "Document number",
   "storage": "Warehouse",
+  "storages": "Warehouses",
   "article": "Article",
   "select_article": "Select article",
   "supplier": "Supplier",
