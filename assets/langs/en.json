@@ -1811,5 +1811,7 @@
   "product_variants": "Product variants",
   "n_a": "N/A",
   "title_with_two_dots": "Title: ",
-  "title_without_dots": "Title"
+  "title_without_dots": "Title",
+  "goods_added_go_to_main": "Items added. Go to 'Main' to save.",
+  "go": "Go"
 }

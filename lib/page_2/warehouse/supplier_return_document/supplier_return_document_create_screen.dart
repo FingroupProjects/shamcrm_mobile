@@ -10,6 +10,7 @@ import 'package:crm_task_manager/custom_widget/keyboard_dismissible.dart';
 import 'package:crm_task_manager/custom_widget/price_input_formatter.dart';
 import 'package:crm_task_manager/custom_widget/quantity_input_formatter.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
+import 'package:crm_task_manager/page_2/warehouse/incoming/info_panel.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/storage_widget.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/supplier_widget.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/variant_selection_bottom_sheet.dart';
@@ -53,6 +54,7 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
   final Map<int, bool> _collapsedItems = {};
 
   late TabController _tabController;
+  bool _showInfoPanel = false;
 
   @override
   void initState() {
@@ -244,12 +246,12 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
       setState(() {
         final index = _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
-          // ✅ Store the price as entered
           _items[index]['price'] = inputPrice;
-
-          // ✅ Calculate total WITHOUT amount: quantity * price
           final quantity = _items[index]['quantity'] ?? 0;
           _items[index]['total'] = (quantity * inputPrice).round();
+
+          // ⭐ Проверяем, заполнены ли оба поля (quantity и price)
+          _checkAndShowInfoPanel(variantId);
         }
         _priceErrors[variantId] = false;
       });
@@ -272,9 +274,10 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
         if (index != -1) {
           _items[index]['quantity'] = quantity;
           final price = _items[index]['price'] ?? 0.0;
-
-          // ✅ Total WITHOUT amount: quantity * price
           _items[index]['total'] = (quantity * price).round();
+
+          // ⭐ Проверяем, заполнены ли оба поля (quantity и price)
+          _checkAndShowInfoPanel(variantId);
         }
         _quantityErrors[variantId] = false;
       });
@@ -282,11 +285,27 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
       setState(() {
         final index = _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
-          // ✅ Remove quantity from item
           _items[index].remove('quantity');
           _items[index]['total'] = 0.0;
         }
       });
+    }
+  }
+
+// Обновите метод _checkAndShowInfoPanel:
+  void _checkAndShowInfoPanel(int variantId) {
+    final index = _items.indexWhere((item) => item['variantId'] == variantId);
+    if (index != -1) {
+      final item = _items[index];
+      final hasQuantity = item.containsKey('quantity') && (item['quantity'] ?? 0) > 0;
+      final hasPrice = (item['price'] ?? 0.0) > 0;
+
+      // ⭐ Показываем панель только если оба поля заполнены
+      if (hasQuantity && hasPrice) {
+        setState(() {
+          _showInfoPanel = true;
+        });
+      }
     }
   }
 
@@ -582,6 +601,31 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
             ),
           ),
         ),
+        // ✅ Информационная панель
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: InfoPanel(
+            show: _showInfoPanel,
+            duration: const Duration(seconds: 4),
+            message:
+            localizations.translate('goods_added_go_to_main') ??
+                'Товары добавлены. Перейдите в «Основное», чтобы сохранить.',
+            actionText: localizations.translate('go') ?? 'Перейти',
+            onActionTap: () {
+              _priceFocusNodes.forEach((_, node) => node.unfocus());
+              _quantityFocusNodes.forEach((_, node) => node.unfocus());
+              _tabController.animateTo(0);
+              // ⭐ НЕ сбрасываем _showInfoPanel здесь, пусть таймер это сделает
+            },
+            onDismiss: () {
+              // ⭐ Сбрасываем только при автоматическом скрытии (по таймеру)
+              if (mounted) {
+                setState(() => _showInfoPanel = false);
+              }
+            },
+          ),
+        ),
+        // Кнопка "Добавить товар"
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(

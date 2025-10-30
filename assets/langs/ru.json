@@ -1814,5 +1814,7 @@
   "n_a": "N/A",
   "title_with_two_dots": "Название: ",
   "no_goods": "Нет товаров",
-  "title_without_dots": "Название"
+  "title_without_dots": "Название",
+  "goods_added_go_to_main": "Товары добавлены. Перейдите в «Основное» для сохранения.",
+  "go": "Перейти"
 }
