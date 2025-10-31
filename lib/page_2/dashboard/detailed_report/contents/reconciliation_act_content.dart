@@ -5,6 +5,7 @@ import '../../../../models/page_2/dashboard/act_of_reconciliation_model.dart';
 import '../../../../bloc/page_2_BLOC/dashboard/reconciliation_act/sales_dashboard_reconciliation_act_bloc.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
 import '../cards/reconciliation_act_card.dart';
+import '../details/reconciliation_act_details.dart';
 
 class ReconciliationActContent extends StatefulWidget {
   const ReconciliationActContent({super.key});
@@ -28,8 +29,15 @@ class _ReconciliationActContentState extends State<ReconciliationActContent> {
               child: ReconciliationActCard(
                 reconciliationItem: item,
                 onClick: (reconciliationItem) {
-                  // Обработка нажатия на элемент акта сверки
-                  print('${localizations.translate('selected_reconciliation_item')}: ${reconciliationItem.id}');
+                  // Навигация к экрану деталей акта сверки
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ReconciliationActDetailsScreen(
+                        reconciliationItem: reconciliationItem,
+                      ),
+                    ),
+                  );
                 },
                 onLongPress: (reconciliationItem) {
                   // Обработка длительного нажатия
