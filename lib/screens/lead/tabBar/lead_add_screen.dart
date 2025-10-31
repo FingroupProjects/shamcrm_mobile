@@ -446,6 +446,7 @@ Widget build(BuildContext context) {
       child: BlocListener<LeadBloc, LeadState>(
         listener: (context, state) {
           if (state is LeadError) {
+            if (!mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
@@ -465,6 +466,7 @@ Widget build(BuildContext context) {
               ),
             );
           } else if (state is LeadSuccess) {
+            if (!mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
