@@ -5,6 +5,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/units_bloc/u
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_character.dart';
+import 'package:crm_task_manager/custom_widget/simple_switch.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart'
     as subCatAttr;
@@ -59,6 +60,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
   List<Map<String, dynamic>> tableAttributes = [];
   final ImagePicker _picker = ImagePicker();
   int? mainImageIndex;
+  late bool isService;
 
   @override
   void initState() {
@@ -89,6 +91,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
   _imagePaths =
       widget.sortedFiles.map((file) => '$baseUrl/${file.path}').toList();
   mainImageIndex = widget.initialMainImageIndex ?? 0;
+  isService = widget.goods.isService ?? false;
 
 }
 
@@ -571,6 +574,16 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                     onChanged: (value) {
                       setState(() {
                         selectedUnit = value;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  SimpleSwitch(
+                    title: AppLocalizations.of(context)!.translate('service'),
+                    value: isService,
+                    onChanged: (value) {
+                      setState(() {
+                        isService = value;
                       });
                     },
                   ),
@@ -1398,6 +1411,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       int? labelId = selectlabel != null ? int.tryParse(selectlabel!) : null; // Преобразуем selectlabel в labelId
 
       final response = await _apiService.updateGoods(
+        isService: isService,
         goodId: widget.goods.id,
         name: goodsNameController.text.trim(),
         parentId: selectedCategory!.id,

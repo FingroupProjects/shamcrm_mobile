@@ -8648,9 +8648,14 @@ Future<String> _appendQueryParams(String path) async {
   int perPage = 15,
   String? search,
   Map<String, dynamic>? filters,
+    bool? isService,
 }) async {
   String path = '/good/get/variant?page=$page&per_page=$perPage';
-  
+
+  if (isService != null) {
+    path += '&is_service=${isService ? 1 : 0}';
+  }
+
   if (search != null && search.isNotEmpty) {
     path += '&search=$search';
   }
@@ -8749,6 +8754,7 @@ Future<String> _appendQueryParams(String path) async {
   }
 
   Future<Map<String, dynamic>> createGoods({
+    required bool isService,
     required String name,
     required int parentId,
     required String description,
@@ -8787,6 +8793,7 @@ Future<String> _appendQueryParams(String path) async {
       request.fields['quantity'] = quantity.toString();
       request.fields['unit_id'] = unitId.toString();
       request.fields['is_active'] = isActive ? '1' : '0';
+      request.fields['is_service'] = isService ? '1' : '0';
 
       // Pass the actual labelId if it exists
       if (labelId != null) {
@@ -8879,6 +8886,7 @@ Future<String> _appendQueryParams(String path) async {
   }
 
   Future<Map<String, dynamic>> updateGoods({
+    required bool isService,
     required int goodId,
     required String name,
     required int parentId,
@@ -8926,6 +8934,7 @@ Future<String> _appendQueryParams(String path) async {
       request.fields['is_active'] = isActive ? '1' : '0';
       request.fields['label_id'] =
           labelId != null ? labelId.toString() : ''; // Add label fields
+      request.fields['is_service'] = isService ? '1' : '0';
       
       if (unitId != null) {
         request.fields['unit_id'] = unitId.toString();
@@ -15985,6 +15994,8 @@ Future<void> clearFieldConfigurationCache() async {
   Future<GoodsOpeningsResponse> getGoodsOpenings() async {
     String path = await _appendQueryParams('/good-initial-balance');
 
+    path += '&is_service=0';
+
     if (kDebugMode) {
       print('ApiService: getGoodsOpenings - path: $path');
     }
@@ -16010,6 +16021,9 @@ Future<void> clearFieldConfigurationCache() async {
   }) async {
     try {
       String path = await _appendQueryParams('/good/get/variant?page=$page&per_page=$perPage');
+
+      path += '&is_service=0';
+
       final response = await _getRequest(path);
 
       if (response.statusCode == 200) {
@@ -16595,6 +16609,8 @@ Future<void> clearFieldConfigurationCache() async {
     if (search != null && search.isNotEmpty) {
       path += '&search=$search';
     }
+
+    path += '&is_service=0';
 
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     path = await _appendQueryParams(path);

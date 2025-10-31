@@ -200,6 +200,7 @@ class _EditMovementDocumentScreenState extends State<EditMovementDocumentScreen>
       backgroundColor: Colors.transparent,
       builder: (context) => VariantSelectionBottomSheet(
         existingItems: _items,
+        isService: false,
       ),
     );
     

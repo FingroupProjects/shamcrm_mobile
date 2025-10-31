@@ -158,6 +158,7 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
       backgroundColor: Colors.transparent,
       builder: (context) => VariantSelectionBottomSheet(
         existingItems: _items,
+        isService: false,
       ),
     );
     

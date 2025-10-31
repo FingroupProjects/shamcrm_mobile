@@ -920,11 +920,9 @@ Future<void> _onRefresh(int currentStatusId) async {
                   ),
                 ],
               ),
-        floatingActionButton: _tabTitles.isNotEmpty
+        floatingActionButton: _tabTitles.isNotEmpty && _hasPermissionToAddLead
             ? FloatingActionButton(
                 key: keyFloatingActionButton,
-
-
                 onPressed: () {
                   print('LeadScreen: FloatingActionButton pressed');
                   final currentStatusId = _tabTitles[_currentTabIndex]['id'];

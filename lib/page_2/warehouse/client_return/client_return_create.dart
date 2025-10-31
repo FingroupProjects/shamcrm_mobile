@@ -197,6 +197,7 @@ class CreateClientReturnDocumentScreenState extends State<CreateClientReturnDocu
       backgroundColor: Colors.transparent,
       builder: (context) => VariantSelectionBottomSheet(
         existingItems: _items,
+        isService: false,
       ),
     );
 

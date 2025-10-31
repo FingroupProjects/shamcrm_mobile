@@ -236,6 +236,7 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
       backgroundColor: Colors.transparent,
       builder: (context) => VariantSelectionBottomSheet(
         existingItems: _items,
+        isService: false,
       ),
     );
 

@@ -351,6 +351,7 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
       backgroundColor: Colors.transparent,
       builder: (context) => VariantSelectionBottomSheet(
         existingItems: _items,
+        isService: false,
       ),
     );
 
