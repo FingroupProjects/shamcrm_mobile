@@ -58,8 +58,8 @@ class CashRegisterCard extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 14,
                           fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w400,
-                          color: Color(0xff99A4BA),
+                          fontWeight: FontWeight.w600,
+                           color: Color(0xff1E2E52),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -68,7 +68,7 @@ class CashRegisterCard extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 14,
                           fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w400,
+                          fontWeight: FontWeight.w600,
                           color: (cashRegister.balance ?? 0) >= 0
                               ? const Color(0xff10B981)
                               : const Color(0xffEF4444),

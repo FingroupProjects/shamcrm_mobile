@@ -21,7 +21,6 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 class ChatLeadFilterScreen extends StatefulWidget {
   final Function(Map<String, dynamic>)? onManagersSelected;
@@ -43,8 +42,7 @@ class ChatLeadFilterScreen extends StatefulWidget {
   final int? initialDaysWithoutActivity;
   final VoidCallback? onResetFilters;
   final List<Map<String, dynamic>>? initialDirectoryValues;
-  final int?
-      initialSalesFunnelId; // ИЗМЕНЕНО: Добавили initial для показа текущей воронки в фильтре
+  final int? initialSalesFunnelId;
 
   ChatLeadFilterScreen({
     Key? key,
@@ -75,9 +73,9 @@ class ChatLeadFilterScreen extends StatefulWidget {
 }
 
 class _ChatLeadFilterScreenState extends State<ChatLeadFilterScreen> {
-  List _selectedManagers = [];
-  List _selectedRegions = [];
-  List _selectedSources = [];
+  List<ManagerData> _selectedManagers = [];
+  List<RegionData> _selectedRegions = [];
+  List<SourceData> _selectedSources = [];
 
   List<String>? _selectedStatuses;
   DateTime? _fromDate;
@@ -92,14 +90,98 @@ class _ChatLeadFilterScreenState extends State<ChatLeadFilterScreen> {
   bool? _hasNoReplies;
   bool? _hasUnreadMessages;
   bool? _hasDeal;
-  bool?
-      _unreadOnly; // Новый параметр для фильтрации по непрочитанным сообщениям
+  bool? _unreadOnly;
 
   int? _daysWithoutActivity;
   String? selectedSalesFunnel;
 
   Map<int, MainField?> _selectedDirectoryFields = {};
   List<DirectoryLink> _directoryLinks = [];
+
+  // ДОБАВЛЕНО: Вспомогательные методы для безопасного преобразования типов
+  
+  /// Преобразует dynamic в ManagerData
+  ManagerData _parseManagerData(dynamic item) {
+    if (item is ManagerData) {
+      return item;
+    }
+    if (item is Map<String, dynamic>) {
+      return ManagerData.fromJson(item);
+    }
+    if (item is Map) {
+      Map<String, dynamic> stringKeyMap = {};
+      item.forEach((key, value) {
+        stringKeyMap[key.toString()] = value;
+      });
+      return ManagerData.fromJson(stringKeyMap);
+    }
+    throw Exception('Неподдерживаемый тип менеджера: ${item.runtimeType}');
+  }
+
+  /// Преобразует dynamic в RegionData
+  RegionData _parseRegionData(dynamic item) {
+    if (item is RegionData) {
+      return item;
+    }
+    if (item is Map<String, dynamic>) {
+      return RegionData.fromJson(item);
+    }
+    if (item is Map) {
+      Map<String, dynamic> stringKeyMap = {};
+      item.forEach((key, value) {
+        stringKeyMap[key.toString()] = value;
+      });
+      return RegionData.fromJson(stringKeyMap);
+    }
+    throw Exception('Неподдерживаемый тип региона: ${item.runtimeType}');
+  }
+
+  /// Преобразует dynamic в SourceData
+  SourceData _parseSourceData(dynamic item) {
+    if (item is SourceData) {
+      return item;
+    }
+    if (item is Map<String, dynamic>) {
+      return SourceData.fromJson(item);
+    }
+    if (item is Map) {
+      Map<String, dynamic> stringKeyMap = {};
+      item.forEach((key, value) {
+        stringKeyMap[key.toString()] = value;
+      });
+      return SourceData.fromJson(stringKeyMap);
+    }
+    throw Exception('Неподдерживаемый тип источника: ${item.runtimeType}');
+  }
+
+  /// Преобразует ManagerData в Map для отправки
+  Map<String, dynamic> _managerToMap(ManagerData manager) {
+    return {
+      'id': manager.id,
+      'name': manager.name,
+      // Добавьте другие поля, если они есть в ManagerData
+    };
+  }
+
+  /// Преобразует RegionData в Map для отправки
+  Map<String, dynamic> _regionToMap(RegionData region) {
+    return {
+      'id': region.id,
+      'name': region.name,
+      // Добавьте другие поля, если они есть в RegionData
+    };
+  }
+
+  /// Преобразует SourceData в Map для отправки
+  Map<String, dynamic> _sourceToMap(SourceData source) {
+    return {
+      'id': source.id,
+      'name': source.name,
+      'created_at': source.createdAt?.toIso8601String(),
+      'updated_at': source.updatedAt?.toIso8601String(),
+      'default': source.isDefault,
+    };
+  }
 
   Widget _buildSwitchTile(String title, bool value, Function(bool) onChanged) {
     return SwitchListTile(
@@ -159,9 +241,29 @@ class _ChatLeadFilterScreenState extends State<ChatLeadFilterScreen> {
   @override
   void initState() {
     super.initState();
-    _selectedManagers = widget.initialManagers ?? [];
-    _selectedRegions = widget.initialRegions ?? [];
-    _selectedSources = widget.initialSources ?? [];
+    
+    // ИСПРАВЛЕНО: Безопасная инициализация всех списков
+    try {
+      _selectedManagers = widget.initialManagers?.map((item) => _parseManagerData(item)).toList() ?? [];
+    } catch (e) {
+      print('ChatLeadFilterScreen: Error parsing managers: $e');
+      _selectedManagers = [];
+    }
+
+    try {
+      _selectedRegions = widget.initialRegions?.map((item) => _parseRegionData(item)).toList() ?? [];
+    } catch (e) {
+      print('ChatLeadFilterScreen: Error parsing regions: $e');
+      _selectedRegions = [];
+    }
+
+    try {
+      _selectedSources = widget.initialSources?.map((item) => _parseSourceData(item)).toList() ?? [];
+    } catch (e) {
+      print('ChatLeadFilterScreen: Error parsing sources: $e');
+      _selectedSources = [];
+    }
+
     _selectedStatuses = widget.initialStatuses;
     _fromDate = widget.initialFromDate;
     _toDate = widget.initialToDate;
@@ -174,16 +276,14 @@ class _ChatLeadFilterScreenState extends State<ChatLeadFilterScreen> {
     _hasNoReplies = widget.initialHasNoReplies;
     _hasUnreadMessages = widget.initialHasUnreadMessages;
     _hasDeal = widget.initialHasDeal;
-    _hasUnreadMessages = widget.initialHasUnreadMessages;
     _daysWithoutActivity = widget.initialDaysWithoutActivity;
- selectedSalesFunnel = widget.initialSalesFunnelId?.toString();
-    _unreadOnly = widget.initialHasUnreadMessages ??
-        false; // Исправлено: используем false по умолчанию
-    context.read<GetAllRegionBloc>().add(GetAllRegionEv()); // Добавлено
-    context.read<GetAllSourceBloc>().add(GetAllSourceEv()); // Добавлено
+    selectedSalesFunnel = widget.initialSalesFunnelId?.toString();
+    _unreadOnly = widget.initialHasUnreadMessages ?? false;
+    
+    context.read<GetAllRegionBloc>().add(GetAllRegionEv());
+    context.read<GetAllSourceBloc>().add(GetAllSourceEv());
     _fetchDirectoryLinks();
-        _loadCurrentSalesFunnel();
-
+    _loadCurrentSalesFunnel();
   }
 
   Future<void> _fetchDirectoryLinks() async {
@@ -195,7 +295,6 @@ class _ChatLeadFilterScreenState extends State<ChatLeadFilterScreen> {
           for (var link in _directoryLinks) {
             _selectedDirectoryFields[link.id] = null;
           }
-          // Восстановление начальных значений справочников
           if (widget.initialDirectoryValues != null) {
             for (var value in widget.initialDirectoryValues!) {
               final directoryId = value['directory_id'];
@@ -216,20 +315,21 @@ class _ChatLeadFilterScreenState extends State<ChatLeadFilterScreen> {
       );
     }
   }
-// ДОБАВЛЯЕМ: Метод для загрузки текущей воронки
-Future<void> _loadCurrentSalesFunnel() async {
-  try {
-    final savedFunnelId = await ApiService().getSelectedChatSalesFunnel();
-    if (savedFunnelId != null && mounted) {
-      setState(() {
-        selectedSalesFunnel = savedFunnelId;
-      });
-      print('ChatLeadFilterScreen: Loaded saved funnel ID: $savedFunnelId');
+
+  Future<void> _loadCurrentSalesFunnel() async {
+    try {
+      final savedFunnelId = await ApiService().getSelectedChatSalesFunnel();
+      if (savedFunnelId != null && mounted) {
+        setState(() {
+          selectedSalesFunnel = savedFunnelId;
+        });
+        print('ChatLeadFilterScreen: Loaded saved funnel ID: $savedFunnelId');
+      }
+    } catch (e) {
+      print('ChatLeadFilterScreen: Error loading saved funnel: $e');
     }
-  } catch (e) {
-    print('ChatLeadFilterScreen: Error loading saved funnel: $e');
   }
-}
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -251,7 +351,7 @@ Future<void> _loadCurrentSalesFunnel() async {
           TextButton(
             onPressed: () {
               setState(() {
-                widget.onResetFilters?.call(); // Вызов коллбэка для сброса
+                widget.onResetFilters?.call();
                 _selectedManagers.clear();
                 _selectedRegions.clear();
                 _selectedSources.clear();
@@ -273,7 +373,6 @@ Future<void> _loadCurrentSalesFunnel() async {
                   _selectedDirectoryFields[link.id] = null;
                 }
               });
-              // Вызываем onManagersSelected с пустыми фильтрами
               widget.onManagersSelected?.call({
                 'managers': [],
                 'regions': [],
@@ -295,7 +394,6 @@ Future<void> _loadCurrentSalesFunnel() async {
                 'directory_values': [],
               });
               Navigator.pop(context);
-
             },
             style: TextButton.styleFrom(
               padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -317,44 +415,44 @@ Future<void> _loadCurrentSalesFunnel() async {
           ),
           SizedBox(width: 10),
           TextButton(
-  onPressed: () async {
-    await LeadCache.clearAllLeads();
-    Map<String, dynamic> filterData = {
-      'managers': _selectedManagers,
-      'regions': _selectedRegions,
-      'sources': _selectedSources,
-      'statuses': _selectedStatuses,
-      'fromDate': _fromDate,
-      'toDate': _toDate,
-      'hasSuccessDeals': _hasSuccessDeals,
-      'hasInProgressDeals': _hasInProgressDeals,
-      'hasFailureDeals': _hasFailureDeals,
-      'hasNotices': _hasNotices,
-      'hasContact': _hasContact,
-      'hasChat': _hasChat,
-      'hasNoReplies': _hasNoReplies,
-      'hasUnreadMessages': _hasUnreadMessages,
-      'hasDeal': _hasDeal,
-      'unreadOnly': _unreadOnly,
-      'daysWithoutActivity': _daysWithoutActivity,
-      'directory_values': _selectedDirectoryFields.entries
-          .where((entry) => entry.value != null)
-          .map((entry) => {
-                'directory_id': _directoryLinks
-                    .firstWhere((link) => link.id == entry.key)
-                    .directory
-                    .id,
-                'entry_id': entry.value!.id,
-              })
-          .toList(),
-    };
-              print(
-                  'ChatLeadFilterScreen: Applying filters: $filterData'); // ДОБАВЛЕНО
-              // ИЗМЕНЕНО: Добавляем sales_funnel_id только если пользователь выбрал (иначе null — отправим текущую)
+            onPressed: () async {
+              await LeadCache.clearAllLeads();
+              
+              // ИСПРАВЛЕНО: Преобразуем все объекты в Map перед отправкой
+              Map<String, dynamic> filterData = {
+                'managers': _selectedManagers.map((m) => _managerToMap(m)).toList(),
+                'regions': _selectedRegions.map((r) => _regionToMap(r)).toList(),
+                'sources': _selectedSources.map((s) => _sourceToMap(s)).toList(),
+                'statuses': _selectedStatuses,
+                'fromDate': _fromDate,
+                'toDate': _toDate,
+                'hasSuccessDeals': _hasSuccessDeals,
+                'hasInProgressDeals': _hasInProgressDeals,
+                'hasFailureDeals': _hasFailureDeals,
+                'hasNotices': _hasNotices,
+                'hasContact': _hasContact,
+                'hasChat': _hasChat,
+                'hasNoReplies': _hasNoReplies,
+                'hasUnreadMessages': _hasUnreadMessages,
+                'hasDeal': _hasDeal,
+                'unreadOnly': _unreadOnly,
+                'daysWithoutActivity': _daysWithoutActivity,
+                'directory_values': _selectedDirectoryFields.entries
+                    .where((entry) => entry.value != null)
+                    .map((entry) => {
+                          'directory_id': _directoryLinks
+                              .firstWhere((link) => link.id == entry.key)
+                              .directory
+                              .id,
+                          'entry_id': entry.value!.id,
+                        })
+                    .toList(),
+              };
+
               if (selectedSalesFunnel != null) {
                 filterData['sales_funnel_id'] = selectedSalesFunnel;
               }
-              // И в условии проверки также добавьте _unreadOnly == true
+
               if (_selectedManagers.isNotEmpty ||
                   _selectedRegions.isNotEmpty ||
                   _selectedSources.isNotEmpty ||
@@ -371,13 +469,11 @@ Future<void> _loadCurrentSalesFunnel() async {
                   _hasNoReplies == true ||
                   _hasUnreadMessages == true ||
                   _hasDeal == true ||
-                  _unreadOnly == true || // ДОБАВЛЕНО
                   _daysWithoutActivity != null ||
-                  _selectedDirectoryFields.values
-                      .any((field) => field != null)) {
+                  _selectedDirectoryFields.values.any((field) => field != null)) {
                 print('ChatLeadFilterScreen: Applying filters: $filterData');
-    widget.onManagersSelected?.call(filterData);
-    print('ChatLeadFilterScreen: Called onManagersSelected with filterData');
+                widget.onManagersSelected?.call(filterData);
+                print('ChatLeadFilterScreen: Called onManagersSelected with filterData');
               }
               Navigator.pop(context);
             },
@@ -458,22 +554,6 @@ Future<void> _loadCurrentSalesFunnel() async {
                         ),
                       ),
                     ),
-                    // const SizedBox(height: 8),
-                    // Card(
-                    //   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    //   color: Colors.white,
-                    //   child: Padding(
-                    //     padding: const EdgeInsets.all(8),
-                    //     child: LeadStatusRadioGroupWidget(
-                    //       selectedStatus: _selectedStatuses?.toString(),
-                    //       onSelectStatus: (LeadStatus selectedStatusData) {
-                    //         setState(() {
-                    //           _selectedStatuses = selectedStatusData.id;
-                    //         });
-                    //       },
-                    //     ),
-                    //   ),
-                    // ),
                     const SizedBox(height: 8),
                     Card(
                       shape: RoundedRectangleBorder(
@@ -545,8 +625,7 @@ Future<void> _loadCurrentSalesFunnel() async {
                           selectedSalesFunnel: selectedSalesFunnel,
                           onChanged: (String? newValue) {
                             setState(() {
-                              selectedSalesFunnel =
-                                  newValue; // ИЗМЕНЕНО: Раскомментировали и сделали полноценным
+                              selectedSalesFunnel = newValue;
                             });
                           },
                         ),
@@ -589,12 +668,6 @@ Future<void> _loadCurrentSalesFunnel() async {
                             _hasContact ?? false,
                             (value) => setState(() => _hasContact = value),
                           ),
-                          // _buildSwitchTile(
-                          //   AppLocalizations.of(context)!
-                          //       .translate('with_chat'),
-                          //   _hasChat ?? false,
-                          //   (value) => setState(() => _hasChat = value),
-                          // ),
                           _buildSwitchTile(
                             AppLocalizations.of(context)!
                                 .translate('without_replies'),
@@ -614,12 +687,6 @@ Future<void> _loadCurrentSalesFunnel() async {
                             _hasDeal ?? false,
                             (value) => setState(() => _hasDeal = value),
                           ),
-                          // _buildSwitchTile(
-                          //   AppLocalizations.of(context)!
-                          //       .translate('unread_only'),
-                          //   _unreadOnly ?? false,
-                          //   (value) => setState(() => _unreadOnly = value),
-                          // ),
                         ],
                       ),
                     ),

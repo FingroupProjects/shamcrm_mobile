@@ -112,6 +112,9 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   Map<String, dynamic>? tutorialProgress;
   SalesFunnel? _selectedFunnel;
   List<int>? _selectedManagerIds;
+    bool _isFilterLoading = false; // НОВЫЙ флаг для отслеживания загрузки после фильтрации
+  bool _shouldShowLoader = false; // НОВЫЙ флаг для принудительного показа лоадера
+
 
   @override
   void initState() {
@@ -458,6 +461,14 @@ Future<void> _onRefresh(int currentStatusId) async {
   // }
 
   Future<void> _searchLeads(String query, int currentStatusId) async {
+     if (mounted) {
+    setState(() {
+      _isFilterLoading = true; // ← НОВОЕ
+            _shouldShowLoader = true; // ← НОВОЕ: принудительно показываем лоадер
+
+    });
+  }
+  
     final leadBloc = BlocProvider.of<LeadBloc>(context);
     await LeadCache.clearLeadsForStatus(currentStatusId);
     print('LeadScreen: Searching leads with query: $query');
@@ -532,74 +543,91 @@ Future<void> _onRefresh(int currentStatusId) async {
     leadBloc.add(FetchLeadStatuses());
   }
 
-  Future<void> _handleManagerSelected(Map managers) async {
-    if (mounted) {
-      setState(() {
-        _showCustomTabBar = false;
-        _selectedManagers = managers['managers'];
-        _selectedRegions = managers['regions'];
-        _selectedSources = managers['sources'];
-        _selectedStatuses = managers['statuses'];
-        _fromDate = managers['fromDate'];
-        _toDate = managers['toDate'];
-        _hasSuccessDeals = managers['hasSuccessDeals'];
-        _hasInProgressDeals = managers['hasInProgressDeals'];
-        _hasFailureDeals = managers['hasFailureDeals'];
-        _hasNotices = managers['hasNotices'];
-        _hasContact = managers['hasContact'];
-        _hasChat = managers['hasChat'];
-        _hasNoReplies = managers['hasNoReplies'];
-        _hasUnreadMessages = managers['hasUnreadMessages'];
-        _hasDeal = managers['hasDeal'];
-        _daysWithoutActivity = managers['daysWithoutActivity'];
-        _directoryValues = managers['directory_values'] ?? [];
-        _initialSelectedManagers = managers['managers'];
-        _initialSelectedRegions = managers['regions'];
-        _initialSelectedSources = managers['sources'];
-        _initialSelStatus = managers['statuses'];
-        _initialFromDate = managers['fromDate'];
-        _initialToDate = managers['toDate'];
-        _initialHasSuccessDeals = managers['hasSuccessDeals'];
-        _initialHasInProgressDeals = managers['hasInProgressDeals'];
-        _initialHasFailureDeals = managers['hasFailureDeals'];
-        _initialHasNotices = managers['hasNotices'];
-        _initialHasContact = managers['hasContact'];
-        _initialHasChat = managers['hasChat'];
-        _initialHasNoReplies = managers['hasNoReplies'];
-        _initialHasUnreadMessages = managers['hasUnreadMessages'];
-        _initialHasDeal = managers['hasDeal'];
-        _initialDaysWithoutActivity = managers['daysWithoutActivity'];
-        _initialDirectoryValues = managers['directory_values'] ?? [];
-      });
-    }
-
-    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-    await LeadCache.clearLeadsForStatus(currentStatusId);
-    final leadBloc = BlocProvider.of<LeadBloc>(context);
-    leadBloc.add(FetchLeads(
-      currentStatusId,
-      managerIds: _selectedManagers.map((manager) => manager.id).toList(),
-      regionsIds: _selectedRegions.map((region) => region.id).toList(),
-      sourcesIds: _selectedSources.map((source) => source.id).toList(),
-      statusIds: _selectedStatuses,
-      fromDate: _fromDate,
-      toDate: _toDate,
-      hasSuccessDeals: _hasSuccessDeals,
-      hasInProgressDeals: _hasInProgressDeals,
-      hasFailureDeals: _hasFailureDeals,
-      hasNotices: _hasNotices,
-      hasContact: _hasContact,
-      hasChat: _hasChat,
-      hasNoReplies: _hasNoReplies,
-      hasUnreadMessages: _hasUnreadMessages,
-      hasDeal: _hasDeal,
-      daysWithoutActivity: _daysWithoutActivity,
-      directoryValues: _directoryValues,
-      salesFunnelId: _selectedFunnel?.id,
-      query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-      ignoreCache: true, // ← ПРИНУДИТЕЛЬНО ИГНОРИРУЕМ КЭШ
-    ));
+ Future<void> _handleManagerSelected(Map managers) async {
+  print('LeadScreen: _handleManagerSelected - START');
+  
+  // КРИТИЧНО: Сначала показываем лоадер и скрываем старые данные
+  if (mounted) {
+    setState(() {
+      _isFilterLoading = true;
+      _shouldShowLoader = true; // ← НОВОЕ: принудительно показываем лоадер
+      _showCustomTabBar = false;
+      _selectedManagers = managers['managers'];
+      _selectedRegions = managers['regions'];
+      _selectedSources = managers['sources'];
+      _selectedStatuses = managers['statuses'];
+      _fromDate = managers['fromDate'];
+      _toDate = managers['toDate'];
+      _hasSuccessDeals = managers['hasSuccessDeals'];
+      _hasInProgressDeals = managers['hasInProgressDeals'];
+      _hasFailureDeals = managers['hasFailureDeals'];
+      _hasNotices = managers['hasNotices'];
+      _hasContact = managers['hasContact'];
+      _hasChat = managers['hasChat'];
+      _hasNoReplies = managers['hasNoReplies'];
+      _hasUnreadMessages = managers['hasUnreadMessages'];
+      _hasDeal = managers['hasDeal'];
+      _daysWithoutActivity = managers['daysWithoutActivity'];
+      _directoryValues = managers['directory_values'] ?? [];
+      _initialSelectedManagers = managers['managers'];
+      _initialSelectedRegions = managers['regions'];
+      _initialSelectedSources = managers['sources'];
+      _initialSelStatus = managers['statuses'];
+      _initialFromDate = managers['fromDate'];
+      _initialToDate = managers['toDate'];
+      _initialHasSuccessDeals = managers['hasSuccessDeals'];
+      _initialHasInProgressDeals = managers['hasInProgressDeals'];
+      _initialHasFailureDeals = managers['hasFailureDeals'];
+      _initialHasNotices = managers['hasNotices'];
+      _initialHasContact = managers['hasContact'];
+      _initialHasChat = managers['hasChat'];
+      _initialHasNoReplies = managers['hasNoReplies'];
+      _initialHasUnreadMessages = managers['hasUnreadMessages'];
+      _initialHasDeal = managers['hasDeal'];
+      _initialDaysWithoutActivity = managers['daysWithoutActivity'];
+      _initialDirectoryValues = managers['directory_values'] ?? [];
+    });
   }
+
+  print('LeadScreen: _handleManagerSelected - Loader shown, clearing cache');
+  
+  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+  
+  // Очищаем кэш
+  await LeadCache.clearLeadsForStatus(currentStatusId);
+  
+  print('LeadScreen: _handleManagerSelected - Cache cleared, dispatching FetchLeads');
+  
+  // Небольшая задержка для гарантии отображения лоадера
+  await Future.delayed(Duration(milliseconds: 50));
+  
+  final leadBloc = BlocProvider.of<LeadBloc>(context);
+  leadBloc.add(FetchLeads(
+    currentStatusId,
+    managerIds: _selectedManagers.map((manager) => manager.id).toList(),
+    regionsIds: _selectedRegions.map((region) => region.id).toList(),
+    sourcesIds: _selectedSources.map((source) => source.id).toList(),
+    statusIds: _selectedStatuses,
+    fromDate: _fromDate,
+    toDate: _toDate,
+    hasSuccessDeals: _hasSuccessDeals,
+    hasInProgressDeals: _hasInProgressDeals,
+    hasFailureDeals: _hasFailureDeals,
+    hasNotices: _hasNotices,
+    hasContact: _hasContact,
+    hasChat: _hasChat,
+    hasNoReplies: _hasNoReplies,
+    hasUnreadMessages: _hasUnreadMessages,
+    hasDeal: _hasDeal,
+    daysWithoutActivity: _daysWithoutActivity,
+    directoryValues: _directoryValues,
+    salesFunnelId: _selectedFunnel?.id,
+    query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+    ignoreCache: true,
+  ));
+  
+  print('LeadScreen: _handleManagerSelected - FetchLeads dispatched');
+}
 
   void _onSearch(String query) {
   _lastSearchQuery = query;
@@ -1038,6 +1066,15 @@ Future<void> _onRefresh(int currentStatusId) async {
   }
 
   Widget searchWidget(List<Lead> leads) {
+     if (_isFilterLoading) {
+    return const Center(
+      child: PlayStoreImageLoading(
+        size: 80.0,
+        duration: Duration(milliseconds: 1000),
+      ),
+    );
+  }
+  
     final currentStatusId = _tabTitles.isNotEmpty ? _tabTitles[_currentTabIndex]['id'] : 0;
     if (_isSearching && leads.isEmpty) {
       return Center(
@@ -1108,9 +1145,29 @@ Future<void> _onRefresh(int currentStatusId) async {
   }
 
   Widget _buildManagerView() {
+      // КРИТИЧНО: Если флаг установлен - показываем ТОЛЬКО лоадер, игнорируя BlocBuilder
+  if (_shouldShowLoader || _isFilterLoading) {
+    print('LeadScreen: _buildManagerView - Showing loader');
+    return const Center(
+      child: PlayStoreImageLoading(
+        size: 80.0,
+        duration: Duration(milliseconds: 1000),
+      ),
+    );
+  }
     return BlocBuilder<LeadBloc, LeadState>(
       builder: (context, state) {
         final currentStatusId = _tabTitles.isNotEmpty ? _tabTitles[_tabController.index]['id'] : 0;
+          // Если идёт загрузка - показываем лоадер
+      if (state is LeadLoading) {
+        print('LeadScreen: _buildManagerView - LeadLoading state, showing loader');
+        return const Center(
+          child: PlayStoreImageLoading(
+            size: 80.0,
+            duration: Duration(milliseconds: 1000),
+          ),
+        );
+      }
         if (state is LeadDataLoaded) {
           final List<Lead> leads = state.leads;
           final statusId = _tabTitles[_tabController.index]['id'];
@@ -1438,7 +1495,16 @@ Widget _buildTabBarView() {
   return BlocListener<LeadBloc, LeadState>(
     listener: (context, state) async {
       print('LeadScreen: BlocListener received state: ${state.runtimeType}');
-      
+       // Сбрасываем флаг загрузки когда получены данные
+      if (state is LeadDataLoaded || state is LeadError) {
+        if (mounted && _isFilterLoading) {
+          setState(() {
+            _isFilterLoading = false; // ← НОВОЕ: сбрасываем флаг после загрузки
+                        _shouldShowLoader = false; // ← НОВОЕ: разрешаем показывать данные
+
+          });
+        }
+      }
       if (state is LeadLoaded) {
         print('LeadScreen: LeadLoaded state, caching lead statuses: ${state.leadStatuses}');
         await LeadCache.cacheLeadStatuses(state.leadStatuses);

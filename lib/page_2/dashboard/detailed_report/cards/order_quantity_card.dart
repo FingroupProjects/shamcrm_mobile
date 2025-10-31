@@ -42,11 +42,11 @@ class OrderQuantityCard extends StatelessWidget {
                 Text(
                   '${localizations.translate('quantity')}: ${parseNumberToString(chartData.amount)}',
                   style: const TextStyle(
-                    fontSize: 14,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w400,
-                    color: Color(0xff99A4BA),
-                  ),
+                      fontSize: 15,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xff1E2E52),
+                    ),
                 ),
               ],
             ),
