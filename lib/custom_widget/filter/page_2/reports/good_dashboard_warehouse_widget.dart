@@ -62,14 +62,14 @@ class _GoodDashboardWarehouseWidgetState extends State<GoodDashboardWarehouseWid
       },
       child: BlocBuilder<GoodDashboardWarehouseBloc, GoodDashboardWarehouseState>(
         builder: (context, state) {
-          // Обновляем данные при успешной загрузке
+          // Update data on successful load
           if (state is GoodDashboardWarehouseLoaded) {
             final List<GoodDashboardWarehouse> goodsList = state.goodDashboardWarehouse;
-            
+
             if (widget.selectedGoodDashboardWarehouse != null && goodsList.isNotEmpty) {
               try {
                 selectedGoodData = goodsList.firstWhere(
-                  (good) => good.id.toString() == widget.selectedGoodDashboardWarehouse,
+                      (good) => good.id.toString() == widget.selectedGoodDashboardWarehouse,
                 );
               } catch (e) {
                 selectedGoodData = null;
@@ -77,12 +77,12 @@ class _GoodDashboardWarehouseWidgetState extends State<GoodDashboardWarehouseWid
             }
           }
 
-          // Всегда отображаем поле
+          // Always display the field
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                AppLocalizations.of(context)!.translate('good'),  // Ключ для "Товар"
+                AppLocalizations.of(context)!.translate('good'),
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
@@ -98,23 +98,24 @@ class _GoodDashboardWarehouseWidgetState extends State<GoodDashboardWarehouseWid
                 searchHintText: AppLocalizations.of(context)!.translate('search'),
                 overlayHeight: 400,
                 enabled: true,
-                decoration:  CustomDropdownDecoration(
-                  closedFillColor: Color(0xffF4F7FD),
+                decoration: CustomDropdownDecoration(
+                  closedFillColor: const Color(0xffF4F7FD),
                   expandedFillColor: Colors.white,
                   closedBorder: Border.all(
-                    color: Color(0xffF4F7FD),
+                    color: const Color(0xffF4F7FD),
                     width: 1,
                   ),
                   closedBorderRadius: BorderRadius.circular(12),
                   expandedBorder: Border.all(
-                    color: Color(0xffF4F7FD),
+                    color: const Color(0xffF4F7FD),
                     width: 1,
                   ),
                   expandedBorderRadius: BorderRadius.circular(12),
                 ),
                 listItemBuilder: (context, item, isSelected, onItemSelect) {
+                  // Display price with proper formatting
                   return Text(
-                    '${item.name} (${item.price} ₽)',  // Добавил цену для дашборда
+                    item.name,
                     style: const TextStyle(
                       color: Color(0xff1E2E52),
                       fontSize: 14,
@@ -130,7 +131,7 @@ class _GoodDashboardWarehouseWidgetState extends State<GoodDashboardWarehouseWid
                     return Row(
                       children: [
                         Text(
-                          AppLocalizations.of(context)!.translate('select_good'),  // Ключ для "Выберите товар"
+                          AppLocalizations.of(context)!.translate('select_good'),
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
@@ -141,10 +142,9 @@ class _GoodDashboardWarehouseWidgetState extends State<GoodDashboardWarehouseWid
                       ],
                     );
                   }
+
                   return Text(
-                    selectedItem.name != null
-                        ? '${selectedItem.name} (${selectedItem.price} ₽)'
-                        : AppLocalizations.of(context)!.translate('select_good'),
+                    selectedItem.name,
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -163,7 +163,9 @@ class _GoodDashboardWarehouseWidgetState extends State<GoodDashboardWarehouseWid
                   ),
                 ),
                 excludeSelected: false,
-                initialItem: (state is GoodDashboardWarehouseLoaded && state.goodDashboardWarehouse.contains(selectedGoodData))
+                initialItem: (state is GoodDashboardWarehouseLoaded &&
+                    selectedGoodData != null &&
+                    state.goodDashboardWarehouse.contains(selectedGoodData))
                     ? selectedGoodData
                     : null,
                 onChanged: (value) {
