@@ -71,10 +71,7 @@ class _ReconciliationActDetailsScreenState
     final localizations = AppLocalizations.of(context)!;
 
     details = [
-      {
-        'label': 'ID:',
-        'value': currentItem.id?.toString() ?? 'N/A',
-      },
+
       {
         'label': '${localizations.translate('document_type')}:',
         'value': _getMovementTypeText(currentItem.movementType, localizations),
