@@ -13,10 +13,12 @@ import 'package:cached_network_image/cached_network_image.dart';
 class VariantSelectionBottomSheet extends StatefulWidget {
   final List<Map<String, dynamic>> existingItems;
   final bool forceReload;
+  final bool? isService;
 
   const VariantSelectionBottomSheet({
     required this.existingItems,
     this.forceReload = true,
+    this.isService,
     super.key,
   });
 
@@ -64,7 +66,7 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
 
     if (mounted) {
       if (_showAllMode) {
-        _bloc.add(FetchVariants(forceReload: widget.forceReload));
+        _bloc.add(FetchVariants(forceReload: widget.forceReload, isService: widget.isService));  // ADD isService
       } else {
         _bloc.add(FetchCategories(forceReload: widget.forceReload));
       }
@@ -104,7 +106,7 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
     _searchDebounce?.cancel();
     _searchDebounce = Timer(_searchDebounceDelay, () {
       if (mounted) {
-        _bloc.add(SearchAll(query));
+        _bloc.add(SearchAll(query, isService: widget.isService));
       }
     });
   }
@@ -118,14 +120,18 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
     _saveDisplayMode(_showAllMode);
 
     if (_showAllMode) {
-      _bloc.add(FetchVariants());
+      _bloc.add(FetchVariants(isService: widget.isService));  // ADD isService
     } else {
       _bloc.add(FetchCategories());
     }
   }
 
   void _onCategoryTap(int categoryId, String categoryName) {
-    _bloc.add(FetchVariantsByCategory(categoryId: categoryId, categoryName: categoryName));
+    _bloc.add(FetchVariantsByCategory(
+      categoryId: categoryId,
+      categoryName: categoryName,
+      isService: widget.isService,  // ADD THIS
+    ));
   }
 
   void _onBackFromCategory() {
@@ -415,7 +421,7 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
             ElevatedButton(
               onPressed: () {
                 if (_showAllMode) {
-                  _bloc.add(FetchVariants(forceReload: true));
+                  _bloc.add(FetchVariants(forceReload: true, isService: widget.isService));  // ADD isService
                 } else {
                   _bloc.add(FetchCategories(forceReload: true));
                 }

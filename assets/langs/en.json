@@ -889,6 +889,7 @@
   "select_branch": "Select branch",
   "appbar_orders": "Orders",
   "goods_finished": "Status",
+  "service": "Service",
   "deal_name": "Name",
   "select_deal_name": "Enter name",
   "with_unread_messages": "With unread messages",

@@ -195,6 +195,7 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
       backgroundColor: Colors.transparent,
       builder: (context) => VariantSelectionBottomSheet(
         existingItems: _items,
+        isService: false,
       ),
     );
 

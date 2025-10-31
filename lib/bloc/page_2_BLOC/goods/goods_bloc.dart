@@ -378,6 +378,7 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
   if (await _checkInternetConnection()) {
     try {
       final response = await apiService.createGoods(
+        isService: event.isService,
         name: event.name,
         parentId: event.parentId,
         description: event.description,
@@ -429,6 +430,7 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
   if (await _checkInternetConnection()) {
     try {
       final response = await apiService.updateGoods(
+        isService: event.isService,
         goodId: event.goodId,
         name: event.name,
         parentId: event.parentId,

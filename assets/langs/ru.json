@@ -887,6 +887,7 @@
   "select_branch": "Выберите филиал",
   "appbar_orders": "Заказы",
   "goods_finished": "Статус",
+  "service": "Услуга",
   "deal_name": "Название",
   "select_deal_name": "Введите название",
   "with_unread_messages": "Только непрочитанные",

@@ -239,6 +239,7 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
       backgroundColor: Colors.transparent,
       builder: (context) => VariantSelectionBottomSheet(
         existingItems: _items,
+        isService: false,
       ),
     );
     

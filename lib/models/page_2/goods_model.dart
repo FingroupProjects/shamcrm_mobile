@@ -202,6 +202,7 @@ class Goods {
   final List<Unit>? units;
   final List<Measurement>? measurements;
   final Unit? unit; // Добавляем поле unit для AddGoodsScreen и EditGoodsScreen
+  final bool? isService;
 
   Goods({
     required this.id,
@@ -229,6 +230,7 @@ class Goods {
     this.units,
     this.measurements,
     this.unit,
+    this.isService,
   });
 
   factory Goods.fromJson(Map<String, dynamic> json) {
@@ -297,6 +299,16 @@ class Goods {
         }
       }
 
+      bool? isService;
+      if (json['is_service'] != null) {
+        if (json['is_service'] is bool) {
+          isService = json['is_service'] as bool?;
+        } else if (json['is_service'] is int) {
+          isService = json['is_service'] == 1;
+        }
+      }
+
+
       List<Unit>? units;
       if (data['units'] != null && data['units'] is List) {
         units = (data['units'] as List).map((u) => Unit.fromJson(u as Map<String, dynamic>)).toList();
@@ -324,6 +336,7 @@ class Goods {
         discountedPrice: discountedPrice,
         discountPercent: discountPercent,
         isActive: isActive,
+        isService: isService,
         files: (json['files'] as List<dynamic>?)?.map((f) {
               return GoodsFile.fromJson(f as Map<String, dynamic>);
             }).toList() ??
