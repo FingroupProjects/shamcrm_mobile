@@ -15,7 +15,7 @@ import '../../../../models/lead_list_model.dart';
 import '../../../../models/supplier_list_model.dart';
 import '../../../dropdown_loading_state.dart';
 
-class ActFilterScreen extends StatefulWidget {
+class GoodsMovementFilterScreen extends StatefulWidget {
   final Function(Map<String, dynamic>)? onSelectedDataFilter;
   final VoidCallback? onResetFilters;
   final DateTime? initialFromDate;
@@ -25,7 +25,7 @@ class ActFilterScreen extends StatefulWidget {
   final String? initialLead;
   final String? initialSupplier;
 
-  const ActFilterScreen({
+  const GoodsMovementFilterScreen({
     Key? key,
     this.onSelectedDataFilter,
     this.onResetFilters,
@@ -38,10 +38,10 @@ class ActFilterScreen extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _ActFilterScreenState createState() => _ActFilterScreenState();
+  _GoodsMovementFilterScreenState createState() => _GoodsMovementFilterScreenState();
 }
 
-class _ActFilterScreenState extends State<ActFilterScreen> {
+class _GoodsMovementFilterScreenState extends State<GoodsMovementFilterScreen> {
   DateTime? _fromDate;
   DateTime? _toDate;
   bool _isLeadSelected = true;
@@ -70,25 +70,25 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
   Future<void> _loadFilterState() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      final fromDateMillis = prefs.getInt('act_from_date');
-      final toDateMillis = prefs.getInt('act_to_date');
-      _isLeadSelected = prefs.getBool('act_filter_is_lead') ?? true;
+      final fromDateMillis = prefs.getInt('goods_movement_from_date');
+      final toDateMillis = prefs.getInt('goods_movement_to_date');
+      _isLeadSelected = prefs.getBool('goods_movement_filter_is_lead') ?? true;
 
       if (fromDateMillis != null) _fromDate = DateTime.fromMillisecondsSinceEpoch(fromDateMillis);
       if (toDateMillis != null) _toDate = DateTime.fromMillisecondsSinceEpoch(toDateMillis);
-      _amountFromController.text = prefs.getString('act_amount_from') ?? widget.initialAmountFrom ?? '';
-      _amountToController.text = prefs.getString('act_amount_to') ?? widget.initialAmountTo ?? '';
+      _amountFromController.text = prefs.getString('goods_movement_amount_from') ?? widget.initialAmountFrom ?? '';
+      _amountToController.text = prefs.getString('goods_movement_amount_to') ?? widget.initialAmountTo ?? '';
 
       // Load lead
-      final leadId = prefs.getInt('act_lead_id');
-      final leadName = prefs.getString('act_lead');
+      final leadId = prefs.getInt('goods_movement_lead_id');
+      final leadName = prefs.getString('goods_movement_lead');
       if (leadId != null && leadName != null) {
         _selectedLead = LeadData(id: leadId, name: leadName);
       }
 
       // Load supplier
-      final supplierId = prefs.getInt('act_supplier_id');
-      final supplierName = prefs.getString('act_supplier');
+      final supplierId = prefs.getInt('goods_movement_supplier_id');
+      final supplierName = prefs.getString('goods_movement_supplier');
       if (supplierId != null && supplierName != null) {
         _selectedSupplier = SupplierData(id: supplierId, name: supplierName);
       }
@@ -100,37 +100,37 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
 
   Future<void> _saveFilterState() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('act_filter_is_lead', _isLeadSelected);
+    await prefs.setBool('goods_movement_filter_is_lead', _isLeadSelected);
 
     if (_fromDate != null) {
-      await prefs.setInt('act_from_date', _fromDate!.millisecondsSinceEpoch);
+      await prefs.setInt('goods_movement_from_date', _fromDate!.millisecondsSinceEpoch);
     } else {
-      await prefs.remove('act_from_date');
+      await prefs.remove('goods_movement_from_date');
     }
 
     if (_toDate != null) {
-      await prefs.setInt('act_to_date', _toDate!.millisecondsSinceEpoch);
+      await prefs.setInt('goods_movement_to_date', _toDate!.millisecondsSinceEpoch);
     } else {
-      await prefs.remove('act_to_date');
+      await prefs.remove('goods_movement_to_date');
     }
 
-    await prefs.setString('act_amount_from', _amountFromController.text);
-    await prefs.setString('act_amount_to', _amountToController.text);
+    await prefs.setString('goods_movement_amount_from', _amountFromController.text);
+    await prefs.setString('goods_movement_amount_to', _amountToController.text);
 
     if (_selectedLead != null) {
-      await prefs.setString('act_lead', _selectedLead!.name);
-      await prefs.setInt('act_lead_id', _selectedLead!.id);
+      await prefs.setString('goods_movement_lead', _selectedLead!.name);
+      await prefs.setInt('goods_movement_lead_id', _selectedLead!.id);
     } else {
-      await prefs.remove('act_lead');
-      await prefs.remove('act_lead_id');
+      await prefs.remove('goods_movement_lead');
+      await prefs.remove('goods_movement_lead_id');
     }
 
     if (_selectedSupplier != null) {
-      await prefs.setString('act_supplier', _selectedSupplier!.name);
-      await prefs.setInt('act_supplier_id', _selectedSupplier!.id);
+      await prefs.setString('goods_movement_supplier', _selectedSupplier!.name);
+      await prefs.setInt('goods_movement_supplier_id', _selectedSupplier!.id);
     } else {
-      await prefs.remove('act_supplier');
-      await prefs.remove('act_supplier_id');
+      await prefs.remove('goods_movement_supplier');
+      await prefs.remove('goods_movement_supplier_id');
     }
   }
 

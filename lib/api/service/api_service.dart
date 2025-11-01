@@ -138,6 +138,7 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/batch_model.dart';
 import '../../models/cash_register_list_model.dart';
+import '../../models/dashboard_goods_movement_history_model.dart';
 import '../../models/domain_check.dart';
 import '../../models/income_categories_data_response.dart';
 import '../../models/login_model.dart';
@@ -10672,7 +10673,6 @@ Future<IncomingDocument> getIncomingDocumentById(int documentId) async {
     }
   }
 
-  // todo show 409 errors on every request with ApiException
   Future<IncomingDocumentHistoryResponse> getIncomingDocumentHistory(
       int documentId) async {
     String url = '/income-documents/history/$documentId';
@@ -14503,7 +14503,6 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         );
       }
     } catch (e) {
-      // todo rethrow
       throw e;
     }
   }
@@ -15742,7 +15741,34 @@ Future<List<OrderStatusWarehouse>> getOrderStatusWarehouse() async {
   }
 }
 
-// Add this method to your ApiService class
+  Future<List<DashboardGoodsMovementHistory>> getDashboardGoodsMovementHistoryList(int goodId) async {
+    final path = await _appendQueryParams('/dashboard/good-movement-history/$goodId');
+    if (kDebugMode) {
+      print('ApiService: getDashboardGoodsMovementHistoryList - Generated path: $path');
+    }
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (kDebugMode) {
+        print('ApiService: Полученные данные истории движения товара $goodId: $data');
+      }
+      final resultList = data['result'] as List?;
+      if (resultList == null) {
+        return [];
+      }
+      return resultList
+          .map((item) => DashboardGoodsMovementHistory.fromJson(item))
+          .toList();
+    } else {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка при получении истории перемещений товаров!',
+        response.statusCode,
+      );
+    }
+  }
 
   Future<dgrmodel.GoodDashboardWarehouseResponse> getGoodDashboardWarehousePage(int page) async {
     try {
