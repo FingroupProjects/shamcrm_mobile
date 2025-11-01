@@ -132,6 +132,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:new_version_plus/new_version_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'bloc/cash_register_list/cash_register_list_bloc.dart';
@@ -641,6 +642,161 @@ class _MyAppState extends State<MyApp> {
       });
     }
   }
+  Future<void> _checkForNewVersion(BuildContext context) async {
+    try {
+      final newVersionPlus = NewVersionPlus();
+      final status = await newVersionPlus.getVersionStatus();
+      print("status?.localVersion = ${status?.localVersion}, status?.storeVersion = ${status?.storeVersion}");
+
+      if (status == null) return;
+
+      // Check if context is still mounted before showing dialog
+      if (!mounted || !context.mounted) return;
+
+      // Get localized strings
+      final localizations = AppLocalizations.of(context);
+      final dialogTitle = localizations?.translate('app_update_available_title') ?? 'Update Available';
+      final dialogText = localizations?.translate('app_update_available_message') ?? 'A new version of the app is available. Please update to get new features and fixes.';
+      final updateButtonText = localizations?.translate('app_update_button') ?? 'Update';
+      final dismissButtonText = localizations?.translate('app_update_dismiss') ?? 'Later';
+
+      // Show clean minimalist dialog
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Container(
+              padding: EdgeInsets.all(32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Simple icon
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: Colors.blue,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.arrow_upward_rounded,
+                      size: 32,
+                      color: Colors.white,
+                    ),
+                  ),
+
+                  SizedBox(height: 24),
+
+                  // Title
+                  Text(
+                    dialogTitle,
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+
+                  SizedBox(height: 12),
+
+                  // Version info - minimal
+                  Text(
+                    '${status.localVersion} → ${status.storeVersion}',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey.shade600,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+
+                  SizedBox(height: 16),
+
+                  // Description
+                  Text(
+                    dialogText,
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: Colors.grey.shade700,
+                      height: 1.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+
+                  SizedBox(height: 32),
+
+                  // Buttons - stacked for cleaner look
+                  Column(
+                    children: [
+                      // Update button - primary action
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            newVersionPlus.launchAppStore(
+                              status.appStoreLink,
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue,
+                            foregroundColor: Colors.white,
+                            padding: EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: Text(
+                            updateButtonText,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      SizedBox(height: 12),
+
+                      // Later button - secondary action
+                      SizedBox(
+                        width: double.infinity,
+                        child: TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Text(
+                            dismissButtonText,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+    } catch (e) {
+      print('MyApp: Error checking version: $e');
+    }
+  }
 
   void setLocale(Locale newLocale) {
     setState(() {
@@ -832,6 +988,13 @@ class _MyAppState extends State<MyApp> {
         },
         home: Builder(
           builder: (context) {
+            // ✅ Check version AFTER MaterialApp context is available
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                _checkForNewVersion(context);
+              }
+            });
+
             if (!widget.sessionValid) {
               return AuthScreen();
             }

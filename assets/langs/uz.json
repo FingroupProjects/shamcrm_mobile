@@ -1832,5 +1832,10 @@
   "title_without_dots": "Nomi",
   "no_goods": "Mahsulotlar yo'q",
   "goods_added_go_to_main": "Mahsulotlar qo'shildi. Saqlash uchun 'Asosiy'ga o'ting.",
-  "go": "O'tish"
+  "go": "O'tish",
+  "COMMENT_TITLE_SCREEN_APP_UPDATE": "----------------------------Ilovani yangilash uchun matnlar----------------------------",
+  "app_update_available_title": "Yangilanish mavjud",
+  "app_update_available_message": "Ilovaning yangi versiyasi mavjud. Yangi funksiyalar va tuzatishlarni olish uchun yangilang.",
+  "app_update_button": "Yangilash",
+  "app_update_dismiss": "Keyinroq"
 }
