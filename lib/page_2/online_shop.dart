@@ -70,7 +70,7 @@ class _OnlineStoreScreenState extends State<OnlineStoreScreen> {
         });
       }
     } catch (e) {
-      print('OnlineStoreScreen: Ошибка при проверке прав: $e');
+      //print('OnlineStoreScreen: Ошибка при проверке прав: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;

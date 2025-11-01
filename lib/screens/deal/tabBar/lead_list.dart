@@ -32,14 +32,14 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
   void initState() {
     super.initState();
     if (kDebugMode) {
-      print('🟢 LeadWidget: initState - showDebt=${widget.showDebt}');
+      //print('🟢 LeadWidget: initState - showDebt=${widget.showDebt}');
     }
 
     // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Используем RefreshAllLeadEv для загрузки свежих данных
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         if (kDebugMode) {
-          print('🔥 LeadWidget: Forcing fresh data load (ignoring cache)');
+          //print('🔥 LeadWidget: Forcing fresh data load (ignoring cache)');
         }
         context.read<GetAllLeadBloc>().add(RefreshAllLeadEv(showDebt: widget.showDebt));
       }
@@ -53,7 +53,7 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
     // ✅ Перезагружаем данные если изменился параметр showDebt
     if (oldWidget.showDebt != widget.showDebt) {
       if (kDebugMode) {
-        print('🔄 LeadWidget: showDebt changed, reloading data');
+        //print('🔄 LeadWidget: showDebt changed, reloading data');
       }
       context.read<GetAllLeadBloc>().add(RefreshAllLeadEv(showDebt: widget.showDebt));
     }
@@ -66,7 +66,7 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
 
   void _updateSelectedLeadData() {
     if (kDebugMode) {
-      print('🔄 LeadWidget: _updateSelectedLeadData started');
+      //print('🔄 LeadWidget: _updateSelectedLeadData started');
     }
 
     if (widget.selectedLead != null && leadsList.isNotEmpty) {
@@ -75,12 +75,12 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
               (lead) => lead.id.toString() == widget.selectedLead,
         );
         if (kDebugMode) {
-          print('🟢 LeadWidget: Selected lead found - ${selectedLeadData?.name}');
+          //print('🟢 LeadWidget: Selected lead found - ${selectedLeadData?.name}');
         }
       } catch (e) {
         selectedLeadData = null;
         if (kDebugMode) {
-          print('🔴 LeadWidget: Selected lead NOT found - searching for ${widget.selectedLead}');
+          //print('🔴 LeadWidget: Selected lead NOT found - searching for ${widget.selectedLead}');
         }
       }
     } else {
@@ -91,7 +91,7 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
   @override
   Widget build(BuildContext context) {
     if (kDebugMode) {
-      print('🟡 LeadWidget: build() called');
+      //print('🟡 LeadWidget: build() called');
     }
 
     return Column(
@@ -110,7 +110,7 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
         BlocBuilder<GetAllLeadBloc, GetAllLeadState>(
           builder: (context, state) {
             if (kDebugMode) {
-              print('🔵 LeadWidget BlocBuilder: state=${state.runtimeType}');
+              //print('🔵 LeadWidget BlocBuilder: state=${state.runtimeType}');
             }
 
             final isLoading = state is GetAllLeadLoading;
@@ -119,9 +119,9 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
             if (state is GetAllLeadSuccess) {
               leadsList = state.dataLead.result ?? [];
               if (kDebugMode) {
-                print('🔵 LeadWidget BlocBuilder: SUCCESS - ${leadsList.length} leads loaded');
+                //print('🔵 LeadWidget BlocBuilder: SUCCESS - ${leadsList.length} leads loaded');
                 if (leadsList.isNotEmpty) {
-                  print('🔵 LeadWidget BlocBuilder: First lead = ${leadsList.first.name}');
+                  //print('🔵 LeadWidget BlocBuilder: First lead = ${leadsList.first.name}');
                 }
               }
               _updateSelectedLeadData();
@@ -129,7 +129,7 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
 
             if (state is GetAllLeadError) {
               if (kDebugMode) {
-                print('🔴 LeadWidget BlocBuilder: ERROR - ${state.message}');
+                //print('🔴 LeadWidget BlocBuilder: ERROR - ${state.message}');
               }
             }
 
@@ -144,8 +144,8 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                 : null;
 
             if (kDebugMode) {
-              print('🔵 LeadWidget: Rendering dropdown - items=${leadsList.length}, isLoading=$isLoading');
-              print('🔵 LeadWidget: actualInitialItem=${actualInitialItem?.name}');
+              //print('🔵 LeadWidget: Rendering dropdown - items=${leadsList.length}, isLoading=$isLoading');
+              //print('🔵 LeadWidget: actualInitialItem=${actualInitialItem?.name}');
             }
 
             return CustomDropdown<LeadData>.search(
@@ -298,7 +298,7 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
               },
               onChanged: (value) {
                 if (kDebugMode) {
-                  print('🟢 LeadWidget: onChanged - selected ${value?.name}');
+                  //print('🟢 LeadWidget: onChanged - selected ${value?.name}');
                 }
 
                 if (value != null) {

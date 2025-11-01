@@ -20,7 +20,7 @@ class CallCenterBloc extends Bloc<CallCenterEvent, CallCenterState> {
 
   CallCenterBloc(this.apiService) : super(CallCenterInitial()) {
     if (kDebugMode) {
-      print("🚀 Initializing CallCenterBloc");
+      //print("🚀 Initializing CallCenterBloc");
     }
     on<LoadCalls>(_onLoadCalls);
     on<LoadMoreCalls>(_onLoadMoreCalls);
@@ -29,26 +29,26 @@ class CallCenterBloc extends Bloc<CallCenterEvent, CallCenterState> {
     on<FilterCalls>(_onFilterCalls);
     on<ResetFilters>(_onResetFilters); // Добавляем обработчик
     if (kDebugMode) {
-      print("✅ Event handlers registered:");
-      print("  - LoadCalls: registered");
-      print("  - LoadMoreCalls: registered");
-      print("  - LoadCallById: registered");
-      print("  - SubmitCallRatingAndReport: registered");
-      print("  - FilterCalls: registered");
-      print("  - ResetFilters: registered");
+      //print("✅ Event handlers registered:");
+      //print("  - LoadCalls: registered");
+      //print("  - LoadMoreCalls: registered");
+      //print("  - LoadCallById: registered");
+      //print("  - SubmitCallRatingAndReport: registered");
+      //print("  - FilterCalls: registered");
+      //print("  - ResetFilters: registered");
     }
   }
 
   Future<bool> _checkInternetConnection() async {
     if (kDebugMode) {
-      print("Checking internet connection");
+      //print("Checking internet connection");
     }
     return true;
   }
 
   Future<void> _onLoadCalls(LoadCalls event, Emitter<CallCenterState> emit) async {
     if (kDebugMode) {
-      print("Handling LoadCalls event: callType=${event.callType}, page=${event.page}, searchQuery=${event.searchQuery}, filters=$_currentFilters");
+      //print("Handling LoadCalls event: callType=${event.callType}, page=${event.page}, searchQuery=${event.searchQuery}, filters=$_currentFilters");
     }
     emit(CallCenterLoading());
     _currentCallType = event.callType;
@@ -58,7 +58,7 @@ class CallCenterBloc extends Bloc<CallCenterEvent, CallCenterState> {
 
     if (!await _checkInternetConnection()) {
       if (kDebugMode) {
-        print("No internet connection");
+        //print("No internet connection");
       }
       emit(CallCenterError('Нет подключения к интернету'));
       return;
@@ -73,11 +73,11 @@ class CallCenterBloc extends Bloc<CallCenterEvent, CallCenterState> {
 
       if (calls.isEmpty) {
         if (kDebugMode) {
-          print("No calls returned from API. callType=${event.callType}, page=$currentPage, searchQuery=${event.searchQuery}");
+          //print("No calls returned from API. callType=${event.callType}, page=$currentPage, searchQuery=${event.searchQuery}");
         }
       } else {
         if (kDebugMode) {
-          print("Loaded calls: ${calls.length}, currentPage: $currentPage, totalPages: $totalPages");
+          //print("Loaded calls: ${calls.length}, currentPage: $currentPage, totalPages: $totalPages");
         }
       }
 
@@ -94,7 +94,7 @@ class CallCenterBloc extends Bloc<CallCenterEvent, CallCenterState> {
       ));
     } catch (e) {
       if (kDebugMode) {
-        print("Error loading calls: $e");
+        //print("Error loading calls: $e");
       }
       emit(CallCenterError('Не удалось загрузить звонки: ${e.toString()}'));
     }
@@ -103,7 +103,7 @@ class CallCenterBloc extends Bloc<CallCenterEvent, CallCenterState> {
   Future<void> _onLoadMoreCalls(LoadMoreCalls event, Emitter<CallCenterState> emit) async {
     if (allCallsFetched || isLoadingMore) {
       if (kDebugMode) {
-        print("All calls fetched or already loading, skipping LoadMoreCalls");
+        //print("All calls fetched or already loading, skipping LoadMoreCalls");
       }
       return;
     }
@@ -111,12 +111,12 @@ class CallCenterBloc extends Bloc<CallCenterEvent, CallCenterState> {
     isLoadingMore = true;
     final nextPage = event.currentPage + 1;
     if (kDebugMode) {
-      print("🚀 Handling LoadMoreCalls event: callType=${event.callType}, nextPage=$nextPage");
+      //print("🚀 Handling LoadMoreCalls event: callType=${event.callType}, nextPage=$nextPage");
     }
 
     if (!await _checkInternetConnection()) {
       if (kDebugMode) {
-        print("No internet connection for LoadMoreCalls");
+        //print("No internet connection for LoadMoreCalls");
       }
       isLoadingMore = false;
       emit(CallCenterError('Нет подключения к интернету'));
@@ -131,7 +131,7 @@ class CallCenterBloc extends Bloc<CallCenterEvent, CallCenterState> {
       final totalPages = pagination['total_pages'] as int;
 
       if (kDebugMode) {
-        print("Loaded more calls: ${newCalls.length}, currentPage: $currentPage, totalPages: $totalPages");
+        //print("Loaded more calls: ${newCalls.length}, currentPage: $currentPage, totalPages: $totalPages");
       }
 
       allCallsFetched = newCalls.isEmpty || currentPage >= totalPages;
@@ -142,12 +142,12 @@ class CallCenterBloc extends Bloc<CallCenterEvent, CallCenterState> {
         emit(currentState.merge(uniqueNewCalls, newPage: currentPage));
       } else {
         if (kDebugMode) {
-          print("Current state is not CallCenterLoaded or BLoC is closed, skipping merge");
+          //print("Current state is not CallCenterLoaded or BLoC is closed, skipping merge");
         }
       }
     } catch (e) {
       if (kDebugMode) {
-        print("Error loading more calls: $e");
+        //print("Error loading more calls: $e");
       }
       emit(CallCenterError('Не удалось загрузить дополнительные звонки: ${e.toString()}'));
     } finally {
@@ -157,17 +157,17 @@ class CallCenterBloc extends Bloc<CallCenterEvent, CallCenterState> {
 
   Future<void> _onFilterCalls(FilterCalls event, Emitter<CallCenterState> emit) async {
     if (kDebugMode) {
-      print("Handling FilterCalls event: filters=${event.filters}");
+      //print("Handling FilterCalls event: filters=${event.filters}");
     }
     emit(CallCenterLoading());
     _currentFilters = event.filters.isEmpty ? null : Map.from(event.filters);
     if (kDebugMode) {
-      print('CallCenterBloc: Применение фильтров: $_currentFilters, поиск: $_currentSearchQuery');
+      //print('CallCenterBloc: Применение фильтров: $_currentFilters, поиск: $_currentSearchQuery');
     }
 
     if (!await _checkInternetConnection()) {
       if (kDebugMode) {
-        print('CallCenterBloc: Нет подключения к интернету при применении фильтров');
+        //print('CallCenterBloc: Нет подключения к интернету при применении фильтров');
       }
       emit(CallCenterError('Нет подключения к интернету'));
       return;
@@ -188,12 +188,12 @@ class CallCenterBloc extends Bloc<CallCenterEvent, CallCenterState> {
 
       if (calls.isEmpty) {
         if (kDebugMode) {
-          print('CallCenterBloc: Звонки не найдены после применения фильтров');
+          //print('CallCenterBloc: Звонки не найдены после применения фильтров');
         }
         emit(CallCenterEmpty());
       } else {
         if (kDebugMode) {
-          print('CallCenterBloc: Найдено ${calls.length} звонков после применения фильтров');
+          //print('CallCenterBloc: Найдено ${calls.length} звонков после применения фильтров');
         }
         emit(CallCenterLoaded(
           calls: calls,
@@ -203,7 +203,7 @@ class CallCenterBloc extends Bloc<CallCenterEvent, CallCenterState> {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('CallCenterBloc: Ошибка применения фильтров: $e');
+        //print('CallCenterBloc: Ошибка применения фильтров: $e');
       }
       emit(CallCenterError('Не удалось применить фильтры: ${e.toString()}'));
     }
@@ -211,7 +211,7 @@ class CallCenterBloc extends Bloc<CallCenterEvent, CallCenterState> {
 
   Future<void> _onResetFilters(ResetFilters event, Emitter<CallCenterState> emit) async {
     if (kDebugMode) {
-      print("Handling ResetFilters event");
+      //print("Handling ResetFilters event");
     }
     emit(CallCenterLoading());
     _currentCallType = null;
@@ -237,12 +237,12 @@ class CallCenterBloc extends Bloc<CallCenterEvent, CallCenterState> {
 
       if (calls.isEmpty) {
         if (kDebugMode) {
-          print('CallCenterBloc: Звонки не найдены после сброса фильтров');
+          //print('CallCenterBloc: Звонки не найдены после сброса фильтров');
         }
         emit(CallCenterEmpty());
       } else {
         if (kDebugMode) {
-          print('CallCenterBloc: Найдено ${calls.length} звонков после сброса фильтров');
+          //print('CallCenterBloc: Найдено ${calls.length} звонков после сброса фильтров');
         }
         emit(CallCenterLoaded(
           calls: calls,
@@ -252,7 +252,7 @@ class CallCenterBloc extends Bloc<CallCenterEvent, CallCenterState> {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('CallCenterBloc: Ошибка сброса фильтров: $e');
+        //print('CallCenterBloc: Ошибка сброса фильтров: $e');
       }
       emit(CallCenterError('Не удалось сбросить фильтры: ${e.toString()}'));
     }
@@ -260,13 +260,13 @@ class CallCenterBloc extends Bloc<CallCenterEvent, CallCenterState> {
 
   Future<void> _onLoadCallById(LoadCallById event, Emitter<CallCenterState> emit) async {
     if (kDebugMode) {
-      print("Handling LoadCallById event: callId=${event.callId}");
+      //print("Handling LoadCallById event: callId=${event.callId}");
     }
     emit(CallCenterLoading());
 
     if (!await _checkInternetConnection()) {
       if (kDebugMode) {
-        print("No internet connection");
+        //print("No internet connection");
       }
       emit(CallCenterError('Нет подключения к интернету'));
       return;
@@ -275,12 +275,12 @@ class CallCenterBloc extends Bloc<CallCenterEvent, CallCenterState> {
     try {
       final call = await apiService.getCallById(callId: event.callId);
       if (kDebugMode) {
-        print("Loaded call by ID: ${call.id}");
+        //print("Loaded call by ID: ${call.id}");
       }
       emit(CallByIdLoaded(call: call));
     } catch (e) {
       if (kDebugMode) {
-        print("Error loading call by ID: $e");
+        //print("Error loading call by ID: $e");
       }
       if (_lastCalls.isNotEmpty) {
         emit(CallCenterLoaded(
@@ -299,13 +299,13 @@ class CallCenterBloc extends Bloc<CallCenterEvent, CallCenterState> {
     Emitter<CallCenterState> emit,
   ) async {
     if (kDebugMode) {
-      print("Handling SubmitCallRatingAndReport event: callId=${event.callId}, rating=${event.rating}, report=${event.report}");
+      //print("Handling SubmitCallRatingAndReport event: callId=${event.callId}, rating=${event.rating}, report=${event.report}");
     }
     emit(CallCenterLoading());
 
     if (!await _checkInternetConnection()) {
       if (kDebugMode) {
-        print("No internet connection");
+        //print("No internet connection");
       }
       emit(CallCenterError('Нет подключения к интернету'));
       return;
@@ -318,7 +318,7 @@ class CallCenterBloc extends Bloc<CallCenterEvent, CallCenterState> {
         organizationId: event.organizationId,
       );
       if (kDebugMode) {
-        print("Rating set successfully for callId=${event.callId}");
+        //print("Rating set successfully for callId=${event.callId}");
       }
 
       await apiService.addCallReport(
@@ -327,17 +327,17 @@ class CallCenterBloc extends Bloc<CallCenterEvent, CallCenterState> {
         organizationId: event.organizationId,
       );
       if (kDebugMode) {
-        print("Report added successfully for callId=${event.callId}");
+        //print("Report added successfully for callId=${event.callId}");
       }
 
       final call = await apiService.getCallById(callId: event.callId);
       if (kDebugMode) {
-        print("Reloaded call by ID: ${call.id}");
+        //print("Reloaded call by ID: ${call.id}");
       }
       emit(CallByIdLoaded(call: call));
     } catch (e) {
       if (kDebugMode) {
-        print("Error submitting rating and report: $e");
+        //print("Error submitting rating and report: $e");
       }
       emit(CallCenterError('Не удалось сохранить оценку и замечание: ${e.toString()}'));
     }
@@ -345,7 +345,7 @@ class CallCenterBloc extends Bloc<CallCenterEvent, CallCenterState> {
 
   Future<Map<String, dynamic>> _fetchCalls(CallType? callType, int page, String? searchQuery, Map<String, dynamic>? filters) async {
     if (kDebugMode) {
-      print("Fetching calls: callType=$callType, page=$page, searchQuery=$searchQuery, filters=$filters");
+      //print("Fetching calls: callType=$callType, page=$page, searchQuery=$searchQuery, filters=$filters");
     }
     Map<String, dynamic> response;
     switch (callType) {
@@ -363,7 +363,7 @@ class CallCenterBloc extends Bloc<CallCenterEvent, CallCenterState> {
         break;
     }
     if (kDebugMode) {
-      print("API response: calls=${(response['calls'] as List).length}, pagination=${response['pagination']}");
+      //print("API response: calls=${(response['calls'] as List).length}, pagination=${response['pagination']}");
     }
     return response;
   }

@@ -55,7 +55,7 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
     final newIds = widget.dealStatuses?.map((s) => s.id).toSet() ?? {};
 
     if (!oldIds.containsAll(newIds) || !newIds.containsAll(oldIds)) {
-      print('🔄 DealStatusEditWidget: dealStatuses изменились, переинициализация');
+      //print('🔄 DealStatusEditWidget: dealStatuses изменились, переинициализация');
       _lastInitializedIds.clear();
       if (statusList.isNotEmpty) {
         _initializeSelectedStatuses();
@@ -67,8 +67,8 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
     final prefs = await SharedPreferences.getInstance();
     final value = prefs.getBool('managing_deal_status_visibility') ?? false;
 
-    print('DealStatusEditWidget: managing_deal_status_visibility = $value');
-    print('DealStatusEditWidget: Режим = ${value ? "МУЛЬТИВЫБОР" : "ОДИНОЧНЫЙ"}');
+    //print('DealStatusEditWidget: managing_deal_status_visibility = $value');
+    //print('DealStatusEditWidget: Режим = ${value ? "МУЛЬТИВЫБОР" : "ОДИНОЧНЫЙ"}');
 
     if (mounted) {
       setState(() {
@@ -88,14 +88,14 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
     });
 
     try {
-      print('📡 Загрузка статусов: includeAll = $isMultiSelectEnabled');
+      //print('📡 Загрузка статусов: includeAll = $isMultiSelectEnabled');
 
       // Используем правильный эндпоинт в зависимости от настройки
       final statuses = await ApiService().getDealStatuses(
           includeAll: isMultiSelectEnabled
       );
 
-      print('✅ Загружено ${statuses.length} статусов');
+      //print('✅ Загружено ${statuses.length} статусов');
 
       if (mounted) {
         setState(() {
@@ -107,7 +107,7 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
         _initializeSelectedStatuses();
       }
     } catch (e) {
-      print('❌ Ошибка загрузки статусов: $e');
+      //print('❌ Ошибка загрузки статусов: $e');
       if (mounted) {
         setState(() {
           isLoadingStatuses = false;
@@ -129,25 +129,25 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
 
   void _initializeSelectedStatuses() {
     if (statusList.isEmpty) {
-      print('❌ DealStatusEditWidget: statusList пустой, инициализация невозможна');
+      //print('❌ DealStatusEditWidget: statusList пустой, инициализация невозможна');
       return;
     }
 
-    print('🔍 DealStatusEditWidget: Начало инициализации');
-    print('   - widget.selectedStatus = ${widget.selectedStatus}');
-    print('   - widget.dealStatuses = ${widget.dealStatuses?.map((s) => s.id).toList()}');
-    print('   - statusList IDs = ${statusList.map((s) => s.id).toList()}');
+    //print('🔍 DealStatusEditWidget: Начало инициализации');
+    //print('   - widget.selectedStatus = ${widget.selectedStatus}');
+    //print('   - widget.dealStatuses = ${widget.dealStatuses?.map((s) => s.id).toList()}');
+    //print('   - statusList IDs = ${statusList.map((s) => s.id).toList()}');
 
     List<int> targetIds = [];
 
     // ✅ ПРИОРИТЕТ 1: Используем dealStatuses (массив от бэкенда)
     if (widget.dealStatuses != null && widget.dealStatuses!.isNotEmpty) {
-      print('✅ Используем dealStatuses от бэкенда');
+      //print('✅ Используем dealStatuses от бэкенда');
       targetIds = widget.dealStatuses!.map((s) => s.id).toList();
     }
     // ✅ ПРИОРИТЕТ 2: Парсим selectedStatus (строка с ID через запятую)
     else if (widget.selectedStatus != null && widget.selectedStatus!.isNotEmpty) {
-      print('✅ Используем selectedStatus');
+      //print('✅ Используем selectedStatus');
       targetIds = widget.selectedStatus!
           .split(',')
           .map((id) => int.tryParse(id.trim()))
@@ -157,7 +157,7 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
     }
     // ✅ ПРИОРИТЕТ 3: Если только один статус в списке, выбираем его
     else if (statusList.length == 1) {
-      print('✅ Автовыбор единственного статуса');
+      //print('✅ Автовыбор единственного статуса');
       targetIds = [statusList[0].id];
     }
 
@@ -165,7 +165,7 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
     final targetIdsSet = targetIds.toSet();
     if (_lastInitializedIds.containsAll(targetIdsSet) &&
         targetIdsSet.containsAll(_lastInitializedIds)) {
-      print('⭐️ Инициализация уже выполнена для этих ID, пропускаем');
+      //print('⭐️ Инициализация уже выполнена для этих ID, пропускаем');
       return;
     }
 
@@ -182,8 +182,8 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
           _lastInitializedIds = targetIds.toSet();
         });
 
-        print('✅ Инициализировано ${selectedStatusesList.length} статус(ов)');
-        print('✅ Выбранные ID: ${selectedStatusesList.map((s) => s.id).toList()}');
+        //print('✅ Инициализировано ${selectedStatusesList.length} статус(ов)');
+        //print('✅ Выбранные ID: ${selectedStatusesList.map((s) => s.id).toList()}');
 
         // ✅ ВАЖНО: Уведомляем родителя о выборе
         widget.onSelectStatus(newSelectedList.first);
@@ -191,11 +191,11 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
           widget.onSelectMultipleStatuses!(targetIds);
         }
       } else {
-        print('❌ Не найдены статусы с ID: $targetIds');
-        print('   Доступные ID: ${statusList.map((s) => s.id).toList()}');
+        //print('❌ Не найдены статусы с ID: $targetIds');
+        //print('   Доступные ID: ${statusList.map((s) => s.id).toList()}');
       }
     } else {
-      print('⚠️ targetIds пустой, выбор не установлен');
+      //print('⚠️ targetIds пустой, выбор не установлен');
     }
   }
 
@@ -323,9 +323,9 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
   }
 
   Widget _buildMultiSelectDropdown() {
-    print('📋 Рендер мультивыбора');
-    print('   - statusList: ${statusList.length} элементов');
-    print('   - selectedStatusesList: ${selectedStatusesList.length} элементов');
+    //print('📋 Рендер мультивыбора');
+    //print('   - statusList: ${statusList.length} элементов');
+    //print('   - selectedStatusesList: ${selectedStatusesList.length} элементов');
 
     // ✅ Синхронизируем выбранные статусы с актуальным statusList
     final currentlySelectedIds = selectedStatusesList.map((s) => s.id).toSet();
@@ -333,7 +333,7 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
         .where((status) => currentlySelectedIds.contains(status.id))
         .toList();
 
-    print('   - selectedStatusesList IDs: ${selectedStatusesList.map((s) => s.id).toList()}');
+    //print('   - selectedStatusesList IDs: ${selectedStatusesList.map((s) => s.id).toList()}');
 
     return CustomDropdown<DealStatus>.multiSelectSearch(
       items: statusList,
@@ -428,9 +428,9 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
         style: statusTextStyle.copyWith(fontSize: 14),
       ),
       onListChanged: (value) {
-        print('✏️ Выбрано статусов: ${value.length}');
+        //print('✏️ Выбрано статусов: ${value.length}');
 
-        print('✏️ onListChanged вызван: ${value.length} статусов');
+        //print('✏️ onListChanged вызван: ${value.length} статусов');
 
         // ✅ КРИТИЧНО: Проверяем, действительно ли изменились данные
         final newIds = value.map((s) => s.id).toSet();
@@ -439,11 +439,11 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
         // Если списки идентичны, игнорируем
         if (newIds.length == currentIds.length &&
             newIds.containsAll(currentIds)) {
-          print('⏭️ Список не изменился, пропускаем обновление');
+          //print('⏭️ Список не изменился, пропускаем обновление');
           return;
         }
 
-        print('✅ Список изменился, обновляем');
+        //print('✅ Список изменился, обновляем');
 
         setState(() {
           selectedStatusesList = value;

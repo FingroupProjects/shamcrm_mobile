@@ -81,7 +81,7 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
   void initState() {
     super.initState();
     if (kDebugMode) {
-      //print('CustomAppBarReports: Инициализация AppBar');
+      ////print('CustomAppBarReports: Инициализация AppBar');
     }
     _searchController = widget.textEditingController;
     focusNode = widget.focusNode;
@@ -137,12 +137,12 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
           _hasOverdueTasks = hasOverdue;
         });
         if (kDebugMode) {
-          //print('CustomAppBarReports: Проверка просроченных задач: $_hasOverdueTasks');
+          ////print('CustomAppBarReports: Проверка просроченных задач: $_hasOverdueTasks');
         }
       }
     } catch (e) {
       if (kDebugMode) {
-        //print('CustomAppBarReports: Ошибка проверки просроченных задач: $e');
+        ////print('CustomAppBarReports: Ошибка проверки просроченных задач: $e');
       }
     }
   }
@@ -155,7 +155,7 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
     notificationSubscription?.cancel();
     socketClient.disconnect();
     if (kDebugMode) {
-      //print('CustomAppBarReports: Очистка ресурсов');
+      ////print('CustomAppBarReports: Очистка ресурсов');
     }
     super.dispose();
   }
@@ -167,7 +167,7 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
       _hasNewNotification = hasNewNotification;
     });
     if (kDebugMode) {
-      //print('CustomAppBarReports: Загрузка состояния уведомлений: $_hasNewNotification');
+      ////print('CustomAppBarReports: Загрузка состояния уведомлений: $_hasNewNotification');
     }
   }
 
@@ -185,19 +185,19 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
         });
         await prefs.setString('userProfileImage_$UUID', _userImage);
         if (kDebugMode) {
-          //print('CustomAppBarReports: Загружено изображение профиля: $_userImage');
+          ////print('CustomAppBarReports: Загружено изображение профиля: $_userImage');
         }
       } else if (_userImage.isEmpty && _cachedUserImage.isNotEmpty) {
         setState(() {
           _userImage = _cachedUserImage;
         });
         if (kDebugMode) {
-          //print('CustomAppBarReports: Использовано кэшированное изображение: $_userImage');
+          ////print('CustomAppBarReports: Использовано кэшированное изображение: $_userImage');
         }
       }
     } catch (e) {
       if (kDebugMode) {
-        //print('CustomAppBarReports: Ошибка загрузки профиля: $e');
+        ////print('CustomAppBarReports: Ошибка загрузки профиля: $e');
       }
       if (_userImage.isEmpty && _cachedUserImage.isNotEmpty) {
         setState(() {
@@ -211,7 +211,7 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
     _lastLoadedImage = '';
     await _loadUserProfile();
     if (kDebugMode) {
-      //print('CustomAppBarReports: Обновление изображения профиля');
+      ////print('CustomAppBarReports: Обновление изображения профиля');
     }
   }
 
@@ -427,7 +427,7 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
                     });
                   }
                   if (kDebugMode) {
-                    //print('CustomAppBarReports: Переключение поиска: $_isSearching');
+                    ////print('CustomAppBarReports: Переключение поиска: $_isSearching');
                   }
                 },
               ),
@@ -449,8 +449,8 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
 
   void navigateToFilterScreen(BuildContext context) {
     if (kDebugMode) {
-      print('CustomAppBarReports: Переход к экрану фильтров widget.currentTabId=${widget.currentTabIndex}');
-      print('CustomAppBarReports: Текущие фильтры: ${widget.currentFilters[widget.currentTabIndex]}');
+      //print('CustomAppBarReports: Переход к экрану фильтров widget.currentTabId=${widget.currentTabIndex}');
+      //print('CustomAppBarReports: Текущие фильтры: ${widget.currentFilters[widget.currentTabIndex]}');
     }
 
     DateTime? initialFromDate;
@@ -554,13 +554,13 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
         filterScreen = GoodsFilterScreen(
           onSelectedDataFilter: (filters) {
             if (kDebugMode) {
-              print('CustomAppBarReports: Получены фильтры из GoodsFilterScreen: $filters');
+              //print('CustomAppBarReports: Получены фильтры из GoodsFilterScreen: $filters');
             }
             widget.onFilterSelected?.call(filters);
           },
           onResetFilters: () {
             if (kDebugMode) {
-              print('CustomAppBarReports: Сброс фильтров из GoodsFilterScreen');
+              //print('CustomAppBarReports: Сброс фильтров из GoodsFilterScreen');
             }
             widget.onResetFilters?.call();
           },
@@ -575,13 +575,13 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
         filterScreen = ActFilterScreen(
             onSelectedDataFilter: (filters) {
               if (kDebugMode) {
-                print('CustomAppBarReports: Получены фильтры из ActFilterScreen: $filters');
+                //print('CustomAppBarReports: Получены фильтры из ActFilterScreen: $filters');
               }
               widget.onFilterSelected?.call(filters);
             },
             onResetFilters: () {
               if (kDebugMode) {
-                print('CustomAppBarReports: Сброс фильтров из ActFilter');
+                //print('CustomAppBarReports: Сброс фильтров из ActFilter');
               }
               widget.onResetFilters?.call();
             },
@@ -597,13 +597,13 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
         filterScreen = CashBalanceFilterScreen(
           onSelectedDataFilter: (filters) {
             if (kDebugMode) {
-              print('CustomAppBarReports: Получены фильтры из CashBalanceFilterScreen: $filters');
+              //print('CustomAppBarReports: Получены фильтры из CashBalanceFilterScreen: $filters');
             }
             widget.onFilterSelected?.call(filters);
           },
           onResetFilters: () {
             if (kDebugMode) {
-              print('CustomAppBarReports: Сброс фильтров из CashBalanceFilterScreen');
+              //print('CustomAppBarReports: Сброс фильтров из CashBalanceFilterScreen');
             }
             widget.onResetFilters?.call();
           },
@@ -617,14 +617,14 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
         filterScreen = CreditorsFilterScreen(
           onSelectedDataFilter: (filters) {
             if (kDebugMode) {
-              print('CustomAppBarReports: Получены фильтры из CreditorsFilterScreen: $filters');
+              //print('CustomAppBarReports: Получены фильтры из CreditorsFilterScreen: $filters');
             }
             debugPrint("CustomAppBarReports.filter: $filters");
             widget.onFilterSelected?.call(filters);
           },
           onResetFilters: () {
             if (kDebugMode) {
-              print('CustomAppBarReports: Сброс фильтров из CreditorsFilterScreen');
+              //print('CustomAppBarReports: Сброс фильтров из CreditorsFilterScreen');
             }
             widget.onResetFilters?.call();
           },
@@ -640,13 +640,13 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
         filterScreen = DebtorsFilterScreen(
           onSelectedDataFilter: (filters) {
             if (kDebugMode) {
-              print('CustomAppBarReports: Получены фильтры из DebtorsFilterScreen: $filters');
+              //print('CustomAppBarReports: Получены фильтры из DebtorsFilterScreen: $filters');
             }
             widget.onFilterSelected?.call(filters);
           },
           onResetFilters: () {
             if (kDebugMode) {
-              print('CustomAppBarReports: Сброс фильтров из DebtorsFilterScreen');
+              //print('CustomAppBarReports: Сброс фильтров из DebtorsFilterScreen');
             }
             widget.onResetFilters?.call();
           },
@@ -662,13 +662,13 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
         filterScreen = TopSellingGoodsFilterScreen(
           onSelectedDataFilter: (filters) {
             if (kDebugMode) {
-              print('CustomAppBarReports: Получены фильтры из TopSellingGoodsFilterScreen: $filters');
+              //print('CustomAppBarReports: Получены фильтры из TopSellingGoodsFilterScreen: $filters');
             }
             widget.onFilterSelected?.call(filters);
           },
           onResetFilters: () {
             if (kDebugMode) {
-              print('CustomAppBarReports: Сброс фильтров из TopSellingGoodsFilterScreen');
+              //print('CustomAppBarReports: Сброс фильтров из TopSellingGoodsFilterScreen');
             }
             widget.onResetFilters?.call();
           },
@@ -684,13 +684,13 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
         filterScreen = SalesDynamicsFilterScreen(
           onSelectedDataFilter: (filters) {
             if (kDebugMode) {
-              print('CustomAppBarReports: Получены фильтры из SalesDynamicsFilterScreen: $filters');
+              //print('CustomAppBarReports: Получены фильтры из SalesDynamicsFilterScreen: $filters');
             }
             widget.onFilterSelected?.call(filters);
           },
           onResetFilters: () {
             if (kDebugMode) {
-              print('CustomAppBarReports: Сброс фильтров из SalesDynamicsFilterScreen');
+              //print('CustomAppBarReports: Сброс фильтров из SalesDynamicsFilterScreen');
             }
             widget.onResetFilters?.call();
           },
@@ -703,13 +703,13 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
         filterScreen = NetProfitFilterScreen(
           onSelectedDataFilter: (filters) {
             if (kDebugMode) {
-              print('CustomAppBarReports: Получены фильтры из NetProfitFilterScreen: $filters');
+              //print('CustomAppBarReports: Получены фильтры из NetProfitFilterScreen: $filters');
             }
             widget.onFilterSelected?.call(filters);
           },
           onResetFilters: () {
             if (kDebugMode) {
-              print('CustomAppBarReports: Сброс фильтров из NetProfitFilterScreen');
+              //print('CustomAppBarReports: Сброс фильтров из NetProfitFilterScreen');
             }
             widget.onResetFilters?.call();
           },
@@ -722,13 +722,13 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
         filterScreen = ProfitabilityFilterScreen(
           onSelectedDataFilter: (filters) {
             if (kDebugMode) {
-              print('CustomAppBarReports: Получены фильтры из ProfitabilityFilterScreen: $filters');
+              //print('CustomAppBarReports: Получены фильтры из ProfitabilityFilterScreen: $filters');
             }
             widget.onFilterSelected?.call(filters);
           },
           onResetFilters: () {
             if (kDebugMode) {
-              print('CustomAppBarReports: Сброс фильтров из ProfitabilityFilterScreen');
+              //print('CustomAppBarReports: Сброс фильтров из ProfitabilityFilterScreen');
             }
             widget.onResetFilters?.call();
           },
@@ -741,13 +741,13 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
         filterScreen = ExpenseStructureFilterScreen(
           onSelectedDataFilter: (filters) {
             if (kDebugMode) {
-              print('CustomAppBarReports: Получены фильтры из ExpenseStructureFilterScreen: $filters');
+              //print('CustomAppBarReports: Получены фильтры из ExpenseStructureFilterScreen: $filters');
             }
             widget.onFilterSelected?.call(filters);
           },
           onResetFilters: () {
             if (kDebugMode) {
-              print('CustomAppBarReports: Сброс фильтров из ExpenseStructureFilterScreen');
+              //print('CustomAppBarReports: Сброс фильтров из ExpenseStructureFilterScreen');
             }
             widget.onResetFilters?.call();
           },
@@ -761,13 +761,13 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
         filterScreen = OrdersQuantityFilterScreen(
           onSelectedDataFilter: (filters) {
             if (kDebugMode) {
-              print('CustomAppBarReports: Получены фильтры из OrdersQuantityFilterScreen: $filters');
+              //print('CustomAppBarReports: Получены фильтры из OrdersQuantityFilterScreen: $filters');
             }
             widget.onFilterSelected?.call(filters);
           },
           onResetFilters: () {
             if (kDebugMode) {
-              print('CustomAppBarReports: Сброс фильтров из OrdersQuantityFilterScreen');
+              //print('CustomAppBarReports: Сброс фильтров из OrdersQuantityFilterScreen');
             }
             widget.onResetFilters?.call();
           },
@@ -780,7 +780,7 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
         break;
       default:
         if (kDebugMode) {
-          print('CustomAppBarReports: Неизвестный индекс таба: ${widget.currentTabIndex}');
+          //print('CustomAppBarReports: Неизвестный индекс таба: ${widget.currentTabIndex}');
         }
         return; // Exit if tab index is invalid
     }

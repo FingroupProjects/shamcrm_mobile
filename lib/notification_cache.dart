@@ -24,12 +24,12 @@ class NotificationCacheHandler {
       try {
         return Notifications.fromJson(e);
       } catch (e) {
-        print('Ошибка десериализации кэшированного уведомления: $e, JSON: $e');
+        //print('Ошибка десериализации кэшированного уведомления: $e, JSON: $e');
         return null;
       }
     }).where((e) => e != null).cast<Notifications>().toList();
   } catch (e) {
-    print('Ошибка декодирования кэша: $e');
+    //print('Ошибка декодирования кэша: $e');
     return null;
   }
 }

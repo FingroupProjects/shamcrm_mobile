@@ -122,7 +122,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
       final savedCurrencyId = prefs.getInt('currency_id');
 
       if (kDebugMode) {
-        print('OrderAddScreen: Загружен currency_id из SharedPreferences: $savedCurrencyId');
+        //print('OrderAddScreen: Загружен currency_id из SharedPreferences: $savedCurrencyId');
       }
 
       setState(() {
@@ -134,7 +134,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('OrderAddScreen: Ошибка загрузки currency_id: $e');
+        //print('OrderAddScreen: Ошибка загрузки currency_id: $e');
       }
       setState(() {
         currencyId = 1; // По умолчанию доллар
@@ -159,12 +159,12 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
         });
 
         if (kDebugMode) {
-          print('OrderAddScreen: Загружен currency_id из API: ${settings.currencyId}');
+          //print('OrderAddScreen: Загружен currency_id из API: ${settings.currencyId}');
         }
       }
     } catch (e) {
       if (kDebugMode) {
-        print('OrderAddScreen: Ошибка загрузки currency_id из API: $e');
+        //print('OrderAddScreen: Ошибка загрузки currency_id из API: $e');
       }
       setState(() {
         currencyId = 1; // По умолчанию доллар
@@ -178,7 +178,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
     String symbol = 'UZS'; // По умолчанию сум
 
     if (kDebugMode) {
-      print('OrderAddScreen: _formatPrice вызван с currency_id: $currencyId');
+      //print('OrderAddScreen: _formatPrice вызван с currency_id: $currencyId');
     }
 
     switch (currencyId) {
@@ -197,12 +197,12 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
       default:
         symbol = 'UZS';
         if (kDebugMode) {
-          print('OrderAddScreen: Используется валюта по умолчанию (UZS) для currency_id: $currencyId');
+          //print('OrderAddScreen: Используется валюта по умолчанию (UZS) для currency_id: $currencyId');
         }
     }
 
     if (kDebugMode) {
-      print('OrderAddScreen: Выбранный символ валюты: $symbol для цены: $price');
+      //print('OrderAddScreen: Выбранный символ валюты: $symbol для цены: $price');
     }
 
     return '${NumberFormat('#,##0', 'ru_RU').format(price)} $symbol';

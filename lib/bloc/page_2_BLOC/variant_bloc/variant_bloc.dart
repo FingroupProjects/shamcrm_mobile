@@ -178,14 +178,14 @@ class VariantBloc extends Bloc<VariantEvent, VariantState> {
     // Проверяем, есть ли кэшированные категории и не нужно ли обновить
     if (_cachedCategories != null && event.search == null && !event.forceReload) {
       if (kDebugMode) {
-        print('💾 BLOC: Using cached categories (${_cachedCategories!.length} categories)');
+        //print('💾 BLOC: Using cached categories (${_cachedCategories!.length} categories)');
       }
       emit(CategoriesLoaded(_cachedCategories!));
       return;
     }
     
     if (kDebugMode) {
-      print('🔄 BLOC: Starting to fetch categories from API');
+      //print('🔄 BLOC: Starting to fetch categories from API');
     }
     emit(CategoriesLoading());
 
@@ -195,7 +195,7 @@ class VariantBloc extends Bloc<VariantEvent, VariantState> {
         final categories = await apiService.getCategory(search: event.search);
         
         if (kDebugMode) {
-          print('📂 BLOC: Loaded ${categories.length} categories from API');
+          //print('📂 BLOC: Loaded ${categories.length} categories from API');
         }
 
         if (categories.isEmpty) {
@@ -210,7 +210,7 @@ class VariantBloc extends Bloc<VariantEvent, VariantState> {
         for (final category in categories) {
           try {
             if (kDebugMode) {
-              print('  📊 BLOC: Fetching goods count for category: ${category.name}');
+              //print('  📊 BLOC: Fetching goods count for category: ${category.name}');
             }
             // Получаем первую страницу вариантов для категории с минимальным per_page
             final response = await apiService.getVariants(
@@ -226,11 +226,11 @@ class VariantBloc extends Bloc<VariantEvent, VariantState> {
             ));
             
             if (kDebugMode) {
-              print('  ✅ BLOC: Category ${category.name} has ${response.pagination.total} goods');
+              //print('  ✅ BLOC: Category ${category.name} has ${response.pagination.total} goods');
             }
           } catch (e) {
             if (kDebugMode) {
-              print('  ❌ BLOC: Error getting goods count for category ${category.id}: $e');
+              //print('  ❌ BLOC: Error getting goods count for category ${category.id}: $e');
             }
             // Если произошла ошибка, добавляем категорию с нулевым количеством товаров
             categoriesWithCount.add(CategoryWithCount(
@@ -244,17 +244,17 @@ class VariantBloc extends Bloc<VariantEvent, VariantState> {
         if (event.search == null) {
           _cachedCategories = categoriesWithCount;
           if (kDebugMode) {
-            print('💾 BLOC: Categories cached');
+            //print('💾 BLOC: Categories cached');
           }
         }
 
         if (kDebugMode) {
-          print('✅ BLOC: All categories loaded with counts');
+          //print('✅ BLOC: All categories loaded with counts');
         }
         emit(CategoriesLoaded(categoriesWithCount));
       } catch (e) {
         if (kDebugMode) {
-          print('❌ BLOC: Error loading categories: $e');
+          //print('❌ BLOC: Error loading categories: $e');
         }
         emit(CategoriesError('Не удалось загрузить категории: $e'));
       }
@@ -266,7 +266,7 @@ class VariantBloc extends Bloc<VariantEvent, VariantState> {
   // Метод для загрузки вариантов по категории
   Future<void> _fetchVariantsByCategory(FetchVariantsByCategory event, Emitter<VariantState> emit) async {
     if (kDebugMode) {
-      print('🔄 BLOC: Loading variants for category ${event.categoryId}, page ${event.page}');
+      //print('🔄 BLOC: Loading variants for category ${event.categoryId}, page ${event.page}');
     }
     emit(CategoryVariantsLoading(event.categoryId));
 
@@ -281,7 +281,7 @@ class VariantBloc extends Bloc<VariantEvent, VariantState> {
         _categoryVariantsFetched[event.categoryId] = response.data.length < _perPage;
 
         if (kDebugMode) {
-          print('✅ BLOC: Loaded ${response.data.length} variants for category ${event.categoryId}');
+          //print('✅ BLOC: Loaded ${response.data.length} variants for category ${event.categoryId}');
         }
 
         if (response.data.isEmpty) {
@@ -296,7 +296,7 @@ class VariantBloc extends Bloc<VariantEvent, VariantState> {
         }
       } catch (e) {
         if (kDebugMode) {
-          print('❌ BLOC: Error loading variants for category ${event.categoryId}: $e');
+          //print('❌ BLOC: Error loading variants for category ${event.categoryId}: $e');
         }
         emit(VariantError('Не удалось загрузить товары категории: $e'));
       }

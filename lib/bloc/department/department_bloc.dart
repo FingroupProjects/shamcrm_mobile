@@ -21,7 +21,7 @@ class DepartmentBloc extends Bloc<DepartmentEvent, DepartmentState> {
         allDepartmentsFetched = departments.isEmpty;
         emit(DepartmentLoaded(departments));
       } catch (e) {
-        print('Ошибка при загрузке отделов!'); // Для отладки
+        //print('Ошибка при загрузке отделов!'); // Для отладки
         emit(DepartmentError('Не удалось загрузить список отделов!'));
       }
     } else {

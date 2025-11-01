@@ -131,12 +131,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       ),
       body: BlocBuilder<NotificationBloc, NotificationState>(
   builder: (context, state) {
-    print("🔄 [UI] Состояние BLoC: ${state.runtimeType}");
+    //print("🔄 [UI] Состояние BLoC: ${state.runtimeType}");
     if (state is NotificationLoading) {
-      print("🔄 [UI] Загрузка...");
+      //print("🔄 [UI] Загрузка...");
       return const Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));
     } else if (state is NotificationError) {
-      print("❌ [UI] Ошибка: ${state.message}");
+      //print("❌ [UI] Ошибка: ${state.message}");
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -161,7 +161,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       });
       return Center(child: Text(state.message));
     } else if (state is NotificationDataLoaded) {
-      print("✅ [UI] Данные загружены, уведомлений: ${state.notifications.length}");
+      //print("✅ [UI] Данные загружены, уведомлений: ${state.notifications.length}");
       final notifications = state.notifications;
       return RefreshIndicator(
         color: Color(0xff1E2E52),
@@ -182,7 +182,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                 itemBuilder: (context, index) {
                   if (index == notifications.length) {
-                    print("🔄 [UI] Показ индикатора загрузки для пагинации");
+                    //print("🔄 [UI] Показ индикатора загрузки для пагинации");
                     return const Padding(
                       padding: EdgeInsets.symmetric(vertical: 16),
                       child: Center(child: CircularProgressIndicator(color: Color(0xff1E2E52))),
@@ -190,7 +190,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   }
 
                   final notification = notifications[index];
-                  print("🔔 [UI] Рендеринг уведомления ID: ${notification.id}, сообщение: ${notification.message}");
+                  //print("🔔 [UI] Рендеринг уведомления ID: ${notification.id}, сообщение: ${notification.message}");
                   return Dismissible(
                     key: Key(notification.id.toString()),
                     direction: DismissDirection.endToStart,
@@ -212,7 +212,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       child: const Icon(Icons.delete, color: Colors.white, size: 24),
                     ),
                     onDismissed: (direction) {
-                      print("🗑️ [UI] Удаление уведомления ID: ${notification.id}");
+                      //print("🗑️ [UI] Удаление уведомления ID: ${notification.id}");
                       setState(() {
                         notifications.removeAt(index);
                       });
@@ -286,7 +286,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           ],
                         ),
                         onTap: () {
-                          print("🔔 [UI] Нажатие на уведомление ID: ${notification.id}, тип: ${notification.type}");
+                          //print("🔔 [UI] Нажатие на уведомление ID: ${notification.id}, тип: ${notification.type}");
                           navigateToScreen(notification.type, notification.id, notification.modelId);
                         },
                       ),
@@ -296,7 +296,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               ),
       );
     }
-    print("⚠️ [UI] Неизвестное состояние, возвращаем пустой контейнер");
+    //print("⚠️ [UI] Неизвестное состояние, возвращаем пустой контейнер");
     return Container();
   },
 ),
@@ -434,7 +434,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             ),
           );
         } else {
-          print("Ошибка загрузки данных!");
+          //print("Ошибка загрузки данных!");
         }
       }
     } else if (type == 'task' || type == 'taskFinished' || type == 'taskOutDated') {
@@ -452,7 +452,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         final taskDetails = await ApiService().getTaskById(chatId);
         Navigator.of(context).pop();
 
-        print('Переход на экран задачи с ID: $chatId');
+        //print('Переход на экран задачи с ID: $chatId');
         navigatorKey.currentState?.push(
           MaterialPageRoute(
             builder: (context) => TaskDetailsScreen(
@@ -467,10 +467,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         );
       } catch (e) {
         Navigator.of(context).pop();
-        print("Ошибка загрузки данных!");
+        //print("Ошибка загрузки данных!");
       }
     } else if (type == 'notice') {
-      print('Переход на экран лида с ID: $chatId');
+      //print('Переход на экран лида с ID: $chatId');
       navigatorKey.currentState?.push(
         MaterialPageRoute(
           builder: (context) => LeadDetailsScreen(
@@ -482,7 +482,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         ),
       );
     } else if (type == 'dealDeadLineNotification') {
-      print('Переход на экран сделки с ID: $chatId');
+      //print('Переход на экран сделки с ID: $chatId');
       List<DealCustomField> defaultCustomFields = [
         DealCustomField(id: 1, key: '', value: ''),
         DealCustomField(id: 2, key: '', value: ''),
@@ -527,7 +527,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         ),
       );
     } else {
-      print('navigateToScreen: Неизвестный тип: $type');
+      //print('navigateToScreen: Неизвестный тип: $type');
     }
   }
 }

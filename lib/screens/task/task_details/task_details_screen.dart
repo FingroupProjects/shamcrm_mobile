@@ -211,7 +211,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         // _isAuthor обновляется в _updateDetails, чтобы избежать зависимости от null currentTask
       });
     } catch (e) {
-      print('TaskDetailsScreen: Error checking permissions or userID: $e');
+      //print('TaskDetailsScreen: Error checking permissions or userID: $e');
       setState(() {
         _canEditTask = false;
         _canDeleteTask = false;

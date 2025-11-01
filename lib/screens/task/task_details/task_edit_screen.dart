@@ -130,9 +130,9 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
         _currentUserId = userId;
       });
 
-      print('TaskEditScreen: Permissions - task.update: $_canUpdateTask, task.createForMySelf: $_hasTaskCreateForMySelfPermission, userID: $_currentUserId');
+      //print('TaskEditScreen: Permissions - task.update: $_canUpdateTask, task.createForMySelf: $_hasTaskCreateForMySelfPermission, userID: $_currentUserId');
     } catch (e) {
-      print('TaskEditScreen: Error checking permissions or userID: $e');
+      //print('TaskEditScreen: Error checking permissions or userID: $e');
       setState(() {
         _canUpdateTask = false;
         _hasTaskCreateForMySelfPermission = false;
@@ -158,7 +158,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
         });
       }
     } catch (e) {
-      print('Ошибка при получении данных справочников: $e');
+      //print('Ошибка при получении данных справочников: $e');
     }
   }
 
@@ -576,7 +576,7 @@ Widget _buildFileIcon(String fileName, String fileExtension, int index) {
         totalSize += file.lengthSync() / (1024 * 1024);
       }
     } catch (e) {
-      print('Error calculating file size: $e');
+      //print('Error calculating file size: $e');
     }
   }
 
