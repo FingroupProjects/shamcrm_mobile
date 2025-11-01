@@ -588,8 +588,8 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
             },
             initialFromDate: initialFromDate,
             initialToDate: initialToDate,
-            initialAmountFrom: sumFrom,
-            initialAmountTo: sumTo,
+            // initialAmountFrom: sumFrom,
+            // initialAmountTo: sumTo,
             initialLead: leadId,
             initialSupplier: supplierId
         );
