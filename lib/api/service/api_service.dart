@@ -15666,7 +15666,11 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     var type = filters!['lead_id'] != null ? 'lead' : 'supplier';
     var id = filters['lead_id'] ?? filters['supplier_id'];
 
-    var path = await _appendQueryParams('/dashboard/act-of-reconciliation/$type/$id');
+    var queryString = queryParams.entries.map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}').join('&');
+
+    var path = await _appendQueryParams(
+      '/dashboard/act-of-reconciliation/$type/$id?$queryString',
+    );
 
     debugPrint("ApiService: getReconciliationAct path: $path");
 

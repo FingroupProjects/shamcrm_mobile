@@ -20,8 +20,8 @@ class ActFilterScreen extends StatefulWidget {
   final VoidCallback? onResetFilters;
   final DateTime? initialFromDate;
   final DateTime? initialToDate;
-  final String? initialAmountFrom;
-  final String? initialAmountTo;
+  // final String? initialAmountFrom;
+  // final String? initialAmountTo;
   final String? initialLead;
   final String? initialSupplier;
 
@@ -31,8 +31,8 @@ class ActFilterScreen extends StatefulWidget {
     this.onResetFilters,
     this.initialFromDate,
     this.initialToDate,
-    this.initialAmountFrom,
-    this.initialAmountTo,
+    // this.initialAmountFrom,
+    // this.initialAmountTo,
     this.initialLead,
     this.initialSupplier,
   }) : super(key: key);
@@ -46,8 +46,8 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
   DateTime? _toDate;
   bool _isLeadSelected = true;
 
-  final TextEditingController _amountFromController = TextEditingController();
-  final TextEditingController _amountToController = TextEditingController();
+  // final TextEditingController _amountFromController = TextEditingController();
+  // final TextEditingController _amountToController = TextEditingController();
 
   List<SupplierData> suppliersList = [];
   SupplierData? _selectedSupplier;
@@ -62,8 +62,8 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
     super.initState();
     _fromDate = widget.initialFromDate;
     _toDate = widget.initialToDate;
-    _amountFromController.text = widget.initialAmountFrom ?? '';
-    _amountToController.text = widget.initialAmountTo ?? '';
+    // _amountFromController.text = widget.initialAmountFrom ?? '';
+    // _amountToController.text = widget.initialAmountTo ?? '';
     _loadFilterState();
   }
 
@@ -76,8 +76,8 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
 
       if (fromDateMillis != null) _fromDate = DateTime.fromMillisecondsSinceEpoch(fromDateMillis);
       if (toDateMillis != null) _toDate = DateTime.fromMillisecondsSinceEpoch(toDateMillis);
-      _amountFromController.text = prefs.getString('act_amount_from') ?? widget.initialAmountFrom ?? '';
-      _amountToController.text = prefs.getString('act_amount_to') ?? widget.initialAmountTo ?? '';
+      // _amountFromController.text = prefs.getString('act_amount_from') ?? widget.initialAmountFrom ?? '';
+      // _amountToController.text = prefs.getString('act_amount_to') ?? widget.initialAmountTo ?? '';
 
       // Load lead
       final leadId = prefs.getInt('act_lead_id');
@@ -114,8 +114,8 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
       await prefs.remove('act_to_date');
     }
 
-    await prefs.setString('act_amount_from', _amountFromController.text);
-    await prefs.setString('act_amount_to', _amountToController.text);
+    // await prefs.setString('act_amount_from', _amountFromController.text);
+    // await prefs.setString('act_amount_to', _amountToController.text);
 
     if (_selectedLead != null) {
       await prefs.setString('act_lead', _selectedLead!.name);
@@ -138,8 +138,8 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
     setState(() {
       _fromDate = null;
       _toDate = null;
-      _amountFromController.clear();
-      _amountToController.clear();
+      // _amountFromController.clear();
+      // _amountToController.clear();
       _selectedLead = null;
       _selectedSupplier = null;
       _isLeadSelected = true;
@@ -185,8 +185,8 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
   bool _isAnyFilterSelected() {
     return _fromDate != null ||
         _toDate != null ||
-        _amountFromController.text.isNotEmpty ||
-        _amountToController.text.isNotEmpty ||
+        // _amountFromController.text.isNotEmpty ||
+        // _amountToController.text.isNotEmpty ||
         _selectedLead != null ||
         _selectedSupplier != null;
   }
@@ -233,11 +233,11 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
         toDateWithTime = DateTime(toDateWithTime.year, toDateWithTime.month, toDateWithTime.day, 23, 59, 59);
       }
 
-      var filters = {
+      Map<String, dynamic> filters = {
         'date_from': fromDateWithTime,
         'date_to': toDateWithTime,
-        'sum_from': _parseAmount(_amountFromController.text),
-        'sum_to': _parseAmount(_amountToController.text),
+        // 'sum_from': _parseAmount(_amountFromController.text),
+        // 'sum_to': _parseAmount(_amountToController.text),
       };
 
       if (_isLeadSelected && _selectedLead != null) {
@@ -446,45 +446,45 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
               ),
               const SizedBox(height: 8),
 
-              Card(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                color: Colors.white,
-                child: Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      CustomTextField(
-                        controller: _amountFromController,
-                        keyboardType: TextInputType.number,
-                        hintText: AppLocalizations.of(context)!.translate('enter_minimum_amount') ?? 'Введите минимальную сумму',
-                        label: AppLocalizations.of(context)!.translate('amount_from') ?? 'Сумма от',
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-
-              Card(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                color: Colors.white,
-                child: Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      CustomTextField(
-                        controller: _amountToController,
-                        keyboardType: TextInputType.number,
-                        hintText: AppLocalizations.of(context)!.translate('enter_maximum_amount') ?? 'Введите максимальную сумму',
-                        label: AppLocalizations.of(context)!.translate('amount_to') ?? 'Сумма до',
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
+              // Card(
+              //   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              //   color: Colors.white,
+              //   child: Padding(
+              //     padding: const EdgeInsets.all(8),
+              //     child: Column(
+              //       crossAxisAlignment: CrossAxisAlignment.start,
+              //       children: [
+              //         CustomTextField(
+              //           controller: _amountFromController,
+              //           keyboardType: TextInputType.number,
+              //           hintText: AppLocalizations.of(context)!.translate('enter_minimum_amount') ?? 'Введите минимальную сумму',
+              //           label: AppLocalizations.of(context)!.translate('amount_from') ?? 'Сумма от',
+              //         ),
+              //       ],
+              //     ),
+              //   ),
+              // ),
+              // const SizedBox(height: 8),
+              //
+              // Card(
+              //   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              //   color: Colors.white,
+              //   child: Padding(
+              //     padding: const EdgeInsets.all(8),
+              //     child: Column(
+              //       crossAxisAlignment: CrossAxisAlignment.start,
+              //       children: [
+              //         CustomTextField(
+              //           controller: _amountToController,
+              //           keyboardType: TextInputType.number,
+              //           hintText: AppLocalizations.of(context)!.translate('enter_maximum_amount') ?? 'Введите максимальную сумму',
+              //           label: AppLocalizations.of(context)!.translate('amount_to') ?? 'Сумма до',
+              //         ),
+              //       ],
+              //     ),
+              //   ),
+              // ),
+              // const SizedBox(height: 8),
 
               // Type switch
               _buildTypeSwitch(),
@@ -784,8 +784,8 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
 
   @override
   void dispose() {
-    _amountFromController.dispose();
-    _amountToController.dispose();
+    // _amountFromController.dispose();
+    // _amountToController.dispose();
     super.dispose();
   }
 }
