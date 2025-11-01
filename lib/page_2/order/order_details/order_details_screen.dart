@@ -59,7 +59,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       final savedCurrencyId = prefs.getInt('currency_id');
 
       if (kDebugMode) {
-        print('OrderDetailsScreen: Загружен currency_id из SharedPreferences: $savedCurrencyId');
+        //print('OrderDetailsScreen: Загружен currency_id из SharedPreferences: $savedCurrencyId');
       }
 
       setState(() {
@@ -71,7 +71,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('OrderDetailsScreen: Ошибка загрузки currency_id: $e');
+        //print('OrderDetailsScreen: Ошибка загрузки currency_id: $e');
       }
       setState(() {
         currencyId = 1; // По умолчанию доллар
@@ -96,12 +96,12 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         });
 
         if (kDebugMode) {
-          print('OrderDetailsScreen: Загружен currency_id из API: ${settings.currencyId}');
+          //print('OrderDetailsScreen: Загружен currency_id из API: ${settings.currencyId}');
         }
       }
     } catch (e) {
       if (kDebugMode) {
-        print('OrderDetailsScreen: Ошибка загрузки currency_id из API: $e');
+        //print('OrderDetailsScreen: Ошибка загрузки currency_id из API: $e');
       }
       setState(() {
         currencyId = 1; // По умолчанию доллар
@@ -117,7 +117,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     String symbol = 'UZS'; // По умолчанию сум
 
     if (kDebugMode) {
-      print('OrderDetailsScreen: _formatPrice вызван с currency_id: $currencyId');
+      //print('OrderDetailsScreen: _formatPrice вызван с currency_id: $currencyId');
     }
 
     switch (currencyId) {
@@ -136,12 +136,12 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       default:
         symbol = 'UZS';
         if (kDebugMode) {
-          print('OrderDetailsScreen: Используется валюта по умолчанию (UZS) для currency_id: $currencyId');
+          //print('OrderDetailsScreen: Используется валюта по умолчанию (UZS) для currency_id: $currencyId');
         }
     }
 
     if (kDebugMode) {
-      print('OrderDetailsScreen: Выбранный символ валюты: $symbol для цены: $price');
+      //print('OrderDetailsScreen: Выбранный символ валюты: $symbol для цены: $price');
     }
 
     return '${NumberFormat('#,##0', 'ru_RU').format(price)} $symbol';

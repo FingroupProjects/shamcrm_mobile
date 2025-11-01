@@ -87,7 +87,7 @@ class Unit {
       try {
         return int.parse(value);
       } catch (e) {
-        print('Error parsing int from string "$value": $e');
+        //print('Error parsing int from string "$value": $e');
         return null;
       }
     }
@@ -99,7 +99,7 @@ class Unit {
     try {
       return DateTime.parse(dateStr);
     } catch (e) {
-      print('Error parsing date $dateStr: $e');
+      //print('Error parsing date $dateStr: $e');
       return null;
     }
   }
@@ -126,7 +126,7 @@ class Unit {
         }
         return parsed; // Return as double (1.23, 90.30, etc.)
       } catch (e) {
-        print('Error parsing num from string "$value": $e');
+        //print('Error parsing num from string "$value": $e');
         return null;
       }
     }
@@ -284,7 +284,7 @@ class Goods {
                 break;
               }
             } catch (e) {
-              print('Ошибка парсинга даты скидки: $e');
+              //print('Ошибка парсинга даты скидки: $e');
             }
           }
         }
@@ -364,8 +364,8 @@ class Goods {
 
       );
     } catch (e, stackTrace) {
-      print('GoodsModel: Ошибка парсинга товара: $e');
-      print(stackTrace);
+      //print('GoodsModel: Ошибка парсинга товара: $e');
+      //print(stackTrace);
       rethrow;
     }
   }
@@ -382,7 +382,7 @@ class Goods {
       // Формируем полный URL
       return 'https://shamcrm.com/storage/${mainFile.path}';
     } catch (e) {
-      print('Ошибка получения главного изображения: $e');
+      //print('Ошибка получения главного изображения: $e');
       return null;
     }
   }

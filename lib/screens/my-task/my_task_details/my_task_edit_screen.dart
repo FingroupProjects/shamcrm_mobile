@@ -120,7 +120,7 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
 
   Future<void> _loadFieldConfiguration() async {
     if (kDebugMode) {
-      print('MyTaskEditScreen: Loading field configuration');
+      //print('MyTaskEditScreen: Loading field configuration');
     }
     
     if (mounted) {
@@ -132,7 +132,7 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
 
   void _buildFieldsFromConfiguration() {
     if (kDebugMode) {
-      print('MyTaskEditScreen: Building fields from configuration with ${fieldConfigurations.length} fields');
+      //print('MyTaskEditScreen: Building fields from configuration with ${fieldConfigurations.length} fields');
     }
     
     fieldWidgets.clear();
@@ -141,7 +141,7 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
     for (var config in fieldConfigurations) {
       if (!config.isActive) {
         if (kDebugMode) {
-          print('MyTaskEditScreen: Skipping inactive field: ${config.fieldName}');
+          //print('MyTaskEditScreen: Skipping inactive field: ${config.fieldName}');
         }
         continue;
       }
@@ -152,13 +152,13 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
         fieldOrder.add(config.fieldName);
         
         if (kDebugMode) {
-          print('MyTaskEditScreen: Added field widget for: ${config.fieldName} at position ${config.position}');
+          //print('MyTaskEditScreen: Added field widget for: ${config.fieldName} at position ${config.position}');
         }
       }
     }
     
     if (kDebugMode) {
-      print('MyTaskEditScreen: Total field widgets: ${fieldWidgets.length}');
+      //print('MyTaskEditScreen: Total field widgets: ${fieldWidgets.length}');
     }
   }
 
@@ -212,7 +212,7 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
         
       default:
         if (kDebugMode) {
-          print('MyTaskEditScreen: Unknown field: ${config.fieldName}');
+          //print('MyTaskEditScreen: Unknown field: ${config.fieldName}');
         }
         return null;
     }
@@ -510,12 +510,12 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
           BlocListener<FieldConfigurationBloc, FieldConfigurationState>(
             listener: (context, configState) {
               if (kDebugMode) {
-                print('MyTaskEditScreen: FieldConfigurationBloc state changed: ${configState.runtimeType}');
+                //print('MyTaskEditScreen: FieldConfigurationBloc state changed: ${configState.runtimeType}');
               }
               
               if (configState is FieldConfigurationLoaded) {
                 if (kDebugMode) {
-                  print('MyTaskEditScreen: Configuration loaded with ${configState.fields.length} fields');
+                  //print('MyTaskEditScreen: Configuration loaded with ${configState.fields.length} fields');
                 }
                 
                 if (mounted) {
@@ -528,7 +528,7 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
                 }
               } else if (configState is FieldConfigurationError) {
                 if (kDebugMode) {
-                  print('MyTaskEditScreen: Configuration error: ${configState.message}');
+                  //print('MyTaskEditScreen: Configuration error: ${configState.message}');
                 }
                 
                 if (mounted) {

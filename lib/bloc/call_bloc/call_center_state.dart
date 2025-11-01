@@ -19,11 +19,11 @@ class CallCenterLoaded extends CallCenterState {
   });
 
   CallCenterLoaded merge(List<CallLogEntry> newCalls, {required int newPage}) {
-    print("🔄 Merging states:");
-    print("  - Current calls: ${calls.length}");
-    print("  - New calls: ${newCalls.length}");
-    print("  - Current page: $currentPage");
-    print("  - New page: $newPage");
+    //print("🔄 Merging states:");
+    //print("  - Current calls: ${calls.length}");
+    //print("  - New calls: ${newCalls.length}");
+    //print("  - Current page: $currentPage");
+    //print("  - New page: $newPage");
     
     final merged = CallCenterLoaded(
       calls: [...calls, ...newCalls],
@@ -31,8 +31,8 @@ class CallCenterLoaded extends CallCenterState {
       totalPages: totalPages,
     );
     
-    print("  - Total calls after merge: ${merged.calls.length}");
-    print("  - New current page: ${merged.currentPage}");
+    //print("  - Total calls after merge: ${merged.calls.length}");
+    //print("  - New current page: ${merged.currentPage}");
     
     return merged;
   }

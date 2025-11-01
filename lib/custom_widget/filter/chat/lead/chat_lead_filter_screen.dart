@@ -246,21 +246,21 @@ class _ChatLeadFilterScreenState extends State<ChatLeadFilterScreen> {
     try {
       _selectedManagers = widget.initialManagers?.map((item) => _parseManagerData(item)).toList() ?? [];
     } catch (e) {
-      print('ChatLeadFilterScreen: Error parsing managers: $e');
+      //print('ChatLeadFilterScreen: Error parsing managers: $e');
       _selectedManagers = [];
     }
 
     try {
       _selectedRegions = widget.initialRegions?.map((item) => _parseRegionData(item)).toList() ?? [];
     } catch (e) {
-      print('ChatLeadFilterScreen: Error parsing regions: $e');
+      //print('ChatLeadFilterScreen: Error parsing regions: $e');
       _selectedRegions = [];
     }
 
     try {
       _selectedSources = widget.initialSources?.map((item) => _parseSourceData(item)).toList() ?? [];
     } catch (e) {
-      print('ChatLeadFilterScreen: Error parsing sources: $e');
+      //print('ChatLeadFilterScreen: Error parsing sources: $e');
       _selectedSources = [];
     }
 
@@ -323,10 +323,10 @@ class _ChatLeadFilterScreenState extends State<ChatLeadFilterScreen> {
         setState(() {
           selectedSalesFunnel = savedFunnelId;
         });
-        print('ChatLeadFilterScreen: Loaded saved funnel ID: $savedFunnelId');
+        //print('ChatLeadFilterScreen: Loaded saved funnel ID: $savedFunnelId');
       }
     } catch (e) {
-      print('ChatLeadFilterScreen: Error loading saved funnel: $e');
+      //print('ChatLeadFilterScreen: Error loading saved funnel: $e');
     }
   }
 
@@ -471,9 +471,9 @@ class _ChatLeadFilterScreenState extends State<ChatLeadFilterScreen> {
                   _hasDeal == true ||
                   _daysWithoutActivity != null ||
                   _selectedDirectoryFields.values.any((field) => field != null)) {
-                print('ChatLeadFilterScreen: Applying filters: $filterData');
+                //print('ChatLeadFilterScreen: Applying filters: $filterData');
                 widget.onManagersSelected?.call(filterData);
-                print('ChatLeadFilterScreen: Called onManagersSelected with filterData');
+                //print('ChatLeadFilterScreen: Called onManagersSelected with filterData');
               }
               Navigator.pop(context);
             },

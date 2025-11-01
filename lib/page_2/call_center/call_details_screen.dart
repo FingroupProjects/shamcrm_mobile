@@ -83,7 +83,7 @@ class _CallDetailsScreenState extends State<CallDetailsScreen> {
   }
 
 String formatDate(DateTime? date) {
-  print('Input date: $date, isUtc: ${date?.isUtc}');
+  //print('Input date: $date, isUtc: ${date?.isUtc}');
   if (date == null) {
     return AppLocalizations.of(context)!.translate('date_unknown') ?? 'Дата неизвестна';
   }
@@ -98,10 +98,10 @@ String formatDate(DateTime? date) {
       date.second,
     );
     final localDate = utcDate.toLocal();
-    print('UTC date: $utcDate, Local date: $localDate');
+    //print('UTC date: $utcDate, Local date: $localDate');
     return DateFormat('dd.MM.yy HH:mm').format(localDate);
   } catch (e) {
-    print('Error formatting date: $e');
+    //print('Error formatting date: $e');
     return AppLocalizations.of(context)!.translate('invalid_format') ?? 'Неверный формат даты';
   }
 }
@@ -937,24 +937,24 @@ String formatDate(DateTime? date) {
               GestureDetector(
                 onTap: () async {
                   try {
-                    print('Attempting to play audio from: $assetPath');
+                    //print('Attempting to play audio from: $assetPath');
                     if (_isPlaying) {
-                      print('Pausing audio');
+                      //print('Pausing audio');
                       await _audioPlayer.pause();
                       setState(() {
                         _isPlaying = false;
                       });
                     } else {
-                      print('Setting audio source');
+                      //print('Setting audio source');
                       await _audioPlayer.setSourceUrl(assetPath);
-                      print('Resuming audio');
+                      //print('Resuming audio');
                       await _audioPlayer.resume();
                       setState(() {
                         _isPlaying = true;
                       });
                     }
                   } catch (e, stackTrace) {
-                    print('Audio playback error: $e\nStackTrace: $stackTrace');
+                    //print('Audio playback error: $e\nStackTrace: $stackTrace');
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
@@ -1012,7 +1012,7 @@ String formatDate(DateTime? date) {
                         _position = newPosition;
                       });
                     } catch (e) {
-                      print('Audio seek error: $e');
+                      //print('Audio seek error: $e');
                     }
                   },
                 ),
@@ -1043,7 +1043,7 @@ String formatDate(DateTime? date) {
                   try {
                     await _audioPlayer.setPlaybackRate(newSpeed.speed);
                   } catch (e) {
-                    print('Error setting playback rate: $e');
+                    //print('Error setting playback rate: $e');
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(

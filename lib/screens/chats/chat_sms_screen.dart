@@ -342,7 +342,7 @@ Future<void> _forceInitializeDomain() async {
     // Проверяем, не был ли метод уже вызван
     if (_hasMarkedMessagesAsRead) {
       if (kDebugMode) {
-        print('ChatSmsScreen: _markMessagesAsRead уже вызван, пропускаем');
+        //print('ChatSmsScreen: _markMessagesAsRead уже вызван, пропускаем');
       }
       return;
     }
@@ -350,7 +350,7 @@ Future<void> _forceInitializeDomain() async {
     final state = context.read<MessagingCubit>().state;
     // Лог для отладки текущего состояния
     if (kDebugMode) {
-      print('ChatSmsScreen: Текущее состояние в _markMessagesAsRead: $state');
+      //print('ChatSmsScreen: Текущее состояние в _markMessagesAsRead: $state');
     }
     List<Message> messages = [];
     // Проверяем оба состояния: MessagesLoadedState и PinnedMessagesState
@@ -362,7 +362,7 @@ Future<void> _forceInitializeDomain() async {
 
     // Лог для количества сообщений
     if (kDebugMode) {
-      print('ChatSmsScreen: Количество сообщений: ${messages.length}');
+      //print('ChatSmsScreen: Количество сообщений: ${messages.length}');
     }
 
     // Проверяем, есть ли непрочитанные сообщения
@@ -371,19 +371,19 @@ Future<void> _forceInitializeDomain() async {
       final latestMessageId = messages.first.id;
       // Лог для chatId и messageId
       if (kDebugMode) {
-        print('ChatSmsScreen: Пометка сообщений как прочитанных, chatId: ${widget.chatId}, latestMessageId: $latestMessageId');
+        //print('ChatSmsScreen: Пометка сообщений как прочитанных, chatId: ${widget.chatId}, latestMessageId: $latestMessageId');
       }
       try {
         await widget.apiService.readMessages(widget.chatId, latestMessageId);
         if (kDebugMode) {
-          print('ChatSmsScreen: Сообщения успешно помечены как прочитанные');
+          //print('ChatSmsScreen: Сообщения успешно помечены как прочитанные');
         }
         // Устанавливаем флаг, чтобы предотвратить повторные вызовы
         _hasMarkedMessagesAsRead = true;
       } catch (e) {
         // Лог для ошибок API
         if (kDebugMode) {
-          print('ChatSmsScreen: Ошибка при пометке сообщений как прочитанных: $e');
+          //print('ChatSmsScreen: Ошибка при пометке сообщений как прочитанных: $e');
         }
         // ScaffoldMessenger.of(context).showSnackBar(
         //   // SnackBar(
@@ -403,7 +403,7 @@ Future<void> _forceInitializeDomain() async {
       }
     } else {
       if (kDebugMode) {
-        print('ChatSmsScreen: Нет непрочитанных сообщений или список пуст');
+        //print('ChatSmsScreen: Нет непрочитанных сообщений или список пуст');
       }
       // Устанавливаем флаг, даже если сообщений нет, чтобы избежать повторных проверок
       _hasMarkedMessagesAsRead = true;
@@ -500,7 +500,7 @@ String? _determineChannelType(IntegrationForLead integration) {
       await _audioPlayer.setAsset('assets/audio/send.mp3');
       await _audioPlayer.play();
     } catch (e) {
-      //print('Error playing sound: $e');
+      ////print('Error playing sound: $e');
     }
   }
 
@@ -514,25 +514,25 @@ Future<void> _showDatePicker(BuildContext context, List<Message> messages) async
 
   // Преобразуем сообщения в карту дат
   final Map<DateTime, List> events = {};
-  //print('Начало обработки сообщений. Количество сообщений: ${messages.length}');
+  ////print('Начало обработки сообщений. Количество сообщений: ${messages.length}');
   for (var message in messages) {
-    //print('Обработка сообщения: $message');
+    ////print('Обработка сообщения: $message');
     try {
       final date = DateTime.parse(message.createMessateTime).toLocal();
-      //print('Парсинг даты: ${message.createMessateTime} -> $date');
+      ////print('Парсинг даты: ${message.createMessateTime} -> $date');
       final eventDate = DateTime(date.year, date.month, date.day); // Нормализуем до начала дня
-      //print('Сформирована дата для события: $eventDate');
+      ////print('Сформирована дата для события: $eventDate');
       if (events[eventDate] == null) {
-        //print('Добавление нового события для даты: $eventDate');
+        ////print('Добавление нового события для даты: $eventDate');
         events[eventDate] = [true]; // Добавляем индикатор события
       } else {
-        //print('Событие для даты $eventDate уже существует');
+        ////print('Событие для даты $eventDate уже существует');
       }
     } catch (e) {
-      //print('Ошибка парсинга даты ${message.createMessateTime}: $e');
+      ////print('Ошибка парсинга даты ${message.createMessateTime}: $e');
     }
   }
-  //print('Карта событий после обработки: $events');
+  ////print('Карта событий после обработки: $events');
 
   await showDialog(
     context: context,
@@ -615,9 +615,9 @@ Future<void> _showDatePicker(BuildContext context, List<Message> messages) async
                   ),
                   calendarBuilders: CalendarBuilders(
                     markerBuilder: (context, date, events) {
-                      //print('Проверка даты $date, события: $events');
+                      ////print('Проверка даты $date, события: $events');
                       if (events.isNotEmpty) {
-                        //print('Отображение точки для даты $date');
+                        ////print('Отображение точки для даты $date');
                         return Positioned(
                           right: 18,
                           bottom: 0,
@@ -631,18 +631,18 @@ Future<void> _showDatePicker(BuildContext context, List<Message> messages) async
                           ),
                         );
                       }
-                      //print('Нет событий для даты $date');
+                      ////print('Нет событий для даты $date');
                       return null;
                     },
                   ),
                   eventLoader: (day) {
                     final normalizedDay = DateTime(day.year, day.month, day.day); // Нормализуем день
-                    //print('Загрузка событий для дня $normalizedDay: ${events[normalizedDay] ?? []}');
+                    ////print('Загрузка событий для дня $normalizedDay: ${events[normalizedDay] ?? []}');
                     return events[normalizedDay] ?? [];
                   },
                   onDaySelected: (selectedDay, focusedDay) {
                     final index = _findMessageIndexByDate(messages, selectedDay);
-                    //print('Выбрана дата $selectedDay, индекс сообщения: $index');
+                    ////print('Выбрана дата $selectedDay, индекс сообщения: $index');
                     if (index != -1) {
                       Navigator.pop(context);
                       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -733,7 +733,7 @@ void _scrollToMessageIndex(DateTime selectedDate) {
   }
 
  Widget _buildAvatar(String avatar) {
-  // print('Avatar path: $avatar'); // Отладочный вывод
+  // //print('Avatar path: $avatar'); // Отладочный вывод
   bool isSupportAvatar = avatar == 'assets/icons/Profile/support_chat.png';
   bool isTaskSection = widget.endPointInTab == 'task'; // Проверка на task
 
@@ -744,7 +744,7 @@ void _scrollToMessageIndex(DateTime selectedDate) {
       radius: ChatSmsStyles.avatarRadius,
       backgroundColor: Colors.white,
       onBackgroundImageError: (exception, stackTrace) {
-        // print('Error loading asset image: assets/images/AvatarTask.png, $exception');
+        // //print('Error loading asset image: assets/images/AvatarTask.png, $exception');
       },
     );
   }
@@ -809,11 +809,11 @@ void _scrollToMessageIndex(DateTime selectedDate) {
       radius: ChatSmsStyles.avatarRadius,
       backgroundColor: isSupportAvatar ? Colors.black : Colors.white,
       onBackgroundImageError: (exception, stackTrace) {
-        // print('Error loading asset image: $avatar, $exception');
+        // //print('Error loading asset image: $avatar, $exception');
       },
     );
   } catch (e) {
-    // print('Fallback avatar due to error: $e');
+    // //print('Fallback avatar due to error: $e');
     return CircleAvatar(
       backgroundImage: AssetImage(isTaskSection ? 'assets/images/AvatarTask.png' : 'assets/images/AvatarChat.png'),
       radius: ChatSmsStyles.avatarRadius,
@@ -856,7 +856,7 @@ void _scrollToMessageIndex(DateTime selectedDate) {
       // Добавлен BlocListener для вызова _markMessagesAsRead только при первой загрузке
       listener: (context, state) {
         if (kDebugMode) {
-          print('ChatSmsScreen: Слушатель MessagingCubit, текущее состояние: $state');
+          //print('ChatSmsScreen: Слушатель MessagingCubit, текущее состояние: $state');
         }
         // Вызываем _markMessagesAsRead только для MessagesLoadedState или PinnedMessagesState
         if ((state is MessagesLoadedState || state is PinnedMessagesState) && !_hasMarkedMessagesAsRead) {
@@ -1954,12 +1954,12 @@ class MessageItemWidget extends StatelessWidget {
                 await apiServiceDownload.downloadAndOpenFile(message.filePath!);
               } catch (e) {
                 if (kDebugMode) {
-                  //print('Error opening file!');
+                  ////print('Error opening file!');
                 }
               }
             } else {
               if (kDebugMode) {
-                //print('Invalid file path. Cannot open file.');
+                ////print('Invalid file path. Cannot open file.');
               }
             }
           },

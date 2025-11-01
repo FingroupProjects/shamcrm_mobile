@@ -95,9 +95,9 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
       });
 
       // Логируем для отладки
-      print('TaskAddScreen: Permissions - task.create: $_hasTaskCreatePermission, task.createForMySelf: $_hasTaskCreateForMySelfPermission, userID: $_currentUserId');
+      //print('TaskAddScreen: Permissions - task.create: $_hasTaskCreatePermission, task.createForMySelf: $_hasTaskCreateForMySelfPermission, userID: $_currentUserId');
     } catch (e) {
-      print('TaskAddScreen: Ошибка при проверке разрешений или получении userID: $e');
+      //print('TaskAddScreen: Ошибка при проверке разрешений или получении userID: $e');
       setState(() {
         _hasTaskCreatePermission = false;
         _hasTaskCreateForMySelfPermission = false;
@@ -136,7 +136,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
         });
       }
     } catch (e) {
-      print('TaskAddScreen: Error fetching custom fields: $e');
+      //print('TaskAddScreen: Error fetching custom fields: $e');
     }
   }
 

@@ -35,7 +35,7 @@ class GetAllGoodsListBloc extends Bloc<GetAllGoodsListEvent, GetAllGoodsListStat
     // Если у нас есть валидный кэш, используем его
     if (_isCacheValid && _cachedGoods != null) {
       if (kDebugMode) {
-        print('GetAllGoodsListBloc: Using cached goods data');
+        //print('GetAllGoodsListBloc: Using cached goods data');
       }
       emit(GetAllGoodsListSuccess(
         goodsList: _cachedGoods!,
@@ -68,7 +68,7 @@ class GetAllGoodsListBloc extends Bloc<GetAllGoodsListEvent, GetAllGoodsListStat
       emit(GetAllGoodsListLoading());
 
       if (kDebugMode) {
-        print('GetAllGoodsListBloc: Loading first page of goods...');
+        //print('GetAllGoodsListBloc: Loading first page of goods...');
       }
 
       // Загружаем только первую страницу
@@ -76,7 +76,7 @@ class GetAllGoodsListBloc extends Bloc<GetAllGoodsListEvent, GetAllGoodsListStat
       var firstPageGoods = firstPageResponse.result?.data ?? [];
 
       if (kDebugMode) {
-        print('GetAllGoodsListBloc: First page loaded with ${firstPageGoods.length} goods');
+        //print('GetAllGoodsListBloc: First page loaded with ${firstPageGoods.length} goods');
       }
 
       // Используем данные пагинации из ответа
@@ -97,7 +97,7 @@ class GetAllGoodsListBloc extends Bloc<GetAllGoodsListEvent, GetAllGoodsListStat
 
       if (hasMorePages && !_isBackgroundLoading) {
         if (kDebugMode) {
-          print('GetAllGoodsListBloc: Starting background loading of remaining pages...');
+          //print('GetAllGoodsListBloc: Starting background loading of remaining pages...');
         }
         // Загружаем остальные страницы в фоне
         _loadRemainingPagesInBackground();
@@ -105,7 +105,7 @@ class GetAllGoodsListBloc extends Bloc<GetAllGoodsListEvent, GetAllGoodsListStat
 
     } catch (e) {
       if (kDebugMode) {
-        print('GetAllGoodsListBloc: Error loading goods: $e');
+        //print('GetAllGoodsListBloc: Error loading goods: $e');
       }
       emit(GetAllGoodsListError(message: e.toString()));
     }
@@ -117,12 +117,12 @@ class GetAllGoodsListBloc extends Bloc<GetAllGoodsListEvent, GetAllGoodsListStat
     // Запускаем асинхронную загрузку без await
     _fetchRemainingPages().then((_) {
       if (kDebugMode) {
-        print('GetAllGoodsListBloc: Background loading completed. Total goods: ${_cachedGoods?.length ?? 0}');
+        //print('GetAllGoodsListBloc: Background loading completed. Total goods: ${_cachedGoods?.length ?? 0}');
       }
       _isBackgroundLoading = false;
     }).catchError((error) {
       if (kDebugMode) {
-        print('GetAllGoodsListBloc: Error in background loading: $error');
+        //print('GetAllGoodsListBloc: Error in background loading: $error');
       }
       _isBackgroundLoading = false;
     });
@@ -137,7 +137,7 @@ class GetAllGoodsListBloc extends Bloc<GetAllGoodsListEvent, GetAllGoodsListStat
       while (hasMorePages) {
         try {
           if (kDebugMode) {
-            print('GetAllGoodsListBloc: Loading page $currentPage in background...');
+            //print('GetAllGoodsListBloc: Loading page $currentPage in background...');
           }
 
           final pageResponse = await apiService.getGoodVariantsForDropdown(page: currentPage, perPage: 20);
@@ -166,7 +166,7 @@ class GetAllGoodsListBloc extends Bloc<GetAllGoodsListEvent, GetAllGoodsListStat
             add(UpdateGoodsListInBackground(allGoods, _totalPages));
 
             if (kDebugMode) {
-              print('GetAllGoodsListBloc: Background loaded page $currentPage, total: ${allGoods.length}');
+              //print('GetAllGoodsListBloc: Background loaded page $currentPage, total: ${allGoods.length}');
             }
           } else {
             hasMorePages = false;
@@ -179,7 +179,7 @@ class GetAllGoodsListBloc extends Bloc<GetAllGoodsListEvent, GetAllGoodsListStat
 
         } catch (e) {
           if (kDebugMode) {
-            print('GetAllGoodsListBloc: Error loading page $currentPage in background: $e');
+            //print('GetAllGoodsListBloc: Error loading page $currentPage in background: $e');
           }
           hasMorePages = false;
         }
@@ -189,7 +189,7 @@ class GetAllGoodsListBloc extends Bloc<GetAllGoodsListEvent, GetAllGoodsListStat
 
     } catch (e) {
       if (kDebugMode) {
-        print('GetAllGoodsListBloc: Error in _fetchRemainingPages: $e');
+        //print('GetAllGoodsListBloc: Error in _fetchRemainingPages: $e');
       }
     }
   }

@@ -244,7 +244,7 @@ Future<void> _checkPermission() async {
     });
   } catch (e) {
     // Обработка ошибок при запросе к API
-    print('Ошибка при проверке разрешений: $e');
+    //print('Ошибка при проверке разрешений: $e');
     setState(() {
       _hasPermissionToAddTask = false; // В случае ошибки отключаем кнопку
     });

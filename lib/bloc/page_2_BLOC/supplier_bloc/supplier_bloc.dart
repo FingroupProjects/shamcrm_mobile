@@ -31,9 +31,9 @@ class SupplierBloc extends Bloc<SupplierEvent, SupplierState> {
         allSupplierFetched = supplierList.isEmpty;
         emit(SupplierLoaded(supplierList));
       } catch (e) {
-        //print('Ошибка при загрузке поставщиков!'); // For debugging
+        ////print('Ошибка при загрузке поставщиков!'); // For debugging
         if (kDebugMode) {
-          print(e);
+          //print(e);
         }
         emit(SupplierError('Не удалось загрузить список поставщиков!'));
       }
@@ -55,7 +55,7 @@ class SupplierBloc extends Bloc<SupplierEvent, SupplierState> {
         emit(SupplierSuccess("screated"));
       } catch (e) {
         if (kDebugMode) {
-          print(e);
+          //print(e);
         }
         emit(SupplierError('Не удалось создать поля поставщика!'));
       }
@@ -75,7 +75,7 @@ class SupplierBloc extends Bloc<SupplierEvent, SupplierState> {
         emit(SupplierLoaded(supplierList));
       } catch (e) {
         if (kDebugMode) {
-          print(e);
+          //print(e);
         }
         emit(SupplierError('Не удалось удалить поставщика!'));
       }
@@ -95,7 +95,7 @@ class SupplierBloc extends Bloc<SupplierEvent, SupplierState> {
         emit(SupplierLoaded(supplierList));
       } catch (e) {
         if (kDebugMode) {
-          print(e);
+          //print(e);
         }
         emit(SupplierError('Не удалось обновить поставщика!'));
       }
