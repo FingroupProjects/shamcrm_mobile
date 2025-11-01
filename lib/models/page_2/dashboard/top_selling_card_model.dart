@@ -28,11 +28,11 @@ class TopSellingCardModel {
   factory TopSellingCardModel.fromJson(Map<String, dynamic> json) {
     return TopSellingCardModel(
       id: json['id'] as int,
-      name: json['name'] as String,
-      category: json['category'] as String,
+      name: json['name'].toString(),
+      category: json['category'].toString(),
       totalQuantity: json['total_quantity'] as num,
-      totalAmount: json['total_amount'] as String,
-      avgPrice: json['avg_price'] as String,
+      totalAmount: json['total_amount'].toString(),
+      avgPrice: json['avg_price'].toString(),
     );
   }
 
