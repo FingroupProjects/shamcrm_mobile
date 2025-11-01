@@ -75,7 +75,7 @@ import 'package:crm_task_manager/models/page_2/dashboard/debtors_model.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/creditors_model.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/illiquids_model.dart';
 import 'package:crm_task_manager/models/page_2/delivery_address_model.dart';
-import 'package:crm_task_manager/models/page_2/good_dashboard_warehouse_model.dart';
+import 'package:crm_task_manager/models/page_2/good_dashboard_warehouse_model.dart' as dgrmodel;
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_history_model.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
@@ -15718,32 +15718,77 @@ Future<List<OrderStatusWarehouse>> getOrderStatusWarehouse() async {
   }
 }
 
-// Метод для получения Товаров
-Future<List<GoodDashboardWarehouse>> getGoodDashboardWarehouse() async {
-  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-  final path = await _appendQueryParams('/good');
-  if (kDebugMode) {
-    print('ApiService: getGoodDashboardWarehouse - Generated path: $path');
-  }
+// Add this method to your ApiService class
 
-  final response = await _getRequest(path);
+  Future<dgrmodel.GoodDashboardWarehouseResponse> getGoodDashboardWarehousePage(int page) async {
+    try {
+      // Form path with page parameter
+      String basePath = '/good?page=$page';
 
-  if (response.statusCode == 200) {
-    final data = json.decode(response.body);
-    print('Полученные данные: $data');  // Для отладки
-    // Данные в result.data, плюс пагинация (игнорируем для списка)
-    final resultObj = data['result'] as Map<String, dynamic>?;
-    final dataList = resultObj?['data'] as List?;
-    if (dataList == null) {
-      return [];
+      // Add other query parameters (language, token, etc.)
+      final path = await _appendQueryParams(basePath);
+
+      if (kDebugMode) {
+        print('ApiService: getGoodDashboardWarehousePage - Loading page $page, path: $path');
+      }
+
+      // Execute GET request
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        if (kDebugMode) {
+          print('ApiService: Received data: $data');
+        }
+
+        // Parse response
+        final resultObj = data['result'] as Map<String, dynamic>?;
+
+        if (resultObj != null) {
+          // Parse data list
+          final dataList = resultObj['data'] as List? ?? [];
+          final goodsList = dataList
+              .map((good) => dgrmodel.GoodDashboardWarehouse.fromJson(good))
+              .toList();
+
+          // Parse pagination
+          if (resultObj['pagination'] != null) {
+            final pagination = dgrmodel.Pagination.fromJson(resultObj['pagination'] as Map<String, dynamic>);
+
+            if (kDebugMode) {
+              print('ApiService: Page $page loaded successfully with ${goodsList.length} items');
+              print('ApiService: Pagination - current: ${pagination.currentPage}, total pages: ${pagination.totalPages}');
+            }
+
+            return dgrmodel.GoodDashboardWarehouseResponse(
+              data: goodsList,
+              pagination: pagination,
+            );
+          } else {
+            return dgrmodel.GoodDashboardWarehouseResponse(
+              data: goodsList,
+              pagination: null,
+            );
+          }
+        } else {
+          // If result is empty, return empty response
+          return dgrmodel.GoodDashboardWarehouseResponse(
+            data: [],
+            pagination: null,
+          );
+        }
+      } else {
+        throw Exception('Ошибка при получении данных со страницы $page! Статус: ${response.statusCode}');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('ApiService: Error loading page $page: $e');
+      }
+      rethrow;
     }
-    return dataList
-        .map((good) => GoodDashboardWarehouse.fromJson(good))
-        .toList();
-  } else {
-    throw Exception('Ошибка загрузки товаров');
   }
-}
+
 
 // Метод для получения Статей расхода
 Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehouse() async {
