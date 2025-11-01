@@ -12,15 +12,18 @@ class SalesDashboardDebtorsBloc extends Bloc<SalesDashboardDebtorsEvent, SalesDa
 
   SalesDashboardDebtorsBloc() : super(SalesDashboardDebtorsInitial()) {
     on<LoadDebtorsReport>((event, emit) async {
-      // try {
+      try {
         emit(SalesDashboardDebtorsLoading());
-        final response = await apiService.getDebtorsList();
+        final response = await apiService.getDebtorsList(
+          filters: event.filter,
+          search: event.search,
+        );
         emit(SalesDashboardDebtorsLoaded(result: response));
-      // } catch (e) {
-      //   emit(SalesDashboardDebtorsError(
-      //     message: e.toString().replaceAll('Exception: ', ''),
-      //   ));
-      // }
+      } catch (e) {
+        emit(SalesDashboardDebtorsError(
+          message: e.toString().replaceAll('Exception: ', ''),
+        ));
+      }
     });
   }
 }

@@ -120,15 +120,6 @@ class _GoodsContentState extends State<GoodsContent> {
                       color: Color(0xff1E2E52),
                     ),
                   ),
-                  SizedBox(height: 8),
-                  Text(
-                    localizations.translate('all_goods_in_circulation'),
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 14,
-                      color: Color(0xff99A4BA),
-                    ),
-                  ),
                 ],
               ),
             ),

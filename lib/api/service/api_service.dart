@@ -75,7 +75,7 @@ import 'package:crm_task_manager/models/page_2/dashboard/debtors_model.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/creditors_model.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/illiquids_model.dart';
 import 'package:crm_task_manager/models/page_2/delivery_address_model.dart';
-import 'package:crm_task_manager/models/page_2/good_dashboard_warehouse_model.dart';
+import 'package:crm_task_manager/models/page_2/good_dashboard_warehouse_model.dart' as dgrmodel;
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_history_model.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
@@ -14547,35 +14547,60 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
   /// Получение списка должников
   Future<DebtorsResponse> getDebtorsList({
-    String? from,
-    String? to,
-    int? cashRegisterId,
-    int? supplierId,
-    int? clientId,
-    int? leadId,
-    String? operationType,
+    int? page,
+    int? perPage,
+    Map<String, dynamic>? filters,
     String? search,
   }) async {
     try {
       // Формируем параметры запроса
       Map<String, String> queryParams = {};
 
-      if (from != null) queryParams['from'] = from;
-      if (to != null) queryParams['to'] = to;
-      if (cashRegisterId != null) queryParams['cash_register_id'] = cashRegisterId.toString();
-      if (supplierId != null) queryParams['supplier_id'] = supplierId.toString();
-      if (clientId != null) queryParams['client_id'] = clientId.toString();
-      if (leadId != null) queryParams['lead_id'] = leadId.toString();
-      if (operationType != null) queryParams['operation_type'] = operationType;
-      if (search != null) queryParams['search'] = search;
+      if (page != null) queryParams['page'] = page.toString();
+      if (perPage != null) queryParams['per_page'] = perPage.toString();
+      if (search != null && search.isNotEmpty) queryParams['search'] = search;
+      if (filters != null) {
+        if (filters.containsKey('date_from') && filters['date_from'] is DateTime && filters['date_from'] != null) {
+          debugPrint("ApiService: filters['date_from']: ${filters['date_from']}");
+          final dateFrom = filters['date_from'] as DateTime;
+          queryParams['date_from'] = dateFrom.toIso8601String();
+        }
+        if (filters.containsKey('date_to') && filters['date_to'] is DateTime && filters['date_to'] != null) {
+          debugPrint("ApiService: filters['date_to']: ${filters['date_to']}");
+          final dateTo = filters['date_to'] as DateTime;
+          queryParams['date_to'] = dateTo.toIso8601String();
+        }
+        if (filters.containsKey('lead_id') && filters['lead_id'] != null) {
+          debugPrint("ApiService: filters['lead_id']: ${filters['lead_id']}");
+          queryParams['lead_id'] = filters['lead_id'].toString();
+        }
+        if (filters.containsKey('supplier_id') && filters['supplier_id'] != null) {
+          debugPrint("ApiService: filters['supplier_id']: ${filters['supplier_id']}");
+          queryParams['supplier_id'] = filters['supplier_id'].toString();
+        }
+        if (filters.containsKey('sum_from') && filters['sum_from'] != null) {
+          debugPrint("ApiService: filters['sum_from']: ${filters['sum_from']}");
+          queryParams['sum_from'] = filters['sum_from'].toString();
+        }
+        if (filters.containsKey('sum_to') && filters['sum_to'] != null) {
+          debugPrint("ApiService: filters['sum_to']: ${filters['sum_to']}");
+          queryParams['sum_to'] = filters['sum_to'].toString();
+        }
+      }
 
       var path = await _appendQueryParams('/fin/dashboard/debtors-list');
 
+      // Fix: Properly encode query parameters
       if (queryParams.isNotEmpty) {
-        path += '?${Uri.encodeQueryComponent(queryParams.entries.map((e) => '${e.key}=${e.value}').join('&'))}';
+        // Check if path already has query params (contains ?)
+        final separator = path.contains('?') ? '&' : '?';
+        final encodedParams = queryParams.entries
+            .map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+            .join('&');
+        path += '$separator$encodedParams';
       }
       if (kDebugMode) {
-        print('ApiService: getDebtorsList - Generated path: $path');
+        print('ApiService: getDebtorsList - Generated path: $path, filter: $filters');
       }
 
       final response = await _getRequest(path);
@@ -14594,7 +14619,6 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       throw e;
     }
   }
-
   /// Получение списка кредиторов
   Future<CreditorsResponse> getCreditorsList({
     int? page,
@@ -14628,13 +14652,13 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
           debugPrint("ApiService: filters['supplier_id']: ${filters['supplier_id']}");
           queryParams['supplier_id'] = filters['supplier_id'].toString();
         }
-        if (filters.containsKey('amountFrom') && filters['amountFrom'] != null) {
-          debugPrint("ApiService: filters['amountFrom']: ${filters['amountFrom']}");
-          queryParams['amount_from'] = filters['amountFrom'].toString();
+        if (filters.containsKey('sum_from') && filters['sum_from'] != null) {
+          debugPrint("ApiService: filters['sum_from']: ${filters['sum_from']}");
+          queryParams['sum_from'] = filters['sum_from'].toString();
         }
-        if (filters.containsKey('amountTo') && filters['amountTo'] != null) {
-          debugPrint("ApiService: filters['amountTo']: ${filters['amountTo']}");
-          queryParams['amount_to'] = filters['amountTo'].toString();
+        if (filters.containsKey('sum_to') && filters['sum_to'] != null) {
+          debugPrint("ApiService: filters['sum_to']: ${filters['sum_to']}");
+          queryParams['sum_to'] = filters['sum_to'].toString();
         }
       }
 
@@ -15718,32 +15742,77 @@ Future<List<OrderStatusWarehouse>> getOrderStatusWarehouse() async {
   }
 }
 
-// Метод для получения Товаров
-Future<List<GoodDashboardWarehouse>> getGoodDashboardWarehouse() async {
-  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-  final path = await _appendQueryParams('/good');
-  if (kDebugMode) {
-    print('ApiService: getGoodDashboardWarehouse - Generated path: $path');
-  }
+// Add this method to your ApiService class
 
-  final response = await _getRequest(path);
+  Future<dgrmodel.GoodDashboardWarehouseResponse> getGoodDashboardWarehousePage(int page) async {
+    try {
+      // Form path with page parameter
+      String basePath = '/good?page=$page';
 
-  if (response.statusCode == 200) {
-    final data = json.decode(response.body);
-    print('Полученные данные: $data');  // Для отладки
-    // Данные в result.data, плюс пагинация (игнорируем для списка)
-    final resultObj = data['result'] as Map<String, dynamic>?;
-    final dataList = resultObj?['data'] as List?;
-    if (dataList == null) {
-      return [];
+      // Add other query parameters (language, token, etc.)
+      final path = await _appendQueryParams(basePath);
+
+      if (kDebugMode) {
+        print('ApiService: getGoodDashboardWarehousePage - Loading page $page, path: $path');
+      }
+
+      // Execute GET request
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        if (kDebugMode) {
+          print('ApiService: Received data: $data');
+        }
+
+        // Parse response
+        final resultObj = data['result'] as Map<String, dynamic>?;
+
+        if (resultObj != null) {
+          // Parse data list
+          final dataList = resultObj['data'] as List? ?? [];
+          final goodsList = dataList
+              .map((good) => dgrmodel.GoodDashboardWarehouse.fromJson(good))
+              .toList();
+
+          // Parse pagination
+          if (resultObj['pagination'] != null) {
+            final pagination = dgrmodel.Pagination.fromJson(resultObj['pagination'] as Map<String, dynamic>);
+
+            if (kDebugMode) {
+              print('ApiService: Page $page loaded successfully with ${goodsList.length} items');
+              print('ApiService: Pagination - current: ${pagination.currentPage}, total pages: ${pagination.totalPages}');
+            }
+
+            return dgrmodel.GoodDashboardWarehouseResponse(
+              data: goodsList,
+              pagination: pagination,
+            );
+          } else {
+            return dgrmodel.GoodDashboardWarehouseResponse(
+              data: goodsList,
+              pagination: null,
+            );
+          }
+        } else {
+          // If result is empty, return empty response
+          return dgrmodel.GoodDashboardWarehouseResponse(
+            data: [],
+            pagination: null,
+          );
+        }
+      } else {
+        throw Exception('Ошибка при получении данных со страницы $page! Статус: ${response.statusCode}');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('ApiService: Error loading page $page: $e');
+      }
+      rethrow;
     }
-    return dataList
-        .map((good) => GoodDashboardWarehouse.fromJson(good))
-        .toList();
-  } else {
-    throw Exception('Ошибка загрузки товаров');
   }
-}
+
 
 // Метод для получения Статей расхода
 Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehouse() async {

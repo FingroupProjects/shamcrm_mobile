@@ -44,6 +44,8 @@ class DebtorsFilterScreen extends StatefulWidget {
 class _DebtorsFilterScreenState extends State<DebtorsFilterScreen> {
   DateTime? _fromDate;
   DateTime? _toDate;
+  bool _isLeadSelected = true;
+  
   final TextEditingController _amountFromController = TextEditingController();
   final TextEditingController _amountToController = TextEditingController();
   List<SupplierData> suppliersList = [];
@@ -68,6 +70,8 @@ class _DebtorsFilterScreenState extends State<DebtorsFilterScreen> {
     setState(() {
       final fromDateMillis = prefs.getInt('debtors_from_date');
       final toDateMillis = prefs.getInt('debtors_to_date');
+      _isLeadSelected = prefs.getBool('filter_is_lead') ?? true;
+      
       if (fromDateMillis != null) _fromDate = DateTime.fromMillisecondsSinceEpoch(fromDateMillis);
       if (toDateMillis != null) _toDate = DateTime.fromMillisecondsSinceEpoch(toDateMillis);
       _amountFromController.text = prefs.getString('debtors_amount_from') ?? widget.initialAmountFrom ?? '';
@@ -99,6 +103,8 @@ class _DebtorsFilterScreenState extends State<DebtorsFilterScreen> {
 
   Future<void> _saveFilterState() async {
     final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('filter_is_lead', _isLeadSelected);
+    
     if (_fromDate != null) {
       await prefs.setInt('debtors_from_date', _fromDate!.millisecondsSinceEpoch);
     } else {
@@ -131,11 +137,11 @@ class _DebtorsFilterScreenState extends State<DebtorsFilterScreen> {
     setState(() {
       _fromDate = null;
       _toDate = null;
-      _amountFromController.text = '';
-      _amountToController.text = '';
+      _amountFromController.clear();
+      _amountToController.clear();
       _selectedLead = null;
       _selectedSupplier = null;
-      // Force dropdowns to rebuild with new keys
+      _isLeadSelected = true;
       _supplierDropdownKey = UniqueKey();
       _leadDropdownKey = UniqueKey();
     });
@@ -193,32 +199,142 @@ class _DebtorsFilterScreenState extends State<DebtorsFilterScreen> {
 
   void _applyFilters() async {
     await _saveFilterState();
+
+    debugPrint("selectedLead: $_selectedLead, selectedSupplier: $_selectedSupplier");
+
     if (!_isAnyFilterSelected()) {
       widget.onResetFilters?.call();
     } else {
-      // Set from date to 00:00:00 and to date to 23:59:59
       DateTime? fromDateWithTime = _fromDate;
       DateTime? toDateWithTime = _toDate;
-      
+
       if (fromDateWithTime != null) {
         fromDateWithTime = DateTime(fromDateWithTime.year, fromDateWithTime.month, fromDateWithTime.day, 0, 0, 0);
       }
       if (toDateWithTime != null) {
         toDateWithTime = DateTime(toDateWithTime.year, toDateWithTime.month, toDateWithTime.day, 23, 59, 59);
       }
-      
+
       var filters = {
         'date_from': fromDateWithTime,
         'date_to': toDateWithTime,
         'sum_from': _parseAmount(_amountFromController.text),
         'sum_to': _parseAmount(_amountToController.text),
-        'lead_id': _selectedLead?.id, // Include lead ID
-        'supplier_id': _selectedSupplier?.id, // Include supplier ID
       };
-      debugPrint('DebtorFilter.filters: $filters'); // Debug print
+
+      if (_isLeadSelected && _selectedLead != null) {
+        filters['lead_id'] = _selectedLead!.id;
+      } else if (!_isLeadSelected && _selectedSupplier != null) {
+        filters['supplier_id'] = _selectedSupplier!.id;
+      }
+
+      debugPrint('DebtorFilter.filters: $filters');
       widget.onSelectedDataFilter?.call(filters);
     }
+
     Navigator.pop(context);
+  }
+
+  Widget _buildTypeSwitch() {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              AppLocalizations.of(context)!.translate('filter_type') ?? 'Тип фильтра',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Gilroy',
+                color: Color(0xff1E2E52),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                // Кнопка "По клиенту"
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      if (!_isLeadSelected) {
+                        setState(() {
+                          _isLeadSelected = true;
+                          _selectedSupplier = null;
+                          _supplierDropdownKey = UniqueKey();
+                        });
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        color: _isLeadSelected ? Colors.blueAccent : const Color(0xFFF4F7FD),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _isLeadSelected ? Colors.blueAccent : Colors.transparent,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          AppLocalizations.of(context)!.translate('filter_by_client') ?? 'По клиенту',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            fontFamily: 'Gilroy',
+                            color: _isLeadSelected ? Colors.white : const Color(0xFF1E2E52),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Кнопка "По поставщику"
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      if (_isLeadSelected) {
+                        setState(() {
+                          _isLeadSelected = false;
+                          _selectedLead = null;
+                          _leadDropdownKey = UniqueKey();
+                        });
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        color: !_isLeadSelected ? Colors.blueAccent : const Color(0xFFF4F7FD),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: !_isLeadSelected ? Colors.blueAccent : Colors.transparent,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          AppLocalizations.of(context)!.translate('filter_by_supplier') ?? 'По поставщику',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            fontFamily: 'Gilroy',
+                            color: !_isLeadSelected ? Colors.white : const Color(0xFF1E2E52),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildSupplierWidget() {
@@ -649,12 +765,12 @@ class _DebtorsFilterScreenState extends State<DebtorsFilterScreen> {
                     ),
                     const SizedBox(height: 8),
 
-                    // Supplier Widget
-                    _buildSupplierWidget(),
+                    // Type switch
+                    _buildTypeSwitch(),
                     const SizedBox(height: 8),
 
-                    // Lead Widget
-                    _buildLeadWidget(),
+                    // Dynamic widget
+                    _isLeadSelected ? _buildLeadWidget() : _buildSupplierWidget(),
                     const SizedBox(height: 16),
                   ],
                 ),
