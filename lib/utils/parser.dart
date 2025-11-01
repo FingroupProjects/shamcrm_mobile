@@ -6,11 +6,11 @@ int? parseInt(dynamic value) {
     try {
       return int.parse(value);
     } catch (e) {
-      print('Error parsing int from string "$value": $e');
+      //print('Error parsing int from string "$value": $e');
       return null;
     }
   }
-  print('Unexpected type for int parsing: ${value.runtimeType}');
+  //print('Unexpected type for int parsing: ${value.runtimeType}');
   return null;
 }
 
@@ -37,11 +37,11 @@ num? parseNum(dynamic value) {
       }
       return parsed; // Return as double (1.23, 2.5, etc.)
     } catch (e) {
-      print('Error parsing num from string "$value": $e');
+      //print('Error parsing num from string "$value": $e');
       return null;
     }
   }
-  print('Unexpected type for num parsing: ${value.runtimeType}');
+  //print('Unexpected type for num parsing: ${value.runtimeType}');
   return null;
 }
 
@@ -51,7 +51,7 @@ DateTime? parseDate(dynamic dateStr) {
   try {
     return DateTime.parse(dateStr);
   } catch (e) {
-    print('Error parsing date $dateStr: $e');
+    //print('Error parsing date $dateStr: $e');
     return null; // Возвращаем null в случае ошибки
   }
 }

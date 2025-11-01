@@ -228,6 +228,6 @@ class CallLogItem extends StatelessWidget {
   }
 
   void _makeCall(String phoneNumber) {
-    print('Calling $phoneNumber');
+    //print('Calling $phoneNumber');
   }
 }

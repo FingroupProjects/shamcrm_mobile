@@ -7,7 +7,7 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-void showDealStatusBottomSheet(
+Future<void> showDealStatusBottomSheet(
     BuildContext context,
     String defaultValue,
     Function(String, List<int>) onSelect,

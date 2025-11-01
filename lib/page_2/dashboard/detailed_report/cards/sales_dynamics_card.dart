@@ -41,12 +41,12 @@ class SalesDynamicsCard extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   '${localizations.translate('total_amount') ?? 'Общая сумма'}: ${parseNumberToString(monthData.totalAmount)}',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w400,
-                    color: Color(0xff99A4BA),
-                  ),
+                   style: const TextStyle(
+                      fontSize: 15,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xff1E2E52),
+                    ),
                 ),
               ],
             ),

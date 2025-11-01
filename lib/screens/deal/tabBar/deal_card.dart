@@ -32,6 +32,7 @@ class DealCard extends StatefulWidget {
 class _DealCardState extends State<DealCard> {
   late String dropdownValue;
   late int statusId;
+  bool _isBottomSheetOpen = false;
 
   late final bool isSuccess = widget.deal.dealStatus!.isSuccess;
   late final bool isFailure = widget.deal.dealStatus!.isFailure;
@@ -186,12 +187,21 @@ class _DealCardState extends State<DealCard> {
                         ),
                       ),
                       Flexible(
-                        child: GestureDetector(
+                          child: GestureDetector(
                           onTap: () {
+                            // 🛡️ Блокируем повторные нажатия
+                            if (_isBottomSheetOpen) {
+                              print('⚠️ BottomSheet уже открыт, игнорируем нажатие');
+                              return;
+                            }
+                            
+                            // Устанавливаем флаг
+                            _isBottomSheetOpen = true;
+                            
                             showDealStatusBottomSheet(
-                                  context,
-                                  dropdownValue,
-                                  (String newValue, List<int> newStatusIds) {
+                              context,
+                              dropdownValue,
+                              (String newValue, List<int> newStatusIds) {
                                 final newStatusId = newStatusIds.isNotEmpty ? newStatusIds.first : statusId;
                                 setState(() {
                                   dropdownValue = newValue;
@@ -202,7 +212,11 @@ class _DealCardState extends State<DealCard> {
                               },
                               widget.deal,
                               ApiService(),
-                            );
+                            ).whenComplete(() {
+                              // 🔓 Сбрасываем флаг после закрытия
+                              _isBottomSheetOpen = false;
+                              print('✅ BottomSheet закрыт, флаг сброшен');
+                            });
                           },
                           child: Container(
                             key: widget.dropdownKey,

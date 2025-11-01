@@ -24,7 +24,7 @@ class MyTaskByIdBloc extends Bloc<MyTaskByIdEvent, MyTaskByIdState> {
         emit(MyTaskByIdError('Задача не найдена'));
       }
     } catch (e) {
-      print('Ошибка при загрузке задачи: $e'); // Добавим вывод ошибки
+      //print('Ошибка при загрузке задачи: $e'); // Добавим вывод ошибки
       emit(MyTaskByIdError('Не удалось загрузить данные задачи: ${e.toString()}'));
     }
   } else {

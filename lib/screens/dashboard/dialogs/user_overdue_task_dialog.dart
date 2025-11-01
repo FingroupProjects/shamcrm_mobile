@@ -2,23 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/models/overdue_task_response.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:intl/intl.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
 import '../../../bloc/dashboard/charts/user_task/user_overdue_task_bloc.dart';
 import '../../../bloc/dashboard/charts/user_task/user_overdue_task_event.dart';
 import '../../../bloc/dashboard/charts/user_task/user_overdue_task_state.dart';
 import '../../task/task_details/task_details_screen.dart';
 
-void showUserOverdueTasksDialog(BuildContext context, int userId, String userName) {
+void showUserOverdueTasksDialog(
+    BuildContext context, int userId, String userName) {
   showDialog(
     context: context,
     barrierColor: Colors.black.withOpacity(0.5),
     builder: (BuildContext dialogContext) {
       return BlocProvider(
-        create: (context) =>
-        UserOverdueTaskBloc(
+        create: (context) => UserOverdueTaskBloc(
           context.read<ApiService>(),
-        )
-          ..add(LoadUserOverdueTaskData(id: userId)),
+        )..add(LoadUserOverdueTaskData(id: userId)),
         child: UserOverdueTasksDialog(userId: userId, userName: userName),
       );
     },
@@ -60,7 +60,8 @@ class _UserOverdueTasksDialogState extends State<UserOverdueTasksDialog> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 100) {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 100) {
       if (!_isLoadingMore && _hasMoreData()) {
         _loadMoreData();
       }
@@ -79,8 +80,8 @@ class _UserOverdueTasksDialogState extends State<UserOverdueTasksDialog> {
       });
 
       context.read<UserOverdueTaskBloc>().add(
-        LoadUserOverdueTaskData(id: widget.userId),
-      );
+            LoadUserOverdueTaskData(id: widget.userId),
+          );
     }
   }
 
@@ -188,29 +189,50 @@ class _UserOverdueTasksDialogState extends State<UserOverdueTasksDialog> {
     );
   }
 
+  Widget _buildOverdueBadge(OverdueTask task) {
+    final overdue = task.overdue;
+    if (overdue == null || overdue <= 0) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: const BoxDecoration(
+        color: Colors.red,
+        borderRadius: BorderRadius.all(Radius.circular(12)),
+      ),
+      child: Text(
+        '$overdue',
+        style: const TextStyle(
+          fontFamily: 'Gilroy',
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
+        ),
+      ),
+    );
+  }
+
   Widget _buildTaskCard(OverdueTask task) {
     return InkWell(
       onTap: () {
-        // navigate to TaskDetailsScreen
-        Navigator.push(context, MaterialPageRoute(
-            builder: (context) =>
-                TaskDetailsScreen(
-                  taskId: (task.id ?? 0).toString(),
-                  taskName: task.name ?? '',
-                  taskStatus: task.taskStatus?.name ?? '',
-                  taskCustomFields: [],
-                )));
-        },
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => TaskDetailsScreen(
+              taskId: (task.id ?? 0).toString(),
+              taskName: task.name ?? '',
+              taskStatus: task.taskStatus?.name ?? '',
+              taskCustomFields: [],
+            ),
+          ),
+        );
+      },
       child: Container(
         width: double.infinity,
         margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: const Color(0xffE2E8F0),
-            width: 1,
-          ),
+          border: Border.all(color: const Color(0xffE2E8F0), width: 1),
           boxShadow: [
             BoxShadow(
               color: const Color(0xff1E2E52).withOpacity(0.08),
@@ -222,57 +244,65 @@ class _UserOverdueTasksDialogState extends State<UserOverdueTasksDialog> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Task header
+            // === ЗАГОЛОВОК С OVERDUE ===
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xffF8FAFC),
-                borderRadius: const BorderRadius.only(
+              decoration: const BoxDecoration(
+                color: Color(0xffF8FAFC),
+                borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(12),
                   topRight: Radius.circular(12),
                 ),
-                border: const Border(
-                  left: BorderSide(
-                    width: 4,
-                    color: Color(0xff1E2E52),
-                  ),
+                border: Border(
+                  left: BorderSide(width: 4, color: Color(0xff1E2E52)),
                 ),
               ),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          task.name ?? AppLocalizations.of(context)!.translate('unknown_dialog'),
+                  // === СТРОКА 1: "Задача №1" ===
+                  if (task.taskNumber != null)
+                    Text(
+                      '${AppLocalizations.of(context)!.translate('task')} №${task.taskNumber}',
+                      style: const TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                            color: Color(0xff1E2E52),
+                      ),
+                    ),
+
+                  const SizedBox(height: 4),
+
+                  // === СТРОКА 2: Название + Overdue ===
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // Название задачи
+                      Expanded(
+                        child: Text(
+                          task.name ??
+                              AppLocalizations.of(context)!
+                                  .translate('unknown_dialog'),
                           style: const TextStyle(
                             fontFamily: 'Gilroy',
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
                             color: Color(0xff1E2E52),
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        if (task.taskNumber != null) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            '№${task.taskNumber}',
-                            style: const TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 12,
-                              color: Color(0xff64748B),
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
+                      ),
+
+                      // Просрочка (справа)
+                      _buildOverdueBadge(task),
+                    ],
                   ),
                 ],
               ),
             ),
-
             // Task details: First row (Project and Author)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
@@ -305,7 +335,9 @@ class _UserOverdueTasksDialogState extends State<UserOverdueTasksDialog> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              task.project!.name ?? AppLocalizations.of(context)!.translate('unknown_dialog'),
+                              task.project!.name ??
+                                  AppLocalizations.of(context)!
+                                      .translate('unknown_dialog'),
                               style: const TextStyle(
                                 fontFamily: 'Gilroy',
                                 fontSize: 14,
@@ -350,7 +382,9 @@ class _UserOverdueTasksDialogState extends State<UserOverdueTasksDialog> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              task.author!.name ?? AppLocalizations.of(context)!.translate('unknown_dialog'),
+                              task.author!.name ??
+                                  AppLocalizations.of(context)!
+                                      .translate('unknown_dialog'),
                               style: const TextStyle(
                                 fontFamily: 'Gilroy',
                                 fontSize: 14,
@@ -399,7 +433,7 @@ class _UserOverdueTasksDialogState extends State<UserOverdueTasksDialog> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            task.from ?? '-',
+                            DateFormatter.toDDMMYYYY(task.from),
                             style: const TextStyle(
                               fontFamily: 'Gilroy',
                               fontSize: 14,
@@ -440,7 +474,7 @@ class _UserOverdueTasksDialogState extends State<UserOverdueTasksDialog> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            task.to ?? '-',
+                            DateFormatter.toDDMMYYYY(task.to),
                             style: const TextStyle(
                               fontFamily: 'Gilroy',
                               fontSize: 14,
@@ -474,7 +508,8 @@ class _UserOverdueTasksDialogState extends State<UserOverdueTasksDialog> {
             } else {
               // Avoid duplicates when paginating
               final existingIds = _allTasks.map((t) => t.id).toSet();
-              final uniqueNewTasks = newTasks.where((t) => !existingIds.contains(t.id)).toList();
+              final uniqueNewTasks =
+                  newTasks.where((t) => !existingIds.contains(t.id)).toList();
               _allTasks.addAll(uniqueNewTasks);
             }
 
@@ -494,10 +529,7 @@ class _UserOverdueTasksDialogState extends State<UserOverdueTasksDialog> {
           insetPadding: const EdgeInsets.symmetric(horizontal: 20),
           child: Container(
             constraints: BoxConstraints(
-              maxHeight: MediaQuery
-                  .of(context)
-                  .size
-                  .height * 0.8,
+              maxHeight: MediaQuery.of(context).size.height * 0.8,
               maxWidth: 420,
             ),
             decoration: BoxDecoration(
@@ -547,7 +579,8 @@ class _UserOverdueTasksDialogState extends State<UserOverdueTasksDialog> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          AppLocalizations.of(context)!.translate('overdue_tasks_title'),
+                          AppLocalizations.of(context)!
+                              .translate('overdue_tasks_title'),
                           style: const TextStyle(
                             fontFamily: 'Gilroy',
                             fontSize: 18,
@@ -567,94 +600,101 @@ class _UserOverdueTasksDialogState extends State<UserOverdueTasksDialog> {
                 Flexible(
                   child: state is UserOverdueTaskLoading && _currentPage == 1
                       ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const CircularProgressIndicator(
-                          color: Color(0xff1E2E52),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          AppLocalizations.of(context)!.translate('loading_data_dialog'),
-                          style: const TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontSize: 16,
-                            color: Color(0xff64748B),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const CircularProgressIndicator(
+                                color: Color(0xff1E2E52),
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                AppLocalizations.of(context)!
+                                    .translate('loading_data_dialog'),
+                                style: const TextStyle(
+                                  fontFamily: 'Gilroy',
+                                  fontSize: 16,
+                                  color: Color(0xff64748B),
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                      ],
-                    ),
-                  )
+                        )
                       : state is UserOverdueTaskError
-                      ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.error_outline,
-                            size: 48,
-                            color: Color(0xffEF4444),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            AppLocalizations.of(context)!.translate('error_loading_dialog'),
-                            style: const TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xff1E2E52),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            state.message,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 14,
-                              color: Color(0xff64748B),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: () {
-                              setState(() {
-                                _currentPage = 1;
-                                _allTasks.clear();
-                                _lastPage = null;
-                              });
-                              context.read<UserOverdueTaskBloc>().add(
-                                LoadUserOverdueTaskData(id: widget.userId),
-                              );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xff1E2E52),
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
+                          ? Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(24),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Icons.error_outline,
+                                      size: 48,
+                                      color: Color(0xffEF4444),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      AppLocalizations.of(context)!
+                                          .translate('error_loading_dialog'),
+                                      style: const TextStyle(
+                                        fontFamily: 'Gilroy',
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xff1E2E52),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      state.message,
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        fontFamily: 'Gilroy',
+                                        fontSize: 14,
+                                        color: Color(0xff64748B),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    ElevatedButton(
+                                      onPressed: () {
+                                        setState(() {
+                                          _currentPage = 1;
+                                          _allTasks.clear();
+                                          _lastPage = null;
+                                        });
+                                        context.read<UserOverdueTaskBloc>().add(
+                                              LoadUserOverdueTaskData(
+                                                  id: widget.userId),
+                                            );
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor:
+                                            const Color(0xff1E2E52),
+                                        foregroundColor: Colors.white,
+                                        elevation: 0,
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 24, vertical: 12),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        AppLocalizations.of(context)!
+                                            .translate('retry_dialog'),
+                                        style: const TextStyle(
+                                          fontFamily: 'Gilroy',
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
+                            )
+                          : SingleChildScrollView(
+                              controller: _scrollController,
+                              padding: const EdgeInsets.all(24),
+                              child: _buildTasksList(_allTasks),
                             ),
-                            child: Text(
-                              AppLocalizations.of(context)!.translate('retry_dialog'),
-                              style: const TextStyle(
-                                fontFamily: 'Gilroy',
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
-                      : SingleChildScrollView(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.all(24),
-                    child: _buildTasksList(_allTasks),
-                  ),
                 ),
 
                 // Footer
@@ -689,5 +729,19 @@ class _UserOverdueTasksDialogState extends State<UserOverdueTasksDialog> {
         );
       },
     );
+  }
+}
+
+class DateFormatter {
+  static String toDDMMYYYY(String? date) {
+    if (date == null || date.isEmpty) return '-';
+    try {
+      final inputFormat = DateFormat('yyyy-MM-dd');
+      final outputFormat = DateFormat('dd.MM.yyyy');
+      final parsedDate = inputFormat.parse(date);
+      return outputFormat.format(parsedDate);
+    } catch (e) {
+      return date; // fallback
+    }
   }
 }

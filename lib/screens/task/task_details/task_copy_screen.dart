@@ -95,9 +95,9 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
         _currentUserId = userId;
       });
 
-      print('TaskCopyScreen: Permissions - task.create: $_canCreateTask, task.createForMySelf: $_hasTaskCreateForMySelfPermission, userID: $_currentUserId');
+      //print('TaskCopyScreen: Permissions - task.create: $_canCreateTask, task.createForMySelf: $_hasTaskCreateForMySelfPermission, userID: $_currentUserId');
     } catch (e) {
-      print('TaskCopyScreen: Error checking permissions or userID: $e');
+      //print('TaskCopyScreen: Error checking permissions or userID: $e');
       setState(() {
         _canCreateTask = false;
         _hasTaskCreateForMySelfPermission = false;

@@ -44,7 +44,7 @@ class GetAllLeadBloc extends Bloc<GetAllLeadEvent, GetAllLeadState> {
     if (_isCacheValid(event.showDebt)) {
       final cachedData = event.showDebt ? _cachedLeadsWithDebt : _cachedLeadsWithoutDebt;
       if (kDebugMode) {
-        print('GetAllLeadBloc: Using cached leads data (showDebt=${event.showDebt})');
+        //print('GetAllLeadBloc: Using cached leads data (showDebt=${event.showDebt})');
       }
       emit(GetAllLeadSuccess(dataLead: cachedData!));
       return;
@@ -77,14 +77,14 @@ class GetAllLeadBloc extends Bloc<GetAllLeadEvent, GetAllLeadState> {
       emit(GetAllLeadLoading());
 
       if (kDebugMode) {
-        print('GetAllLeadBloc: Loading first page of leads (showDebt=$showDebt)...');
+        //print('GetAllLeadBloc: Loading first page of leads (showDebt=$showDebt)...');
       }
 
       // Загружаем только первую страницу
       var firstPageRes = await apiService.getLeadPage(1, showDebt: showDebt);
 
       if (kDebugMode) {
-        print('GetAllLeadBloc: First page loaded with ${firstPageRes.result?.length ?? 0} leads (showDebt=$showDebt)');
+        //print('GetAllLeadBloc: First page loaded with ${firstPageRes.result?.length ?? 0} leads (showDebt=$showDebt)');
       }
 
       // ИСПРАВЛЕНО: Сохраняем в правильный кэш
@@ -109,7 +109,7 @@ class GetAllLeadBloc extends Bloc<GetAllLeadEvent, GetAllLeadState> {
 
       if (hasMorePages && !isCurrentlyLoading) {
         if (kDebugMode) {
-          print('GetAllLeadBloc: Starting background loading of remaining pages (showDebt=$showDebt)...');
+          //print('GetAllLeadBloc: Starting background loading of remaining pages (showDebt=$showDebt)...');
         }
         // Загружаем остальные страницы в фоне
         _loadRemainingPagesInBackground(showDebt);
@@ -117,7 +117,7 @@ class GetAllLeadBloc extends Bloc<GetAllLeadEvent, GetAllLeadState> {
 
     } catch (e) {
       if (kDebugMode) {
-        print('GetAllLeadBloc: Error loading leads: $e');
+        //print('GetAllLeadBloc: Error loading leads: $e');
       }
       emit(GetAllLeadError(message: e.toString()));
     }
@@ -135,7 +135,7 @@ class GetAllLeadBloc extends Bloc<GetAllLeadEvent, GetAllLeadState> {
     _fetchRemainingPages(showDebt).then((_) {
       if (kDebugMode) {
         final cachedData = showDebt ? _cachedLeadsWithDebt : _cachedLeadsWithoutDebt;
-        print('GetAllLeadBloc: Background loading completed (showDebt=$showDebt). Total leads: ${cachedData?.result?.length ?? 0}');
+        //print('GetAllLeadBloc: Background loading completed (showDebt=$showDebt). Total leads: ${cachedData?.result?.length ?? 0}');
       }
       if (showDebt) {
         _isBackgroundLoadingWithDebt = false;
@@ -144,7 +144,7 @@ class GetAllLeadBloc extends Bloc<GetAllLeadEvent, GetAllLeadState> {
       }
     }).catchError((error) {
       if (kDebugMode) {
-        print('GetAllLeadBloc: Error in background loading (showDebt=$showDebt): $error');
+        //print('GetAllLeadBloc: Error in background loading (showDebt=$showDebt): $error');
       }
       if (showDebt) {
         _isBackgroundLoadingWithDebt = false;
@@ -165,7 +165,7 @@ class GetAllLeadBloc extends Bloc<GetAllLeadEvent, GetAllLeadState> {
       while (hasMorePages) {
         try {
           if (kDebugMode) {
-            print('GetAllLeadBloc: Loading page $currentPage in background (showDebt=$showDebt)...');
+            //print('GetAllLeadBloc: Loading page $currentPage in background (showDebt=$showDebt)...');
           }
 
           final pageResponse = await apiService.getLeadPage(currentPage, showDebt: showDebt);
@@ -199,7 +199,7 @@ class GetAllLeadBloc extends Bloc<GetAllLeadEvent, GetAllLeadState> {
             }
 
             if (kDebugMode) {
-              print('GetAllLeadBloc: Background loaded page $currentPage, total: ${allLeads.length} (showDebt=$showDebt)');
+              //print('GetAllLeadBloc: Background loaded page $currentPage, total: ${allLeads.length} (showDebt=$showDebt)');
             }
           } else {
             hasMorePages = false;
@@ -212,7 +212,7 @@ class GetAllLeadBloc extends Bloc<GetAllLeadEvent, GetAllLeadState> {
 
         } catch (e) {
           if (kDebugMode) {
-            print('GetAllLeadBloc: Error loading page $currentPage in background: $e');
+            //print('GetAllLeadBloc: Error loading page $currentPage in background: $e');
           }
           hasMorePages = false;
         }
@@ -227,7 +227,7 @@ class GetAllLeadBloc extends Bloc<GetAllLeadEvent, GetAllLeadState> {
 
     } catch (e) {
       if (kDebugMode) {
-        print('GetAllLeadBloc: Error in _fetchRemainingPages: $e');
+        //print('GetAllLeadBloc: Error in _fetchRemainingPages: $e');
       }
     }
   }

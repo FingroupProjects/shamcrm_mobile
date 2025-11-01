@@ -173,7 +173,7 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
 
   Future<void> _loadFieldConfiguration() async {
     if (kDebugMode) {
-      print('MyTaskDetailsScreen: Loading field configuration');
+      //print('MyTaskDetailsScreen: Loading field configuration');
     }
     
     if (mounted) {
@@ -204,27 +204,27 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
     currentMyTask = task;
     
     if (kDebugMode) {
-      print('=== MyTaskDetailsScreen: _updateDetails START ===');
-      print('MyTaskDetailsScreen: isConfigurationLoaded = $isConfigurationLoaded');
-      print('MyTaskDetailsScreen: fieldConfigurations.length = ${fieldConfigurations.length}');
+      //print('=== MyTaskDetailsScreen: _updateDetails START ===');
+      //print('MyTaskDetailsScreen: isConfigurationLoaded = $isConfigurationLoaded');
+      //print('MyTaskDetailsScreen: fieldConfigurations.length = ${fieldConfigurations.length}');
     }
     
     // Если конфигурация загружена, строим детали на её основе
     if (isConfigurationLoaded && fieldConfigurations.isNotEmpty) {
       if (kDebugMode) {
-        print('MyTaskDetailsScreen: Using configuration-based details');
+        //print('MyTaskDetailsScreen: Using configuration-based details');
       }
       _buildDetailsFromConfiguration(task);
     } else {
       if (kDebugMode) {
-        print('MyTaskDetailsScreen: Using LEGACY method (fallback)');
+        //print('MyTaskDetailsScreen: Using LEGACY method (fallback)');
       }
       _buildDetailsLegacy(task);
     }
     
     if (kDebugMode) {
-      print('MyTaskDetailsScreen: Total details built: ${details.length}');
-      print('=== MyTaskDetailsScreen: _updateDetails END ===');
+      //print('MyTaskDetailsScreen: Total details built: ${details.length}');
+      //print('=== MyTaskDetailsScreen: _updateDetails END ===');
     }
   }
 
@@ -233,8 +233,8 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
     details = [];
     
     if (kDebugMode) {
-      print('=== _buildDetailsFromConfiguration START ===');
-      print('MyTaskDetailsScreen: fieldConfigurations count: ${fieldConfigurations.length}');
+      //print('=== _buildDetailsFromConfiguration START ===');
+      //print('MyTaskDetailsScreen: fieldConfigurations count: ${fieldConfigurations.length}');
     }
     
     // Проходим по конфигурации в правильном порядке
@@ -260,7 +260,7 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
     }
     
     if (kDebugMode) {
-      print('=== _buildDetailsFromConfiguration END ===');
+      //print('=== _buildDetailsFromConfiguration END ===');
     }
   }
 
@@ -417,12 +417,12 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
         BlocListener<FieldConfigurationBloc, FieldConfigurationState>(
           listener: (context, configState) {
             if (kDebugMode) {
-              print('MyTaskDetailsScreen: FieldConfigurationBloc state changed: ${configState.runtimeType}');
+              //print('MyTaskDetailsScreen: FieldConfigurationBloc state changed: ${configState.runtimeType}');
             }
             
             if (configState is FieldConfigurationLoaded) {
               if (kDebugMode) {
-                print('MyTaskDetailsScreen: Configuration loaded with ${configState.fields.length} fields');
+                //print('MyTaskDetailsScreen: Configuration loaded with ${configState.fields.length} fields');
               }
               
               if (mounted) {
@@ -440,7 +440,7 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
               }
             } else if (configState is FieldConfigurationError) {
               if (kDebugMode) {
-                print('MyTaskDetailsScreen: Configuration error: ${configState.message}');
+                //print('MyTaskDetailsScreen: Configuration error: ${configState.message}');
               }
               
               if (mounted) {

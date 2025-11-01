@@ -5288,258 +5288,228 @@ Future<List<Deal>> getDeals(
 
 //_________________________________ START_____API_SCREEN__CHATS____________________________________________//
 
-  Future<PaginationDTO<Chats>> getAllChats(
-    String endPoint, [
-    int page = 1,
-    String? search,
-    int? salesFunnelId,
-    Map<String, dynamic>? filters,
-  ]) async {
-    final token = await getToken();
-    String path = '/v2/chat/getMyChats/$endPoint?page=$page';
+Future<PaginationDTO<Chats>> getAllChats(
+  String endPoint, [
+  int page = 1,
+  String? search,
+  int? salesFunnelId,
+  Map<String, dynamic>? filters,
+]) async {
+  final token = await getToken();
+  String path = '/v2/chat/getMyChats/$endPoint?page=$page';
 
-    //print('ApiService.getAllChats: Initial path: $path');
-    //print('ApiService.getAllChats: Parameters - page: $page, search: $search, salesFunnelId: $salesFunnelId, filters: $filters');
+  path = await _appendQueryParams(path);
 
-    path = await _appendQueryParams(path);
+  if (search != null && search.isNotEmpty) {
+    path += '&search=${Uri.encodeComponent(search)}';
+  }
 
-    if (search != null && search.isNotEmpty) {
-      path += '&search=${Uri.encodeComponent(search)}';
-      //print('ApiService.getAllChats: Added search: $search');
-    }
+  if (salesFunnelId != null && endPoint == 'lead') {
+    path += '&funnel_id=$salesFunnelId';
+  }
 
-    if (salesFunnelId != null && endPoint == 'lead') {
-      path += '&funnel_id=$salesFunnelId';
-      //print('ApiService.getAllChats: Added funnel_id: $salesFunnelId');
-    }
-
-    if (filters != null) {
-      //print('ApiService.getAllChats: Processing filters: $filters');
-
-      if (endPoint == 'lead') {
-        // Менеджеры
-        if (filters['managers'] != null &&
-            (filters['managers'] as List).isNotEmpty) {
-          List<int> managerIds =
-              (filters['managers'] as List).map((m) => m.id as int).toList();
-          for (int managerId in managerIds) {
-            path += '&managers[]=$managerId';
+  if (filters != null) {
+    if (endPoint == 'lead') {
+      // ИСПРАВЛЕНО: Менеджеры - поддержка Map и объектов
+      if (filters['managers'] != null &&
+          (filters['managers'] as List).isNotEmpty) {
+        List<int> managerIds = (filters['managers'] as List).map((m) {
+          if (m is Map) {
+            return m['id'] as int;
           }
-          //print('ApiService.getAllChats: Added managers: $managerIds');
-        }
-
-        // Регионы
-        if (filters['regions'] != null &&
-            (filters['regions'] as List).isNotEmpty) {
-          List<int> regionIds =
-              (filters['regions'] as List).map((r) => r.id as int).toList();
-          for (int regionId in regionIds) {
-            path += '&regions[]=$regionId';
-          }
-          //print('ApiService.getAllChats: Added regions: $regionIds');
-        }
-
-        // Источники
-        if (filters['sources'] != null &&
-            (filters['sources'] as List).isNotEmpty) {
-          List<int> sourceIds =
-              (filters['sources'] as List).map((s) => s.id as int).toList();
-          for (int sourceId in sourceIds) {
-            path += '&sources[]=$sourceId';
-          }
-          //print('ApiService.getAllChats: Added sources: $sourceIds');
-        }
-
-        // Статусы
-        if (filters['statuses'] != null &&
-            (filters['statuses'] as List).isNotEmpty) {
-          List<String> statusIds = (filters['statuses'] as List).cast<String>();
-          for (String statusId in statusIds) {
-            path += '&leadStatus[]=$statusId';
-          }
-          //print('ApiService.getAllChats: Added statuses: $statusIds');
-        }
-
-        // Даты
-        if (filters['fromDate'] != null) {
-          path += '&from_date=${filters['fromDate'].toIso8601String()}';
-          //print('ApiService.getAllChats: Added from_date: ${filters['fromDate']}');
-        }
-        if (filters['toDate'] != null) {
-          path += '&to_date=${filters['toDate'].toIso8601String()}';
-          //print('ApiService.getAllChats: Added to_date: ${filters['toDate']}');
-        }
-
-        // Флаги
-        if (filters['hasSuccessDeals'] == true) {
-          path += '&has_success_deals=1';
-          //print('ApiService.getAllChats: Added has_success_deals=1');
-        }
-        if (filters['hasInProgressDeals'] == true) {
-          path += '&has_in_progress_deals=1';
-          //print('ApiService.getAllChats: Added has_in_progress_deals=1');
-        }
-        if (filters['hasFailureDeals'] == true) {
-          path += '&has_failure_deals=1';
-          //print('ApiService.getAllChats: Added has_failure_deals=1');
-        }
-        if (filters['hasNotices'] == true) {
-          path += '&has_notices=1';
-          //print('ApiService.getAllChats: Added has_notices=1');
-        }
-        if (filters['hasContact'] == true) {
-          path += '&has_contact=1';
-          //print('ApiService.getAllChats: Added has_contact=1');
-        }
-        if (filters['hasChat'] == true) {
-          path += '&has_chat=1';
-          //print('ApiService.getAllChats: Added has_chat=1');
-        }
-        if (filters['hasNoReplies'] == true) {
-          path += '&has_no_replies=1';
-          //print('ApiService.getAllChats: Added has_no_replies=1');
-        }
-        if (filters['hasUnreadMessages'] == true) {
-          path += '&unread_only=1';
-          //print('ApiService.getAllChats: Added has_unread_messages=1');
-        }
-        if (filters['hasDeal'] == true) {
-          path += '&has_deal=1';
-          //print('ApiService.getAllChats: Added has_deal=1');
-        }
-        if (filters['unreadOnly'] == true) {
-          path += '&unread_only=1';
-          //print('ApiService.getAllChats: Added unread_only=1');
-        }
-        if (filters['daysWithoutActivity'] != null &&
-            filters['daysWithoutActivity'] > 0) {
-          path += '&days_without_activity=${filters['daysWithoutActivity']}';
-          //print('ApiService.getAllChats: Added days_without_activity: ${filters['daysWithoutActivity']}');
-        }
-        if (filters['directory_values'] != null &&
-            (filters['directory_values'] as List).isNotEmpty) {
-          List<Map<String, dynamic>> directoryValues =
-              filters['directory_values'] as List<Map<String, dynamic>>;
-          for (var value in directoryValues) {
-            path +=
-                '&directory_values[${value['directory_id']}]=${value['entry_id']}';
-          }
-          //print('ApiService.getAllChats: Added directory_values: $directoryValues');
-        }
-      } else if (endPoint == 'task') {
-        // Обработка фильтров для task (без изменений)
-        if (filters['task_number'] != null &&
-            filters['task_number'].isNotEmpty) {
-          path += '&task_number=${Uri.encodeComponent(filters['task_number'])}';
-          //print('ApiService.getAllChats: Added task_number: ${filters['task_number']}');
-        }
-        if (filters['department_id'] != null) {
-          path += '&department_id=${filters['department_id']}';
-          //print('ApiService.getAllChats: Added department_id: ${filters['department_id']}');
-        }
-        if (filters['task_created_from'] != null) {
-          path += '&task_created_from=${filters['task_created_from']}';
-          //print('ApiService.getAllChats: Added task_created_from: ${filters['task_created_from']}');
-        }
-        if (filters['task_created_to'] != null) {
-          path += '&task_created_to=${filters['task_created_to']}';
-          //print('ApiService.getAllChats: Added task_created_to: ${filters['task_created_to']}');
-        }
-        if (filters['deadline_from'] != null) {
-          path += '&deadline_from=${filters['deadline_from']}';
-          //print('ApiService.getAllChats: Added deadline_from: ${filters['deadline_from']}');
-        }
-        if (filters['deadline_to'] != null) {
-          path += '&deadline_to=${filters['deadline_to']}';
-          //print('ApiService.getAllChats: Added deadline_to: ${filters['deadline_to']}');
-        }
-        if (filters['executor_ids'] != null &&
-            (filters['executor_ids'] as List).isNotEmpty) {
-          List<String> executorIds = (filters['executor_ids'] as List)
-              .map((id) => id.toString())
-              .toList();
-          for (String executorId in executorIds) {
-            path += '&executor_ids[]=$executorId';
-          }
-          //print('ApiService.getAllChats: Added executor_ids: $executorIds');
-        }
-        if (filters['author_ids'] != null &&
-            (filters['author_ids'] as List).isNotEmpty) {
-          List<int> authorIds = (filters['author_ids'] as List).cast<int>();
-          for (int authorId in authorIds) {
-            path += '&author_ids[]=$authorId';
-          }
-          //print('ApiService.getAllChats: Added author_ids: $authorIds');
-        }
-        if (filters['project_ids'] != null &&
-            (filters['project_ids'] as List).isNotEmpty) {
-          List<int> projectIds = (filters['project_ids'] as List).cast<int>();
-          for (int projectId in projectIds) {
-            path += '&project_ids[]=$projectId';
-          }
-          //print('ApiService.getAllChats: Added project_ids: $projectIds');
-        }
-        if (filters['task_status_ids'] != null &&
-            (filters['task_status_ids'] as List).isNotEmpty) {
-          List<int> taskStatusIds =
-              (filters['task_status_ids'] as List).cast<int>();
-          for (int statusId in taskStatusIds) {
-            path += '&task_status_ids[]=$statusId';
-          }
-          //print('ApiService.getAllChats: Added task_status_ids: $taskStatusIds');
-        }
-        if (filters['unread_only'] == true) {
-          path += '&unread_only=1';
-          //print('ApiService.getAllChats: Added unread_only=1');
+          return m.id as int; // Для объектов ManagerData
+        }).toList();
+        for (int managerId in managerIds) {
+          path += '&managers[]=$managerId';
         }
       }
-    }
 
-    final fullUrl = '$baseUrl$path';
-    //print('ApiService.getAllChats: Requesting URL: $fullUrl');
-
-    try {
-      final response = await http.get(
-        Uri.parse(fullUrl),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'User-Agent': 'FlutterApp/1.0',
-          'Cache-Control': 'no-cache',
-        },
-      );
-
-      //print('ApiService.getAllChats: Response status: ${response.statusCode}');
-      //print('ApiService.getAllChats: Response headers: ${response.headers}');
-
-      if (response.statusCode == 302) {
-        //print('ApiService.getAllChats: Got 302 redirect to: ${response.headers['location']}');
-        throw Exception('Получен редирект 302. Проверьте URL и авторизацию.');
-      }
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['result'] != null) {
-          final pagination = PaginationDTO<Chats>.fromJson(data['result'], (e) {
-            return Chats.fromJson(e);
-          });
-          //print('ApiService.getAllChats: Received ${pagination.data.length} chats for page $page');
-          //print('ApiService.getAllChats: Chat IDs: ${pagination.data.map((chat) => chat.id).toList()}');
-          return pagination;
-        } else {
-          //print('ApiService.getAllChats: No result found in response');
-          throw Exception('Результат отсутствует в ответе');
+      // ИСПРАВЛЕНО: Регионы - поддержка Map и объектов
+      if (filters['regions'] != null &&
+          (filters['regions'] as List).isNotEmpty) {
+        List<int> regionIds = (filters['regions'] as List).map((r) {
+          if (r is Map) {
+            return r['id'] as int;
+          }
+          return r.id as int; // Для объектов RegionData
+        }).toList();
+        for (int regionId in regionIds) {
+          path += '&regions[]=$regionId';
         }
-      } else {
-        //print('ApiService.getAllChats: Error ${response.statusCode}: ${response.body}');
-        throw Exception('Ошибка ${response.statusCode}: ${response.body}');
       }
-    } catch (e) {
-      //print('ApiService.getAllChats: Exception caught: $e');
-      rethrow;
+
+      // ИСПРАВЛЕНО: Источники - поддержка Map и объектов
+      if (filters['sources'] != null &&
+          (filters['sources'] as List).isNotEmpty) {
+        List<int> sourceIds = (filters['sources'] as List).map((s) {
+          if (s is Map) {
+            return s['id'] as int;
+          }
+          return s.id as int; // Для объектов SourceData
+        }).toList();
+        for (int sourceId in sourceIds) {
+          path += '&sources[]=$sourceId';
+        }
+      }
+
+      // Статусы (без изменений)
+      if (filters['statuses'] != null &&
+          (filters['statuses'] as List).isNotEmpty) {
+        List<String> statusIds = (filters['statuses'] as List).cast<String>();
+        for (String statusId in statusIds) {
+          path += '&leadStatus[]=$statusId';
+        }
+      }
+
+      // Даты (без изменений)
+      if (filters['fromDate'] != null) {
+        path += '&from_date=${filters['fromDate'].toIso8601String()}';
+      }
+      if (filters['toDate'] != null) {
+        path += '&to_date=${filters['toDate'].toIso8601String()}';
+      }
+
+      // Флаги (без изменений)
+      if (filters['hasSuccessDeals'] == true) {
+        path += '&has_success_deals=1';
+      }
+      if (filters['hasInProgressDeals'] == true) {
+        path += '&has_in_progress_deals=1';
+      }
+      if (filters['hasFailureDeals'] == true) {
+        path += '&has_failure_deals=1';
+      }
+      if (filters['hasNotices'] == true) {
+        path += '&has_notices=1';
+      }
+      if (filters['hasContact'] == true) {
+        path += '&has_contact=1';
+      }
+      if (filters['hasChat'] == true) {
+        path += '&has_chat=1';
+      }
+      if (filters['hasNoReplies'] == true) {
+        path += '&has_no_replies=1';
+      }
+      if (filters['hasUnreadMessages'] == true) {
+        path += '&unread_only=1';
+      }
+      if (filters['hasDeal'] == true) {
+        path += '&has_deal=1';
+      }
+      if (filters['unreadOnly'] == true) {
+        path += '&unread_only=1';
+      }
+      if (filters['daysWithoutActivity'] != null &&
+          filters['daysWithoutActivity'] > 0) {
+        path += '&days_without_activity=${filters['daysWithoutActivity']}';
+      }
+      if (filters['directory_values'] != null &&
+          (filters['directory_values'] as List).isNotEmpty) {
+        List<Map<String, dynamic>> directoryValues =
+            filters['directory_values'] as List<Map<String, dynamic>>;
+        for (var value in directoryValues) {
+          path +=
+              '&directory_values[${value['directory_id']}]=${value['entry_id']}';
+        }
+      }
+    } else if (endPoint == 'task') {
+      // Обработка фильтров для task (без изменений)
+      if (filters['task_number'] != null &&
+          filters['task_number'].isNotEmpty) {
+        path += '&task_number=${Uri.encodeComponent(filters['task_number'])}';
+      }
+      if (filters['department_id'] != null) {
+        path += '&department_id=${filters['department_id']}';
+      }
+      if (filters['task_created_from'] != null) {
+        path += '&task_created_from=${filters['task_created_from']}';
+      }
+      if (filters['task_created_to'] != null) {
+        path += '&task_created_to=${filters['task_created_to']}';
+      }
+      if (filters['deadline_from'] != null) {
+        path += '&deadline_from=${filters['deadline_from']}';
+      }
+      if (filters['deadline_to'] != null) {
+        path += '&deadline_to=${filters['deadline_to']}';
+      }
+      if (filters['executor_ids'] != null &&
+          (filters['executor_ids'] as List).isNotEmpty) {
+        List<String> executorIds = (filters['executor_ids'] as List)
+            .map((id) => id.toString())
+            .toList();
+        for (String executorId in executorIds) {
+          path += '&executor_ids[]=$executorId';
+        }
+      }
+      if (filters['author_ids'] != null &&
+          (filters['author_ids'] as List).isNotEmpty) {
+        List<int> authorIds = (filters['author_ids'] as List).cast<int>();
+        for (int authorId in authorIds) {
+          path += '&author_ids[]=$authorId';
+        }
+      }
+      if (filters['project_ids'] != null &&
+          (filters['project_ids'] as List).isNotEmpty) {
+        List<int> projectIds = (filters['project_ids'] as List).cast<int>();
+        for (int projectId in projectIds) {
+          path += '&project_ids[]=$projectId';
+        }
+      }
+      if (filters['task_status_ids'] != null &&
+          (filters['task_status_ids'] as List).isNotEmpty) {
+        List<int> taskStatusIds =
+            (filters['task_status_ids'] as List).cast<int>();
+        for (int statusId in taskStatusIds) {
+          path += '&task_status_ids[]=$statusId';
+        }
+      }
+      if (filters['unread_only'] == true) {
+        path += '&unread_only=1';
+      }
     }
   }
+
+  final fullUrl = '$baseUrl$path';
+  
+  // ДОБАВЛЕНО: Отладочный вывод
+  print('ApiService.getAllChats: Final URL: $fullUrl');
+
+  try {
+    final response = await http.get(
+      Uri.parse(fullUrl),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'User-Agent': 'FlutterApp/1.0',
+        'Cache-Control': 'no-cache',
+      },
+    );
+
+    if (response.statusCode == 302) {
+      throw Exception('Получен редирект 302. Проверьте URL и авторизацию.');
+    }
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['result'] != null) {
+        final pagination = PaginationDTO<Chats>.fromJson(data['result'], (e) {
+          return Chats.fromJson(e);
+        });
+        return pagination;
+      } else {
+        throw Exception('Результат отсутствует в ответе');
+      }
+    } else {
+      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+    }
+  } catch (e) {
+    print('ApiService.getAllChats: Error: $e');
+    rethrow;
+  }
+}
 Future<String> getDynamicBaseUrlFixed() async {
   // Сначала проверяем кешированное значение
   SharedPreferences prefs = await SharedPreferences.getInstance();

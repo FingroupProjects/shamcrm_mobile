@@ -21,8 +21,8 @@ class LogoutButtonWidget extends StatelessWidget {
         // Очистка SharedPreferences
         SharedPreferences prefs = await SharedPreferences.getInstance();
         String? token = prefs.getString('token') ?? '';
-        print('------=-=--=-==--=-=-=-=-=-=-TOKEN LOGOUT =-=-=-==--=-=-=-=-==--==-=-');
-        print(token);
+        //print('------=-=--=-==--=-=-=-=-=-=-TOKEN LOGOUT =-=-=-==--=-=-=-=-==--==-=-');
+        //print(token);
         await prefs.clear();
 
 

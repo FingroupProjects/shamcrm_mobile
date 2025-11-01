@@ -21,7 +21,7 @@ class DomainBloc extends Bloc<DomainEvent, DomainState> {
     try {
       final token = await apiService.getToken();
       if (token == null || token.isEmpty) {
-        print('DomainBloc: Token is null or empty');
+        ////print('DomainBloc: Token is null or empty');
         return false;
       }
 
@@ -42,7 +42,7 @@ class DomainBloc extends Bloc<DomainEvent, DomainState> {
           
           if (enteredDomain == null || enteredDomain.isEmpty ||
               enteredMainDomain == null || enteredMainDomain.isEmpty) {
-            print('DomainBloc: No valid domain found');
+            ////print('DomainBloc: No valid domain found');
             return false;
           }
         }
@@ -50,7 +50,7 @@ class DomainBloc extends Bloc<DomainEvent, DomainState> {
 
       return true;
     } catch (e) {
-      print('DomainBloc: Error validating session: $e');
+      ////print('DomainBloc: Error validating session: $e');
       return false;
     }
   }
@@ -60,9 +60,9 @@ class DomainBloc extends Bloc<DomainEvent, DomainState> {
     try {
       await apiService.logout();
       await apiService.reset();
-      print('DomainBloc: Session data cleared');
+      ////print('DomainBloc: Session data cleared');
     } catch (e) {
-      print('DomainBloc: Error clearing session data: $e');
+      ////print('DomainBloc: Error clearing session data: $e');
     }
   }
 
@@ -79,10 +79,10 @@ class DomainBloc extends Bloc<DomainEvent, DomainState> {
       }
 
       try {
-        print('DomainBloc: Checking email: ${event.email}');
+        ////print('DomainBloc: Checking email: ${event.email}');
         
         final userInfo = await apiService.getUserByEmail(event.email);
-        print('DomainBloc: User info received: $userInfo');
+        ////print('DomainBloc: User info received: $userInfo');
         
         // Проверяем полученные данные
         if (userInfo['domain'] == null || userInfo['domain']!.isEmpty) {
@@ -102,7 +102,7 @@ class DomainBloc extends Bloc<DomainEvent, DomainState> {
           organizationId: userInfo['organization_id']
         );
         
-        print('DomainBloc: Data saved, initializing API');
+        ////print('DomainBloc: Data saved, initializing API');
         
         // Инициализируем API с новым доменом
         await apiService.initializeWithEmailFlow();
@@ -117,11 +117,11 @@ class DomainBloc extends Bloc<DomainEvent, DomainState> {
           return;
         }
         
-        print('DomainBloc: API initialized successfully');
+        ////print('DomainBloc: API initialized successfully');
         emit(EmailVerified(userInfo['login']!));
         
       } catch (e) {
-        print('DomainBloc: Error in CheckEmail: $e');
+        ////print('DomainBloc: Error in CheckEmail: $e');
         
         // При критической ошибке очищаем данные
         await _clearSessionData();
@@ -154,11 +154,11 @@ class DomainBloc extends Bloc<DomainEvent, DomainState> {
       }
 
       try {
-        print('DomainBloc: Checking domain: ${event.domain}');
+        ////print('DomainBloc: Checking domain: ${event.domain}');
         
         // Проверяем валидность сессии перед проверкой домена
         if (!await _validateSessionData()) {
-          print('DomainBloc: Invalid session data detected');
+          ////print('DomainBloc: Invalid session data detected');
           await _clearSessionData();
           emit(DomainError('Данные сессии повреждены, необходима повторная авторизация'));
           return;
@@ -168,7 +168,7 @@ class DomainBloc extends Bloc<DomainEvent, DomainState> {
         emit(DomainLoaded(domainCheck));
         
       } catch (e) {
-        print('DomainBloc: Error in CheckDomain: $e');
+        ////print('DomainBloc: Error in CheckDomain: $e');
         
         // При критической ошибке очищаем данные
         if (e.toString().contains('401') || 
@@ -188,14 +188,14 @@ class DomainBloc extends Bloc<DomainEvent, DomainState> {
       try {
         final isValid = await _validateSessionData();
         if (!isValid) {
-          print('DomainBloc: Session validation failed');
+          ////print('DomainBloc: Session validation failed');
           await _clearSessionData();
           emit(DomainError('Сессия недействительна, необходима повторная авторизация'));
         } else {
           emit(SessionValid());
         }
       } catch (e) {
-        print('DomainBloc: Error validating session: $e');
+        ////print('DomainBloc: Error validating session: $e');
         await _clearSessionData();
         emit(DomainError('Ошибка проверки сессии'));
       }
@@ -207,7 +207,7 @@ class DomainBloc extends Bloc<DomainEvent, DomainState> {
         await _clearSessionData();
         emit(SessionCleared());
       } catch (e) {
-        print('DomainBloc: Error clearing session: $e');
+        ////print('DomainBloc: Error clearing session: $e');
         emit(DomainError('Ошибка очистки данных'));
       }
     });

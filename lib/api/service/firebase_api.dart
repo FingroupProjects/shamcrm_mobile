@@ -27,18 +27,18 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       await Firebase.initializeApp();
     }
     
-    print('Фоновое уведомление: ${message.messageId}');
+    //print('Фоновое уведомление: ${message.messageId}');
     if (message.data.isNotEmpty) {
       message.data.forEach((key, value) {
-        print('Custom Data - Key: $key, Value: $value');
+        //print('Custom Data - Key: $key, Value: $value');
       });
     } else {
-      print('Нет кастомных данных в уведомлении в фоне');
+      //print('Нет кастомных данных в уведомлении в фоне');
     }
-    print('Заголовок: ${message.notification?.title}');
-    print('Сообщение: ${message.notification?.body}');
+    //print('Заголовок: ${message.notification?.title}');
+    //print('Сообщение: ${message.notification?.body}');
   } catch (e) {
-    print('Ошибка обработки фонового сообщения: $e');
+    //print('Ошибка обработки фонового сообщения: $e');
   }
 }
 
@@ -55,7 +55,7 @@ class FirebaseApi {
     try {
       // КРИТИЧЕСКАЯ ПРОВЕРКА: Firebase должен быть инициализирован
       if (Firebase.apps.isEmpty) {
-        print('FirebaseApi: Firebase не инициализирован, пропускаем настройку уведомлений');
+        //print('FirebaseApi: Firebase не инициализирован, пропускаем настройку уведомлений');
         return;
       }
 
@@ -63,12 +63,12 @@ class FirebaseApi {
       try {
         Firebase.app();
       } catch (e) {
-        print('FirebaseApi: Default Firebase app недоступен: $e');
+        //print('FirebaseApi: Default Firebase app недоступен: $e');
         return;
       }
 
       if (_isInitialized) {
-        print('FirebaseApi уже инициализирован');
+        //print('FirebaseApi уже инициализирован');
         return;
       }
 
@@ -80,7 +80,7 @@ class FirebaseApi {
       );
 
       if (settings.authorizationStatus != AuthorizationStatus.authorized) {
-        print('User declined or has not accepted notification permission');
+        //print('User declined or has not accepted notification permission');
         return;
       }
 
@@ -88,7 +88,7 @@ class FirebaseApi {
       if (Platform.isIOS) {
         String? apnsToken = await _firebaseMessaging.getAPNSToken();
         if (apnsToken == null) {
-          print('APNS token is not available yet. Skipping FCM token retrieval.');
+          //print('APNS token is not available yet. Skipping FCM token retrieval.');
           return;
         }
       }
@@ -96,31 +96,31 @@ class FirebaseApi {
       // Получаем FCM-токен
       final fcmToken = await _firebaseMessaging.getToken();
       if (fcmToken != null) {
-        print('FCM Token: $fcmToken');
+        //print('FCM Token: $fcmToken');
       } else {
-        print('Failed to get FCM token');
+        //print('Failed to get FCM token');
       }
 
       // Безопасная регистрация background handler
       try {
         if (Firebase.apps.isNotEmpty) {
           FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-          print('Background message handler зарегистрирован');
+          //print('Background message handler зарегистрирован');
         }
       } catch (e) {
         if (e.toString().contains('already')) {
-          print('Background handler уже зарегистрирован');
+          //print('Background handler уже зарегистрирован');
         } else {
-          print('Ошибка регистрации background handler: $e');
+          //print('Ошибка регистрации background handler: $e');
         }
       }
 
       await initPushNotification();
       _isInitialized = true;
-      print('FirebaseApi успешно инициализирован');
+      //print('FirebaseApi успешно инициализирован');
 
     } catch (e) {
-      print('Error initializing notifications: $e');
+      //print('Error initializing notifications: $e');
       // НЕ пробрасываем ошибку дальше
     }
   }
@@ -130,16 +130,16 @@ class FirebaseApi {
       _initialMessage = await FirebaseMessaging.instance.getInitialMessage();
 
       FirebaseMessaging.onMessageOpenedApp.listen((message) {
-        print('Пользователь нажал на уведомление: ${message.messageId}');
+        //print('Пользователь нажал на уведомление: ${message.messageId}');
         handleMessage(message);
       });
 
       FirebaseMessaging.onMessage.listen((message) {
-        print('Уведомление при активном приложении: ${message.notification?.title}');
+        //print('Уведомление при активном приложении: ${message.notification?.title}');
         _printCustomData(message);
       });
     } catch (e) {
-      print('Ошибка инициализации push уведомлений: $e');
+      //print('Ошибка инициализации push уведомлений: $e');
     }
   }
 
@@ -150,10 +150,10 @@ class FirebaseApi {
   void _printCustomData(RemoteMessage? message) {
     if (message != null && message.data.isNotEmpty) {
       message.data.forEach((key, value) {
-        print('Custom Data - Key: $key, Value: $value');
+        //print('Custom Data - Key: $key, Value: $value');
       });
     } else {
-      print('Нет кастомных данных в уведомлении');
+      //print('Нет кастомных данных в уведомлении');
     }
   }
 
@@ -162,7 +162,7 @@ class FirebaseApi {
       final ApiService _apiService = ApiService();
 
       if (message == null || message.data.isEmpty) {
-        print('handleMessage: сообщение пустое или данные отсутствуют');
+        //print('handleMessage: сообщение пустое или данные отсутствуют');
         return;
       }
 
@@ -170,16 +170,16 @@ class FirebaseApi {
       final id = message.data['id'];
 
       if (type == null || id == null) {
-        print('handleMessage: отсутствует тип или id уведомления');
+        //print('handleMessage: отсутствует тип или id уведомления');
         return;
       }
 
-      print('Обработка уведомления с типом: $type, ID: $id');
+      //print('Обработка уведомления с типом: $type, ID: $id');
 
       int? screenIndex;
       switch (type) {
         case 'message':
-          print('Переход на экран чата с ID: $id');
+          //print('Переход на экран чата с ID: $id');
 
           bool hasDealRead = await _apiService.hasPermission('deal.read');
           bool hasDashboard = await _apiService.hasPermission('section.dashboard');
@@ -213,52 +213,52 @@ class FirebaseApi {
         case 'task':
         case 'taskFinished':
         case 'taskOutDated':
-          print('Переход на экран задачи с ID: $id');
+          //print('Переход на экран задачи с ID: $id');
           screenIndex = 1;
           await navigateToScreen(screenIndex, id, 'task', message);
           break;
 
         case 'notice':
-          print('Переход на экран лида с ID: $id');
+          //print('Переход на экран лида с ID: $id');
           screenIndex = 2;
           await navigateToScreen(screenIndex, id, 'lead', message);
           break;
 
         case 'dealDeadLineNotification':
-          print('Переход на экран сделки с ID: $id');
+          //print('Переход на экран сделки с ID: $id');
           screenIndex = 3;
           await navigateToScreen(screenIndex, id, 'dealDeadLineNotification', message);
           break;
 
         case 'lead':
         case 'updateLeadStatus':
-          print('Переход на экран лида с ID: $id');
+          //print('Переход на экран лида с ID: $id');
           screenIndex = 2;
           await navigateToScreen(screenIndex, id, 'lead', message);
           break;
 
         case 'myTaskOutDated':
-          print('Переход на экран мои задачи с ID: $id');
+          //print('Переход на экран мои задачи с ID: $id');
           screenIndex = -1;
           await navigateToScreen(screenIndex, id, 'myTask', message);
           break;
 
         case 'eventId':
-          print('Переход на экран лида с ID: $id');
+          //print('Переход на экран лида с ID: $id');
           screenIndex = 2;
           await navigateToScreen(screenIndex, id, 'eventId', message);
           break;
 
         case 'orders':
-          print('Переход на экран заказов с ID: $id');
+          //print('Переход на экран заказов с ID: $id');
           screenIndex = 3;
           await navigateToScreen(screenIndex, id, 'orders', message);
           break;
         default:
-          print('handleMessage: Неизвестный тип: $type');
+          //print('handleMessage: Неизвестный тип: $type');
       }
     } catch (e) {
-      print('Ошибка обработки сообщения: $e');
+      //print('Ошибка обработки сообщения: $e');
     }
   }
 
@@ -311,13 +311,13 @@ class FirebaseApi {
             await navigateToOrdersScreen(id, message);
             break;
           default:
-            print('Не удалось перейти на экран: $type');
+            //print('Не удалось перейти на экран: $type');
         }
       } else {
-        print('Navigator не доступен');
+        //print('Navigator не доступен');
       }
     } catch (e) {
-      print('Ошибка навигации к экрану: $e');
+      //print('Ошибка навигации к экрану: $e');
     }
   }
 
@@ -358,7 +358,7 @@ class FirebaseApi {
             }
             break;
           default:
-            print('Неизвестный тип чата');
+            //print('Неизвестный тип чата');
             return;
         }
 
@@ -388,20 +388,20 @@ class FirebaseApi {
           ));
         }
       } catch (e) {
-        print("Ошибка загрузки данных чата: $e");
+        //print("Ошибка загрузки данных чата: $e");
       }
     }
   }
 
   Future<void> navigateToTaskScreen(String id, RemoteMessage message) async {
     try {
-      print('Received push notification data: ${message.data}');
+      //print('Received push notification data: ${message.data}');
 
       final taskId = message.data['id'];
       final taskNumber = int.tryParse(message.data['taskNumber'] ?? '');
 
-      print('taskId: $taskId');
-      print('taskNumber: $taskNumber');
+      //print('taskId: $taskId');
+      //print('taskNumber: $taskNumber');
 
       if (taskId != null && navigatorKey.currentState != null) {
         navigatorKey.currentState?.push(
@@ -418,7 +418,7 @@ class FirebaseApi {
         );
       }
     } catch (e) {
-      print('Ошибка навигации к экрану задачи: $e');
+      //print('Ошибка навигации к экрану задачи: $e');
     }
   }
 
@@ -438,7 +438,7 @@ class FirebaseApi {
         );
       }
     } catch (e) {
-      print('Ошибка навигации к экрану лида: $e');
+      //print('Ошибка навигации к экрану лида: $e');
     }
   }
 
@@ -461,7 +461,7 @@ class FirebaseApi {
         );
       }
     } catch (e) {
-      print('Ошибка навигации к экрану моих задач: $e');
+      //print('Ошибка навигации к экрану моих задач: $e');
     }
   }
 
@@ -478,7 +478,7 @@ class FirebaseApi {
         );
       }
     } catch (e) {
-      print('Ошибка навигации к экрану событий: $e');
+      //print('Ошибка навигации к экрану событий: $e');
     }
   }
 
@@ -503,7 +503,7 @@ class FirebaseApi {
         );
       }
     } catch (e) {
-      print('Ошибка навигации к экрану сделки: $e');
+      //print('Ошибка навигации к экрану сделки: $e');
     }
   }
 
@@ -529,7 +529,7 @@ class FirebaseApi {
         );
       }
     } catch (e) {
-      print('Ошибка навигации к экрану заказов: $e');
+      //print('Ошибка навигации к экрану заказов: $e');
     }
   }
 
@@ -537,17 +537,17 @@ class FirebaseApi {
   Future<String?> getFCMToken() async {
     try {
       if (Firebase.apps.isEmpty) {
-        print('Firebase не инициализирован');
+        //print('Firebase не инициализирован');
         return null;
       }
 
       final String? token = await _firebaseMessaging.getToken();
       if (token != null) {
-        print('FCM Token получен: ${token.substring(0, 20)}...');
+        //print('FCM Token получен: ${token.substring(0, 20)}...');
       }
       return token;
     } catch (e) {
-      print('Ошибка получения FCM токена: $e');
+      //print('Ошибка получения FCM токена: $e');
       return null;
     }
   }
@@ -555,28 +555,28 @@ class FirebaseApi {
   Future<void> subscribeToTopic(String topic) async {
     try {
       if (Firebase.apps.isEmpty) {
-        print('Firebase не инициализирован, не можем подписаться на топик');
+        //print('Firebase не инициализирован, не можем подписаться на топик');
         return;
       }
       
       await _firebaseMessaging.subscribeToTopic(topic);
-      print('Подписались на топик: $topic');
+      //print('Подписались на топик: $topic');
     } catch (e) {
-      print('Ошибка подписки на топик $topic: $e');
+      //print('Ошибка подписки на топик $topic: $e');
     }
   }
 
   Future<void> unsubscribeFromTopic(String topic) async {
     try {
       if (Firebase.apps.isEmpty) {
-        print('Firebase не инициализирован, не можем отписаться от топика');
+        //print('Firebase не инициализирован, не можем отписаться от топика');
         return;
       }
       
       await _firebaseMessaging.unsubscribeFromTopic(topic);
-      print('Отписались от топика: $topic');
+      //print('Отписались от топика: $topic');
     } catch (e) {
-      print('Ошибка отписки от топика $topic: $e');
+      //print('Ошибка отписки от топика $topic: $e');
     }
   }
 

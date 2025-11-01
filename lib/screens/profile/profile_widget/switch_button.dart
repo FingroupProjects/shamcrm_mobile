@@ -31,7 +31,7 @@ class _ToggleFeatureButtonState extends State<ToggleFeatureButton> {
     });
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setBool('switchContact', _isFeatureEnabled);
-    print('ToggleFeatureButton: switchContact set to: $_isFeatureEnabled'); // Новый лог
+    //print('ToggleFeatureButton: switchContact set to: $_isFeatureEnabled'); // Новый лог
   }
 
   @override

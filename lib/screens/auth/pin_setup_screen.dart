@@ -75,22 +75,22 @@ Future<void> _fetchMiniAppSettings() async {
   try {
     final prefs = await SharedPreferences.getInstance();
     final organizationId = await _apiService.getSelectedOrganization();
-    print('Fetching MiniAppSettings for organizationId: $organizationId');
+    //print('Fetching MiniAppSettings for organizationId: $organizationId');
     
     final settingsList = await _apiService.getMiniAppSettings(organizationId);
     
     if (settingsList.isNotEmpty) {
       final settings = settingsList.first;
-      print('Saving currency_id: ${settings.currencyId}');
+      //print('Saving currency_id: ${settings.currencyId}');
       await prefs.setInt('currency_id', settings.currencyId);
     } else {
-      print('No settings found for organizationId: $organizationId');
+      //print('No settings found for organizationId: $organizationId');
     }
   } catch (e) {
-    print('Error fetching mini-app settings: $e');
+    //print('Error fetching mini-app settings: $e');
     final prefs = await SharedPreferences.getInstance();
     final savedCurrencyId = prefs.getInt('currency_id');
-    print('Using cached currency_id: $savedCurrencyId');
+    //print('Using cached currency_id: $savedCurrencyId');
   }
 }
 
@@ -145,11 +145,11 @@ Future<void> _fetchMiniAppSettings() async {
         _toBool(response['result']['managing_deal_status_visibility'])
       );      
       if (kDebugMode) {
-        print('PinScreen: Настройки сохранены: good_measurement = ${response['result']['good_measurement']}');
+        //print('PinScreen: Настройки сохранены: good_measurement = ${response['result']['good_measurement']}');
       }
     }
   } catch (e) {
-    print('Error fetching settings: $e');
+    //print('Error fetching settings: $e');
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('integration_with_1C', false);
     // Добавляем значение по умолчанию для good_measurement
@@ -240,7 +240,7 @@ Future<void> _fetchMiniAppSettings() async {
         isPermissionsLoaded = true;
       });
     } catch (e) {
-      //print('Error loading user role: $e');
+      ////print('Error loading user role: $e');
       setState(() {
         userRoleId = 0;
       });
