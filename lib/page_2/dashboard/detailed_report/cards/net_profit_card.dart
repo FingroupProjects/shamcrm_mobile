@@ -44,8 +44,8 @@ class NetProfitCard extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 14,
                     fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w400,
-                    color: Color(0xff99A4BA),
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff1E2E52),
                   ),
                 ),
               ],
