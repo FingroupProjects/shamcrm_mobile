@@ -1833,5 +1833,10 @@
   "title_with_two_dots": "Title: ",
   "title_without_dots": "Title",
   "goods_added_go_to_main": "Items added. Go to 'Main' to save.",
-  "go": "Go"
+  "go": "Go",
+  "COMMENT_TITLE_SCREEN_APP_UPDATE": "----------------------------Texts for app update----------------------------",
+  "app_update_available_title": "Update Available",
+  "app_update_available_message": "A new version of the app is available. Please update to get new features and fixes.",
+  "app_update_button": "Update",
+  "app_update_dismiss": "Later"
 }
