@@ -1838,8 +1838,8 @@
   "goods_added_go_to_main": "Товары добавлены. Перейдите в «Основное» для сохранения.",
   "go": "Перейти",
   "COMMENT_TITLE_SCREEN_APP_UPDATE": "----------------------------Тексты для обновления приложения----------------------------",
-  "app_update_available_title": "Доступно обновление",
-  "app_update_available_message": "Доступна новая версия приложения. Пожалуйста, обновите для получения новых функций и исправлений.",
+  "app_update_available_title": "Обновление",
+  "app_update_available_message": "Доступна новая версия приложения",
   "app_update_button": "Обновить",
   "app_update_dismiss": "Позже"
 }
