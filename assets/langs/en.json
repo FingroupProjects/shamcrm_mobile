@@ -1123,6 +1123,7 @@
   "select_call_type": "Select call type",
   "operator": "Operator",
   "select_operator": "Select operator",
+  "of_total": "оf total",
   "rating": "Rating",
   "select_rating": "Select rating",
   "remark": "Remark",

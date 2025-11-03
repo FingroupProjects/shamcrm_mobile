@@ -1158,6 +1158,7 @@
   "total_calls": "Всего звонков",
   "call_type_stats": "Количество звонков",
   "operator_efficiency": "Эффективность работы",
+  "of_total": "от общего",
   "unanswered": "Без ответа",
   "duplicate_options": "Функция переноса",
   "duplicate": "Дублировать",
