@@ -995,7 +995,7 @@ Widget _buildVoicePlayer(String? recordUrl, int? callDuration) {
       'value': notice.body,
     },
     {
-      'label': AppLocalizations.of(context)!.translate('date'),
+      'label': AppLocalizations.of(context)!.translate('date_reminder'),
       'value': notice.date != null
           ? formatDate(notice.date.toString())
           : AppLocalizations.of(context)!.translate(''),
