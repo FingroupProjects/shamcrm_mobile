@@ -10277,7 +10277,6 @@ Future<String> _appendQueryParams(String path) async {
       //print('ApiService: getCallStatistics - Generated path: $path');
     }
 
-    try {
       final response = await _getRequest(path);
 
       if (response.statusCode == 200) {
@@ -10292,10 +10291,8 @@ Future<String> _appendQueryParams(String path) async {
       } else {
         throw ('Ошибка загрузки данных статистики звонков');
       }
-    } catch (e) {
-      throw ('Ошибка получения данных статистики звонков');
     }
-  }
+
 
   Future<CallAnalytics> getCallAnalytics() async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
@@ -10305,7 +10302,6 @@ Future<String> _appendQueryParams(String path) async {
       //print('ApiService: getCallAnalytics - Generated path: $path');
     }
 
-    try {
       final response = await _getRequest(path);
 
       if (response.statusCode == 200) {
@@ -10320,10 +10316,8 @@ Future<String> _appendQueryParams(String path) async {
       } else {
         throw ('Ошибка загрузки данных статистики звонков');
       }
-    } catch (e) {
-      throw ('Ошибка получения данных статистики звонков');
     }
-  }
+
 
   Future<MonthlyCallStats> getMonthlyCallStats(int operatorId) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
