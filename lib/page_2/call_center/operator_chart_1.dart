@@ -64,122 +64,124 @@ class OperatorChartRating extends StatelessWidget {
             ),
           ),
         ),
-        Row(
-          children: cardData.asMap().entries.map((entry) {
-            final index = entry.key;
-            final data = entry.value;
+        IntrinsicHeight(
+          child: Row(
+            children: cardData.asMap().entries.map((entry) {
+              final index = entry.key;
+              final data = entry.value;
 
-            return Expanded(
-              child: Padding(
-                padding: EdgeInsets.only(
-                  right: index == 0 ? 8 : 0,
-                  left: index == 1 ? 8 : 0,
-                ),
-                child: Container(
-                  padding: const EdgeInsets.all(20.0),
-                  decoration: BoxDecoration(
-                    color: data['backgroundColor'],
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+              return Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    right: index == 0 ? 8 : 0,
+                    left: index == 1 ? 8 : 0,
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            data['icon'],
-                            color: data['textColor'],
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              data['title'],
-                              style: TextStyle(
-                                fontFamily: 'Gilroy',
-                                fontWeight: FontWeight.w500,
-                                fontSize: 14,
-                                color: data['textColor'].withOpacity(0.8),
-                                height: 1.3,
+                  child: Container(
+                    padding: const EdgeInsets.all(20.0),
+                    decoration: BoxDecoration(
+                      color: data['backgroundColor'],
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.04),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              data['icon'],
+                              color: data['textColor'],
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                data['title'],
+                                style: TextStyle(
+                                  fontFamily: 'Gilroy',
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 14,
+                                  color: data['textColor'].withOpacity(0.8),
+                                  height: 1.3,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Text(
-                                    data['mainValue'],
-                                    style: TextStyle(
-                                      fontFamily: 'Gilroy',
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 32,
-                                      color: data['textColor'],
-                                      height: 0.9,
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      data['mainValue'],
+                                      style: TextStyle(
+                                        fontFamily: 'Gilroy',
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 32,
+                                        color: data['textColor'],
+                                        height: 0.9,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    data['mainUnit'],
-                                    style: TextStyle(
-                                      fontFamily: 'Gilroy',
-                                      fontWeight: FontWeight.w500,
-                                      fontSize: 12,
-                                      color: data['textColor'].withOpacity(0.7),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      data['mainUnit'],
+                                      style: TextStyle(
+                                        fontFamily: 'Gilroy',
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 12,
+                                        color: data['textColor'].withOpacity(0.7),
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Text(
-                                    data['secondaryValue'],
-                                    style: TextStyle(
-                                      fontFamily: 'Gilroy',
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 24,
-                                      color: data['textColor'],
-                                      height: 0.9,
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      data['secondaryValue'],
+                                      style: TextStyle(
+                                        fontFamily: 'Gilroy',
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 24,
+                                        color: data['textColor'],
+                                        height: 0.9,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    data['secondaryUnit'],
-                                    style: TextStyle(
-                                      fontFamily: 'Gilroy',
-                                      fontWeight: FontWeight.w500,
-                                      fontSize: 12,
-                                      color: data['textColor'].withOpacity(0.7),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      data['secondaryUnit'],
+                                      style: TextStyle(
+                                        fontFamily: 'Gilroy',
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 12,
+                                        color: data['textColor'].withOpacity(0.7),
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ],
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            );
-          }).toList(),
+              );
+            }).toList(),
+          ),
         ),
       ],
     );

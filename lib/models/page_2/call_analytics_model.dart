@@ -26,10 +26,10 @@ class CallAnalytics {
 }
 
 class CallAnalyticsResult {
-  final int unansweredNotCalledBack;
-  final int todaysTotalMissedCalls;
-  final int todaysTotalOutgoingCalls;
-  final int operatorsInCall;
+  final num unansweredNotCalledBack;
+  final num todaysTotalMissedCalls;
+  final num todaysTotalOutgoingCalls;
+  final num operatorsInCall;
 
   CallAnalyticsResult({
     required this.unansweredNotCalledBack,

@@ -647,6 +647,7 @@ class _MyAppState extends State<MyApp> {
   try {
     final newVersionPlus = NewVersionPlus();
     final status = await newVersionPlus.getVersionStatus();
+    debugPrint("APP_VERSION: Current: ${status?.localVersion}, Store: ${status?.storeVersion}");
     
     if (status == null) return;
     if (!mounted || !context.mounted) return;
