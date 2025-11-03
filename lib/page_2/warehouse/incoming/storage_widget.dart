@@ -24,18 +24,17 @@ class StorageWidget extends StatefulWidget {
 
 class _StorageWidgetState extends State<StorageWidget> {
   WareHouse? selectedStorageData;
+  bool _isInitialLoad = true; // ✅ Track if this is the first load
 
   @override
   void initState() {
     super.initState();
-    // ✅ ИСПРАВЛЕНИЕ: Всегда загружаем актуальные данные при инициализации
     context.read<StorageBloc>().add(FetchStorage());
   }
 
   @override
   void didUpdateWidget(StorageWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // ✅ Обновляем выбранный склад если изменился извне
     if (oldWidget.selectedStorage != widget.selectedStorage) {
       final currentState = context.read<StorageBloc>().state;
       if (currentState is StorageLoaded) {
@@ -58,6 +57,13 @@ class _StorageWidgetState extends State<StorageWidget> {
   Widget build(BuildContext context) {
     return BlocListener<StorageBloc, StorageState>(
       listener: (context, state) {
+        // ✅ Mark as loaded when data arrives
+        if (state is StorageLoaded && _isInitialLoad) {
+          setState(() {
+            _isInitialLoad = false;
+          });
+        }
+
         if (state is StorageError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -87,7 +93,6 @@ class _StorageWidgetState extends State<StorageWidget> {
         builder: (context, state) {
           final isLoading = state is StorageLoading;
 
-          // Обновляем данные при успешной загрузке
           if (state is StorageLoaded) {
             List<WareHouse> storageList = state.storageList;
 
@@ -103,7 +108,6 @@ class _StorageWidgetState extends State<StorageWidget> {
             }
           }
 
-          // Всегда отображаем поле
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -235,7 +239,11 @@ class _StorageWidgetState extends State<StorageWidget> {
                     state.storageList.contains(selectedStorageData))
                     ? selectedStorageData
                     : null,
+                // ✅ FIX: Don't validate while data is loading or on initial load
                 validator: (value) {
+                  if (_isInitialLoad || isLoading) {
+                    return null; // Skip validation during initial load
+                  }
                   if (value == null) {
                     return AppLocalizations.of(context)!
                         .translate('field_required_project');
