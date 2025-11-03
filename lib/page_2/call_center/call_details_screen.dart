@@ -498,86 +498,86 @@ String formatDate(DateTime? date) {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Container(
-                  width: 24,
-                  height: 24,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Color(0xff1E2E52),
-                  ),
-                  child: const Center(
-                    child: Icon(
-                      Icons.phone,
-                      color: Colors.white,
-                      size: 16,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  AppLocalizations.of(context)!.translate('lead_deal_card'),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w400,
-                    color: Color(0xff99A4BA),
-                  ),
-                ),
-                Expanded(
-                  child: Text(
-                    callData!['caller']!,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xff1E2E52),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Container(
-                  width: 24,
-                  height: 24,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Color(0xff1E2E52),
-                  ),
-                  child: const Center(
-                    child: Icon(
-                      Icons.timer,
-                      color: Colors.white,
-                      size: 16,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  AppLocalizations.of(context)!.translate('call_duration_title') + ' ',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w400,
-                    color: Color(0xff99A4BA),
-                  ),
-                ),
-                Text(
-                  callData!['call_duration']!,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xff1E2E52),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
+            // Row(
+            //   children: [
+            //     Container(
+            //       width: 24,
+            //       height: 24,
+            //       decoration: const BoxDecoration(
+            //         shape: BoxShape.circle,
+            //         color: Color(0xff1E2E52),
+            //       ),
+            //       child: const Center(
+            //         child: Icon(
+            //           Icons.phone,
+            //           color: Colors.white,
+            //           size: 16,
+            //         ),
+            //       ),
+            //     ),
+            //     const SizedBox(width: 8),
+            //     Text(
+            //       AppLocalizations.of(context)!.translate('lead_deal_card'),
+            //       style: const TextStyle(
+            //         fontSize: 16,
+            //         fontFamily: 'Gilroy',
+            //         fontWeight: FontWeight.w400,
+            //         color: Color(0xff99A4BA),
+            //       ),
+            //     ),
+            //     Expanded(
+            //       child: Text(
+            //         callData!['caller']!,
+            //         style: const TextStyle(
+            //           fontSize: 16,
+            //           fontFamily: 'Gilroy',
+            //           fontWeight: FontWeight.w500,
+            //           color: Color(0xff1E2E52),
+            //         ),
+            //       ),
+            //     ),
+            //   ],
+            // ),
+            // const SizedBox(height: 12),
+            // Row(
+            //   children: [
+            //     Container(
+            //       width: 24,
+            //       height: 24,
+            //       decoration: const BoxDecoration(
+            //         shape: BoxShape.circle,
+            //         color: Color(0xff1E2E52),
+            //       ),
+            //       child: const Center(
+            //         child: Icon(
+            //           Icons.timer,
+            //           color: Colors.white,
+            //           size: 16,
+            //         ),
+            //       ),
+            //     ),
+            //     const SizedBox(width: 8),
+            //     Text(
+            //       AppLocalizations.of(context)!.translate('call_duration_title') + ' ',
+            //       style: const TextStyle(
+            //         fontSize: 16,
+            //         fontFamily: 'Gilroy',
+            //         fontWeight: FontWeight.w400,
+            //         color: Color(0xff99A4BA),
+            //       ),
+            //     ),
+            //     Text(
+            //       callData!['call_duration']!,
+            //       style: const TextStyle(
+            //         fontSize: 16,
+            //         fontFamily: 'Gilroy',
+            //         fontWeight: FontWeight.w500,
+            //         color: Color(0xff1E2E52),
+            //       ),
+            //     ),
+            //   ],
+            // ),
+            // const SizedBox(height: 12),
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
