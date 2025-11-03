@@ -1852,5 +1852,6 @@
   "close_dialog": "Yopish",
   "movement_history": "Harakatlar tarixi",
   "income_document": "Kirim",
-  "outcome_document": "Chiqim"
+  "outcome_document": "Chiqim",
+  "change_status": "Holatni o'zgartirish"
 }

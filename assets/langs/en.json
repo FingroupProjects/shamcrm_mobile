@@ -1853,5 +1853,6 @@
   "close_dialog": "Close",
   "movement_history": "Movement History",
   "income_document": "Income",
-  "outcome_document": "Outcome"
+  "outcome_document": "Outcome",
+  "change_status": "Change Status"
 }
