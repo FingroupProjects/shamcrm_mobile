@@ -1,4 +1,4 @@
-// lib/screens/deal/tabBar/deal_details/action_history_widget.dart
+// lib/screens/deal/tabBar/deal_details/dropdown_history.dart
 
 import 'dart:convert';
 import 'package:crm_task_manager/models/lead_history_model.dart';
@@ -42,7 +42,12 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
               SnackBar(
                 content: Text(
                   state.message,
-                  style: const TextStyle(fontFamily: 'Gilroy', fontSize: 16, fontWeight: FontWeight.w500, color: Colors.white),
+                  style: const TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
                 ),
                 behavior: SnackBarBehavior.floating,
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -58,7 +63,7 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
 
         return _buildExpandableActionContainer(
           'История действий',
-          _buildActionHistoryItems(actionHistory.cast<DealHistoryLead>()),
+          _buildActionHistoryItems(actionHistory),
           isActionHistoryExpanded,
           () => setState(() => isActionHistoryExpanded = !isActionHistoryExpanded),
         );
@@ -109,9 +114,18 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
       children: [
         Text(
           title,
-          style: const TextStyle(fontSize: 16, fontFamily: 'Gilroy', fontWeight: FontWeight.w500, color: Color(0xff1E2E52)),
+          style: const TextStyle(
+            fontSize: 16,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            color: Color(0xff1E2E52),
+          ),
         ),
-        Image.asset('assets/icons/tabBar/dropdown.png', width: 16, height: 16),
+        Image.asset(
+          'assets/icons/tabBar/dropdown.png',
+          width: 16,
+          height: 16,
+        ),
       ],
     );
   }
@@ -142,7 +156,12 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
                   padding: const EdgeInsets.only(bottom: 4),
                   child: Text(
                     d,
-                    style: const TextStyle(fontSize: 14, fontFamily: 'Gilroy', fontWeight: FontWeight.w400, color: Color(0xff1E2E52)),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w400,
+                      color: Color(0xff1E2E52),
+                    ),
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -160,7 +179,12 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
         Expanded(
           child: Text(
             status,
-            style: const TextStyle(fontSize: 14, fontFamily: 'Gilroy', fontWeight: FontWeight.w600, color: Color(0xff1E2E52)),
+            style: const TextStyle(
+              fontSize: 14,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w600,
+              color: Color(0xff1E2E52),
+            ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
@@ -169,7 +193,12 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
         Expanded(
           child: Text(
             userAndDate,
-            style: const TextStyle(fontSize: 14, fontFamily: 'Gilroy', fontWeight: FontWeight.w600, color: Color(0xff1E2E52)),
+            style: const TextStyle(
+              fontSize: 14,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w600,
+              color: Color(0xff1E2E52),
+            ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.end,
@@ -179,11 +208,10 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
     );
   }
 
- // MARK: - Формирование истории
-List<String> _buildActionHistoryItems(List<DealHistoryLead> history) {
-  return history.expand((deal) {
-    return deal.history.map((item) {
-      final userName = item.user?.fullName ?? 'Система'; // Используем fullName!
+  // MARK: - Формирование истории
+  List<String> _buildActionHistoryItems(List<DealHistory> history) {
+    return history.map((item) {
+      final userName = item.user?.fullName ?? 'Система';
       final date = DateFormat('dd.MM.yyyy HH:mm').format(item.date.toLocal());
       final header = '${item.status}\n$userName $date';
 
@@ -193,7 +221,7 @@ List<String> _buildActionHistoryItems(List<DealHistoryLead> history) {
 
       for (final change in item.changes) {
         for (final MapEntry(:key, :value) in change.body.entries) {
-          if (value is! ChangeValue) continue; // Добавляем проверку типа
+          if (value is! ChangeValue) continue;
 
           final prev = value.previousValue?.toString() ?? '';
           final next = value.newValue?.toString() ?? '';
@@ -203,9 +231,15 @@ List<String> _buildActionHistoryItems(List<DealHistoryLead> history) {
 
           final field = _formatFieldName(key);
 
+          // ✅ Для дат используем dd.MM.yyyy (кроме created_at и updated_at)
           if (key == 'start_date' || key == 'end_date' || key == 'status_update_date') {
-            final prevDate = _formatDate(prev);
-            final nextDate = _formatDate(next);
+            final prevDate = _formatDate(prev, withTime: false);
+            final nextDate = _formatDate(next, withTime: false);
+            lines.add('$field: $prevDate → $nextDate');
+          } else if (key == 'created_at' || key == 'updated_at') {
+            // ✅ Для "Создан" и "Изменен" оставляем с часами
+            final prevDate = _formatDate(prev, withTime: true);
+            final nextDate = _formatDate(next, withTime: true);
             lines.add('$field: $prevDate → $nextDate');
           } else {
             lines.add('$field: $prevText → $nextText');
@@ -214,9 +248,9 @@ List<String> _buildActionHistoryItems(List<DealHistoryLead> history) {
       }
 
       return lines.isEmpty ? header : '$header\n${lines.join('\n')}';
-    });
-  }).toList();
-}
+    }).toList();
+  }
+
   // MARK: - Названия полей
   String _formatFieldName(String key) {
     return switch (key) {
@@ -229,14 +263,21 @@ List<String> _buildActionHistoryItems(List<DealHistoryLead> history) {
       'sum' => 'Сумма',
       'description' => 'Описание',
       'status_update_date' => 'Дата обновления статуса',
+      'created_at' => 'Создан',
+      'updated_at' => 'Изменен',
       _ => key[0].toUpperCase() + key.substring(1).replaceAll('_', ' '),
     };
   }
 
   // MARK: - Формат даты
-  String _formatDate(String? dateStr) {
+  String _formatDate(String? dateStr, {bool withTime = false}) {
     if (dateStr == null || dateStr.isEmpty) return '—';
     final date = DateTime.tryParse(dateStr);
-    return date != null ? DateFormat('dd.MM.yyyy').format(date) : dateStr;
+    if (date == null) return dateStr;
+    
+    // ✅ Единый формат: dd.MM.yyyy или dd.MM.yyyy HH:mm
+    return withTime 
+        ? DateFormat('dd.MM.yyyy HH:mm').format(date)
+        : DateFormat('dd.MM.yyyy').format(date);
   }
 }

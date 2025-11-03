@@ -1859,5 +1859,6 @@
   "close_dialog": "Закрыть",
   "movement_history": "История движений",
   "income_document": "Приход",
-  "outcome_document": "Расход"
+  "outcome_document": "Расход",
+  "change_status": "Изменить статус"
 }
