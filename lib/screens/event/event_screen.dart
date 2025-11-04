@@ -508,7 +508,7 @@ int _tutorialStep = 0; // Добавляем шаг туториала
       },
       {
         'id': 2,
-        'title': localizations?.translate('finished') ?? 'Завершенные',
+        'title': localizations?.translate('finished_status') ?? 'Завершенные',
       },
     ];
 

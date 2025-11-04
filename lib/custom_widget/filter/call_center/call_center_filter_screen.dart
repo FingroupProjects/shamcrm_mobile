@@ -4,6 +4,7 @@ import 'package:crm_task_manager/custom_widget/filter/call_center/operator_multi
 import 'package:crm_task_manager/custom_widget/filter/call_center/rating_multi_select_widget.dart';
 import 'package:crm_task_manager/custom_widget/filter/call_center/status_multi_select_widget.dart';
 import 'package:crm_task_manager/custom_widget/filter/deal/lead_manager_list.dart';
+import 'package:crm_task_manager/custom_widget/custom_textfield_wh.dart';
 import 'package:crm_task_manager/models/lead_multi_model.dart';
 import 'package:crm_task_manager/models/page_2/operator_model.dart';
 import 'package:flutter/material.dart';
@@ -67,11 +68,8 @@ class _CallCenterFilterScreenState extends State<CallCenterFilterScreen> {
   final TextEditingController _startDateController = TextEditingController();
   final TextEditingController _endDateController = TextEditingController();
 
-  Key _callTypeSelectKey = UniqueKey();
   Key _operatorSelectKey = UniqueKey();
-  Key _statusSelectKey = UniqueKey();
   Key _ratingSelectKey = UniqueKey();
-  Key _remarkSelectKey = UniqueKey();
 
   @override
   void initState() {
@@ -115,13 +113,13 @@ class _CallCenterFilterScreenState extends State<CallCenterFilterScreen> {
     if (widget.initialStartDate != null) {
       startDate = DateTime.tryParse(widget.initialStartDate!);
       _startDateController.text = startDate != null
-          ? DateFormat('dd.MM.yyyy').format(startDate!)
+          ? DateFormat('dd/MM/yyyy').format(startDate!)
           : '';
     }
     if (widget.initialEndDate != null) {
       endDate = DateTime.tryParse(widget.initialEndDate!);
       _endDateController.text = endDate != null
-          ? DateFormat('dd.MM.yyyy').format(endDate!)
+          ? DateFormat('dd/MM/yyyy').format(endDate!)
           : '';
     }
     _loadFilterState();
@@ -189,16 +187,15 @@ class _CallCenterFilterScreenState extends State<CallCenterFilterScreen> {
       if (startDateString != null) {
         startDate = DateTime.tryParse(startDateString);
         _startDateController.text = startDate != null
-            ? DateFormat('dd.MM.yyyy').format(startDate!)
+            ? DateFormat('dd/MM/yyyy').format(startDate!)
             : '';
       }
       if (endDateString != null) {
         endDate = DateTime.tryParse(endDateString);
         _endDateController.text = endDate != null
-            ? DateFormat('dd.MM.yyyy').format(endDate!)
+            ? DateFormat('dd/MM/yyyy').format(endDate!)
             : '';
       }
-      _remarkSelectKey = UniqueKey();
     });
   }
 
@@ -268,17 +265,14 @@ void _resetFilters() {
     endDate = null;
     _startDateController.clear();
     _endDateController.clear();
-    _callTypeSelectKey = UniqueKey();
     _operatorSelectKey = UniqueKey();
-    _statusSelectKey = UniqueKey();
     _ratingSelectKey = UniqueKey();
-    _remarkSelectKey = UniqueKey();
   });
-  
+
   widget.onResetFilters?.call();
   _saveFilterState();
   context.read<CallCenterBloc>().add(ResetFilters());
-  
+
   // Уведомляем о сбросе фильтров
   widget.onSelectedDataFilter?.call({});
 }
@@ -303,56 +297,19 @@ void _resetFilters() {
     });
   }
 
-  Future<void> _selectDate(BuildContext context, bool isStartDate) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-      builder: (context, child) {
-        return Theme(
-          data: ThemeData.light().copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Colors.blueAccent,
-              onPrimary: Colors.white,
-              surface: Colors.white,
-            ),
-            textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.blueAccent,
-              ),
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (picked != null) {
-      setState(() {
-        if (isStartDate) {
-          startDate = picked;
-          _startDateController.text = DateFormat('dd.MM.yyyy').format(picked);
-        } else {
-          endDate = picked;
-          _endDateController.text = DateFormat('dd.MM.yyyy').format(picked);
-        }
-      });
-    }
-  }
-
 void _applyFilters() async {
   final prefs = await SharedPreferences.getInstance();
-  
+
   if (!_isAnyFilterSelected()) {
     await prefs.setBool('call_center_filters_active', false);
     Navigator.pop(context);
     return;
   }
-  
- 
+
+
   await _saveFilterState();
   await CallCache.clearAllCalls();
-  
+
   final filters = {
     'callTypes': _selectedCallTypes.isNotEmpty
         ? _selectedCallTypes.map((callType) => callType.id).toList()
@@ -375,11 +332,11 @@ void _applyFilters() async {
     'startDate': startDate != null ? startDate!.toIso8601String() : null,
     'endDate': endDate != null ? endDate!.toIso8601String() : null,
   };
-  
+
   if (kDebugMode) {
     print('CallCenterFilterScreen: Applying filters: $filters');
   }
-  
+
   widget.onSelectedDataFilter?.call(filters);
   context.read<CallCenterBloc>().add(FilterCalls(filters));
   Navigator.pop(context);
@@ -388,7 +345,7 @@ void _applyFilters() async {
   // Просто закрываем экран без дополнительных действий
   Navigator.pop(context);
 }
-  
+
 @override
 Widget build(BuildContext context) {
   return WillPopScope(
@@ -469,102 +426,67 @@ Widget build(BuildContext context) {
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
+                      // From Date
                       Card(
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         color: Colors.white,
                         child: Padding(
                           padding: const EdgeInsets.all(8),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                AppLocalizations.of(context)!.translate('date_range'),
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                  fontFamily: 'Gilroy',
-                                  color: Color(0xff1E2E52),
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: TextField(
-                                      controller: _startDateController,
-                                      readOnly: true,
-                                      onTap: () => _selectDate(context, true),
-                                      decoration: InputDecoration(
-                                        labelText: AppLocalizations.of(context)!.translate('from'),
-                                        labelStyle: const TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w500,
-                                          fontFamily: 'Gilroy',
-                                          color: Color(0xff1E2E52),
-                                        ),
-                                        suffixIcon: const Icon(
-                                          Icons.calendar_today,
-                                          color: Colors.blueAccent,
-                                        ),
-                                        border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(8),
-                                          borderSide: const BorderSide(color: Colors.grey),
-                                        ),
-                                        focusedBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(8),
-                                          borderSide: const BorderSide(color: Colors.blueAccent),
-                                        ),
-                                      ),
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
-                                        fontFamily: 'Gilroy',
-                                        color: Color(0xff1E2E52),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: TextField(
-                                      controller: _endDateController,
-                                      readOnly: true,
-                                      onTap: () => _selectDate(context, false),
-                                      decoration: InputDecoration(
-                                        labelText: AppLocalizations.of(context)!.translate('to'),
-                                        labelStyle: const TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w500,
-                                          fontFamily: 'Gilroy',
-                                          color: Color(0xff1E2E52),
-                                        ),
-                                        suffixIcon: const Icon(
-                                          Icons.calendar_today,
-                                          color: Colors.blueAccent,
-                                        ),
-                                        border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(8),
-                                          borderSide: const BorderSide(color: Colors.grey),
-                                        ),
-                                        focusedBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(8),
-                                          borderSide: const BorderSide(color: Colors.blueAccent),
-                                        ),
-                                      ),
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
-                                        fontFamily: 'Gilroy',
-                                        color: Color(0xff1E2E52),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                          child: DateFieldWithFromTo(
+                            isFrom: true,
+                            controller: _startDateController,
+                            label: AppLocalizations.of(context)!.translate('date'),
+                            withTime: false,
+                            onDateSelected: (date) {
+                              if (mounted) {
+                                setState(() {
+                                  _startDateController.text = date;
+                                  List<String> parts = date.split('/');
+                                  if (parts.length == 3) {
+                                    startDate = DateTime(
+                                      int.parse(parts[2]),
+                                      int.parse(parts[1]),
+                                      int.parse(parts[0]),
+                                    );
+                                  }
+                                });
+                              }
+                            },
                           ),
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 8),
+
+                      // To Date
+                      Card(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        color: Colors.white,
+                        child: Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: DateFieldWithFromTo(
+                            isFrom: false,
+                            controller: _endDateController,
+                            label: AppLocalizations.of(context)!.translate('date') ?? 'До даты',
+                            withTime: false,
+                            onDateSelected: (date) {
+                              if (mounted) {
+                                setState(() {
+                                  _endDateController.text = date;
+                                  List<String> parts = date.split('/');
+                                  if (parts.length == 3) {
+                                    endDate = DateTime(
+                                      int.parse(parts[2]),
+                                      int.parse(parts[1]),
+                                      int.parse(parts[0]),
+                                    );
+                                  }
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
                       Card(
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         color: Colors.white,
@@ -633,7 +555,7 @@ Widget build(BuildContext context) {
                         child: Column(
                           children: [
                             _buildSwitchTile(
-                              AppLocalizations.of(context)!.translate('remark'),
+                              AppLocalizations.of(context)!.translate('with_remarks'),
                               selectedRemarkStatus ?? false,
                               _handleRemarkStatusChanged,
                             ),
@@ -645,7 +567,7 @@ Widget build(BuildContext context) {
                 ),
               ),
            ] ),
-        
+
         ),
       ),
     );

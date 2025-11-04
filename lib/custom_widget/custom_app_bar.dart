@@ -3,7 +3,7 @@ import 'dart:convert';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/calendar/calendar_screen.dart';
-import 'package:crm_task_manager/custom_widget/filter/call_center/call_center_screen.dart';
+import 'package:crm_task_manager/custom_widget/filter/call_center/call_center_filter_screen.dart';
 import 'package:crm_task_manager/custom_widget/filter/chat/lead/chat_lead_filter_screen.dart';
 import 'package:crm_task_manager/custom_widget/filter/chat/task/chat_task_filter_screen.dart';
 import 'package:crm_task_manager/custom_widget/filter/deal/manager_app_bar_deal.dart';
