@@ -27,6 +27,7 @@ class LeadRadioGroupWidget extends StatefulWidget {
 class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
   List<LeadData> leadsList = [];
   LeadData? selectedLeadData;
+  bool _isInitialized = false; // ✅ NEW: Track if data has been loaded at least once
 
   @override
   void initState() {
@@ -55,6 +56,7 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
       if (kDebugMode) {
         //print('🔄 LeadWidget: showDebt changed, reloading data');
       }
+      _isInitialized = false; // ✅ Reset initialization flag when reloading
       context.read<GetAllLeadBloc>().add(RefreshAllLeadEv(showDebt: widget.showDebt));
     }
 
@@ -114,10 +116,12 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
             }
 
             final isLoading = state is GetAllLeadLoading;
+            final isInitial = state is GetAllLeadInitial; // ✅ NEW: Check for initial state
 
             // ✅ ИСПРАВЛЕНИЕ: Обновляем список только при Success
             if (state is GetAllLeadSuccess) {
               leadsList = state.dataLead.result ?? [];
+              _isInitialized = true; // ✅ Mark as initialized after first successful load
               if (kDebugMode) {
                 //print('🔵 LeadWidget BlocBuilder: SUCCESS - ${leadsList.length} leads loaded');
                 if (leadsList.isNotEmpty) {
@@ -133,9 +137,9 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
               }
             }
 
-            // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Если загрузка, не показываем initialItem
+            // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Если загрузка ИЛИ начальное состояние, не показываем initialItem
             // Это предотвращает ошибку "initialItem must match with one of the item in items list"
-            final actualInitialItem = isLoading
+            final actualInitialItem = (isLoading || isInitial || !_isInitialized)
                 ? null
                 : (selectedLeadData != null &&
                 leadsList.isNotEmpty &&
@@ -144,16 +148,16 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                 : null;
 
             if (kDebugMode) {
-              //print('🔵 LeadWidget: Rendering dropdown - items=${leadsList.length}, isLoading=$isLoading');
+              //print('🔵 LeadWidget: Rendering dropdown - items=${leadsList.length}, isLoading=$isLoading, isInitial=$isInitial');
               //print('🔵 LeadWidget: actualInitialItem=${actualInitialItem?.name}');
             }
 
             return CustomDropdown<LeadData>.search(
               closeDropDownOnClearFilterSearch: true,
-              items: leadsList, // ✅ Всегда показываем текущий список (не пустой во время загрузки)
+              items: leadsList.isEmpty ? [] : leadsList, // ✅ Provide empty list during initial state
               searchHintText: AppLocalizations.of(context)!.translate('search'),
               overlayHeight: 400,
-              enabled: !isLoading,
+              enabled: !isLoading && !isInitial, // ✅ Disable during initial state too
               decoration: CustomDropdownDecoration(
                 closedFillColor: const Color(0xffF4F7FD),
                 expandedFillColor: Colors.white,
@@ -198,7 +202,7 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                 );
               },
               headerBuilder: (context, selectedItem, enabled) {
-                if (isLoading) {
+                if (isLoading || isInitial) { // ✅ Show loading for both states
                   return const Center(
                     child: SizedBox(
                       width: 20,
@@ -239,7 +243,7 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                 );
               },
               hintBuilder: (context, hint, enabled) {
-                if (isLoading) {
+                if (isLoading || isInitial) { // ✅ Show loading for both states
                   return const Center(
                     child: SizedBox(
                       width: 20,
@@ -263,7 +267,7 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                 );
               },
               noResultFoundBuilder: (context, text) {
-                if (isLoading) {
+                if (isLoading || isInitial) { // ✅ Show loading for both states
                   return const Center(
                     child: Padding(
                       padding: EdgeInsets.all(20.0),
@@ -289,13 +293,13 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                 );
               },
               excludeSelected: false,
-              initialItem: actualInitialItem, // ✅ null во время загрузки
-              validator: (value) {
+              initialItem: actualInitialItem, // ✅ null во время загрузки И начального состояния
+              validator: _isInitialized ? (value) { // ✅ CRITICAL FIX: Only validate after initialization
                 if (value == null) {
                   return AppLocalizations.of(context)!.translate('field_required_project');
                 }
                 return null;
-              },
+              } : null, // ✅ No validator during initialization = no red error
               onChanged: (value) {
                 if (kDebugMode) {
                   //print('🟢 LeadWidget: onChanged - selected ${value?.name}');

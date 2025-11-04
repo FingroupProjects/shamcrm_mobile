@@ -23,17 +23,23 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:new_version_plus/new_version_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vibration/vibration.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:flutter/services.dart';
+
+import '../../update_dialog.dart';
 
 // [ИМПОРТЫ ОСТАЮТСЯ БЕЗ ИЗМЕНЕНИЙ]
 
 class PinScreen extends StatefulWidget {
   final RemoteMessage? initialMessage;
 
-  const PinScreen({Key? key, this.initialMessage}) : super(key: key);
+  const PinScreen({
+    Key? key,
+    this.initialMessage,
+  }) : super(key: key);
 
   @override
   _PinScreenState createState() => _PinScreenState();
@@ -100,6 +106,29 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
     
     return false;
   }
+
+  Future<void> checkForNewVersion(BuildContext context) async {
+    try {
+      final newVersionPlus = NewVersionPlus();
+      final status = await newVersionPlus.getVersionStatus();
+      debugPrint("pinScreen. APP_VERSION: Current: ${status?.localVersion}, Store: ${status?.storeVersion}, CanUpdate: ${status?.canUpdate}");
+
+      if (!mounted || !context.mounted || status == null || status.canUpdate == false) return;
+
+      final localizations = AppLocalizations.of(context);
+
+      await UpdateDialog.show(
+        context: context,
+        status: status,
+        title: localizations?.translate('app_update_available_title') ?? 'Обновление',
+        message: localizations?.translate('app_update_available_message') ?? 'Доступна новая версия приложения',
+        updateButton: localizations?.translate('app_update_button') ?? 'Обновить',
+      );
+    } catch (e) {
+      print('PinScreen: Error checking version: $e');
+    }
+  }
+
   // ==========================================================================
   // ГЛАВНАЯ ИНИЦИАЛИЗАЦИЯ
   // ==========================================================================
@@ -111,6 +140,9 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
       setState(() {
         _isLoading = true;
       });
+
+      // Проверка обновления приложения
+      await checkForNewVersion(context);
 
       // ШАГ 1: Безопасная инициализация FirebaseApi
       await _initializeFirebaseApi();
@@ -156,7 +188,7 @@ try {
       await _checkSavedPin();
       
       // ШАГ 7: Биометрия
-      await _initBiometrics();
+        await _initBiometrics();
 
       if (mounted) {
         setState(() {
