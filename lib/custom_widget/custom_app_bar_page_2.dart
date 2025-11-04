@@ -743,73 +743,73 @@ Future<void> _scanBarcode() async {
     );
   }
 
-void navigateToGoodsFilterScreen(BuildContext context) {
-  if (kDebugMode) {
-    //print('CustomAppBarPage2: Переход к экрану фильтров товаров');
-    //print('CustomAppBarPage2: Текущие фильтры: ${widget.currentFilters}');
-  }
-  List<int>? initialCategoryIds;
-  double? initialDiscountPercent;
-  List<String>? initialLabels;
-  bool? initialIsActive;
+  void navigateToGoodsFilterScreen(BuildContext context) {
+    if (kDebugMode) {
+      //print('CustomAppBarPage2: Переход к экрану фильтров товаров');
+      //print('CustomAppBarPage2: Текущие фильтры: ${widget.currentFilters}');
+    }
+    List<int>? initialCategoryIds;
+    double? initialDiscountPercent;
+    List<String>? initialLabels;
+    bool? initialIsActive;
 
-  if (widget.currentFilters.containsKey('category_id') &&
-      widget.currentFilters['category_id'] is List &&
-      widget.currentFilters['category_id'].isNotEmpty) {
-    initialCategoryIds = (widget.currentFilters['category_id'] as List)
-        .map((id) => int.tryParse(id.toString()) ?? 0)
-        .where((id) => id != 0)
-        .toList();
-  }
+    if (widget.currentFilters.containsKey('category_id') &&
+        widget.currentFilters['category_id'] is List &&
+        widget.currentFilters['category_id'].isNotEmpty) {
+      initialCategoryIds = (widget.currentFilters['category_id'] as List)
+          .map((id) => int.tryParse(id.toString()) ?? 0)
+          .where((id) => id != 0)
+          .toList();
+    }
 
-  if (widget.currentFilters.containsKey('discount_percent')) {
-    initialDiscountPercent = widget.currentFilters['discount_percent'] is double
-        ? widget.currentFilters['discount_percent']
-        : double.tryParse(widget.currentFilters['discount_percent'].toString());
-  }
+    if (widget.currentFilters.containsKey('discount_percent')) {
+      initialDiscountPercent = widget.currentFilters['discount_percent'] is double
+          ? widget.currentFilters['discount_percent']
+          : double.tryParse(widget.currentFilters['discount_percent'].toString());
+    }
 
-  if (widget.currentFilters.containsKey('label_id') &&
-      widget.currentFilters['label_id'] is List &&
-      widget.currentFilters['label_id'].isNotEmpty) {
-    initialLabels = List<String>.from(widget.currentFilters['label_id']);
-  }
+    if (widget.currentFilters.containsKey('label_id') &&
+        widget.currentFilters['label_id'] is List &&
+        widget.currentFilters['label_id'].isNotEmpty) {
+      initialLabels = List<String>.from(widget.currentFilters['label_id']);
+    }
 
-  if (widget.currentFilters.containsKey('is_active')) {
-    initialIsActive = widget.currentFilters['is_active'] as bool?;
-  }
+    if (widget.currentFilters.containsKey('is_active')) {
+      initialIsActive = widget.currentFilters['is_active'] as bool?;
+    }
 
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => GoodsFilterScreen(
-        onSelectedDataFilter: (filters) {
-          if (kDebugMode) {
-            //print('CustomAppBarPage2: Получены фильтры из GoodsFilterScreen: $filters');
-          }
-          setState(() {
-            _isGoodsFiltering = filters.isNotEmpty;
-          });
-          widget.onFilterGoodsSelected?.call(filters);
-        },
-        onResetFilters: () {
-          if (kDebugMode) {
-            //print('CustomAppBarPage2: Сброс фильтров из GoodsFilterScreen');
-          }
-          setState(() {
-            _isGoodsFiltering = false;
-          });
-          widget.onGoodsResetFilters?.call();
-        },
-        initialCategoryIds: initialCategoryIds,
-        initialDiscountPercent: initialDiscountPercent,
-        initialLabels: initialLabels,
-        initialIsActive: initialIsActive,
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => GoodsFilterScreen(
+          onSelectedDataFilter: (filters) {
+            if (kDebugMode) {
+              //print('CustomAppBarPage2: Получены фильтры из GoodsFilterScreen: $filters');
+            }
+            setState(() {
+              _isGoodsFiltering = filters.isNotEmpty;
+            });
+            widget.onFilterGoodsSelected?.call(filters);
+          },
+          onResetFilters: () {
+            if (kDebugMode) {
+              //print('CustomAppBarPage2: Сброс фильтров из GoodsFilterScreen');
+            }
+            setState(() {
+              _isGoodsFiltering = false;
+            });
+            widget.onGoodsResetFilters?.call();
+          },
+          initialCategoryIds: initialCategoryIds,
+          initialDiscountPercent: initialDiscountPercent,
+          initialLabels: initialLabels,
+          initialIsActive: initialIsActive,
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
-void navigateToOrderFilterScreen(BuildContext context) {
+  void navigateToOrderFilterScreen(BuildContext context) {
   if (kDebugMode) {
     //print('CustomAppBarPage2: Переход к экрану фильтров заказов');
     //print('CustomAppBarPage2: Текущие фильтры: ${widget.currentFilters}');

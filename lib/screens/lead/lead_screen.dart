@@ -84,6 +84,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   bool? _hasNoReplies = false;
   bool? _hasUnreadMessages = false;
   bool? _hasDeal = false;
+  bool? _hasOrders = false;
   int? _daysWithoutActivity;
   List<Map<String, dynamic>> _directoryValues = [];
   List<Map<String, dynamic>> _initialDirectoryValues = [];
@@ -102,6 +103,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   bool? _initialHasNoReplies;
   bool? _initialHasUnreadMessages;
   bool? _initialHasDeal;
+  bool? _initialHasOrders;
   int? _initialDaysWithoutActivity;
   final GlobalKey keySearchIcon = GlobalKey();
   final GlobalKey keyMenuIcon = GlobalKey();
@@ -239,6 +241,7 @@ Future<void> _onRefresh(int currentStatusId) async {
         _hasNoReplies = false;
         _hasUnreadMessages = false;
         _hasDeal = false;
+        _hasOrders = false;
         _daysWithoutActivity = null;
         _directoryValues.clear();
         
@@ -258,6 +261,7 @@ Future<void> _onRefresh(int currentStatusId) async {
         _initialHasNoReplies = null;
         _initialHasUnreadMessages = null;
         _initialHasDeal = null;
+        _initialHasOrders = null;
         _initialDaysWithoutActivity = null;
         _initialDirectoryValues.clear();
         
@@ -490,6 +494,7 @@ Future<void> _onRefresh(int currentStatusId) async {
       hasNoReplies: _hasNoReplies,
       hasUnreadMessages: _hasUnreadMessages,
       hasDeal: _hasDeal,
+      hasOrders: _hasOrders,
       daysWithoutActivity: _daysWithoutActivity,
       directoryValues: _directoryValues,
       salesFunnelId: _selectedFunnel?.id,
@@ -516,6 +521,7 @@ Future<void> _onRefresh(int currentStatusId) async {
         _hasNoReplies = false;
         _hasUnreadMessages = false;
         _hasDeal = false;
+        _hasOrders = false;
         _daysWithoutActivity = null;
         _directoryValues = [];
         _initialSelectedManagers = [];
@@ -533,6 +539,7 @@ Future<void> _onRefresh(int currentStatusId) async {
         _initialHasNoReplies = false;
         _initialHasUnreadMessages = false;
         _initialHasDeal = false;
+        _initialHasOrders = false;
         _initialDaysWithoutActivity = null;
         _initialDirectoryValues = [];
         _lastSearchQuery = '';
@@ -567,6 +574,7 @@ Future<void> _onRefresh(int currentStatusId) async {
       _hasNoReplies = managers['hasNoReplies'];
       _hasUnreadMessages = managers['hasUnreadMessages'];
       _hasDeal = managers['hasDeal'];
+      _hasOrders = managers['hasOrders'];
       _daysWithoutActivity = managers['daysWithoutActivity'];
       _directoryValues = managers['directory_values'] ?? [];
       _initialSelectedManagers = managers['managers'];
@@ -584,6 +592,7 @@ Future<void> _onRefresh(int currentStatusId) async {
       _initialHasNoReplies = managers['hasNoReplies'];
       _initialHasUnreadMessages = managers['hasUnreadMessages'];
       _initialHasDeal = managers['hasDeal'];
+      _initialHasOrders = managers['hasOrders'];
       _initialDaysWithoutActivity = managers['daysWithoutActivity'];
       _initialDirectoryValues = managers['directory_values'] ?? [];
     });
@@ -619,6 +628,7 @@ Future<void> _onRefresh(int currentStatusId) async {
     hasNoReplies: _hasNoReplies,
     hasUnreadMessages: _hasUnreadMessages,
     hasDeal: _hasDeal,
+    hasOrders: _hasOrders,
     daysWithoutActivity: _daysWithoutActivity,
     directoryValues: _directoryValues,
     salesFunnelId: _selectedFunnel?.id,
@@ -834,6 +844,7 @@ Future<void> _onRefresh(int currentStatusId) async {
             initialManagerLeadHasNoReplies: _initialHasNoReplies,
             initialManagerLeadHasUnreadMessages: _initialHasUnreadMessages,
             initialManagerLeadHasDeal: _initialHasDeal,
+            initialManagerLeadHasOrders: _initialHasOrders,
             initialManagerLeadDaysWithoutActivity: _initialDaysWithoutActivity,
             initialDirectoryValuesLead: _initialDirectoryValues,
             onLeadResetFilters: _resetFilters,
@@ -873,6 +884,7 @@ Future<void> _onRefresh(int currentStatusId) async {
                       _hasNoReplies == false &&
                       _hasUnreadMessages == false &&
                       _hasDeal == false &&
+                      _hasOrders == false &&
                       _directoryValues.isEmpty) {
                     if (mounted) {
                       setState(() {
@@ -909,6 +921,7 @@ Future<void> _onRefresh(int currentStatusId) async {
                       hasNoReplies: _hasNoReplies,
                       hasUnreadMessages: _hasUnreadMessages,
                       hasDeal: _hasDeal,
+                      hasOrders: _hasOrders,
                       daysWithoutActivity: _daysWithoutActivity,
                       directoryValues: _directoryValues,
                       salesFunnelId: _selectedFunnel?.id,
@@ -1582,6 +1595,7 @@ Widget _buildTabBarView() {
                     hasNoReplies: _hasNoReplies,
                     hasUnreadMessages: _hasUnreadMessages,
                     hasDeal: _hasDeal,
+                    hasOrders: _hasOrders,
                     daysWithoutActivity: _daysWithoutActivity,
                     directoryValues: _directoryValues,
                   ));
@@ -1773,6 +1787,7 @@ Widget _buildTabBarView() {
                             hasNoReplies: _hasNoReplies,
                             hasUnreadMessages: _hasUnreadMessages,
                             hasDeal: _hasDeal,
+                            hasOrders: _hasOrders,
                             daysWithoutActivity: _daysWithoutActivity,
                             directoryValues: _directoryValues,
                           ));

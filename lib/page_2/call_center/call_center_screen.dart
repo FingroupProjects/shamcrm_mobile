@@ -2,7 +2,7 @@ import 'package:crm_task_manager/bloc/call_bloc/call_center_bloc.dart';
 import 'package:crm_task_manager/bloc/call_bloc/call_center_event.dart';
 import 'package:crm_task_manager/bloc/call_bloc/call_center_state.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
-import 'package:crm_task_manager/custom_widget/filter/call_center/call_center_screen.dart';
+import 'package:crm_task_manager/custom_widget/filter/call_center/call_center_filter_screen.dart';
 import 'package:crm_task_manager/custom_widget/filter/call_center/call_type_multi_select_widget.dart';
 import 'package:crm_task_manager/custom_widget/filter/call_center/rating_multi_select_widget.dart';
 import 'package:crm_task_manager/custom_widget/filter/call_center/status_multi_select_widget.dart';
