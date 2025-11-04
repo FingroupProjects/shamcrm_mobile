@@ -643,24 +643,23 @@ class _MyAppState extends State<MyApp> {
       });
     }
   }
- Future<void> _checkForNewVersion(BuildContext context) async {
+
+  Future<void> checkForNewVersion(BuildContext context) async {
   try {
     final newVersionPlus = NewVersionPlus();
     final status = await newVersionPlus.getVersionStatus();
-    debugPrint("APP_VERSION: Current: ${status?.localVersion}, Store: ${status?.storeVersion}");
+    debugPrint("APP_VERSION: Current: ${status?.localVersion}, Store: ${status?.storeVersion}, CanUpdate: ${status?.canUpdate}");
     
-    if (status == null) return;
-    if (!mounted || !context.mounted) return;
+    if (!mounted || !context.mounted || status == null || status.canUpdate == false) return;
 
     final localizations = AppLocalizations.of(context);
-    
+
     await UpdateDialog.show(
       context: context,
       status: status,
       title: localizations?.translate('app_update_available_title') ?? 'Обновление',
       message: localizations?.translate('app_update_available_message') ?? 'Доступна новая версия приложения',
       updateButton: localizations?.translate('app_update_button') ?? 'Обновить',
-      dismissButton: localizations?.translate('app_update_dismiss') ?? 'Позже',
     );
   } catch (e) {
     print('MyApp: Error checking version: $e');
@@ -857,20 +856,28 @@ class _MyAppState extends State<MyApp> {
         },
         home: Builder(
           builder: (context) {
-            // ✅ Check version AFTER MaterialApp context is available
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) {
-                _checkForNewVersion(context);
-              }
-            });
-
             if (!widget.sessionValid) {
+              WidgetsBinding.instance.addPostFrameCallback((_) async {
+                if (mounted) {
+                  await checkForNewVersion(context);
+                }
+              });
               return AuthScreen();
             }
 
             if (widget.token == null) {
+              WidgetsBinding.instance.addPostFrameCallback((_) async {
+                if (mounted) {
+                  await checkForNewVersion(context);
+                }
+              });
               return AuthScreen();
             } else if (widget.pin == null) {
+              WidgetsBinding.instance.addPostFrameCallback((_) async {
+                if (mounted) {
+                  await checkForNewVersion(context);
+                }
+              });
               return PinSetupScreen();
             } else {
               return PinScreen(

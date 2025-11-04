@@ -8,21 +8,26 @@ class UpdateDialog {
     required String title,
     required String message,
     required String updateButton,
-    required String dismissButton,
   }) async {
     if (!context.mounted) return;
 
     await showDialog(
       context: context,
       barrierDismissible: false,
+
       builder: (BuildContext context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
-          elevation: 0,
-          backgroundColor: Colors.transparent,
-          child: Container(
+        return PopScope(
+          onPopInvokedWithResult: (didPop, obj) async {
+            if (didPop) return;
+          },
+          canPop: false, // Блокируем кнопку "Назад" на Android
+          child: Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+            ),
+            elevation: 0,
+            backgroundColor: Colors.transparent,
+            child: Container(
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(24),
@@ -122,7 +127,7 @@ class UpdateDialog {
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () {
-                      Navigator.of(context).pop();
+                      // Не закрываем диалог - принудительное обновление
                       NewVersionPlus().launchAppStore(status.appStoreLink);
                     },
                     style: ElevatedButton.styleFrom(
@@ -147,31 +152,9 @@ class UpdateDialog {
                 ),
 
                 SizedBox(height: 10),
-
-                // Dismiss button
-                SizedBox(
-                  width: double.infinity,
-                  child: TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: Text(
-                      dismissButton,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF999999),
-                        letterSpacing: 0.1,
-                      ),
-                    ),
-                  ),
-                ),
               ],
             ),
+          ),
           ),
         );
       },

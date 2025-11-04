@@ -90,38 +90,52 @@ class _UserOverdueTasksDialogState extends State<UserOverdueTasksDialog> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Header info
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xffF1F5F9),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: const Color(0xffCBD5E1),
-              width: 1,
-            ),
-          ),
-          child: Row(
-            children: [
-              const Icon(
-                Icons.assignment_late_outlined,
-                color: Color(0xff1E2E52),
-                size: 20,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  widget.userName,
-                  style: const TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xff1E2E52),
-                  ),
+        BlocBuilder<UserOverdueTaskBloc, UserOverdueTaskState>(
+          builder: (context, state) {
+            // Get total from the loaded state
+            final total = state is UserOverdueTaskLoaded ? (state.data.result?.total?.toInt() ?? 0) : 0;
+
+            return Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xffF1F5F9),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: const Color(0xffCBD5E1),
+                  width: 1,
                 ),
               ),
-            ],
-          ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.userName,
+                    style: const TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xff1E2E52),
+                    ),
+                  ),
+
+                  if (total > 1)
+                    ...[
+                      const SizedBox(height: 8),
+                      Text(
+                      // '${AppLocalizations.of(context)!.translate('total_overdue_tasks')}: $total',
+                      'Просроченных задач: $total',
+                      style: const TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xff1E2E52),
+                      ),
+                    ),]
+                ],
+              ),
+            );
+          },
         ),
 
         const SizedBox(height: 16),

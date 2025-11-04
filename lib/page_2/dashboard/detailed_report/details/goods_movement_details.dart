@@ -5,6 +5,7 @@ import '../../../../api/service/api_service.dart';
 import '../../../../models/dashboard_goods_movement_history_model.dart';
 import '../../../../models/page_2/good_variants_model.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
+import '../../../../custom_widget/full_text_dialog.dart';
 
 void showGoodsMovementDetailsDialog(
   BuildContext context,
@@ -134,13 +135,24 @@ class _GoodsMovementDetailsDialogState extends State<GoodsMovementDetailsDialog>
             child: Row(
               children: [
                 Expanded(
-                  child: Text(
-                    movement.goodName,
-                    style: const TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xff1E2E52),
+                  child: GestureDetector(
+                    onTap: () {
+                      showFullTextDialog(
+                        AppLocalizations.of(context)!.translate('goods_movement_history_title'),
+                        movement.goodName,
+                        context,
+                      );
+                    },
+                    child: Text(
+                      movement.goodName,
+                      style: const TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xff1E2E52),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ),
@@ -274,16 +286,25 @@ class _GoodsMovementDetailsDialogState extends State<GoodsMovementDetailsDialog>
             ),
           ),
           const SizedBox(height: 4),
-          Text(
-            value,
-            style: TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: valueColor ?? const Color(0xff1E2E52),
+          GestureDetector(
+            onTap: () {
+              showFullTextDialog(
+                label,
+                value,
+                context,
+              );
+            },
+            child: Text(
+              value,
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: valueColor ?? const Color(0xff1E2E52),
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
