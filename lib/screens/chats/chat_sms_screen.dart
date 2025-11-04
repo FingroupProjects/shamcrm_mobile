@@ -1014,11 +1014,11 @@ void _scrollToMessageIndex(DateTime selectedDate) {
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              isSupportChat
-                                  ? AppLocalizations.of(context)!.translate('support_chat_name')
-                                  : widget.chatItem.name.isEmpty
-                                      ? AppLocalizations.of(context)!.translate('no_name')
-                                      : widget.chatItem.name,
+                               isSupportChat
+      ? AppLocalizations.of(context)!.translate('support_chat_name')
+      : widget.chatItem.name.isEmpty
+          ? AppLocalizations.of(context)!.translate('no_name')
+          : widget.chatItem.name,
                               style: const TextStyle(
                                 fontSize: 18,
                                 color: ChatSmsStyles.appBarTitleColor,

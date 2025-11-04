@@ -3127,30 +3127,103 @@ Future<List<Deal>> getDeals(
   }
 
 // Обновление статуса карточки Сделки в колонке
-  Future<void> updateDealStatus(int dealId, int position, List<int> statusIds) async {
-  // ИЗМЕНЕНО: принимаем List<int> вместо int
-  final path = await _appendQueryParams('/deal/change-multiple-status/$dealId');
-  if (kDebugMode) {
-    //print('ApiService: updateDealStatus - Generated path: $path');
+ Future<void> updateDealStatus(
+  int dealId, 
+  int currentStatusId,  // from_status_id
+  List<int> statusIds,   // to_status_id (один или несколько)
+  {
+    bool isMultiSelect = false,  // новый параметр
+    String? organizationId,
+    String? salesFunnelId,
   }
+) async {
+  
+  if (isMultiSelect) {
+    // ============ МУЛЬТИВЫБОР (как было) ============
+    final path = await _appendQueryParams('/deal/change-multiple-status/$dealId');
+    if (kDebugMode) {
+      print('ApiService: MULTI-SELECT mode');
+      print('ApiService: Path: $path');
+      print('ApiService: Statuses: $statusIds');
+    }
 
-  final response = await _postRequest(
-    path,
-    {
-      'position': 1,
-      'statuses': statusIds, // ИЗМЕНЕНО: отправляем массив
-    },
-  );
-
-  if (response.statusCode == 200) {
-    ////print('Статус задачи успешно обновлен.');
-  } else if (response.statusCode == 422) {
-    throw DealStatusUpdateException(
-      422,
-      'Вы не можете переместить задачу на этот статус',
+    final response = await _postRequest(
+      path,
+      {
+        'position': 1,
+        'statuses': statusIds,
+      },
     );
+
+    if (response.statusCode == 200) {
+      if (kDebugMode) {
+        print('✅ Статусы успешно обновлены (multi-select)');
+      }
+    } else if (response.statusCode == 422) {
+      throw DealStatusUpdateException(
+        422,
+        'Вы не можете переместить задачу на эти статусы',
+      );
+    } else {
+      throw Exception('Ошибка обновления статусов сделки!');
+    }
+    
   } else {
-    throw Exception('Ошибка обновления задач сделки!');
+    // ============ ОДИНОЧНЫЙ ВЫБОР (новая логика) ============
+    if (statusIds.isEmpty) {
+      throw Exception('Не выбран статус для перемещения');
+    }
+    
+    final int toStatusId = statusIds.first; // берём первый (и единственный)
+    
+    // Формируем URL с query параметрами
+    String path = '/deal/changeStatus1/$dealId';
+    final queryParams = <String, String>{};
+    
+    if (organizationId != null) {
+      queryParams['organization_id'] = organizationId;
+    }
+    if (salesFunnelId != null) {
+      queryParams['sales_funnel_id'] = salesFunnelId;
+    }
+    
+    // Добавляем параметры через _appendQueryParams или вручную
+    if (queryParams.isNotEmpty) {
+      final query = queryParams.entries
+          .map((e) => '${e.key}=${e.value}')
+          .join('&');
+      path = '$path?$query';
+    }
+    
+    if (kDebugMode) {
+      print('ApiService: SINGLE-SELECT mode');
+      print('ApiService: Path: $path');
+      print('ApiService: from_status_id: $currentStatusId → to_status_id: $toStatusId');
+    }
+
+    final response = await _postRequest(
+      path,
+      {
+        'from_status_id': currentStatusId,
+        'to_status_id': toStatusId,
+        'position': 1,
+        'organization_id': organizationId ?? '1',
+        'sales_funnel_id': salesFunnelId ?? '1',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      if (kDebugMode) {
+        print('✅ Статус успешно обновлён (single-select)');
+      }
+    } else if (response.statusCode == 422) {
+      throw DealStatusUpdateException(
+        422,
+        'Вы не можете переместить задачу на этот статус',
+      );
+    } else {
+      throw Exception('Ошибка обновления статуса сделки!');
+    }
   }
 }
 
@@ -3743,27 +3816,30 @@ Future<List<Deal>> getDeals(
   }
 
 // Обновление статуса карточки Задачи в колонке
-  Future<void> updateTaskStatus(int taskId, int position, int statusId) async {
-    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/task/changeStatus/$taskId');
-    if (kDebugMode) {
-      //print('ApiService: updateTaskStatus - Generated path: $path');
-    }
-
-    final response = await _postRequest(path, {
-      'position': 1,
-      'status_id': statusId,
-    });
-
-    if (response.statusCode == 200) {
-      ////print('Статус задачи успешно обновлен');
-    } else if (response.statusCode == 422) {
-      throw TaskStatusUpdateException(
-          422, 'Вы не можете переместить задачу на этот статус');
-    } else {
-      throw Exception('Ошибка обновления задач сделки!');
-    }
+ Future<void> updateTaskStatus(int taskId, int position, int statusId) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/task/changeStatus/$taskId');
+  if (kDebugMode) {
+    //print('ApiService: updateTaskStatus - Generated path: $path');
   }
+
+  final response = await _postRequest(path, {
+    'position': 1,
+    'status_id': statusId,
+  });
+
+  if (response.statusCode == 200) {
+    ////print('Статус задачи успешно обновлен');
+  } else if (response.statusCode == 422) {
+    // ПАРСИМ JSON ОТВЕТ ОТ СЕРВЕРА
+    final jsonResponse = json.decode(response.body);
+    // БЕРЁМ message ИЗ ОТВЕТА СЕРВЕРА
+    final errorMessage = jsonResponse['message'] ?? 'Вы не можете переместить задачу на этот статус';
+    throw TaskStatusUpdateException(422, errorMessage);
+  } else {
+    throw Exception('Ошибка обновления задач сделки!');
+  }
+}
 
   Map<String, dynamic> _handleTaskResponse(
       http.Response response, String operation) {

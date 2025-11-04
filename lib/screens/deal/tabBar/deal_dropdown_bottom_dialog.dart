@@ -50,7 +50,11 @@ Future<void> showDealStatusBottomSheet(
   // Read multi-select flag from preferences
   final prefs = await SharedPreferences.getInstance();
   final bool isMultiSelectEnabled = prefs.getBool('managing_deal_status_visibility') ?? false;
+final String? organizationId = prefs.getString('organization_id') ?? '1';
+final String? salesFunnelId = prefs.getString('sales_funnel_id') ?? '1';
 
+print('DropdownBottomSheet: organizationId = $organizationId');
+print('DropdownBottomSheet: salesFunnelId = $salesFunnelId');
   String selectedValue = defaultValue;
   List<int> selectedStatusIds = [];
   bool isLoading = false;
@@ -162,7 +166,12 @@ Future<void> showDealStatusBottomSheet(
                         isLoading = true;
                       });
 
-                      apiService.updateDealStatus(deal.id, deal.statusId, selectedStatusIds).then((_) {
+                      apiService.updateDealStatus(
+  deal.id, 
+  deal.statusId,  // from_status_id (текущий статус)
+  selectedStatusIds,
+  isMultiSelect: isMultiSelectEnabled,  // ← добавили флаг
+).then((_) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(

@@ -4,6 +4,7 @@ import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_task_even
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_task_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/main.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/task_profile_status_bottom_sheet.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_details_screen.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
@@ -11,10 +12,45 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
-class TaskByIdScreen extends StatelessWidget {
+class TaskByIdScreen extends StatefulWidget {
   final int chatId;
 
   TaskByIdScreen({required this.chatId});
+
+  @override
+  State<TaskByIdScreen> createState() => _TaskByIdScreenState();
+}
+
+class _TaskByIdScreenState extends State<TaskByIdScreen> {
+  final ApiService _apiService = ApiService();
+  bool _canEditTask = false;
+  bool _isLoadingPermissions = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkPermissions();
+  }
+
+  Future<void> _checkPermissions() async {
+    try {
+      final canEdit = await _apiService.hasPermission('task.update');
+      
+      if (mounted) {
+        setState(() {
+          _canEditTask = canEdit;
+          _isLoadingPermissions = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _canEditTask = false;
+          _isLoadingPermissions = false;
+        });
+      }
+    }
+  }
 
   void _showUsersDialog(BuildContext context, List<String> users) {
     List<String> userNamesList = users.map((user) => user.trim()).toList();
@@ -164,6 +200,68 @@ class TaskByIdScreen extends StatelessWidget {
     );
   }
 
+  // ОБНОВЛЕННЫЙ МЕТОД ДЛЯ СТРОКИ СО СТАТУСОМ ЗАДАЧИ
+  Widget buildStatusRow(BuildContext context, dynamic task) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Icon(Icons.assignment, size: 32, color: const Color(0xff1E2E52)),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                AppLocalizations.of(context)!.translate('status_lead_profile'),
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'Gilroy',
+                  color: Color(0xff6E7C97),
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              Text(
+                task.taskStatus.taskStatus?.name ?? "no_comment",
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'Gilroy',
+                  color: Color(0xff1E2E52),
+                ),
+              ),
+            ],
+          ),
+        ),
+        // Иконка редактирования - показываем только если есть права
+        if (!_isLoadingPermissions && _canEditTask)
+          IconButton(
+            icon: Icon(
+              Icons.edit,
+              color: Color(0xff1E2E52),
+              size: 24,
+            ),
+            onPressed: () {
+              if (task.taskStatus?.id != null) {
+                showTaskProfileStatusBottomSheet(
+                  context,
+                  task.id,
+                  task.taskStatus!.id,
+                  task.taskStatus!.taskStatus?.name ?? "",
+                  () {
+                    // Callback после успешного изменения статуса
+                    // Перезагружаем профиль задачи
+                    context.read<TaskProfileBloc>().add(FetchTaskProfile(widget.chatId));
+                  },
+                );
+              }
+            },
+          ),
+      ],
+    );
+  }
+
   Widget buildDivider() {
     return const Divider(
       color: Color(0xffE1E6F0),
@@ -176,7 +274,7 @@ class TaskByIdScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) =>
-          TaskProfileBloc(ApiService())..add(FetchTaskProfile(chatId)),
+          TaskProfileBloc(ApiService())..add(FetchTaskProfile(widget.chatId)),
       child: Scaffold(
         backgroundColor: const Color(0xffF4F7FD),
         appBar: AppBar(
@@ -276,14 +374,8 @@ class TaskByIdScreen extends StatelessWidget {
                               Icons.low_priority,
                               null),
                           buildDivider(),
-                          buildInfoRow(
-                              context,
-                              task,
-                              AppLocalizations.of(context)!
-                                  .translate('status_lead_profile'),
-                              task.taskStatus.taskStatus?.name ?? "no_comment",
-                              Icons.assignment,
-                              null),
+                          // ЗАМЕНИЛИ buildInfoRow на buildStatusRow для статуса
+                          buildStatusRow(context, task),
                           buildDivider(),
                           buildInfoRow(
                               context,
