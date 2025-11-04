@@ -21,12 +21,47 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class UserProfileScreen extends StatelessWidget {
+class UserProfileScreen extends StatefulWidget {
   final int chatId;
 
   UserProfileScreen({
     required this.chatId,
   });
+
+  @override
+  State<UserProfileScreen> createState() => _UserProfileScreenState();
+}
+
+class _UserProfileScreenState extends State<UserProfileScreen> {
+  final ApiService _apiService = ApiService();
+  bool _canEditLead = false;
+  bool _isLoadingPermissions = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkPermissions();
+  }
+
+  Future<void> _checkPermissions() async {
+    try {
+      final canEdit = await _apiService.hasPermission('lead.update');
+      
+      if (mounted) {
+        setState(() {
+          _canEditLead = canEdit;
+          _isLoadingPermissions = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _canEditLead = false;
+          _isLoadingPermissions = false;
+        });
+      }
+    }
+  }
 
   Future<void> _makePhoneCall(String phoneNumber) async {
     final Uri launchUri = Uri(
@@ -69,7 +104,7 @@ class UserProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => ChatProfileBloc(ApiService())..add(FetchChatProfile(chatId)),
+      create: (context) => ChatProfileBloc(ApiService())..add(FetchChatProfile(widget.chatId)),
       child: Scaffold(
         backgroundColor: const Color(0xffF4F7FD),
         appBar: AppBar(
@@ -331,7 +366,7 @@ class UserProfileScreen extends StatelessWidget {
                                                   await completer.future;
                                                   listener.cancel();
 
-                                                  context.read<ChatProfileBloc>().add(FetchChatProfile(chatId));
+                                                  context.read<ChatProfileBloc>().add(FetchChatProfile(widget.chatId));
 
                                                   context.read<LeadByIdBloc>().add(FetchLeadByIdEvent(leadId: profile.id));
                                                   context.read<LeadBloc>().add(FetchLeadStatuses());
@@ -407,7 +442,7 @@ class UserProfileScreen extends StatelessWidget {
     );
   }
 
-  // НОВЫЙ МЕТОД ДЛЯ СТРОКИ СО СТАТУСОМ
+  // ОБНОВЛЁННЫЙ МЕТОД ДЛЯ СТРОКИ СО СТАТУСОМ
   Widget buildStatusRow(BuildContext context, dynamic profile) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -439,40 +474,41 @@ class UserProfileScreen extends StatelessWidget {
             ],
           ),
         ),
-        // Иконка редактирования
-        IconButton(
-          icon: Icon(
-            Icons.edit,
-            color: Color(0xff1E2E52),
-            size: 24,
+        // Иконка редактирования - показываем только если есть права
+        if (!_isLoadingPermissions && _canEditLead)
+          IconButton(
+            icon: Icon(
+              Icons.edit,
+              color: Color(0xff1E2E52),
+              size: 24,
+            ),
+            onPressed: () {
+              if (profile.leadStatus?.id != null) {
+                showProfileStatusBottomSheet(
+                  context,
+                  profile.id,
+                  profile.leadStatus!.id,
+                  profile.leadStatus!.title,
+                  () {
+                    // Callback после успешного изменения статуса
+                    // Перезагружаем профиль
+                    context.read<ChatProfileBloc>().add(FetchChatProfile(widget.chatId));
+                    
+                    // Также обновляем данные в других блоках, если они используются
+                    context.read<LeadByIdBloc>().add(FetchLeadByIdEvent(leadId: profile.id));
+                    context.read<LeadBloc>().add(FetchLeadStatuses());
+                  },
+                );
+              }
+            },
           ),
-          onPressed: () {
-            if (profile.leadStatus?.id != null) {
-              showProfileStatusBottomSheet(
-                context,
-                profile.id,
-                profile.leadStatus!.id,
-                profile.leadStatus!.title,
-                () {
-                  // Callback после успешного изменения статуса
-                  // Перезагружаем профиль
-                  context.read<ChatProfileBloc>().add(FetchChatProfile(chatId));
-                  
-                  // Также обновляем данные в других блоках, если они используются
-                  context.read<LeadByIdBloc>().add(FetchLeadByIdEvent(leadId: profile.id));
-                  context.read<LeadBloc>().add(FetchLeadStatuses());
-                },
-              );
-            }
-          },
-        ),
       ],
     );
   }
 
   Widget buildInfoRow(
-    BuildContext context, // Добавляем context как параметр
-    dynamic profile, // Добавляем profile как параметр
+    BuildContext context,
+    dynamic profile,
     String title,
     String value,
     IconData? icon,

@@ -151,7 +151,7 @@ void main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
     //print("====================== MAIN START ======================");
-
+    
     // ШАГ 1: Безопасная инициализация Firebase
     await _initializeFirebase();
 

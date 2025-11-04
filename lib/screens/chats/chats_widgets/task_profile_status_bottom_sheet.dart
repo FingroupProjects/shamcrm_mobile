@@ -1,14 +1,14 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/custom_bottom_dropdown.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
-import 'package:crm_task_manager/models/lead_model.dart';
+import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 
-/// Модальное окно для изменения статуса лида из профиля
-void showProfileStatusBottomSheet(
+/// Модальное окно для изменения статуса задачи из профиля
+void showTaskProfileStatusBottomSheet(
   BuildContext context,
-  int leadId,
+  int taskId,
   int currentStatusId,
   String currentStatusTitle,
   Function() onStatusChanged,
@@ -16,7 +16,7 @@ void showProfileStatusBottomSheet(
   String selectedValue = currentStatusTitle;
   int? selectedStatusId = currentStatusId;
   bool isLoading = false;
-  List<LeadStatus>? cachedStatuses; // Кешируем статусы
+  List<TaskStatus>? cachedStatuses; // Кешируем статусы
 
   showModalBottomSheet(
     context: context,
@@ -56,11 +56,11 @@ void showProfileStatusBottomSheet(
                 ),
                 const SizedBox(height: 16),
                 
-                // Список статусов
+                // Список статусов задач
                 Expanded(
                   child: cachedStatuses == null
-                      ? FutureBuilder<List<LeadStatus>>(
-                          future: ApiService().getLeadStatuses(),
+                      ? FutureBuilder<List<TaskStatus>>(
+                          future: ApiService().getTaskStatuses(),
                           builder: (context, snapshot) {
                             if (snapshot.connectionState == ConnectionState.waiting) {
                               return Center(
@@ -93,21 +93,19 @@ void showProfileStatusBottomSheet(
                             }
 
                             // Кешируем статусы после первой загрузки
-                            cachedStatuses = snapshot.data!
-                                .where((status) => status.lead_status_id == null)
-                                .toList();
+                            cachedStatuses = snapshot.data!;
 
-                            return _buildStatusList(cachedStatuses!, selectedValue, (status) {
+                            return _buildTaskStatusList(cachedStatuses!, selectedValue, (status) {
                               setState(() {
-                                selectedValue = status.title;
+                                selectedValue = status.taskStatus?.name ?? "";
                                 selectedStatusId = status.id;
                               });
                             });
                           },
                         )
-                      : _buildStatusList(cachedStatuses!, selectedValue, (status) {
+                      : _buildTaskStatusList(cachedStatuses!, selectedValue, (status) {
                           setState(() {
-                            selectedValue = status.title;
+                            selectedValue = status.taskStatus?.name ?? "";
                             selectedStatusId = status.id;
                           });
                         }),
@@ -131,8 +129,8 @@ void showProfileStatusBottomSheet(
                             });
 
                             try {
-                              await ApiService().updateLeadStatus(
-                                leadId,
+                              await ApiService().updateTaskStatus(
+                                taskId,
                                 currentStatusId,
                                 selectedStatusId!,
                               );
@@ -175,10 +173,11 @@ void showProfileStatusBottomSheet(
 
                               if (!context.mounted) return;
 
-                              // Получаем сообщение об ошибке
+                              // Получаем сообщение об ошибке - обращаемся к свойству напрямую
                               String errorMessage;
-                              if (error is LeadStatusUpdateException) {
-                                // Используем message из exception
+                              
+                              if (error is TaskStatusUpdateException) {
+                                // ВАЖНО: используем свойство .message напрямую, а не toString()
                                 errorMessage = error.message;
                               } else {
                                 // Общая ошибка
@@ -236,11 +235,11 @@ void showProfileStatusBottomSheet(
   );
 }
 
-/// Виджет списка статусов
-Widget _buildStatusList(
-  List<LeadStatus> statuses,
+/// Виджет списка статусов задач
+Widget _buildTaskStatusList(
+  List<TaskStatus> statuses,
   String selectedValue,
-  Function(LeadStatus) onStatusSelected,
+  Function(TaskStatus) onStatusSelected,
 ) {
   return ListView.builder(
     itemCount: statuses.length,
@@ -249,21 +248,21 @@ Widget _buildStatusList(
       return GestureDetector(
         onTap: () => onStatusSelected(status),
         child: buildDropDownStyles(
-          text: status.title,
-          isSelected: selectedValue == status.title,
+          text: status.taskStatus?.name ?? "",
+          isSelected: selectedValue == status.taskStatus?.name,
         ),
       );
     },
   );
 }
 
-/// Exception для обработки ошибок обновления статуса
-class LeadStatusUpdateException implements Exception {
-  final int code;
+/// Exception для обработки ошибок обновления статуса задачи
+class TaskStatusUpdateException implements Exception {
+  final int statusCode;
   final String message;
 
-  LeadStatusUpdateException(this.code, this.message);
+  TaskStatusUpdateException(this.statusCode, this.message);
 
   @override
-  String toString() => 'LeadStatusUpdateException($code, $message)';
+  String toString() => 'TaskStatusUpdateException($statusCode, $message)';
 }
