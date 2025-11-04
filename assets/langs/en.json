@@ -668,6 +668,7 @@
   "new_lead_in_switch": "New lead",
   "import_contact": "Import from contacts",
   "withoutDeal": "Without a deal",
+  "withOrders": "With orders",
   "event_history": "Event history",
   "sum": "Sum",
   "notifications_sent": "Send PUSH notification",

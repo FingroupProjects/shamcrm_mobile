@@ -1450,6 +1450,7 @@ Future<String> getStaticBaseUrl() async {
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       if (data['result']['data'] != null) {
+        debugPrint("getLeadsResponse: $data", wrapWidth: 999999);
         return (data['result']['data'] as List)
             .map((json) => Lead.fromJson(json, leadStatusId ?? -1))
             .toList();

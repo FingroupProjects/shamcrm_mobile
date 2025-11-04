@@ -506,7 +506,7 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
                             (value) => setState(() => _hasDeal = value),
                           ),
                           _buildSwitchTile(
-                            AppLocalizations.of(context)!.translate('withOrders'),
+                            AppLocalizations.of(context)!.translate('withOrders') ?? 'С заказами',
                             _hasOrders ?? false,
                             (value) => setState(() => _hasOrders = value),
                           ),
