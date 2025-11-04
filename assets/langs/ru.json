@@ -184,7 +184,7 @@
   "task_statuses": "Статусы задачи",
   "lead_statuses": "Статусы лида",
   "deal_statuses": "Статусы сделки",
-  "event_statuses": "Статусы cобитый",
+  "event_statuses": "Статусы событий",
   "select_status": "Выберите статус",
   "select_order_status": "Выберите статус заказа",
   "field_required": "Поле обязательно для заполнения",
