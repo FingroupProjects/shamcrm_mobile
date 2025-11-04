@@ -1330,6 +1330,7 @@ Future<String> getStaticBaseUrl() async {
     bool? hasContact,
     bool? hasChat,
     bool? hasDeal,
+    bool? hasOrders,
     int? daysWithoutActivity,
     bool? hasNoReplies,
     bool? hasUnreadMessages,
@@ -1362,6 +1363,7 @@ Future<String> getStaticBaseUrl() async {
         (hasContact == true) ||
         (hasChat == true) ||
         (hasDeal == true) ||
+        (hasOrders == true) ||
         (hasNoReplies == true) ||
         (hasUnreadMessages == true) ||
         (daysWithoutActivity != null) ||
@@ -1426,6 +1428,9 @@ Future<String> getStaticBaseUrl() async {
     if (hasDeal == true) {
       path += '&withoutDeal=1';
     }
+    if (hasOrders == true) {
+      path += '&hasOrders=1';
+    }
     if (daysWithoutActivity != null) {
       path += '&lastUpdate=$daysWithoutActivity';
     }
@@ -1439,7 +1444,7 @@ Future<String> getStaticBaseUrl() async {
     }
 
     if (kDebugMode) {
-      //print('ApiService: getLeads - Final path: $path');
+      print('ApiService: getLeads - Final path: $path');
     }
     final response = await _getRequest(path);
     if (response.statusCode == 200) {

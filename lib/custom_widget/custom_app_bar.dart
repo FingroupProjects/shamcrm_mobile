@@ -108,6 +108,7 @@ class CustomAppBar extends StatefulWidget {
   final bool? initialManagerLeadHasNoReplies;
   final bool? initialManagerLeadHasUnreadMessages;
   final bool? initialManagerLeadHasDeal;
+  final bool? initialManagerLeadHasOrders;
   final int? initialManagerLeadDaysWithoutActivity;
   final List<Map<String, dynamic>>?
       initialDirectoryValuesLead; // Новый параметр для лидов
@@ -197,6 +198,7 @@ final List<String>? initialDealNames; // Новый параметр
     this.initialManagerLeadHasNoReplies,
     this.initialManagerLeadHasUnreadMessages,
     this.initialManagerLeadHasDeal,
+    this.initialManagerLeadHasOrders,
     this.initialManagerLeadDaysWithoutActivity,
     this.initialDirectoryValuesLead, // Добавляем в конструктор
     this.initialDirectoryValuesTask, // Добавляем в конструктор
@@ -1061,6 +1063,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                           initialHasUnreadMessages:
                               widget.initialChatFilters?['hasUnreadMessages'],
                           initialHasDeal: widget.initialChatFilters?['hasDeal'],
+                          // initialHasOrders: widget.initialChatFilters?['hasOrders'],
                           initialDaysWithoutActivity:
                               widget.initialChatFilters?['daysWithoutActivity'],
                           initialDirectoryValues: _safeConvertToMapList(
@@ -1687,6 +1690,7 @@ class _CustomAppBarState extends State<CustomAppBar>
           initialHasNoReplies: widget.initialManagerLeadHasNoReplies,
           initialHasUnreadMessages: widget.initialManagerLeadHasUnreadMessages,
           initialHasDeal: widget.initialManagerLeadHasDeal,
+          initialHasOrders: widget.initialManagerLeadHasOrders,
           initialDaysWithoutActivity:
               widget.initialManagerLeadDaysWithoutActivity,
           onResetFilters: widget.onLeadResetFilters,

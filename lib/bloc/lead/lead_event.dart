@@ -28,6 +28,7 @@ class FetchLeads extends LeadEvent {
   final bool? hasNoReplies;
   final bool? hasUnreadMessages;
   final bool? hasDeal;
+  final bool? hasOrders;
   final int? daysWithoutActivity;
   final List<Map<String, dynamic>>? directoryValues;
   final int? salesFunnelId;
@@ -51,6 +52,7 @@ class FetchLeads extends LeadEvent {
     this.hasNoReplies,
     this.hasUnreadMessages,
     this.hasDeal,
+    this.hasOrders,
     this.daysWithoutActivity,
     this.directoryValues,
     this.salesFunnelId,

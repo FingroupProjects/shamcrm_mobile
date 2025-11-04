@@ -26,6 +26,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
   bool? _currentHasNoReplies; // Новый параметр
   bool? _currentHasUnreadMessages; // Новый параметр
   bool? _currentHasDeal;
+  bool? _currentHasOrders;
   int? _currentDaysWithoutActivity;
   bool isFetching = false; // Новый флаг
   List<Map<String, dynamic>>? _currentDirectoryValues; // Новый параметр
@@ -87,6 +88,7 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
     _currentHasNoReplies = event.hasNoReplies;
     _currentHasUnreadMessages = event.hasUnreadMessages;
     _currentHasDeal = event.hasDeal;
+    _currentHasOrders = event.hasOrders;
     _currentDaysWithoutActivity = event.daysWithoutActivity;
     _currentDirectoryValues = event.directoryValues;
 
@@ -129,6 +131,7 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
         hasNoReplies: event.hasNoReplies,
         hasUnreadMessages: event.hasUnreadMessages,
         hasDeal: event.hasDeal,
+        hasOrders: event.hasOrders,
         daysWithoutActivity: event.daysWithoutActivity,
         directoryValues: event.directoryValues,
         salesFunnelId: event.salesFunnelId,
@@ -201,6 +204,7 @@ Future<void> _fetchLeadStatuses(FetchLeadStatuses event, Emitter<LeadState> emit
       _currentHasNoReplies = null;
       _currentHasUnreadMessages = null;
       _currentHasDeal = null;
+      _currentHasOrders = null;
       _currentDaysWithoutActivity = null;
       _currentDirectoryValues = null;
       
@@ -338,6 +342,7 @@ Future<void> _fetchLeadStatuses(FetchLeadStatuses event, Emitter<LeadState> emit
         hasNoReplies: _currentHasNoReplies, // Новый параметр
         hasUnreadMessages: _currentHasUnreadMessages, // Новый параметр
         hasDeal: _currentHasDeal,
+        hasOrders: _currentHasOrders,
         daysWithoutActivity: _currentDaysWithoutActivity,
                 directoryValues: _currentDirectoryValues, // Передаем сохраненные значения
 
@@ -615,6 +620,7 @@ Future<void> clearAllCountsAndCache() async {
   _currentHasNoReplies = null;
   _currentHasUnreadMessages = null;
   _currentHasDeal = null;
+  _currentHasOrders = null;
   _currentDaysWithoutActivity = null;
   _currentDirectoryValues = null;
   
