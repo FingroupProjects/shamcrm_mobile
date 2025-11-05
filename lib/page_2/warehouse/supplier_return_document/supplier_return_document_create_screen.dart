@@ -10,13 +10,11 @@ import 'package:crm_task_manager/custom_widget/keyboard_dismissible.dart';
 import 'package:crm_task_manager/custom_widget/price_input_formatter.dart';
 import 'package:crm_task_manager/custom_widget/quantity_input_formatter.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
-import 'package:crm_task_manager/page_2/warehouse/incoming/info_panel.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/storage_widget.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/supplier_widget.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/variant_selection_bottom_sheet.dart';
 import 'package:crm_task_manager/page_2/widgets/confirm_exit_dialog.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -54,7 +52,6 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
   final Map<int, bool> _collapsedItems = {};
 
   late TabController _tabController;
-  bool _showInfoPanel = false;
 
   @override
   void initState() {
@@ -245,9 +242,6 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
           _items[index]['price'] = inputPrice;
           final quantity = _items[index]['quantity'] ?? 0;
           _items[index]['total'] = (quantity * inputPrice).round();
-
-          // ⭐ Проверяем, заполнены ли оба поля (quantity и price)
-          _checkAndShowInfoPanel(variantId);
         }
         _priceErrors[variantId] = false;
       });
@@ -271,9 +265,6 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
           _items[index]['quantity'] = quantity;
           final price = _items[index]['price'] ?? 0.0;
           _items[index]['total'] = (quantity * price).round();
-
-          // ⭐ Проверяем, заполнены ли оба поля (quantity и price)
-          _checkAndShowInfoPanel(variantId);
         }
         _quantityErrors[variantId] = false;
       });
@@ -285,23 +276,6 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
           _items[index]['total'] = 0.0;
         }
       });
-    }
-  }
-
-// Обновите метод _checkAndShowInfoPanel:
-  void _checkAndShowInfoPanel(int variantId) {
-    final index = _items.indexWhere((item) => item['variantId'] == variantId);
-    if (index != -1) {
-      final item = _items[index];
-      final hasQuantity = item.containsKey('quantity') && (item['quantity'] ?? 0) > 0;
-      final hasPrice = (item['price'] ?? 0.0) > 0;
-
-      // ⭐ Показываем панель только если оба поля заполнены
-      if (hasQuantity && hasPrice) {
-        setState(() {
-          _showInfoPanel = true;
-        });
-      }
     }
   }
 
@@ -597,30 +571,22 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
             ),
           ),
         ),
-        // ✅ Информационная панель
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: InfoPanel(
-            show: _showInfoPanel,
-            duration: const Duration(seconds: 4),
-            message:
-            localizations.translate('goods_added_go_to_main') ??
-                'Товары добавлены. Перейдите в «Основное», чтобы сохранить.',
-            actionText: localizations.translate('go') ?? 'Перейти',
-            onActionTap: () {
-              _priceFocusNodes.forEach((_, node) => node.unfocus());
-              _quantityFocusNodes.forEach((_, node) => node.unfocus());
-              _tabController.animateTo(0);
-              // ⭐ НЕ сбрасываем _showInfoPanel здесь, пусть таймер это сделает
-            },
-            onDismiss: () {
-              // ⭐ Сбрасываем только при автоматическом скрытии (по таймеру)
-              if (mounted) {
-                setState(() => _showInfoPanel = false);
-              }
-            },
+        // Подсказка для сохранения
+        if (_items.isNotEmpty)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: const Text(
+              'После добавления товаров перейдите в "Основное" для сохранения', // localizations.translate('save_hint')
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w400,
+                color: Color(0xffbdc2cf),
+                height: 1.2,
+              ),
+            ),
           ),
-        ),
         // Кнопка "Добавить товар"
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
