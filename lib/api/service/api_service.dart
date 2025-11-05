@@ -51,6 +51,7 @@ import 'package:crm_task_manager/models/notice_subject_model.dart';
 import 'package:crm_task_manager/models/notifications_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/task_chart_model.dart';
 import 'package:crm_task_manager/models/organization_model.dart';
+import 'package:crm_task_manager/models/overdue_task_response.dart';
 import 'package:crm_task_manager/models/page_2/branch_model.dart';
 import 'package:crm_task_manager/models/page_2/call_analytics_model.dart';
 import 'package:crm_task_manager/models/page_2/call_center_by_id_model.dart';
@@ -59,6 +60,8 @@ import 'package:crm_task_manager/models/page_2/call_statistics1_model.dart';
 import 'package:crm_task_manager/models/page_2/call_summary_stats_model.dart';
 import 'package:crm_task_manager/models/page_2/category_dashboard_warehouse_model.dart';
 import 'package:crm_task_manager/models/field_configuration.dart';
+import 'package:crm_task_manager/models/page_2/expense_details_document_model.dart' as expDoc;
+import 'package:crm_task_manager/models/page_2/expense_document_model.dart' as expense;
 import 'package:crm_task_manager/models/page_2/opening_supplier_model.dart' as opening_supplier;
 import 'package:crm_task_manager/models/page_2/openings/client_dialog_model.dart' as opening_lead;
 import 'package:crm_task_manager/models/page_2/order_status_warehouse_model.dart';
@@ -169,7 +172,7 @@ class ApiService {
     '/login',
     '/get-user-by-email',
     '/checkDomain',
-    '/add-fcm-token',
+    // '/add-fcm-token',
   ];
   ApiService() {
     _initializeIfDomainExists();
@@ -776,12 +779,15 @@ Future<void> sendDeviceToken(String deviceToken) async {
   try {
     print('sendDeviceToken: Начало отправки токена');
     
+    // ← ДОБАВЬ ПРОВЕРКУ
+    if (baseUrl == null || baseUrl!.isEmpty) {
+      print('sendDeviceToken: baseUrl не инициализирован! Пропускаем отправку.');
+      await _savePendingToken(deviceToken); // ← сохраняем на потом
+      return;
+    }
+
     final token = await getToken();
     final organizationId = await getSelectedOrganization();
-    
-    print('sendDeviceToken: User token: ${token != null ? "exists" : "null"}');
-    print('sendDeviceToken: Organization ID: $organizationId');
-    print('sendDeviceToken: BaseUrl: $baseUrl');
     
     final url = '$baseUrl/add-fcm-token${organizationId != null ? '?organization_id=$organizationId' : ''}';
     print('sendDeviceToken: Full URL: $url');
@@ -800,21 +806,33 @@ Future<void> sendDeviceToken(String deviceToken) async {
       }),
     );
 
-    print('sendDeviceToken: Response status: ${response.statusCode}');
-    print('sendDeviceToken: Response body: ${response.body}');
-
     if (response.statusCode == 200) {
-      print('sendDeviceToken: ✅ FCM-токен успешно отправлен!');
+      print('sendDeviceToken: FCM-токен успешно отправлен!');
     } else {
-      print('sendDeviceToken: ❌ Ошибка ${response.statusCode}: ${response.body}');
-      throw Exception('Ошибка отправки FCM-токена: ${response.statusCode}');
+      print('sendDeviceToken: Ошибка ${response.statusCode}: ${response.body}');
+      await _savePendingToken(deviceToken);
     }
   } catch (e, stackTrace) {
-    print('sendDeviceToken: ❌ Exception: $e');
-    print('sendDeviceToken: StackTrace: $stackTrace');
+    print('sendDeviceToken: Exception: $e');
+    await _savePendingToken(deviceToken); // ← сохраняем при ошибке
     rethrow;
   }
-}Future<void> sendPendingFCMToken() async {
+}
+
+// ← ДОБАВЬ ЭТОТ МЕТОД
+Future<void> _savePendingToken(String token) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString('pending_fcm_token', token);
+  print('sendDeviceToken: Токен сохранён как отложенный');
+}
+
+Future<void> ensureInitialized() async {
+  if (baseUrl == null) {
+    await _initializeIfDomainExists();
+  }
+}
+
+Future<void> sendPendingFCMToken() async {
   try {
     print('ApiService: Проверка отложенного FCM токена');
     
@@ -921,7 +939,7 @@ Future<void> sendDeviceToken(String deviceToken) async {
     };
   }
 
-//_________________________________ START___API__DOMAIN_CHECK____________________________________________//
+//_________________________________ START___API__MARK:DOMAIN_CHECK____________________________________________//
 
   Future<http.Response> _postRequestDomain(
       String path, Map<String, dynamic> body) async {
@@ -5080,6 +5098,34 @@ Future<List<Deal>> getDeals(
       throw ('Ошибка загрузки данных графика Выполнение целей!');
     }
   }
+
+  Future<OverdueTasksResponse> getUsersOverdueTaskData(
+  {required int userId}
+      ) async {
+    // Use _appendQueryParams to include organization_id, etc.
+    final path = await _appendQueryParams('/dashboard/user/$userId/overdue-tasks');
+
+    if (kDebugMode) {
+      // print('ApiService: getUserOverdueTasksData - Generated path: $path');
+    }
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = json.decode(response.body);
+
+      if (data['result'] != null) {
+        return OverdueTasksResponse.fromJson(data);
+      } else {
+        throw ('Нет данных в ответе "Просроченные задачи"');
+      }
+    } else if (response.statusCode == 500) {
+      throw ('Ошибка сервера: 500');
+    } else {
+      throw ('Ошибка загрузки данных "Просроченные задачи"!');
+    }
+  }
+
 
 //_________________________________ END_____API_SCREEN__DASHBOARD____________________________________________//
 
@@ -10909,7 +10955,7 @@ Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
 //______________________________end incoming documents____________________________//
 
 //______________________________start client sales____________________________//
-  Future<IncomingResponse> getClientSales({
+  Future<expense.ExpenseResponse> getClientSales({
     int page = 1,
     int perPage = 20,
     String? query,
@@ -10965,7 +11011,7 @@ Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
       final response = await _getRequest(path);
       if (response.statusCode == 200) {
         final rawData = json.decode(response.body)['result']; // Как в JSON
-        return IncomingResponse.fromJson(rawData);
+        return expense.ExpenseResponse.fromJson(rawData);
       } else {
         final message = _extractErrorMessageFromResponse(response);
         throw ApiException(message ?? 'Ошибка сервера', response.statusCode);
@@ -10977,7 +11023,7 @@ Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
 
 
 
-  Future<IncomingDocument> getClienSalesById(int documentId) async {
+  Future<expDoc.ExpenseDocumentDetail> getClienSalesById(int documentId) async {
     String url = '/expense-documents/$documentId';
 
     final path = await _appendQueryParams(url);
@@ -10989,7 +11035,7 @@ Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
       final response = await _getRequest(path);
       if (response.statusCode == 200) {
         final rawData = json.decode(response.body)['result'];
-        return IncomingDocument.fromJson(rawData);
+        return expDoc.ExpenseDocumentDetail.fromJson(rawData);
       } else {
         final message = _extractErrorMessageFromResponse(response);
         throw ApiException(message ?? 'Ошибка сервера', response.statusCode);
@@ -15461,7 +15507,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     }
   }
 
-  Future<ExpenseResponse> getExpenseStructureByFilter(
+  Future<DashboardExpenseResponse> getExpenseStructureByFilter(
     Map<String, dynamic>? filters,
     String? search,
   ) async {
@@ -15507,7 +15553,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      return ExpenseResponse.fromJson(data);
+      return DashboardExpenseResponse.fromJson(data);
     } else {
       final message = _extractErrorMessageFromResponse(response);
       throw ApiException(

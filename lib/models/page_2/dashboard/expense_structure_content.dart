@@ -1,14 +1,14 @@
-class ExpenseResponse {
+class DashboardExpenseResponse {
   final ExpenseResult result;
   final dynamic errors;
 
-  ExpenseResponse({
+  DashboardExpenseResponse({
     required this.result,
     this.errors,
   });
 
-  factory ExpenseResponse.fromJson(Map<String, dynamic> json) {
-    return ExpenseResponse(
+  factory DashboardExpenseResponse.fromJson(Map<String, dynamic> json) {
+    return DashboardExpenseResponse(
       result: ExpenseResult.fromJson(json['result'] as Map<String, dynamic>),
       errors: json['errors'],
     );

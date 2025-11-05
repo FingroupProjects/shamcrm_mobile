@@ -12,10 +12,10 @@ final class ClientSaleInitial extends ClientSaleState {}
 final class ClientSaleLoading extends ClientSaleState {}
 
 final class ClientSaleLoaded extends ClientSaleState {
-  final List<IncomingDocument> data;
+  final List<ExpenseDocument> data;
   final Pagination? pagination;
   final bool hasReachedMax;
-  final List<IncomingDocument>? selectedData;
+  final List<ExpenseDocument>? selectedData;
 
   const ClientSaleLoaded({
     required this.data,

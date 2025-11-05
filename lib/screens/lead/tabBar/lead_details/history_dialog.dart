@@ -1,15 +1,17 @@
+import 'dart:convert';
+
 import 'package:crm_task_manager/bloc/history_lead_notice_deal/history_lead_notice_deal_bloc.dart';
 import 'package:crm_task_manager/bloc/history_lead_notice_deal/history_lead_notice_deal_event.dart';
 import 'package:crm_task_manager/bloc/history_lead_notice_deal/history_lead_notice_deal_state.dart';
 import 'package:crm_task_manager/models/lead_history_model.dart';
 import 'package:crm_task_manager/models/notice_history_model.dart';
-import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/models/deal_history_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 
 class HistoryDialog extends StatefulWidget {
   final int leadId;
-
   const HistoryDialog({Key? key, required this.leadId}) : super(key: key);
 
   @override
@@ -18,9 +20,9 @@ class HistoryDialog extends StatefulWidget {
 
 class _HistoryDialogState extends State<HistoryDialog> {
   int _selectedTab = 0;
-  int? expandedItemId;
-  Set<int> expandedNoticeIds = {};
-  Set<int> expandedDealIds = {};
+  final Set<int> expandedNoticeIds = {};
+  final Set<int> expandedDealIds = {};
+
   @override
   void initState() {
     super.initState();
@@ -42,9 +44,7 @@ class _HistoryDialogState extends State<HistoryDialog> {
             const SizedBox(height: 16),
             _buildTabs(),
             const SizedBox(height: 16),
-            Expanded(
-              child: _buildContent(),
-            ),
+            Expanded(child: _buildContent()),
           ],
         ),
       ),
@@ -55,8 +55,8 @@ class _HistoryDialogState extends State<HistoryDialog> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          AppLocalizations.of(context)!.translate('history'),
+        const Text(
+          'История',
           style: TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
@@ -80,35 +80,29 @@ class _HistoryDialogState extends State<HistoryDialog> {
       ),
       child: Row(
         children: [
-          _buildTab(AppLocalizations.of(context)!.translate('lead'), 0),
-          _buildTab(AppLocalizations.of(context)!.translate('notes'), 1),
-          _buildTab(AppLocalizations.of(context)!.translate('deals'), 2),
+          _buildTab('Лид', 0),
+          _buildTab('Заметки', 1),
+          _buildTab('Сделки', 2),
         ],
       ),
     );
   }
 
   Widget _buildTab(String title, int index) {
-    bool isSelected = _selectedTab == index;
+    final isSelected = _selectedTab == index;
     return Expanded(
       child: GestureDetector(
         onTap: () {
           setState(() => _selectedTab = index);
           switch (index) {
             case 0:
-              context
-                  .read<HistoryLeadsBloc>()
-                  .add(FetchLeadHistory(widget.leadId));
+              context.read<HistoryLeadsBloc>().add(FetchLeadHistory(widget.leadId));
               break;
             case 1:
-              context
-                  .read<HistoryLeadsBloc>()
-                  .add(FetchNoticeHistory(widget.leadId));
+              context.read<HistoryLeadsBloc>().add(FetchNoticeHistory(widget.leadId));
               break;
             case 2:
-              context
-                  .read<HistoryLeadsBloc>()
-                  .add(FetchDealHistory(widget.leadId));
+              context.read<HistoryLeadsBloc>().add(FetchDealHistory(widget.leadId));
               break;
           }
         },
@@ -133,169 +127,6 @@ class _HistoryDialogState extends State<HistoryDialog> {
     );
   }
 
-  List<Widget> _buildLeadChanges(Changes changes) {
-    final Map<String, dynamic> body = {
-      "lead_status": {
-        "previous_value": changes.leadStatusPreviousValue,
-        "new_value": changes.leadStatusNewValue
-      },
-      "name": {
-        "previous_value": changes.historyNamePreviousValue,
-        "new_value": changes.historyNameNewValue
-      },
-      "phone": {
-        "previous_value": changes.phonePreviousValue,
-        "new_value": changes.phoneNewValue
-      },
-      "email": {
-        "previous_value": changes.emailPreviousValue,
-        "new_value": changes.emailNewValue
-      },
-      "region": {
-        "previous_value": changes.regionPreviousValue,
-        "new_value": changes.regionNewValue
-      },
-      "manager": {
-        "previous_value": changes.managerPreviousValue,
-        "new_value": changes.managerNewValue
-      },
-      "tg_nick": {
-        "previous_value": changes.tgNickPreviousValue,
-        "new_value": changes.tgNickNewValue
-      },
-      "birthday": {
-        "previous_value": changes.birthdayPreviousValue,
-        "new_value": changes.birthdayNewValue
-      },
-      "description": {
-        "previous_value": changes.descriptionPreviousValue,
-        "new_value": changes.descriptionNewValue
-      },
-      "insta_login": {
-        "previous_value": changes.instaLoginPreviousValue,
-        "new_value": changes.instaLoginNewValue
-      },
-      "facebook_login": {
-        "previous_value": changes.facebookLoginPreviousValue,
-        "new_value": changes.facebookLoginNewValue
-      }
-    };
-
-    final Map<String, String> translations = {
-      "name": "Название",
-      "phone": "Телефон",
-      "email": "Email",
-      "region": "Регион",
-      "manager": "Менеджер",
-      "tg_nick": "Telegram",
-      "birthday": "День рождения",
-      "description": "Описание",
-      "insta_login": "Instagram",
-      "facebook_login": "Facebook",
-      "lead_status": "Статус"
-    };
-
-    String formatDateIfNeeded(String key, dynamic value) {
-      if (key == 'birthday' && value != null && value.toString().isNotEmpty) {
-        try {
-          DateTime date;
-          String dateStr = value.toString();
-
-          if (dateStr.contains('T')) {
-            date = DateTime.parse(dateStr);
-          } else {
-            date = DateTime.parse(dateStr);
-          }
-
-          return '${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year}';
-        } catch (e) {
-          return value.toString();
-        }
-      }
-      return value?.toString() ?? '-';
-    }
-
-    return body.entries.map((entry) {
-      final previous = entry.value['previous_value'];
-      final newValue = entry.value['new_value'];
-
-      if (previous == null && newValue == null) {
-        return const SizedBox.shrink();
-      }
-
-      final String translatedKey = translations[entry.key] ?? entry.key;
-
-      final formattedPrevious = formatDateIfNeeded(entry.key, previous);
-      final formattedNewValue = formatDateIfNeeded(entry.key, newValue);
-
-      return Padding(
-        padding: const EdgeInsets.only(top: 8),
-        child: Text(
-          '$translatedKey: $formattedPrevious → $formattedNewValue',
-          style: const TextStyle(
-            fontSize: 14,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w400,
-            color: Color(0xff8F9BB3),
-          ),
-        ),
-      );
-    }).toList();
-  }
-
-Widget _buildHistoryItem(LeadHistory item) {
-  return Padding(
-    padding: const EdgeInsets.only(bottom: 16),
-    child: Container(
-      padding: EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF4F7FD),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Text(
-                  item.status,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF1E2E52),
-                  ),
-                ),
-              ),
-              Container(
-                constraints: BoxConstraints(
-                  maxWidth: 150,
-                ),
-                child: Text(
-                  '${item.user.name} ${_formatDate(item.date)}',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF1E2E52),
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 2,
-                  textAlign: TextAlign.end,
-                ),
-              ),
-            ],
-          ),
-          if (item.changes != null) ..._buildLeadChanges(item.changes!),
-        ],
-      ),
-    ),
-  );
-}
-
   Widget _buildContent() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -306,9 +137,7 @@ Widget _buildHistoryItem(LeadHistory item) {
       child: BlocBuilder<HistoryLeadsBloc, HistoryState>(
         builder: (context, state) {
           if (state is HistoryLoading) {
-            return const Center(
-              child: CircularProgressIndicator(color: Color(0xff1E2E52)),
-            );
+            return const Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));
           } else if (state is HistoryError) {
             return Center(child: Text(state.message));
           } else if (state is LeadHistoryLoaded) {
@@ -324,59 +153,78 @@ Widget _buildHistoryItem(LeadHistory item) {
     );
   }
 
+  // MARK: - Лид
   Widget _buildLeadHistoryContent(List<LeadHistory> history) {
     if (history.isEmpty) {
-      return Center(
+      return const Center(
         child: Text(
-          AppLocalizations.of(context)!.translate('no_data_to_display'),
-          style: const TextStyle(
-            fontSize: 14,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w500,
-            color: Color(0xff8F9BB3),
-          ),
+          'Нет данных для отображения',
+          style: TextStyle(fontSize: 14, fontFamily: 'Gilroy', fontWeight: FontWeight.w500, color: Color(0xff8F9BB3)),
         ),
       );
     }
-
     return SingleChildScrollView(
       child: Column(
-        children: history.map((item) => _buildHistoryItem(item)).toList(),
+        children: history.map((item) => _buildLeadHistoryItem(item)).toList(),
       ),
     );
   }
 
+  Widget _buildLeadHistoryItem(LeadHistory item) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(color: const Color(0xFFF4F7FD), borderRadius: BorderRadius.circular(8)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Text(
+                    item.status,
+                    style: const TextStyle(fontSize: 16, fontFamily: 'Gilroy', fontWeight: FontWeight.w600, color: Color(0xFF1E2E52)),
+                  ),
+                ),
+                Container(
+                  constraints: const BoxConstraints(maxWidth: 150),
+                  child: Text(
+                    '${item.user?.fullName ?? 'Система'} ${_formatDate(item.date)}',
+                    style: const TextStyle(fontSize: 14, fontFamily: 'Gilroy', fontWeight: FontWeight.w600, color: Color(0xFF1E2E52)),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
+                    textAlign: TextAlign.end,
+                  ),
+                ),
+              ],
+            ),
+            if (item.changes.isNotEmpty) ..._buildChanges(item.changes, _leadFieldNames),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // MARK: - Заметки
   Widget _buildNoticeHistoryContent(List<NoticeHistory> notices) {
     if (notices.isEmpty) {
-      return Center(
-        child: Text(
-          AppLocalizations.of(context)!.translate('no_data_to_display'),
-          style: const TextStyle(
-            fontSize: 14,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w500,
-            color: Color(0xff8F9BB3),
-          ),
-        ),
-      );
+      return const Center(child: Text('Нет данных для отображения', style: TextStyle(fontSize: 14, fontFamily: 'Gilroy', fontWeight: FontWeight.w500, color: Color(0xff8F9BB3))));
     }
-
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: notices.map((notice) {
-          final bool isExpanded = expandedNoticeIds.contains(notice.id);
+          final isExpanded = expandedNoticeIds.contains(notice.id);
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               GestureDetector(
                 onTap: () {
                   setState(() {
-                    if (isExpanded) {
-                      expandedNoticeIds.remove(notice.id);
-                    } else {
-                      expandedNoticeIds.add(notice.id);
-                    }
+                    isExpanded ? expandedNoticeIds.remove(notice.id) : expandedNoticeIds.add(notice.id);
                   });
                 },
                 child: Padding(
@@ -387,27 +235,15 @@ Widget _buildHistoryItem(LeadHistory item) {
                       Expanded(
                         child: Text(
                           notice.title,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xff1E2E52),
-                          ),
+                          style: const TextStyle(fontSize: 16, fontFamily: 'Gilroy', fontWeight: FontWeight.w600, color: Color(0xff1E2E52)),
                         ),
                       ),
-                      Icon(
-                        isExpanded ? Icons.expand_less : Icons.expand_more,
-                        color: const Color(0xff8F9BB3),
-                      ),
+                      Icon(isExpanded ? Icons.expand_less : Icons.expand_more, color: const Color(0xff8F9BB3)),
                     ],
                   ),
                 ),
               ),
-              if (isExpanded) ...[
-                ...notice.history
-                    .map((item) => _buildNoticeHistoryItem(item))
-                    .toList(),
-              ],
+              if (isExpanded) ...notice.history.map((item) => _buildNoticeHistoryItem(item)).toList(),
               const Divider(color: Color(0xFFE0E0E0), height: 24),
             ],
           );
@@ -416,37 +252,61 @@ Widget _buildHistoryItem(LeadHistory item) {
     );
   }
 
+  Widget _buildNoticeHistoryItem(HistoryItem item) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(color: const Color(0xFFF4F7FD), borderRadius: BorderRadius.circular(8)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Text(
+                    item.status,
+                    style: const TextStyle(fontSize: 16, fontFamily: 'Gilroy', fontWeight: FontWeight.w600, color: Color(0xFF1E2E52)),
+                  ),
+                ),
+                Container(
+                  constraints: const BoxConstraints(maxWidth: 150),
+                  child: Text(
+                    '${item.user?.fullName ?? 'Система'} ${_formatDate(item.date)}',
+                    style: const TextStyle(fontSize: 14, fontFamily: 'Gilroy', fontWeight: FontWeight.w600, color: Color(0xFF1E2E52)),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
+                    textAlign: TextAlign.end,
+                  ),
+                ),
+              ],
+            ),
+            if (item.changes.isNotEmpty) ..._buildChanges(item.changes, _noticeFieldNames),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // MARK: - Сделки
   Widget _buildDealHistoryContent(List<DealHistoryLead> deals) {
     if (deals.isEmpty) {
-      return Center(
-        child: Text(
-          AppLocalizations.of(context)!.translate('no_data_to_display'),
-          style: const TextStyle(
-            fontSize: 14,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w500,
-            color: Color(0xff8F9BB3),
-          ),
-        ),
-      );
+      return const Center(child: Text('Нет данных для отображения', style: TextStyle(fontSize: 14, fontFamily: 'Gilroy', fontWeight: FontWeight.w500, color: Color(0xff8F9BB3))));
     }
-
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: deals.map((deal) {
-          final bool isExpanded = expandedDealIds.contains(deal.id);
+          final isExpanded = expandedDealIds.contains(deal.id);
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               GestureDetector(
                 onTap: () {
                   setState(() {
-                    if (isExpanded) {
-                      expandedDealIds.remove(deal.id);
-                    } else {
-                      expandedDealIds.add(deal.id);
-                    }
+                    isExpanded ? expandedDealIds.remove(deal.id) : expandedDealIds.add(deal.id);
                   });
                 },
                 child: Padding(
@@ -457,27 +317,15 @@ Widget _buildHistoryItem(LeadHistory item) {
                       Expanded(
                         child: Text(
                           deal.title,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xff1E2E52),
-                          ),
+                          style: const TextStyle(fontSize: 16, fontFamily: 'Gilroy', fontWeight: FontWeight.w600, color: Color(0xff1E2E52)),
                         ),
                       ),
-                      Icon(
-                        isExpanded ? Icons.expand_less : Icons.expand_more,
-                        color: const Color(0xff8F9BB3),
-                      ),
+                      Icon(isExpanded ? Icons.expand_less : Icons.expand_more, color: const Color(0xff8F9BB3)),
                     ],
                   ),
                 ),
               ),
-              if (isExpanded) ...[
-                ...deal.history
-                    .map((item) => _buildDealHistoryItem(item))
-                    .toList(),
-              ],
+              if (isExpanded) ...deal.history.map((item) => _buildDealHistoryItem(item)).toList(),
               const Divider(color: Color(0xFFE0E0E0), height: 24),
             ],
           );
@@ -486,235 +334,142 @@ Widget _buildHistoryItem(LeadHistory item) {
     );
   }
 
-Widget _buildNoticeHistoryItem(HistoryItem item) {
-  return Padding(
-    padding: const EdgeInsets.only(bottom: 16),
-    child: Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF4F7FD),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Text(
-                  item.status,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF1E2E52),
-                  ),
-                ),
-              ),
-              Container(
-                constraints: const BoxConstraints(
-                  maxWidth: 150,
-                ),
-                child: Text(
-                  '${item.user!.name} ${_formatDate(item.date)}',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF1E2E52),
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 2,
-                  textAlign: TextAlign.end
-                ),
-              ),
-            ],
-          ),
-          if (item.changes.isNotEmpty) ..._buildNoticeChanges(item.changes.first),
-        ],
-      ),
-    ),
-  );
-}
-
   Widget _buildDealHistoryItem(HistoryItem item) {
-  return Padding(
-    padding: const EdgeInsets.only(bottom: 16),
-    child: Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF4F7FD),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Text(
-                  item.status,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF1E2E52),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(color: const Color(0xFFF4F7FD), borderRadius: BorderRadius.circular(8)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Text(
+                    item.status,
+                    style: const TextStyle(fontSize: 16, fontFamily: 'Gilroy', fontWeight: FontWeight.w600, color: Color(0xFF1E2E52)),
                   ),
                 ),
-              ),
-              Container(
-                constraints: const BoxConstraints(
-                  maxWidth: 150,
-                ),
-                child: Text(
-                  '${item.user!.name} ${_formatDate(item.date)}',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF1E2E52),
+                Container(
+                  constraints: const BoxConstraints(maxWidth: 150),
+                  child: Text(
+                    '${item.user?.fullName ?? 'Система'} ${_formatDate(item.date)}',
+                    style: const TextStyle(fontSize: 14, fontFamily: 'Gilroy', fontWeight: FontWeight.w600, color: Color(0xFF1E2E52)),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
+                    textAlign: TextAlign.end,
                   ),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 2,
-                  textAlign: TextAlign.end,
                 ),
-              ),
-            ],
-          ),
-          if (item.changes.isNotEmpty) ..._buildDealChanges(item.changes.first),
-        ],
+              ],
+            ),
+            if (item.changes.isNotEmpty) ..._buildChanges(item.changes, _dealFieldNames),
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
-  List<Widget> _buildNoticeChanges(ChangesLead changes) {
-    final Map<String, dynamic> body = changes.body;
-    if (body.isEmpty) return [];
+  // MARK: - Универсальные изменения
+  List<Widget> _buildChanges(List<ChangeItem> changesList, Map<String, String> fieldNames) {
+    final List<Widget> widgets = [];
 
-    final Map<String, String> translations = {
-      'body': AppLocalizations.of(context)!.translate('description'),
-      'date': AppLocalizations.of(context)!.translate('reminder'),
-      'lead': AppLocalizations.of(context)!.translate('lead'),
-      'title': AppLocalizations.of(context)!.translate('subject'),
-      'notifications_sent': AppLocalizations.of(context)!.translate('send_push_notification')
-    };
+    for (final change in changesList) {
+      for (final MapEntry(:key, :value) in change.body.entries) {
+        if (value is! ChangeValue) continue;
 
-    String formatDateIfNeeded(String key, dynamic value) {
-      if (key == 'date' && value != null && value.toString().isNotEmpty) {
-        try {
-          DateTime date;
-          String dateStr = value.toString();
+        final prev = value.previousValue ?? '';
+        final next = value.newValue ?? '';
+        final prevText = prev.isEmpty ? '—' : prev;
+        final nextText = next.isEmpty ? '—' : next;
 
-          if (dateStr.contains('T')) {
-            date = DateTime.parse(dateStr);
-          } else {
-            date = DateTime.parse(dateStr);
+        final field = fieldNames[key] ?? key[0].toUpperCase() + key.substring(1).replaceAll('_', ' ');
+
+        String format(String text) {
+          if (key == 'date' || key.contains('date') || key == 'from' || key == 'to') {
+            return _formatDateTime(text);
           }
-          return '${date.day.toString().padLeft(2, '0')}.'
-              '${date.month.toString().padLeft(2, '0')}.'
-              '${date.year} ${date.hour.toString().padLeft(2, '0')}:'
-              '${date.minute.toString().padLeft(2, '0')}';
-        } catch (e) {
-          return value.toString();
+          if (key == 'notifications_sent') {
+            return _parseNotifications(text);
+          }
+          return text;
         }
-      }
-      return value?.toString() ??
-          AppLocalizations.of(context)!.translate('');
-    }
 
-    return body.entries.map((entry) {
-      if (entry.value is Map) {
-        final changeMap = Map<String, dynamic>.from(entry.value as Map);
-        final String translatedKey = translations[entry.key] ?? entry.key;
-        final formattedPreviousValue = formatDateIfNeeded(entry.key, changeMap['previous_value']);
-        final formattedNewValue = formatDateIfNeeded(entry.key, changeMap['new_value']);
-        return Padding(
-          padding: const EdgeInsets.only(top: 8),
-          child: Text(
-            '$translatedKey: $formattedPreviousValue → $formattedNewValue',
-            style: const TextStyle(
-              fontSize: 14,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w400,
-              color: Color(0xff8F9BB3),
+        widgets.add(
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              '$field: ${format(prevText)} → ${format(nextText)}',
+              style: const TextStyle(fontSize: 14, fontFamily: 'Gilroy', fontWeight: FontWeight.w400, color: Color(0xff8F9BB3)),
             ),
           ),
         );
       }
-      return const SizedBox.shrink();
-    }).toList();
-  }
-
-  List<Widget> _buildDealChanges(ChangesLead changes) {
-    final Map<String, dynamic> body = changes.body;
-    if (body.isEmpty) return [];
-
-    final Map<String, String> translations = {
-      'sum': AppLocalizations.of(context)!.translate('amount'),
-      'name': AppLocalizations.of(context)!.translate('name'),
-      'manager': AppLocalizations.of(context)!.translate('manager'),
-      'description': AppLocalizations.of(context)!.translate('description'),
-      'end_date': AppLocalizations.of(context)!.translate('end_date'),
-      'start_date': AppLocalizations.of(context)!.translate('start_date'),
-      'deal_status': AppLocalizations.of(context)!.translate('status'),
-      'lead': AppLocalizations.of(context)!.translate('lead'),
-    };
-
-    String formatDateIfNeeded(String key, dynamic value) {
-      if ((key == 'end_date' || key == 'start_date') &&
-          value != null &&
-          value.toString().isNotEmpty) {
-        try {
-          final date = DateTime.parse(value.toString());
-          return '${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year}';
-        } catch (e) {
-          return value.toString();
-        }
-      }
-      return value?.toString() ?? '-';
     }
-
-    return body.entries.map((entry) {
-      if (entry.value is Map) {
-        final changeMap = Map<String, dynamic>.from(entry.value as Map);
-        final String translatedKey = translations[entry.key] ?? entry.key;
-
-        final formattedPreviousValue =
-            formatDateIfNeeded(entry.key, changeMap['previous_value']);
-        final formattedNewValue =
-            formatDateIfNeeded(entry.key, changeMap['new_value']);
-
-        return Padding(
-          padding: const EdgeInsets.only(top: 8),
-          child: Text(
-            '$translatedKey: $formattedPreviousValue → $formattedNewValue',
-            style: const TextStyle(
-              fontSize: 14,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w400,
-              color: Color(0xff8F9BB3),
-            ),
-          ),
-        );
-      }
-      return const SizedBox.shrink();
-    }).toList();
+    return widgets;
   }
 
-String _formatDate(DateTime date) {
-  final adjustedDate = date.add(Duration(hours: 5));
-  final day = adjustedDate.day.toString().padLeft(2, '0');
-  final month = adjustedDate.month.toString().padLeft(2, '0');
-  final year = adjustedDate.year;
-  final hour = adjustedDate.hour.toString().padLeft(2, '0');
-  final minute = adjustedDate.minute.toString().padLeft(2, '0');
+  // MARK: - Названия полей
+  static const Map<String, String> _leadFieldNames = {
+    'lead_status': 'Статус',
+    'name': 'Название',
+    'phone': 'Телефон',
+    'email': 'Email',
+    'region': 'Регион',
+    'manager': 'Менеджер',
+    'tg_nick': 'Telegram',
+    'birthday': 'День рождения',
+    'description': 'Описание',
+    'insta_login': 'Instagram',
+    'facebook_login': 'Facebook',
+  };
 
-  return '$day.$month.$year $hour:$minute';
-}
+  static const Map<String, String> _noticeFieldNames = {
+    'title': 'Тематика',
+    'body': 'Описание',
+    'date': 'Напоминание',
+    'notifications_sent': 'Уведомления',
+  };
 
+  static const Map<String, String> _dealFieldNames = {
+    'deal_status': 'Статус сделки',
+    'name': 'Название',
+    'lead': 'Лид',
+    'manager': 'Менеджер',
+    'start_date': 'Дата начала',
+    'end_date': 'Дата завершения',
+    'sum': 'Сумма',
+    'description': 'Описание',
+  };
+
+  // MARK: - Формат даты
+  String _formatDate(DateTime date) {
+    final local = date.toLocal();
+    return '${local.day.toString().padLeft(2, '0')}.${local.month.toString().padLeft(2, '0')}.${local.year} '
+        '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
+  }
+
+  String _formatDateTime(String? dateStr) {
+    if (dateStr == null || dateStr.isEmpty) return '—';
+    final date = DateTime.tryParse(dateStr);
+    return date != null ? DateFormat('dd.MM.yyyy HH:mm').format(date) : dateStr;
+  }
+
+  String _parseNotifications(String? jsonStr) {
+    if (jsonStr == null || jsonStr.isEmpty || jsonStr == '[]') return '—';
+    try {
+      final List<dynamic> list = jsonDecode(jsonStr);
+      return list.map((n) {
+        return switch (n) {
+          'morning_reminder' => 'утреннее напоминание',
+          'two_hours_before' => 'за два часа',
+          _ => n.toString(),
+        };
+      }).join(', ');
+    } catch (e) {
+      return jsonStr;
+    }
+  }
 }

@@ -30,7 +30,7 @@ class ExpenseStructureCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${localizations.translate('name')}: ${expenseItem.articleName}',
+                  '${AppLocalizations.of(context)!.translate('title_without_dots') ?? 'Название'}: ${expenseItem.articleName}',
                   style: const TextStyle(
                     fontSize: 14,
                     fontFamily: 'Gilroy',

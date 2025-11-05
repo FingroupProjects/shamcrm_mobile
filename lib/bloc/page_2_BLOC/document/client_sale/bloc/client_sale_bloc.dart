@@ -1,5 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
+import 'package:crm_task_manager/models/page_2/expense_document_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -16,8 +16,8 @@ class ClientSaleBloc extends Bloc<ClientSaleEvent, ClientSaleState> {
   final int _perPage = 20;
   Map<String, dynamic>? _filters;
   String? _search = '';
-  List<IncomingDocument> _allData = [];
-  List<IncomingDocument> _selectedDocuments = [];
+  List<ExpenseDocument> _allData = [];
+  List<ExpenseDocument> _selectedDocuments = [];
 
   ClientSaleBloc(this.apiService) : super(ClientSaleInitial()) {
     on<FetchClientSales>(_onFetchData);

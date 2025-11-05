@@ -29,11 +29,11 @@ class Pagination {
 
   factory Pagination.fromJson(Map<String, dynamic> json) {
     return Pagination(
-      total: json['total'] as int,
-      count: json['count'] as int,
-      per_page: json['per_page'] as int,
-      current_page: json['current_page'] as int,
-      total_pages: json['total_pages'] as int,
+      total: (json['total'] as num?)?.toInt() ?? 0,
+      count: (json['count'] as num?)?.toInt() ?? 0,
+      per_page: (json['per_page'] as num?)?.toInt() ?? 0,
+      current_page: (json['current_page'] as num?)?.toInt() ?? 0,
+      total_pages: (json['total_pages'] as num?)?.toInt() ?? 0,
     );
   }
 }
@@ -45,8 +45,6 @@ class DashboardGoods {
   final String category;
   final String totalQuantity; // Renamed from quantity
   final List<Storage> storages; // New field for storages array
-  final String daysWithoutMovement;
-  final String sum;
 
   DashboardGoods({
     required this.id,
@@ -55,20 +53,16 @@ class DashboardGoods {
     required this.category,
     required this.totalQuantity,
     required this.storages,
-    required this.daysWithoutMovement,
-    required this.sum,
   });
 
   factory DashboardGoods.fromJson(Map<String, dynamic> json) {
     return DashboardGoods(
-      id: json['id'] as int,
-      goodVariantId: json['good_variant_id'] as int?,
-      name: json['name'] as String,
-      category: json['category'] as String,
-      totalQuantity: json['total_quantity'] as String,
+      id: (json['id'] as num?)?.toInt() ?? 0,
+      goodVariantId: (json['good_variant_id'] as num?)?.toInt(),
+      name: json['name'] as String? ?? '',
+      category: json['category'] as String? ?? '',
+      totalQuantity: json['total_quantity'] as String? ?? '0',
       storages: (json['storages'] as List?)?.map((i) => Storage.fromJson(i)).toList() ?? [],
-      daysWithoutMovement: json['days_without_movement'] as String,
-      sum: json['sum'] as String,
     );
   }
 }
@@ -86,9 +80,9 @@ class Storage {
 
   factory Storage.fromJson(Map<String, dynamic> json) {
     return Storage(
-      id: json['id'] as int,
-      name: json['name'] as String,
-      quantity: json['quantity'] as String,
+      id: (json['id'] as num?)?.toInt() ?? 0,
+      name: json['name'] as String? ?? '',
+      quantity: json['quantity'] as String? ?? '0',
     );
   }
 }

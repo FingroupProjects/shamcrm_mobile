@@ -41,7 +41,7 @@ class TopSellingCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '${localizations.translate('name') ?? 'Название'}: ${product.name}',
+                    '${AppLocalizations.of(context)!.translate('title_without_dots') ?? 'Название'}: ${product.name}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',

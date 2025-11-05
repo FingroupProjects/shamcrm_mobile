@@ -13,7 +13,7 @@ void showCustomSnackBar({
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       content: Text(
-        AppLocalizations.of(context)!.translate(message),
+        AppLocalizations.of(context)?.translate(message) ?? message,
         style: TextStyle(
           fontFamily: 'Gilroy',
           fontSize: 16,

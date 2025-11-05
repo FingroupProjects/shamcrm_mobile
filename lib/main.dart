@@ -550,7 +550,7 @@ class ErrorApp extends StatelessWidget {
 }
 
 // =============================================================================
-// MYAPP
+// MARK: MYAPP
 // =============================================================================
 
 class MyApp extends StatefulWidget {
@@ -699,74 +699,53 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => HistoryLeadsBloc(widget.apiService)),
         BlocProvider(create: (context) => HistoryBlocMyTask(widget.apiService)),
         BlocProvider(create: (context) => RoleBloc(widget.apiService)),
-        BlocProvider(
-            create: (context) => TaskStatusNameBloc(widget.apiService)),
-        BlocProvider(
-            create: (context) => MyTaskMyStatusNameBloc(widget.apiService)),
+        BlocProvider(create: (context) => TaskStatusNameBloc(widget.apiService)),
+        BlocProvider(create: (context) => MyTaskMyStatusNameBloc(widget.apiService)),
         BlocProvider(create: (context) => LeadByIdBloc(widget.apiService)),
         BlocProvider(create: (context) => DealByIdBloc(widget.apiService)),
         BlocProvider(create: (context) => TaskByIdBloc(widget.apiService)),
         BlocProvider(create: (context) => MyTaskByIdBloc(widget.apiService)),
         BlocProvider(create: (context) => DealHistoryBloc(widget.apiService)),
-        BlocProvider(
-            create: (context) =>
-                GetAllClientBloc(apiService: widget.apiService)),
-        BlocProvider(
-            create: (context) =>
-                GetAllAuthorBloc(apiService: widget.apiService)),
+        BlocProvider(create: (context) => GetAllClientBloc(apiService: widget.apiService)),
+        BlocProvider(create: (context) => GetAllAuthorBloc(apiService: widget.apiService)),
         BlocProvider(create: (context) => CreateClientBloc()),
         BlocProvider(create: (context) => GroupChatBloc(widget.apiService)),
         BlocProvider(create: (context) => DeleteMessageBloc(ApiService())),
         BlocProvider(create: (context) => ListenSenderTextCubit()),
         BlocProvider(create: (context) => ListenSenderVoiceCubit()),
         BlocProvider(create: (context) => ListenSenderFileCubit()),
-        BlocProvider(
-          create: (context) => ChatsBloc(ApiService()),
-        ),
+        BlocProvider(create: (context) => ChatsBloc(ApiService()), ),
         BlocProvider(create: (context) => TaskStatusBloc(ApiService())),
         BlocProvider(create: (context) => MyTaskStatusBloc(ApiService())),
         BlocProvider(create: (context) => OrganizationBloc(ApiService())),
         BlocProvider(create: (context) => NotificationBloc(ApiService())),
-        BlocProvider(
-          create: (context) => ChatsBloc(ApiService()),
-        ),
+        BlocProvider(create: (context) => ChatsBloc(ApiService()),),
         BlocProvider(create: (context) => TaskStatusBloc(ApiService())),
         BlocProvider(create: (context) => DashboardChartBloc(ApiService())),
-        BlocProvider(
-            create: (context) => DashboardChartBlocManager(ApiService())),
-        BlocProvider(
-            create: (context) => DashboardConversionBloc(ApiService())),
-        BlocProvider(
-            create: (context) => DashboardConversionBlocManager(ApiService())),
+        BlocProvider(create: (context) => DashboardChartBlocManager(ApiService())),
+        BlocProvider(create: (context) => DashboardConversionBloc(ApiService())),
+        BlocProvider(create: (context) => DashboardConversionBlocManager(ApiService())),
         BlocProvider(create: (context) => UserBlocManager(ApiService())),
         BlocProvider(create: (context) => DealStatsBloc(ApiService())),
         BlocProvider(create: (context) => DealStatsManagerBloc(ApiService())),
         BlocProvider(create: (context) => DashboardTaskChartBloc(ApiService())),
-        BlocProvider(
-            create: (context) => DashboardTaskChartBlocManager(ApiService())),
+        BlocProvider(create: (context) => DashboardTaskChartBlocManager(ApiService())),
         BlocProvider(create: (context) => LeadDealsBloc(ApiService())),
         BlocProvider(create: (context) => DealTasksBloc(ApiService())),
-        BlocProvider(
-            create: (context) => ProcessSpeedBlocManager(ApiService())),
+        BlocProvider(create: (context) => ProcessSpeedBlocManager(ApiService())),
         BlocProvider(create: (context) => ContactPersonBloc(ApiService())),
         BlocProvider(create: (context) => LeadToChatBloc(widget.apiService)),
         BlocProvider(create: (context) => ChatProfileBloc(ApiService())),
         BlocProvider(create: (context) => TaskProfileBloc(ApiService())),
         BlocProvider(create: (context) => PermissionsBloc(ApiService())),
-        BlocProvider(
-            create: (context) => ForgotPinBloc(apiService: ApiService())),
+        BlocProvider(create: (context) => ForgotPinBloc(apiService: ApiService())),
         BlocProvider(create: (context) => SourceLeadBloc(widget.apiService)),
-        BlocProvider(
-            create: (context) => LeadToCBloc(apiService: widget.apiService)),
-        BlocProvider(
-            create: (context) => Data1CBloc(apiService: widget.apiService)),
-        BlocProvider(
-            create: (context) => ProfileBloc(apiService: widget.apiService)),
+        BlocProvider(create: (context) => LeadToCBloc(apiService: widget.apiService)),
+        BlocProvider(create: (context) => Data1CBloc(apiService: widget.apiService)),
+        BlocProvider(create: (context) => ProfileBloc(apiService: widget.apiService)),
         BlocProvider(create: (context) => ProcessSpeedBloc(widget.apiService)),
-        BlocProvider(
-            create: (context) => TaskCompletionBloc(widget.apiService)),
-        BlocProvider(
-            create: (context) => TaskAddFromDealBloc(apiService: ApiService())),
+        BlocProvider(create: (context) => TaskCompletionBloc(widget.apiService)),
+        BlocProvider(create: (context) => TaskAddFromDealBloc(apiService: ApiService())),
         BlocProvider(create: (context) => EventBloc(widget.apiService)),
         BlocProvider(create: (context) => NoticeBloc(widget.apiService)),
         BlocProvider(create: (context) => GetAllSubjectBloc()),
@@ -787,45 +766,26 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => LabelBloc(widget.apiService)),
         BlocProvider(create: (context) => VariantBloc(widget.apiService)),
         BlocProvider(create: (context) => VariantBottomSheetBloc(widget.apiService)),
-        BlocProvider(
-          create: (context) => CallCenterBloc(ApiService()),
-        ),
+        BlocProvider(create: (context) => CallCenterBloc(ApiService()), ),
         BlocProvider(create: (context) => SalesFunnelBloc(ApiService())),
         BlocProvider(create: (context) => OperatorBloc(ApiService())),
         BlocProvider(create: (context) => TemplateBloc(ApiService())),
-        BlocProvider(
-            create: (context) => LeadStatusForFilterBloc(widget.apiService)),
+        BlocProvider(create: (context) => LeadStatusForFilterBloc(widget.apiService)),
         BlocProvider(create: (context) => IncomingBloc(widget.apiService)),
-        BlocProvider<StorageBloc>(
-          create: (context) => StorageBloc(widget.apiService),
-        ),
-        BlocProvider<UnitsBloc>(
-          create: (context) => UnitsBloc(widget.apiService),
-        ),
-        BlocProvider<ExpenseArticleBloc>(
-          create: (context) => ExpenseArticleBloc(widget.apiService),
-        ),
-        BlocProvider<SupplierBloc>(
-          create: (context) => SupplierBloc(widget.apiService),
-        ),
-        BlocProvider<ClientSaleBloc>(
-          create: (context) => ClientSaleBloc(widget.apiService),
-        ),
-        BlocProvider<ClientSaleDocumentHistoryBloc>(
-          create: (context) => ClientSaleDocumentHistoryBloc(widget.apiService),
-        ),
-        BlocProvider<IncomingDocumentHistoryBloc>(
-          create: (context) => IncomingDocumentHistoryBloc(context.read<ApiService>()),
-        ),
+        BlocProvider<StorageBloc>(create: (context) => StorageBloc(widget.apiService),),
+        BlocProvider<UnitsBloc>(create: (context) => UnitsBloc(widget.apiService), ),
+        BlocProvider<ExpenseArticleBloc>( create: (context) => ExpenseArticleBloc(widget.apiService),),
+        BlocProvider<SupplierBloc>( create: (context) => SupplierBloc(widget.apiService), ),
+        BlocProvider<ClientSaleBloc>(  create: (context) => ClientSaleBloc(widget.apiService), ),
+        BlocProvider<ClientSaleDocumentHistoryBloc>(  create: (context) => ClientSaleDocumentHistoryBloc(widget.apiService),),
+        BlocProvider<IncomingDocumentHistoryBloc>(  create: (context) => IncomingDocumentHistoryBloc(context.read<ApiService>()),),
         // TODO fix bloc providers warehouse folder
         BlocProvider(create: (context) => ClientReturnBloc(widget.apiService)),
         BlocProvider(create: (context) => SupplierBloc(widget.apiService)),
         BlocProvider(create: (context) => MeasureUnitsBloc(widget.apiService)),
         BlocProvider(create: (context) => WareHouseBloc(widget.apiService)),
-        BlocProvider(
-            create: (context) => PriceTypeScreenBloc(widget.apiService)),
-        BlocProvider(
-            create: (context) => SupplierReturnBloc(widget.apiService)),
+        BlocProvider(create: (context) => PriceTypeScreenBloc(widget.apiService)),
+        BlocProvider(create: (context) => SupplierReturnBloc(widget.apiService)),
         BlocProvider(create: (context) => WriteOffBloc(widget.apiService)),
         BlocProvider(create: (context) => MovementBloc(widget.apiService)),
         BlocProvider(create: (context) => CashDeskBloc()),
@@ -839,9 +799,6 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => SalesDashboardCreditorsBloc()),
         BlocProvider(create: (context) => SalesDashboardDebtorsBloc()),
         BlocProvider(create: (context) => FieldConfigurationBloc(widget.apiService)),
-
-
-
      ],
       child: MaterialApp(
         locale: _locale ?? const Locale('ru'),

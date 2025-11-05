@@ -89,13 +89,9 @@ try {
 } catch (e, stackTrace) {
   print('LoginScreen: Ошибка получения/отправки FCM токена: $e');
   print('LoginScreen: StackTrace: $stackTrace');
-}catch (e) {
-  print('LoginScreen: Ошибка с FCM токеном, пробуем отложенный: $e');
-  await apiService.sendPendingFCMToken();
-}catch (e) {
-                //print('Error getting FCM token: $e');
-              }
-
+}
+await apiService.ensureInitialized();
+await apiService.sendPendingFCMToken(); // ← ДОБАВЬ
               final savedOrganization =
                   await apiService.getSelectedOrganization();
               if (savedOrganization == null) {

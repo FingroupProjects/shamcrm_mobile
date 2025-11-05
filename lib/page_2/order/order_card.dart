@@ -304,8 +304,8 @@ class _OrderCardState extends State<OrderCard> {
     final bool hasLongContent = _isContentLong();
     
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
+      onTap: () async {
+        final result = await Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => OrderDetailsScreen(
@@ -316,6 +316,20 @@ class _OrderCardState extends State<OrderCard> {
             ),
           ),
         );
+        
+        // Обрабатываем результат редактирования заказа
+        if (result != null && result is Map<String, dynamic> && result['success'] == true && mounted) {
+          final statusId = result['statusId'];
+          if (statusId != null) {
+            // Обновляем список заказов для соответствующего статуса
+            context.read<OrderBloc>().add(FetchOrders(
+              statusId: statusId,
+              page: 1,
+              perPage: 20,
+              forceRefresh: true,
+            ));
+          }
+        }
       },
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),

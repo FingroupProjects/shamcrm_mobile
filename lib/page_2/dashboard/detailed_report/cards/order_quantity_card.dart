@@ -30,7 +30,7 @@ class OrderQuantityCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${localizations.translate('name')}: ${chartData.name}',
+                  '${localizations.translate('status')}: ${chartData.name}',
                   style: const TextStyle(
                     fontSize: 14,
                     fontFamily: 'Gilroy',

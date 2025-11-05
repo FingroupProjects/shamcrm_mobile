@@ -286,8 +286,8 @@ try {
         await prefs.setString('store_name', settings.name);
         await prefs.setString('store_phone', settings.phone);
         await prefs.setString('delivery_sum', settings.deliverySum);
-        await prefs.setBool('has_bonus', settings.hasBonus == 1);
-        await prefs.setBool('identify_by_phone', settings.identifyByPhone == 1);
+        await prefs.setBool('has_bonus', settings.hasBonus);
+        await prefs.setBool('identify_by_phone', settings.identifyByPhone);
         
         print('PinScreen: MiniAppSettings сохранены успешно');
       }

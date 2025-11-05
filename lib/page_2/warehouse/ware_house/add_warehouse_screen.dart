@@ -137,7 +137,7 @@ class _AddWarehouseScreenState extends State<AddWarehouseScreen> {
                             controller: nameController,
                             hintText: AppLocalizations.of(context)!
                                 .translate('enter_warehouse_name') ?? 'Введите название склада',
-                            label: AppLocalizations.of(context)!.translate('name') ?? 'Название',
+                            label: AppLocalizations.of(context)!.translate('title_without_dots') ?? 'Название',
                             validator: (value) {
                               if (value == null || value.isEmpty) {
                                 return AppLocalizations.of(context)!

@@ -7,7 +7,7 @@ import 'package:crm_task_manager/custom_widget/compact_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/custom_widget/keyboard_dismissible.dart';
-// import 'package:crm_task_manager/custom_widget/price_input_formatter.dart'; // Не используется - цена скрыта
+import 'package:crm_task_manager/custom_widget/price_input_formatter.dart';
 import 'package:crm_task_manager/custom_widget/quantity_input_formatter.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
@@ -16,6 +16,7 @@ import 'package:crm_task_manager/page_2/warehouse/incoming/storage_widget.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/supplier_widget.dart';
 import 'package:crm_task_manager/page_2/widgets/confirm_exit_dialog.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -85,15 +86,24 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
         final quantity = good.quantity ?? 0;
         final price = double.tryParse(good.price ?? '0') ?? 0.0;
         
-        // ✅ NEW: Try multiple sources for units
-        final availableUnits = good.good?.units ??
-                              (good.unit != null ? [good.unit!] : []);
-        
-        // ✅ NEW: Get selected unit from document_goods level first
-        final selectedUnitObj = good.unit ?? 
-                               (availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: 'шт'));
-        
-        final amount = selectedUnitObj.amount ?? 1;
+        final availableUnits = good.good?.units ?? (good.unit != null ? [good.unit!] : []);
+        Unit? selectedUnitObj;
+        double amount = 1.0; // USE 1 for amount DO NOT CALCUALTE TOTAL WITH AMOUNT
+        // if (good.good?.units != null && good.unitId != null) {
+        //   // Search in good.good.units array for matching unit
+        //   for (var unit in good.good!.units!) {
+        //     if (unit.id == good.unitId) {
+        //       selectedUnitObj = unit;
+        //       amount = (unit.amount != null)
+        //           ? double.tryParse(unit.amount.toString()) ?? 1.0
+        //           : 1.0;
+        //       break;
+        //     }
+        //   }
+        // }
+        // Fallback if not found
+        selectedUnitObj ??= good.unit ?? (availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: 'шт'));
+        debugPrint("amount of unit '${selectedUnitObj.name}': $amount");
         
         _items.add({
           'id': good.good?.id ?? 0,
@@ -109,7 +119,7 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
         });
         
         // Создаем контроллеры с существующими значениями
-        _priceControllers[variantId] = TextEditingController(text: price.toStringAsFixed(3));
+        _priceControllers[variantId] = TextEditingController(text: parseNumberToString(price * amount));
         _quantityControllers[variantId] = TextEditingController(text: quantity.toString());
         
         // ✅ НОВОЕ: Создаём FocusNode для существующих товаров
@@ -125,39 +135,38 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
   void _handleVariantSelection(Map<String, dynamic>? newItem) {
     if (mounted && newItem != null) {
       setState(() {
-        final existingIndex = _items.indexWhere((item) => item['variantId'] == newItem['variantId']);
+        final existingIndex = _items
+            .indexWhere((item) => item['variantId'] == newItem['variantId']);
 
         if (existingIndex == -1) {
-          // Сворачиваем все существующие карточки
           for (var item in _items) {
             final variantId = item['variantId'] as int;
             _collapsedItems[variantId] = true;
           }
-          
-          _items.add(newItem);
+
+          // ✅ Don't use the price from newItem - let user enter it
+          final modifiedItem = Map<String, dynamic>.from(newItem);
+          modifiedItem['price'] = 0.0; // Set to 0 instead of using default price
+          modifiedItem.remove('quantity');
+
+          _items.add(modifiedItem);
 
           final variantId = newItem['variantId'] as int;
 
-          final initialPrice = newItem['price'] ?? 0.0;
-          _priceControllers[variantId] = TextEditingController(
-              text: initialPrice > 0 ? initialPrice.toStringAsFixed(3) : ''
-          );
+          // ✅ Initialize price controller with empty string (no default price)
+          _priceControllers[variantId] = TextEditingController(text: '');
 
           _quantityControllers[variantId] = TextEditingController(text: '');
 
-          // ✅ НОВОЕ: Создаём FocusNode для новых товаров
           _quantityFocusNodes[variantId] = FocusNode();
           _priceFocusNodes[variantId] = FocusNode();
 
-          _items.last['price'] = initialPrice;
-
-          final amount = newItem['amount'] ?? 1;
-          _items.last['total'] = (initialPrice * amount).round();
+          // ✅ Set price to 0 in the item
+          _items.last['price'] = 0.0;
 
           _priceErrors[variantId] = false;
           _quantityErrors[variantId] = false;
-          
-          // Новая карточка развернута
+
           _collapsedItems[variantId] = false;
 
           if (!newItem.containsKey('amount')) {
@@ -169,7 +178,6 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
             duration: const Duration(milliseconds: 300),
           );
 
-          // ✅ НОВОЕ: Устанавливаем фокус на поле количества после добавления
           Future.delayed(const Duration(milliseconds: 350), () {
             if (mounted && _scrollController.hasClients) {
               _scrollController.animateTo(
@@ -245,6 +253,64 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
   }
   }
 
+  void _updateItemUnit(int variantId, String newUnit, int? newUnitId) {
+    setState(() {
+      final index = _items.indexWhere((item) => item['variantId'] == variantId);
+      if (index != -1) {
+        _items[index]['selectedUnit'] = newUnit;
+        _items[index]['unit_id'] = newUnitId;
+
+        final availableUnits = _items[index]['availableUnits'] as List<Unit>? ?? [];
+        final selectedUnitObj = availableUnits.firstWhere(
+              (unit) => (unit.name) == newUnit,
+          orElse: () => availableUnits.isNotEmpty
+              ? availableUnits.first
+              : Unit(id: null, name: '', amount: 1),
+        );
+
+        final newAmount = selectedUnitObj.amount ?? 1;
+        _items[index]['amount'] = newAmount;
+
+        // ✅ Get the current price from the controller (user input)
+        final priceController = _priceControllers[variantId];
+        final currentDisplayPrice = double.tryParse(priceController?.text ?? '0') ?? 0.0;
+
+        // ✅ Update price in item
+        _items[index]['price'] = currentDisplayPrice;
+
+        // ✅ Recalculate total WITHOUT amount: quantity * price
+        final quantity = _items[index]['quantity'] ?? 0;
+        _items[index]['total'] = (quantity * currentDisplayPrice).round();
+      }
+    });
+  }
+
+  void _updateItemPrice(int variantId, String value) {
+    final inputPrice = double.tryParse(value);
+    if (inputPrice != null && inputPrice >= 0) {
+      setState(() {
+        final index = _items.indexWhere((item) => item['variantId'] == variantId);
+        if (index != -1) {
+          // ✅ Store the price as entered
+          _items[index]['price'] = inputPrice;
+
+          // ✅ Calculate total WITHOUT amount: quantity * price
+          final quantity = _items[index]['quantity'] ?? 0;
+          _items[index]['total'] = (quantity * inputPrice).round();
+        }
+        _priceErrors[variantId] = false;
+      });
+    } else if (value.isEmpty) {
+      setState(() {
+        final index = _items.indexWhere((item) => item['variantId'] == variantId);
+        if (index != -1) {
+          _items[index]['price'] = 0.0;
+          _items[index]['total'] = 0.0;
+        }
+      });
+    }
+  }
+
   void _updateItemQuantity(int variantId, String value) {
     final quantity = int.tryParse(value);
     if (quantity != null && quantity > 0) {
@@ -252,9 +318,10 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
         final index = _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
           _items[index]['quantity'] = quantity;
-          final amount = _items[index]['amount'] ?? 1;
-          final num total = _items[index]['quantity'] * _items[index]['price'] * amount;
-          _items[index]['total'] = total.round().toInt(); // Округляем до целого
+          final price = _items[index]['price'] ?? 0.0;
+
+          // ✅ Total WITHOUT amount: quantity * price
+          _items[index]['total'] = (quantity * price).round();
         }
         _quantityErrors[variantId] = false;
       });
@@ -262,56 +329,12 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
       setState(() {
         final index = _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
-          _items[index]['quantity'] = 0;
+          // ✅ Remove quantity from item
+          _items[index].remove('quantity');
           _items[index]['total'] = 0.0;
         }
       });
     }
-  }
-
-  // Цена скрыта - функция не используется
-  // void _updateItemPrice(int variantId, String value) {
-  //   final price = double.tryParse(value);
-  //   if (price != null && price >= 0) {
-  //     setState(() {
-  //       final index = _items.indexWhere((item) => item['variantId'] == variantId);
-  //       if (index != -1) {
-  //         _items[index]['price'] = price;
-  //         final amount = _items[index]['amount'] ?? 1;
-  //         _items[index]['total'] = _items[index]['quantity'] * _items[index]['price'] * amount;
-  //       }
-  //       _priceErrors[variantId] = false;
-  //     });
-  //   } else if (value.isEmpty) {
-  //     setState(() {
-  //       final index = _items.indexWhere((item) => item['variantId'] == variantId);
-  //       if (index != -1) {
-  //         _items[index]['price'] = 0.0;
-  //         _items[index]['total'] = 0.0;
-  //       }
-  //     });
-  //   }
-  // }
-
-  void _updateItemUnit(int variantId, String newUnit, int? newUnitId) {
-    setState(() {
-      final index = _items.indexWhere((item) => item['variantId'] == variantId);
-      if (index != -1) {
-        _items[index]['selectedUnit'] = newUnit;
-        _items[index]['unit_id'] = newUnitId;
-        
-        final availableUnits = _items[index]['availableUnits'] as List<Unit>? ?? [];
-        final selectedUnitObj = availableUnits.firstWhere(
-          (unit) => (unit.name) == newUnit,
-          orElse: () => availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: '', amount: 1),
-        );
-        
-        _items[index]['amount'] = selectedUnitObj.amount ?? 1;
-        
-        final amount = _items[index]['amount'] ?? 1;
-        _items[index]['total'] = _items[index]['quantity'] * _items[index]['price'] * amount;
-      }
-    });
   }
 
   // ✅ НОВОЕ: Функция для перехода к следующему пустому полю
@@ -776,10 +799,10 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
   Widget _buildSelectedItemCard(int index, Map<String, dynamic> item, Animation<double> animation) {
     final availableUnits = item['availableUnits'] as List<Unit>? ?? [];
     final variantId = item['variantId'] as int;
-    // final priceController = _priceControllers[variantId]; // Не используется - цена скрыта
+    final priceController = _priceControllers[variantId];
     final quantityController = _quantityControllers[variantId];
     final quantityFocusNode = _quantityFocusNodes[variantId];
-    // final priceFocusNode = _priceFocusNodes[variantId]; // Не используется - цена скрыта
+    final priceFocusNode = _priceFocusNodes[variantId];
     
     final isCollapsed = _collapsedItems[variantId] ?? false;
 
@@ -973,46 +996,45 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
                         ],
                       ),
                     ),
-                  // if (availableUnits.isNotEmpty) const SizedBox(width: 8),
-                  // Цена скрыта согласно требованиям
-                  // Expanded(
-                  //   flex: 25,
-                  //   child: Column(
-                  //       crossAxisAlignment: CrossAxisAlignment.start,
-                  //       children: [
-                  //         Text(
-                  //           AppLocalizations.of(context)!.translate('price') ?? 'Цена',
-                  //           style: const TextStyle(
-                  //             fontSize: 11,
-                  //             fontFamily: 'Gilroy',
-                  //             fontWeight: FontWeight.w400,
-                  //             color: Color(0xff99A4BA),
-                  //           ),
-                  //         ),
-                  //         const SizedBox(height: 4),
-                  //         CompactTextField(
-                  //           controller:
-                  //               priceController ?? TextEditingController(),
-                  //           focusNode: priceFocusNode,
-                  //           hintText: AppLocalizations.of(context)!.translate('price') ?? 'Цена',
-                  //           keyboardType: const TextInputType.numberWithOptions(
-                  //               decimal: true),
-                  //           inputFormatters: [
-                  //             PriceInputFormatter(),
-                  //           ],
-                  //           style: const TextStyle(
-                  //             fontSize: 13,
-                  //             fontFamily: 'Gilroy',
-                  //             fontWeight: FontWeight.w600,
-                  //             color: Color(0xff1E2E52),
-                  //           ),
-                  //           hasError: _priceErrors[variantId] == true,
-                  //           onChanged: (value) =>
-                  //               _updateItemPrice(variantId, value),
-                  //           onDone: _moveToNextEmptyField,
-                  //         ),
-                  //       ]),
-                  // ),
+                  if (availableUnits.isNotEmpty) const SizedBox(width: 8),
+                  Expanded(
+                    flex: 25,
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            AppLocalizations.of(context)!.translate('price') ?? 'Цена',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w400,
+                              color: Color(0xff99A4BA),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          CompactTextField(
+                            controller:
+                                priceController ?? TextEditingController(),
+                            focusNode: priceFocusNode,
+                            hintText: AppLocalizations.of(context)!.translate('price') ?? 'Цена',
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
+                            inputFormatters: [
+                              PriceInputFormatter(),
+                            ],
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xff1E2E52),
+                            ),
+                            hasError: _priceErrors[variantId] == true,
+                            onChanged: (value) =>
+                                _updateItemPrice(variantId, value),
+                            onDone: _moveToNextEmptyField,
+                          ),
+                        ]),
+                  ),
                 ]),
               ],
             ],

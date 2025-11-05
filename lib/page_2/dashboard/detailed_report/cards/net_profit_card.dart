@@ -30,7 +30,7 @@ class NetProfitCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${localizations.translate('month')}: ${monthData.monthName}',
+                  monthData.monthName,
                   style: const TextStyle(
                     fontSize: 14,
                     fontFamily: 'Gilroy',
@@ -40,7 +40,7 @@ class NetProfitCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '${localizations.translate('profit')}: ${parseNumberToString(monthData.netProfit)}',
+                  '${localizations.translate('profit')}${parseNumberToString(monthData.netProfit)}',
                   style: const TextStyle(
                     fontSize: 14,
                     fontFamily: 'Gilroy',

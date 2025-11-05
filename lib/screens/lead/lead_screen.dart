@@ -482,6 +482,7 @@ Future<void> _onRefresh(int currentStatusId) async {
       daysWithoutActivity: _daysWithoutActivity,
       directoryValues: _directoryValues,
       salesFunnelId: _selectedFunnel?.id,
+      ignoreCache: true, // ← ВАЖНО!
     ));
   }
 
@@ -573,6 +574,7 @@ Future<void> _onRefresh(int currentStatusId) async {
     }
 
     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+    await LeadCache.clearLeadsForStatus(currentStatusId);
     final leadBloc = BlocProvider.of<LeadBloc>(context);
     leadBloc.add(FetchLeads(
       currentStatusId,
@@ -595,15 +597,15 @@ Future<void> _onRefresh(int currentStatusId) async {
       directoryValues: _directoryValues,
       salesFunnelId: _selectedFunnel?.id,
       query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+      ignoreCache: true, // ← ПРИНУДИТЕЛЬНО ИГНОРИРУЕМ КЭШ
     ));
   }
 
   void _onSearch(String query) {
-    _lastSearchQuery = query;
-    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-    _searchLeads(query, currentStatusId);
-  }
-
+  _lastSearchQuery = query;
+  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+  _searchLeads(query, currentStatusId);
+}
   FocusNode focusNode = FocusNode();
   TextEditingController textEditingController = TextEditingController();
   ValueChanged<String>? onChangedSearchInput;

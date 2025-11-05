@@ -7,8 +7,10 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../models/page_2/expense_document_model.dart';
+
 class ClientSalesCard extends StatefulWidget {
-  final IncomingDocument document;
+  final ExpenseDocument document;
   final VoidCallback? onUpdate;
   final Function() onLongPress;
   final bool isSelectionMode;
@@ -191,7 +193,7 @@ class _ClientSalesCardState extends State<ClientSalesCard> {
                       ),
                       // show price from documentGoods
                       Text(
-                        '${AppLocalizations.of(context)!.translate('total') ?? 'Итого'} ${parseNumberToString(doc.totalSum.toStringAsFixed(0))}',
+                        '${AppLocalizations.of(context)!.translate('total') ?? 'Итого'} ${parseNumberToString(doc.totalSum.toStringAsFixed(2))}',
                         style: const TextStyle(
                           fontSize: 16,
                           fontFamily: 'Gilroy',

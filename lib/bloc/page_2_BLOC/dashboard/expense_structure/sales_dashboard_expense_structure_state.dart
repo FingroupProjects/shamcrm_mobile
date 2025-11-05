@@ -15,7 +15,7 @@ final class SalesDashboardExpenseStructureLoading extends SalesDashboardExpenseS
 }
 
 final class SalesDashboardExpenseStructureLoaded extends SalesDashboardExpenseStructureState {
-  final ExpenseResponse data;
+  final DashboardExpenseResponse data;
 
   const SalesDashboardExpenseStructureLoaded({
     required this.data,

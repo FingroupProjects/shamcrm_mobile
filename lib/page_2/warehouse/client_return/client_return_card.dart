@@ -174,7 +174,7 @@ class _ClientReturnCardState extends State<ClientReturnCard> {
                       ),
                       // show price from documentGoods
                       Text(
-                        '${AppLocalizations.of(context)!.translate('total') ?? 'Итого'} ${parseNumberToString(doc.totalSum.toStringAsFixed(0))}',
+                        '${AppLocalizations.of(context)!.translate('total') ?? 'Итого'} ${parseNumberToString(doc.totalSum.toStringAsFixed(2))}',
                         style: const TextStyle(
                           fontSize: 16,
                           fontFamily: 'Gilroy',

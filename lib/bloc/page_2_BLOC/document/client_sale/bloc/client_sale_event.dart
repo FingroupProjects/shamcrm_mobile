@@ -125,7 +125,7 @@ class MassRestoreClientSaleDocuments extends ClientSaleEvent {
 }
 
 class SelectDocument extends ClientSaleEvent {
-  final IncomingDocument document;
+  final ExpenseDocument document;
 
   const SelectDocument(this.document);
 

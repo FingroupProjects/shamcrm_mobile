@@ -10,11 +10,13 @@ import 'package:crm_task_manager/custom_widget/keyboard_dismissible.dart';
 import 'package:crm_task_manager/custom_widget/price_input_formatter.dart';
 import 'package:crm_task_manager/custom_widget/quantity_input_formatter.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
+import 'package:crm_task_manager/page_2/warehouse/incoming/info_panel.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/storage_widget.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/supplier_widget.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/variant_selection_bottom_sheet.dart';
 import 'package:crm_task_manager/page_2/widgets/confirm_exit_dialog.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -52,6 +54,7 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
   final Map<int, bool> _collapsedItems = {};
 
   late TabController _tabController;
+  bool _showInfoPanel = false;
 
   @override
   void initState() {
@@ -65,7 +68,8 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
   void _handleVariantSelection(Map<String, dynamic>? newItem) {
     if (mounted && newItem != null) {
       setState(() {
-        final existingIndex = _items.indexWhere((item) => item['variantId'] == newItem['variantId']);
+        final existingIndex = _items
+            .indexWhere((item) => item['variantId'] == newItem['variantId']);
 
         if (existingIndex == -1) {
           for (var item in _items) {
@@ -73,19 +77,24 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
             _collapsedItems[variantId] = true;
           }
 
-          _items.add(newItem);
+          // ✅ Don't use the price from newItem - let user enter it
+          final modifiedItem = Map<String, dynamic>.from(newItem);
+          modifiedItem['price'] = 0.0;
+
+          // ✅ ВАЖНО: НЕ устанавливаем quantity в item вообще
+          // Убираем quantity из modifiedItem, если он там есть
+          modifiedItem.remove('quantity');
+
+          _items.add(modifiedItem);
 
           final variantId = newItem['variantId'] as int;
 
-          final initialPrice = newItem['price'] ?? 0.0;
-          _priceControllers[variantId] = TextEditingController(text: initialPrice > 0 ? initialPrice.toStringAsFixed(3) : '');
-
+          // ✅ Initialize controllers with empty strings
+          _priceControllers[variantId] = TextEditingController(text: '');
           _quantityControllers[variantId] = TextEditingController(text: '');
 
           _quantityFocusNodes[variantId] = FocusNode();
           _priceFocusNodes[variantId] = FocusNode();
-
-          _items.last['price'] = initialPrice;
 
           _priceErrors[variantId] = false;
           _quantityErrors[variantId] = false;
@@ -94,7 +103,6 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
 
           if (!newItem.containsKey('amount')) {
             _items.last['amount'] = 1;
-            _items.last['price'] = initialPrice;
           }
 
           _listKey.currentState?.insertItem(
@@ -198,39 +206,52 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
   }
   }
 
-  void _updateItemQuantity(int variantId, String value) {
-    final quantity = int.tryParse(value);
-    if (quantity != null && quantity > 0) {
-      setState(() {
-        final index = _items.indexWhere((item) => item['variantId'] == variantId);
-        if (index != -1) {
-          _items[index]['quantity'] = quantity;
-          final amount = _items[index]['amount'] ?? 1;
-          _items[index]['total'] = (_items[index]['quantity'] * _items[index]['price'] * amount).round();
-        }
-        _quantityErrors[variantId] = false;
-      });
-    } else if (value.isEmpty) {
-      setState(() {
-        final index = _items.indexWhere((item) => item['variantId'] == variantId);
-        if (index != -1) {
-          _items[index]['quantity'] = 0;
-          _items[index]['total'] = 0;
-        }
-      });
-    }
+  // ✅ FIXED: Remove amount multiplication from all calculations
+
+  void _updateItemUnit(int variantId, String newUnit, int? newUnitId) {
+    setState(() {
+      final index = _items.indexWhere((item) => item['variantId'] == variantId);
+      if (index != -1) {
+        _items[index]['selectedUnit'] = newUnit;
+        _items[index]['unit_id'] = newUnitId;
+
+        final availableUnits = _items[index]['availableUnits'] as List<Unit>? ?? [];
+        final selectedUnitObj = availableUnits.firstWhere(
+              (unit) => (unit.name) == newUnit,
+          orElse: () => availableUnits.isNotEmpty
+              ? availableUnits.first
+              : Unit(id: null, name: '', amount: 1),
+        );
+
+        final newAmount = selectedUnitObj.amount ?? 1;
+        _items[index]['amount'] = newAmount;
+
+        // ✅ Get the current price from the controller (user input)
+        final priceController = _priceControllers[variantId];
+        final currentDisplayPrice = double.tryParse(priceController?.text ?? '0') ?? 0.0;
+
+        // ✅ Update price in item
+        _items[index]['price'] = currentDisplayPrice;
+
+        // ✅ Recalculate total WITHOUT amount: quantity * price
+        final quantity = _items[index]['quantity'] ?? 0;
+        _items[index]['total'] = (quantity * currentDisplayPrice).round();
+      }
+    });
   }
 
   void _updateItemPrice(int variantId, String value) {
-    final price = double.tryParse(value);
-    if (price != null && price >= 0) {
+    final inputPrice = double.tryParse(value);
+    if (inputPrice != null && inputPrice >= 0) {
       setState(() {
         final index = _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
-          _items[index]['price'] = price;
-          final amount = _items[index]['amount'] ?? 1;
-          final formattedPrice = double.parse(price.toStringAsFixed(3));
-          _items[index]['total'] = (_items[index]['quantity'] * formattedPrice * amount).round();
+          _items[index]['price'] = inputPrice;
+          final quantity = _items[index]['quantity'] ?? 0;
+          _items[index]['total'] = (quantity * inputPrice).round();
+
+          // ⭐ Проверяем, заполнены ли оба поля (quantity и price)
+          _checkAndShowInfoPanel(variantId);
         }
         _priceErrors[variantId] = false;
       });
@@ -245,25 +266,47 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
     }
   }
 
-  void _updateItemUnit(int variantId, String newUnit, int? newUnitId) {
-    setState(() {
-      final index = _items.indexWhere((item) => item['variantId'] == variantId);
-      if (index != -1) {
-        _items[index]['selectedUnit'] = newUnit;
-        _items[index]['unit_id'] = newUnitId;
+  void _updateItemQuantity(int variantId, String value) {
+    final quantity = int.tryParse(value);
+    if (quantity != null && quantity > 0) {
+      setState(() {
+        final index = _items.indexWhere((item) => item['variantId'] == variantId);
+        if (index != -1) {
+          _items[index]['quantity'] = quantity;
+          final price = _items[index]['price'] ?? 0.0;
+          _items[index]['total'] = (quantity * price).round();
 
-        final availableUnits = _items[index]['availableUnits'] as List<Unit>? ?? [];
-        final selectedUnitObj = availableUnits.firstWhere(
-              (unit) => (unit.name) == newUnit,
-          orElse: () => availableUnits.isNotEmpty ? availableUnits.first : Unit(id: 0, name: '', amount: 1),
-        );
+          // ⭐ Проверяем, заполнены ли оба поля (quantity и price)
+          _checkAndShowInfoPanel(variantId);
+        }
+        _quantityErrors[variantId] = false;
+      });
+    } else if (value.isEmpty) {
+      setState(() {
+        final index = _items.indexWhere((item) => item['variantId'] == variantId);
+        if (index != -1) {
+          _items[index].remove('quantity');
+          _items[index]['total'] = 0.0;
+        }
+      });
+    }
+  }
 
-        _items[index]['amount'] = selectedUnitObj.amount ?? 1;
+// Обновите метод _checkAndShowInfoPanel:
+  void _checkAndShowInfoPanel(int variantId) {
+    final index = _items.indexWhere((item) => item['variantId'] == variantId);
+    if (index != -1) {
+      final item = _items[index];
+      final hasQuantity = item.containsKey('quantity') && (item['quantity'] ?? 0) > 0;
+      final hasPrice = (item['price'] ?? 0.0) > 0;
 
-        final amount = _items[index]['amount'] ?? 1;
-        _items[index]['total'] = (_items[index]['quantity'] * _items[index]['price'] * amount).round();
+      // ⭐ Показываем панель только если оба поля заполнены
+      if (hasQuantity && hasPrice) {
+        setState(() {
+          _showInfoPanel = true;
+        });
       }
-    });
+    }
   }
 
   // ✅ НОВОЕ: Функция для перехода к следующему пустому полю
@@ -558,6 +601,31 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
             ),
           ),
         ),
+        // ✅ Информационная панель
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: InfoPanel(
+            show: _showInfoPanel,
+            duration: const Duration(seconds: 4),
+            message:
+            localizations.translate('goods_added_go_to_main') ??
+                'Товары добавлены. Перейдите в «Основное», чтобы сохранить.',
+            actionText: localizations.translate('go') ?? 'Перейти',
+            onActionTap: () {
+              _priceFocusNodes.forEach((_, node) => node.unfocus());
+              _quantityFocusNodes.forEach((_, node) => node.unfocus());
+              _tabController.animateTo(0);
+              // ⭐ НЕ сбрасываем _showInfoPanel здесь, пусть таймер это сделает
+            },
+            onDismiss: () {
+              // ⭐ Сбрасываем только при автоматическом скрытии (по таймеру)
+              if (mounted) {
+                setState(() => _showInfoPanel = false);
+              }
+            },
+          ),
+        ),
+        // Кнопка "Добавить товар"
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(

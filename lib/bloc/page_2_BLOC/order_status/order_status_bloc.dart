@@ -279,7 +279,8 @@ Future<void> _updateOrder(UpdateOrder event, Emitter<OrderState> emit) async {
 
     if (response['success']) {
       //print('OrderBloc: Заказ успешно обновлен');
-      emit(OrderSuccess()); // Эмитируем успех без данных
+      final statusId = response['statusId'] ?? event.statusId;
+      emit(OrderSuccess(statusId: statusId)); // Эмитируем успех с statusId
     } else {
       //print('OrderBloc: Ошибка сервера при обновлении заказа: ${response['error']}');
       emit(OrderError('Не удалось обновить заказ: ${response['error']}'));

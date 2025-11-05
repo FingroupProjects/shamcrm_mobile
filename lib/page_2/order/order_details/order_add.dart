@@ -438,7 +438,10 @@ Future<void> _initializeBaseUrl() async {
                     .translate('order_created_success'),
                 isSuccess: true,
               );
-              Navigator.pop(context, state.statusId ?? 1);
+              Navigator.pop(context, {
+                'success': true,
+                'statusId': state.statusId ?? 1,
+              });
             } else if (state is OrderError) {
               showCustomSnackBar(
                 context: context,
@@ -957,7 +960,15 @@ Future<void> _initializeBaseUrl() async {
           Expanded(
             child: ElevatedButton(
               onPressed: () async {
-                if (_formKey.currentState!.validate() && _items.isNotEmpty) {
+                if (_formKey.currentState!.validate()) {
+                  if (_items.isEmpty) {
+                    showCustomSnackBar(
+                      context: context,
+                      message: AppLocalizations.of(context)!.translate('add_at_least_one_product'),
+                      isSuccess: false,
+                    );
+                    return;
+                  }
                   if (selectedManager == null) {
                     setState(() {
                       isManagerInvalid = true;
@@ -1019,16 +1030,6 @@ Future<void> _initializeBaseUrl() async {
                         ? int.parse(selectedManager!)
                         : null,
                   ));
-
-                  await Future.delayed(const Duration(milliseconds: 500));
-
-                  if (orderBloc.state is OrderSuccess && mounted) {
-                    final successState = orderBloc.state as OrderSuccess;
-                    Navigator.pop(context, {
-                      'statusId': successState.statusId,
-                      'success': true,
-                    });
-                  }
                 }
               },
               style: ElevatedButton.styleFrom(

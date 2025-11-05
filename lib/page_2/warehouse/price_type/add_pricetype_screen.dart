@@ -135,9 +135,7 @@ class _AddPriceTypeScreenState extends State<AddPriceTypeScreen> {
                           hintText: AppLocalizations.of(context)!
                                   .translate('enter_pricetype_name') ??
                               'Введите название типа цены',
-                          label:
-                              AppLocalizations.of(context)!.translate('name') ??
-                                  'Название',
+                          label: AppLocalizations.of(context)!.translate('title_without_dots') ?? 'Название',
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return AppLocalizations.of(context)!

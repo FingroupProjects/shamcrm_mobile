@@ -44,7 +44,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   late TextEditingController _phoneController;
   late TextEditingController _commentController;
   late List<Map<String, dynamic>> _items;
-  String? selectedLead;
+  LeadData? _selectedLead;
   String? selectedManager;
   String? _deliveryMethod;
   Branch? _selectedBranch;
@@ -74,7 +74,10 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
         'imagePath': imagePath,
       };
     }).toList();
-    selectedLead = widget.order.lead.id.toString();
+    _selectedLead = LeadData(
+      id: widget.order.lead.id,
+      name: widget.order.lead.name,
+    );
     selectedManager = widget.order.manager?.id.toString();
     _selectedDeliveryAddress = widget.order.deliveryAddress != null
         ? DeliveryAddress(
@@ -94,7 +97,16 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
         address: '',
         isActive: 0,
       );
+    } else if (widget.order.storageId != null) {
+      _selectedBranch = Branch(
+        id: widget.order.storageId!,
+        name: widget.order.branchName ?? '',
+        address: '',
+        isActive: 0,
+      );
     }
+
+    // debugPrint('storage id : ${widget.order.storageId}');
 
     String phoneText = widget.order.phone;
     _fullPhoneNumber = phoneText; // Сохраняем полный номер
@@ -248,8 +260,8 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
       deliveryAddress: _selectedDeliveryAddress?.address,
       deliveryAddressId: _selectedDeliveryAddress?.id,
       lead: OrderLead(
-        id: int.tryParse(selectedLead ?? '0') ?? 0,
-        name: widget.order.lead.name,
+        id: _selectedLead?.id ?? 0,
+        name: _selectedLead?.name ?? widget.order.lead.name,
         channels: widget.order.lead.channels,
         phone: _fullPhoneNumber ?? widget.order.phone,
       ),
@@ -360,7 +372,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
               context.read<OrderBloc>().add(
                     AddMiniAppAddress(
                       address: addressController.text.trim(),
-                      leadId: int.parse(selectedLead ?? '0'),
+                      leadId: _selectedLead?.id ?? 0,
                     ),
                   );
             },
@@ -388,6 +400,9 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
 
   @override
   Widget build(BuildContext context) {
+
+    // debugPrint("selectedBranch ID  : ${_selectedBranch?.id}");
+
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (context) => OrderBloc(context.read<ApiService>())),
@@ -405,7 +420,10 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                 message: AppLocalizations.of(context)!.translate('order_updated_successfully'),
                 isSuccess: true,
               );
-              Navigator.pop(context, true);
+              Navigator.pop(context, {
+                'success': true,
+                'statusId': state.statusId ?? widget.order.orderStatus.id,
+              });
             } else if (state is OrderError) {
               showCustomSnackBar(
                 context: context,
@@ -421,7 +439,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
               // Обновляем список адресов доставки
               context.read<DeliveryAddressBloc>().add(
                     FetchDeliveryAddresses(
-                      leadId: int.parse(selectedLead ?? '0'),
+                      leadId: _selectedLead?.id ?? 0,
                     ),
                   );
             } else if (state is OrderCreateAddressError) {
@@ -448,11 +466,11 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                         children: [
                           const SizedBox(height: 8),
                           LeadRadioGroupWidget(
-                            selectedLead: selectedLead,
+                            selectedLead: _selectedLead?.id.toString(),
                             onSelectLead: (LeadData lead) {
                               if (mounted) {
                                 setState(() {
-                                  selectedLead = lead.id.toString();
+                                  _selectedLead = lead;
                                   _selectedDeliveryAddress = null;
                                 });
                                 context.read<DeliveryAddressBloc>().add(FetchDeliveryAddresses(
@@ -480,7 +498,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                           ),
                           const SizedBox(height: 16),
                           BranchRadioGroupWidget(
-                            selectedStatus: _selectedBranch?.toString(),
+                            selectedStatus: _selectedBranch?.id.toString(),
                             onSelectStatus: (Branch selectedStatusData) {
                               setState(() {
                                 _selectedBranch = selectedStatusData;
@@ -516,7 +534,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                           const SizedBox(height: 8),
                           if (_deliveryMethod == AppLocalizations.of(context)!.translate('delivery'))
                             DeliveryAddressDropdown(
-                              leadId: int.parse(selectedLead ?? '0'),
+                              leadId: _selectedLead?.id ?? 0,
                               organizationId: widget.order.organizationId ?? 1,
                               selectedAddress: _selectedDeliveryAddress,
                               onSelectAddress: (DeliveryAddress address) {
@@ -916,7 +934,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                   context.read<OrderBloc>().add(UpdateOrder(
                         orderId: widget.order.id,
                           phone: _fullPhoneNumber ?? widget.order.phone,
-                        leadId: int.parse(selectedLead ?? '0'),
+                        leadId: _selectedLead?.id ?? 0,
                         delivery: !isPickup,
                         deliveryAddress: isPickup ? null : _selectedDeliveryAddress?.address,
                         deliveryAddressId: isPickup ? null : _selectedDeliveryAddress?.id,
@@ -933,6 +951,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                             ? _commentController.text
                             : null,
                         managerId: selectedManager != null ? int.parse(selectedManager!) : null,
+                        statusId: widget.order.orderStatus.id, // Передаем текущий statusId
                       ));
                 } else {
                   showCustomSnackBar(

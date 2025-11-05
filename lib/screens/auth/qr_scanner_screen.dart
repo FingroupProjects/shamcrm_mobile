@@ -67,6 +67,7 @@ void _onDetect(BarcodeCapture barcodeCapture) async {
         await controller.stop();
 
         final apiService = context.read<ApiService>();
+await apiService.initialize(); // ← Явная инициализация baseUrl
 
        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => PinSetupScreen()));
 
@@ -88,9 +89,9 @@ try {
 }
         
         String? fcmToken = await FirebaseMessaging.instance.getToken();
-        if (fcmToken != null) {
-          await apiService.sendDeviceToken(fcmToken);
-        }
+if (fcmToken != null && fcmToken.isNotEmpty) {
+  await apiService.sendDeviceToken(fcmToken);
+}
       } catch (e, stackTrace) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -174,10 +175,10 @@ try {
   print('QrScanner: StackTrace: $stackTrace');
 }
             
-            String? fcmToken = await FirebaseMessaging.instance.getToken();
-            if (fcmToken != null) {
-              await apiService.sendDeviceToken(fcmToken);
-            }
+            // String? fcmToken = await FirebaseMessaging.instance.getToken();
+            // if (fcmToken != null) {
+            //   await apiService.sendDeviceToken(fcmToken);
+            // }
           } catch (e) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
