@@ -8,6 +8,7 @@ import '../../../bloc/dashboard/charts/user_task/user_overdue_task_bloc.dart';
 import '../../../bloc/dashboard/charts/user_task/user_overdue_task_event.dart';
 import '../../../bloc/dashboard/charts/user_task/user_overdue_task_state.dart';
 import '../../task/task_details/task_details_screen.dart';
+import '../../../custom_widget/full_text_dialog.dart';
 
 void showUserOverdueTasksDialog(
     BuildContext context, int userId, String userName) {
@@ -348,18 +349,29 @@ class _UserOverdueTasksDialogState extends State<UserOverdueTasksDialog> {
                               ),
                             ),
                             const SizedBox(height: 4),
-                            Text(
-                              task.project!.name ??
-                                  AppLocalizations.of(context)!
-                                      .translate('unknown_dialog'),
-                              style: const TextStyle(
-                                fontFamily: 'Gilroy',
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xff1E2E52),
+                            GestureDetector(
+                              onTap: () {
+                                showFullTextDialog(
+                                  AppLocalizations.of(context)!.translate('project_label'),
+                                  task.project!.name ??
+                                      AppLocalizations.of(context)!
+                                          .translate('unknown_dialog'),
+                                  context,
+                                );
+                              },
+                              child: Text(
+                                task.project!.name ??
+                                    AppLocalizations.of(context)!
+                                        .translate('unknown_dialog'),
+                                style: const TextStyle(
+                                  fontFamily: 'Gilroy',
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xff1E2E52),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
                             ),
                           ],
                         ),
@@ -395,18 +407,29 @@ class _UserOverdueTasksDialogState extends State<UserOverdueTasksDialog> {
                               ),
                             ),
                             const SizedBox(height: 4),
-                            Text(
-                              task.author!.name ??
-                                  AppLocalizations.of(context)!
-                                      .translate('unknown_dialog'),
-                              style: const TextStyle(
-                                fontFamily: 'Gilroy',
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xff1E2E52),
+                            GestureDetector(
+                              onTap: () {
+                                showFullTextDialog(
+                                  AppLocalizations.of(context)!.translate('author_label'),
+                                  task.author!.name ??
+                                      AppLocalizations.of(context)!
+                                          .translate('unknown_dialog'),
+                                  context,
+                                );
+                              },
+                              child: Text(
+                                task.author!.name ??
+                                    AppLocalizations.of(context)!
+                                        .translate('unknown_dialog'),
+                                style: const TextStyle(
+                                  fontFamily: 'Gilroy',
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xff1E2E52),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
                             ),
                           ],
                         ),
