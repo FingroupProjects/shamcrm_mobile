@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_by_id/goodsById_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_by_id/goodsById_event.dart';
@@ -11,6 +12,8 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:photo_view/photo_view.dart';
+import 'package:photo_view/photo_view_gallery.dart';
 
 class GoodsDetailsScreen extends StatefulWidget {
   final int id;
@@ -161,14 +164,19 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
               if (sortedFiles[index].path.isEmpty) {
                 return _buildPlaceholder();
               }
-              return ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  imageUrl,
-                  width: double.infinity,
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) =>
-                      _buildPlaceholder(),
+              return GestureDetector(
+                onTap: () {
+                  _openImageGallery(context, sortedFiles, index);
+                },
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: CachedNetworkImage(
+                    imageUrl: imageUrl,
+                    width: double.infinity,
+                    fit: BoxFit.contain,
+                    errorWidget: (context, error, stackTrace) =>
+                        _buildPlaceholder(),
+                  ),
                 ),
               );
             },
@@ -198,6 +206,28 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
       color: Colors.grey[200],
       child: const Center(
         child: Icon(Icons.image, size: 50, color: Colors.grey),
+      ),
+    );
+  }
+
+  void _openImageGallery(BuildContext context, List<GoodsFile> files, int initialIndex) {
+    final List<String> imageUrls = files
+        .where((file) => file.path.isNotEmpty)
+        .map((file) => '$baseUrl/${file.path}')
+        .toList();
+
+    if (imageUrls.isEmpty) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ImageGalleryViewer(
+          imageUrls: imageUrls,
+          initialIndex: initialIndex,
+          backgroundDecoration: const BoxDecoration(
+            color: Colors.black,
+          ),
+        ),
       ),
     );
   }
@@ -806,6 +836,116 @@ AppBar _buildAppBar(BuildContext context, String title) {
           return Center(
               child: Text(AppLocalizations.of(context)!.translate('loading')));
         },
+      ),
+    );
+  }
+}
+
+class ImageGalleryViewer extends StatefulWidget {
+  final List<String> imageUrls;
+  final int initialIndex;
+  final BoxDecoration backgroundDecoration;
+
+  const ImageGalleryViewer({
+    Key? key,
+    required this.imageUrls,
+    this.initialIndex = 0,
+    required this.backgroundDecoration,
+  }) : super(key: key);
+
+  @override
+  State<ImageGalleryViewer> createState() => _ImageGalleryViewerState();
+}
+
+class _ImageGalleryViewerState extends State<ImageGalleryViewer> {
+  late int currentIndex;
+  late PageController pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    currentIndex = widget.initialIndex;
+    pageController = PageController(initialPage: widget.initialIndex);
+  }
+
+  @override
+  void dispose() {
+    pageController.dispose();
+    super.dispose();
+  }
+
+  void onPageChanged(int index) {
+    setState(() {
+      currentIndex = index;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.close, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          '${currentIndex + 1} / ${widget.imageUrls.length}',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        centerTitle: true,
+      ),
+      body: Container(
+        decoration: widget.backgroundDecoration,
+        child: PhotoViewGallery.builder(
+          scrollPhysics: const BouncingScrollPhysics(),
+          builder: (BuildContext context, int index) {
+            return PhotoViewGalleryPageOptions(
+              imageProvider: CachedNetworkImageProvider(widget.imageUrls[index]),
+              initialScale: PhotoViewComputedScale.contained,
+              minScale: PhotoViewComputedScale.contained * 0.8,
+              maxScale: PhotoViewComputedScale.covered * 2.0,
+              heroAttributes: PhotoViewHeroAttributes(tag: widget.imageUrls[index]),
+              onTapUp: (context, details, controllerValue) {
+                Navigator.pop(context);
+              },
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  color: Colors.grey[900],
+                  child: const Center(
+                    child: Icon(
+                      Icons.broken_image,
+                      color: Colors.white54,
+                      size: 60,
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+          itemCount: widget.imageUrls.length,
+          loadingBuilder: (context, event) => Center(
+            child: SizedBox(
+              width: 30.0,
+              height: 30.0,
+              child: CircularProgressIndicator(
+                value: event == null
+                    ? 0
+                    : event.cumulativeBytesLoaded / (event.expectedTotalBytes ?? 1),
+                color: Colors.white,
+              ),
+            ),
+          ),
+          backgroundDecoration: widget.backgroundDecoration,
+          pageController: pageController,
+          onPageChanged: onPageChanged,
+        ),
       ),
     );
   }

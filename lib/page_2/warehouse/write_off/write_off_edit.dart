@@ -116,12 +116,6 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
         final existingIndex = _items.indexWhere((item) => item['variantId'] == newItem['variantId']);
 
         if (existingIndex == -1) {
-          // ✅ Сворачиваем все предыдущие карточки
-          for (var item in _items) {
-            final variantId = item['variantId'] as int;
-            _collapsedItems[variantId] = true;
-          }
-
           _items.add(newItem);
 
           final variantId = newItem['variantId'] as int;

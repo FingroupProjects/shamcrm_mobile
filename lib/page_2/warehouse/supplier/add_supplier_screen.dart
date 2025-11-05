@@ -96,7 +96,7 @@ class _AddSupplierScreenState extends State<AddSupplierScreen> {
             height: 24,
           ),
           onPressed: () {
-            Navigator.pop(context);
+            Navigator.pop(context, false);
           },
         ),
         title: Text(
@@ -143,7 +143,7 @@ class _AddSupplierScreenState extends State<AddSupplierScreen> {
                 duration: const Duration(seconds: 3),
               ),
             );
-            Navigator.pop(context);
+            Navigator.pop(context, true);
           }
         },
         child: Form(
@@ -239,7 +239,7 @@ class _AddSupplierScreenState extends State<AddSupplierScreen> {
                         buttonColor: const Color(0xffF4F7FD),
                         textColor: Colors.black,
                         onPressed: () {
-                          Navigator.pop(context);
+                          Navigator.pop(context, false);
                         },
                       ),
                     ),
