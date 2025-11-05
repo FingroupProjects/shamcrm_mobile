@@ -63,36 +63,49 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
     return;
   }
   isFetching = true;
-  
   try {
-    // ВСЕГДА эмитим LeadLoading в начале, если это новый запрос
-    if (event.ignoreCache || event.query != null || event.managerIds != null) {
+    if (state is! LeadDataLoaded) {
       emit(LeadLoading());
     }
 
     _currentQuery = event.query;
     _currentManagerIds = event.managerIds;
-    // ... остальные параметры
-    
-    // Восстанавливаем постоянные счетчики
+    _currentRegionIds = event.regionsIds;
+    _currentSourceIds = event.sourcesIds;
+    _currentStatusId = event.statusIds;
+    _currentFromDate = event.fromDate;
+    _currentToDate = event.toDate;
+    _currentHasSuccessDeals = event.hasSuccessDeals;
+    _currentHasInProgressDeals = event.hasInProgressDeals;
+    _currentHasFailureDeals = event.hasFailureDeals;
+    _currentHasNotices = event.hasNotices;
+    _currentHasContact = event.hasContact;
+    _currentHasChat = event.hasChat;
+    _currentHasNoReplies = event.hasNoReplies;
+    _currentHasUnreadMessages = event.hasUnreadMessages;
+    _currentHasDeal = event.hasDeal;
+    _currentHasOrders = event.hasOrders;
+    _currentDaysWithoutActivity = event.daysWithoutActivity;
+    _currentDirectoryValues = event.directoryValues;
+
+    // КРИТИЧНО: Восстанавливаем ВСЕ постоянные счетчики
     final allPersistentCounts = await LeadCache.getPersistentLeadCounts();
     for (String statusIdStr in allPersistentCounts.keys) {
       int statusId = int.parse(statusIdStr);
       int count = allPersistentCounts[statusIdStr] ?? 0;
       _leadCounts[statusId] = count;
     }
+    ////print('LeadBloc: Restored all persistent counts: $_leadCounts');
 
     List<Lead> leads = [];
-    
-    // Проверяем кэш только если НЕ ignoreCache
-    if (!event.ignoreCache && event.query == null) {
+    if (!event.ignoreCache) {
       leads = await LeadCache.getLeadsForStatus(event.statusId);
       if (leads.isNotEmpty) {
+        ////print('LeadBloc: _fetchLeads - Emitting cached leads: ${leads.length}, preserved counts: $_leadCounts');
         emit(LeadDataLoaded(leads, currentPage: 1, leadCounts: Map.from(_leadCounts)));
       }
     }
 
-    // Загружаем с сервера
     if (await _checkInternetConnection()) {
       leads = await apiService.getLeads(
         event.statusId,
@@ -120,28 +133,28 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
         salesFunnelId: event.salesFunnelId,
       );
 
-      // Кэшируем данные
+      // КЛЮЧЕВОЙ МОМЕНТ: Берём реальный счётчик из _leadCounts
+      // (который был установлен при загрузке статусов из API)
+      final int? realTotalCount = _leadCounts[event.statusId];
+      
+      // Кэшируем лиды с РЕАЛЬНЫМ общим счётчиком, а не с leads.length
       await LeadCache.cacheLeadsForStatus(
         event.statusId,
         leads,
         updatePersistentCount: event.ignoreCache,
+        actualTotalCount: realTotalCount, // ← Передаём РЕАЛЬНЫЙ счётчик из API статусов
       );
+      
+      ////print('LeadBloc: _fetchLeads - Fetched ${leads.length} leads from API for status ${event.statusId}, using REAL total count: $realTotalCount from _leadCounts');
     }
 
     allLeadsFetched = leads.isEmpty;
-    
-    // КРИТИЧНО: ВСЕГДА эмитим финальное состояние
-    emit(LeadDataLoaded(
-      leads, 
-      currentPage: 1, 
-      leadCounts: Map.from(_leadCounts),
-      timestamp: DateTime.now(), // Обновляем timestamp для гарантии изменения
-    ));
-    
+    emit(LeadDataLoaded(leads, currentPage: 1, leadCounts: Map.from(_leadCounts)));
   } catch (e) {
+    ////print('LeadBloc: _fetchLeads - Error: $e');
     emit(LeadError('Не удалось загрузить данные!'));
   } finally {
-    isFetching = false; // ОБЯЗАТЕЛЬНО сбрасываем флаг
+    isFetching = false;
   }
 }
 
