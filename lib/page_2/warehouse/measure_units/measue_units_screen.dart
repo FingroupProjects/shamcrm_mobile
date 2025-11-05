@@ -211,31 +211,19 @@ class _MeasureUnitsScreenState extends State<MeasureUnitsScreen> {
                 ),
               );
             } else if (state is MeasureUnitsEmpty) {
-              return RefreshIndicator(
-                color: const Color(0xff1E2E52),
-                backgroundColor: Colors.white,
-                onRefresh: () async {
-                  final query = _currentFilters['query'] as String?;
-                  context.read<MeasureUnitsBloc>().add(RefreshMeasureUnits(query: query));
-                },
-                child: ListView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  children: [
-                    const SizedBox(height: 100),
-                    Center(
-                      child: Text(
-                        localizations.translate('no_measure_units') ?? 'Нет единиц измерения',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xff99A4BA),
-                        ),
-                      ),
+              return Center(
+                  child: Text(
+                    _isSearching
+                        ? (localizations.translate('nothing_found') ?? 'Ничего не найдено')
+                        : (localizations.translate('no_measure_units') ?? 'Нет единиц измерения'),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xff99A4BA),
                     ),
-                  ],
-                ),
-              );
+                  ),
+                );
             } else if (state is MeasureUnitsError) {
               return Center(
                 child: Padding(

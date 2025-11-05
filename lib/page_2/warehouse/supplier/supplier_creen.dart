@@ -116,9 +116,12 @@ class _SupplierCreenState extends State<SupplierCreen> {
                       MaterialPageRoute(
                         builder: (context) => AddSupplierScreen(),
                       ),
-                    ).then((_) {
-                      final query = _currentFilters['query'] as String?;
-                      _supplierBloc.add(FetchSupplier(query: query));
+                    ).then((wasAdded) {
+                      // Перезагружаем список только если поставщик был добавлен
+                      if (wasAdded == true) {
+                        final query = _currentFilters['query'] as String?;
+                        _supplierBloc.add(FetchSupplier(query: query));
+                      }
                     });
                   }
                 },
