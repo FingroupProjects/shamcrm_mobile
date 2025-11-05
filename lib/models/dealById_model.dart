@@ -53,12 +53,20 @@ class DealById {
       manager: json['manager'] != null ? ManagerData.fromJson(json['manager']) : null,
       lead: json['lead'] != null ? Lead.fromJson(json['lead'], json['lead']['status_id'] ?? 0) : null,
       author: json['author'] != null && json['author'] is Map<String, dynamic> ? AuthorDeal.fromJson(json['author']) : null,
-      dealCustomFields: (json['deal_custom_fields'] as List<dynamic>?)?.map((field) => DealCustomFieldsById.fromJson(field)).toList() ?? [],
+      dealCustomFields: (json['customFieldValues'] as List<dynamic>?)
+          ?.map((field) => DealCustomFieldsById(
+        id: field['id'] ?? 0,
+        key: field['custom_field']?['name'] ?? '',
+        value: field['value'] ?? '',
+        type: field['type'],
+      ))
+          .toList() ?? [],
       dealStatus: json['deal_status'] != null ? DealStatusById.fromJson(json['deal_status']) : null,
-      directoryValues: (json['directory_values'] as List<dynamic>?)?.map((dirValue) => DirectoryValue.fromJson(dirValue)).toList(),
+      directoryValues: (json['directory_values'] as List<dynamic>?)
+          ?.map((dirValue) => DirectoryValue.fromJson(dirValue))
+          .toList(),
       files: (json['files'] as List<dynamic>?)?.map((item) => DealFiles.fromJson(item)).toList() ?? [],
       dealNumber: json['deal_number'] is int ? json['deal_number'] : null,
-      // ✅ НОВОЕ: парсим массив статусов
       dealStatuses: (json['deal_statuses'] as List<dynamic>?)
           ?.map((status) => DealStatusById.fromJson(status))
           .toList(),
@@ -129,7 +137,7 @@ class DealStatusById {
       updatedAt: json['updated_at'] is String ? json['updated_at'] : null,
     );
   }
-  
+
   // ✅ НОВОЕ: добавляем методы для сравнения
   @override
   bool operator ==(Object other) =>
@@ -177,17 +185,24 @@ class DealCustomFieldsById {
 
 class DirectoryValue {
   final int id;
-  final Entry entry;
+  final Entry? entry; // make nullable if sometimes missing or a list
 
   DirectoryValue({
     required this.id,
-    required this.entry,
+    this.entry,
   });
 
   factory DirectoryValue.fromJson(Map<String, dynamic> json) {
+    Entry? entryObj;
+    if (json['entry'] != null && json['entry'] is Map<String, dynamic>) {
+      entryObj = Entry.fromJson(json['entry']);
+    } else {
+      entryObj = null; // or handle if it’s a list differently
+    }
+
     return DirectoryValue(
       id: json['id'] ?? 0,
-      entry: Entry.fromJson(json['entry']),
+      entry: entryObj,
     );
   }
 }
@@ -195,19 +210,43 @@ class DirectoryValue {
 class Entry {
   final int id;
   final DirectoryByDeal directory;
-  final Map<String, dynamic> values;
+  final List<DirectoryFieldValue> values; // ИЗМЕНЕНО: было Map<String, dynamic>
+  final String createdAt;
 
   Entry({
     required this.id,
     required this.directory,
     required this.values,
+    required this.createdAt,
   });
 
   factory Entry.fromJson(Map<String, dynamic> json) {
     return Entry(
       id: json['id'] ?? 0,
       directory: DirectoryByDeal.fromJson(json['directory']),
-      values: json['values'] ?? {},
+      values: (json['values'] as List<dynamic>?)
+              ?.map((item) => DirectoryFieldValue.fromJson(item))
+              .toList() ??
+          [],
+      createdAt: json['created_at'] ?? '',
+    );
+  }
+}
+
+// Новый класс для представления пары key-value
+class DirectoryFieldValue {
+  final String key;
+  final String value;
+
+  DirectoryFieldValue({
+    required this.key,
+    required this.value,
+  });
+
+  factory DirectoryFieldValue.fromJson(Map<String, dynamic> json) {
+    return DirectoryFieldValue(
+      key: json['key'] ?? '',
+      value: json['value'] ?? '',
     );
   }
 }

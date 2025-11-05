@@ -1,5 +1,8 @@
 import 'dart:io';
 
+import 'package:crm_task_manager/bloc/field_configuration/field_configuration_bloc.dart';
+import 'package:crm_task_manager/bloc/field_configuration/field_configuration_event.dart';
+import 'package:crm_task_manager/bloc/field_configuration/field_configuration_state.dart';
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
@@ -15,6 +18,7 @@ import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/custom_widget/file_picker_dialog.dart';
 import 'package:crm_task_manager/models/dealById_model.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
+import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
@@ -25,7 +29,7 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_create_cu
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/main_field_dropdown_widget.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -94,6 +98,10 @@ class _DealEditScreenState extends State<DealEditScreen> {
   List<DealFiles> existingFiles = [];
   List<String> newFiles = [];
     List<int> _selectedStatusIds = []; // ✅ НОВОЕ: список выбранных ID
+  
+  // Конфигурация полей с сервера
+  List<FieldConfiguration> fieldConfigurations = [];
+  bool isConfigurationLoaded = false;
 
 
   @override
@@ -111,6 +119,58 @@ class _DealEditScreenState extends State<DealEditScreen> {
         selectedFiles.addAll(existingFiles.map((file) => file.path));
       });
     }
+    
+    // ВАЖНО: Добавляем небольшую задержку чтобы context был готов
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadFieldConfiguration();
+    });
+  }
+  
+  Future<void> _loadFieldConfiguration() async {
+    if (kDebugMode) {
+      print('DealEditScreen: Loading field configuration for deals');
+    }
+    context.read<FieldConfigurationBloc>().add(FetchFieldConfiguration('deals'));
+  }
+  
+  // Вспомогательный метод для создания/получения кастомного поля
+  CustomField _getOrCreateCustomField(FieldConfiguration config) {
+    final existingField = customFields.firstWhere(
+      (field) => field.fieldName == config.fieldName && field.isCustomField,
+      orElse: () {
+        final newField = CustomField(
+          fieldName: config.fieldName,
+          uniqueId: Uuid().v4(),
+          controller: TextEditingController(),
+          type: config.type,
+          isCustomField: true,
+        );
+        customFields.add(newField);
+        return newField;
+      },
+    );
+
+    return existingField;
+  }
+
+  // Вспомогательный метод для создания/получения поля-справочника
+  CustomField _getOrCreateDirectoryField(FieldConfiguration config) {
+    final existingField = customFields.firstWhere(
+      (field) => field.directoryId == config.directoryId,
+      orElse: () {
+        final newField = CustomField(
+          fieldName: config.fieldName,
+          isDirectoryField: true,
+          directoryId: config.directoryId,
+          uniqueId: Uuid().v4(),
+          controller: TextEditingController(),
+        );
+        customFields.add(newField);
+        return newField;
+      },
+    );
+
+    return existingField;
   }
 
   void _initializeControllers() {
@@ -140,18 +200,21 @@ class _DealEditScreenState extends State<DealEditScreen> {
     if (widget.directoryValues != null && widget.directoryValues!.isNotEmpty) {
       final seen = <String>{};
       final uniqueDirectoryValues = widget.directoryValues!.where((dirValue) {
-        final key = '${dirValue.entry.directory.id}_${dirValue.entry.id}';
+        final key = '${dirValue.entry?.directory.id}_${dirValue.entry?.id}';
         return seen.add(key);
       }).toList();
 
       for (var dirValue in uniqueDirectoryValues) {
         customFields.add(CustomField(
-          fieldName: dirValue.entry.directory.name,
-          controller:
-              TextEditingController(text: dirValue.entry.values['value'] ?? ''),
+          fieldName: dirValue.entry?.directory.name ?? '',
+          controller: TextEditingController(
+            text: dirValue.entry?.values.isNotEmpty == true
+                ? dirValue.entry!.values.first.value
+                : ''
+          ),
           isDirectoryField: true,
-          directoryId: dirValue.entry.directory.id,
-          entryId: dirValue.entry.id,
+          directoryId: dirValue.entry?.directory.id ?? 0,
+          entryId: dirValue.entry?.id ?? 0,
           uniqueId: Uuid().v4(),
         ));
       }
@@ -388,7 +451,6 @@ Widget _buildFileSelection() {
             
             // Отображение выбранных файлов
             final fileName = fileNames[index];
-            final filePath = selectedFiles[index];
             final fileExtension = fileName.split('.').last.toLowerCase();
             
        return Padding(
@@ -495,6 +557,139 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
     );
   }
 }
+  
+  // Метод для построения стандартных системных полей
+  Widget _buildStandardField(FieldConfiguration config) {
+    switch (config.fieldName) {
+      case 'name':
+        return DealNameSelectionWidget(
+          selectedDealName: titleController.text,
+          onSelectDealName: (String dealName) {
+            setState(() {
+              titleController.text = dealName;
+            });
+          },
+        );
+
+      case 'lead_id':
+        return LeadRadioGroupWidget(
+          selectedLead: selectedLead,
+          onSelectLead: (LeadData selectedLeadData) {
+            setState(() {
+              selectedLead = selectedLeadData.id.toString();
+            });
+          },
+        );
+
+      case 'manager_id':
+        return ManagerRadioGroupWidget(
+          selectedManager: selectedManager,
+          onSelectManager: (ManagerData selectedManagerData) {
+            setState(() {
+              selectedManager = selectedManagerData.id.toString();
+            });
+          },
+        );
+
+      case 'start_date':
+        return CustomTextFieldDate(
+          controller: startDateController,
+          label: AppLocalizations.of(context)!.translate('start_date'),
+          withTime: false,
+        );
+
+      case 'end_date':
+        return CustomTextFieldDate(
+          controller: endDateController,
+          label: AppLocalizations.of(context)!.translate('end_date'),
+          hasError: isEndDateInvalid,
+          withTime: false,
+        );
+
+      case 'sum':
+        return CustomTextField(
+          controller: sumController,
+          hintText: AppLocalizations.of(context)!.translate('enter_summ'),
+          label: AppLocalizations.of(context)!.translate('summ'),
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9\.,]'))],
+        );
+
+      case 'description':
+        return CustomTextField(
+          controller: descriptionController,
+          hintText: AppLocalizations.of(context)!.translate('enter_description'),
+          label: AppLocalizations.of(context)!.translate('description_list'),
+          maxLines: 5,
+          keyboardType: TextInputType.multiline,
+        );
+
+      default:
+        return SizedBox.shrink();
+    }
+  }
+  
+  // Метод для построения виджета на основе конфигурации поля
+  Widget _buildFieldWidget(FieldConfiguration config) {
+    // Сначала проверяем, является ли это кастомным полем
+    if (config.isCustomField) {
+      final customField = _getOrCreateCustomField(config);
+
+      return CustomFieldWidget(
+        fieldName: config.fieldName,
+        valueController: customField.controller,
+        onRemove: () {}, // Пустая функция, так как серверные поля нельзя удалить
+        type: config.type,
+        isDirectory: false,
+      );
+    }
+
+    // Затем проверяем, является ли это справочником
+    if (config.isDirectory && config.directoryId != null) {
+      final directoryField = _getOrCreateDirectoryField(config);
+
+      return MainFieldDropdownWidget(
+        directoryId: directoryField.directoryId!,
+        directoryName: directoryField.fieldName,
+        selectedField: directoryField.entryId != null
+            ? MainField(
+                id: directoryField.entryId!,
+                value: directoryField.controller.text)
+            : null,
+        onSelectField: (MainField selectedField) {
+          setState(() {
+            final index = customFields.indexWhere(
+                    (f) => f.directoryId == config.directoryId
+            );
+            if (index != -1) {
+              customFields[index] = directoryField.copyWith(
+                entryId: selectedField.id,
+                controller: TextEditingController(text: selectedField.value),
+              );
+            }
+          });
+        },
+        controller: directoryField.controller,
+        onSelectEntryId: (int entryId) {
+          setState(() {
+            final index = customFields.indexWhere(
+                    (f) => f.directoryId == config.directoryId
+            );
+            if (index != -1) {
+              customFields[index] = directoryField.copyWith(
+                entryId: entryId,
+              );
+            }
+          });
+        },
+        onRemove: () {},
+        initialEntryId: directoryField.entryId,
+      );
+    }
+
+    // Иначе это стандартное системное поле
+    return _buildStandardField(config);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -533,40 +728,102 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
         ),
         leadingWidth: 40,
       ),
-      body: MultiBlocProvider(
-        providers: [
-          BlocProvider(create: (context) => MainFieldBloc()),
-        ],
-        child: BlocListener<DealBloc, DealState>(
-          listener: (context, state) {
-            if (state is DealError) {
-              _showErrorSnackBar(
-                  AppLocalizations.of(context)!.translate(state.message));
-            } else if (state is DealSuccess) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    AppLocalizations.of(context)!
-                        .translate('deal_updated_successfully'),
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  backgroundColor: Colors.green,
-                  behavior: SnackBarBehavior.floating,
-                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+      body: BlocConsumer<FieldConfigurationBloc, FieldConfigurationState>(
+        listener: (context, configState) {
+          if (kDebugMode) {
+            print('DealEditScreen: FieldConfigurationBloc state changed: ${configState.runtimeType}');
+          }
+
+          if (configState is FieldConfigurationLoaded) {
+            if (kDebugMode) {
+              print('DealEditScreen: Configuration loaded with ${configState.fields.length} fields');
+            }
+            setState(() {
+              fieldConfigurations = configState.fields;
+              isConfigurationLoaded = true;
+            });
+          } else if (configState is FieldConfigurationError) {
+            if (kDebugMode) {
+              print('DealEditScreen: Configuration error: ${configState.message}');
+            }
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Ошибка загрузки конфигурации: ${configState.message}',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
                   ),
                 ),
-              );
-              Navigator.pop(context, true);
-            }
-          },
-          child: Form(
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        },
+        builder: (context, configState) {
+          if (kDebugMode) {
+            print('DealEditScreen: Building with state: ${configState.runtimeType}, isLoaded: $isConfigurationLoaded');
+          }
+
+          if (configState is FieldConfigurationLoading) {
+            return Center(
+              child: CircularProgressIndicator(
+                color: Color(0xff1E2E52),
+              ),
+            );
+          }
+
+          if (!isConfigurationLoaded) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(
+                    color: Color(0xff1E2E52),
+                  ),
+                  SizedBox(height: 16),
+                  Text('Загрузка конфигурации...'),
+                ],
+              ),
+            );
+          }
+
+          return MultiBlocProvider(
+            providers: [
+              BlocProvider(create: (context) => MainFieldBloc()),
+            ],
+            child: BlocListener<DealBloc, DealState>(
+              listener: (context, state) {
+                if (state is DealError) {
+                  _showErrorSnackBar(
+                      AppLocalizations.of(context)!.translate(state.message));
+                } else if (state is DealSuccess) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        AppLocalizations.of(context)!
+                            .translate('deal_updated_successfully'),
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white,
+                        ),
+                      ),
+                      backgroundColor: Colors.green,
+                      behavior: SnackBarBehavior.floating,
+                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  );
+                  Navigator.pop(context, true);
+                }
+              },
+              child: Form(
             key: _formKey,
             child: Column(
               children: [
@@ -580,105 +837,52 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          DealNameSelectionWidget(
-                            selectedDealName: titleController.text,
-                            onSelectDealName: (String dealName) {
-                              setState(() {
-                                titleController.text = dealName;
-                              });
+                          // Динамическое построение полей на основе конфигурации с сервера
+                          ...fieldConfigurations.map((config) {
+                            return Column(
+                              children: [
+                                _buildFieldWidget(config),
+                                const SizedBox(height: 15),
+                              ],
+                            );
+                          }).toList(),
+                          
+                          // Статусы (специальное поле, не из конфигурации)
+                          DealStatusEditWidget(
+                            selectedStatus: _selectedStatuses?.toString(),
+                            dealStatuses: widget.dealStatuses,
+                            onSelectStatus: (DealStatus selectedStatusData) {
+                              if (_selectedStatuses != selectedStatusData.id) {
+                                setState(() {
+                                  _selectedStatuses = selectedStatusData.id;
+                                });
+                              }
                             },
-                          ),
-                        const SizedBox(height: 8),
- DealStatusEditWidget(
-  
-    selectedStatus: _selectedStatuses?.toString(),
-    dealStatuses: widget.dealStatuses,
-    onSelectStatus: (DealStatus selectedStatusData) {
-      if (_selectedStatuses != selectedStatusData.id) {
-        setState(() {
-          _selectedStatuses = selectedStatusData.id;
-        });
-      }
-    },
-    onSelectMultipleStatuses: (List<int> selectedIds) {
-      if (_selectedStatusIds.length != selectedIds.length ||
-          !_selectedStatusIds.toSet().containsAll(selectedIds) ||
-          !selectedIds.toSet().containsAll(_selectedStatusIds)) {
-        setState(() {
-          _selectedStatusIds = selectedIds;
-        });
-      }
-    },
-  ),
-  // const SizedBox(height: 8),
-  //                           LeadRadioGroupWidget(
-  //                             selectedLead: selectedLead,
-  //                             onSelectLead: (LeadData selectedRegionData) {
-  //                               setState(() {
-  //                                 selectedLead = selectedRegionData.id.toString();
-  //                               });
-  //                             },
-  //                           ),
-                          const SizedBox(height: 8),
-                          ManagerRadioGroupWidget(
-                            selectedManager: selectedManager,
-                            onSelectManager: (ManagerData selectedManagerData) {
-                              setState(() {
-                                selectedManager =
-                                    selectedManagerData.id.toString();
-                              });
+                            onSelectMultipleStatuses: (List<int> selectedIds) {
+                              if (_selectedStatusIds.length != selectedIds.length ||
+                                  !_selectedStatusIds.toSet().containsAll(selectedIds) ||
+                                  !selectedIds.toSet().containsAll(_selectedStatusIds)) {
+                                setState(() {
+                                  _selectedStatusIds = selectedIds;
+                                });
+                              }
                             },
-                          ),
-                          const SizedBox(height: 8),
-                          CustomTextFieldDate(
-                            controller: startDateController,
-                            label: AppLocalizations.of(context)!
-                                .translate('start_date'),
-                            withTime: false,
-                          ),
-                          const SizedBox(height: 8),
-                          CustomTextFieldDate(
-                            controller: endDateController,
-                            label:
-                                AppLocalizations.of(context)!.translate('end_date'),
-                            hasError: isEndDateInvalid,
-                            withTime: false,
-                          ),
-                          const SizedBox(height: 8),
-                          CustomTextField(
-                            controller: sumController,
-                            hintText: AppLocalizations.of(context)!
-                                .translate('enter_summ'),
-                            label:
-                                AppLocalizations.of(context)!.translate('summ'),
-                            inputFormatters: [
-                              FilteringTextInputFormatter.allow(
-                                  RegExp(r'[0-9\.,]')),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          CustomTextField(
-                            controller: descriptionController,
-                            hintText: AppLocalizations.of(context)!
-                                .translate('enter_description'),
-                            label: AppLocalizations.of(context)!
-                                .translate('description_list'),
-                            maxLines: 5,
-                            keyboardType: TextInputType.multiline,
                           ),
                           const SizedBox(height: 8),
                           _buildFileSelection(),
                           const SizedBox(height: 20),
-                          ListView.builder(
-                            shrinkWrap: true,
-                            physics: NeverScrollableScrollPhysics(),
-                            itemCount: customFields.length,
-                            itemBuilder: (context, index) {
-                              final field = customFields[index];
-                              return Container(
-                                key: ValueKey(field.uniqueId),
-                                child: field.isDirectoryField &&
-                                        field.directoryId != null
+                          
+                          // ТОЛЬКО пользовательские поля (те, которые добавлены через кнопку "Добавить поле")
+                          ...customFields.where((field) {
+                            // Исключаем поля, которые уже есть в серверной конфигурации
+                            return !fieldConfigurations.any((config) =>
+                              (config.isCustomField && config.fieldName == field.fieldName) ||
+                              (config.isDirectory && config.directoryId == field.directoryId)
+                            );
+                          }).map((field) {
+                            return Column(
+                              children: [
+                                field.isDirectoryField && field.directoryId != null
                                     ? MainFieldDropdownWidget(
                                         directoryId: field.directoryId!,
                                         directoryName: field.fieldName,
@@ -687,11 +891,10 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
                                                 id: field.entryId!,
                                                 value: field.controller.text)
                                             : null,
-                                        onSelectField:
-                                            (MainField selectedField) {
+                                        onSelectField: (MainField selectedField) {
                                           setState(() {
-                                            customFields[index] =
-                                                field.copyWith(
+                                            final idx = customFields.indexOf(field);
+                                            customFields[idx] = field.copyWith(
                                               entryId: selectedField.id,
                                               controller: TextEditingController(
                                                   text: selectedField.value),
@@ -701,15 +904,15 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
                                         controller: field.controller,
                                         onSelectEntryId: (int entryId) {
                                           setState(() {
-                                            customFields[index] =
-                                                field.copyWith(
+                                            final idx = customFields.indexOf(field);
+                                            customFields[idx] = field.copyWith(
                                               entryId: entryId,
                                             );
                                           });
                                         },
                                         onRemove: () {
                                           setState(() {
-                                            customFields.removeAt(index);
+                                            customFields.remove(field);
                                           });
                                         },
                                         initialEntryId: field.entryId,
@@ -719,14 +922,16 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
                                         valueController: field.controller,
                                         onRemove: () {
                                           setState(() {
-                                            customFields.removeAt(index);
+                                            customFields.remove(field);
                                           });
                                         },
                                         type: field.type,
+                                        isDirectory: false,
                                       ),
-                              );
-                            },
-                          ),
+                                const SizedBox(height: 15),
+                              ],
+                            );
+                          }).toList(),
                           CustomButton(
                             buttonText: AppLocalizations.of(context)!
                                 .translate('add_field'),
@@ -822,6 +1027,13 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
                                           field.controller.text.trim();
                                       String? fieldType = field.type;
 
+                                      // ВАЖНО: Нормализуем тип поля - преобразуем "text" в "string"
+                                      if (fieldType == 'text') {
+                                        fieldType = 'string';
+                                      }
+                                      // Если type null, устанавливаем string по умолчанию
+                                      fieldType ??= 'string';
+
                                       // Валидация для number
                                       if (fieldType == 'number' &&
                                           fieldValue.isNotEmpty) {
@@ -876,7 +1088,7 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
                                         customFieldList.add({
                                           'key': fieldName,
                                           'value': fieldValue,
-                                          'type': fieldType ?? 'string',
+                                          'type': fieldType, // Теперь гарантированно один из: string, number, date, datetime
                                         });
                                       }
                                     }
@@ -929,6 +1141,8 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
             ),
           ),
         ),
+      );
+        },
       ),
     );
   }
@@ -938,6 +1152,7 @@ class CustomField {
   final String fieldName;
   final TextEditingController controller;
   final bool isDirectoryField;
+  final bool isCustomField;
   final int? directoryId;
   final int? entryId;
   final String uniqueId;
@@ -947,6 +1162,7 @@ class CustomField {
     required this.fieldName,
     TextEditingController? controller,
     this.isDirectoryField = false,
+    this.isCustomField = false,
     this.directoryId,
     this.entryId,
     required this.uniqueId,
@@ -957,6 +1173,7 @@ class CustomField {
     String? fieldName,
     TextEditingController? controller,
     bool? isDirectoryField,
+    bool? isCustomField,
     int? directoryId,
     int? entryId,
     String? uniqueId,
@@ -966,6 +1183,7 @@ class CustomField {
       fieldName: fieldName ?? this.fieldName,
       controller: controller ?? this.controller,
       isDirectoryField: isDirectoryField ?? this.isDirectoryField,
+      isCustomField: isCustomField ?? this.isCustomField,
       directoryId: directoryId ?? this.directoryId,
       entryId: entryId ?? this.entryId,
       uniqueId: uniqueId ?? this.uniqueId,

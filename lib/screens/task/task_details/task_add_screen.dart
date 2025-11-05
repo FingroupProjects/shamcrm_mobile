@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/bloc/field_configuration/field_configuration_state.dart';
 import 'package:crm_task_manager/bloc/main_field/main_field_bloc.dart';
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/project_task/project_task_bloc.dart';
@@ -18,11 +19,10 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_details/main_field_dro
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_details/project_list_task.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
-import 'package:crm_task_manager/models/directory_model.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:crm_task_manager/bloc/user/user_bloc.dart';
 import 'package:crm_task_manager/bloc/user/user_event.dart';
 import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
@@ -34,6 +34,10 @@ import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../../bloc/field_configuration/field_configuration_bloc.dart';
+import '../../../bloc/field_configuration/field_configuration_event.dart';
+import '../../../models/field_configuration.dart';
 
 class TaskAddScreen extends StatefulWidget {
   final int statusId;
@@ -60,10 +64,13 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   List<String>? selectedUsers;
   List<CustomField> customFields = [];
   bool isEndDateInvalid = false;
-  bool _showAdditionalFields = false;
   bool _hasTaskCreatePermission = false;
   bool _hasTaskCreateForMySelfPermission = false;
   int? _currentUserId;
+
+  // Конфигурация полей с сервера
+  List<FieldConfiguration> fieldConfigurations = [];
+  bool isConfigurationLoaded = false;
 
   @override
   void initState() {
@@ -74,6 +81,186 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     _setDefaultValues();
     _fetchAndAddCustomFields();
     _checkPermissionsAndUser();
+    // ВАЖНО: Добавляем небольшую задержку чтобы context был готов
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadFieldConfiguration();
+    });
+  }
+
+  Future<void> _loadFieldConfiguration() async {
+    if (kDebugMode) {
+      print('LeadAddScreen: Loading field configuration for tasks');
+    }
+    context.read<FieldConfigurationBloc>().add(FetchFieldConfiguration('tasks'));
+  }
+
+  // Вспомогательный метод для создания/получения кастомного поля
+  CustomField _getOrCreateCustomField(FieldConfiguration config) {
+    final existingField = customFields.firstWhere(
+      (field) => field.fieldName == config.fieldName && field.isCustomField,
+      orElse: () {
+        final newField = CustomField(
+          fieldName: config.fieldName,
+          uniqueId: Uuid().v4(),
+          controller: TextEditingController(),
+          type: config.type,
+          isCustomField: true,
+        );
+        customFields.add(newField);
+        return newField;
+      },
+    );
+
+    return existingField;
+  }
+
+  // Вспомогательный метод для создания/получения поля-справочника
+  CustomField _getOrCreateDirectoryField(FieldConfiguration config) {
+    final existingField = customFields.firstWhere(
+      (field) => field.directoryId == config.directoryId,
+      orElse: () {
+        final newField = CustomField(
+          fieldName: config.fieldName,
+          isDirectoryField: true,
+          directoryId: config.directoryId,
+          uniqueId: Uuid().v4(),
+          controller: TextEditingController(),
+        );
+        customFields.add(newField);
+        return newField;
+      },
+    );
+
+    return existingField;
+  }
+
+  // Метод для построения стандартных системных полей
+  Widget _buildStandardField(FieldConfiguration config) {
+    switch (config.fieldName) {
+      case 'name':
+        return CustomTextFieldWithPriority(
+          controller: nameController,
+          hintText: AppLocalizations.of(context)!.translate('enter_title'),
+          label: AppLocalizations.of(context)!.translate('event_name'),
+          showPriority: true,
+          isPrioritySelected: selectedPriority == 3,
+          onPriorityChanged: (bool? value) {
+            setState(() {
+              selectedPriority = value == true ? 3 : 1;
+            });
+          },
+          priorityText: AppLocalizations.of(context)!.translate('urgent'),
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return AppLocalizations.of(context)!.translate('field_required');
+            }
+            return null;
+          },
+        );
+
+      case 'description':
+        return CustomTextField(
+          controller: descriptionController,
+          hintText: AppLocalizations.of(context)!.translate('enter_description'),
+          label: AppLocalizations.of(context)!.translate('description_list'),
+          maxLines: 5,
+          keyboardType: TextInputType.multiline,
+        );
+
+      // Условно отображаем UserMultiSelectWidget
+      case 'executor':
+        if (_hasTaskCreatePermission || !_hasTaskCreateForMySelfPermission) {
+          return UserMultiSelectWidget(
+            selectedUsers: selectedUsers,
+            onSelectUsers: (List<UserData> selectedUsersData) {
+              setState(() {
+                selectedUsers = selectedUsersData.map((user) => user.id.toString()).toList();
+              });
+            },
+          );
+        } else {
+          return SizedBox.shrink();
+        }
+
+      case 'project':
+        return ProjectTaskGroupWidget(
+          selectedProject: selectedProject,
+          onSelectProject: (ProjectTask selectedProjectData) {
+            setState(() {
+              selectedProject = selectedProjectData.id.toString();
+            });
+          },
+        );
+      case 'deadline':
+        return CustomTextFieldDate(
+          controller: endDateController,
+          label: AppLocalizations.of(context)!.translate('deadline'),
+          hasError: isEndDateInvalid,
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return AppLocalizations.of(context)!.translate('field_required');
+            }
+            return null;
+          },
+        );
+
+      default:
+        return SizedBox.shrink();
+    }
+  }
+
+  // Метод для построения виджета на основе конфигурации поля
+  Widget _buildFieldWidget(FieldConfiguration config) {
+    // Сначала проверяем, является ли это кастомным полем
+    if (config.isCustomField) {
+      final customField = _getOrCreateCustomField(config);
+
+      return CustomFieldWidget(
+        fieldName: config.fieldName,
+        valueController: customField.controller,
+        onRemove: () {},
+        // Пустая функция, так как серверные поля нельзя удалить
+        type: config.type,
+        isDirectory: false,
+      );
+    }
+
+    // Затем проверяем, является ли это справочником
+    if (config.isDirectory && config.directoryId != null) {
+      final directoryField = _getOrCreateDirectoryField(config);
+
+      return MainFieldDropdownWidget(
+        directoryId: directoryField.directoryId!,
+        directoryName: directoryField.fieldName,
+        selectedField: null,
+        onSelectField: (MainField selectedField) {
+          setState(() {
+            final index = customFields.indexWhere((f) => f.directoryId == config.directoryId);
+            if (index != -1) {
+              customFields[index] = directoryField.copyWith(
+                entryId: selectedField.id,
+                controller: TextEditingController(text: selectedField.value),
+              );
+            }
+          });
+        },
+        controller: directoryField.controller,
+        onSelectEntryId: (int entryId) {
+          setState(() {
+            final index = customFields.indexWhere((f) => f.directoryId == config.directoryId);
+            if (index != -1) {
+              customFields[index] = directoryField.copyWith(
+                entryId: entryId,
+              );
+            }
+          });
+        },
+        onRemove: () {},
+      );
+    }
+
+    // Иначе это стандартное системное поле
+    return _buildStandardField(config);
   }
 
   Future<void> _checkPermissionsAndUser() async {
@@ -89,8 +276,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
       ]);
 
       setState(() {
-        _hasTaskCreatePermission = results[0] as bool;
-        _hasTaskCreateForMySelfPermission = results[1] as bool;
+        _hasTaskCreatePermission = results[0];
+        _hasTaskCreateForMySelfPermission = results[1];
         _currentUserId = userIdString != null ? int.tryParse(userIdString) : null;
       });
 
@@ -432,23 +619,6 @@ Widget _buildFileIcon(int index, String fileExtension) {
   }
 }
 
-  InputDecoration _inputDecoration() {
-    return InputDecoration(
-      border: OutlineInputBorder(
-        borderSide: const BorderSide(color: Color(0xFFF4F7FD)),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderSide: const BorderSide(color: Color(0xFFF4F7FD)),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderSide: const BorderSide(color: Color(0xFFF4F7FD)),
-        borderRadius: BorderRadius.circular(12),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -487,217 +657,228 @@ Widget _buildFileIcon(int index, String fileExtension) {
         leadingWidth: 40,
         backgroundColor: const Color.fromARGB(255, 255, 255, 255),
       ),
-      body: MultiBlocProvider(
-        providers: [
-          BlocProvider(create: (context) => MainFieldBloc()),
-        ],
-        child: BlocListener<TaskBloc, TaskState>(
-          listener: (context, state) {
-            if (state is TaskError) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    AppLocalizations.of(context)!.translate(state.message),
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  behavior: SnackBarBehavior.floating,
-                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  backgroundColor: Colors.red,
-                  elevation: 3,
-                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  duration: Duration(seconds: 3),
-                ),
-              );
-            } else if (state is TaskSuccess) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    AppLocalizations.of(context)!.translate(state.message),
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  behavior: SnackBarBehavior.floating,
-                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  backgroundColor: Colors.green,
-                  elevation: 3,
-                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  duration: Duration(seconds: 3),
-                ),
-              );
-              Navigator.pop(context, widget.statusId);
-              context.read<TaskBloc>().add(FetchTaskStatuses());
+      body: BlocConsumer<FieldConfigurationBloc, FieldConfigurationState>(
+        listener: (context, configState) {
+          if (kDebugMode) {
+            print('TaskAddScreen: FieldConfigurationBloc state changed: ${configState.runtimeType}');
+          }
+
+          if (configState is FieldConfigurationLoaded) {
+            if (kDebugMode) {
+              print('TaskAddScreen: Configuration loaded with ${configState.fields.length} fields');
             }
-          },
-          child: Form(
-            key: _formKey,
-            child: Column(
-              children: [
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      FocusScope.of(context).unfocus();
-                    },
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          CustomTextFieldWithPriority(
-                            controller: nameController,
-                            hintText: AppLocalizations.of(context)!.translate('enter_title'),
-                            label: AppLocalizations.of(context)!.translate('event_name'),
-                            showPriority: true,
-                            isPrioritySelected: selectedPriority == 3,
-                            onPriorityChanged: (bool? value) {
-                              setState(() {
-                                selectedPriority = value == true ? 3 : 1;
-                              });
-                            },
-                            priorityText: AppLocalizations.of(context)!.translate('urgent'),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return AppLocalizations.of(context)!.translate('field_required');
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 8),
-                          CustomTextField(
-                            controller: descriptionController,
-                            hintText: AppLocalizations.of(context)!.translate('enter_description'),
-                            label: AppLocalizations.of(context)!.translate('description_list'),
-                            maxLines: 5,
-                            keyboardType: TextInputType.multiline,
-                          ),
-                          const SizedBox(height: 8),
-                          // Условно отображаем UserMultiSelectWidget
-                          if (_hasTaskCreatePermission || !_hasTaskCreateForMySelfPermission)
-                            UserMultiSelectWidget(
-                              selectedUsers: selectedUsers,
-                              onSelectUsers: (List<UserData> selectedUsersData) {
-                                setState(() {
-                                  selectedUsers = selectedUsersData.map((user) => user.id.toString()).toList();
-                                });
-                              },
-                            ),
-                          const SizedBox(height: 8),
-                          ProjectTaskGroupWidget(
-                            selectedProject: selectedProject,
-                            onSelectProject: (ProjectTask selectedProjectData) {
-                              setState(() {
-                                selectedProject = selectedProjectData.id.toString();
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 8),
-                          CustomTextFieldDate(
-                            controller: endDateController,
-                            label: AppLocalizations.of(context)!.translate('deadline'),
-                            hasError: isEndDateInvalid,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return AppLocalizations.of(context)!.translate('field_required');
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                          if (!_showAdditionalFields)
-                            CustomButton(
-                              buttonText: AppLocalizations.of(context)!.translate('additionally'),
-                              buttonColor: Color(0xff1E2E52),
-                              textColor: Colors.white,
-                              onPressed: () {
-                                setState(() {
-                                  _showAdditionalFields = true;
-                                });
-                              },
-                            )
-                          else ...[
-                            _buildFileSelection(),
-                            const SizedBox(height: 8),
-                            ListView.builder(
-                              shrinkWrap: true,
-                              physics: NeverScrollableScrollPhysics(),
-                              itemCount: customFields.length,
-                              itemBuilder: (context, index) {
-                                final field = customFields[index];
-                                return Container(
-                                  key: ValueKey(field.uniqueId),
-                                  child: field.isDirectoryField && field.directoryId != null
-                                      ? MainFieldDropdownWidget(
-                                          directoryId: field.directoryId!,
-                                          directoryName: field.fieldName,
-                                          selectedField: null,
-                                          onSelectField: (MainField selectedField) {
-                                            setState(() {
-                                              customFields[index] = field.copyWith(
-                                                entryId: selectedField.id,
-                                                controller: TextEditingController(text: selectedField.value),
-                                              );
-                                            });
-                                          },
-                                          controller: field.controller,
-                                          onSelectEntryId: (int entryId) {
-                                            setState(() {
-                                              customFields[index] = field.copyWith(
-                                                entryId: entryId,
-                                              );
-                                            });
-                                          },
-                                          onRemove: () {
-                                            setState(() {
-                                              customFields.removeAt(index);
-                                            });
-                                          },
-                                        )
-                                      : CustomFieldWidget(
-                                          fieldName: field.fieldName,
-                                          valueController: field.controller,
-                                          onRemove: () {
-                                            setState(() {
-                                              customFields.removeAt(index);
-                                            });
-                                          },
-                                          type: field.type,
-                                        ),
+            setState(() {
+              fieldConfigurations = configState.fields;
+              isConfigurationLoaded = true;
+            });
+          } else if (configState is FieldConfigurationError) {
+            if (kDebugMode) {
+              print('TaskAddScreen: Configuration error: ${configState.message}');
+            }
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Ошибка загрузки конфигурации: ${configState.message}',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        },
+        builder: (context, configState) {
+          if (kDebugMode) {
+            print('TaskAddScreen: Building with state: ${configState.runtimeType}, isLoaded: $isConfigurationLoaded');
+          }
+
+          if (configState is FieldConfigurationLoading) {
+            return Center(
+              child: CircularProgressIndicator(
+                color: Color(0xff1E2E52),
+              ),
+            );
+          }
+
+          if (!isConfigurationLoaded) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(
+                    color: Color(0xff1E2E52),
+                  ),
+                  SizedBox(height: 16),
+                  Text('Загрузка конфигурации...'),
+                ],
+              ),
+            );
+          }
+
+          return MultiBlocProvider(
+            providers: [
+              BlocProvider(create: (context) => MainFieldBloc()),
+            ],
+            child: BlocListener<TaskBloc, TaskState>(
+              listener: (context, state) {
+                if (state is TaskError) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        AppLocalizations.of(context)!.translate(state.message),
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white,
+                        ),
+                      ),
+                      behavior: SnackBarBehavior.floating,
+                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      backgroundColor: Colors.red,
+                      elevation: 3,
+                      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      duration: Duration(seconds: 3),
+                    ),
+                  );
+                } else if (state is TaskSuccess) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        AppLocalizations.of(context)!.translate(state.message),
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white,
+                        ),
+                      ),
+                      behavior: SnackBarBehavior.floating,
+                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      backgroundColor: Colors.green,
+                      elevation: 3,
+                      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      duration: Duration(seconds: 3),
+                    ),
+                  );
+                  Navigator.pop(context, widget.statusId);
+                  context.read<TaskBloc>().add(FetchTaskStatuses());
+                }
+              },
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          FocusScope.of(context).unfocus();
+                        },
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Динамическое построение полей на основе конфигурации с сервера
+                              ...fieldConfigurations.map((config) {
+                                return Column(
+                                  children: [
+                                    _buildFieldWidget(config),
+                                    const SizedBox(height: 15),
+                                  ],
                                 );
-                              },
-                            ),
-                            const SizedBox(height: 8),
-                            CustomButton(
-                              buttonText: AppLocalizations.of(context)!.translate('add_field'),
-                              buttonColor: Color(0xff1E2E52),
-                              textColor: Colors.white,
-                              onPressed: _showAddFieldMenu,
-                            ),
-                          ],
-                          const SizedBox(height: 8),
-                        ],
+                              }).toList(),
+
+                              // Файлы (всегда показываем)
+                              _buildFileSelection(),
+                              const SizedBox(height: 15),
+
+                              // ТОЛЬКО пользовательские поля (те, которые добавлены через кнопку "Добавить поле")
+                              ...customFields.where((field) {
+                                // Исключаем поля, которые уже есть в серверной конфигурации
+                                return !fieldConfigurations.any((config) =>
+                                (config.isCustomField && config.fieldName == field.fieldName) ||
+                                    (config.isDirectory && config.directoryId == field.directoryId)
+                                );
+                              }).map((field) {
+                                return Column(
+                                  children: [
+                                    field.isDirectoryField && field.directoryId != null
+                                        ? MainFieldDropdownWidget(
+                                      directoryId: field.directoryId!,
+                                      directoryName: field.fieldName,
+                                      selectedField: null,
+                                      onSelectField: (MainField selectedField) {
+                                        setState(() {
+                                          final idx = customFields.indexOf(field);
+                                          customFields[idx] = field.copyWith(
+                                            entryId: selectedField.id,
+                                            controller: TextEditingController(
+                                                text: selectedField.value),
+                                          );
+                                        });
+                                      },
+                                      controller: field.controller,
+                                      onSelectEntryId: (int entryId) {
+                                        setState(() {
+                                          final idx = customFields.indexOf(field);
+                                          customFields[idx] = field.copyWith(
+                                            entryId: entryId,
+                                          );
+                                        });
+                                      },
+                                      onRemove: () {
+                                        setState(() {
+                                          customFields.remove(field);
+                                        });
+                                      },
+                                    )
+                                        : CustomFieldWidget(
+                                      fieldName: field.fieldName,
+                                      valueController: field.controller,
+                                      onRemove: () {
+                                        setState(() {
+                                          customFields.remove(field);
+                                        });
+                                      },
+                                      type: field.type,
+                                      isDirectory: false,
+                                    ),
+                                    const SizedBox(height: 15),
+                                  ],
+                                );
+                              }).toList(),
+
+                              // Кнопка добавления дополнительных полей
+                              CustomButton(
+                                buttonText: AppLocalizations.of(context)!.translate('add_field'),
+                                buttonColor: Color(0xff1E2E52),
+                                textColor: Colors.white,
+                                onPressed: _showAddFieldMenu,
+                              ),
+                              const SizedBox(height: 20),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                    _buildActionButtons(context),
+                  ],
                 ),
-                _buildActionButtons(context),
-              ],
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
@@ -871,6 +1052,13 @@ Widget _buildFileIcon(int index, String fileExtension) {
       String fieldValue = field.controller.text.trim();
       String? fieldType = field.type;
 
+      // ВАЖНО: Н рмализуем тип поля - преобразуем "text" в "string"
+      if (fieldType == 'text') {
+        fieldType = 'string';
+      }
+      // Если type null, устанавливаем string по умолчанию
+      fieldType ??= 'string';
+
       // Валидация для number
       if (fieldType == 'number' && fieldValue.isNotEmpty) {
         if (!RegExp(r'^\d+$').hasMatch(fieldValue)) {
@@ -892,7 +1080,7 @@ Widget _buildFileIcon(int index, String fileExtension) {
         }
       }
 
-      // Валидация и форматирование для date и datetime
+      // Валидация для date и datetime
       if ((fieldType == 'date' || fieldType == 'datetime') && fieldValue.isNotEmpty) {
         try {
           if (fieldType == 'date') {
@@ -928,7 +1116,7 @@ Widget _buildFileIcon(int index, String fileExtension) {
         customFieldMap.add({
           'key': fieldName,
           'value': fieldValue,
-          'type': fieldType ?? 'string',
+          'type': fieldType, // Теперь гарантированно один из: string, number, date, datetime
         });
       }
     }
@@ -942,7 +1130,7 @@ Widget _buildFileIcon(int index, String fileExtension) {
       userIds = [_currentUserId!];
     } else {
       // Иначе используем выбранных пользователей из UserMultiSelectWidget
-      userIds = selectedUsers != null ? selectedUsers!.map((id) => int.parse(id)).toList() : null;
+      userIds = selectedUsers?.map((id) => int.parse(id)).toList();
     }
 
     context.read<TaskBloc>().add(CreateTask(
