@@ -907,18 +907,15 @@ Widget _buildVoicePlayer(String? recordUrl, int? callDuration) {
                                   id: notice.id,
                                   title: notice.title,
                                   body: notice.body,
-                                  lead: notice.lead ??
-                                      null, // or just `notice.lead`
-                                  date: notice.date ?? null,
+                                  lead: notice.lead,
+                                  date: notice.date,
                                   isFinished: notice.isFinished,
                                   users: notice.users,
                                   author: notice.author,
                                   createdAt: notice.createdAt,
-                                  sendNotification:
-                                      false, // or true, depending on the logic
+                                  sendNotification: false, // or true, depending on the logic
                                   canFinish: false, // or true
-                                  files:
-                                      notice.files, // Ensure files are passed
+                                  files: notice.files, // Ensure files are passed
                                 ),
                               ),
                             ),
@@ -994,8 +991,8 @@ Widget _buildVoicePlayer(String? recordUrl, int? callDuration) {
       'label': AppLocalizations.of(context)!.translate('body'),
       'value': notice.body,
     },
-    {
-      'label': AppLocalizations.of(context)!.translate('date'),
+    if (notice.date != null) {
+      'label': AppLocalizations.of(context)!.translate('date_reminder'),
       'value': notice.date != null
           ? formatDate(notice.date.toString())
           : AppLocalizations.of(context)!.translate(''),

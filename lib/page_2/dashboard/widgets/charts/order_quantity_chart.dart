@@ -1,7 +1,9 @@
 import 'package:crm_task_manager/models/page_2/dashboard/order_dashboard_model.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../bloc/page_2_BLOC/dashboard/sales_dashboard_bloc.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
 import '../../detailed_report/detailed_report_screen.dart';
 import 'download_popup_menu.dart';
@@ -21,7 +23,7 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
   int? selectedIndex;
   int? selectedLineIndex;
   final Map<String, bool> _lineVisibility = {};
-  OrderTimePeriod selectedPeriod = OrderTimePeriod.week;
+  OrderTimePeriod selectedPeriod = OrderTimePeriod.year;
 
   // Generate colors based on index
   final List<Color> lineColors = [
@@ -71,6 +73,9 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
         _lineVisibility.clear();
         _initializeLineVisibility();
       });
+      
+      // Вызываем перезагрузку данных через Bloc
+      context.read<SalesDashboardBloc>().add(ReloadOrderQuantityData(period));
     }
   }
 
@@ -109,33 +114,38 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
     );
   }
 
-  void _handleDownload(DownloadFormat format) async {
-    setState(() {
-      isDownloading = true;
-    });
-
-    try {
-      await Future.delayed(const Duration(seconds: 2));
-    } catch (e) {
-      // Handle error silently
-    } finally {
-      if (mounted) {
-        setState(() {
-          isDownloading = false;
-        });
-      }
-    }
-  }
+  // void _handleDownload(DownloadFormat format) async {
+  //   setState(() {
+  //     isDownloading = true;
+  //   });
+  //
+  //   try {
+  //     await Future.delayed(const Duration(seconds: 2));
+  //   } catch (e) {
+  //     // Handle error silently
+  //   } finally {
+  //     if (mounted) {
+  //       setState(() {
+  //         isDownloading = false;
+  //       });
+  //     }
+  //   }
+  // }
 
   double _calculateInterval(double maxY) {
+    // Более детальные интервалы для красивого UI
     if (maxY <= 5) return 1;
     if (maxY <= 10) return 2;
+    if (maxY <= 20) return 5;
     if (maxY <= 50) return 10;
-    if (maxY <= 150) return 20;
+    if (maxY <= 100) return 20;
+    if (maxY <= 200) return 25;
     if (maxY <= 500) return 50;
     if (maxY <= 1000) return 100;
     if (maxY <= 2000) return 200;
-    return 500;
+    if (maxY <= 5000) return 500;
+    if (maxY <= 10000) return 1000;
+    return 2000;
   }
 
   LineChartData _buildChartData(List<OrderChartData> chartData) {
@@ -202,8 +212,9 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
       maxY = 1; // Default scale when no data
     }
 
+    // Вычисляем интервал на основе оригинального maxY, а не adjustedMaxY
+    double horizontalInterval = _calculateInterval(maxY);
     double adjustedMaxY = maxY * 1.1;
-    double horizontalInterval = _calculateInterval(adjustedMaxY);
 
     return LineChartData(
       gridData: FlGridData(
@@ -406,18 +417,18 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
                   color: Colors.black,
                 ),
               ),
-              Transform.translate(
-                offset: const Offset(16, 0),
-                child: DownloadPopupMenu(
-                  onDownload: _handleDownload,
-                  loading: isDownloading,
-                  formats: const [
-                    DownloadFormat.png,
-                    DownloadFormat.svg,
-                    DownloadFormat.csv,
-                  ],
-                ),
-              ),
+              // Transform.translate(
+              //   offset: const Offset(16, 0),
+              //   child: DownloadPopupMenu(
+              //     onDownload: _handleDownload,
+              //     loading: isDownloading,
+              //     formats: const [
+              //       DownloadFormat.png,
+              //       DownloadFormat.svg,
+              //       DownloadFormat.csv,
+              //     ],
+              //   ),
+              // ),
             ],
           ),
           const SizedBox(height: 16),

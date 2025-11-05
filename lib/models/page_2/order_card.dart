@@ -19,6 +19,7 @@ import 'package:crm_task_manager/models/page_2/order_status_model.dart';
     final String? paymentMethod; // Add this field
     final String? paymentStatus; // Новое поле
     final DateTime? createdAt;
+    final int? storageId; // Новое поле для storage_id (пока используется вместо branchId)
 
     Order({
       required this.id,
@@ -38,7 +39,8 @@ import 'package:crm_task_manager/models/page_2/order_status_model.dart';
       this.sum,
       this.paymentMethod, // Add to constructor
       this.paymentStatus, // Добавляем в конструктор
-      this.createdAt
+      this.createdAt,
+      this.storageId,
     });
 
   factory Order.fromJson(Map<String, dynamic> json) {
@@ -74,6 +76,9 @@ import 'package:crm_task_manager/models/page_2/order_status_model.dart';
         paymentMethod: json['payment_type']?.toString(), // Parse payment_type
         paymentStatus: json['payment_status']?.toString(), // Парсим payment_status
          manager: json['manager'] != null ? ManagerData.fromJson(json['manager']) : null,
+        storageId: json['storage_id'] != null
+            ? int.tryParse(json['storage_id'].toString())
+            : null,
       );
     } catch (e) {
       //print('Error parsing Order: $e');
@@ -101,6 +106,8 @@ import 'package:crm_task_manager/models/page_2/order_status_model.dart';
         'comment_to_courier': commentToCourier,
         'sum': sum,
         'payment_status': paymentStatus, // Добавляем в JSON
+        'payment_type': paymentMethod, // Add to JSON
+        'storage_id': storageId,
       };
     }
 
@@ -120,6 +127,7 @@ import 'package:crm_task_manager/models/page_2/order_status_model.dart';
       String? commentToCourier,
       double? sum,
       String? paymentStatus,
+      int? storageId,
     }) {
       return Order(
         id: id ?? this.id,
@@ -137,6 +145,7 @@ import 'package:crm_task_manager/models/page_2/order_status_model.dart';
         commentToCourier: commentToCourier ?? this.commentToCourier,
         sum: sum ?? this.sum,
         paymentStatus: paymentStatus ?? this.paymentStatus,
+        storageId: storageId ?? this.storageId,
       );
     }
   }

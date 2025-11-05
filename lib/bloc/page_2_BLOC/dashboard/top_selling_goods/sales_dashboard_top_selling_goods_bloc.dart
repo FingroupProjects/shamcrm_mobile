@@ -14,7 +14,7 @@ class SalesDashboardTopSellingGoodsBloc extends Bloc<SalesDashboardTopSellingGoo
 
   SalesDashboardTopSellingGoodsBloc() : super(SalesDashboardTopSellingProductsInitial()) {
     on<LoadTopSellingGoodsReport>((event, emit) async {
-      // try {
+      try {
       emit(SalesDashboardTopSellingGoodsLoading());
       final response = await apiService.getTopSellingCardsByFilter(
         filters: event.filter,
@@ -23,11 +23,11 @@ class SalesDashboardTopSellingGoodsBloc extends Bloc<SalesDashboardTopSellingGoo
       emit(SalesDashboardTopSellingGoodsLoaded(
         topSellingGoods: response,
       ));
-      // } catch (e) {
-      //   emit(SalesDashboardGoodsError(
-      //     message: e.toString().replaceAll('Exception: ', ''),
-      //   ));
-      // }
+      } catch (e) {
+        emit(SalesDashboardTopSellingGoodsError(
+          message: e.toString().replaceAll('Exception: ', ''),
+        ));
+      }
     });
   }
 }

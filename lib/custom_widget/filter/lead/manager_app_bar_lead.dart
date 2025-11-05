@@ -32,6 +32,7 @@ class ManagerFilterScreen extends StatefulWidget {
   final bool? initialHasNoReplies;
   final bool? initialHasUnreadMessages;
   final bool? initialHasDeal;
+  final bool? initialHasOrders;
   final bool? initialUnreadOnly;
   final int? initialDaysWithoutActivity;
   final VoidCallback? onResetFilters;
@@ -56,6 +57,7 @@ class ManagerFilterScreen extends StatefulWidget {
     this.initialHasNoReplies,
     this.initialHasUnreadMessages,
     this.initialHasDeal,
+    this.initialHasOrders,
     this.initialUnreadOnly, // ИЗМЕНЕНО: Добавили параметр для фильтрации по непрочитанным сообщениям
     this.initialDaysWithoutActivity,
     this.onResetFilters,
@@ -84,6 +86,7 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
   bool? _hasNoReplies;
   bool? _hasUnreadMessages;
   bool? _hasDeal;
+  bool? _hasOrders;
 
   int? _daysWithoutActivity;
 
@@ -162,6 +165,7 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
     _hasNoReplies = widget.initialHasNoReplies;
     _hasUnreadMessages = widget.initialHasUnreadMessages;
     _hasDeal = widget.initialHasDeal;
+    _hasOrders = widget.initialHasOrders;
     _daysWithoutActivity = widget.initialDaysWithoutActivity;
     _fetchDirectoryLinks();
   }
@@ -230,6 +234,7 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
                 _hasNoReplies = false;
                 _hasUnreadMessages = false;
                 _hasDeal = false;
+                _hasOrders = false;
                 _daysWithoutActivity = null;
                 _selectedDirectoryFields.clear();
                 for (var link in _directoryLinks) {
@@ -275,6 +280,7 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
                 'hasNoReplies': _hasNoReplies,
                 'hasUnreadMessages': _hasUnreadMessages,
                 'hasDeal': _hasDeal,
+                'hasOrders': _hasOrders,
                 'daysWithoutActivity': _daysWithoutActivity,
                 'directory_values': _selectedDirectoryFields.entries
                     .where((entry) => entry.value != null)
@@ -302,6 +308,7 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
                   _hasNoReplies == true ||
                   _hasUnreadMessages == true ||
                   _hasDeal == true ||
+                  _hasOrders == true ||
                   _daysWithoutActivity != null ||
                   _selectedDirectoryFields.values.any((field) => field != null)) {
                 widget.onManagersSelected?.call(filterData);
@@ -497,6 +504,11 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
                             AppLocalizations.of(context)!.translate('withoutDeal'),
                             _hasDeal ?? false,
                             (value) => setState(() => _hasDeal = value),
+                          ),
+                          _buildSwitchTile(
+                            AppLocalizations.of(context)!.translate('withOrders') ?? 'С заказами',
+                            _hasOrders ?? false,
+                            (value) => setState(() => _hasOrders = value),
                           ),
                         ],
                       ),

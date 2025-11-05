@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-import 'package:intl/intl.dart';
+import 'package:crm_task_manager/utils/global_fun.dart';
 
 import '../../../../models/page_2/dashboard/cash_balance_model.dart';
 
@@ -19,22 +19,6 @@ class CashRegisterCard extends StatelessWidget {
     required this.isSelectionMode,
     required this.isSelected,
   }) : super(key: key);
-
-  String _formatAmount(int? amount) {
-    double amountValue = (amount ?? 0).toDouble();
-    return NumberFormat('#,##0.00', 'ru_RU').format(amountValue);
-  }
-
-  String _formatDate(String? dateString) {
-    if (dateString == null) return 'Не обновлялось';
-    
-    try {
-      DateTime date = DateTime.parse(dateString);
-      return DateFormat('dd.MM.yyyy HH:mm', 'ru_RU').format(date);
-    } catch (e) {
-      return 'Неверная дата';
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -74,17 +58,17 @@ class CashRegisterCard extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 14,
                           fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w400,
-                          color: Color(0xff99A4BA),
+                          fontWeight: FontWeight.w600,
+                           color: Color(0xff1E2E52),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        _formatAmount(cashRegister.balance),
+                        parseNumberToString(cashRegister.balance),
                         style: TextStyle(
                           fontSize: 14,
                           fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w400,
+                          fontWeight: FontWeight.w600,
                           color: (cashRegister.balance ?? 0) >= 0
                               ? const Color(0xff10B981)
                               : const Color(0xffEF4444),

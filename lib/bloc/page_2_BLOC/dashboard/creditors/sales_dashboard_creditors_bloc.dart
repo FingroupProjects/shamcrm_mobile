@@ -12,18 +12,18 @@ class SalesDashboardCreditorsBloc extends Bloc<SalesDashboardCreditorsEvent, Sal
 
   SalesDashboardCreditorsBloc() : super(SalesDashboardCreditorsInitial()) {
     on<LoadCreditorsReport>((event, emit) async {
-      // try {
+      try {
         emit(SalesDashboardCreditorsLoading());
         final response = await apiService.getCreditorsList(
           filters: event.filter,
           search: event.search,
         );
         emit(SalesDashboardCreditorsLoaded(result: response));
-      // } catch (e) {
-      //   emit(SalesDashboardCreditorsError(
-      //     message: e.toString().replaceAll('Exception: ', ''),
-      //   ));
-      // }
+      } catch (e) {
+        emit(SalesDashboardCreditorsError(
+          message: e.toString().replaceAll('Exception: ', ''),
+        ));
+      }
     });
   }
 }

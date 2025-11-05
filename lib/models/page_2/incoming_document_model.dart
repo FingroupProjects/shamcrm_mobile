@@ -1,8 +1,11 @@
 import 'package:crm_task_manager/models/page_2/storage_model.dart';
+import 'package:crm_task_manager/utils/parser.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 
 import 'goods_model.dart';
+
+// ================ Incoming Document Models ==================
 
 class IncomingResponse {
   final List<IncomingDocument>? data;
@@ -46,7 +49,6 @@ class IncomingDocument extends Equatable {
   final int? storageId;
   final int? currencyId;
   final int? authorId;
-
   final String? comment;
   final Currency? currency;
   final List<DocumentGood>? documentGoods;
@@ -93,84 +95,33 @@ class IncomingDocument extends Equatable {
     updatedAt
   ];
 
-  // Безопасная функция для парсинга int из динамического значения
-  static int? _parseInt(dynamic value) {
-    if (value == null) return null;
-    if (value is int) return value;
-    if (value is String) {
-      try {
-        return int.parse(value);
-      } catch (e) {
-        print('Error parsing int from string "$value": $e');
-        return null;
-      }
-    }
-    print('Unexpected type for int parsing: ${value.runtimeType}');
-    return null;
-  }
-
-  static num? _parseNum(dynamic value) {
-    if (value == null) return null;
-    if (value is num) {
-      if (value is int) return value;
-      if (value is double) {
-        if (value == value.toInt()) {
-          return value.toInt();
-        }
-        return value;
-      }
-      return value;
-    }
-    if (value is String) {
-      if (value.isEmpty) return null;
-      try {
-        double parsed = double.parse(value.replaceAll(',', '.'));
-
-        if (parsed == parsed.toInt()) {
-          return parsed.toInt(); // Return as int (1, 2, 3, etc.)
-        }
-        return parsed; // Return as double (1.23, 2.5, etc.)
-      } catch (e) {
-        print('Error parsing num from string "$value": $e');
-        return null;
-      }
-    }
-    print('Unexpected type for num parsing: ${value.runtimeType}');
-    return null;
-  }
-
   factory IncomingDocument.fromJson(Map<String, dynamic> json) {
     return IncomingDocument(
-      id: _parseInt(json['id']),
-      date: _parseDate(json['date']),
+      id: parseInt(json['id']),
+      date: parseDate(json['date']),
       modelType: json['model_type'],
-      modelId: _parseInt(json['model_id']),
-      counterpartyAgreementId: _parseInt(json['counterparty_agreement_id']),
-      organizationId: _parseInt(json['organization_id']), // Теперь безопасно обрабатывает и строки и числа
-      storage:
-          json['storage'] != null ? WareHouse.fromJson(json['storage']) : null,
+      modelId: parseInt(json['model_id']),
+      counterpartyAgreementId: parseInt(json['counterparty_agreement_id']),
+      organizationId: parseInt(json['organization_id']),
+      storage: json['storage'] != null ? WareHouse.fromJson(json['storage']) : null,
       article: json['article'] != null ? ArticleGood.fromJson(json['article']) : null,
       sender_storage_id: json['sender_storage_id'] != null ? WareHouse.fromJson(json['sender_storage_id']) : null,
       recipient_storage_id: json['recipient_storage_id'] != null ? WareHouse.fromJson(json['recipient_storage_id']) : null,
       comment: json['comment'],
-      currency:
-          json['currency'] != null ? Currency.fromJson(json['currency']) : null,
+      currency: json['currency'] != null ? Currency.fromJson(json['currency']) : null,
       documentGoods: json['document_goods'] != null
-          ? (json['document_goods'] as List)
-              .map((i) => DocumentGood.fromJson(i))
-              .toList()
-          : null,
+          ? (json['document_goods'] as List).map((i) => DocumentGood.fromJson(i)).toList() : null,
       author: json['author'] != null ? Author.fromJson(json['author']) : null,
       model: json['model'] != null ? Model.fromJson(json['model']) : null,
-      createdAt: _parseDate(json['created_at']),
-      updatedAt: _parseDate(json['updated_at']),
-      deletedAt: _parseDate(json['deleted_at']),
+      createdAt: parseDate(json['created_at']),
+      updatedAt: parseDate(json['updated_at']),
+      deletedAt: parseDate(json['deleted_at']),
       docNumber: json['doc_number'],
-      approved: _parseInt(json['approved']),
+      approved: parseInt(json['approved']),
       type: json['type'],
-      storageId: _parseInt(json['storage_id']),
-      currencyId: _parseInt(json['currency_id']),
-      authorId: _parseInt(json['author_id']),
+      storageId: parseInt(json['storage_id']),
+      currencyId: parseInt(json['currency_id']),
+      authorId: parseInt(json['author_id']),
     );
   }
 
@@ -206,15 +157,44 @@ class IncomingDocument extends Equatable {
   double get totalSum {
     if (documentGoods == null || documentGoods!.isEmpty) return 0.0;
     return documentGoods!.fold(
-        0.0,
-        (sum, good) =>
-            sum +
-            (good.quantity ?? 0) * (double.tryParse(good.price ?? '0') ?? 0));
+      0.0,
+      (sum, documentGood) {
+        final quantity = documentGood.quantity ?? 0;
+        final price = double.tryParse(documentGood.price ?? '0') ?? 0;
+
+        num unitMultiplier = 1.0; // USE 1 for amount, DO NOT CALCULATE BASED ON unitId
+
+        // debugPrint("=== Processing IncomingDocumentGood ===");
+        // debugPrint("DocumentGood.unitId: ${documentGood.unitId}");
+        //
+        // final good = documentGood.good;
+        //
+        // if (good != null && good.units != null && documentGood.unitId != null) {
+        //   // Find the unit with matching id in good.units array
+        //   try {
+        //     final matchingUnit = good.units!.firstWhere(
+        //       (unit) => unit.id == documentGood.unitId,
+        //     );
+        //     unitMultiplier = matchingUnit.amount ?? 1.0;
+        //     debugPrint("Found matching unit: id=${matchingUnit.id}, amount=${matchingUnit.amount}");
+        //   } catch (e) {
+        //     debugPrint("Unit not found in good.units array, using default multiplier 1.0");
+        //   }
+        // }
+        //
+        // debugPrint("Good.units array: ${good?.units?.map((u) => 'id:${u.id}, amount:${u.amount}').toList()}");
+        // debugPrint("FINAL: price=$price, quantity=$quantity, multiplier=$unitMultiplier");
+        // debugPrint("Item total: ${quantity * price * unitMultiplier}");
+        // debugPrint("=== End IncomingDocumentGood ===\n");
+
+        return sum + (quantity * price * unitMultiplier);
+      },
+    );
   }
 
   int get totalQuantity {
     if (documentGoods == null || documentGoods!.isEmpty) return 0;
-     return documentGoods!.fold(0, (sum, good) => sum + (good.quantity?.toInt() ?? 0));
+    return documentGoods!.fold(0, (sum, good) => sum + (good.quantity?.toInt() ?? 0));
   }
 
   String get statusText {
@@ -226,7 +206,7 @@ class IncomingDocument extends Equatable {
 
   Color get statusColor {
     if (deletedAt != null) {
-      return Colors.red; // Красный цвет для удаленных документов
+      return Colors.red;
     }
     return approved == 1 ? Colors.green : Colors.orange;
   }
@@ -249,7 +229,7 @@ class IncomingDocument extends Equatable {
     DateTime? deletedAt,
     String? docNumber,
     int? approved,
-    bool clearDeletedAt = false, // Специальный флаг для очистки deletedAt
+    bool clearDeletedAt = false,
     String? type,
     int? storageId,
     int? currencyId,
@@ -283,18 +263,9 @@ class IncomingDocument extends Equatable {
       recipient_storage_id: recipient_storage_id ?? this.recipient_storage_id,
     );
   }
-
-  // Вспомогательная функция для безопасного парсинга даты
-  static DateTime? _parseDate(dynamic dateStr) {
-    if (dateStr == null || dateStr == '' || dateStr is! String) return null;
-    try {
-      return DateTime.parse(dateStr);
-    } catch (e) {
-      print('Error parsing date $dateStr: $e');
-      return null; // Возвращаем null в случае ошибки
-    }
-  }
 }
+
+// ================ Supporting Models ==================
 
 class Author {
   final int? id;
@@ -351,29 +322,29 @@ class Author {
 
   factory Author.fromJson(Map<String, dynamic> json) {
     return Author(
-      id: IncomingDocument._parseInt(json['id']),
+      id: parseInt(json['id']),
       name: json['name'],
       lastname: json['lastname'],
       login: json['login'],
       email: json['email'],
       phone: json['phone'],
       telegramUserId: json['telegram_user_id'],
-      emailVerifiedAt: IncomingDocument._parseDate(json['email_verified_at']),
+      emailVerifiedAt: parseDate(json['email_verified_at']),
       image: json['image'],
-      lastSeen: IncomingDocument._parseDate(json['last_seen']),
-      deletedAt: IncomingDocument._parseDate(json['deleted_at']),
-      createdAt: IncomingDocument._parseDate(json['created_at']),
-      updatedAt: IncomingDocument._parseDate(json['updated_at']),
-      managerId: IncomingDocument._parseInt(json['manager_id']),
+      lastSeen: parseDate(json['last_seen']),
+      deletedAt: parseDate(json['deleted_at']),
+      createdAt: parseDate(json['created_at']),
+      updatedAt: parseDate(json['updated_at']),
+      managerId: parseInt(json['manager_id']),
       jobTitle: json['job_title'],
-      hasImage: IncomingDocument._parseInt(json['has_image']),
-      isFirstLogin: IncomingDocument._parseInt(json['is_first_login']),
+      hasImage: parseInt(json['has_image']),
+      isFirstLogin: parseInt(json['is_first_login']),
       internalNumber: json['internal_number']?.toString(),  // ← Добавлена конвертация
-      departmentId: IncomingDocument._parseInt(json['department_id']),
+      departmentId: parseInt(json['department_id']),
       uniqueId: json['unique_id'],
-      shiftId: IncomingDocument._parseInt(json['shift_id']),
-      weekendPatternId: IncomingDocument._parseInt(json['weekend_pattern_id']),
-      workBreakId: IncomingDocument._parseInt(json['work_break_id']),
+      shiftId: parseInt(json['shift_id']),
+      weekendPatternId: parseInt(json['weekend_pattern_id']),
+      workBreakId: parseInt(json['work_break_id']),
       oneCId: json['one_c_id'],
     );
   }
@@ -418,7 +389,7 @@ class Storage {
 
   factory Storage.fromJson(Map<String, dynamic> json) {
     return Storage(
-      id: IncomingDocument._parseInt(json['id']),
+      id: parseInt(json['id']),
       name: json['name'],
       createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
       updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
@@ -456,11 +427,11 @@ class Currency {
 
   factory Currency.fromJson(Map<String, dynamic> json) {
     return Currency(
-      id: IncomingDocument._parseInt(json['id']),
+      id: parseInt(json['id']),
       name: json['name'],
-      digitalCode: IncomingDocument._parseInt(json['digital_code']),
+      digitalCode: parseInt(json['digital_code']),
       symbolCode: json['symbol_code'],
-      organizationId: IncomingDocument._parseInt(json['organization_id']),
+      organizationId: parseInt(json['organization_id']),
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
           : null,
@@ -500,6 +471,21 @@ class Currency {
   final Unit? unit;
   final GoodVariant? goodVariant;
 
+  Unit get selectedUnit {
+    if (unit?.id  != null && good?.units != null) {
+      final value = good!.units!.firstWhere(
+            (u) => u.id == unit!.id,
+        orElse: () => Unit(id: unit!.id, name: unit!.name, amount: 1),
+      );
+
+      debugPrint("Selected unit for DocumentGood id=$id: id=${value.id}, name=${value.name}, amount=${value.amount}");
+
+      return value;
+    }
+
+    return Unit(id: unit?.id, name: unit?.name, amount: 1);
+  }
+
   DocumentGood({
     this.id,
     this.documentId,
@@ -519,28 +505,32 @@ class Currency {
   });
 
   factory DocumentGood.fromJson(Map<String, dynamic> json) {
+    // Parse the unit object first
+    final unitObj = json['unit'] != null ? Unit.fromJson(json['unit']) : null;
+
     return DocumentGood(
-      id: IncomingDocument._parseInt(json['id']),
-      documentId: IncomingDocument._parseInt(json['document_id']),
-      variantId: IncomingDocument._parseInt(json['variant_id']),
+      id: parseInt(json['id']),
+      documentId: parseInt(json['document_id']),
+      variantId: parseInt(json['variant_id']),
       good: json['good'] != null ? Good.fromJson(json['good']) : null,
-      quantity: IncomingDocument._parseNum(json['quantity']), // Используем num для поддержки int и double
+      quantity: parseNum(json['quantity']),
       price: json['price'],
-      createdAt: IncomingDocument._parseDate(json['created_at']),
-      updatedAt: IncomingDocument._parseDate(json['updated_at']),
+      createdAt: parseDate(json['created_at']),
+      updatedAt: parseDate(json['updated_at']),
       attributes: json['attributes'] != null
           ? (json['attributes'] as List)
-              .map((i) => Attribute.fromJson(i))
-              .toList()
+          .map((i) => Attribute.fromJson(i))
+          .toList()
           : null,
       fullName: json['full_name'] as String?,
-      unitId: IncomingDocument._parseInt(json['unit_id']), // Правильно
+      // FIXED: Extract unit_id from the unit object if unit_id field doesn't exist
+      unitId: parseInt(json['unit_id']) ?? unitObj?.id,
       goodVariant: json['good_variant'] != null
           ? GoodVariant.fromJson(json['good_variant'])
           : null,
-      goodVariantId: IncomingDocument._parseInt(json['good_variant_id']),
+      goodVariantId: parseInt(json['good_variant_id']),
       sum: json['sum'] as String?,
-      unit: json['unit'] != null ? Unit.fromJson(json['unit']) : null,
+      unit: unitObj,
     );
   }
 
@@ -612,28 +602,27 @@ class Good {
 
   factory Good.fromJson(Map<String, dynamic> json) {
     return Good(
-      id: _parseInt(json['id']),
+      units: json['units'] != null ? (json['units'] as List).map((i) => Unit.fromJson(i)).toList() : null,
+      unitId: json['unit_id'] is int ? json['unit_id']
+          : (json['unit_id'] is String ? int.tryParse(json['unit_id']) : null),
+      id: parseInt(json['id']),
       oneCId: json['one_c_id'],
       name: json['name'],
-      categoryId: _parseInt(json['category_id']),
+      categoryId: parseInt(json['category_id']),
       description: json['description'],
       price: json['price'],
-      unitId: _parseInt(json['unit_id']),
-      quantity: _parseInt(json['quantity']),
-      deletedAt: _parseDate(json['deleted_at']),
-      createdAt: _parseDate(json['created_at']),
-      updatedAt: _parseDate(json['updated_at']),
+      quantity: parseInt(json['quantity']),
+      deletedAt: parseDate(json['deleted_at']),
+      createdAt: parseDate(json['created_at']),
+      updatedAt: parseDate(json['updated_at']),
       isActive: json['is_active'],
       article: json['article'],
-      labelId: _parseInt(json['label_id']),
+      labelId: parseInt(json['label_id']),
       getImage: json['get_image'],
       cip: json['cip'],
       packageCode: json['package_code'],
       files: json['files'] != null
           ? (json['files'] as List).map((i) => GoodFile.fromJson(i)).toList()
-          : null,
-      units: json['units'] != null
-          ? (json['units'] as List).map((i) => Unit.fromJson(i)).toList()
           : null,
       measurements: json['measurements'] as List<dynamic>?,
       category: json['category'],
@@ -668,26 +657,26 @@ class Good {
     };
   }
 
-  static int? _parseInt(dynamic value) {
+  static int? parseInt(dynamic value) {
     if (value == null) return null;
     if (value is int) return value;
     if (value is String) {
       try {
         return int.parse(value);
       } catch (e) {
-        print('Error parsing int from string "$value": $e');
+        //print('Error parsing int from string "$value": $e');
         return null;
       }
     }
     return null;
   }
 
-  static DateTime? _parseDate(dynamic dateStr) {
+  static DateTime? parseDate(dynamic dateStr) {
     if (dateStr == null || dateStr == '' || dateStr is! String) return null;
     try {
       return DateTime.parse(dateStr);
     } catch (e) {
-      print('Error parsing date $dateStr: $e');
+      //print('Error parsing date $dateStr: $e');
       return null;
     }
   }
@@ -710,11 +699,11 @@ class GoodFile {
 
   factory GoodFile.fromJson(Map<String, dynamic> json) {
     return GoodFile(
-      id: Good._parseInt(json['id']),
+      id: parseInt(json['id']),
       path: json['path'],
       type: json['type'],
-      createdAt: Good._parseDate(json['created_at']),
-      updatedAt: Good._parseDate(json['updated_at']),
+      createdAt: parseDate(json['created_at']),
+      updatedAt: parseDate(json['updated_at']),
     );
   }
 
@@ -756,13 +745,13 @@ class GoodVariant {
 
   factory GoodVariant.fromJson(Map<String, dynamic> json) {
     return GoodVariant(
-      id: _parseInt(json['id']),
-      goodId: _parseInt(json['good_id']),
+      id: parseInt(json['id']),
+      goodId: parseInt(json['good_id']),
       isActive: json['is_active'] is int
           ? json['is_active'] == 1
           : json['is_active'] as bool?,
-      createdAt: _parseDate(json['created_at']),
-      updatedAt: _parseDate(json['updated_at']),
+      createdAt: parseDate(json['created_at']),
+      updatedAt: parseDate(json['updated_at']),
       oneCUid: json['one_c_uid'],
       barcode: json['barcode'],
       fullName: json['full_name'],
@@ -790,27 +779,27 @@ class GoodVariant {
     };
   }
 
-  static int? _parseInt(dynamic value) {
+  static int? parseInt(dynamic value) {
     if (value == null) return null;
     if (value is int) return value;
     if (value is String) {
       try {
         return int.parse(value);
       } catch (e) {
-        print('Error parsing int from string "$value": $e');
+        //print('Error parsing int from string "$value": $e');
         return null;
       }
     }
-    print('Unexpected type for int parsing: ${value.runtimeType}');
+    //print('Unexpected type for int parsing: ${value.runtimeType}');
     return null;
   }
 
-  static DateTime? _parseDate(dynamic dateStr) {
+  static DateTime? parseDate(dynamic dateStr) {
     if (dateStr == null || dateStr == '' || dateStr is! String) return null;
     try {
       return DateTime.parse(dateStr);
     } catch (e) {
-      print('Error parsing date $dateStr: $e');
+      //print('Error parsing date $dateStr: $e');
       return null;
     }
   }
@@ -841,18 +830,18 @@ class Attribute {
 
   factory Attribute.fromJson(Map<String, dynamic> json) {
     return Attribute(
-      id: IncomingDocument._parseInt(json['id']),
-      categoryAttributeId: IncomingDocument._parseInt(json['category_attribute_id']),
+      id: parseInt(json['id']),
+      categoryAttributeId: parseInt(json['category_attribute_id']),
       value: json['value'],
-      unitId: IncomingDocument._parseInt(json['unit_id']),
+      unitId: parseInt(json['unit_id']),
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
           : null,
       updatedAt: json['updated_at'] != null
           ? DateTime.parse(json['updated_at'])
           : null,
-      variantAttributeId: IncomingDocument._parseInt(json['variant_attribute_id']),
-      variantId: IncomingDocument._parseInt(json['variant_id']),
+      variantAttributeId: parseInt(json['variant_attribute_id']),
+      variantId: parseInt(json['variant_id']),
       categoryAttribute: json['category_attribute'] != null
           ? CategoryAttribute.fromJson(json['category_attribute'])
           : null,
@@ -897,9 +886,9 @@ class CategoryAttribute {
 
   factory CategoryAttribute.fromJson(Map<String, dynamic> json) {
     return CategoryAttribute(
-      id: IncomingDocument._parseInt(json['id']),
-      categoryId: IncomingDocument._parseInt(json['category_id']),
-      attributeId: IncomingDocument._parseInt(json['attribute_id']),
+      id: parseInt(json['id']),
+      categoryId: parseInt(json['category_id']),
+      attributeId: parseInt(json['attribute_id']),
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
           : null,
@@ -938,7 +927,7 @@ class AttributeModel {
 
   factory AttributeModel.fromJson(Map<String, dynamic> json) {
     return AttributeModel(
-      id: IncomingDocument._parseInt(json['id']),
+      id: parseInt(json['id']),
       name: json['name'],
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
@@ -980,10 +969,10 @@ class Model {
 
   factory Model.fromJson(Map<String, dynamic> json) {
     return Model(
-      id: IncomingDocument._parseInt(json['id']),
+      id: parseInt(json['id']),
       name: json['name'],
       phone: json['phone'],
-      inn: IncomingDocument._parseInt(json['inn']),
+      inn: parseInt(json['inn']),
       note: json['note'],
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
@@ -1023,11 +1012,11 @@ class Pagination {
 
   factory Pagination.fromJson(Map<String, dynamic> json) {
     return Pagination(
-      total: IncomingDocument._parseInt(json['total']),
-      count: IncomingDocument._parseInt(json['count']),
-      perPage: IncomingDocument._parseInt(json['per_page']),
-      currentPage: IncomingDocument._parseInt(json['current_page']),
-      totalPages: IncomingDocument._parseInt(json['total_pages']),
+      total: parseInt(json['total']),
+      count: parseInt(json['count']),
+      perPage: parseInt(json['per_page']),
+      currentPage: parseInt(json['current_page']),
+      totalPages: parseInt(json['total_pages']),
     );
   }
 
@@ -1067,14 +1056,14 @@ class AttributeValue {
 
   factory AttributeValue.fromJson(Map<String, dynamic> json) {
     return AttributeValue(
-      id: GoodVariant._parseInt(json['id']),
-      categoryAttributeId: GoodVariant._parseInt(json['category_attribute_id']),
+      id: parseInt(json['id']),
+      categoryAttributeId: parseInt(json['category_attribute_id']),
       value: json['value'],
-      unitId: GoodVariant._parseInt(json['unit_id']),
-      createdAt: GoodVariant._parseDate(json['created_at']),
-      updatedAt: GoodVariant._parseDate(json['updated_at']),
-      variantAttributeId: GoodVariant._parseInt(json['variant_attribute_id']),
-      variantId: GoodVariant._parseInt(json['variant_id']),
+      unitId: parseInt(json['unit_id']),
+      createdAt: parseDate(json['created_at']),
+      updatedAt: parseDate(json['updated_at']),
+      variantAttributeId: parseInt(json['variant_attribute_id']),
+      variantId: parseInt(json['variant_id']),
       categoryAttribute: json['category_attribute'] != null
           ? CategoryAttribute.fromJson(json['category_attribute'])
           : null,
@@ -1105,7 +1094,7 @@ class ArticleGood {
   ArticleGood({this.id, this.name, this.type});
   factory ArticleGood.fromJson(Map<String, dynamic> json) {
     return ArticleGood(
-      id: IncomingDocument._parseInt(json['id']),
+      id: parseInt(json['id']),
       name: json['name'],
       type: json['type'],
     );

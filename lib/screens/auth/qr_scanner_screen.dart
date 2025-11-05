@@ -67,36 +67,54 @@ void _onDetect(BarcodeCapture barcodeCapture) async {
         await controller.stop();
 
         final apiService = context.read<ApiService>();
+await apiService.initialize(); // ← Явная инициализация baseUrl
 
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => PinSetupScreen()));
+       Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => PinSetupScreen()));
+
+// Отправка FCM токена с улучшенной обработкой ошибок
+try {
+  //print('QrScanner: Получение FCM токена');
+  String? fcmToken = await FirebaseMessaging.instance.getToken();
+  
+  if (fcmToken != null && fcmToken.isNotEmpty) {
+    //print('QrScanner: FCM токен получен: ${fcmToken.substring(0, 20)}...');
+    await apiService.sendDeviceToken(fcmToken);
+    //print('QrScanner: FCM токен успешно отправлен');
+  } else {
+    //print('QrScanner: FCM токен null или пустой');
+  }
+} catch (e, stackTrace) {
+  //print('QrScanner: Ошибка отправки FCM токена: $e');
+  //print('QrScanner: StackTrace: $stackTrace');
+}
         
         String? fcmToken = await FirebaseMessaging.instance.getToken();
-        if (fcmToken != null) {
-          await apiService.sendDeviceToken(fcmToken);
-        }
+if (fcmToken != null && fcmToken.isNotEmpty) {
+  await apiService.sendDeviceToken(fcmToken);
+}
       } catch (e, stackTrace) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Неверный формат QR-кода!',
-              style: TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.white,
-              ),
-            ),
-            behavior: SnackBarBehavior.floating,
-            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            backgroundColor: Colors.red,
-            elevation: 3,
-            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            duration: Duration(seconds: 3),
-          ),
-        );
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   SnackBar(
+        //     content: Text(
+        //       'Неверный формат QR-кода!',
+        //       style: TextStyle(
+        //         fontFamily: 'Gilroy',
+        //         fontSize: 16,
+        //         fontWeight: FontWeight.w500,
+        //         color: Colors.white,
+        //       ),
+        //     ),
+        //     behavior: SnackBarBehavior.floating,
+        //     margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        //     shape: RoundedRectangleBorder(
+        //       borderRadius: BorderRadius.circular(12),
+        //     ),
+        //     backgroundColor: Colors.red,
+        //     elevation: 3,
+        //     padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        //     duration: Duration(seconds: 3),
+        //   ),
+        // );
       }
     }
   }
@@ -139,34 +157,51 @@ Future<void> _pickFile() async {
             final apiService = context.read<ApiService>();
 
             Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => PinSetupScreen()));
+
+// Отправка FCM токена с улучшенной обработкой ошибок
+try {
+  //print('QrScanner: Получение FCM токена');
+  String? fcmToken = await FirebaseMessaging.instance.getToken();
+  
+  if (fcmToken != null && fcmToken.isNotEmpty) {
+    //print('QrScanner: FCM токен получен: ${fcmToken.substring(0, 20)}...');
+    await apiService.sendDeviceToken(fcmToken);
+    //print('QrScanner: FCM токен успешно отправлен');
+  } else {
+    //print('QrScanner: FCM токен null или пустой');
+  }
+} catch (e, stackTrace) {
+  //print('QrScanner: Ошибка отправки FCM токена: $e');
+  //print('QrScanner: StackTrace: $stackTrace');
+}
             
-            String? fcmToken = await FirebaseMessaging.instance.getToken();
-            if (fcmToken != null) {
-              await apiService.sendDeviceToken(fcmToken);
-            }
+            // String? fcmToken = await FirebaseMessaging.instance.getToken();
+            // if (fcmToken != null) {
+            //   await apiService.sendDeviceToken(fcmToken);
+            // }
           } catch (e) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  'Неверный формат QR-кода!',
-                  style: TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
-                  ),
-                ),
-                behavior: SnackBarBehavior.floating,
-                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                backgroundColor: Colors.red,
-                elevation: 3,
-                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                duration: Duration(seconds: 3),
-              ),
-            );
+            // ScaffoldMessenger.of(context).showSnackBar(
+            //   SnackBar(
+            //     content: Text(
+            //       'Неверный формат QR-кода!',
+            //       style: TextStyle(
+            //         fontFamily: 'Gilroy',
+            //         fontSize: 16,
+            //         fontWeight: FontWeight.w500,
+            //         color: Colors.white,
+            //       ),
+            //     ),
+            //     behavior: SnackBarBehavior.floating,
+            //     margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            //     shape: RoundedRectangleBorder(
+            //       borderRadius: BorderRadius.circular(12),
+            //     ),
+            //     backgroundColor: Colors.red,
+            //     elevation: 3,
+            //     padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            //     duration: Duration(seconds: 3),
+            //   ),
+            // );
           }
         }
       }

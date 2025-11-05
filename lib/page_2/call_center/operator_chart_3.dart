@@ -135,12 +135,15 @@ class _OperatorChart3State extends State<OperatorChart3> {
                             if (monthIndex >= 0 && monthIndex < monthNames.length) {
                               return Padding(
                                 padding: const EdgeInsets.only(top: 8),
-                                child: Text(
-                                  monthNames[monthIndex],
-                                  style: TextStyle(
-                                    fontFamily: 'Gilroy',
-                                    fontSize: 10,
-                                    color: hasData ? const Color(0xFF9CA3AF) : Colors.grey.withOpacity(0.5),
+                                child: Transform.rotate(
+                                  angle: -3.14 / 2,
+                                  child: Text(
+                                    monthNames[monthIndex],
+                                    style: TextStyle(
+                                      fontFamily: 'Gilroy',
+                                      fontSize: 10,
+                                      color: hasData ? const Color(0xFF9CA3AF) : Colors.grey.withOpacity(0.5),
+                                    ),
                                   ),
                                 ),
                               );

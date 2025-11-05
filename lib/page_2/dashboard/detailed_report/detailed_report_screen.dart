@@ -1,6 +1,9 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/top_selling_goods/sales_dashboard_top_selling_goods_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/goods_movement/sales_dashboard_goods_movement_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/goods_movement/sales_dashboard_goods_movement_event.dart';
 import 'package:crm_task_manager/page_2/dashboard/detailed_report/contents/cash_balance_content.dart';
 import 'package:crm_task_manager/page_2/dashboard/detailed_report/contents/reconciliation_act_content.dart';
+import 'package:crm_task_manager/page_2/dashboard/detailed_report/contents/goods_movement_content.dart';
 import 'package:crm_task_manager/page_2/dashboard/detailed_report/contents/sales_dynamics_content.dart';
 import 'package:crm_task_manager/page_2/dashboard/detailed_report/contents/net_profit_content.dart';
 import 'package:crm_task_manager/page_2/dashboard/detailed_report/contents/profitability_content.dart';
@@ -72,6 +75,7 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
   final List<Map<String, dynamic>> _tabTitles = [
     {'id': 0, 'titleKey': 'tab_goods_illiquid'},
     {'id': 1, 'titleKey': 'tab_reconciliation_act'},
+    {'id': 11, 'titleKey': 'tab_goods_movement'},
     {'id': 2, 'titleKey': 'tab_cash_balance'},
     {'id': 3, 'titleKey': 'tab_our_debts'},
     {'id': 4, 'titleKey': 'tab_owed_to_us'},
@@ -103,6 +107,7 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
   late SalesDashboardExpenseStructureBloc _expenseStructureBloc;
   late SalesDashboardOrderQuantityBloc _orderQuantityBloc;
   late SalesDashboardReconciliationActBloc _reconciliationActBloc;
+  late SalesDashboardGoodsMovementBloc _goodsMovementBloc;
 
   @override
   void initState() {
@@ -120,6 +125,7 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
     _expenseStructureBloc = SalesDashboardExpenseStructureBloc()..add(LoadExpenseStructureReport());
     _orderQuantityBloc = SalesDashboardOrderQuantityBloc()..add(LoadOrderQuantityReport());
     _reconciliationActBloc = SalesDashboardReconciliationActBloc();
+    _goodsMovementBloc = SalesDashboardGoodsMovementBloc()..add(LoadGoodsMovementReport());
 
     _currentTabIndex = widget.currentTabIndex;
     _scrollController = ScrollController();
@@ -161,6 +167,7 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
     _expenseStructureBloc.close();
     _orderQuantityBloc.close();
     _reconciliationActBloc.close();
+    _goodsMovementBloc.close();
 
     super.dispose();
   }
@@ -191,6 +198,8 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
       _goodsBloc.add(LoadGoodsReport(filter: filter, search: search));
     } else if (id == 1) {
       _reconciliationActBloc.add(LoadReconciliationActReport(filter: filter, search: search));
+    } else if (id == 11) {
+      _goodsMovementBloc.add(LoadGoodsMovementReport(filter: filter, search: search));
     } else if (id == 2) {
       _cashBalanceBloc.add(LoadCashBalanceReport(filter: filter, search: search));
     } else if (id == 3) {
@@ -231,27 +240,42 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
 
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider<SalesDashboardGoodsBloc>.value(value: _goodsBloc),
-        BlocProvider<SalesDashboardCashBalanceBloc>.value(value: _cashBalanceBloc),
-        BlocProvider<SalesDashboardCreditorsBloc>.value(value: _creditorsBloc),
-        BlocProvider<SalesDashboardDebtorsBloc>.value(value: _debtorsBloc),
-        BlocProvider<SalesDashboardTopSellingGoodsBloc>.value(value: _topSellingGoodsBloc),
-        BlocProvider<SalesDashboardSalesDynamicsBloc>.value(value: _salesDynamicsBloc),
-        BlocProvider<SalesDashboardNetProfitBloc>.value(value: _netProfitBloc),
-        BlocProvider<SalesDashboardProfitabilityBloc>.value(value: _profitabilityBloc),
-        BlocProvider<SalesDashboardExpenseStructureBloc>.value(value: _expenseStructureBloc),
-        BlocProvider<SalesDashboardOrderQuantityBloc>.value(value: _orderQuantityBloc),
-        BlocProvider<SalesDashboardReconciliationActBloc>.value(value: _reconciliationActBloc),
-      ],
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        appBar: AppBar(
-          forceMaterialTransparency: true,
-          elevation: 0,
+    return WillPopScope(
+      onWillPop: () async {
+        // Возвращаем true для перезагрузки дашборда
+        Navigator.of(context).pop(true);
+        return false; // Блокируем стандартный pop
+      },
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider<SalesDashboardGoodsBloc>.value(value: _goodsBloc),
+          BlocProvider<SalesDashboardCashBalanceBloc>.value(value: _cashBalanceBloc),
+          BlocProvider<SalesDashboardCreditorsBloc>.value(value: _creditorsBloc),
+          BlocProvider<SalesDashboardDebtorsBloc>.value(value: _debtorsBloc),
+          BlocProvider<SalesDashboardTopSellingGoodsBloc>.value(value: _topSellingGoodsBloc),
+          BlocProvider<SalesDashboardSalesDynamicsBloc>.value(value: _salesDynamicsBloc),
+          BlocProvider<SalesDashboardNetProfitBloc>.value(value: _netProfitBloc),
+          BlocProvider<SalesDashboardProfitabilityBloc>.value(value: _profitabilityBloc),
+          BlocProvider<SalesDashboardExpenseStructureBloc>.value(value: _expenseStructureBloc),
+          BlocProvider<SalesDashboardOrderQuantityBloc>.value(value: _orderQuantityBloc),
+          BlocProvider<SalesDashboardReconciliationActBloc>.value(value: _reconciliationActBloc),
+          BlocProvider<SalesDashboardGoodsMovementBloc>.value(value: _goodsMovementBloc),
+        ],
+        child: Scaffold(
           backgroundColor: Colors.white,
-          automaticallyImplyLeading: !isClickAvatarIcon,
+          appBar: AppBar(
+            forceMaterialTransparency: true,
+            elevation: 0,
+            backgroundColor: Colors.white,
+            leading: !isClickAvatarIcon
+                ? IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: () {
+                      Navigator.of(context).pop(true);
+                    },
+                  )
+                : null,
+            automaticallyImplyLeading: false,
           title: CustomAppBarReports(
             title: isClickAvatarIcon
                 ? localizations!.translate('appbar_settings')
@@ -286,6 +310,7 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
               child: _buildTabBarView(),
             ),
           ],
+        ),
         ),
       ),
     );
@@ -342,6 +367,8 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
       return GoodsContent();
     } else if (id == 1) {
       return ReconciliationActContent();
+    } else if (id == 11) {
+      return GoodsMovementContent();
     } else if (id == 2) {
       return CashBalanceContent();
     } else if (id == 3) {

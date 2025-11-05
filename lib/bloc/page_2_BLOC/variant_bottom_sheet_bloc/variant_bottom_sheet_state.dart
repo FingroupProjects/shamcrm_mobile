@@ -7,28 +7,30 @@ class VariantBottomSheetState {
   final bool isLoading;
   final bool isLoadingMore;
   final bool isSearching;
-  
+  final bool? isService;
+
   // Error
   final String? error;
-  
+
   // All Variants Mode
   final List<Variant> allVariants;
   final VariantPagination? allVariantsPagination;
-  
+
   // Categories
   final List<CategoryWithCount> categories;
-  
+
   // Selected Category Mode
   final int? selectedCategoryId;
+  final String? selectedCategoryName;
   final List<Variant> categoryVariants;
   final VariantPagination? categoryVariantsPagination;
-  
+
   // Search Results
   final String? searchQuery;
   final List<CategoryWithCount> searchCategories;
   final List<Variant> searchVariants;
   final VariantPagination? searchVariantsPagination;
-  
+
   // Pagination tracking
   final int currentPage;
 
@@ -41,6 +43,7 @@ class VariantBottomSheetState {
     this.allVariantsPagination,
     this.categories = const [],
     this.selectedCategoryId,
+    this.selectedCategoryName,
     this.categoryVariants = const [],
     this.categoryVariantsPagination,
     this.searchQuery,
@@ -48,6 +51,7 @@ class VariantBottomSheetState {
     this.searchVariants = const [],
     this.searchVariantsPagination,
     this.currentPage = 1,
+    this.isService,
   });
 
   factory VariantBottomSheetState.initial() {
@@ -64,6 +68,7 @@ class VariantBottomSheetState {
     Object? allVariantsPagination = _undefined,
     List<CategoryWithCount>? categories,
     Object? selectedCategoryId = _undefined,
+    Object? selectedCategoryName = _undefined,
     List<Variant>? categoryVariants,
     Object? categoryVariantsPagination = _undefined,
     Object? searchQuery = _undefined,
@@ -71,6 +76,7 @@ class VariantBottomSheetState {
     List<Variant>? searchVariants,
     Object? searchVariantsPagination = _undefined,
     int? currentPage,
+    Object? isService = _undefined,
   }) {
     return VariantBottomSheetState(
       isLoading: isLoading ?? this.isLoading,
@@ -78,43 +84,47 @@ class VariantBottomSheetState {
       isSearching: isSearching ?? this.isSearching,
       error: error == _undefined ? this.error : error as String?,
       allVariants: allVariants ?? this.allVariants,
-      allVariantsPagination: allVariantsPagination == _undefined 
-          ? this.allVariantsPagination 
+      allVariantsPagination: allVariantsPagination == _undefined
+          ? this.allVariantsPagination
           : allVariantsPagination as VariantPagination?,
       categories: categories ?? this.categories,
-      selectedCategoryId: selectedCategoryId == _undefined 
-          ? this.selectedCategoryId 
+      selectedCategoryId: selectedCategoryId == _undefined
+          ? this.selectedCategoryId
           : selectedCategoryId as int?,
+      selectedCategoryName: selectedCategoryName == _undefined
+          ? this.selectedCategoryName
+          : selectedCategoryName as String?,
       categoryVariants: categoryVariants ?? this.categoryVariants,
-      categoryVariantsPagination: categoryVariantsPagination == _undefined 
-          ? this.categoryVariantsPagination 
+      categoryVariantsPagination: categoryVariantsPagination == _undefined
+          ? this.categoryVariantsPagination
           : categoryVariantsPagination as VariantPagination?,
-      searchQuery: searchQuery == _undefined 
-          ? this.searchQuery 
+      searchQuery: searchQuery == _undefined
+          ? this.searchQuery
           : searchQuery as String?,
       searchCategories: searchCategories ?? this.searchCategories,
       searchVariants: searchVariants ?? this.searchVariants,
-      searchVariantsPagination: searchVariantsPagination == _undefined 
-          ? this.searchVariantsPagination 
+      searchVariantsPagination: searchVariantsPagination == _undefined
+          ? this.searchVariantsPagination
           : searchVariantsPagination as VariantPagination?,
       currentPage: currentPage ?? this.currentPage,
+      isService: isService == _undefined ? this.isService : isService as bool?,  // ADD THIS
     );
   }
 
   // Helper getters for UI
-  bool get hasData => 
-    allVariants.isNotEmpty || 
-    categories.isNotEmpty || 
-    categoryVariants.isNotEmpty ||
-    searchCategories.isNotEmpty ||
-    searchVariants.isNotEmpty;
+  bool get hasData =>
+      allVariants.isNotEmpty ||
+          categories.isNotEmpty ||
+          categoryVariants.isNotEmpty ||
+          searchCategories.isNotEmpty ||
+          searchVariants.isNotEmpty;
 
   bool get isInSearchMode => searchQuery != null && searchQuery!.isNotEmpty;
-  
+
   bool get isInCategoryMode => selectedCategoryId != null;
-  
-  bool get isInAllVariantsMode => 
-    !isInSearchMode && !isInCategoryMode && allVariants.isNotEmpty;
+
+  bool get isInAllVariantsMode =>
+      !isInSearchMode && !isInCategoryMode && allVariants.isNotEmpty;
 }
 
 // Sentinel value for nullable parameters

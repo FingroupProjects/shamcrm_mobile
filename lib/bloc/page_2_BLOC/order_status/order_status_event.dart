@@ -88,6 +88,7 @@ class UpdateOrder extends OrderEvent {
   final int? branchId;
   final String? commentToCourier;
   final int? managerId; // Новое поле
+  final int? statusId; // Добавлено для обновления списка
 
   UpdateOrder({
     required this.orderId,
@@ -101,6 +102,7 @@ class UpdateOrder extends OrderEvent {
     this.branchId,
     this.commentToCourier,
     this.managerId,
+    this.statusId,
   });
 }
 class DeleteOrder extends OrderEvent {
@@ -159,4 +161,14 @@ class DeleteOrderStatus extends OrderEvent {
   final int statusId;
 
   DeleteOrderStatus({required this.statusId});
+}
+
+class AddMiniAppAddress extends OrderEvent {
+  final String address;
+  final int leadId;
+
+  AddMiniAppAddress({
+    required this.address,
+    required this.leadId,
+  });
 }

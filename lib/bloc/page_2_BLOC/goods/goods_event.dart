@@ -33,18 +33,12 @@ class SearchGoods extends GoodsEvent {
   final String query;
 
   SearchGoods(this.query);
-
-  @override
-  List<Object> get props => [query];
 }
 
 class FilterGoods extends GoodsEvent {
   final Map<String, dynamic> filters;
 
   FilterGoods(this.filters);
-
-  @override
-  List<Object> get props => [filters];
 }
 
 class FetchSubCategories extends GoodsEvent {}
@@ -67,8 +61,10 @@ class CreateGoods extends GoodsEvent {
   final int? mainImageIndex;
   final int? labelId; // Добавляем поле для ID метки
   final double? price; // Добавляем поле для цены
+  final bool isService; // Добавляем поле для указания услуги
 
   CreateGoods({
+    required this.isService,
     required this.name,
     required this.description,
     this.unitId,
@@ -90,6 +86,7 @@ class CreateGoods extends GoodsEvent {
 }
 
 class UpdateGoods extends GoodsEvent {
+  final bool isService; // Добавляем поле для указания услуги
   final int goodId;
   final String name;
   final String description;
@@ -108,6 +105,7 @@ class UpdateGoods extends GoodsEvent {
 final int? labelId; // Добавляем поле для ID метки
 
   UpdateGoods({
+    required this.isService,
     required this.goodId,
     required this.name,
     required this.description,
@@ -131,9 +129,6 @@ class SearchGoodsByBarcode extends GoodsEvent {
   final String barcode;
 
   SearchGoodsByBarcode(this.barcode);
-
-  @override
-  List<Object> get props => [barcode];
 }
 
 class CloseBatchRemainders extends GoodsEvent {}

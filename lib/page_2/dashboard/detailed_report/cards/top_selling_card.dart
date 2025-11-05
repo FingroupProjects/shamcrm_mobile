@@ -1,7 +1,7 @@
 import 'package:crm_task_manager/models/page_2/dashboard/top_selling_card_model.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-import 'package:intl/intl.dart';
+import 'package:crm_task_manager/utils/global_fun.dart';
 
 class TopSellingCard extends StatelessWidget {
   final TopSellingCardModel product;
@@ -18,11 +18,6 @@ class TopSellingCard extends StatelessWidget {
     required this.isSelectionMode,
     required this.isSelected,
   }) : super(key: key);
-
-  String _formatAmount(String amount) {
-    double amountValue = double.tryParse(amount.replaceAll(' ', '')) ?? 0.0;
-    return NumberFormat('#,##0.00', 'ru_RU').format(amountValue);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +41,7 @@ class TopSellingCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '${localizations.translate('name') ?? 'Название'}: ${product.name}',
+                    '${AppLocalizations.of(context)!.translate('title_without_dots') ?? 'Название'}: ${product.name}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
@@ -67,21 +62,21 @@ class TopSellingCard extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     '${localizations.translate('total_quantity') ?? 'Количество'}: ${product.totalQuantity}',
-                    style: const TextStyle(
-                      fontSize: 14,
+                     style: const TextStyle(
+                      fontSize: 15,
                       fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w400,
-                      color: Color(0xff99A4BA),
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xff1E2E52),
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${localizations.translate('total_amount') ?? 'Общая сумма'}: ${_formatAmount(product.totalAmount)}',
-                    style: const TextStyle(
-                      fontSize: 14,
+                    '${localizations.translate('total_amount') ?? 'Общая сумма'}: ${parseNumberToString(product.totalAmount)}',
+                     style: const TextStyle(
+                      fontSize: 15,
                       fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w400,
-                      color: Color(0xff99A4BA),
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xff1E2E52),
                     ),
                   ),
                 ],

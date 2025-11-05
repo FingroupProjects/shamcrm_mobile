@@ -28,6 +28,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/sales_dashboard_bloc
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
+import 'package:crm_task_manager/page_2/dashboard/widgets/charts/chart_skeleton.dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/dialogs/dialog_creditors_info.dart';
 import 'package:crm_task_manager/screens/dashboard/deal_stats.dart';
 import 'package:crm_task_manager/screens/dashboard/users_chart.dart';
@@ -589,14 +590,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
         isRefreshing = true;
       });
 
-      await Future.wait(
-          [_loadUserRoles(), Future.delayed(const Duration(seconds: 3))]);
+      await Future.wait([
+        _loadUserRoles(),
+        Future.delayed(const Duration(seconds: 1)), // Reduced delay for better UX
+      ]);
+
       if (mounted) {
         setState(() {
           isRefreshing = false;
         });
 
         if (_activeDashboard == DashboardType.crm) {
+          // Reload CRM dashboard
           context.read<TaskCompletionBloc>().add(LoadTaskCompletionData());
           context.read<DashboardChartBloc>().add(LoadLeadChartData());
           context
@@ -618,7 +623,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               .read<ProcessSpeedBlocManager>()
               .add(LoadProcessSpeedDataManager());
         } else {
-          context.read<SalesDashboardBloc>().add(ReloadInitialData());
+          // Reload accounting dashboard with new progressive loading
+          context.read<SalesDashboardBloc>().add(ReloadAllData());
         }
       }
     } catch (e) {
@@ -753,16 +759,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ];
     }
   }
-
   List<Widget> _buildAccountingDashboard() {
     return [
       BlocConsumer<SalesDashboardBloc, SalesDashboardState>(
         listener: (context, state) {
           if (state is SalesDashboardError) {
-            showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+            showCustomSnackBar(
+              context: context,
+              message: state.message,
+              isSuccess: false,
+            );
           }
         },
         builder: (context, state) {
+          // Initial loading state
           if (state is SalesDashboardLoading) {
             return const Center(
               child: PlayStoreImageLoading(
@@ -770,39 +780,191 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 duration: Duration(milliseconds: 1000),
               ),
             );
-          } else if (state is SalesDashboardLoaded) {
-            final SalesResponse? salesData = state.salesData;
-            final List<AllNetProfitData> netProfitData = state.netProfitData;
-            final List<AllOrdersData> orderDashboardData = state.orderDashboardData;
-            final List<AllExpensesData> expenseStructureData = state.expenseStructureData;
-            final List<AllProfitabilityData> profitabilityData = state.profitabilityData;
-            final List<AllTopSellingData> topSellingData = state.topSellingData;
+          }
 
+          // Wave 1 loaded - show priority data
+          if (state is SalesDashboardPriorityLoaded) {
+            return Column(
+              children: [
+                // Wave 1 data - show immediately (includes illiquid goods in TopPart)
+                TopPart(
+                  state: SalesDashboardLoaded(
+                    salesDashboardTopPart: state.salesDashboardTopPart,
+                    salesData: null,
+                    netProfitData: [],
+                    orderDashboardData: [],
+                    expenseStructureData: [],
+                    profitabilityData: [],
+                    topSellingData: state.topSellingData,
+                    illiquidGoodsData: state.illiquidGoodsData,
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Fade-in animation for Wave 1 charts
+                _FadeInWidget(
+                  child: TopSellingProductsChart(state.topSellingData),
+                ),
+                const SizedBox(height: 16),
+
+                // Wave 2 skeletons - loading
+                const ChartSkeleton(height: 300, title: 'Динамика продаж'),
+                const SizedBox(height: 16),
+                const ChartSkeleton(height: 300, title: 'Чистая прибыль'),
+                const SizedBox(height: 16),
+                const ChartSkeleton(height: 300, title: 'Рентабельность'),
+                const SizedBox(height: 16),
+                const ChartSkeleton(height: 300, title: 'Структура расходов'),
+                const SizedBox(height: 16),
+                const ChartSkeleton(height: 300, title: 'Количество заказов'),
+                const SizedBox(height: 16),
+              ],
+            );
+          }
+
+          // Wave 2 loading - show Wave 1 data + loading indicators
+          if (state is SalesDashboardLoadingSecondary) {
+            return Column(
+              children: [
+                // Wave 1 data - already visible
+                TopPart(
+                  state: SalesDashboardLoaded(
+                    salesDashboardTopPart: state.salesDashboardTopPart,
+                    salesData: null,
+                    netProfitData: [],
+                    orderDashboardData: [],
+                    expenseStructureData: [],
+                    profitabilityData: [],
+                    topSellingData: state.topSellingData,
+                    illiquidGoodsData: state.illiquidGoodsData,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TopSellingProductsChart(state.topSellingData),
+                const SizedBox(height: 16),
+
+                // Wave 2 loading indicators
+                const ChartSkeleton(height: 300, title: 'Динамика продаж'),
+                const SizedBox(height: 16),
+                const ChartSkeleton(height: 300, title: 'Чистая прибыль'),
+                const SizedBox(height: 16),
+                const ChartSkeleton(height: 300, title: 'Рентабельность'),
+                const SizedBox(height: 16),
+                const ChartSkeleton(height: 300, title: 'Структура расходов'),
+                const SizedBox(height: 16),
+                const ChartSkeleton(height: 300, title: 'Количество заказов'),
+                const SizedBox(height: 16),
+              ],
+            );
+          }
+
+          // Fully loaded - show all data with fade-in
+          if (state is SalesDashboardFullyLoaded) {
+            return Column(
+              children: [
+                TopPart(
+                  state: SalesDashboardLoaded(
+                    salesDashboardTopPart: state.salesDashboardTopPart,
+                    salesData: state.salesData, // TopPart не использует salesData
+                    netProfitData: state.netProfitData,
+                    orderDashboardData: state.orderDashboardData,
+                    expenseStructureData: state.expenseStructureData,
+                    profitabilityData: state.profitabilityData,
+                    topSellingData: state.topSellingData,
+                    illiquidGoodsData: state.illiquidGoodsData,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TopSellingProductsChart(state.topSellingData),
+                const SizedBox(height: 16),
+
+                // Wave 2 data with fade-in animation
+                _FadeInWidget(
+                  child: SalesDynamicsLineChart(state.salesData),
+                ),
+                const SizedBox(height: 16),
+
+                _FadeInWidget(
+                  delay: const Duration(milliseconds: 100),
+                  child: NetProfitChart(state.netProfitData),
+                ),
+                const SizedBox(height: 16),
+
+                _FadeInWidget(
+                  delay: const Duration(milliseconds: 200),
+                  child: ProfitabilityChart(profitabilityData: state.profitabilityData),
+                ),
+                const SizedBox(height: 16),
+
+                _FadeInWidget(
+                  delay: const Duration(milliseconds: 300),
+                  child: ExpenseStructureChart(state.expenseStructureData),
+                ),
+                const SizedBox(height: 16),
+
+                _FadeInWidget(
+                  delay: const Duration(milliseconds: 400),
+                  child: OrderQuantityChart(orderDashboardData: state.orderDashboardData),
+                ),
+                const SizedBox(height: 16),
+              ],
+            );
+          }
+
+          // Legacy support - old SalesDashboardLoaded state
+          if (state is SalesDashboardLoaded) {
             return Column(
               children: [
                 TopPart(state: state),
                 const SizedBox(height: 16),
-                TopSellingProductsChart(topSellingData),
+                TopSellingProductsChart(state.topSellingData),
                 const SizedBox(height: 16),
-                SalesDynamicsLineChart(salesData),
+                if (state.salesData != null && state.salesData!.isNotEmpty)
+                  SalesDynamicsLineChart(state.salesData!),
+                if (state.salesData != null && state.salesData!.isNotEmpty)
+                  const SizedBox(height: 16),
+                NetProfitChart(state.netProfitData),
                 const SizedBox(height: 16),
-                NetProfitChart(netProfitData),
+                ProfitabilityChart(profitabilityData: state.profitabilityData),
                 const SizedBox(height: 16),
-                ProfitabilityChart(profitabilityData: profitabilityData),
+                ExpenseStructureChart(state.expenseStructureData),
                 const SizedBox(height: 16),
-                ExpenseStructureChart(expenseStructureData),
-                const SizedBox(height: 16),
-                OrderQuantityChart(orderDashboardData: orderDashboardData),
+                OrderQuantityChart(orderDashboardData: state.orderDashboardData),
                 const SizedBox(height: 16),
               ],
             );
-          } else if (state is SalesDashboardError) {
-            return Center(
-              child: Text(AppLocalizations.of(context)!.translate('error_loading') ?? 'Ошибка загрузки'),
-            );
-          } else {
-            return Center();
           }
+
+          // Error state
+          if (state is SalesDashboardError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.error_outline,
+                    size: 48,
+                    color: Colors.red,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    AppLocalizations.of(context)!.translate('error_loading') ??
+                        'Ошибка загрузки',
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      context.read<SalesDashboardBloc>().add(ReloadAllData());
+                    },
+                    child: const Text('Повторить'),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          return const Center(child: Text('Нет данных'));
         },
       ),
     ];
@@ -937,10 +1099,10 @@ class TopPart extends StatelessWidget {
                 accentColor: Colors.orange,
                 title: localizations.translate('illiquid_goods') ?? 'ТОВАРЫ/НЕЛИКВИДНЫМИ ТОВАРЫ',
                 leading: const Icon(Icons.inventory_2, color: Colors.orange),
-                amountText: "${illiquidGoodsData.result?.liquidGoods ?? 0}/${illiquidGoodsData.result?.nonLiquidGoods ?? 0}",
+                amountText: "${illiquidGoodsData.result?.liquidGoods ?? 0}",
                 showCurrencySymbol: false,
-                isUp: illiquidGoodsData.result?.liquidChangeFormatted.startsWith("+") ?? true,
-                trendText: "${illiquidGoodsData.result?.liquidChangeFormatted ?? '0.0%'}/${illiquidGoodsData.result?.nonLiquidChangeFormatted ?? '0.0%'}",
+                isUp: illiquidGoodsData.result?.liquidChangeFormatted?.startsWith("+") ?? true,
+                trendText: illiquidGoodsData.result?.liquidChangeFormatted ?? '0.0%',
               ),
             ),
             const SizedBox(width: 16),
@@ -997,6 +1159,62 @@ class TopPart extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+
+/// Widget with fade-in animation
+class _FadeInWidget extends StatefulWidget {
+  final Widget child;
+  final Duration delay;
+
+  const _FadeInWidget({
+    required this.child,
+    this.delay = Duration.zero,
+  });
+
+  @override
+  State<_FadeInWidget> createState() => _FadeInWidgetState();
+}
+
+class _FadeInWidgetState extends State<_FadeInWidget>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+
+    _animation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeIn,
+    );
+
+    // Start animation after delay
+    Future.delayed(widget.delay, () {
+      if (mounted) {
+        _controller.forward();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _animation,
+      child: widget.child,
     );
   }
 }

@@ -11,7 +11,7 @@ class MoneyOutcomeDocumentModel extends Equatable {
         result: json['result'] != null ? Result.fromJson(json['result']) : null,
       );
     } catch (e) {
-      print('Error parsing MoneyOutcomeDocumentModel: $e');
+      //print('Error parsing MoneyOutcomeDocumentModel: $e');
       rethrow;
     }
   }
@@ -43,7 +43,7 @@ class Result extends Equatable {
             : null,
       );
     } catch (e) {
-      print('Error parsing Result: $e');
+      //print('Error parsing Result: $e');
       rethrow;
     }
   }
@@ -121,8 +121,8 @@ class MoneyOrganization extends Equatable {
         autoResponder: json['auto_responder'],
       );
     } catch (e) {
-      print('Error parsing MoneyOrganization: $e');
-      print('JSON data: $json');
+      //print('Error parsing MoneyOrganization: $e');
+      //print('JSON data: $json');
       rethrow;
     }
   }
@@ -240,8 +240,8 @@ class Document extends Equatable {
         deletedAt: _parseString(json['deleted_at']),
       );
     } catch (e) {
-      print('Error parsing Document: $e');
-      print('JSON data: $json');
+      //print('Error parsing Document: $e');
+      //print('JSON data: $json');
       rethrow;
     }
   }
@@ -348,7 +348,7 @@ class CashRegister extends Equatable {
         updatedAt: _parseString(json['updated_at']),
       );
     } catch (e) {
-      print('Error parsing CashRegister: $e');
+      //print('Error parsing CashRegister: $e');
       rethrow;
     }
   }
@@ -395,7 +395,7 @@ class Article extends Equatable {
         updatedAt: _parseString(json['updated_at']),
       );
     } catch (e) {
-      print('Error parsing Article: $e');
+      //print('Error parsing Article: $e');
       rethrow;
     }
   }
@@ -554,7 +554,7 @@ class Model extends Equatable {
         tiktokCommenterId: json['tiktok_commenter_id'],
       );
     } catch (e) {
-      print('Error parsing Model: $e');
+      //print('Error parsing Model: $e');
       rethrow;
     }
   }
@@ -712,7 +712,7 @@ class Author extends Equatable {
         uniqueId: _parseString(json['unique_id']),
       );
     } catch (e) {
-      print('Error parsing Author: $e');
+      //print('Error parsing Author: $e');
       rethrow;
     }
   }

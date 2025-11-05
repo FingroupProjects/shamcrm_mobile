@@ -199,6 +199,7 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
       backgroundColor: Colors.transparent,
       builder: (context) => VariantSelectionBottomSheet(
         existingItems: _items,
+        isService: false,
       ),
     );
 

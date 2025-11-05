@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/sales_model.dart';
-import 'package:intl/intl.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/utils/global_fun.dart';
 
 class SalesDynamicsCard extends StatelessWidget {
   final MonthData monthData;
@@ -10,11 +10,6 @@ class SalesDynamicsCard extends StatelessWidget {
     Key? key,
     required this.monthData,
   }) : super(key: key);
-
-  String _formatAmount(String amount) {
-    double amountValue = double.tryParse(amount.replaceAll(' ', '')) ?? 0.0;
-    return NumberFormat('#,##0.00', 'ru_RU').format(amountValue);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +30,7 @@ class SalesDynamicsCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${localizations.translate('month') ?? 'Месяц'}: ${monthData.monthName}',
+                  monthData.monthName,
                   style: const TextStyle(
                     fontSize: 14,
                     fontFamily: 'Gilroy',
@@ -45,13 +40,13 @@ class SalesDynamicsCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '${localizations.translate('total_amount') ?? 'Общая сумма'}: ${_formatAmount(monthData.totalAmount)}',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w400,
-                    color: Color(0xff99A4BA),
-                  ),
+                  '${localizations.translate('total_amount') ?? 'Общая сумма'}: ${parseNumberToString(monthData.totalAmount)}',
+                   style: const TextStyle(
+                      fontSize: 15,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xff1E2E52),
+                    ),
                 ),
               ],
             ),

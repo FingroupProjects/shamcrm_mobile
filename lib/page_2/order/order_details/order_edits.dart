@@ -44,12 +44,13 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   late TextEditingController _phoneController;
   late TextEditingController _commentController;
   late List<Map<String, dynamic>> _items;
-  String? selectedLead;
+  LeadData? _selectedLead;
   String? selectedManager;
   String? _deliveryMethod;
   Branch? _selectedBranch;
   DeliveryAddress? _selectedDeliveryAddress;
   String? selectedDialCode;
+  String? _fullPhoneNumber; // Полный номер телефона с кодом страны
   String? baseUrl;
   List<Branch> branches = [];
     final ApiService _apiService = ApiService();
@@ -73,7 +74,10 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
         'imagePath': imagePath,
       };
     }).toList();
-    selectedLead = widget.order.lead.id.toString();
+    _selectedLead = LeadData(
+      id: widget.order.lead.id,
+      name: widget.order.lead.name,
+    );
     selectedManager = widget.order.manager?.id.toString();
     _selectedDeliveryAddress = widget.order.deliveryAddress != null
         ? DeliveryAddress(
@@ -93,9 +97,19 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
         address: '',
         isActive: 0,
       );
+    } else if (widget.order.storageId != null) {
+      _selectedBranch = Branch(
+        id: widget.order.storageId!,
+        name: widget.order.branchName ?? '',
+        address: '',
+        isActive: 0,
+      );
     }
 
+    // debugPrint('storage id : ${widget.order.storageId}');
+
     String phoneText = widget.order.phone;
+    _fullPhoneNumber = phoneText; // Сохраняем полный номер
     if (RegExp(r'^\+?\d{2,}$').hasMatch(phoneText)) {
       for (var country in countries) {
         if (phoneText.startsWith(country.dialCode)) {
@@ -126,7 +140,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
       final savedCurrencyId = prefs.getInt('currency_id');
 
       if (kDebugMode) {
-        print('OrderEditScreen: Загружен currency_id из SharedPreferences: $savedCurrencyId');
+        //print('OrderEditScreen: Загружен currency_id из SharedPreferences: $savedCurrencyId');
       }
 
       setState(() {
@@ -138,7 +152,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('OrderEditScreen: Ошибка загрузки currency_id: $e');
+        //print('OrderEditScreen: Ошибка загрузки currency_id: $e');
       }
       setState(() {
         currencyId = 1; // По умолчанию доллар
@@ -163,12 +177,12 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
         });
 
         if (kDebugMode) {
-          print('OrderEditScreen: Загружен currency_id из API: ${settings.currencyId}');
+          //print('OrderEditScreen: Загружен currency_id из API: ${settings.currencyId}');
         }
       }
     } catch (e) {
       if (kDebugMode) {
-        print('OrderEditScreen: Ошибка загрузки currency_id из API: $e');
+        //print('OrderEditScreen: Ошибка загрузки currency_id из API: $e');
       }
       setState(() {
         currencyId = 1; // По умолчанию доллар
@@ -182,7 +196,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
     String symbol = '₽'; // По умолчанию сум
 
     if (kDebugMode) {
-      print('OrderEditScreen: _formatPrice вызван с currency_id: $currencyId');
+      //print('OrderEditScreen: _formatPrice вызван с currency_id: $currencyId');
     }
 
     switch (currencyId) {
@@ -201,12 +215,12 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
       default:
         symbol = '₽';
         if (kDebugMode) {
-          print('OrderEditScreen: Используется валюта по умолчанию (UZS) для currency_id: $currencyId');
+          //print('OrderEditScreen: Используется валюта по умолчанию (UZS) для currency_id: $currencyId');
         }
     }
 
     if (kDebugMode) {
-      print('OrderEditScreen: Выбранный символ валюты: $symbol для цены: $price');
+      //print('OrderEditScreen: Выбранный символ валюты: $symbol для цены: $price');
     }
 
     return '${NumberFormat('#,##0', 'ru_RU').format(price)} $symbol';
@@ -241,19 +255,15 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
 
   void _navigateToAddProduct() async {
     final Order tempOrder = widget.order.copyWith(
-      phone: selectedDialCode != null
-          ? '$selectedDialCode${_phoneController.text}'
-          : _phoneController.text,
+      phone: _fullPhoneNumber ?? widget.order.phone,
       delivery: _deliveryMethod == AppLocalizations.of(context)!.translate('delivery'),
       deliveryAddress: _selectedDeliveryAddress?.address,
       deliveryAddressId: _selectedDeliveryAddress?.id,
       lead: OrderLead(
-        id: int.tryParse(selectedLead ?? '0') ?? 0,
-        name: widget.order.lead.name,
+        id: _selectedLead?.id ?? 0,
+        name: _selectedLead?.name ?? widget.order.lead.name,
         channels: widget.order.lead.channels,
-        phone: selectedDialCode != null
-            ? '$selectedDialCode${_phoneController.text}'
-            : _phoneController.text,
+        phone: _fullPhoneNumber ?? widget.order.phone,
       ),
       goods: _items.map((item) {
         final goodItem = GoodItem(
@@ -309,8 +319,90 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
     }
   }
 
+  void _showAddAddressDialog(BuildContext context) {
+    final TextEditingController addressController = TextEditingController();
+    
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CustomTextField(
+              controller: addressController,
+              hintText: AppLocalizations.of(context)!
+                  .translate('enter_delivery_address'),
+              label: AppLocalizations.of(context)!.translate('delivery_address'),
+              maxLines: 3,
+              keyboardType: TextInputType.text,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(
+              AppLocalizations.of(context)!.translate('cancel'),
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Gilroy',
+                color: Color(0xff99A4BA),
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (addressController.text.trim().isEmpty) {
+                showCustomSnackBar(
+                  context: context,
+                  message: AppLocalizations.of(context)!.translate('field_required'),
+                  isSuccess: false,
+                );
+                return;
+              }
+              
+              Navigator.of(dialogContext).pop();
+              
+              // Вызываем bloc событие для добавления адреса
+              context.read<OrderBloc>().add(
+                    AddMiniAppAddress(
+                      address: addressController.text.trim(),
+                      leadId: _selectedLead?.id ?? 0,
+                    ),
+                  );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xff4759FF),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            ),
+            child: Text(
+              AppLocalizations.of(context)!.translate('add'),
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Gilroy',
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+
+    // debugPrint("selectedBranch ID  : ${_selectedBranch?.id}");
+
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (context) => OrderBloc(context.read<ApiService>())),
@@ -328,8 +420,29 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                 message: AppLocalizations.of(context)!.translate('order_updated_successfully'),
                 isSuccess: true,
               );
-              Navigator.pop(context, true);
+              Navigator.pop(context, {
+                'success': true,
+                'statusId': state.statusId ?? widget.order.orderStatus.id,
+              });
             } else if (state is OrderError) {
+              showCustomSnackBar(
+                context: context,
+                message: state.message,
+                isSuccess: false,
+              );
+            } else if (state is OrderCreateAddressSuccess) {
+              showCustomSnackBar(
+                context: context,
+                message: state.message,
+                isSuccess: true,
+              );
+              // Обновляем список адресов доставки
+              context.read<DeliveryAddressBloc>().add(
+                    FetchDeliveryAddresses(
+                      leadId: _selectedLead?.id ?? 0,
+                    ),
+                  );
+            } else if (state is OrderCreateAddressError) {
               showCustomSnackBar(
                 context: context,
                 message: state.message,
@@ -351,12 +464,13 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          const SizedBox(height: 8),
                           LeadRadioGroupWidget(
-                            selectedLead: selectedLead,
+                            selectedLead: _selectedLead?.id.toString(),
                             onSelectLead: (LeadData lead) {
                               if (mounted) {
                                 setState(() {
-                                  selectedLead = lead.id.toString();
+                                  _selectedLead = lead;
                                   _selectedDeliveryAddress = null;
                                 });
                                 context.read<DeliveryAddressBloc>().add(FetchDeliveryAddresses(
@@ -366,20 +480,11 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                             },
                           ),
                           const SizedBox(height: 8),
-                          ManagerRadioGroupWidget(
-                            selectedManager: selectedManager,
-                            onSelectManager: (ManagerData selectedManagerData) {
-                              setState(() {
-                                selectedManager = selectedManagerData.id.toString();
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 16),
                           CustomPhoneNumberInput(
                             controller: _phoneController,
                             onInputChanged: (String number) {
                               if (mounted) {
-                                setState(() => selectedDialCode = number);
+                                setState(() => _fullPhoneNumber = number);
                               }
                             },
                             validator: (value) {
@@ -392,33 +497,44 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                             selectedDialCode: selectedDialCode,
                           ),
                           const SizedBox(height: 16),
+                          BranchRadioGroupWidget(
+                            selectedStatus: _selectedBranch?.id.toString(),
+                            onSelectStatus: (Branch selectedStatusData) {
+                              setState(() {
+                                _selectedBranch = selectedStatusData;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          ManagerRadioGroupWidget(
+                            selectedManager: selectedManager,
+                            onSelectManager: (ManagerData selectedManagerData) {
+                              setState(() {
+                                selectedManager = selectedManagerData.id.toString();
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 16),
                           _buildItemsSection(),
                           const SizedBox(height: 16),
                           DeliveryMethodDropdown(
+                            key: const Key('delivery_method_dropdown'),
                             selectedDeliveryMethod: _deliveryMethod,
                             onSelectDeliveryMethod: (value) {
-                              if (mounted) {
-                                setState(() {
-                                  _deliveryMethod = value;
-                                  _selectedBranch = null;
-                                  _selectedDeliveryAddress = null;
-                                });
-                              }
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                if (mounted) {
+                                  setState(() {
+                                    _deliveryMethod = value;
+                                    _selectedDeliveryAddress = null;
+                                  });
+                                }
+                              });
                             },
                           ),
                           const SizedBox(height: 8),
-                          if (_deliveryMethod == AppLocalizations.of(context)!.translate('self_delivery'))
-                            BranchRadioGroupWidget(
-                              selectedStatus: _selectedBranch?.toString(),
-                              onSelectStatus: (Branch selectedStatusData) {
-                                setState(() {
-                                  _selectedBranch = selectedStatusData;
-                                });
-                              },
-                            ),
                           if (_deliveryMethod == AppLocalizations.of(context)!.translate('delivery'))
                             DeliveryAddressDropdown(
-                              leadId: int.parse(selectedLead ?? '0'),
+                              leadId: _selectedLead?.id ?? 0,
                               organizationId: widget.order.organizationId ?? 1,
                               selectedAddress: _selectedDeliveryAddress,
                               onSelectAddress: (DeliveryAddress address) {
@@ -427,11 +543,33 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                                 });
                               },
                             ),
-                          const SizedBox(height: 16),
+                          if (_deliveryMethod == AppLocalizations.of(context)!.translate('delivery')) const SizedBox(height: 16),
+                          if (_deliveryMethod == AppLocalizations.of(context)!.translate('delivery'))
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Spacer(),
+                              if (_deliveryMethod == AppLocalizations.of(context)!.translate('delivery'))
+                                GestureDetector(
+                                  onTap: () => _showAddAddressDialog(context),
+                                  child: Text(
+                                    AppLocalizations.of(context)!.translate('add_address'),
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      fontFamily: 'Gilroy',
+                                      color: Color(0xff4759FF),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          if (_deliveryMethod == AppLocalizations.of(context)!.translate('delivery')) const SizedBox(height: 8),
                           CustomTextField(
                             controller: _commentController,
                             hintText: AppLocalizations.of(context)!.translate('please_enter_comment'),
-                            label: AppLocalizations.of(context)!.translate('comment_client'),
+                            label: AppLocalizations.of(context)!.translate('comment'),
                             maxLines: 5,
                             keyboardType: TextInputType.multiline,
                           ),
@@ -795,10 +933,8 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                   final isPickup = _deliveryMethod == AppLocalizations.of(context)!.translate('self_delivery');
                   context.read<OrderBloc>().add(UpdateOrder(
                         orderId: widget.order.id,
-                        phone: selectedDialCode != null
-                            ? '$selectedDialCode${_phoneController.text}'
-                            : _phoneController.text,
-                        leadId: int.parse(selectedLead ?? '0'),
+                          phone: _fullPhoneNumber ?? widget.order.phone,
+                        leadId: _selectedLead?.id ?? 0,
                         delivery: !isPickup,
                         deliveryAddress: isPickup ? null : _selectedDeliveryAddress?.address,
                         deliveryAddressId: isPickup ? null : _selectedDeliveryAddress?.id,
@@ -810,11 +946,12 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                                 })
                             .toList(),
                         organizationId: widget.order.organizationId ?? 1,
-                        branchId: isPickup ? _selectedBranch?.id : null,
+                        branchId: _selectedBranch?.id,
                         commentToCourier: _commentController.text.isNotEmpty
                             ? _commentController.text
                             : null,
                         managerId: selectedManager != null ? int.parse(selectedManager!) : null,
+                        statusId: widget.order.orderStatus.id, // Передаем текущий statusId
                       ));
                 } else {
                   showCustomSnackBar(

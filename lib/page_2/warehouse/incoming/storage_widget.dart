@@ -24,14 +24,32 @@ class StorageWidget extends StatefulWidget {
 
 class _StorageWidgetState extends State<StorageWidget> {
   WareHouse? selectedStorageData;
+  bool _isInitialLoad = true; // ✅ Track if this is the first load
 
   @override
   void initState() {
     super.initState();
-    // ✅ ИСПРАВЛЕНИЕ: Загружаем данные только если они ещё не загружены
-    final currentState = context.read<StorageBloc>().state;
-    if (currentState is! StorageLoaded && currentState is! StorageLoading) {
-      context.read<StorageBloc>().add(FetchStorage());
+    context.read<StorageBloc>().add(FetchStorage());
+  }
+
+  @override
+  void didUpdateWidget(StorageWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selectedStorage != widget.selectedStorage) {
+      final currentState = context.read<StorageBloc>().state;
+      if (currentState is StorageLoaded) {
+        if (widget.selectedStorage != null) {
+          try {
+            selectedStorageData = currentState.storageList.firstWhere(
+                  (storage) => storage.id.toString() == widget.selectedStorage,
+            );
+          } catch (e) {
+            selectedStorageData = null;
+          }
+        } else {
+          selectedStorageData = null;
+        }
+      }
     }
   }
 
@@ -39,6 +57,13 @@ class _StorageWidgetState extends State<StorageWidget> {
   Widget build(BuildContext context) {
     return BlocListener<StorageBloc, StorageState>(
       listener: (context, state) {
+        // ✅ Mark as loaded when data arrives
+        if (state is StorageLoaded && _isInitialLoad) {
+          setState(() {
+            _isInitialLoad = false;
+          });
+        }
+
         if (state is StorageError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -68,15 +93,14 @@ class _StorageWidgetState extends State<StorageWidget> {
         builder: (context, state) {
           final isLoading = state is StorageLoading;
 
-          // Обновляем данные при успешной загрузке
           if (state is StorageLoaded) {
             List<WareHouse> storageList = state.storageList;
 
             if (widget.selectedStorage != null && storageList.isNotEmpty) {
               try {
                 selectedStorageData = storageList.firstWhere(
-                  (storage) =>
-                      storage.id.toString() == widget.selectedStorage,
+                      (storage) =>
+                  storage.id.toString() == widget.selectedStorage,
                 );
               } catch (e) {
                 selectedStorageData = null;
@@ -84,7 +108,6 @@ class _StorageWidgetState extends State<StorageWidget> {
             }
           }
 
-          // Всегда отображаем поле
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -102,7 +125,7 @@ class _StorageWidgetState extends State<StorageWidget> {
                 closeDropDownOnClearFilterSearch: true,
                 items: state is StorageLoaded ? state.storageList : [],
                 searchHintText:
-                    AppLocalizations.of(context)!.translate('search'),
+                AppLocalizations.of(context)!.translate('search'),
                 overlayHeight: 400,
                 enabled: !isLoading,
                 decoration: CustomDropdownDecoration(
@@ -213,10 +236,14 @@ class _StorageWidgetState extends State<StorageWidget> {
                 },
                 excludeSelected: false,
                 initialItem: (state is StorageLoaded &&
-                        state.storageList.contains(selectedStorageData))
+                    state.storageList.contains(selectedStorageData))
                     ? selectedStorageData
                     : null,
+                // ✅ FIX: Don't validate while data is loading or on initial load
                 validator: (value) {
+                  if (_isInitialLoad || isLoading) {
+                    return null; // Skip validation during initial load
+                  }
                   if (value == null) {
                     return AppLocalizations.of(context)!
                         .translate('field_required_project');

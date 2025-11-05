@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/expense_structure_content.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/utils/global_fun.dart';
 
 class ExpenseStructureCard extends StatelessWidget {
   final ExpenseItem expenseItem;
@@ -29,7 +30,7 @@ class ExpenseStructureCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${localizations.translate('name')}: ${expenseItem.articleName}',
+                  '${AppLocalizations.of(context)!.translate('title_without_dots') ?? 'Название'}: ${expenseItem.articleName}',
                   style: const TextStyle(
                     fontSize: 14,
                     fontFamily: 'Gilroy',
@@ -39,13 +40,13 @@ class ExpenseStructureCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '${localizations.translate('amount')}: ${expenseItem.formattedSum}',
+                  '${localizations.translate('amount')}: ${parseNumberToString(expenseItem.formattedSum)}',
                   style: const TextStyle(
-                    fontSize: 14,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w400,
-                    color: Color(0xff99A4BA),
-                  ),
+                      fontSize: 15,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xff1E2E52),
+                    ),
                 ),
               ],
             ),

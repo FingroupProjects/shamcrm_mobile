@@ -26,7 +26,7 @@ class _EventCardState extends State<EventCard> {
     }
     try {
       DateTime dateTime = DateTime.parse(dateString);
-      return DateFormat('dd.MM.yyyy').format(dateTime);
+      return DateFormat('dd.MM.yyyy HH:mm').format(dateTime);
     } catch (e) {
       return AppLocalizations.of(context)!.translate('Invalid_date_format');
     }
@@ -276,7 +276,28 @@ class _EventCardState extends State<EventCard> {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  ' ${formatDate(widget.event.date?.toString())}',
+                  ' ${formatDate(widget.event.createdAt.toString())}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xff99A4BA),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 5),
+            if (widget.event.date != null)  const SizedBox(height: 5),
+            if (widget.event.date != null) Row(
+              children: [
+                // Image.asset(
+                //   'assets/icons/tabBar/date.png',
+                //   width: 17,
+                //   height: 17,
+                // ),
+                // const SizedBox(width: 4),
+                Text(
+                  '${AppLocalizations.of(context)?.translate('reminder_date') ?? 'Напоминание'}: ${formatDate(widget.event.date?.toString())}',
                   style: const TextStyle(
                     fontSize: 12,
                     fontFamily: 'Gilroy',

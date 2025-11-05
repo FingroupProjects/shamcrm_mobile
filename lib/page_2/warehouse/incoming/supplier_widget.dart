@@ -19,6 +19,7 @@ class SupplierWidget extends StatefulWidget {
 
 class _SupplierWidgetState extends State<SupplierWidget> {
   Supplier? selectedSupplierData;
+  bool _isInitialLoad = true; // ✅ Track if this is the first load
 
   @override
   void initState() {
@@ -30,6 +31,13 @@ class _SupplierWidgetState extends State<SupplierWidget> {
   Widget build(BuildContext context) {
     return BlocListener<SupplierBloc, SupplierState>(
       listener: (context, state) {
+        // ✅ Mark as loaded when data arrives
+        if (state is SupplierLoaded && _isInitialLoad) {
+          setState(() {
+            _isInitialLoad = false;
+          });
+        }
+
         if (state is SupplierError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -58,16 +66,15 @@ class _SupplierWidgetState extends State<SupplierWidget> {
       child: BlocBuilder<SupplierBloc, SupplierState>(
         builder: (context, state) {
           final isLoading = state is SupplierLoading;
-          
-          // Обновляем данные при успешной загрузке
+
           if (state is SupplierLoaded) {
             List<Supplier> supplierList = state.supplierList;
 
             if (widget.selectedSupplier != null && supplierList.isNotEmpty) {
               try {
                 selectedSupplierData = supplierList.firstWhere(
-                  (supplier) =>
-                      supplier.id.toString() == widget.selectedSupplier,
+                      (supplier) =>
+                  supplier.id.toString() == widget.selectedSupplier,
                 );
               } catch (e) {
                 selectedSupplierData = null;
@@ -75,7 +82,6 @@ class _SupplierWidgetState extends State<SupplierWidget> {
             }
           }
 
-          // Всегда отображаем поле
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -94,9 +100,9 @@ class _SupplierWidgetState extends State<SupplierWidget> {
                   closeDropDownOnClearFilterSearch: true,
                   items: state is SupplierLoaded ? state.supplierList : [],
                   searchHintText:
-                      AppLocalizations.of(context)!.translate('search'),
+                  AppLocalizations.of(context)!.translate('search'),
                   overlayHeight: 400,
-                  enabled: !isLoading, // ← Блокируем при загрузке
+                  enabled: !isLoading,
                   decoration: CustomDropdownDecoration(
                     closedFillColor: Color(0xffF4F7FD),
                     expandedFillColor: Colors.white,
@@ -141,7 +147,6 @@ class _SupplierWidgetState extends State<SupplierWidget> {
                     );
                   },
                   headerBuilder: (context, selectedItem, enabled) {
-                    // ← Показываем загрузку в центре закрытого поля
                     if (isLoading) {
                       return const Center(
                         child: SizedBox(
@@ -154,7 +159,7 @@ class _SupplierWidgetState extends State<SupplierWidget> {
                         ),
                       );
                     }
-                    
+
                     return Text(
                       selectedItem?.name ??
                           AppLocalizations.of(context)!
@@ -168,7 +173,6 @@ class _SupplierWidgetState extends State<SupplierWidget> {
                     );
                   },
                   hintBuilder: (context, hint, enabled) {
-                    // ← Показываем загрузку когда ничего не выбрано
                     if (isLoading) {
                       return const Center(
                         child: SizedBox(
@@ -181,7 +185,7 @@ class _SupplierWidgetState extends State<SupplierWidget> {
                         ),
                       );
                     }
-                    
+
                     return Text(
                       AppLocalizations.of(context)!.translate('select_supplier'),
                       style: TextStyle(
@@ -192,7 +196,6 @@ class _SupplierWidgetState extends State<SupplierWidget> {
                       ),
                     );
                   },
-                  // ← Показываем загрузку в открытом списке
                   noResultFoundBuilder: (context, text) {
                     if (isLoading) {
                       return const Center(
@@ -221,10 +224,14 @@ class _SupplierWidgetState extends State<SupplierWidget> {
                   },
                   excludeSelected: false,
                   initialItem: (state is SupplierLoaded &&
-                          state.supplierList.contains(selectedSupplierData))
+                      state.supplierList.contains(selectedSupplierData))
                       ? selectedSupplierData
                       : null,
+                  // ✅ FIX: Don't validate while data is loading or on initial load
                   validator: (value) {
+                    if (_isInitialLoad || isLoading) {
+                      return null; // Skip validation during initial load
+                    }
                     if (value == null) {
                       return AppLocalizations.of(context)!.translate('field_required_project');
                     }

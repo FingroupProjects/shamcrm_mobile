@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/order_quantity_content.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/utils/global_fun.dart';
 
 class OrderQuantityCard extends StatelessWidget {
   final ChartDataContent chartData;
@@ -29,7 +30,7 @@ class OrderQuantityCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${localizations.translate('name')}: ${chartData.name}',
+                  '${localizations.translate('status')}: ${chartData.name}',
                   style: const TextStyle(
                     fontSize: 14,
                     fontFamily: 'Gilroy',
@@ -39,13 +40,13 @@ class OrderQuantityCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '${localizations.translate('quantity')}: ${chartData.amount}',
+                  '${localizations.translate('quantity')}: ${parseNumberToString(chartData.amount)}',
                   style: const TextStyle(
-                    fontSize: 14,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w400,
-                    color: Color(0xff99A4BA),
-                  ),
+                      fontSize: 15,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xff1E2E52),
+                    ),
                 ),
               ],
             ),

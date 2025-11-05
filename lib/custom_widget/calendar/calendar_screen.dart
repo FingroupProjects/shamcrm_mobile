@@ -126,52 +126,81 @@ void _changeView(String view) {
     );
   }
 
-  void _handleEventTap(int id, String type) {
-    switch (type) {
-      case 'task':
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => TaskDetailsScreen(
-              taskId: id.toString(),
-              taskName: '',
-              taskStatus: '',
-              statusId: 1,
-              taskNumber: 0,
-              taskCustomFields: [],
-            ),
-          ),
-        );
+ void _handleEventTap(int id, String type) {
+  // Находим событие по ID из всех событий
+  CalendarEventData? event;
+  
+  print('🔍 Ищем событие: id=$id, type=$type');
+  print('📋 Всего дат с событиями: ${_events.length}');
+  
+  // Ищем событие в _events
+  for (var eventList in _events.values) {
+    print('  📦 Список событий, длина: ${eventList.length}');
+    for (var e in eventList) {
+      print('    🎯 Событие: id=${e.id}, type=${e.type}, title="${e.title}"');
+      if (e.id == id && e.type == type) {
+        event = e;
+        print('✅ Найдено событие: "${e.title}"');
         break;
-      case 'my_task':
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => MyTaskDetailsScreen(
-              taskId: id.toString(),
-              taskName: '',
-              taskStatus: '',
-              statusId: 0,
-              taskNumber: 0,
-            ),
-          ),
-        );
-        break;
-      case 'notice':
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => EventDetailsScreen(
-              noticeId: id,
-              initialDate: _selectedDate,
-            ),
-          ),
-        );
-        break;
-      default:
-        break;
+      }
     }
+    if (event != null) break;
   }
+  
+  if (event == null) {
+    print('❌ Событие НЕ найдено!');
+  }
+  
+  switch (type) {
+    case 'task':
+      print('🚀 Переход в TaskDetailsScreen с taskName: "${event?.title ?? ''}"');
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => TaskDetailsScreen(
+            taskId: id.toString(),
+            taskName: event?.title ?? '',
+            taskStatus: '',
+            statusId: 1,
+            taskNumber: 0,
+            taskCustomFields: [],
+            initialDate: _selectedDate,
+          ),
+        ),
+      );
+      break;
+      
+    case 'my_task':
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => MyTaskDetailsScreen(
+            taskId: id.toString(),
+            taskName: event?.title ?? '',
+            taskStatus: '',
+            statusId: 0,
+            taskNumber: 0,
+          ),
+        ),
+      );
+      break;
+      
+    case 'notice':
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => EventDetailsScreen(
+            noticeId: id,
+            initialDate: _selectedDate,
+          ),
+        ),
+      );
+      break;
+      
+    default:
+      break;
+  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -283,40 +312,41 @@ void _changeView(String view) {
         ],
       ),
       body: BlocConsumer<CalendarBloc, CalendarBlocState>(
-        listener: (context, state) {
-          if (state is CalendarLoaded) {
-            setState(() {
-              _events.clear();
-              _filteredDates.clear();
+  listener: (context, state) {
+    if (state is CalendarLoaded) {
+      setState(() {
+        _events.clear();
+        _filteredDates.clear();
 
-              for (var event in state.events) {
-                final eventDate = DateTime(event.date.year, event.date.month, event.date.day);
-                _events[eventDate] = _events[eventDate] ?? [];
-                _events[eventDate]!.add(
-                  CalendarEventData(
-                    id: event.id,
-                    title: event.name,
-                    date: event.date,
-                    startTime: event.date,
-                    endTime: event.date.add(const Duration(hours: 1)),
-                    color: CalendarUtils.getEventColor(event.type),
-                    type: event.type,
-                    isFinished: event.isFinished,
-                  ),
-                );
-                if (_searchController.text.isNotEmpty || _selectedTypes.isNotEmpty || _selectedUsers.isNotEmpty) {
-                  _filteredDates.add(eventDate);
-                }
-              }
-            });
-          } else if (state is CalendarError) {
-            showCustomSnackBar(
-              context: context,
-              message: AppLocalizations.of(context)!.translate(state.message),
-              isSuccess: false,
-            );
+        print('📅 Загружено событий: ${state.events.length}');
+
+        for (var event in state.events) {
+          final eventDate = DateTime(event.date.year, event.date.month, event.date.day);
+          _events[eventDate] = _events[eventDate] ?? [];
+          _events[eventDate]!.add(
+            CalendarEventData(
+              id: event.id,
+              title: event.name,  // ← Проверьте, что event.name не пустое
+              date: event.date,
+              startTime: event.date,
+              endTime: event.date.add(const Duration(hours: 1)),
+              color: CalendarUtils.getEventColor(event.type),
+              type: event.type,
+              isFinished: event.isFinished,
+            ),
+          );
+          
+          print('  ✏️ Добавлено: id=${event.id}, name="${event.name}", type=${event.type}');
+          
+          if (_searchController.text.isNotEmpty || _selectedTypes.isNotEmpty || _selectedUsers.isNotEmpty) {
+            _filteredDates.add(eventDate);
           }
-        },
+        }
+        
+        print('📊 Итого в _events: ${_events.length} дат');
+      });
+    }
+  },
         builder: (context, state) {
           if (state is CalendarLoading) {
             return const Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));

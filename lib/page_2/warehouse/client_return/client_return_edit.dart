@@ -12,6 +12,7 @@ import 'package:crm_task_manager/page_2/widgets/confirm_exit_dialog.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/storage_widget.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -85,22 +86,31 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
         name: widget.document.model!.name ?? '',
       );
     }
-
     if (widget.document.documentGoods != null) {
       for (var good in widget.document.documentGoods!) {
         final variantId = good.variantId ?? good.good?.id ?? 0;
         final quantity = good.quantity ?? 0;
         final price = double.tryParse(good.price ?? '0') ?? 0.0;
 
-        // ✅ NEW: Try multiple sources for units
-        final availableUnits = good.good?.units ?? 
-                              (good.unit != null ? [good.unit!] : []);
-        
-        // ✅ NEW: Get selected unit from document_goods level first
-        final selectedUnitObj = good.unit ?? 
-                               (availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: 'шт'));
+        final availableUnits = good.good?.units ?? (good.unit != null ? [good.unit!] : []);
+        Unit? selectedUnitObj;
+        double amount = 1.0; // USE 1 for amount DO NOT USE good.amount directly
 
-        final amount = selectedUnitObj.amount ?? 1;
+        // if (good.good?.units != null && good.unitId != null) {
+        //   // Search in good.good.units array for matching unit
+        //   for (var unit in good.good!.units!) {
+        //     if (unit.id == good.unitId) {
+        //       selectedUnitObj = unit;
+        //       amount = (unit.amount != null)
+        //           ? double.tryParse(unit.amount.toString()) ?? 1.0
+        //           : 1.0;
+        //       break;
+        //     }
+        //   }
+        // }
+        // Fallback if not found
+        selectedUnitObj ??= good.unit ?? (availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: 'шт'));
+        debugPrint("amount of unit '${selectedUnitObj.name}': $amount");
 
         _items.add({
           'id': good.good?.id ?? 0,
@@ -115,7 +125,7 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
           'availableUnits': availableUnits,
         });
 
-        _priceControllers[variantId] = TextEditingController(text: price.toStringAsFixed(3));
+        _priceControllers[variantId] = TextEditingController(text: parseNumberToString(price * amount));
         _quantityControllers[variantId] = TextEditingController(text: quantity.toString());
 
         // ✅ НОВОЕ: Создаём FocusNode для существующих товаров
@@ -140,20 +150,25 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
             _collapsedItems[variantId] = true;
           }
 
-          _items.add(newItem);
+          // ✅ Don't use the price from newItem - let user enter it
+          final modifiedItem = Map<String, dynamic>.from(newItem);
+          modifiedItem['price'] = 0.0; // Set to 0 instead of using default price
+          modifiedItem.remove('quantity');
+
+          _items.add(modifiedItem);
 
           final variantId = newItem['variantId'] as int;
 
-          final initialPrice = newItem['price'] ?? 0.0;
-          _priceControllers[variantId] = TextEditingController(
-              text: initialPrice > 0 ? initialPrice.toStringAsFixed(3) : '');
+          // ✅ Initialize price controller with empty string (no default price)
+          _priceControllers[variantId] = TextEditingController(text: '');
 
           _quantityControllers[variantId] = TextEditingController(text: '');
 
           _quantityFocusNodes[variantId] = FocusNode();
           _priceFocusNodes[variantId] = FocusNode();
 
-          _items.last['price'] = initialPrice;
+          // ✅ Set price to 0 in the item
+          _items.last['price'] = 0.0;
 
           _priceErrors[variantId] = false;
           _quantityErrors[variantId] = false;
@@ -162,7 +177,6 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
 
           if (!newItem.containsKey('amount')) {
             _items.last['amount'] = 1;
-            _items.last['price'] = initialPrice;
           }
 
           _listKey.currentState?.insertItem(
@@ -181,6 +195,90 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
               _quantityFocusNodes[variantId]?.requestFocus();
             }
           });
+        }
+      });
+    }
+  }
+
+  void _updateItemUnit(int variantId, String newUnit, int? newUnitId) {
+    setState(() {
+      final index = _items.indexWhere((item) => item['variantId'] == variantId);
+      if (index != -1) {
+        _items[index]['selectedUnit'] = newUnit;
+        _items[index]['unit_id'] = newUnitId;
+
+        final availableUnits = _items[index]['availableUnits'] as List<Unit>? ?? [];
+        final selectedUnitObj = availableUnits.firstWhere(
+              (unit) => (unit.name) == newUnit,
+          orElse: () => availableUnits.isNotEmpty
+              ? availableUnits.first
+              : Unit(id: null, name: '', amount: 1),
+        );
+
+        final newAmount = selectedUnitObj.amount ?? 1;
+        _items[index]['amount'] = newAmount;
+
+        // ✅ Get the current price from the controller (user input)
+        final priceController = _priceControllers[variantId];
+        final currentDisplayPrice = double.tryParse(priceController?.text ?? '0') ?? 0.0;
+
+        // ✅ Update price in item
+        _items[index]['price'] = currentDisplayPrice;
+
+        // ✅ Recalculate total WITHOUT amount: quantity * price
+        final quantity = _items[index]['quantity'] ?? 0;
+        _items[index]['total'] = (quantity * currentDisplayPrice).round();
+      }
+    });
+  }
+
+  void _updateItemPrice(int variantId, String value) {
+    final inputPrice = double.tryParse(value);
+    if (inputPrice != null && inputPrice >= 0) {
+      setState(() {
+        final index = _items.indexWhere((item) => item['variantId'] == variantId);
+        if (index != -1) {
+          // ✅ Store the price as entered
+          _items[index]['price'] = inputPrice;
+
+          // ✅ Calculate total WITHOUT amount: quantity * price
+          final quantity = _items[index]['quantity'] ?? 0;
+          _items[index]['total'] = (quantity * inputPrice).round();
+        }
+        _priceErrors[variantId] = false;
+      });
+    } else if (value.isEmpty) {
+      setState(() {
+        final index = _items.indexWhere((item) => item['variantId'] == variantId);
+        if (index != -1) {
+          _items[index]['price'] = 0.0;
+          _items[index]['total'] = 0.0;
+        }
+      });
+    }
+  }
+
+  void _updateItemQuantity(int variantId, String value) {
+    final quantity = int.tryParse(value);
+    if (quantity != null && quantity > 0) {
+      setState(() {
+        final index = _items.indexWhere((item) => item['variantId'] == variantId);
+        if (index != -1) {
+          _items[index]['quantity'] = quantity;
+          final price = _items[index]['price'] ?? 0.0;
+
+          // ✅ Total WITHOUT amount: quantity * price
+          _items[index]['total'] = (quantity * price).round();
+        }
+        _quantityErrors[variantId] = false;
+      });
+    } else if (value.isEmpty) {
+      setState(() {
+        final index = _items.indexWhere((item) => item['variantId'] == variantId);
+        if (index != -1) {
+          // ✅ Remove quantity from item
+          _items[index].remove('quantity');
+          _items[index]['total'] = 0.0;
         }
       });
     }
@@ -253,6 +351,7 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
       backgroundColor: Colors.transparent,
       builder: (context) => VariantSelectionBottomSheet(
         existingItems: _items,
+        isService: false,
       ),
     );
 
@@ -268,72 +367,6 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
     }
   }
 
-  void _updateItemQuantity(int variantId, String value) {
-    final quantity = int.tryParse(value);
-    if (quantity != null && quantity > 0) {
-      setState(() {
-        final index = _items.indexWhere((item) => item['variantId'] == variantId);
-        if (index != -1) {
-          _items[index]['quantity'] = quantity;
-          final amount = _items[index]['amount'] ?? 1;
-          _items[index]['total'] = (_items[index]['quantity'] * _items[index]['price'] * amount).round();
-        }
-        _quantityErrors[variantId] = false;
-      });
-    } else if (value.isEmpty) {
-      setState(() {
-        final index = _items.indexWhere((item) => item['variantId'] == variantId);
-        if (index != -1) {
-          _items[index]['quantity'] = 0;
-          _items[index]['total'] = 0.0;
-        }
-      });
-    }
-  }
-
-  void _updateItemPrice(int variantId, String value) {
-    final price = double.tryParse(value);
-    if (price != null && price >= 0) {
-      setState(() {
-        final index = _items.indexWhere((item) => item['variantId'] == variantId);
-        if (index != -1) {
-          _items[index]['price'] = price;
-          final amount = _items[index]['amount'] ?? 1;
-          _items[index]['total'] = (_items[index]['quantity'] * _items[index]['price'] * amount).round();
-        }
-        _priceErrors[variantId] = false;
-      });
-    } else if (value.isEmpty) {
-      setState(() {
-        final index = _items.indexWhere((item) => item['variantId'] == variantId);
-        if (index != -1) {
-          _items[index]['price'] = 0.0;
-          _items[index]['total'] = 0.0;
-        }
-      });
-    }
-  }
-
-  void _updateItemUnit(int variantId, String newUnit, int? newUnitId) {
-    setState(() {
-      final index = _items.indexWhere((item) => item['variantId'] == variantId);
-      if (index != -1) {
-        _items[index]['selectedUnit'] = newUnit;
-        _items[index]['unit_id'] = newUnitId;
-
-        final availableUnits = _items[index]['availableUnits'] as List<Unit>? ?? [];
-        final selectedUnitObj = availableUnits.firstWhere(
-              (unit) => (unit.name) == newUnit,
-          orElse: () => availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: '', amount: 1),
-        );
-
-        _items[index]['amount'] = selectedUnitObj.amount ?? 1;
-
-        final amount = _items[index]['amount'] ?? 1;
-        _items[index]['total'] = (_items[index]['quantity'] * _items[index]['price'] * amount).round();
-      }
-    });
-  }
 
   // ✅ НОВОЕ: Функция для перехода к следующему пустому полю
   void _moveToNextEmptyField() {
@@ -902,7 +935,7 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
                   const SizedBox(width: 8),
                   if (availableUnits.isNotEmpty)
                     Expanded(
-                      flex: 25,
+                      flex: 20,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [

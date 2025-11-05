@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/net_profit_content_model.dart';
-import 'package:intl/intl.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/utils/global_fun.dart';
 
 class NetProfitCard extends StatelessWidget {
   final MonthData monthData;
@@ -10,11 +10,6 @@ class NetProfitCard extends StatelessWidget {
     Key? key,
     required this.monthData,
   }) : super(key: key);
-
-  String _formatAmount(String amount) {
-    double amountValue = double.tryParse(amount.replaceAll(' ', '')) ?? 0.0;
-    return NumberFormat('#,##0.00', 'ru_RU').format(amountValue);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +30,7 @@ class NetProfitCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${localizations.translate('month')}: ${monthData.monthName}',
+                  monthData.monthName,
                   style: const TextStyle(
                     fontSize: 14,
                     fontFamily: 'Gilroy',
@@ -45,12 +40,12 @@ class NetProfitCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '${localizations.translate('profit')}: ${_formatAmount(monthData.netProfit)}',
+                  '${localizations.translate('profit')}${parseNumberToString(monthData.netProfit)}',
                   style: const TextStyle(
                     fontSize: 14,
                     fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w400,
-                    color: Color(0xff99A4BA),
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff1E2E52),
                   ),
                 ),
               ],

@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/page_2/warehouse/supplier_return_document/supplier_return_document_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -167,6 +168,32 @@ class _SupplierReturnCardState extends State<SupplierReturnCard> {
                 fontWeight: FontWeight.w400,
                 color: Color(0xff99A4BA),
               ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '${localizations.translate('author') ?? 'Автор'}: ${doc.author?.name ?? 'N/A'}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w400,
+                      color: Color(0xff99A4BA),
+                    ),
+                  ),
+                ),
+                // show price from documentGoods
+                Text(
+                  '${localizations.translate('total') ?? 'Итого'} ${parseNumberToString(doc.totalSum.toStringAsFixed(2))}',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff1E2E52),
+                  ),
+                ),
+              ],
             ),
             if (doc.comment != null && doc.comment!.isNotEmpty)
               Padding(

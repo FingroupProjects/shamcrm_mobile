@@ -18,7 +18,7 @@ class ErrorInterceptor {
     try {
       return await apiCall();
     } catch (e) {
-      print('ErrorInterceptor: Caught API error: $e');
+      //print('ErrorInterceptor: Caught API error: $e');
       
       if (redirectOnError && _shouldRedirectToAuth(e)) {
         await _forceRedirectToAuth();
@@ -46,7 +46,7 @@ class ErrorInterceptor {
   // Принудительное перенаправление на экран авторизации
   static Future<void> _forceRedirectToAuth() async {
     try {
-      print('ErrorInterceptor: Forcing redirect to auth');
+      //print('ErrorInterceptor: Forcing redirect to auth');
       
       if (_apiService != null) {
         await _apiService!.logout();
@@ -61,7 +61,7 @@ class ErrorInterceptor {
         );
       }
     } catch (e) {
-      print('ErrorInterceptor: Error in force redirect: $e');
+      //print('ErrorInterceptor: Error in force redirect: $e');
     }
   }
 
@@ -133,7 +133,7 @@ class ErrorInterceptor {
       
       return true;
     } catch (e) {
-      print('ErrorInterceptor: Health check failed: $e');
+      //print('ErrorInterceptor: Health check failed: $e');
       return false;
     }
   }
@@ -154,7 +154,7 @@ extension ApiServiceErrorHandling on ApiService {
       );
       return result ?? false;
     } catch (e) {
-      print('ApiService: Safe bool operation failed: $e');
+      //print('ApiService: Safe bool operation failed: $e');
       return false;
     }
   }
@@ -167,7 +167,7 @@ extension ApiServiceErrorHandling on ApiService {
         redirectOnError: false,
       );
     } catch (e) {
-      print('ApiService: Safe string operation failed: $e');
+      //print('ApiService: Safe string operation failed: $e');
       return null;
     }
   }

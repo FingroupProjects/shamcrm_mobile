@@ -1,15 +1,12 @@
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/bloc/field_configuration/field_configuration_bloc.dart';
-import 'package:crm_task_manager/bloc/field_configuration/field_configuration_event.dart';
-import 'package:crm_task_manager/bloc/field_configuration/field_configuration_state.dart';
 import 'package:crm_task_manager/bloc/main_field/main_field_bloc.dart';
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/project_task/project_task_bloc.dart';
 import 'package:crm_task_manager/bloc/project_task/project_task_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_withPriority.dart';
-import 'package:crm_task_manager/models/field_configuration.dart';
+import 'package:crm_task_manager/custom_widget/file_picker_dialog.dart';
 import 'package:crm_task_manager/models/project_task_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
@@ -21,11 +18,11 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_details/main_field_dro
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_details/project_list_task.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
+import 'package:crm_task_manager/models/directory_model.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:crm_task_manager/bloc/user/user_bloc.dart';
 import 'package:crm_task_manager/bloc/user/user_event.dart';
 import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
@@ -54,10 +51,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   final TextEditingController endDateController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
 
-  // Конфигурация полей
-  List<FieldConfiguration> fieldConfigurations = [];
-  bool isConfigurationLoaded = false;
-
   List<String> selectedFiles = [];
   List<String> fileNames = [];
   List<String> fileSizes = [];
@@ -75,14 +68,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   @override
   void initState() {
     super.initState();
-    
-    // Загружаем конфигурацию после build
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _loadFieldConfiguration();
-      }
-    });
-    
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     context.read<GetTaskProjectBloc>().add(GetTaskProjectEv());
     context.read<UserTaskBloc>().add(FetchUsers());
@@ -104,15 +89,15 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
       ]);
 
       setState(() {
-        _hasTaskCreatePermission = results[0];
-        _hasTaskCreateForMySelfPermission = results[1];
+        _hasTaskCreatePermission = results[0] as bool;
+        _hasTaskCreateForMySelfPermission = results[1] as bool;
         _currentUserId = userIdString != null ? int.tryParse(userIdString) : null;
       });
 
       // Логируем для отладки
-      print('TaskAddScreen: Permissions - task.create: $_hasTaskCreatePermission, task.createForMySelf: $_hasTaskCreateForMySelfPermission, userID: $_currentUserId');
+      //print('TaskAddScreen: Permissions - task.create: $_hasTaskCreatePermission, task.createForMySelf: $_hasTaskCreateForMySelfPermission, userID: $_currentUserId');
     } catch (e) {
-      print('TaskAddScreen: Ошибка при проверке разрешений или получении userID: $e');
+      //print('TaskAddScreen: Ошибка при проверке разрешений или получении userID: $e');
       setState(() {
         _hasTaskCreatePermission = false;
         _hasTaskCreateForMySelfPermission = false;
@@ -151,7 +136,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
         });
       }
     } catch (e) {
-      print('TaskAddScreen: Error fetching custom fields: $e');
+      //print('TaskAddScreen: Error fetching custom fields: $e');
     }
   }
 
@@ -159,95 +144,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     selectedPriority = 1;
     final now = DateTime.now();
     startDateController.text = DateFormat('dd/MM/yyyy').format(now);
-  }
-
-  Future<void> _loadFieldConfiguration() async {
-    if (kDebugMode) {
-      print('TaskAddScreen: Loading field configuration');
-    }
-    
-    if (mounted) {
-      context.read<FieldConfigurationBloc>().add(
-        FetchFieldConfiguration('tasks')
-      );
-    }
-  }
-
-  Widget _buildFieldWidget(FieldConfiguration config) {
-    switch (config.fieldName) {
-      case 'name':
-        return CustomTextFieldWithPriority(
-          controller: nameController,
-          hintText: AppLocalizations.of(context)!.translate('enter_title'),
-          label: AppLocalizations.of(context)!.translate('event_name'),
-          showPriority: true,
-          isPrioritySelected: selectedPriority == 3,
-          onPriorityChanged: (bool? value) {
-            setState(() {
-              selectedPriority = value == true ? 3 : 1;
-            });
-          },
-          priorityText: AppLocalizations.of(context)!.translate('urgent'),
-          validator: config.required ? (value) {
-            if (value == null || value.isEmpty) {
-              return AppLocalizations.of(context)!.translate('field_required');
-            }
-            return null;
-          } : null,
-        );
-        
-      case 'description':
-        return CustomTextField(
-          controller: descriptionController,
-          hintText: AppLocalizations.of(context)!.translate('enter_description'),
-          label: AppLocalizations.of(context)!.translate('description_list'),
-          maxLines: 5,
-          keyboardType: TextInputType.multiline,
-        );
-        
-      case 'user_id':
-        // Условно отображаем UserMultiSelectWidget
-        if (_hasTaskCreatePermission || !_hasTaskCreateForMySelfPermission) {
-          return UserMultiSelectWidget(
-            selectedUsers: selectedUsers,
-            onSelectUsers: (List<UserData> selectedUsersData) {
-              setState(() {
-                selectedUsers = selectedUsersData.map((user) => user.id.toString()).toList();
-              });
-            },
-          );
-        }
-        return SizedBox.shrink();
-        
-      case 'project_id':
-        return ProjectTaskGroupWidget(
-          selectedProject: selectedProject,
-          onSelectProject: (ProjectTask selectedProjectData) {
-            setState(() {
-              selectedProject = selectedProjectData.id.toString();
-            });
-          },
-        );
-        
-      case 'end_date':
-        return CustomTextFieldDate(
-          controller: endDateController,
-          label: AppLocalizations.of(context)!.translate('deadline'),
-          hasError: isEndDateInvalid,
-          validator: config.required ? (value) {
-            if (value == null || value.isEmpty) {
-              return AppLocalizations.of(context)!.translate('field_required');
-            }
-            return null;
-          } : null,
-        );
-        
-      default:
-        if (kDebugMode) {
-          print('TaskAddScreen: Unknown field: ${config.fieldName}');
-        }
-        return SizedBox.shrink();
-    }
   }
 
   void _addCustomField(String fieldName, {bool isDirectory = false, int? directoryId, String? type}) {
@@ -331,181 +227,226 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     });
   }
 
-  Widget _buildFileSelection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          AppLocalizations.of(context)!.translate('file'),
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
-          ),
+Widget _buildFileSelection() {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        AppLocalizations.of(context)!.translate('file'),
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+          fontFamily: 'Gilroy',
+          color: Color(0xff1E2E52),
         ),
-        SizedBox(height: 16),
-        Container(
-          height: 120,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: fileNames.isEmpty ? 1 : fileNames.length + 1,
-            itemBuilder: (context, index) {
-              if (fileNames.isEmpty || index == fileNames.length) {
-                return Padding(
-                  padding: EdgeInsets.only(right: 16),
-                  child: GestureDetector(
-                    onTap: _pickFile,
-                    child: Container(
-                      width: 100,
-                      child: Column(
-                        children: [
-                          Image.asset(
-                            'assets/icons/files/add.png',
-                            width: 60,
-                            height: 60,
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            AppLocalizations.of(context)!.translate('add_file'),
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontFamily: 'Gilroy',
-                              color: Color(0xff1E2E52),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              }
-
-              final fileName = fileNames[index];
-              final fileExtension = fileName.split('.').last.toLowerCase();
+      ),
+      SizedBox(height: 16),
+      Container(
+        height: 120,
+        child: ListView.builder(
+          scrollDirection: Axis.horizontal,
+          itemCount: fileNames.isEmpty ? 1 : fileNames.length + 1,
+          itemBuilder: (context, index) {
+            if (fileNames.isEmpty || index == fileNames.length) {
               return Padding(
                 padding: EdgeInsets.only(right: 16),
-                child: Stack(
-                  children: [
-                    Container(
-                      width: 100,
-                      child: Column(
-                        children: [
-                          Image.asset(
-                            'assets/icons/files/$fileExtension.png',
-                            width: 60,
-                            height: 60,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Image.asset(
-                                'assets/icons/files/file.png',
-                                width: 60,
-                                height: 60,
-                              );
-                            },
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            fileName,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontFamily: 'Gilroy',
-                              color: Color(0xff1E2E52),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Positioned(
-                      right: -2,
-                      top: -6,
-                      child: GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            selectedFiles.removeAt(index);
-                            fileNames.removeAt(index);
-                            fileSizes.removeAt(index);
-                          });
-                        },
-                        child: Container(
-                          padding: EdgeInsets.all(4),
-                          child: Icon(
-                            Icons.close,
-                            size: 16,
+                child: GestureDetector(
+                  onTap: _pickFile,
+                  child: Container(
+                    width: 100,
+                    child: Column(
+                      children: [
+                        Image.asset('assets/icons/files/add.png', width: 60, height: 60),
+                        SizedBox(height: 8),
+                        Text(
+                          AppLocalizations.of(context)!.translate('add_file'),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontFamily: 'Gilroy',
                             color: Color(0xff1E2E52),
                           ),
                         ),
-                      ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               );
-            },
-          ),
+            }
+            
+            final fileName = fileNames[index];
+            final fileExtension = fileName.split('.').last.toLowerCase();
+            
+            return Padding(
+              padding: EdgeInsets.only(right: 16),
+              child: Stack(
+                children: [
+                  Container(
+                    width: 100,
+                    child: Column(
+                      children: [
+                        // ✅ КРИТИЧЕСКИ ВАЖНО: Передаем INDEX, а не fileName!
+                        _buildFileIcon(index, fileExtension),
+                        SizedBox(height: 8),
+                        Text(
+                          fileName,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontFamily: 'Gilroy',
+                            color: Color(0xff1E2E52),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Positioned(
+                    right: -2,
+                    top: -6,
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          // Для deal_edit и других *_edit файлов:
+                          // ДОБАВЬТЕ проверку на existingFiles!
+                          // (см. отдельный блок ниже)
+                          
+                          selectedFiles.removeAt(index);
+                          fileNames.removeAt(index);
+                          fileSizes.removeAt(index);
+                        });
+                      },
+                      child: Container(
+                        padding: EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 4,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Icon(Icons.close, size: 16, color: Color(0xff1E2E52)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
         ),
-      ],
+      ),
+    ],
+  );
+}
+
+
+// ==========================================
+// НОВЫЙ ВСПОМОГАТЕЛЬНЫЙ МЕТОД
+// Добавьте этот метод в класс _DealAddScreenState
+// ==========================================
+
+/// Строит иконку файла или превью изображения
+Widget _buildFileIcon(int index, String fileExtension) {
+  // ✅ ВАЖНО: Проверка валидности индекса!
+  if (index < 0 || index >= selectedFiles.length) {
+    return Image.asset(
+      'assets/icons/files/file.png',
+      width: 60,
+      height: 60,
     );
   }
 
-  Future<void> _pickFile() async {
-    try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(allowMultiple: true);
-      if (result != null) {
-        double totalSize = selectedFiles.fold<double>(
-          0.0,
-          (sum, file) => sum + File(file).lengthSync() / (1024 * 1024),
-        );
-
-        double newFilesSize = result.files.fold<double>(
-          0.0,
-          (sum, file) => sum + file.size / (1024 * 1024),
-        );
-
-        if (totalSize + newFilesSize > 50) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                AppLocalizations.of(context)!.translate('file_size_too_large'),
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              backgroundColor: Colors.red,
-              elevation: 3,
-              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              duration: Duration(seconds: 3),
-            ),
+  final imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'heic', 'heif'];
+  
+  if (imageExtensions.contains(fileExtension)) {
+    // ✅ ИСПРАВЛЕНИЕ: Используем index напрямую, БЕЗ indexOf()!
+    final filePath = selectedFiles[index];
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: Image.file(
+        File(filePath),
+        width: 60,
+        height: 60,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Image.asset(
+            'assets/icons/files/file.png',
+            width: 60,
+            height: 60,
           );
-          return;
-        }
+        },
+      ),
+    );
+  } else {
+    return Image.asset(
+      'assets/icons/files/$fileExtension.png',
+      width: 60,
+      height: 60,
+      errorBuilder: (context, error, stackTrace) {
+        return Image.asset(
+          'assets/icons/files/file.png',
+          width: 60,
+          height: 60,
+        );
+      },
+    );
+  }
+}
 
-        setState(() {
-          for (var file in result.files) {
-            selectedFiles.add(file.path!);
-            fileNames.add(file.name);
-            fileSizes.add('${(file.size / 1024).toStringAsFixed(3)}KB');
-          }
-        });
+
+ Future<void> _pickFile() async {
+  // Вычисляем текущий общий размер файлов
+  double totalSize = selectedFiles.fold<double>(
+    0.0,
+    (sum, file) => sum + File(file).lengthSync() / (1024 * 1024),
+  );
+
+  // Показываем диалог выбора типа файла
+  final List<PickedFileInfo>? pickedFiles = await FilePickerDialog.show(
+    context: context,
+    allowMultiple: true,
+    maxSizeMB: 50.0,
+    currentTotalSizeMB: totalSize,
+    fileLabel: AppLocalizations.of(context)!.translate('file'),
+    galleryLabel: AppLocalizations.of(context)!.translate('gallery'),
+    cameraLabel: AppLocalizations.of(context)!.translate('camera'),
+    cancelLabel: AppLocalizations.of(context)!.translate('cancel'),
+    fileSizeTooLargeMessage: AppLocalizations.of(context)!.translate('file_size_too_large'),
+    errorPickingFileMessage: AppLocalizations.of(context)!.translate('error_picking_file'),
+  );
+
+  // Если файлы выбраны, добавляем их
+  if (pickedFiles != null && pickedFiles.isNotEmpty) {
+    setState(() {
+      for (var file in pickedFiles) {
+        selectedFiles.add(file.path);
+        fileNames.add(file.name);
+        fileSizes.add(file.sizeKB);
       }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Ошибка при выборе файла!"),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
+    });
+  }
+}
+
+  InputDecoration _inputDecoration() {
+    return InputDecoration(
+      border: OutlineInputBorder(
+        borderSide: const BorderSide(color: Color(0xFFF4F7FD)),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderSide: const BorderSide(color: Color(0xFFF4F7FD)),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderSide: const BorderSide(color: Color(0xFFF4F7FD)),
+        borderRadius: BorderRadius.circular(12),
+      ),
+    );
   }
 
   @override
@@ -546,125 +487,63 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
         leadingWidth: 40,
         backgroundColor: const Color.fromARGB(255, 255, 255, 255),
       ),
-      body: BlocConsumer<FieldConfigurationBloc, FieldConfigurationState>(
-        listener: (context, configState) {
-          if (kDebugMode) {
-            print('TaskAddScreen: FieldConfigurationBloc state changed: ${configState.runtimeType}');
-          }
-          
-          if (configState is FieldConfigurationLoaded) {
-            if (kDebugMode) {
-              print('TaskAddScreen: Configuration loaded with ${configState.fields.length} fields');
-            }
-            setState(() {
-              fieldConfigurations = configState.fields;
-              isConfigurationLoaded = true;
-            });
-          } else if (configState is FieldConfigurationError) {
-            if (kDebugMode) {
-              print('TaskAddScreen: Configuration error: ${configState.message}');
-            }
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  'Ошибка загрузки конфигурации: ${configState.message}',
-                  style: TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
+      body: MultiBlocProvider(
+        providers: [
+          BlocProvider(create: (context) => MainFieldBloc()),
+        ],
+        child: BlocListener<TaskBloc, TaskState>(
+          listener: (context, state) {
+            if (state is TaskError) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    AppLocalizations.of(context)!.translate(state.message),
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
                   ),
+                  behavior: SnackBarBehavior.floating,
+                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  backgroundColor: Colors.red,
+                  elevation: 3,
+                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  duration: Duration(seconds: 3),
                 ),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-        },
-        builder: (context, configState) {
-          if (kDebugMode) {
-            print('TaskAddScreen: Building with state: ${configState.runtimeType}, isLoaded: $isConfigurationLoaded');
-          }
-          
-          if (configState is FieldConfigurationLoading) {
-            return Center(
-              child: CircularProgressIndicator(
-                color: Color(0xff1E2E52),
-              ),
-            );
-          }
-          
-          if (!isConfigurationLoaded) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(
-                    color: Color(0xff1E2E52),
+              );
+            } else if (state is TaskSuccess) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    AppLocalizations.of(context)!.translate(state.message),
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
                   ),
-                  SizedBox(height: 16),
-                  Text('Загрузка конфигурации...'),
-                ],
-              ),
-            );
-          }
-          
-          return MultiBlocProvider(
-            providers: [
-              BlocProvider(create: (context) => MainFieldBloc()),
-            ],
-            child: BlocListener<TaskBloc, TaskState>(
-              listener: (context, state) {
-                if (state is TaskError) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        AppLocalizations.of(context)!.translate(state.message),
-                        style: TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white,
-                        ),
-                      ),
-                      behavior: SnackBarBehavior.floating,
-                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      backgroundColor: Colors.red,
-                      elevation: 3,
-                      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                      duration: Duration(seconds: 3),
-                    ),
-                  );
-                } else if (state is TaskSuccess) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        AppLocalizations.of(context)!.translate(state.message),
-                        style: TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white,
-                        ),
-                      ),
-                      behavior: SnackBarBehavior.floating,
-                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      backgroundColor: Colors.green,
-                      elevation: 3,
-                      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                      duration: Duration(seconds: 3),
-                    ),
-                  );
-                  Navigator.pop(context, widget.statusId);
-                  context.read<TaskBloc>().add(FetchTaskStatuses());
-                }
-              },
-              child: Form(
+                  behavior: SnackBarBehavior.floating,
+                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  backgroundColor: Colors.green,
+                  elevation: 3,
+                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  duration: Duration(seconds: 3),
+                ),
+              );
+              Navigator.pop(context, widget.statusId);
+              context.read<TaskBloc>().add(FetchTaskStatuses());
+            }
+          },
+          child: Form(
             key: _formKey,
             child: Column(
               children: [
@@ -678,16 +557,66 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Динамическое построение полей на основе конфигурации с сервера
-                          ...fieldConfigurations.map((config) {
-                            return Column(
-                              children: [
-                                _buildFieldWidget(config),
-                                const SizedBox(height: 8),
-                              ],
-                            );
-                          }).toList(),
+                          CustomTextFieldWithPriority(
+                            controller: nameController,
+                            hintText: AppLocalizations.of(context)!.translate('enter_title'),
+                            label: AppLocalizations.of(context)!.translate('event_name'),
+                            showPriority: true,
+                            isPrioritySelected: selectedPriority == 3,
+                            onPriorityChanged: (bool? value) {
+                              setState(() {
+                                selectedPriority = value == true ? 3 : 1;
+                              });
+                            },
+                            priorityText: AppLocalizations.of(context)!.translate('urgent'),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return AppLocalizations.of(context)!.translate('field_required');
+                              }
+                              return null;
+                            },
+                          ),
                           const SizedBox(height: 8),
+                          CustomTextField(
+                            controller: descriptionController,
+                            hintText: AppLocalizations.of(context)!.translate('enter_description'),
+                            label: AppLocalizations.of(context)!.translate('description_list'),
+                            maxLines: 5,
+                            keyboardType: TextInputType.multiline,
+                          ),
+                          const SizedBox(height: 8),
+                          // Условно отображаем UserMultiSelectWidget
+                          if (_hasTaskCreatePermission || !_hasTaskCreateForMySelfPermission)
+                            UserMultiSelectWidget(
+                              selectedUsers: selectedUsers,
+                              onSelectUsers: (List<UserData> selectedUsersData) {
+                                setState(() {
+                                  selectedUsers = selectedUsersData.map((user) => user.id.toString()).toList();
+                                });
+                              },
+                            ),
+                          const SizedBox(height: 8),
+                          ProjectTaskGroupWidget(
+                            selectedProject: selectedProject,
+                            onSelectProject: (ProjectTask selectedProjectData) {
+                              setState(() {
+                                selectedProject = selectedProjectData.id.toString();
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 8),
+                          CustomTextFieldDate(
+                            controller: endDateController,
+                            label: AppLocalizations.of(context)!.translate('deadline'),
+                            hasError: isEndDateInvalid,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return AppLocalizations.of(context)!.translate('field_required');
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
                           if (!_showAdditionalFields)
                             CustomButton(
                               buttonText: AppLocalizations.of(context)!.translate('additionally'),
@@ -767,10 +696,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                 _buildActionButtons(context),
               ],
             ),
-              ),
-            ),
-          );
-        },
+          ),
+        ),
       ),
     );
   }

@@ -114,17 +114,16 @@ class _ChatsScreenState extends State<ChatsScreen>
   }
 
   void _handleFiltersApplied(Map<String, dynamic> filters) {
-    print('ChatsScreen._handleFiltersApplied: Received filters: $filters');
+    //print('ChatsScreen._handleFiltersApplied: Received filters: $filters');
     setState(() {
       _activeFilters = filters;
       _hasActiveFilters = _checkIfFiltersActive(filters);
-      print(
-          'ChatsScreen._handleFiltersApplied: Updated _activeFilters: $_activeFilters, _hasActiveFilters: $_hasActiveFilters');
+      //print( 'ChatsScreen._handleFiltersApplied: Updated _activeFilters: $_activeFilters, _hasActiveFilters: $_hasActiveFilters');
     });
 
     SharedPreferences.getInstance().then((prefs) {
       prefs.remove('active_chat_filters');
-      print('ChatsScreen: Removed active filters from SharedPreferences');
+      //print('ChatsScreen: Removed active filters from SharedPreferences');
     });
 
     final chatsBloc = _chatsBlocs[endPointInTab]!;
@@ -134,8 +133,7 @@ class _ChatsScreenState extends State<ChatsScreen>
 
     if (_debounce?.isActive ?? false) _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 300), () {
-      print(
-          'ChatsScreen._handleFiltersApplied: Dispatching FetchChats with filters: $filters, salesFunnelId: ${_selectedFunnel?.id}');
+      //print(  'ChatsScreen._handleFiltersApplied: Dispatching FetchChats with filters: $filters, salesFunnelId: ${_selectedFunnel?.id}');
       chatsBloc.add(FetchChats(
         endPoint: endPointInTab,
         salesFunnelId: endPointInTab == 'lead' ? _selectedFunnel?.id : null,
@@ -180,7 +178,7 @@ class _ChatsScreenState extends State<ChatsScreen>
   }
 
   void _resetFilters() {
-    print('ChatsScreen._resetFilters: Resetting filters');
+    //print('ChatsScreen._resetFilters: Resetting filters');
     setState(() {
       _activeFilters = null;
       _hasActiveFilters = false;
@@ -188,7 +186,7 @@ class _ChatsScreenState extends State<ChatsScreen>
 
     SharedPreferences.getInstance().then((prefs) {
       prefs.remove('active_chat_filters');
-      print('ChatsScreen: Removed active filters from SharedPreferences');
+      //print('ChatsScreen: Removed active filters from SharedPreferences');
     });
 
     final chatsBloc = _chatsBlocs[endPointInTab]!;
@@ -198,8 +196,7 @@ class _ChatsScreenState extends State<ChatsScreen>
 
     if (_debounce?.isActive ?? false) _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 300), () {
-      print(
-          'ChatsScreen._resetFilters: Dispatching FetchChats with no filters, salesFunnelId: ${_selectedFunnel?.id}');
+      //print(  'ChatsScreen._resetFilters: Dispatching FetchChats with no filters, salesFunnelId: ${_selectedFunnel?.id}');
       chatsBloc.add(FetchChats(
         endPoint: endPointInTab,
         salesFunnelId: endPointInTab == 'lead' ? _selectedFunnel?.id : null,
@@ -211,7 +208,7 @@ class _ChatsScreenState extends State<ChatsScreen>
   @override
   void initState() {
     super.initState();
-    print('ChatsScreen: initState started');
+    //print('ChatsScreen: initState started');
     _checkPermissions().then((_) {
       if (_isPermissionsChecked) {
         setState(() {
@@ -225,15 +222,14 @@ class _ChatsScreenState extends State<ChatsScreen>
         });
         setUpServices();
 
-        print('ChatsScreen: Fetching sales funnels');
+        //print('ChatsScreen: Fetching sales funnels');
         context.read<SalesFunnelBloc>().add(FetchSalesFunnels());
 
         apiService.getSelectedChatSalesFunnel().then((funnelId) {
           if (kDebugMode) {
-            print(
-                'ChatsScreen: ApiService initialized with baseUrl: ${apiService.baseUrl}');
+            //print(  'ChatsScreen: ApiService initialized with baseUrl: ${apiService.baseUrl}');
           }
-          print('ChatsScreen: Retrieved saved funnel ID: $funnelId');
+          //print('ChatsScreen: Retrieved saved funnel ID: $funnelId');
           if (funnelId != null && mounted) {
             final funnel = SalesFunnel(
               id: int.parse(funnelId),
@@ -248,8 +244,7 @@ class _ChatsScreenState extends State<ChatsScreen>
               _selectedFunnel = funnel;
             });
             if (endPointInTab == 'lead') {
-              print(
-                  'ChatsScreen: Dispatching FetchChats with saved funnelId: $funnelId, filters: $_activeFilters');
+              //print(    'ChatsScreen: Dispatching FetchChats with saved funnelId: $funnelId, filters: $_activeFilters');
               _chatsBlocs[endPointInTab]!.add(FetchChats(
                 endPoint: endPointInTab,
                 salesFunnelId: int.parse(funnelId),
@@ -257,22 +252,19 @@ class _ChatsScreenState extends State<ChatsScreen>
               ));
             }
           } else {
-            print(
-                'ChatsScreen: No saved funnel ID found or widget not mounted');
+            //print(    'ChatsScreen: No saved funnel ID found or widget not mounted');
           }
         });
 
         context.read<SalesFunnelBloc>().stream.listen((state) {
           if (state is SalesFunnelLoaded && mounted) {
-            print(
-                'ChatsScreen: SalesFunnelLoaded, funnels: ${state.funnels.length}, selectedFunnel: ${state.selectedFunnel?.id}');
+            //print(   'ChatsScreen: SalesFunnelLoaded, funnels: ${state.funnels.length}, selectedFunnel: ${state.selectedFunnel?.id}');
             setState(() {
               _selectedFunnel =
                   state.selectedFunnel ?? state.funnels.firstOrNull;
             });
             if (endPointInTab == 'lead' && _selectedFunnel != null) {
-              print(
-                  'ChatsScreen: Dispatching FetchChats with selectedFunnel: ${_selectedFunnel!.id}, filters: $_activeFilters');
+              //print(    'ChatsScreen: Dispatching FetchChats with selectedFunnel: ${_selectedFunnel!.id}, filters: $_activeFilters');
               _chatsBlocs[endPointInTab]!.add(ClearChats());
               _pagingControllers[endPointInTab]!.itemList = null;
               _pagingControllers[endPointInTab]!.refresh();
@@ -290,8 +282,7 @@ class _ChatsScreenState extends State<ChatsScreen>
 
     _pagingControllers.forEach((endPoint, controller) {
       controller.addPageRequestListener((pageKey) {
-        print(
-            'ChatsScreen: Page request for endpoint $endPoint, pageKey: $pageKey');
+        //print( 'ChatsScreen: Page request for endpoint $endPoint, pageKey: $pageKey');
         if (pageKey == 0) {
           controller.refresh();
         }
@@ -300,7 +291,7 @@ class _ChatsScreenState extends State<ChatsScreen>
         }
       });
     });
-    print('ChatsScreen: initState completed');
+    //print('ChatsScreen: initState completed');
   }
 
   List<String> _getTabTitles(BuildContext context) {
@@ -360,46 +351,39 @@ class _ChatsScreenState extends State<ChatsScreen>
   }
 
   Widget _buildTitleWidget(BuildContext context) {
-    print('ChatsScreen: Entering _buildTitleWidget');
+    //print('ChatsScreen: Entering _buildTitleWidget');
     return BlocBuilder<SalesFunnelBloc, SalesFunnelState>(
       builder: (context, state) {
-        print(
-            'ChatsScreen: _buildTitleWidget - Current SalesFunnelBloc state: $state');
-        print('ChatsScreen: _buildTitleWidget - endPointInTab: $endPointInTab');
-        print(
-            'ChatsScreen: _buildTitleWidget - _selectedFunnel: $_selectedFunnel');
+        //print( 'ChatsScreen: _buildTitleWidget - Current SalesFunnelBloc state: $state');
+        //print('ChatsScreen: _buildTitleWidget - endPointInTab: $endPointInTab');
+        //print( 'ChatsScreen: _buildTitleWidget - _selectedFunnel: $_selectedFunnel');
 
         String title = AppLocalizations.of(context)!.translate('appbar_chats');
         SalesFunnel? selectedFunnel;
 
         if (state is SalesFunnelLoading) {
-          print('ChatsScreen: _buildTitleWidget - State is SalesFunnelLoading');
+          //print('ChatsScreen: _buildTitleWidget - State is SalesFunnelLoading');
           title = AppLocalizations.of(context)!.translate('appbar_chats');
         } else if (state is SalesFunnelLoaded && endPointInTab == 'lead') {
-          print('ChatsScreen: _buildTitleWidget - State is SalesFunnelLoaded');
-          print(
-              'ChatsScreen: _buildTitleWidget - Available funnels: ${state.funnels.map((f) => '${f.id}: ${f.name}').toList()}');
-          print(
-              'ChatsScreen: _buildTitleWidget - Selected funnel from state: ${state.selectedFunnel}');
+          //print('ChatsScreen: _buildTitleWidget - State is SalesFunnelLoaded');
+          //print( 'ChatsScreen: _buildTitleWidget - Available funnels: ${state.funnels.map((f) => '${f.id}: ${f.name}').toList()}');
+          //print('ChatsScreen: _buildTitleWidget - Selected funnel from state: ${state.selectedFunnel}');
 
           selectedFunnel = state.selectedFunnel ?? state.funnels.firstOrNull;
           _selectedFunnel = selectedFunnel;
 
           if (selectedFunnel != null) {
             title = selectedFunnel.name;
-            print(
-                'ChatsScreen: _buildTitleWidget - Using funnel: ${selectedFunnel.id} - ${selectedFunnel.name}');
+            //print( 'ChatsScreen: _buildTitleWidget - Using funnel: ${selectedFunnel.id} - ${selectedFunnel.name}');
           } else {
-            print(
-                'ChatsScreen: _buildTitleWidget - No funnel selected, using default title');
+            //print(  'ChatsScreen: _buildTitleWidget - No funnel selected, using default title');
           }
         } else if (state is SalesFunnelError) {
-          print(
-              'ChatsScreen: _buildTitleWidget - State is SalesFunnelError: ${state.message}');
+          //print(   'ChatsScreen: _buildTitleWidget - State is SalesFunnelError: ${state.message}');
           title = 'Ошибка загрузки';
         }
 
-        print('ChatsScreen: _buildTitleWidget - Final title: $title');
+        //print('ChatsScreen: _buildTitleWidget - Final title: $title');
         return Row(
           children: [
             Expanded(
@@ -430,13 +414,11 @@ class _ChatsScreenState extends State<ChatsScreen>
                   shadowColor: Colors.black.withOpacity(0.2),
                   offset: Offset(0, 40),
                   onSelected: (SalesFunnel funnel) async {
-                    print(
-                        'ChatsScreen: PopupMenuButton - Selected funnel: ${funnel.id} - ${funnel.name}');
+                    //print('ChatsScreen: PopupMenuButton - Selected funnel: ${funnel.id} - ${funnel.name}');
                     try {
                       await apiService
                           .saveSelectedChatSalesFunnel(funnel.id.toString());
-                      print(
-                          'ChatsScreen: PopupMenuButton - Saved funnel to preferences');
+                      //print('ChatsScreen: PopupMenuButton - Saved funnel to preferences');
 
                       setState(() {
                         _selectedFunnel = funnel;
@@ -452,15 +434,14 @@ class _ChatsScreenState extends State<ChatsScreen>
                       _pagingControllers[endPointInTab]!.itemList = null;
                       _pagingControllers[endPointInTab]!.refresh();
 
-                      print(
-                          'ChatsScreen: PopupMenuButton - Fetching chats with new funnel and active filters: $_activeFilters');
+                      //print(   'ChatsScreen: PopupMenuButton - Fetching chats with new funnel and active filters: $_activeFilters');
                       _chatsBlocs[endPointInTab]!.add(FetchChats(
                         endPoint: endPointInTab,
                         salesFunnelId: funnel.id,
                         filters: _activeFilters,
                       ));
                     } catch (e) {
-                      print('ChatsScreen: PopupMenuButton - Error: $e');
+                      //print('ChatsScreen: PopupMenuButton - Error: $e');
                     }
                   },
                   itemBuilder: (BuildContext context) {
@@ -690,7 +671,7 @@ class _ChatsScreenState extends State<ChatsScreen>
       onSkip: () {
         prefs.setBool('isTutorialShowninChat', true);
         apiService.markPageCompleted("chat", "index").catchError((e) {
-          print('Error marking page completed on skip: $e');
+          //print('Error marking page completed on skip: $e');
         });
         setState(() {
           _isTaskScreenTutorialCompleted = true;
@@ -703,7 +684,7 @@ class _ChatsScreenState extends State<ChatsScreen>
         try {
           await apiService.markPageCompleted("chat", "index");
         } catch (e) {
-          print('Error marking page completed on finish: $e');
+          //print('Error marking page completed on finish: $e');
         }
         setState(() {
           _isTaskScreenTutorialCompleted = true;
@@ -1112,12 +1093,12 @@ Future<void> updateFromSocket({required Chats chat}) async {
 
     return GestureDetector(
       onTap: () {
-        print(
-            'ChatsScreen._buildTabButton: Switching to tab $index (endpoint: ${[
-          'lead',
-          'task',
-          'corporate'
-        ][index]})');
+        // //print(
+        //     'ChatsScreen._buildTabButton: Switching to tab $index (endpoint: ${[
+        //   'lead',
+        //   'task',
+        //   'corporate'
+        // ][index]})');
         setState(() {
           selectTabIndex = index;
         });
@@ -1214,12 +1195,12 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
   @override
   void initState() {
     super.initState();
-    print('_ChatItemsWidget: initState for endpoint ${widget.endPointInTab}');
+    //print('_ChatItemsWidget: initState for endpoint ${widget.endPointInTab}');
   }
 
   @override
   void dispose() {
-    print('_ChatItemsWidget: dispose for endpoint ${widget.endPointInTab}');
+    //print('_ChatItemsWidget: dispose for endpoint ${widget.endPointInTab}');
     super.dispose();
   }
 
@@ -1273,18 +1254,18 @@ bool _shouldRefreshData(List<Chats> current, List<Chats> updated) {
   Widget build(BuildContext context) {
     return BlocListener<ChatsBloc, ChatsState>(
   listener: (context, state) {
-    print('_ChatItemsWidget: State=$state, endpoint=${widget.endPointInTab}');
+    //print('_ChatItemsWidget: State=$state, endpoint=${widget.endPointInTab}');
     
     if (state is ChatsLoaded) {
       final newChats = state.chatsPagination.data;
       final currentPage = state.chatsPagination.currentPage;
       final totalPage = state.chatsPagination.totalPage;
       
-      print('_ChatItemsWidget: Loaded page $currentPage/$totalPage with ${newChats.length} chats');
+      //print('_ChatItemsWidget: Loaded page $currentPage/$totalPage with ${newChats.length} chats');
       
       // ✅ КРИТИЧЕСКАЯ ПРОВЕРКА #1: Первая страница пустая
       if (currentPage == 1 && newChats.isEmpty) {
-        print('_ChatItemsWidget: No data, showing empty state');
+        //print('_ChatItemsWidget: No data, showing empty state');
         widget.pagingController.appendLastPage([]);
         return;
       }
@@ -1293,7 +1274,7 @@ bool _shouldRefreshData(List<Chats> current, List<Chats> updated) {
       final currentItems = widget.pagingController.itemList ?? [];
       
       if (!_shouldRefreshData(currentItems, newChats)) {
-        print('_ChatItemsWidget: No changes detected, skipping update');
+        //print('_ChatItemsWidget: No changes detected, skipping update');
         return;
       }
       
@@ -1301,15 +1282,15 @@ bool _shouldRefreshData(List<Chats> current, List<Chats> updated) {
       widget.pagingController.itemList = null;
       
       if (currentPage >= totalPage) {
-        print('_ChatItemsWidget: Appending last page with ${newChats.length} chats');
+        //print('_ChatItemsWidget: Appending last page with ${newChats.length} chats');
         widget.pagingController.appendLastPage(newChats);
       } else {
-        print('_ChatItemsWidget: Appending page $currentPage with ${newChats.length} chats');
+        //print('_ChatItemsWidget: Appending page $currentPage with ${newChats.length} chats');
         widget.pagingController.appendPage(newChats, currentPage);
       }
       
     } else if (state is ChatsError) {
-      print('_ChatItemsWidget: Error - ${state.message}');
+      //print('_ChatItemsWidget: Error - ${state.message}');
       widget.pagingController.error = state.message;
       
       if (state.message.contains(
@@ -1332,7 +1313,7 @@ bool _shouldRefreshData(List<Chats> current, List<Chats> updated) {
       }
       
     } else if (state is ChatsInitial) {
-      print('_ChatItemsWidget: Initial state, resetting');
+      //print('_ChatItemsWidget: Initial state, resetting');
       widget.pagingController.itemList = null;
     }
   },
@@ -1359,7 +1340,7 @@ bool _shouldRefreshData(List<Chats> current, List<Chats> updated) {
             );
           },
           firstPageProgressIndicatorBuilder: (context) {
-            print('_ChatItemsWidget: Showing first page progress indicator for endpoint ${widget.endPointInTab}');
+            //print('_ChatItemsWidget: Showing first page progress indicator for endpoint ${widget.endPointInTab}');
             return Center(
               child: PlayStoreImageLoading(
                 size: 80.0,
@@ -1368,7 +1349,7 @@ bool _shouldRefreshData(List<Chats> current, List<Chats> updated) {
             );
           },
           newPageProgressIndicatorBuilder: (context) {
-            print('_ChatItemsWidget: Showing new page progress indicator for endpoint ${widget.endPointInTab}');
+            //print('_ChatItemsWidget: Showing new page progress indicator for endpoint ${widget.endPointInTab}');
             return Center(
               child: PlayStoreImageLoading(
                 size: 80.0,
@@ -1377,7 +1358,7 @@ bool _shouldRefreshData(List<Chats> current, List<Chats> updated) {
             );
           },
           itemBuilder: (context, item, index) {
-            print('_ChatItemsWidget: Rendering chat ID: ${item.id} at index $index for endpoint ${widget.endPointInTab}, unreadCount: ${item.unreadCount}');
+            //print('_ChatItemsWidget: Rendering chat ID: ${item.id} at index $index for endpoint ${widget.endPointInTab}, unreadCount: ${item.unreadCount}');
             return InkWell(
               onTap: () => onTap(item),
               onLongPress: () => onLongPress(item),

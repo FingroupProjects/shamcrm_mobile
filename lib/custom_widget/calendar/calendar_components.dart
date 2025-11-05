@@ -36,8 +36,8 @@ class CalendarWidget extends StatelessWidget {
     return TableCalendar(
       rowHeight: MediaQuery.of(context).size.height * 0.065,
       daysOfWeekHeight: MediaQuery.of(context).size.height * 0.028,
-      firstDay: DateTime.utc(2020, 1, 1),
-      lastDay: DateTime.utc(2030, 12, 31),
+      firstDay: DateTime.utc(2000, 1, 1),
+      lastDay: DateTime.utc(2200, 12, 31),
       focusedDay: focusedDate,
       calendarFormat: calendarFormat,
       selectedDayPredicate: (day) => isSameDay(selectedDate, day),
@@ -553,9 +553,9 @@ class YearPickerDialog extends StatelessWidget {
             crossAxisSpacing: 8,
             mainAxisSpacing: 8,
           ),
-          itemCount: 12,
+          itemCount: 100,
           itemBuilder: (context, index) {
-            final year = 2020 + index;
+            final year = 2015 + index;
             return GestureDetector(
               onTap: () => onYearSelected(year),
               child: AnimatedContainer(
@@ -871,8 +871,8 @@ Future<DateTime?> showDateTimePicker(
   final date = await showDatePicker(
     context: context,
     initialDate: initialDate,
-    firstDate: DateTime(2020),
-    lastDate: DateTime(2030),
+    firstDate: DateTime(2000),
+    lastDate: DateTime(2200),
   );
   if (date != null) {
     final time = await showTimePicker(

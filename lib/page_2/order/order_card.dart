@@ -182,7 +182,7 @@ class _OrderCardState extends State<OrderCard> {
       final savedCurrencyId = prefs.getInt('currency_id');
       
       if (kDebugMode) {
-        print('OrderCard: Загружен currency_id из SharedPreferences: $savedCurrencyId');
+        //print('OrderCard: Загружен currency_id из SharedPreferences: $savedCurrencyId');
       }
       
       setState(() {
@@ -195,7 +195,7 @@ class _OrderCardState extends State<OrderCard> {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('OrderCard: Ошибка загрузки currency_id: $e');
+        //print('OrderCard: Ошибка загрузки currency_id: $e');
       }
       setState(() {
         currencyId = 0;
@@ -220,12 +220,12 @@ class _OrderCardState extends State<OrderCard> {
         });
         
         if (kDebugMode) {
-          print('OrderCard: Загружен currency_id из API: ${settings.currencyId}');
+          //print('OrderCard: Загружен currency_id из API: ${settings.currencyId}');
         }
       }
     } catch (e) {
       if (kDebugMode) {
-        print('OrderCard: Ошибка загрузки currency_id из API: $e');
+        //print('OrderCard: Ошибка загрузки currency_id из API: $e');
       }
       // Устанавливаем значение по умолчанию
       setState(() {
@@ -256,7 +256,7 @@ class _OrderCardState extends State<OrderCard> {
     String symbol = '₽';
     
     if (kDebugMode) {
-      print('OrderCard: _formatSum вызван с currency_id: $currencyId');
+      //print('OrderCard: _formatSum вызван с currency_id: $currencyId');
     }
     
     switch (currencyId) {
@@ -275,12 +275,12 @@ class _OrderCardState extends State<OrderCard> {
       default:
         symbol = '\$';
         if (kDebugMode) {
-          print('OrderCard: Используется валюта по умолчанию (₽) для currency_id: $currencyId');
+          //print('OrderCard: Используется валюта по умолчанию (₽) для currency_id: $currencyId');
         }
     }
     
     if (kDebugMode) {
-      print('OrderCard: Выбранный символ валюты: $symbol для суммы: $sum');
+      //print('OrderCard: Выбранный символ валюты: $symbol для суммы: $sum');
     }
     
     return '${NumberFormat('#,##0.00', 'ru_RU').format(sum)} $symbol';
@@ -304,8 +304,8 @@ class _OrderCardState extends State<OrderCard> {
     final bool hasLongContent = _isContentLong();
     
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
+      onTap: () async {
+        final result = await Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => OrderDetailsScreen(
@@ -316,6 +316,20 @@ class _OrderCardState extends State<OrderCard> {
             ),
           ),
         );
+        
+        // Обрабатываем результат редактирования заказа
+        if (result != null && result is Map<String, dynamic> && result['success'] == true && mounted) {
+          final statusId = result['statusId'];
+          if (statusId != null) {
+            // Обновляем список заказов для соответствующего статуса
+            context.read<OrderBloc>().add(FetchOrders(
+              statusId: statusId,
+              page: 1,
+              perPage: 20,
+              forceRefresh: true,
+            ));
+          }
+        }
       },
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),

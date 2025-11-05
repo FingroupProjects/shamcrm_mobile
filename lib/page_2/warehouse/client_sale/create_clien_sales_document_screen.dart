@@ -12,6 +12,7 @@ import 'package:crm_task_manager/page_2/warehouse/incoming/storage_widget.dart';
 import 'package:crm_task_manager/page_2/widgets/confirm_exit_dialog.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -19,6 +20,8 @@ import 'package:intl/intl.dart';
 
 import '../../../bloc/page_2_BLOC/variant_bloc/variant_bloc.dart';
 import '../../../bloc/page_2_BLOC/variant_bloc/variant_event.dart';
+import '../../../bloc/lead_list/lead_list_bloc.dart';
+import '../../../bloc/lead_list/lead_list_event.dart';
 
 class CreateClienSalesDocumentScreen extends StatefulWidget {
   final int? organizationId;
@@ -60,8 +63,22 @@ class CreateClienSalesDocumentScreenState
     super.initState();
     _dateController.text =
         DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
+    
+    // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Принудительно сбрасываем кэш лидов
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        // Вариант 1: Если есть событие ResetLeadState
+        // context.read<GetAllLeadBloc>().add(ResetLeadState());
+        
+        // Вариант 2: Принудительно загружаем заново (даже если есть кэш)
+        context.read<GetAllLeadBloc>().add(GetAllLeadEv(
+          showDebt: true,
+          // forceRefresh: true, // Если ваш BLoC поддерживает этот параметры
+        ));
+      }
+    });
+    
     context.read<VariantBloc>().add(FetchVariants());
-
     _tabController = TabController(length: 2, vsync: this);
   }
 
@@ -77,22 +94,31 @@ class CreateClienSalesDocumentScreenState
             _collapsedItems[variantId] = true;
           }
 
-          _items.add(newItem);
+          // ✅ Создаем копию item
+          final modifiedItem = Map<String, dynamic>.from(newItem);
+
+          // ✅ ВАЖНО: Удаляем quantity из item (должно быть пустым)
+          modifiedItem.remove('quantity');
+
+          _items.add(modifiedItem);
 
           final variantId = newItem['variantId'] as int;
 
+          // ✅ Цена берется из товара и отображается
           final initialPrice = newItem['price'] ?? 0.0;
-          _priceControllers[variantId] = TextEditingController(
-              text: initialPrice > 0 ? initialPrice.toStringAsFixed(3) : '');
+          final amount = newItem['amount'] ?? 1;
 
+          _priceControllers[variantId] = TextEditingController(
+              text: initialPrice > 0 ? parseNumberToString(initialPrice * amount) : '');
+
+          // ✅ Количество НЕ устанавливается - пустое поле
           _quantityControllers[variantId] = TextEditingController(text: '');
 
           _quantityFocusNodes[variantId] = FocusNode();
           _priceFocusNodes[variantId] = FocusNode();
 
+          // ✅ Сохраняем базовую цену в item
           _items.last['price'] = initialPrice;
-
-          final amount = newItem['amount'] ?? 1;
 
           _priceErrors[variantId] = false;
           _quantityErrors[variantId] = false;
@@ -101,7 +127,6 @@ class CreateClienSalesDocumentScreenState
 
           if (!newItem.containsKey('amount')) {
             _items.last['amount'] = 1;
-            _items.last['price'] = initialPrice;
           }
 
           _listKey.currentState?.insertItem(
@@ -204,52 +229,56 @@ class CreateClienSalesDocumentScreenState
     }
   }
 
+// ✅ УЛУЧШЕНО: функция _updateItemQuantity
   void _updateItemQuantity(int variantId, String value) {
     final quantity = int.tryParse(value);
     if (quantity != null && quantity > 0) {
       setState(() {
-        final index =
-            _items.indexWhere((item) => item['variantId'] == variantId);
+        final index = _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
           _items[index]['quantity'] = quantity;
+          final price = _items[index]['price'] ?? 0.0;
           final amount = _items[index]['amount'] ?? 1;
-          _items[index]['total'] =
-              (_items[index]['quantity'] * _items[index]['price'] * amount)
-                  .round();
+
+          // ✅ Total = количество * базовая_цена * amount
+          _items[index]['total'] = (quantity * price * amount).round();
         }
         _quantityErrors[variantId] = false;
       });
     } else if (value.isEmpty) {
       setState(() {
-        final index =
-            _items.indexWhere((item) => item['variantId'] == variantId);
+        final index = _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
-          _items[index]['quantity'] = 0;
-          _items[index]['total'] = 0;
+          // ✅ ВАЖНО: Удаляем quantity из item, а не устанавливаем в 0
+          _items[index].remove('quantity');
+          _items[index]['total'] = 0.0;
         }
       });
     }
   }
 
+// ✅ ИСПРАВЛЕНО: функция _updateItemPrice
   void _updateItemPrice(int variantId, String value) {
-    final price = double.tryParse(value);
-    if (price != null && price >= 0) {
+    final inputPrice = double.tryParse(value);
+    if (inputPrice != null && inputPrice >= 0) {
       setState(() {
-        final index =
-            _items.indexWhere((item) => item['variantId'] == variantId);
+        final index = _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
-          _items[index]['price'] = price;
           final amount = _items[index]['amount'] ?? 1;
-          final formattedPrice = double.parse(price.toStringAsFixed(3));
-          _items[index]['total'] =
-              (_items[index]['quantity'] * formattedPrice * amount).round();
+
+          // ✅ ГЛАВНОЕ ИЗМЕНЕНИЕ: сохраняем price разделив на amount
+          // Потому что price - это цена за одну базовую единицу (например: 1 штуку)
+          _items[index]['price'] = inputPrice / amount;
+
+          // Обновляем итоговую сумму
+          final quantity = _items[index]['quantity'] ?? 0;
+          _items[index]['total'] = (quantity * inputPrice).round();
         }
         _priceErrors[variantId] = false;
       });
     } else if (value.isEmpty) {
       setState(() {
-        final index =
-            _items.indexWhere((item) => item['variantId'] == variantId);
+        final index = _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
           _items[index]['price'] = 0.0;
           _items[index]['total'] = 0.0;
@@ -258,6 +287,7 @@ class CreateClienSalesDocumentScreenState
     }
   }
 
+// ✅ ИСПРАВЛЕНО: функция _updateItemUnit
   void _updateItemUnit(int variantId, String newUnit, int? newUnitId) {
     setState(() {
       final index = _items.indexWhere((item) => item['variantId'] == variantId);
@@ -265,21 +295,25 @@ class CreateClienSalesDocumentScreenState
         _items[index]['selectedUnit'] = newUnit;
         _items[index]['unit_id'] = newUnitId;
 
-        final availableUnits =
-            _items[index]['availableUnits'] as List<Unit>? ?? [];
+        final availableUnits = _items[index]['availableUnits'] as List<Unit>? ?? [];
         final selectedUnitObj = availableUnits.firstWhere(
-          (unit) => (unit.name) == newUnit,
-          orElse: () => availableUnits.isNotEmpty
-              ? availableUnits.first
-              : Unit(id: 0, name: '', amount: 1),
+              (unit) => (unit.name) == newUnit,
+          orElse: () => availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: '', amount: 1),
         );
 
-        _items[index]['amount'] = selectedUnitObj.amount ?? 1;
+        final newAmount = selectedUnitObj.amount ?? 1;
+        _items[index]['amount'] = newAmount;
 
-        final amount = _items[index]['amount'] ?? 1;
-        _items[index]['total'] =
-            (_items[index]['quantity'] * _items[index]['price'] * amount)
-                .round();
+        // ✅ ГЛАВНОЕ ИЗМЕНЕНИЕ: price не меняется (это цена за 1 штуку)
+        // Только отображаемое значение в контроллере нужно изменить
+        final basePrice = _items[index]['price'] ?? 0.0;
+
+        // Обновляем итоговую сумму
+        final quantity = _items[index]['quantity'] ?? 0;
+        _items[index]['total'] = (quantity * basePrice * newAmount).round();
+
+        // ✅ В контроллере показываем: basePrice * newAmount
+        _priceControllers[variantId]?.text = parseNumberToString(basePrice * newAmount);
       }
     });
   }
@@ -490,7 +524,6 @@ class CreateClienSalesDocumentScreenState
                     child: TabBarView(
                       controller: _tabController,
                       children: [
-                        // ✅ Оборачиваем вкладки в KeepAliveWrapper
                         _KeepAliveWrapper(child: _buildMainTab(localizations)),
                         _KeepAliveWrapper(child: _buildGoodsTab(localizations)),
                       ],
@@ -1127,7 +1160,6 @@ class CreateClienSalesDocumentScreenState
   }
 }
 
-// ✅ НОВЫЙ ВИДЖЕТ: Обёртка для сохранения состояния вкладок
 class _KeepAliveWrapper extends StatefulWidget {
   final Widget child;
 
@@ -1144,7 +1176,7 @@ class _KeepAliveWrapperState extends State<_KeepAliveWrapper>
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // ← Обязательно вызываем super.build
+    super.build(context);
     return widget.child;
   }
 }

@@ -48,7 +48,7 @@ class _MyNavBarState extends State<MyNavBar> {
     final defaultItems = _getAllItems();
     
     if (defaultItems.isEmpty) {
-      print('⏳ Списки навигации пока пустые, ждём...');
+      //print('⏳ Списки навигации пока пустые, ждём...');
       return;
     }
     
@@ -56,7 +56,7 @@ class _MyNavBarState extends State<MyNavBar> {
     List<NavBarItemData> finalItems;
     
     if (savedOrder != null && savedOrder.isNotEmpty) {
-      print('✅ Загружен сохранённый порядок: ${savedOrder.length} элементов');
+      //print('✅ Загружен сохранённый порядок: ${savedOrder.length} элементов');
       finalItems = [];
       
       for (var savedItem in savedOrder) {
@@ -67,7 +67,7 @@ class _MyNavBarState extends State<MyNavBar> {
           );
           finalItems.add(matchingItem);
         } catch (e) {
-          print('⚠️ Элемент не найден: group=${savedItem['group']}, index=${savedItem['index']}');
+          //print('⚠️ Элемент не найден: group=${savedItem['group']}, index=${savedItem['index']}');
         }
       }
       
@@ -77,11 +77,11 @@ class _MyNavBarState extends State<MyNavBar> {
         );
         if (!exists) {
           finalItems.add(item);
-          print('➕ Добавлен новый элемент: group=${item.groupIndex}, index=${item.itemIndex}');
+          //print('➕ Добавлен новый элемент: group=${item.groupIndex}, index=${item.itemIndex}');
         }
       }
     } else {
-      print('📋 Сохранённый порядок не найден, используем по умолчанию');
+      //print('📋 Сохранённый порядок не найден, используем по умолчанию');
       finalItems = defaultItems;
     }
     
@@ -99,16 +99,16 @@ class _MyNavBarState extends State<MyNavBar> {
       final orderJson = prefs.getString('navbar_order_v2');
       
       if (orderJson != null && orderJson.isNotEmpty) {
-        print('📦 JSON из SharedPreferences: $orderJson');
+        //print('📦 JSON из SharedPreferences: $orderJson');
         final List<dynamic> decoded = json.decode(orderJson);
         final result = decoded.map((e) => Map<String, int>.from(e)).toList();
-        print('✅ Успешно декодировано: ${result.length} элементов');
+        //print('✅ Успешно декодировано: ${result.length} элементов');
         return result;
       } else {
-        print('❌ navbar_order_v2 пуст или null');
+        //print('❌ navbar_order_v2 пуст или null');
       }
     } catch (e) {
-      print('❌ Ошибка загрузки порядка: $e');
+      //print('❌ Ошибка загрузки порядка: $e');
     }
     return null;
   }
@@ -126,14 +126,14 @@ class _MyNavBarState extends State<MyNavBar> {
       final success = await prefs.setString('navbar_order_v2', orderJson);
       
       if (success) {
-        print('💾 Порядок сохранён успешно: $orderJson');
+        //print('💾 Порядок сохранён успешно: $orderJson');
         final verification = prefs.getString('navbar_order_v2');
-        print('✅ Проверка: данные в SharedPreferences = $verification');
+        //print('✅ Проверка: данные в SharedPreferences = $verification');
       } else {
-        print('❌ Не удалось сохранить порядок');
+        //print('❌ Не удалось сохранить порядок');
       }
     } catch (e) {
-      print('❌ Ошибка сохранения порядка: $e');
+      //print('❌ Ошибка сохранения порядка: $e');
     }
   }
 
@@ -172,7 +172,7 @@ class _MyNavBarState extends State<MyNavBar> {
     final currentItemCount = widget.navBarTitlesGroup1.length + widget.navBarTitlesGroup2.length;
     
     if (_orderedItems == null || _lastItemCount != currentItemCount) {
-      print('🔄 Количество элементов изменилось: $_lastItemCount -> $currentItemCount');
+      //print('🔄 Количество элементов изменилось: $_lastItemCount -> $currentItemCount');
       _initializeOrder();
       return;
     }
@@ -276,7 +276,7 @@ class _MyNavBarState extends State<MyNavBar> {
             final item = _orderedItems!.removeAt(oldIndex);
             _orderedItems!.insert(newIndex, item);
             
-            print('🔄 Элемент перемещён с позиции $oldIndex на $newIndex');
+            //print('🔄 Элемент перемещён с позиции $oldIndex на $newIndex');
             _saveOrder(_orderedItems!);
             _isReordering = false;
           });
@@ -286,13 +286,13 @@ class _MyNavBarState extends State<MyNavBar> {
           setState(() {
             _isReordering = true;
           });
-          print('🖐️ Начато перемещение элемента на позиции $index');
+          //print('🖐️ Начато перемещение элемента на позиции $index');
         },
         onReorderEnd: (index) {
           setState(() {
             _isReordering = false;
           });
-          print('✋ Перемещение завершено');
+          //print('✋ Перемещение завершено');
         },
         proxyDecorator: (child, index, animation) {
           return AnimatedBuilder(

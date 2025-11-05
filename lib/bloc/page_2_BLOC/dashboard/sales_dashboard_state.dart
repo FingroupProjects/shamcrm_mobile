@@ -11,9 +11,85 @@ class SalesDashboardInitial extends SalesDashboardState {}
 
 class SalesDashboardLoading extends SalesDashboardState {}
 
+/// Wave 1 loaded - show priority data immediately
+class SalesDashboardPriorityLoaded extends SalesDashboardState {
+  final DashboardTopPart salesDashboardTopPart;
+  final List<AllTopSellingData> topSellingData;
+  final IlliquidGoodsResponse illiquidGoodsData;
+
+  const SalesDashboardPriorityLoaded({
+    required this.salesDashboardTopPart,
+    required this.topSellingData,
+    required this.illiquidGoodsData,
+  });
+
+  @override
+  List<Object?> get props => [
+    salesDashboardTopPart,
+    topSellingData,
+    illiquidGoodsData,
+  ];
+}
+
+/// Wave 2 loading - show Wave 1 data + loading indicators for Wave 2
+class SalesDashboardLoadingSecondary extends SalesDashboardState {
+  final DashboardTopPart salesDashboardTopPart;
+  final List<AllTopSellingData> topSellingData;
+  final IlliquidGoodsResponse illiquidGoodsData;
+
+  const SalesDashboardLoadingSecondary({
+    required this.salesDashboardTopPart,
+    required this.topSellingData,
+    required this.illiquidGoodsData,
+  });
+
+  @override
+  List<Object?> get props => [
+    salesDashboardTopPart,
+    topSellingData,
+    illiquidGoodsData,
+  ];
+}
+
+/// All data loaded - complete dashboard
+class SalesDashboardFullyLoaded extends SalesDashboardState {
+  final DashboardTopPart salesDashboardTopPart;
+  final List<AllTopSellingData> topSellingData;
+  final IlliquidGoodsResponse illiquidGoodsData;
+  final List<AllSalesDynamicsData> salesData;
+  final List<AllNetProfitData> netProfitData;
+  final List<AllOrdersData> orderDashboardData;
+  final List<AllExpensesData> expenseStructureData;
+  final List<AllProfitabilityData> profitabilityData;
+
+  const SalesDashboardFullyLoaded({
+    required this.salesDashboardTopPart,
+    required this.topSellingData,
+    required this.illiquidGoodsData,
+    required this.salesData,
+    required this.netProfitData,
+    required this.orderDashboardData,
+    required this.expenseStructureData,
+    required this.profitabilityData,
+  });
+
+  @override
+  List<Object?> get props => [
+    salesDashboardTopPart,
+    topSellingData,
+    illiquidGoodsData,
+    salesData,
+    netProfitData,
+    orderDashboardData,
+    expenseStructureData,
+    profitabilityData,
+  ];
+}
+
+/// Legacy state for backward compatibility
 class SalesDashboardLoaded extends SalesDashboardState {
   final DashboardTopPart? salesDashboardTopPart;
-  final SalesResponse? salesData;
+  final List<AllSalesDynamicsData>? salesData;
   final List<AllNetProfitData> netProfitData;
   final List<AllOrdersData> orderDashboardData;
   final List<AllExpensesData> expenseStructureData;
@@ -34,15 +110,15 @@ class SalesDashboardLoaded extends SalesDashboardState {
 
   @override
   List<Object?> get props => [
-        salesDashboardTopPart,
-        salesData,
-        netProfitData,
-        orderDashboardData,
-        expenseStructureData,
-        profitabilityData,
-        topSellingData,
-        illiquidGoodsData,
-      ];
+    salesDashboardTopPart,
+    salesData,
+    netProfitData,
+    orderDashboardData,
+    expenseStructureData,
+    profitabilityData,
+    topSellingData,
+    illiquidGoodsData,
+  ];
 }
 
 class SalesDashboardError extends SalesDashboardState {

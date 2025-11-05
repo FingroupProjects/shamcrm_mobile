@@ -26,6 +26,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
   bool? _currentHasNoReplies; // Новый параметр
   bool? _currentHasUnreadMessages; // Новый параметр
   bool? _currentHasDeal;
+  bool? _currentHasOrders;
   int? _currentDaysWithoutActivity;
   bool isFetching = false; // Новый флаг
   List<Map<String, dynamic>>? _currentDirectoryValues; // Новый параметр
@@ -59,12 +60,12 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
 
 Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
   if (isFetching) {
-    //print('LeadBloc: _fetchLeads - Already fetching, skipping');
+    ////print('LeadBloc: _fetchLeads - Already fetching, skipping');
     return;
   }
   isFetching = true;
   try {
-    //print('LeadBloc: _fetchLeads - statusId: ${event.statusId}, salesFunnelId: ${event.salesFunnelId}, ignoreCache: ${event.ignoreCache}');
+    ////print('LeadBloc: _fetchLeads - statusId: ${event.statusId}, salesFunnelId: ${event.salesFunnelId}, ignoreCache: ${event.ignoreCache}');
     
     // НЕ отправляем LeadLoading, чтобы не мигал интерфейс
     if (state is! LeadDataLoaded) {
@@ -87,6 +88,7 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
     _currentHasNoReplies = event.hasNoReplies;
     _currentHasUnreadMessages = event.hasUnreadMessages;
     _currentHasDeal = event.hasDeal;
+    _currentHasOrders = event.hasOrders;
     _currentDaysWithoutActivity = event.daysWithoutActivity;
     _currentDirectoryValues = event.directoryValues;
 
@@ -97,13 +99,13 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
       int count = allPersistentCounts[statusIdStr] ?? 0;
       _leadCounts[statusId] = count;
     }
-    //print('LeadBloc: Restored all persistent counts: $_leadCounts');
+    ////print('LeadBloc: Restored all persistent counts: $_leadCounts');
 
     List<Lead> leads = [];
     if (!event.ignoreCache) {
       leads = await LeadCache.getLeadsForStatus(event.statusId);
       if (leads.isNotEmpty) {
-        //print('LeadBloc: _fetchLeads - Emitting cached leads: ${leads.length}, preserved counts: $_leadCounts');
+        ////print('LeadBloc: _fetchLeads - Emitting cached leads: ${leads.length}, preserved counts: $_leadCounts');
         emit(LeadDataLoaded(leads, currentPage: 1, leadCounts: Map.from(_leadCounts)));
       }
     }
@@ -129,23 +131,28 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
         hasNoReplies: event.hasNoReplies,
         hasUnreadMessages: event.hasUnreadMessages,
         hasDeal: event.hasDeal,
+        hasOrders: event.hasOrders,
         daysWithoutActivity: event.daysWithoutActivity,
         directoryValues: event.directoryValues,
         salesFunnelId: event.salesFunnelId,
       );
 
       // Кэшируем лиды БЕЗ изменения постоянных счетчиков
-      await LeadCache.cacheLeadsForStatus(event.statusId, leads);
+      await LeadCache.cacheLeadsForStatus(
+  event.statusId,
+  leads,
+  updatePersistentCount: event.ignoreCache, // ← только при ignoreCache обновляем счётчик
+);
       
       // ВАЖНО: НЕ ПЕРЕЗАПИСЫВАЕМ счетчики значениями из пагинации!
       // Счетчики остаются такими, какими были в постоянном кэше
-      //print('LeadBloc: _fetchLeads - Fetched ${leads.length} leads from API, but kept persistent counts: $_leadCounts');
+      ////print('LeadBloc: _fetchLeads - Fetched ${leads.length} leads from API, but kept persistent counts: $_leadCounts');
     }
 
     allLeadsFetched = leads.isEmpty;
     emit(LeadDataLoaded(leads, currentPage: 1, leadCounts: Map.from(_leadCounts)));
   } catch (e) {
-    //print('LeadBloc: _fetchLeads - Error: $e');
+    ////print('LeadBloc: _fetchLeads - Error: $e');
     emit(LeadError('Не удалось загрузить данные!'));
   } finally {
     isFetching = false;
@@ -160,7 +167,7 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
 // Полностью заменить метод _fetchLeadStatuses в LeadBloc на этот:
 
 Future<void> _fetchLeadStatuses(FetchLeadStatuses event, Emitter<LeadState> emit) async {
-  print('LeadBloc: _fetchLeadStatuses - Starting with forceRefresh: ${event.forceRefresh}');
+  //print('LeadBloc: _fetchLeadStatuses - Starting with forceRefresh: ${event.forceRefresh}');
   emit(LeadLoading());
 
   try {
@@ -168,7 +175,7 @@ Future<void> _fetchLeadStatuses(FetchLeadStatuses event, Emitter<LeadState> emit
 
     // При forceRefresh = true делаем РАДИКАЛЬНУЮ перезагрузку
     if (event.forceRefresh) {
-      print('LeadBloc: RADICAL REFRESH - loading everything from server, ignoring all cache');
+      //print('LeadBloc: RADICAL REFRESH - loading everything from server, ignoring all cache');
       
       if (!await _checkInternetConnection()) {
         emit(LeadError('Нет подключения к интернету для обновления данных'));
@@ -197,6 +204,7 @@ Future<void> _fetchLeadStatuses(FetchLeadStatuses event, Emitter<LeadState> emit
       _currentHasNoReplies = null;
       _currentHasUnreadMessages = null;
       _currentHasDeal = null;
+      _currentHasOrders = null;
       _currentDaysWithoutActivity = null;
       _currentDirectoryValues = null;
       
@@ -213,12 +221,12 @@ Future<void> _fetchLeadStatuses(FetchLeadStatuses event, Emitter<LeadState> emit
         await LeadCache.setPersistentLeadCount(status.id, status.leadsCount);
       }
       
-      print('LeadBloc: RADICAL REFRESH completed - fresh leadCounts from API: $_leadCounts');
+      //print('LeadBloc: RADICAL REFRESH completed - fresh leadCounts from API: $_leadCounts');
       
     } else {
       // Стандартная логика для обычной загрузки
       if (!await _checkInternetConnection()) {
-        print('LeadBloc: No internet connection, trying cache');
+        //print('LeadBloc: No internet connection, trying cache');
         final cachedStatuses = await LeadCache.getLeadStatuses();
         if (cachedStatuses.isNotEmpty) {
           final statuses = cachedStatuses.map((status) => LeadStatus.fromJson(status)).toList();
@@ -232,10 +240,10 @@ Future<void> _fetchLeadStatuses(FetchLeadStatuses event, Emitter<LeadState> emit
             _leadCounts[statusId] = count;
           }
           
-          print('LeadBloc: Using cached statuses with persistent counts: $_leadCounts');
+          //print('LeadBloc: Using cached statuses with persistent counts: $_leadCounts');
           emit(LeadLoaded(statuses, leadCounts: Map.from(_leadCounts)));
         } else {
-          print('LeadBloc: No cached statuses available');
+          //print('LeadBloc: No cached statuses available');
           emit(LeadError('Нет подключения к интернету и нет кэшированных данных'));
         }
         return;
@@ -244,10 +252,10 @@ Future<void> _fetchLeadStatuses(FetchLeadStatuses event, Emitter<LeadState> emit
       // Проверяем кэш
       final cachedStatuses = await LeadCache.getLeadStatuses();
       if (cachedStatuses.isNotEmpty) {
-        print('LeadBloc: Using cached statuses');
+        //print('LeadBloc: Using cached statuses');
         response = cachedStatuses.map((status) => LeadStatus.fromJson(status)).toList();
       } else {
-        print('LeadBloc: No cache found, loading from API');
+        //print('LeadBloc: No cache found, loading from API');
         response = await apiService.getLeadStatuses();
         await LeadCache.cacheLeadStatuses(response);
       }
@@ -261,30 +269,30 @@ Future<void> _fetchLeadStatuses(FetchLeadStatuses event, Emitter<LeadState> emit
         
         if (allPersistentCounts.containsKey(statusIdStr)) {
           _leadCounts[status.id] = allPersistentCounts[statusIdStr] ?? 0;
-          print('LeadBloc: Using persistent count for status ${status.id}: ${_leadCounts[status.id]}');
+          //print('LeadBloc: Using persistent count for status ${status.id}: ${_leadCounts[status.id]}');
         } else {
           _leadCounts[status.id] = status.leadsCount;
           await LeadCache.setPersistentLeadCount(status.id, status.leadsCount);
-          print('LeadBloc: Setting initial persistent count for status ${status.id}: ${status.leadsCount}');
+          //print('LeadBloc: Setting initial persistent count for status ${status.id}: ${status.leadsCount}');
         }
       }
     }
 
-    print('LeadBloc: _fetchLeadStatuses - Final leadCounts: $_leadCounts');
+    //print('LeadBloc: _fetchLeadStatuses - Final leadCounts: $_leadCounts');
     emit(LeadLoaded(response, leadCounts: Map.from(_leadCounts)));
 
     // При обычной загрузке автоматически загружаем лиды для первого статуса
     // При forceRefresh НЕ загружаем автоматически - это будет делать LeadScreen вручную
     if (response.isNotEmpty && !event.forceRefresh) {
       final firstStatusId = response.first.id;
-      print('LeadBloc: Auto-loading leads for first status: $firstStatusId');
+      //print('LeadBloc: Auto-loading leads for first status: $firstStatusId');
       add(FetchLeads(firstStatusId, ignoreCache: false));
     } else if (event.forceRefresh) {
-      print('LeadBloc: ForceRefresh mode - NOT auto-loading leads, waiting for manual trigger');
+      //print('LeadBloc: ForceRefresh mode - NOT auto-loading leads, waiting for manual trigger');
     }
 
   } catch (e) {
-    print('LeadBloc: _fetchLeadStatuses - Error: $e');
+    //print('LeadBloc: _fetchLeadStatuses - Error: $e');
     emit(LeadError('Не удалось загрузить статусы: $e'));
   }
 }
@@ -334,6 +342,7 @@ Future<void> _fetchLeadStatuses(FetchLeadStatuses event, Emitter<LeadState> emit
         hasNoReplies: _currentHasNoReplies, // Новый параметр
         hasUnreadMessages: _currentHasUnreadMessages, // Новый параметр
         hasDeal: _currentHasDeal,
+        hasOrders: _currentHasOrders,
         daysWithoutActivity: _currentDaysWithoutActivity,
                 directoryValues: _currentDirectoryValues, // Передаем сохраненные значения
 
@@ -577,7 +586,7 @@ if (event.duplicate != null) 'duplicate': event.duplicate, // Добавляем
     // Перезагружаем текущий статус
     add(FetchLeads(event.oldStatusId, ignoreCache: true));
     
-    //print('LeadBloc: Updated lead status and counts - old: ${event.oldStatusId}($oldCount), new: ${event.newStatusId}($newCount)');
+    ////print('LeadBloc: Updated lead status and counts - old: ${event.oldStatusId}($oldCount), new: ${event.newStatusId}($newCount)');
   } catch (e) {
     emit(LeadError('Не удалось обновить статус лида: $e'));
   }
@@ -587,7 +596,7 @@ if (event.duplicate != null) 'duplicate': event.duplicate, // Добавляем
 
 /// РАДИКАЛЬНАЯ очистка - удаляет ВСЕ данные и сбрасывает состояние блока
 Future<void> clearAllCountsAndCache() async {
-  print('LeadBloc: RADICAL CLEAR - Clearing all counts, cache and resetting state');
+  //print('LeadBloc: RADICAL CLEAR - Clearing all counts, cache and resetting state');
   
   // Очищаем локальные переменные блока
   _leadCounts.clear();
@@ -611,20 +620,21 @@ Future<void> clearAllCountsAndCache() async {
   _currentHasNoReplies = null;
   _currentHasUnreadMessages = null;
   _currentHasDeal = null;
+  _currentHasOrders = null;
   _currentDaysWithoutActivity = null;
   _currentDirectoryValues = null;
   
   // Радикальная очистка кэша
   await LeadCache.clearEverything(); // Используем новый метод полной очистки
   
-  print('LeadBloc: RADICAL CLEAR completed - all state reset to initial');
+  //print('LeadBloc: RADICAL CLEAR completed - all state reset to initial');
 }
 
 /// Дополнительный метод для принудительного сброса всех счетчиков
 Future<void> resetAllCounters() async {
   _leadCounts.clear();
   await LeadCache.clearPersistentCounts();
-  print('LeadBloc: Reset all counters to zero');
+  //print('LeadBloc: Reset all counters to zero');
 }
 /// Вызывать перед переходом между табами
 Future<void> _preserveCurrentCounts() async {
@@ -633,7 +643,7 @@ Future<void> _preserveCurrentCounts() async {
       int currentCount = _leadCounts[statusId] ?? 0;
       await LeadCache.setPersistentLeadCount(statusId, currentCount);
     }
-    //print('LeadBloc: Preserved all current counts: $_leadCounts');
+    ////print('LeadBloc: Preserved all current counts: $_leadCounts');
   }
 }
 
@@ -649,7 +659,7 @@ Future<void> _restoreAllCounts() async {
     _leadCounts[statusId] = count;
   }
   
-  //print('LeadBloc: Restored all counts from persistent cache: $_leadCounts');
+  ////print('LeadBloc: Restored all counts from persistent cache: $_leadCounts');
 }
 
 Future<void> _restoreCountsFromCache(RestoreCountsFromCache event, Emitter<LeadState> emit) async {
@@ -669,7 +679,7 @@ Future<void> _restoreCountsFromCache(RestoreCountsFromCache event, Emitter<LeadS
   }
 }
 Future<void> _refreshCurrentStatus(RefreshCurrentStatus event, Emitter<LeadState> emit) async {
-  print('LeadBloc: _refreshCurrentStatus for statusId: ${event.statusId}');
+  //print('LeadBloc: _refreshCurrentStatus for statusId: ${event.statusId}');
   
   try {
     if (await _checkInternetConnection()) {
@@ -687,14 +697,14 @@ Future<void> _refreshCurrentStatus(RefreshCurrentStatus event, Emitter<LeadState
       // Восстанавливаем все счетчики из постоянного кэша
       await _restoreAllCounts();
       
-      print('LeadBloc: _refreshCurrentStatus - Loaded ${leads.length} leads for status ${event.statusId}');
+      //print('LeadBloc: _refreshCurrentStatus - Loaded ${leads.length} leads for status ${event.statusId}');
       emit(LeadDataLoaded(leads, currentPage: 1, leadCounts: Map.from(_leadCounts)));
     } else {
-      print('LeadBloc: _refreshCurrentStatus - No internet connection');
+      //print('LeadBloc: _refreshCurrentStatus - No internet connection');
       emit(LeadError('Нет подключения к интернету'));
     }
   } catch (e) {
-    print('LeadBloc: _refreshCurrentStatus - Error: $e');
+    //print('LeadBloc: _refreshCurrentStatus - Error: $e');
     emit(LeadError('Не удалось обновить данные статуса: $e'));
   }
 }

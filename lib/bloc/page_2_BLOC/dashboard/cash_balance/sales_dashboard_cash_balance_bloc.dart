@@ -13,7 +13,7 @@ class SalesDashboardCashBalanceBloc extends Bloc<SalesDashboardCashBalanceEvent,
 
   SalesDashboardCashBalanceBloc() : super(SalesDashboardProductsInitial()) {
     on<LoadCashBalanceReport>((event, emit) async {
-      // try {
+      try {
         emit(SalesDashboardCashBalanceLoading());
 
         debugPrint("Fetching cash balance report: page=${event.page}, perPage=${event.perPage}, filter=${event.filter}, search=${event.search}");
@@ -25,11 +25,11 @@ class SalesDashboardCashBalanceBloc extends Bloc<SalesDashboardCashBalanceEvent,
           search: event.search,
         );
         emit(SalesDashboardCashBalanceLoaded(data: response));
-      // } catch (e) {
-      //   emit(SalesDashboardGoodsError(
-      //     message: e.toString().replaceAll('Exception: ', ''),
-      //   ));
-      // }
+      } catch (e) {
+        emit(SalesDashboardCashBalanceError(
+          message: e.toString().replaceAll('Exception: ', ''),
+        ));
+      }
     });
   }
 }

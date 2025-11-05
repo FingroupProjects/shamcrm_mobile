@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-import 'package:intl/intl.dart';
+import 'package:crm_task_manager/utils/global_fun.dart';
 
 import '../../../../models/page_2/dashboard/dashboard_goods_report.dart';
 
@@ -19,11 +19,6 @@ class GoodsCard extends StatelessWidget {
     this.isSelectionMode = false,
     this.isSelected = false,
   }) : super(key: key);
-
-  String _formatAmount(String amount) {
-    double amountValue = double.tryParse(amount.replaceAll(' ', '')) ?? 0.0;
-    return NumberFormat('#,##0.00', 'ru_RU').format(amountValue);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -67,7 +62,7 @@ class GoodsCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${localizations.translate('days_without_movement') ?? 'Дней без движения'}: ${goods.daysWithoutMovement}',
+                    '${localizations.translate('storages') ?? 'Склады'}: ${goods.storages.map((s) => '${s.name}(${s.quantity})').join(', ')}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
@@ -79,20 +74,10 @@ class GoodsCard extends StatelessWidget {
                   Text(
                     '${localizations.translate('quantity') ?? 'Количество'}: ${goods.totalQuantity}',
                     style: const TextStyle(
-                      fontSize: 14,
+                      fontSize: 15,
                       fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w400,
-                      color: Color(0xff99A4BA),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${localizations.translate('sum') ?? 'Сумма'}: ${_formatAmount(goods.sum)}',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w400,
-                      color: Color(0xff99A4BA),
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xff1E2E52),
                     ),
                   ),
                 ],

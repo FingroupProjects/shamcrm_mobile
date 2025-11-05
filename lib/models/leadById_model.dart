@@ -312,32 +312,48 @@ import 'package:crm_task_manager/models/sales_funnel_model.dart';
 }
 
   class DirectoryEntry {
-    final int id;
-    final DirectoryByLead directory;
-    final Map<String, String> values;
-    final String createdAt;
+  final int id;
+  final DirectoryByLead directory;
+  final List<DirectoryFieldValue> values; // ИЗМЕНЕНО: было Map<String, String>
+  final String createdAt;
 
-    DirectoryEntry({
-      required this.id,
-      required this.directory,
-      required this.values,
-      required this.createdAt,
-    });
+  DirectoryEntry({
+    required this.id,
+    required this.directory,
+    required this.values,
+    required this.createdAt,
+  });
 
-    factory DirectoryEntry.fromJson(Map<String, dynamic> json) {
-      //print('DirectoryEntry: Parsing JSON for entry: ${json['id']}');
-      final entry = DirectoryEntry(
-        id: json['id'] ?? 0,
-        directory: DirectoryByLead.fromJson(json['directory']),
-        values: (json['values'] as Map<String, dynamic>?)?.cast<String, String>() ??
-            {},
-        createdAt: json['created_at'] ?? '',
-      );
-      //print('DirectoryEntry: Entry created: id=${entry.id}, directoryName=${entry.directory.name}, values=${entry.values}');
-      return entry;
-    }
+  factory DirectoryEntry.fromJson(Map<String, dynamic> json) {
+    return DirectoryEntry(
+      id: json['id'] ?? 0,
+      directory: DirectoryByLead.fromJson(json['directory']),
+      values: (json['values'] as List<dynamic>?)
+              ?.map((item) => DirectoryFieldValue.fromJson(item))
+              .toList() ??
+          [],
+      createdAt: json['created_at'] ?? '',
+    );
   }
+}
 
+// Новый класс для представления пары key-value
+class DirectoryFieldValue {
+  final String key;
+  final String value;
+
+  DirectoryFieldValue({
+    required this.key,
+    required this.value,
+  });
+
+  factory DirectoryFieldValue.fromJson(Map<String, dynamic> json) {
+    return DirectoryFieldValue(
+      key: json['key'] ?? '',
+      value: json['value'] ?? '',
+    );
+  }
+}
   class DirectoryByLead{
     final int id;
     final String name;

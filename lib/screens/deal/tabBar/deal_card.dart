@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
@@ -31,6 +32,7 @@ class DealCard extends StatefulWidget {
 class _DealCardState extends State<DealCard> {
   late String dropdownValue;
   late int statusId;
+  bool _isBottomSheetOpen = false;
 
   late final bool isSuccess = widget.deal.dealStatus!.isSuccess;
   late final bool isFailure = widget.deal.dealStatus!.isFailure;
@@ -59,7 +61,7 @@ class _DealCardState extends State<DealCard> {
     'telegram_account': 'assets/icons/leads/telegram.png',
     'telegram_bot': 'assets/icons/leads/telegram.png',
     'whatsapp': 'assets/icons/leads/whatsapp.png',
-    'facebook': 'assets/icons/leads/facebook.png',
+    'facebook': 'assets/icons/leads/messenger.png',
     'instagram': 'assets/icons/leads/instagram.png',
   };
 
@@ -185,12 +187,22 @@ class _DealCardState extends State<DealCard> {
                         ),
                       ),
                       Flexible(
-                        child: GestureDetector(
+                          child: GestureDetector(
                           onTap: () {
-                            DropdownBottomSheet(
+                            // 🛡️ Блокируем повторные нажатия
+                            if (_isBottomSheetOpen) {
+                              print('⚠️ BottomSheet уже открыт, игнорируем нажатие');
+                              return;
+                            }
+                            
+                            // Устанавливаем флаг
+                            _isBottomSheetOpen = true;
+                            
+                            showDealStatusBottomSheet(
                               context,
                               dropdownValue,
-                                  (String newValue, int newStatusId) {
+                              (String newValue, List<int> newStatusIds) {
+                                final newStatusId = newStatusIds.isNotEmpty ? newStatusIds.first : statusId;
                                 setState(() {
                                   dropdownValue = newValue;
                                   statusId = newStatusId;
@@ -199,7 +211,12 @@ class _DealCardState extends State<DealCard> {
                                 widget.onStatusUpdated();
                               },
                               widget.deal,
-                            );
+                              ApiService(),
+                            ).whenComplete(() {
+                              // 🔓 Сбрасываем флаг после закрытия
+                              _isBottomSheetOpen = false;
+                              print('✅ BottomSheet закрыт, флаг сброшен');
+                            });
                           },
                           child: Container(
                             key: widget.dropdownKey,

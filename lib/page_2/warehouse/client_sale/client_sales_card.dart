@@ -2,12 +2,15 @@ import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_sale/clien_sales_document_detail.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/incoming_document_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../models/page_2/expense_document_model.dart';
+
 class ClientSalesCard extends StatefulWidget {
-  final IncomingDocument document;
+  final ExpenseDocument document;
   final VoidCallback? onUpdate;
   final Function() onLongPress;
   final bool isSelectionMode;
@@ -174,19 +177,45 @@ class _ClientSalesCardState extends State<ClientSalesCard> {
                       color: Color(0xff99A4BA),
                     ),
                   ),
-                  if (doc.comment != null && doc.comment!.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Text(
-                        '${AppLocalizations.of(context)!.translate('comment') ?? 'Примечание'}: ${doc.comment}',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w400,
-                          color: Color(0xff99A4BA),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '${AppLocalizations.of(context)!.translate('author') ?? 'Автор'}: ${doc.author?.name ?? 'N/A'}',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w400,
+                            color: Color(0xff99A4BA),
+                          ),
                         ),
                       ),
-                    ),
+                      // show price from documentGoods
+                      Text(
+                        '${AppLocalizations.of(context)!.translate('total') ?? 'Итого'} ${parseNumberToString(doc.totalSum.toStringAsFixed(2))}',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xff1E2E52),
+                        ),
+                      ),
+                    ],
+                  ),
+                  // if (doc.comment != null && doc.comment!.isNotEmpty)
+                  //   Padding(
+                  //     padding: const EdgeInsets.only(top: 8),
+                  //     child: Text(
+                  //       '${AppLocalizations.of(context)!.translate('comment') ?? 'Примечание'}: ${doc.comment}',
+                  //       style: const TextStyle(
+                  //         fontSize: 14,
+                  //         fontFamily: 'Gilroy',
+                  //         fontWeight: FontWeight.w400,
+                  //         color: Color(0xff99A4BA),
+                  //       ),
+                  //     ),
+                  //   ),
                   // Показываем дату удаления для удаленных документов
                   // if (doc.deletedAt != null)
                   //   Padding(

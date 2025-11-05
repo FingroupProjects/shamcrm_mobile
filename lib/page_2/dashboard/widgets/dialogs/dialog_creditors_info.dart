@@ -3,8 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../models/page_2/dashboard/creditors_model.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/creditors/sales_dashboard_creditors_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/sales_dashboard_bloc.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
 import '../../detailed_report/detailed_report_screen.dart';
+import '../../../../custom_widget/full_text_dialog.dart';
 
 void showCreditorsDialog(BuildContext context) {
   // Get the bloc instance from the current context before showing dialog
@@ -169,7 +171,7 @@ class _CreditorsDialogState extends State<CreditorsDialog> {
                     item.name,
                     style: TextStyle(
                       fontFamily: 'Gilroy',
-                      fontSize: 15,
+                      fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: Color(0xff1E2E52),
                     ),
@@ -204,20 +206,31 @@ class _CreditorsDialogState extends State<CreditorsDialog> {
                             '${AppLocalizations.of(context)!.translate('amount')}:',
                             style: TextStyle(
                               fontFamily: 'Gilroy',
-                              fontSize: 11,
+                              fontSize: 10,
                               fontWeight: FontWeight.w500,
                               color: Color(0xff475569),
                             ),
                           ),
                         ),
                         SizedBox(height: 4),
-                        Text(
-                          '${item.debtAmount}',
-                          style: TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xff1E2E52),
+                        GestureDetector(
+                          onTap: () {
+                            showFullTextDialog(
+                              AppLocalizations.of(context)!.translate('amount'),
+                              '${item.debtAmount}',
+                              context,
+                            );
+                          },
+                          child: Text(
+                            '${item.debtAmount}',
+                            style: TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xff1E2E52),
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
                           ),
                         ),
                       ],
@@ -247,23 +260,32 @@ class _CreditorsDialogState extends State<CreditorsDialog> {
                             '${AppLocalizations.of(context)!.translate('phone')}:',
                             style: TextStyle(
                               fontFamily: 'Gilroy',
-                              fontSize: 11,
+                              fontSize: 10,
                               fontWeight: FontWeight.w500,
                               color: Color(0xff475569),
                             ),
                           ),
                         ),
                         SizedBox(height: 4),
-                        FittedBox(
-                          child: Builder(
-                            builder: (context) => Text(
+                        Builder(
+                          builder: (context) => GestureDetector(
+                            onTap: () {
+                              showFullTextDialog(
+                                AppLocalizations.of(context)!.translate('phone'),
+                                item.phone ?? AppLocalizations.of(context)!.translate('not_specified'),
+                                context,
+                              );
+                            },
+                            child: Text(
                               item.phone ?? AppLocalizations.of(context)!.translate('not_specified'),
                               style: TextStyle(
                                 fontFamily: 'Gilroy',
-                                fontSize: 16,
+                                fontSize: 14,
                                 fontWeight: FontWeight.w700,
                                 color: Color(0xff1E2E52),
                               ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
                             ),
                           ),
                         ),
@@ -447,14 +469,25 @@ class _CreditorsDialogState extends State<CreditorsDialog> {
                       // Кнопка "Подробнее"
                       Expanded(
                         child: ElevatedButton(
-                          onPressed: () {
+                          onPressed: () async {
                             debugPrint("Подробнее pressed");
-                            Navigator.of(context).pop(); // Сначала закрываем диалог
-                            Navigator.of(context).push(
+                            
+                            // Сохраняем BLoC перед закрытием диалога
+                            final dashboardBloc = context.read<SalesDashboardBloc>();
+                            
+                            Navigator.of(context).pop(); // Закрываем диалог
+                            
+                            // Переходим на экран отчетов и ждем результат
+                            final shouldReload = await Navigator.of(context).push<bool>(
                               MaterialPageRoute(
                                 builder: (context) => DetailedReportScreen(currentTabIndex: 3),
                               ),
                             );
+                            
+                            // Если вернулось true - перезагружаем
+                            if (shouldReload == true) {
+                              dashboardBloc.add(ReloadAllData());
+                            }
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white,

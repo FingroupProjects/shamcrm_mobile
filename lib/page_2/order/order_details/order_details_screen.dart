@@ -41,6 +41,8 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   final ApiService _apiService = ApiService();
   bool _canEditOrder = false;
   int? currencyId; // Поле для хранения currency_id
+  Map<String, dynamic>? _editResult; // Сохраняем результат редактирования
+  Order? _currentOrderDetails; // Текущие детали заказа для AppBar
 
   @override
   void initState() {
@@ -57,7 +59,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       final savedCurrencyId = prefs.getInt('currency_id');
 
       if (kDebugMode) {
-        print('OrderDetailsScreen: Загружен currency_id из SharedPreferences: $savedCurrencyId');
+        //print('OrderDetailsScreen: Загружен currency_id из SharedPreferences: $savedCurrencyId');
       }
 
       setState(() {
@@ -69,7 +71,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('OrderDetailsScreen: Ошибка загрузки currency_id: $e');
+        //print('OrderDetailsScreen: Ошибка загрузки currency_id: $e');
       }
       setState(() {
         currencyId = 1; // По умолчанию доллар
@@ -94,12 +96,12 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         });
 
         if (kDebugMode) {
-          print('OrderDetailsScreen: Загружен currency_id из API: ${settings.currencyId}');
+          //print('OrderDetailsScreen: Загружен currency_id из API: ${settings.currencyId}');
         }
       }
     } catch (e) {
       if (kDebugMode) {
-        print('OrderDetailsScreen: Ошибка загрузки currency_id из API: $e');
+        //print('OrderDetailsScreen: Ошибка загрузки currency_id из API: $e');
       }
       setState(() {
         currencyId = 1; // По умолчанию доллар
@@ -115,7 +117,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     String symbol = 'UZS'; // По умолчанию сум
 
     if (kDebugMode) {
-      print('OrderDetailsScreen: _formatPrice вызван с currency_id: $currencyId');
+      //print('OrderDetailsScreen: _formatPrice вызван с currency_id: $currencyId');
     }
 
     switch (currencyId) {
@@ -134,12 +136,12 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       default:
         symbol = 'UZS';
         if (kDebugMode) {
-          print('OrderDetailsScreen: Используется валюта по умолчанию (UZS) для currency_id: $currencyId');
+          //print('OrderDetailsScreen: Используется валюта по умолчанию (UZS) для currency_id: $currencyId');
         }
     }
 
     if (kDebugMode) {
-      print('OrderDetailsScreen: Выбранный символ валюты: $symbol для цены: $price');
+      //print('OrderDetailsScreen: Выбранный символ валюты: $symbol для цены: $price');
     }
 
     return '${NumberFormat('#,##0', 'ru_RU').format(price)} $symbol';
@@ -317,57 +319,74 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           create: (context) => OrderHistoryBloc(context.read<ApiService>()),
         ),
       ],
-      child: BlocBuilder<OrderBloc, OrderState>(
-        builder: (context, state) {
-          if (state is OrderLoading) {
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
-          } else if (state is OrderLoaded && state.orderDetails != null) {
-            _updateDetails(state.orderDetails!);
-            return Scaffold(
-              appBar: _buildAppBar(context, state.orderDetails!),
-              backgroundColor: Colors.white,
-              body: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: ListView(
-                  children: [
-                    _buildDetailsList(),
-                    const SizedBox(height: 16),
-                    OrderHistoryWidget(orderId: widget.orderId),
-                    const SizedBox(height: 16),
-                    OrderGoodsScreen(
-                      goods: state.orderDetails!.goods,
-                      order: widget.order,
-                    ),
-                  ],
-                ),
-              ),
-            );
-          } else if (state is OrderError) {
-            return Scaffold(
-              body: Center(child: Text(state.message)),
-            );
-          }
-          return const Scaffold(
-            body: Center(child: Text('')),
-          );
+      child: WillPopScope(
+        onWillPop: () async {
+          // Передаем результат редактирования при закрытии экрана
+          Navigator.pop(context, _editResult);
+          return false;
         },
+        child: BlocBuilder<OrderBloc, OrderState>(
+          builder: (context, state) {
+            // Обновляем текущие детали заказа
+            Order? orderForAppBar = _currentOrderDetails;
+            if (state is OrderLoaded && state.orderDetails != null) {
+              orderForAppBar = state.orderDetails;
+              if (_currentOrderDetails != state.orderDetails) {
+                _currentOrderDetails = state.orderDetails;
+              }
+              _updateDetails(state.orderDetails!);
+            }
+            
+            return Scaffold(
+              backgroundColor: Colors.white,
+              appBar: _buildAppBar(context, orderForAppBar),
+              body: _buildBody(state),
+            );
+          },
+        ),
       ),
     );
   }
 
-  AppBar _buildAppBar(BuildContext context, Order order) {
+  Widget _buildBody(OrderState state) {
+    if (state is OrderLoading) {
+      return const Center(child: CircularProgressIndicator());
+    } else if (state is OrderLoaded && state.orderDetails != null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: ListView(
+          children: [
+            _buildDetailsList(),
+            const SizedBox(height: 16),
+            OrderHistoryWidget(orderId: widget.orderId),
+            const SizedBox(height: 16),
+            OrderGoodsScreen(
+              goods: state.orderDetails!.goods,
+              order: widget.order,
+            ),
+          ],
+        ),
+      );
+    } else if (state is OrderError) {
+      return Center(child: Text(state.message));
+    }
+    return const Center(child: Text(''));
+  }
+
+  AppBar _buildAppBar(BuildContext context, Order? order) {
     return AppBar(
       backgroundColor: Colors.white,
       forceMaterialTransparency: true,
       elevation: 0,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back, color: Color(0xff1E2E52)),
-        onPressed: () => Navigator.pop(context),
+        onPressed: () {
+          // Передаем результат редактирования при закрытии экрана
+          Navigator.pop(context, _editResult);
+        },
       ),
       title: Text(
-        '${AppLocalizations.of(context)!.translate('order_title')} №${order.orderNumber}',
+        '${AppLocalizations.of(context)!.translate('order_title')}№${widget.orderId}',
         style: const TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
@@ -376,7 +395,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         ),
       ),
       actions: [
-        if (_canEditOrder)
+        if (_canEditOrder && order != null)
           IconButton(
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
@@ -386,14 +405,20 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
               height: 24,
             ),
             onPressed: () async {
-              final updatedOrder = await Navigator.push(
+              final result = await Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => OrderEditScreen(order: order),
                 ),
               );
-              if (updatedOrder != null) {
+              if (result != null) {
                 context.read<OrderBloc>().add(FetchOrderDetails(widget.orderId));
+                // Сохраняем результат редактирования для последующей передачи
+                if (result is Map<String, dynamic> && result['success'] == true) {
+                  setState(() {
+                    _editResult = result;
+                  });
+                }
               }
             },
           ),

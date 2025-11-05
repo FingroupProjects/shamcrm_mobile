@@ -17,7 +17,7 @@ import '../../../../bloc/author/get_all_author_bloc.dart';
 import '../../../../models/author_data_response.dart';
 import '../../../../models/cash_register_list_model.dart';
 import '../../../../models/supplier_list_model.dart';
-import '../../../custom_textfield_deadline.dart';
+import '../../../custom_textfield_wh.dart';
 import '../../../dropdown_loading_state.dart';
 
 class IncomingFilterScreen extends StatefulWidget {
@@ -938,9 +938,10 @@ class _IncomingFilterScreenState extends State<IncomingFilterScreen> {
                       color: Colors.white,
                       child: Padding(
                         padding: const EdgeInsets.all(8),
-                        child: CustomTextFieldDate(
+                        child: DateFieldWithFromTo(
+                          isFrom: true,
                           controller: _fromDateController,
-                          label: AppLocalizations.of(context)!.translate('from_date') ?? 'От даты',
+                          label: AppLocalizations.of(context)!.translate('date') ?? 'От даты',
                           withTime: false,
                           onDateSelected: (date) {
                             if (mounted) {
@@ -968,9 +969,10 @@ class _IncomingFilterScreenState extends State<IncomingFilterScreen> {
                       color: Colors.white,
                       child: Padding(
                         padding: const EdgeInsets.all(8),
-                        child: CustomTextFieldDate(
+                        child: DateFieldWithFromTo(
+                          isFrom: false,
                           controller: _toDateController,
-                          label: AppLocalizations.of(context)!.translate('to_date') ?? 'До даты',
+                          label: AppLocalizations.of(context)!.translate('date') ?? 'До даты',
                           withTime: false,
                           onDateSelected: (date) {
                             if (mounted) {

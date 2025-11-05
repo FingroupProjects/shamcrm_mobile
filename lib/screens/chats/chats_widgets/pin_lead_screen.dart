@@ -21,7 +21,7 @@ class PinnedLeadMessageWidget extends StatelessWidget {
     'telegram_account': 'assets/icons/leads/telegram.png',
     'whatsapp': 'assets/icons/leads/whatsapp.png',
     'instagram': 'assets/icons/leads/instagram.png',
-    'facebook': 'assets/icons/leads/facebook.png',
+    'facebook': 'assets/icons/leads/messenger.png',
     'email': 'assets/icons/leads/email.png',
   };
 

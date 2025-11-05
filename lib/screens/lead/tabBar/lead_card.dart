@@ -101,10 +101,11 @@ Color _hexToColor(String hexColor) {
     'Телеграм Аккаунт': 'assets/icons/leads/telegram.png',
     'Телеграм Бот': 'assets/icons/leads/telegram.png',
     'WhatsApp': 'assets/icons/leads/whatsapp.png',
-    'Facebook': 'assets/icons/leads/facebook.png',
+    'facebook': 'assets/icons/leads/messenger.png',
     'Инстаграм': 'assets/icons/leads/instagram.png',
     'Телефон': 'assets/icons/leads/telefon.png',
     'Электронная почта': 'assets/icons/leads/email.png',
+    'Messenger': 'assets/icons/leads/messenger.png',
   };
 
   // Цвета для источников
@@ -116,6 +117,7 @@ Color _hexToColor(String hexColor) {
     'Инстаграм': Color(0xFFE1306C), // Instagram розово-красный
     'Телефон': Color(0xFF4CAF50), // Зеленый для телефона
     'Электронная почта': Color(0xFFFF5722), // Оранжево-красный для почты
+    'Messenger': Color(0xFF0084FF), // Messenger синий
   };
 
   Color getBorderColor(String? sourceName) {

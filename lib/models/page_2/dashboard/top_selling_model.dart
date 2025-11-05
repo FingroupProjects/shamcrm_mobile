@@ -44,10 +44,10 @@ class TopSellingResult {
     required this.lastPage,
     required this.lastPageUrl,
     required this.links,
-    required this.nextPageUrl,
+    this.nextPageUrl,
     required this.path,
     required this.perPage,
-    required this.prevPageUrl,
+    this.prevPageUrl,
     required this.to,
     required this.total,
   });
@@ -116,8 +116,8 @@ class TopSellingData {
       name: json['name'] as String,
       category: json['category'] as String,
       totalQuantity: json['total_quantity'] as int,
-      totalAmount: json['total_amount'] as String,
-      avgPrice: json['avg_price'] as String,
+      totalAmount: json['total_amount'].toString(),
+      avgPrice: json['avg_price'].toString(),
     );
   }
 

@@ -1,7 +1,7 @@
 import 'package:crm_task_manager/models/page_2/dashboard/creditors_model.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-import 'package:intl/intl.dart';
+import 'package:crm_task_manager/utils/global_fun.dart';
 
 class CreditorCard extends StatelessWidget {
   final Creditor creditor;
@@ -18,11 +18,6 @@ class CreditorCard extends StatelessWidget {
     required this.isSelectionMode,
     required this.isSelected,
   }) : super(key: key);
-
-  String _formatAmount(String amount) {
-    double amountValue = double.tryParse(amount.replaceAll(' ', '')) ?? 0.0;
-    return NumberFormat('#,##0.00', 'ru_RU').format(amountValue);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +41,7 @@ class CreditorCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '${localizations.translate('creditor_name_details') ?? 'Название'}: ${creditor.name}',
+                    '${localizations.translate('client') ?? 'Клиент'} ${creditor.name}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
@@ -56,12 +51,12 @@ class CreditorCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${localizations.translate('debt_amount') ?? 'debt_amount'}: ${creditor.debtAmount}',
-                    style: const TextStyle(
-                      fontSize: 14,
+                    '${localizations.translate('debt_amount') ?? 'debt_amount'}: ${parseNumberToString(creditor.debtAmount)}',
+                     style: const TextStyle(
+                      fontSize: 15,
                       fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w400,
-                      color: Color(0xff99A4BA),
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xff1E2E52),
                     ),
                   ),
                 ],

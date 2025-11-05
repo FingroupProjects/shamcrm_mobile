@@ -2,12 +2,12 @@ import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/sales_model.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
+import '../../../../bloc/page_2_BLOC/dashboard/sales_dashboard_bloc.dart';
 import '../../detailed_report/detailed_report_screen.dart';
 import 'download_popup_menu.dart';
-
-enum TimePeriod { year, previousYear }
 
 class SalesData {
   final String period;
@@ -17,16 +17,16 @@ class SalesData {
 }
 
 class SalesDynamicsLineChart extends StatefulWidget {
-  const SalesDynamicsLineChart(this.salesData, {super.key});
+  const SalesDynamicsLineChart(this.allSalesDynamicsData, {super.key});
 
-  final SalesResponse? salesData;
+  final List<AllSalesDynamicsData> allSalesDynamicsData;
 
   @override
   State<SalesDynamicsLineChart> createState() => _SalesDynamicsLineChartState();
 }
 
 class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
-  TimePeriod selectedPeriod = TimePeriod.year;
+  SalesDynamicsTimePeriod selectedPeriod = SalesDynamicsTimePeriod.year;
   List<SalesData> salesData = [];
 
   @override
@@ -38,31 +38,30 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
   @override
   void didUpdateWidget(SalesDynamicsLineChart oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.salesData != widget.salesData) {
+    if (oldWidget.allSalesDynamicsData != widget.allSalesDynamicsData) {
       setState(() {
         salesData = _getDataForPeriod(selectedPeriod);
       });
     }
   }
 
-  List<SalesData> _getDataForPeriod(TimePeriod period) {
-    if (widget.salesData == null) {
+  List<SalesData> _getDataForPeriod(SalesDynamicsTimePeriod period) {
+    try {
+      // Находим данные для выбранного периода
+      final periodData = widget.allSalesDynamicsData.firstWhere(
+        (item) => item.period == period,
+      );
+
+      // Преобразуем данные месяцев в формат для графика
+      return periodData.data.result.months.map((monthData) {
+        return SalesData(
+          period: _getShortMonthName(monthData.monthName),
+          value: double.tryParse(monthData.totalAmount) ?? 0.0,
+        );
+      }).toList();
+    } catch (e) {
+      // Если данных для периода нет, возвращаем пустой список
       return [];
-    }
-
-    switch (period) {
-      case TimePeriod.year:
-        return widget.salesData!.result.months.map((monthData) {
-          return SalesData(
-            period: _getShortMonthName(monthData.monthName),
-            value: double.tryParse(monthData.totalAmount) ?? 0.0,
-          );
-        }).toList();
-
-      case TimePeriod.previousYear:
-      // For previous year, you would need to fetch data from backend
-      // For now, returning empty list
-        return [];
     }
   }
 
@@ -84,20 +83,23 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
     return monthMap[fullName] ?? fullName.substring(0, 3);
   }
 
-  void onPeriodChanged(TimePeriod? period) {
+  void onPeriodChanged(SalesDynamicsTimePeriod? period) {
     if (period != null && selectedPeriod != period) {
       setState(() {
         selectedPeriod = period;
         salesData = _getDataForPeriod(period);
       });
+      
+      // Вызываем перезагрузку данных через Bloc
+      context.read<SalesDashboardBloc>().add(ReloadSalesDynamicsData(period));
     }
   }
 
-  String getPeriodText(TimePeriod period, AppLocalizations localizations) {
+  String getPeriodText(SalesDynamicsTimePeriod period, AppLocalizations localizations) {
     switch (period) {
-      case TimePeriod.year:
+      case SalesDynamicsTimePeriod.year:
         return localizations.translate('current_year_lowercase');
-      case TimePeriod.previousYear:
+      case SalesDynamicsTimePeriod.previousYear:
         return localizations.translate('previous_year');
     }
   }
@@ -105,7 +107,7 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    final isLoading = widget.salesData == null;
+    final isLoading = widget.allSalesDynamicsData.isEmpty;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -135,10 +137,10 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
                   color: Colors.black,
                 ),
               ),
-              Transform.translate(
-                offset: const Offset(16, 0),
-                child: DownloadPopupMenu(onDownload: (DownloadFormat type) {}),
-              ),
+              // Transform.translate(
+              //   offset: const Offset(16, 0),
+              //   child: DownloadPopupMenu(onDownload: (DownloadFormat type) {}),
+              // ),
             ],
           ),
           const SizedBox(height: 16),
@@ -387,13 +389,20 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
 
   double _calculateInterval() {
     final maxY = _calculateMaxY();
+    // Более детальные интервалы для красивого UI
+    if (maxY <= 5) return 1;
     if (maxY <= 10) return 2;
+    if (maxY <= 20) return 5;
     if (maxY <= 50) return 10;
-    if (maxY <= 150) return 20;
+    if (maxY <= 100) return 20;
+    if (maxY <= 200) return 25;
     if (maxY <= 500) return 50;
     if (maxY <= 1000) return 100;
     if (maxY <= 2000) return 200;
-    return 500;
+    if (maxY <= 5000) return 500;
+    if (maxY <= 10000) return 1000;
+    if (maxY <= 20000) return 2000;
+    return 5000;
   }
 
   String _formatValue(double value) {
@@ -411,7 +420,7 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
   }
 
   Widget _buildPeriodDropdown() {
-    return CustomDropdown<TimePeriod>(
+    return CustomDropdown<SalesDynamicsTimePeriod>(
       decoration: CustomDropdownDecoration(
         closedBorder: Border.all(color: Colors.grey[300]!),
         expandedBorder: Border.all(color: Colors.grey[300]!),
@@ -420,9 +429,9 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
         closedFillColor: Colors.white,
         expandedFillColor: Colors.white,
       ),
-      items: TimePeriod.values,
+      items: SalesDynamicsTimePeriod.values,
       initialItem: selectedPeriod,
-      onChanged: (TimePeriod? value) {
+      onChanged: (SalesDynamicsTimePeriod? value) {
         if (value != null) {
           onPeriodChanged(value);
         }

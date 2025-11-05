@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_return/client_return_details.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -42,8 +43,7 @@ class _ClientReturnCardState extends State<ClientReturnCard> {
   }
 
   String _formatDate(DateTime? date) {
-    if (date == null)
-      return AppLocalizations.of(context)!.translate('no_date') ?? 'Нет даты';
+    if (date == null) return AppLocalizations.of(context)!.translate('no_date') ?? 'Нет даты';
     return DateFormat('dd.MM.yyyy').format(date);
   }
 
@@ -85,9 +85,7 @@ class _ClientReturnCardState extends State<ClientReturnCard> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: widget.isSelected
-              ? const Color(0xFFDDE8F5)
-              : const Color(0xFFE9EDF5),
+          color: widget.isSelected ? const Color(0xFFDDE8F5) : const Color(0xFFE9EDF5),
           borderRadius: BorderRadius.circular(12),
           boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 4)],
         ),
@@ -161,14 +159,30 @@ class _ClientReturnCardState extends State<ClientReturnCard> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    '${AppLocalizations.of(context)!.translate('author') ?? 'Автор'}: ${doc.author?.name ?? 'N/A'}',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w400,
-                      color: Color(0xff99A4BA),
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '${AppLocalizations.of(context)!.translate('author') ?? 'Автор'}: ${doc.author?.name ?? 'N/A'}',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w400,
+                            color: Color(0xff99A4BA),
+                          ),
+                        ),
+                      ),
+                      // show price from documentGoods
+                      Text(
+                        '${AppLocalizations.of(context)!.translate('total') ?? 'Итого'} ${parseNumberToString(doc.totalSum.toStringAsFixed(2))}',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xff1E2E52),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

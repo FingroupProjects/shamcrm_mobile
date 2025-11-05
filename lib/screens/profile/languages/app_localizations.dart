@@ -45,7 +45,7 @@ class AppLocalizations {
   String get russian => translate('russian');
   String get uzbek => translate('uzbek');
   String get english => translate('english');
-  String get exit => translate('exit');
+  String get exit => translate('exit_account');
   String get urgent => translate('urgent');
   String get important => translate('important');
   String get normal => translate('normal');

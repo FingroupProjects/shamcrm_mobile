@@ -127,11 +127,13 @@ import 'package:crm_task_manager/screens/auth/auth_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/languages/local_manager_lang.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
+import 'package:crm_task_manager/update_dialog.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:new_version_plus/new_version_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'bloc/cash_register_list/cash_register_list_bloc.dart';
@@ -148,8 +150,8 @@ final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
 void main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
-    print("====================== MAIN START ======================");
-
+    //print("====================== MAIN START ======================");
+    
     // ШАГ 1: Безопасная инициализация Firebase
     await _initializeFirebase();
 
@@ -174,7 +176,7 @@ void main() async {
         await apiService.initialize();
       }
     } else {
-      print('main: Invalid session detected, clearing all data');
+      //print('main: Invalid session detected, clearing all data');
       await _clearAllApplicationData(apiService, authService);
     }
 
@@ -190,11 +192,11 @@ void main() async {
       if (Firebase.apps.isNotEmpty) {
         initialMessage = await FirebaseMessaging.instance.getInitialMessage();
         if (initialMessage != null) {
-          print('main: Initial message получено: ${initialMessage.messageId}');
+          //print('main: Initial message получено: ${initialMessage.messageId}');
         }
       }
     } catch (e) {
-      print('main: Ошибка получения initial message: $e');
+      //print('main: Ошибка получения initial message: $e');
     }
 
     // ШАГ 8: UI настройки
@@ -224,8 +226,8 @@ void main() async {
       sessionValid: sessionValidation.isValid,
     ));
   } catch (e, stackTrace) {
-    print('Критическая ошибка при запуске приложения: $e');
-    print('StackTrace: $stackTrace');
+    //print('Критическая ошибка при запуске приложения: $e');
+    //print('StackTrace: $stackTrace');
 
     // Показываем экран ошибки вместо краша
     runApp(ErrorApp(error: e.toString()));
@@ -238,28 +240,28 @@ void main() async {
 
 Future<void> _initializeFirebase() async {
   try {
-    print('Firebase: Проверка состояния инициализации');
+    //print('Firebase: Проверка состояния инициализации');
     
     // Проверка 1: Проверяем список приложений
     if (Firebase.apps.isEmpty) {
-      print('Firebase: Начинаем первичную инициализацию');
+      //print('Firebase: Начинаем первичную инициализацию');
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
-      print('Firebase: Первичная инициализация завершена успешно');
+      //print('Firebase: Первичная инициализация завершена успешно');
       
       // Даём время полностью инициализироваться
       await Future.delayed(const Duration(milliseconds: 500));
       
     } else {
-      print('Firebase: Приложение уже существует (apps.length = ${Firebase.apps.length})');
+      //print('Firebase: Приложение уже существует (apps.length = ${Firebase.apps.length})');
       
       // Проверка 2: Убеждаемся что default app доступен
       try {
         final app = Firebase.app();
-        print('Firebase: Default app доступен и готов (name: ${app.name})');
+        //print('Firebase: Default app доступен и готов (name: ${app.name})');
       } catch (e) {
-        print('Firebase: Default app существует но недоступен: $e');
+        //print('Firebase: Default app существует но недоступен: $e');
         // Даём время на инициализацию
         await Future.delayed(const Duration(milliseconds: 500));
       }
@@ -268,9 +270,9 @@ Future<void> _initializeFirebase() async {
     // Финальная проверка готовности
     try {
       final app = Firebase.app();
-      print('Firebase: Финальная проверка пройдена (name: ${app.name})');
+      //print('Firebase: Финальная проверка пройдена (name: ${app.name})');
     } catch (e) {
-      print('Firebase: Предупреждение - default app может быть не готов: $e');
+      //print('Firebase: Предупреждение - default app может быть не готов: $e');
     }
     
   } catch (e) {
@@ -279,7 +281,7 @@ Future<void> _initializeFirebase() async {
     // Обрабатываем специфичные ошибки
     if (errorString.contains('already exists') || 
         errorString.contains('duplicate app')) {
-      print('Firebase: Приложение уже было инициализировано (это нормально)');
+      //print('Firebase: Приложение уже было инициализировано (это нормально)');
       
       // Даём время на полную инициализацию
       await Future.delayed(const Duration(milliseconds: 500));
@@ -287,14 +289,14 @@ Future<void> _initializeFirebase() async {
       // Проверяем доступность
       try {
         Firebase.app();
-        print('Firebase: После ошибки "already exists" - app доступен');
+        //print('Firebase: После ошибки "already exists" - app доступен');
       } catch (checkError) {
-        print('Firebase: После ошибки "already exists" - app НЕ доступен: $checkError');
+        //print('Firebase: После ошибки "already exists" - app НЕ доступен: $checkError');
       }
       
     } else {
       // Это реальная критическая ошибка
-      print('Firebase: КРИТИЧЕСКАЯ ОШИБКА инициализации: $e');
+      //print('Firebase: КРИТИЧЕСКАЯ ОШИБКА инициализации: $e');
       // НЕ пробрасываем ошибку - даём приложению запуститься без Firebase
     }
   }
@@ -306,20 +308,20 @@ Future<void> _initializeFirebase() async {
 
 Future<void> _initializeFirebaseMessaging(ApiService apiService) async {
   try {
-    print('Firebase Messaging: Начало инициализации');
+    //print('Firebase Messaging: Начало инициализации');
     
     // Проверка 1: Firebase инициализирован?
     if (Firebase.apps.isEmpty) {
-      print('Firebase Messaging: Firebase не инициализирован, пропуск');
+      //print('Firebase Messaging: Firebase не инициализирован, пропуск');
       return;
     }
 
     // Проверка 2: Default app доступен?
     try {
       final app = Firebase.app();
-      print('Firebase Messaging: Default app доступен (${app.name})');
+      //print('Firebase Messaging: Default app доступен (${app.name})');
     } catch (e) {
-      print('Firebase Messaging: Default app недоступен: $e');
+      //print('Firebase Messaging: Default app недоступен: $e');
       return;
     }
 
@@ -327,13 +329,13 @@ Future<void> _initializeFirebaseMessaging(ApiService apiService) async {
     await Future.delayed(const Duration(milliseconds: 500));
 
     // Запрос разрешений
-    print('Firebase Messaging: Запрос разрешений');
+    //print('Firebase Messaging: Запрос разрешений');
     final settings = await FirebaseMessaging.instance.requestPermission(
       alert: true,
       badge: true,
       sound: true,
     );
-    print('Firebase Messaging: Разрешения получены (status: ${settings.authorizationStatus})');
+    //print('Firebase Messaging: Разрешения получены (status: ${settings.authorizationStatus})');
 
     // Получение FCM токена
     await getFCMTokens(apiService);
@@ -342,21 +344,21 @@ Future<void> _initializeFirebaseMessaging(ApiService apiService) async {
     try {
       FirebaseApi firebaseApi = FirebaseApi();
       await firebaseApi.initNotifications();
-      print('Firebase Messaging: FirebaseApi инициализирован успешно');
+      //print('Firebase Messaging: FirebaseApi инициализирован успешно');
     } catch (e) {
-      print('Firebase Messaging: Ошибка инициализации FirebaseApi: $e');
+      //print('Firebase Messaging: Ошибка инициализации FirebaseApi: $e');
     }
 
-    print('Firebase Messaging: Инициализация завершена успешно');
+    //print('Firebase Messaging: Инициализация завершена успешно');
     
   } catch (e) {
     final errorString = e.toString();
     
     if (errorString.contains('already exists') || 
         errorString.contains('duplicate')) {
-      print('Firebase Messaging: Сервис уже инициализирован (нормально)');
+      //print('Firebase Messaging: Сервис уже инициализирован (нормально)');
     } else {
-      print('Firebase Messaging: Ошибка инициализации: $e');
+      //print('Firebase Messaging: Ошибка инициализации: $e');
     }
     // НЕ пробрасываем ошибку - приложение должно работать
   }
@@ -366,13 +368,14 @@ Future<void> _initializeFirebaseMessaging(ApiService apiService) async {
 // ПОЛУЧЕНИЕ FCM ТОКЕНА
 // =============================================================================
 
+// В main.dart - ИЗМЕНЯЕМ функцию getFCMTokens
 Future<void> getFCMTokens(ApiService apiService) async {
   try {
-    print('FCM Token: Начало получения');
+    //print('FCM Token: Начало получения');
     
     // Проверка Firebase
     if (Firebase.apps.isEmpty) {
-      print('FCM Token: Firebase не инициализирован');
+      //print('FCM Token: Firebase не инициализирован');
       return;
     }
 
@@ -380,7 +383,7 @@ Future<void> getFCMTokens(ApiService apiService) async {
     try {
       Firebase.app();
     } catch (e) {
-      print('FCM Token: Default app недоступен: $e');
+      //print('FCM Token: Default app недоступен: $e');
       return;
     }
 
@@ -388,18 +391,23 @@ Future<void> getFCMTokens(ApiService apiService) async {
     final String? fcmToken = await FirebaseMessaging.instance.getToken();
     
     if (fcmToken != null && fcmToken.isNotEmpty) {
-      print('FCM Token: Успешно получен (${fcmToken.substring(0, 20)}...)');
+      //print('FCM Token: Успешно получен (${fcmToken.substring(0, 20)}...)');
+      //print('FCM Token: Полный токен: $fcmToken');
       
-      // Можно отправить на сервер если нужно
-      // await apiService.saveFCMToken(fcmToken);
+      // ✅ ОТПРАВЛЯЕМ ТОКЕН НА СЕРВЕР
+      try {
+        await apiService.sendDeviceToken(fcmToken);
+        //print('FCM Token: Успешно отправлен на сервер');
+      } catch (e) {
+        //print('FCM Token: Ошибка отправки на сервер: $e');
+      }
       
     } else {
-      print('FCM Token: Токен не получен (null или пустой)');
+      //print('FCM Token: Токен не получен (null или пустой)');
     }
     
   } catch (e) {
-    print('FCM Token: Ошибка получения: $e');
-    // НЕ критично - продолжаем без токена
+    //print('FCM Token: Ошибка получения: $e');
   }
 }
 
@@ -417,11 +425,11 @@ class SessionValidationResult {
 Future<SessionValidationResult> _validateApplicationSession(
     ApiService apiService) async {
   try {
-    print('main: Validating application session');
+    //print('main: Validating application session');
 
     final token = await apiService.getToken();
     if (token == null || token.isEmpty) {
-      print('main: No token found');
+      //print('main: No token found');
       return SessionValidationResult(isValid: false, errorMessage: 'No token');
     }
 
@@ -443,7 +451,7 @@ Future<SessionValidationResult> _validateApplicationSession(
             enteredDomain.isEmpty ||
             enteredMainDomain == null ||
             enteredMainDomain.isEmpty) {
-          print('main: No valid domain configuration found');
+          //print('main: No valid domain configuration found');
           return SessionValidationResult(
               isValid: false, errorMessage: 'No domain');
         }
@@ -452,13 +460,13 @@ Future<SessionValidationResult> _validateApplicationSession(
 
     final organizationId = await apiService.getSelectedOrganization();
     if (organizationId == null || organizationId.isEmpty) {
-      print('main: No organization selected');
+      //print('main: No organization selected');
     }
 
-    print('main: Session validation successful');
+    //print('main: Session validation successful');
     return SessionValidationResult(isValid: true);
   } catch (e) {
-    print('main: Error validating session: $e');
+    //print('main: Error validating session: $e');
     return SessionValidationResult(isValid: false, errorMessage: e.toString());
   }
 }
@@ -470,7 +478,7 @@ Future<SessionValidationResult> _validateApplicationSession(
 Future<void> _clearAllApplicationData(
     ApiService apiService, AuthService authService) async {
   try {
-    print('main: Clearing all application data');
+    //print('main: Clearing all application data');
 
     await apiService.logout();
     await apiService.reset();
@@ -479,9 +487,9 @@ Future<void> _clearAllApplicationData(
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
 
-    print('main: All application data cleared');
+    //print('main: All application data cleared');
   } catch (e) {
-    print('main: Error clearing application data: $e');
+    //print('main: Error clearing application data: $e');
   }
 }
 
@@ -544,7 +552,7 @@ class ErrorApp extends StatelessWidget {
 }
 
 // =============================================================================
-// MYAPP
+// MARK: MYAPP
 // =============================================================================
 
 class MyApp extends StatefulWidget {
@@ -592,11 +600,11 @@ class _MyAppState extends State<MyApp> {
 
   Future<void> _initializeApp() async {
     try {
-      print('MyApp: Инициализация приложения');
+      //print('MyApp: Инициализация приложения');
       
       // Если initial message уже был передан из main, используем его
       if (_initialMessage != null) {
-        print('MyApp: Initial message уже получено из main');
+        //print('MyApp: Initial message уже получено из main');
       } else {
         // Пытаемся получить initial message если Firebase готов
         if (Firebase.apps.isNotEmpty) {
@@ -610,15 +618,15 @@ class _MyAppState extends State<MyApp> {
             _initialMessage = firebaseApi.getInitialMessage();
             
             if (_initialMessage != null) {
-              print('MyApp: Initial message получено в MyApp');
+              //print('MyApp: Initial message получено в MyApp');
             } else {
-              print('MyApp: Initial message отсутствует');
+              //print('MyApp: Initial message отсутствует');
             }
           } catch (e) {
-            print('MyApp: Ошибка получения initial message: $e');
+            //print('MyApp: Ошибка получения initial message: $e');
           }
         } else {
-          print('MyApp: Firebase не инициализирован, пропуск initial message');
+          //print('MyApp: Firebase не инициализирован, пропуск initial message');
         }
       }
 
@@ -626,15 +634,37 @@ class _MyAppState extends State<MyApp> {
         _isInitialized = true;
       });
       
-      print('MyApp: Инициализация завершена успешно');
+      //print('MyApp: Инициализация завершена успешно');
       
     } catch (e) {
-      print('MyApp: Ошибка инициализации: $e');
+      //print('MyApp: Ошибка инициализации: $e');
       setState(() {
         _isInitialized = true;
       });
     }
   }
+
+  Future<void> checkForNewVersion(BuildContext context) async {
+  try {
+    final newVersionPlus = NewVersionPlus();
+    final status = await newVersionPlus.getVersionStatus();
+    debugPrint("APP_VERSION: Current: ${status?.localVersion}, Store: ${status?.storeVersion}, CanUpdate: ${status?.canUpdate}");
+    
+    if (!mounted || !context.mounted || status == null || status.canUpdate == false) return;
+
+    final localizations = AppLocalizations.of(context);
+
+    await UpdateDialog.show(
+      context: context,
+      status: status,
+      title: localizations?.translate('app_update_available_title') ?? 'Обновление',
+      message: localizations?.translate('app_update_available_message') ?? 'Доступна новая версия приложения',
+      updateButton: localizations?.translate('app_update_button') ?? 'Обновить',
+    );
+  } catch (e) {
+    print('MyApp: Error checking version: $e');
+  }
+}
 
   void setLocale(Locale newLocale) {
     setState(() {
@@ -693,74 +723,53 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => HistoryLeadsBloc(widget.apiService)),
         BlocProvider(create: (context) => HistoryBlocMyTask(widget.apiService)),
         BlocProvider(create: (context) => RoleBloc(widget.apiService)),
-        BlocProvider(
-            create: (context) => TaskStatusNameBloc(widget.apiService)),
-        BlocProvider(
-            create: (context) => MyTaskMyStatusNameBloc(widget.apiService)),
+        BlocProvider(create: (context) => TaskStatusNameBloc(widget.apiService)),
+        BlocProvider(create: (context) => MyTaskMyStatusNameBloc(widget.apiService)),
         BlocProvider(create: (context) => LeadByIdBloc(widget.apiService)),
         BlocProvider(create: (context) => DealByIdBloc(widget.apiService)),
         BlocProvider(create: (context) => TaskByIdBloc(widget.apiService)),
         BlocProvider(create: (context) => MyTaskByIdBloc(widget.apiService)),
         BlocProvider(create: (context) => DealHistoryBloc(widget.apiService)),
-        BlocProvider(
-            create: (context) =>
-                GetAllClientBloc(apiService: widget.apiService)),
-        BlocProvider(
-            create: (context) =>
-                GetAllAuthorBloc(apiService: widget.apiService)),
+        BlocProvider(create: (context) => GetAllClientBloc(apiService: widget.apiService)),
+        BlocProvider(create: (context) => GetAllAuthorBloc(apiService: widget.apiService)),
         BlocProvider(create: (context) => CreateClientBloc()),
         BlocProvider(create: (context) => GroupChatBloc(widget.apiService)),
         BlocProvider(create: (context) => DeleteMessageBloc(ApiService())),
         BlocProvider(create: (context) => ListenSenderTextCubit()),
         BlocProvider(create: (context) => ListenSenderVoiceCubit()),
         BlocProvider(create: (context) => ListenSenderFileCubit()),
-        BlocProvider(
-          create: (context) => ChatsBloc(ApiService()),
-        ),
+        BlocProvider(create: (context) => ChatsBloc(ApiService()), ),
         BlocProvider(create: (context) => TaskStatusBloc(ApiService())),
         BlocProvider(create: (context) => MyTaskStatusBloc(ApiService())),
         BlocProvider(create: (context) => OrganizationBloc(ApiService())),
         BlocProvider(create: (context) => NotificationBloc(ApiService())),
-        BlocProvider(
-          create: (context) => ChatsBloc(ApiService()),
-        ),
+        BlocProvider(create: (context) => ChatsBloc(ApiService()),),
         BlocProvider(create: (context) => TaskStatusBloc(ApiService())),
         BlocProvider(create: (context) => DashboardChartBloc(ApiService())),
-        BlocProvider(
-            create: (context) => DashboardChartBlocManager(ApiService())),
-        BlocProvider(
-            create: (context) => DashboardConversionBloc(ApiService())),
-        BlocProvider(
-            create: (context) => DashboardConversionBlocManager(ApiService())),
+        BlocProvider(create: (context) => DashboardChartBlocManager(ApiService())),
+        BlocProvider(create: (context) => DashboardConversionBloc(ApiService())),
+        BlocProvider(create: (context) => DashboardConversionBlocManager(ApiService())),
         BlocProvider(create: (context) => UserBlocManager(ApiService())),
         BlocProvider(create: (context) => DealStatsBloc(ApiService())),
         BlocProvider(create: (context) => DealStatsManagerBloc(ApiService())),
         BlocProvider(create: (context) => DashboardTaskChartBloc(ApiService())),
-        BlocProvider(
-            create: (context) => DashboardTaskChartBlocManager(ApiService())),
+        BlocProvider(create: (context) => DashboardTaskChartBlocManager(ApiService())),
         BlocProvider(create: (context) => LeadDealsBloc(ApiService())),
         BlocProvider(create: (context) => DealTasksBloc(ApiService())),
-        BlocProvider(
-            create: (context) => ProcessSpeedBlocManager(ApiService())),
+        BlocProvider(create: (context) => ProcessSpeedBlocManager(ApiService())),
         BlocProvider(create: (context) => ContactPersonBloc(ApiService())),
         BlocProvider(create: (context) => LeadToChatBloc(widget.apiService)),
         BlocProvider(create: (context) => ChatProfileBloc(ApiService())),
         BlocProvider(create: (context) => TaskProfileBloc(ApiService())),
         BlocProvider(create: (context) => PermissionsBloc(ApiService())),
-        BlocProvider(
-            create: (context) => ForgotPinBloc(apiService: ApiService())),
+        BlocProvider(create: (context) => ForgotPinBloc(apiService: ApiService())),
         BlocProvider(create: (context) => SourceLeadBloc(widget.apiService)),
-        BlocProvider(
-            create: (context) => LeadToCBloc(apiService: widget.apiService)),
-        BlocProvider(
-            create: (context) => Data1CBloc(apiService: widget.apiService)),
-        BlocProvider(
-            create: (context) => ProfileBloc(apiService: widget.apiService)),
+        BlocProvider(create: (context) => LeadToCBloc(apiService: widget.apiService)),
+        BlocProvider(create: (context) => Data1CBloc(apiService: widget.apiService)),
+        BlocProvider(create: (context) => ProfileBloc(apiService: widget.apiService)),
         BlocProvider(create: (context) => ProcessSpeedBloc(widget.apiService)),
-        BlocProvider(
-            create: (context) => TaskCompletionBloc(widget.apiService)),
-        BlocProvider(
-            create: (context) => TaskAddFromDealBloc(apiService: ApiService())),
+        BlocProvider(create: (context) => TaskCompletionBloc(widget.apiService)),
+        BlocProvider(create: (context) => TaskAddFromDealBloc(apiService: ApiService())),
         BlocProvider(create: (context) => EventBloc(widget.apiService)),
         BlocProvider(create: (context) => NoticeBloc(widget.apiService)),
         BlocProvider(create: (context) => GetAllSubjectBloc()),
@@ -781,45 +790,26 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => LabelBloc(widget.apiService)),
         BlocProvider(create: (context) => VariantBloc(widget.apiService)),
         BlocProvider(create: (context) => VariantBottomSheetBloc(widget.apiService)),
-        BlocProvider(
-          create: (context) => CallCenterBloc(ApiService()),
-        ),
+        BlocProvider(create: (context) => CallCenterBloc(ApiService()), ),
         BlocProvider(create: (context) => SalesFunnelBloc(ApiService())),
         BlocProvider(create: (context) => OperatorBloc(ApiService())),
         BlocProvider(create: (context) => TemplateBloc(ApiService())),
-        BlocProvider(
-            create: (context) => LeadStatusForFilterBloc(widget.apiService)),
+        BlocProvider(create: (context) => LeadStatusForFilterBloc(widget.apiService)),
         BlocProvider(create: (context) => IncomingBloc(widget.apiService)),
-        BlocProvider<StorageBloc>(
-          create: (context) => StorageBloc(widget.apiService),
-        ),
-        BlocProvider<UnitsBloc>(
-          create: (context) => UnitsBloc(widget.apiService),
-        ),
-        BlocProvider<ExpenseArticleBloc>(
-          create: (context) => ExpenseArticleBloc(widget.apiService),
-        ),
-        BlocProvider<SupplierBloc>(
-          create: (context) => SupplierBloc(widget.apiService),
-        ),
-        BlocProvider<ClientSaleBloc>(
-          create: (context) => ClientSaleBloc(widget.apiService),
-        ),
-        BlocProvider<ClientSaleDocumentHistoryBloc>(
-          create: (context) => ClientSaleDocumentHistoryBloc(widget.apiService),
-        ),
-        BlocProvider<IncomingDocumentHistoryBloc>(
-          create: (context) => IncomingDocumentHistoryBloc(context.read<ApiService>()),
-        ),
+        BlocProvider<StorageBloc>(create: (context) => StorageBloc(widget.apiService),),
+        BlocProvider<UnitsBloc>(create: (context) => UnitsBloc(widget.apiService), ),
+        BlocProvider<ExpenseArticleBloc>( create: (context) => ExpenseArticleBloc(widget.apiService),),
+        BlocProvider<SupplierBloc>( create: (context) => SupplierBloc(widget.apiService), ),
+        BlocProvider<ClientSaleBloc>(  create: (context) => ClientSaleBloc(widget.apiService), ),
+        BlocProvider<ClientSaleDocumentHistoryBloc>(  create: (context) => ClientSaleDocumentHistoryBloc(widget.apiService),),
+        BlocProvider<IncomingDocumentHistoryBloc>(  create: (context) => IncomingDocumentHistoryBloc(context.read<ApiService>()),),
         // TODO fix bloc providers warehouse folder
         BlocProvider(create: (context) => ClientReturnBloc(widget.apiService)),
         BlocProvider(create: (context) => SupplierBloc(widget.apiService)),
         BlocProvider(create: (context) => MeasureUnitsBloc(widget.apiService)),
         BlocProvider(create: (context) => WareHouseBloc(widget.apiService)),
-        BlocProvider(
-            create: (context) => PriceTypeScreenBloc(widget.apiService)),
-        BlocProvider(
-            create: (context) => SupplierReturnBloc(widget.apiService)),
+        BlocProvider(create: (context) => PriceTypeScreenBloc(widget.apiService)),
+        BlocProvider(create: (context) => SupplierReturnBloc(widget.apiService)),
         BlocProvider(create: (context) => WriteOffBloc(widget.apiService)),
         BlocProvider(create: (context) => MovementBloc(widget.apiService)),
         BlocProvider(create: (context) => CashDeskBloc()),
@@ -833,9 +823,6 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => SalesDashboardCreditorsBloc()),
         BlocProvider(create: (context) => SalesDashboardDebtorsBloc()),
         BlocProvider(create: (context) => FieldConfigurationBloc(widget.apiService)),
-
-
-
      ],
       child: MaterialApp(
         locale: _locale ?? const Locale('ru'),
@@ -870,12 +857,27 @@ class _MyAppState extends State<MyApp> {
         home: Builder(
           builder: (context) {
             if (!widget.sessionValid) {
+              WidgetsBinding.instance.addPostFrameCallback((_) async {
+                if (mounted) {
+                  await checkForNewVersion(context);
+                }
+              });
               return AuthScreen();
             }
 
             if (widget.token == null) {
+              WidgetsBinding.instance.addPostFrameCallback((_) async {
+                if (mounted) {
+                  await checkForNewVersion(context);
+                }
+              });
               return AuthScreen();
             } else if (widget.pin == null) {
+              WidgetsBinding.instance.addPostFrameCallback((_) async {
+                if (mounted) {
+                  await checkForNewVersion(context);
+                }
+              });
               return PinSetupScreen();
             } else {
               return PinScreen(

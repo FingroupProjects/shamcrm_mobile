@@ -24,6 +24,7 @@ class BranchRadioGroupWidget extends StatefulWidget {
 class _BranchRadioGroupWidgetState extends State<BranchRadioGroupWidget> {
   List<Branch> statusList = [];
   Branch? selectedStatusData;
+  bool _hasInitialized = false;
 
   final TextStyle statusTextStyle = const TextStyle(
     fontSize: 16,
@@ -35,6 +36,7 @@ class _BranchRadioGroupWidgetState extends State<BranchRadioGroupWidget> {
   @override
   void initState() {
     super.initState();
+    debugPrint('BranchRadioGroupWidget initState - selectedStatus: ${widget.selectedStatus}');
     context.read<BranchBloc>().add(FetchBranches());
   }
 
@@ -72,10 +74,21 @@ class _BranchRadioGroupWidgetState extends State<BranchRadioGroupWidget> {
             }
 
             if (state is BranchLoaded) {
-              // Фильтруем филиалы с isActive = 1
-              statusList = state.branches.where((branch) => branch.isActive == 1).toList();
+              // Print all branches with their details
+              debugPrint('=== BranchRadioGroupWidget - BranchLoaded ===');
+              debugPrint('Total branches: ${state.branches.length}');
+              for (var branch in state.branches) {
+                debugPrint('Branch: id=${branch.id}, name=${branch.name}, isActive=${branch.isActive}');
+              }
+              debugPrint('Looking for selectedStatus: ${widget.selectedStatus}');
+              debugPrint('_hasInitialized: $_hasInitialized');
+              debugPrint('Current selectedStatusData: ${selectedStatusData?.id} - ${selectedStatusData?.name}');
 
-              // Если список пуст, показываем сообщение
+              // Filter branches with isActive = 1
+              statusList = state.branches.where((branch) => branch.isActive == 1).toList();
+              debugPrint('Active branches count: ${statusList.length}');
+
+              // If no active branches available
               if (statusList.isEmpty) {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -104,24 +117,51 @@ class _BranchRadioGroupWidgetState extends State<BranchRadioGroupWidget> {
                 );
               }
 
-              // Логика выбора филиала
-              if (statusList.length == 1 && selectedStatusData == null) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  widget.onSelectStatus(statusList[0]);
-                  setState(() {
-                    selectedStatusData = statusList[0];
+              // Initialize selected branch only once when data is first loaded
+              if (!_hasInitialized) {
+                debugPrint('Initializing branch selection...');
+                _hasInitialized = true;
+
+                if (widget.selectedStatus != null) {
+                  debugPrint('Searching for branch with ID: ${widget.selectedStatus}');
+
+                  // Try to find the branch by ID
+                  try {
+                    selectedStatusData = statusList.firstWhere(
+                          (branch) {
+                        debugPrint('Comparing: branch.id=${branch.id} with selectedStatus=${widget.selectedStatus}');
+                        return branch.id.toString() == widget.selectedStatus;
+                      },
+                    );
+
+                    debugPrint('✅ Found branch: ${selectedStatusData?.id} - ${selectedStatusData?.name}');
+
+                    // Notify parent about the selected branch
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (selectedStatusData != null) {
+                        debugPrint('Notifying parent with branch: ${selectedStatusData!.id}');
+                        widget.onSelectStatus(selectedStatusData!);
+                      }
+                    });
+                  } catch (e) {
+                    // If branch not found, don't select anything
+                    debugPrint('❌ Branch not found: $e');
+                    selectedStatusData = null;
+                  }
+                } else if (statusList.length == 1) {
+                  // If only one branch and nothing selected, auto-select it
+                  debugPrint('Auto-selecting single branch: ${statusList[0].id} - ${statusList[0].name}');
+                  selectedStatusData = statusList[0];
+
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    widget.onSelectStatus(statusList[0]);
                   });
-                });
-              } else if (widget.selectedStatus != null && statusList.isNotEmpty) {
-                try {
-                  selectedStatusData = statusList.firstWhere(
-                    (status) => status.id.toString() == widget.selectedStatus,
-                    orElse: () => statusList[0], // Выбираем первый активный филиал, если указанный не найден
-                  );
-                } catch (e) {
-                  selectedStatusData = statusList[0]; // Дефолт на первый активный
+                } else {
+                  debugPrint('No selectedStatus provided and multiple branches available');
                 }
               }
+
+              debugPrint('Final selectedStatusData for dropdown: ${selectedStatusData?.id} - ${selectedStatusData?.name}');
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -176,13 +216,14 @@ class _BranchRadioGroupWidgetState extends State<BranchRadioGroupWidget> {
                         style: statusTextStyle.copyWith(fontSize: 14),
                       ),
                       excludeSelected: false,
-                      initialItem: statusList.contains(selectedStatusData) ? selectedStatusData : null,
+                      initialItem: selectedStatusData,
                       onChanged: (value) {
                         if (value != null) {
-                          widget.onSelectStatus(value);
+                          debugPrint('User selected branch: ${value.id} - ${value.name}');
                           setState(() {
                             selectedStatusData = value;
                           });
+                          widget.onSelectStatus(value);
                           FocusScope.of(context).unfocus();
                         }
                       },

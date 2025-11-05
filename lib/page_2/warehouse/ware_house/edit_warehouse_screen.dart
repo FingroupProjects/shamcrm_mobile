@@ -112,8 +112,7 @@ class _EditWarehouseScreenState extends State<EditWarehouseScreen> {
                           hintText: AppLocalizations.of(context)!
                               .translate('enter_warehouse_name') ??
                               'Введите название склада',
-                          label: AppLocalizations.of(context)!.translate('name') ??
-                              'Название',
+                            label: AppLocalizations.of(context)!.translate('title_without_dots') ?? 'Название без точек',
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return AppLocalizations.of(context)!

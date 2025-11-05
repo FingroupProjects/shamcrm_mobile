@@ -16,6 +16,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../models/api_exception_model.dart';
 import '../../../models/page_2/goods_model.dart';
+import '../../../utils/global_fun.dart';
 import '../../../widgets/snackbar_widget.dart';
 import '../../money/widgets/error_dialog.dart';
 
@@ -149,7 +150,7 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
       },
       {
         'label': '${AppLocalizations.of(context)!.translate('total_sum') ?? 'Общая сумма'}:',
-        'value': '${document.totalSum.toStringAsFixed(2)} ${document.currency?.symbolCode ?? ''}',
+        'value': '${parseNumberToString(document.totalSum.toStringAsFixed(2))} ${document.currency?.symbolCode ?? ''}',
       },
       {
         'label': '${AppLocalizations.of(context)!.translate('status') ?? 'Статус'}:',
@@ -667,15 +668,11 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
   }
 
   Widget _buildGoodsItem(DocumentGood good) {
-    final availableUnits = good.good?.units ?? [];
+    final selectedUnit = good.selectedUnit;
+    final amount = 1.0; // USE 1 for amount DO NOT USE selectedUnit.amount ?? 1.0
+    final unitShortName = selectedUnit.shortName ?? selectedUnit.name ?? '';
 
-    final selectedUnit = good.unit ??
-        availableUnits.firstWhere(
-              (unit) => unit.id == good.unitId,
-          orElse: () => Unit(id: null, name: 'шт'),
-        );
-
-    final unitShortName = selectedUnit.shortName ?? selectedUnit.name ?? 'шт';
+    debugPrint("selectedUnit: $selectedUnit");
 
     return GestureDetector(
       onTap: () {
@@ -776,7 +773,7 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  '${(double.tryParse(good.price ?? '0.00') ?? 0.00).toStringAsFixed(2)}',
+                                  parseNumberToString((amount * (double.tryParse(good.price ?? '0.00') ?? 0.00)).toStringAsFixed(2)),
                                   style: const TextStyle(
                                     fontSize: 12,
                                     fontFamily: 'Gilroy',
@@ -811,7 +808,7 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              '${((good.quantity ?? 0) * (double.tryParse(good.price ?? '0') ?? 0)).toStringAsFixed(2)} ${currentDocument!.currency?.symbolCode ?? ''}',
+                              '${parseNumberToString(((good.quantity ?? 0) * amount * (double.tryParse(good.price ?? '0') ?? 0)).toStringAsFixed(2))} ${currentDocument!.currency?.symbolCode ?? ''}',
                               style: const TextStyle(
                                 fontSize: 14,
                                 fontFamily: 'Gilroy',
@@ -832,6 +829,7 @@ class _IncomingDocumentDetailsScreenState extends State<IncomingDocumentDetailsS
       ),
     );
   }
+
 
   Widget _buildImageWidget(DocumentGood good) {
     if (baseUrl == null || good.good == null || good.good!.files == null || good.good!.files!.isEmpty) {
