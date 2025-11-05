@@ -60,14 +60,10 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
 
 Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
   if (isFetching) {
-    ////print('LeadBloc: _fetchLeads - Already fetching, skipping');
     return;
   }
   isFetching = true;
   try {
-    ////print('LeadBloc: _fetchLeads - statusId: ${event.statusId}, salesFunnelId: ${event.salesFunnelId}, ignoreCache: ${event.ignoreCache}');
-    
-    // НЕ отправляем LeadLoading, чтобы не мигал интерфейс
     if (state is! LeadDataLoaded) {
       emit(LeadLoading());
     }
@@ -92,7 +88,7 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
     _currentDaysWithoutActivity = event.daysWithoutActivity;
     _currentDirectoryValues = event.directoryValues;
 
-    // КРИТИЧНО: Сначала восстанавливаем ВСЕ постоянные счетчики
+    // КРИТИЧНО: Восстанавливаем ВСЕ постоянные счетчики
     final allPersistentCounts = await LeadCache.getPersistentLeadCounts();
     for (String statusIdStr in allPersistentCounts.keys) {
       int statusId = int.parse(statusIdStr);
@@ -137,16 +133,19 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
         salesFunnelId: event.salesFunnelId,
       );
 
-      // Кэшируем лиды БЕЗ изменения постоянных счетчиков
-      await LeadCache.cacheLeadsForStatus(
-  event.statusId,
-  leads,
-  updatePersistentCount: event.ignoreCache, // ← только при ignoreCache обновляем счётчик
-);
+      // КЛЮЧЕВОЙ МОМЕНТ: Берём реальный счётчик из _leadCounts
+      // (который был установлен при загрузке статусов из API)
+      final int? realTotalCount = _leadCounts[event.statusId];
       
-      // ВАЖНО: НЕ ПЕРЕЗАПИСЫВАЕМ счетчики значениями из пагинации!
-      // Счетчики остаются такими, какими были в постоянном кэше
-      ////print('LeadBloc: _fetchLeads - Fetched ${leads.length} leads from API, but kept persistent counts: $_leadCounts');
+      // Кэшируем лиды с РЕАЛЬНЫМ общим счётчиком, а не с leads.length
+      await LeadCache.cacheLeadsForStatus(
+        event.statusId,
+        leads,
+        updatePersistentCount: event.ignoreCache,
+        actualTotalCount: realTotalCount, // ← Передаём РЕАЛЬНЫЙ счётчик из API статусов
+      );
+      
+      ////print('LeadBloc: _fetchLeads - Fetched ${leads.length} leads from API for status ${event.statusId}, using REAL total count: $realTotalCount from _leadCounts');
     }
 
     allLeadsFetched = leads.isEmpty;
