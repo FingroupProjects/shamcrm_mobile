@@ -161,8 +161,7 @@ class _NotesWidgetState extends State<NotesWidget> {
   Widget _buildNoteItem(Notes note) {
     final formattedDate = note.date != null
         ? DateFormat('dd.MM.yyyy HH:mm')
-            .format(DateTime.parse(note.date!).add(Duration(hours: 5)))
-        : AppLocalizations.of(context)!.translate('');
+            .format(DateTime.parse(note.date!).add(Duration(hours: 5))) : null;
     final createDate = note.createDate != null
         ? DateFormat('dd.MM.yyyy HH:mm')
             .format(DateTime.parse(note.createDate!).add(Duration(hours: 5)))
@@ -192,15 +191,15 @@ class _NotesWidgetState extends State<NotesWidget> {
                         note.title,
                         style: TaskCardStyles.titleStyle,
                       ),
-                      SizedBox(height: 4),
-                      Text(
-                        AppLocalizations.of(context)!.translate('date') +
-                            " " +
-                            formattedDate,
-                        style: TaskCardStyles.priorityStyle.copyWith(
+                      if (formattedDate != null) ...[
+                        SizedBox(height: 4),
+                        Text(
+                          "${AppLocalizations.of(context)!.translate('date_reminder')} $formattedDate",
+                          style: TaskCardStyles.priorityStyle.copyWith(
                           color: Color(0xff1E2E52),
                         ),
-                      ),
+                        ),
+                      ],
                       SizedBox(height: 4),
                       Text(
                         AppLocalizations.of(context)!

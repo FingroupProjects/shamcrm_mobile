@@ -62,21 +62,21 @@ class TopSellingCard extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     '${localizations.translate('total_quantity') ?? 'Количество'}: ${product.totalQuantity}',
-                    style: const TextStyle(
-                      fontSize: 14,
+                     style: const TextStyle(
+                      fontSize: 15,
                       fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w400,
-                      color: Color(0xff99A4BA),
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xff1E2E52),
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     '${localizations.translate('total_amount') ?? 'Общая сумма'}: ${parseNumberToString(product.totalAmount)}',
-                    style: const TextStyle(
-                      fontSize: 14,
+                     style: const TextStyle(
+                      fontSize: 15,
                       fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w400,
-                      color: Color(0xff99A4BA),
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xff1E2E52),
                     ),
                   ),
                 ],

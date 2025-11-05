@@ -76,7 +76,7 @@ class VariantBottomSheetBloc extends Bloc<VariantBottomSheetEvent, VariantBottom
       // Search in parallel: categories AND variants
       final results = await Future.wait([
         apiService.getCategory(search: event.query),
-        apiService.getVariants(page: 1, search: event.query, perPage: _perPage),
+        apiService.getVariants(page: 1, search: event.query, perPage: _perPage, isService: event.isService),  // ADD isService
       ]);
 
       final categories = results[0] as List<CategoryData>;
@@ -138,6 +138,7 @@ class VariantBottomSheetBloc extends Bloc<VariantBottomSheetEvent, VariantBottom
         page: nextPage,
         search: state.searchQuery!,
         perPage: _perPage,
+        isService: state.isService,  // ADD THIS
       );
 
       // Merge with existing (remove duplicates)
@@ -237,6 +238,7 @@ class VariantBottomSheetBloc extends Bloc<VariantBottomSheetEvent, VariantBottom
       final response = await apiService.getVariants(
         page: event.page,
         perPage: _perPage,
+        isService: event.isService,  // ADD THIS
       );
 
       // Cache the result
@@ -289,6 +291,7 @@ class VariantBottomSheetBloc extends Bloc<VariantBottomSheetEvent, VariantBottom
       final response = await apiService.getVariants(
         page: nextPage,
         perPage: _perPage,
+        isService: state.isService,  // ADD THIS (also need to store in state)
       );
 
       // Cache the page
@@ -446,6 +449,7 @@ class VariantBottomSheetBloc extends Bloc<VariantBottomSheetEvent, VariantBottom
         page: event.page,
         perPage: _perPage,
         filters: {'category_id': event.categoryId},
+        isService: event.isService,  // ADD THIS
       );
 
       // Cache the result
@@ -496,6 +500,7 @@ class VariantBottomSheetBloc extends Bloc<VariantBottomSheetEvent, VariantBottom
         page: nextPage,
         perPage: _perPage,
         filters: {'category_id': event.categoryId},
+        isService: state.isService,  // ADD THIS
       );
 
       // Merge with existing (remove duplicates)

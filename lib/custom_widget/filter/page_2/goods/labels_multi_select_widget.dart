@@ -29,7 +29,7 @@ class _LabelsMultiSelectWidgetState extends State<LabelsMultiSelectWidget> {
   void initState() {
     super.initState();
     context.read<LabelBloc>().add(FetchLabels());
-    print('LabelsMultiSelectWidget: Инициализация, загрузка меток');
+    //print('LabelsMultiSelectWidget: Инициализация, загрузка меток');
   }
 
   @override
@@ -40,7 +40,7 @@ class _LabelsMultiSelectWidgetState extends State<LabelsMultiSelectWidget> {
         BlocListener<LabelBloc, LabelState>(
           listener: (context, state) {
             if (state is LabelError) {
-              print('LabelsMultiSelectWidget: Ошибка загрузки меток: ${state.message}');
+              //print('LabelsMultiSelectWidget: Ошибка загрузки меток: ${state.message}');
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
@@ -68,7 +68,7 @@ class _LabelsMultiSelectWidgetState extends State<LabelsMultiSelectWidget> {
           child: BlocBuilder<LabelBloc, LabelState>(
             builder: (context, state) {
               if (state is LabelLoading) {
-                print('LabelsMultiSelectWidget: Загрузка меток');
+                //print('LabelsMultiSelectWidget: Загрузка меток');
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -93,7 +93,7 @@ class _LabelsMultiSelectWidgetState extends State<LabelsMultiSelectWidget> {
                   selectedLabelsData = labelsList
                       .where((label) => widget.selectedLabels!.contains(label.id.toString()))
                       .toList();
-                  print('LabelsMultiSelectWidget: Начальные метки: ${selectedLabelsData.map((e) => e.name).toList()}');
+                  //print('LabelsMultiSelectWidget: Начальные метки: ${selectedLabelsData.map((e) => e.name).toList()}');
                 }
 
                 return Column(
@@ -203,7 +203,7 @@ class _LabelsMultiSelectWidgetState extends State<LabelsMultiSelectWidget> {
                         setState(() {
                           selectedLabelsData = values;
                         });
-                        print('LabelsMultiSelectWidget: Выбраны метки (label_id): $selectedIds');
+                        //print('LabelsMultiSelectWidget: Выбраны метки (label_id): $selectedIds');
                       },
                     ),
                   ],

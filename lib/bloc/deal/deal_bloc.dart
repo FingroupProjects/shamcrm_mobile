@@ -48,12 +48,12 @@ class DealBloc extends Bloc<DealEvent, DealState> {
 
   Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
     if (isFetching) {
-      print('DealBloc: _fetchDeals - Already fetching, skipping');
+      //print('DealBloc: _fetchDeals - Already fetching, skipping');
       return;
     }
     isFetching = true;
     try {
-      print('DealBloc: _fetchDeals - statusId: ${event.statusId}, salesFunnelId: ${event.salesFunnelId}');
+      //print('DealBloc: _fetchDeals - statusId: ${event.statusId}, salesFunnelId: ${event.salesFunnelId}');
       emit(DealLoading());
 
       _currentQuery = event.query;
@@ -68,7 +68,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
       _currentNames = event.names;
 
       if (!await _checkInternetConnection()) {
-        print('DealBloc: _fetchDeals - No internet connection');
+        //print('DealBloc: _fetchDeals - No internet connection');
         final cachedDeals = await DealCache.getDealsForStatus(event.statusId);
         if (cachedDeals.isNotEmpty) {
           emit(DealDataLoaded(cachedDeals, currentPage: 1, dealCounts: {}));
@@ -81,7 +81,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
 
       final cachedDeals = await DealCache.getDealsForStatus(event.statusId);
       if (cachedDeals.isNotEmpty) {
-        print('DealBloc: _fetchDeals - Emitting cached deals: ${cachedDeals.length}');
+        //print('DealBloc: _fetchDeals - Emitting cached deals: ${cachedDeals.length}');
         emit(DealDataLoaded(cachedDeals, currentPage: 1, dealCounts: {}));
       }
 
@@ -103,7 +103,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
       );
 
       await DealCache.cacheDealsForStatus(event.statusId, deals);
-      print('DealBloc: _fetchDeals - Cached deals for statusId: ${event.statusId}, count: ${deals.length}');
+      //print('DealBloc: _fetchDeals - Cached deals for statusId: ${event.statusId}, count: ${deals.length}');
 
       final dealCounts = Map<int, int>.from(_dealCounts);
       for (var deal in deals) {
@@ -113,7 +113,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
       allDealsFetched = deals.isEmpty;
       emit(DealDataLoaded(deals, currentPage: 1, dealCounts: dealCounts));
     } catch (e) {
-      print('DealBloc: _fetchDeals - Error: $e');
+      //print('DealBloc: _fetchDeals - Error: $e');
       emit(DealError('Не удалось загрузить данные!'));
     } finally {
       isFetching = false;

@@ -62,7 +62,7 @@ class _AuthScreenState extends State<AuthScreen> {
         });
       }
     } catch (e) {
-      print('AuthScreen: Error checking domain: $e');
+      //print('AuthScreen: Error checking domain: $e');
       if (mounted) {
         setState(() {
           _isDomainChecked = false;
@@ -180,7 +180,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                 }
                               }
                             } catch (e) {
-                              print('AuthScreen: Error with QR scan: $e');
+                              //print('AuthScreen: Error with QR scan: $e');
                               if (mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
@@ -303,7 +303,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                   }
                                 }
                               } catch (e) {
-                                print('AuthScreen: Error in domain listener: $e');
+                                //print('AuthScreen: Error in domain listener: $e');
                                 if (mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(content: Text('Произошла ошибка при проверке email')),
@@ -360,10 +360,10 @@ class _AuthScreenState extends State<AuthScreen> {
                                       bool hasMiniApp = loginState.hasMiniApp; // Теперь это поле есть в LoginLoaded
                                       
                                       await prefs.setBool('hasMiniApp', hasMiniApp);
-                                      print('AuthScreen: Saved hasMiniApp: $hasMiniApp');
+                                      //print('AuthScreen: Saved hasMiniApp: $hasMiniApp');
 
                                       final organizationId = await context.read<ApiService>().getSelectedOrganization();
-                                      print('AuthScreen: Login successful, organization_id: $organizationId');
+                                      //print('AuthScreen: Login successful, organization_id: $organizationId');
                                       await Future.delayed(const Duration(seconds: 2));
                                       if (mounted) {
                                         await _checkPinSetupStatus(context);
@@ -374,7 +374,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                       );
                                     }
                                   } catch (e) {
-                                    print('AuthScreen: Error in login listener: $e');
+                                    //print('AuthScreen: Error in login listener: $e');
                                     if (mounted) {
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(content: Text('Ошибка входа в систему')),
@@ -478,7 +478,7 @@ class _AuthScreenState extends State<AuthScreen> {
         }
       }
     } catch (e) {
-      print('AuthScreen: Error checking PIN setup status: $e');
+      //print('AuthScreen: Error checking PIN setup status: $e');
       if (mounted) {
         // Fallback - идем на pin_setup
         Navigator.pushReplacementNamed(context, '/pin_setup');

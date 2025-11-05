@@ -1,4 +1,5 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/page_2/warehouse/incoming/supplier_widget.dart';
 import '../../../../bloc/page_2_BLOC/money_income/money_income_bloc.dart';
 import 'package:crm_task_manager/bloc/supplier_list/supplier_list_bloc.dart';
 import 'package:crm_task_manager/bloc/supplier_list/supplier_list_event.dart';
@@ -36,7 +37,7 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
   final TextEditingController _commentController = TextEditingController();
   final TextEditingController _amountController = TextEditingController();
 
-  SupplierData? _selectedSupplier;
+  String? _selectedSupplierId;
   CashRegisterData? selectedCashRegister;
   List<SupplierData> suppliersList = [];
   
@@ -85,10 +86,7 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
     }
 
     if (widget.document.model?.id != null) {
-      _selectedSupplier = SupplierData(
-        id: widget.document.model!.id!,
-        name: widget.document.model!.name ?? widget.document.model!.id.toString(),
-      );
+      _selectedSupplierId = widget.document.model!.id!.toString();
     }
 
     if (widget.document.cashRegister != null) {
@@ -117,7 +115,7 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
   void _createDocument() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (_selectedSupplier == null) {
+    if (_selectedSupplierId == null) {
       _showSnackBar(
         AppLocalizations.of(context)!.translate('select_supplier') ?? 
         'Пожалуйста, выберите поставщика',
@@ -163,7 +161,7 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
     final dataChanged = !areDatesEqual(widget.document.date ?? '', isoDate) ||
         widget.document.amount != _amountController.text.trim() ||
         (widget.document.comment ?? '') != _commentController.text.trim() ||
-        widget.document.model?.id.toString() != _selectedSupplier!.id.toString() ||
+        widget.document.model?.id.toString() != _selectedSupplierId!.toString() ||
         widget.document.cashRegister?.id != selectedCashRegister?.id;
 
     if (dataChanged) {
@@ -172,7 +170,7 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
         date: isoDate,
         amount: double.parse(_amountController.text.trim()),
         operationType: MoneyIncomeOperationType.return_supplier.name,
-        supplierId: _selectedSupplier!.id,
+        supplierId: int.parse(_selectedSupplierId!),
         comment: _commentController.text.trim(),
         cashRegisterId: selectedCashRegister?.id,
       ));
@@ -214,147 +212,6 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
         ),
       );
     });
-  }
-
-  Widget _buildSupplierWidget() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          AppLocalizations.of(context)!.translate('supplier') ?? 'Поставщик',
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
-          ),
-        ),
-        const SizedBox(height: 4),
-        BlocConsumer<GetAllSupplierBloc, GetAllSupplierState>(
-          listener: (context, state) {
-            if (state is GetAllSupplierSuccess) {
-              setState(() {
-                suppliersList = state.dataSuppliers.result ?? [];
-              });
-            }
-          },
-          builder: (context, state) {
-            if (state is GetAllSupplierInitial || (state is GetAllSupplierSuccess && suppliersList.isEmpty)) {
-              context.read<GetAllSupplierBloc>().add(GetAllSupplierEv());
-              return const DropdownLoadingState();
-            }
-
-            if (state is GetAllSupplierLoading) {
-              return const DropdownLoadingState();
-            }
-
-            if (state is GetAllSupplierError) {
-              return Container(
-                height: 50,
-                alignment: Alignment.center,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                        AppLocalizations.of(context)!.translate('error_loading_suppliers') ?? 'Ошибка загрузки поставщиков',
-                        style: const TextStyle(color: Colors.red, fontSize: 12)
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        context.read<GetAllSupplierBloc>().add(GetAllSupplierEv());
-                      },
-                      child: Text(
-                          AppLocalizations.of(context)!.translate('retry') ?? 'Повторить',
-                          style: const TextStyle(fontSize: 12)
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }
-
-            if (state is GetAllSupplierSuccess && suppliersList.isEmpty) {
-              return Container(
-                height: 50,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: const Color(0xffF4F7FD),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  AppLocalizations.of(context)!.translate('select_supplier') ?? 'Выберите поставщика',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
-                  ),
-                ),
-              );
-            }
-
-            return CustomDropdown<SupplierData>.search(
-              items: suppliersList,
-              searchHintText: AppLocalizations.of(context)!.translate('search') ?? 'Поиск',
-              overlayHeight: 300,
-              enabled: true,
-              decoration: CustomDropdownDecoration(
-                closedFillColor: const Color(0xffF4F7FD),
-                expandedFillColor: Colors.white,
-                closedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
-                closedBorderRadius: BorderRadius.circular(12),
-                expandedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
-                expandedBorderRadius: BorderRadius.circular(12),
-              ),
-              listItemBuilder: (context, item, isSelected, onItemSelect) {
-                return Text(
-                  item.name ?? item.id?.toString() ?? 'Unknown Supplier',
-                  style: const TextStyle(
-                    color: Color(0xff1E2E52),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                  ),
-                );
-              },
-              headerBuilder: (context, selectedItem, enabled) {
-                return Text(
-                  selectedItem?.name ??
-                      selectedItem?.id?.toString() ??
-                      AppLocalizations.of(context)!.translate('select_supplier') ?? 'Выберите поставщика',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
-                  ),
-                );
-              },
-              hintBuilder: (context, hint, enabled) => Text(
-                AppLocalizations.of(context)!.translate('select_supplier') ?? 'Выберите поставщика',
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
-                ),
-              ),
-              initialItem: _selectedSupplier != null && suppliersList.any((s) => s.id == _selectedSupplier!.id)
-                  ? suppliersList.firstWhere((s) => s.id == _selectedSupplier!.id)
-                  : null,
-              onChanged: (value) {
-                if (value != null && mounted) {
-                  setState(() {
-                    _selectedSupplier = value;
-                  });
-                  FocusScope.of(context).unfocus();
-                }
-              },
-            );
-          },
-        ),
-      ],
-    );
   }
 
   @override
@@ -438,7 +295,14 @@ class _EditMoneyIncomeSupplierReturnState extends State<EditMoneyIncomeSupplierR
                       const SizedBox(height: 8),
                       _buildApproveButton(localizations),
                       const SizedBox(height: 16),
-                      _buildSupplierWidget(),
+                      SupplierWidget(
+                        selectedSupplier: _selectedSupplierId,
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedSupplierId = value;
+                          });
+                        },
+                      ),
                       const SizedBox(height: 16),
                       _buildDateField(localizations),
                       const SizedBox(height: 16),

@@ -43,21 +43,21 @@ class _GoodUnitsDropdownState extends State<GoodUnitsDropdown> {
 
   void _updateUnitsList() {
     if (kDebugMode) {
-      print('GoodUnitsDropdown: _updateUnitsList called');
-      print('GoodUnitsDropdown: selectedGood=${widget.selectedGood?.fullName}');
-      print('GoodUnitsDropdown: selectedUnitId=${widget.selectedUnitId}');
+      //print('GoodUnitsDropdown: _updateUnitsList called');
+      //print('GoodUnitsDropdown: selectedGood=${widget.selectedGood?.fullName}');
+      //print('GoodUnitsDropdown: selectedUnitId=${widget.selectedUnitId}');
     }
 
     // Получаем единицы из выбранного товара
     if (widget.selectedGood?.good?.units != null) {
       unitsList = widget.selectedGood!.good!.units!;
       if (kDebugMode) {
-        print('GoodUnitsDropdown: Found ${unitsList.length} units for this good');
+        //print('GoodUnitsDropdown: Found ${unitsList.length} units for this good');
       }
     } else {
       unitsList = [];
       if (kDebugMode) {
-        print('GoodUnitsDropdown: No units found for this good');
+        //print('GoodUnitsDropdown: No units found for this good');
       }
     }
 
@@ -68,12 +68,12 @@ class _GoodUnitsDropdownState extends State<GoodUnitsDropdown> {
           (unit) => unit.id.toString() == widget.selectedUnitId,
         );
         if (kDebugMode) {
-          print('GoodUnitsDropdown: Selected unit found - ${selectedUnitData?.name}');
+          //print('GoodUnitsDropdown: Selected unit found - ${selectedUnitData?.name}');
         }
       } catch (e) {
         selectedUnitData = null;
         if (kDebugMode) {
-          print('GoodUnitsDropdown: Selected unit NOT found - searching for ${widget.selectedUnitId}');
+          //print('GoodUnitsDropdown: Selected unit NOT found - searching for ${widget.selectedUnitId}');
         }
       }
     } else {
@@ -89,7 +89,7 @@ class _GoodUnitsDropdownState extends State<GoodUnitsDropdown> {
     final isDisabled = widget.selectedGood == null || unitsList.isEmpty;
 
     if (kDebugMode) {
-      print('GoodUnitsDropdown: build() - isDisabled=$isDisabled, units count=${unitsList.length}');
+      //print('GoodUnitsDropdown: build() - isDisabled=$isDisabled, units count=${unitsList.length}');
     }
 
     return Column(
@@ -269,7 +269,7 @@ class _GoodUnitsDropdownState extends State<GoodUnitsDropdown> {
           },
           onChanged: (value) {
             if (kDebugMode) {
-              print('GoodUnitsDropdown: onChanged - selected ${value?.name}');
+              //print('GoodUnitsDropdown: onChanged - selected ${value?.name}');
             }
 
             if (value != null) {

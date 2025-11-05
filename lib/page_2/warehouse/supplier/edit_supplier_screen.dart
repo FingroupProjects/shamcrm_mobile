@@ -135,7 +135,7 @@ class _EditSupplierScreenState extends State<EditSupplierScreen> {
             height: 24,
           ),
           onPressed: () {
-            Navigator.pop(context);
+            Navigator.pop(context, false);
           },
         ),
         title: Text(
@@ -182,7 +182,7 @@ class _EditSupplierScreenState extends State<EditSupplierScreen> {
                 duration: const Duration(seconds: 3),
               ),
             );
-            Navigator.pop(context);
+            Navigator.pop(context, true);
           }
         },
         child: Form(
@@ -266,7 +266,7 @@ class _EditSupplierScreenState extends State<EditSupplierScreen> {
                   ),
                 ),
               ),
-              Container(
+                        Container(
                 padding: const EdgeInsets.all(16),
                 child: Row(
                   children: [
@@ -278,7 +278,7 @@ class _EditSupplierScreenState extends State<EditSupplierScreen> {
                         buttonColor: const Color(0xffF4F7FD),
                         textColor: Colors.black,
                         onPressed: () {
-                          Navigator.pop(context);
+                          Navigator.pop(context, false);
                         },
                       ),
                     ),
@@ -319,7 +319,7 @@ class _EditSupplierScreenState extends State<EditSupplierScreen> {
                                   context.read<SupplierBloc>().add(
                                       UpdateSupplier(supplier, supplier.id));
 
-                                  Navigator.pop(context);
+                                  Navigator.pop(context, true);
                                 }
                               },
                             );

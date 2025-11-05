@@ -74,10 +74,10 @@ class GoodsCard extends StatelessWidget {
                   Text(
                     '${localizations.translate('quantity') ?? 'Количество'}: ${goods.totalQuantity}',
                     style: const TextStyle(
-                      fontSize: 14,
+                      fontSize: 15,
                       fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w400,
-                      color: Color(0xff99A4BA),
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xff1E2E52),
                     ),
                   ),
                 ],

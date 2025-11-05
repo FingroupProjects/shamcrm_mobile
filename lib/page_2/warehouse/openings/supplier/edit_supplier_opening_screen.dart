@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/page_2/warehouse/incoming/supplier_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
@@ -206,7 +207,10 @@ class _EditSupplierOpeningScreenState extends State<EditSupplierOpeningScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildSupplierDropdown(),
+                          SupplierWidget(
+                            selectedSupplier: _selectedSupplierId,
+                            onChanged: (value) => setState(() => _selectedSupplierId = value),
+                          ),
                           const SizedBox(height: 16),
                           GestureDetector(
                             onTap: () {
@@ -345,201 +349,6 @@ class _EditSupplierOpeningScreenState extends State<EditSupplierOpeningScreen> {
               ],
             ),
           ),
-      ),
-    );
-  }
-
-  Widget _buildSupplierDropdown() {
-    return BlocListener<SupplierBloc, SupplierState>(
-      listener: (context, state) {
-        if (state is SupplierError) {
-          _showSnackBar(
-            AppLocalizations.of(context)!.translate(state.message),
-            isSuccess: false,
-          );
-        }
-      },
-      child: BlocBuilder<SupplierBloc, SupplierState>(
-        builder: (context, state) {
-          final isLoading = state is SupplierLoading;
-
-          // Update selected supplier data when loaded
-          if (state is SupplierLoaded) {
-            List<Supplier> supplierList = state.supplierList;
-
-            if (_selectedSupplierId != null && supplierList.isNotEmpty) {
-              try {
-                _selectedSupplierData = supplierList.firstWhere(
-                      (supplier) => supplier.id.toString() == _selectedSupplierId,
-                );
-              } catch (e) {
-                _selectedSupplierData = null;
-              }
-            }
-          }
-
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                AppLocalizations.of(context)!.translate('supplier'),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                child: CustomDropdown<Supplier>.search(
-                  closeDropDownOnClearFilterSearch: true,
-                  items: state is SupplierLoaded ? state.supplierList : [],
-                  searchHintText: AppLocalizations.of(context)!.translate('search'),
-                  overlayHeight: 400,
-                  enabled: !isLoading,
-                  decoration: CustomDropdownDecoration(
-                    closedFillColor: const Color(0xffF4F7FD),
-                    expandedFillColor: Colors.white,
-                    closedBorder: Border.all(
-                      color: const Color(0xffF4F7FD),
-                      width: 1,
-                    ),
-                    closedBorderRadius: BorderRadius.circular(12),
-                    expandedBorder: Border.all(
-                      color: const Color(0xffF4F7FD),
-                      width: 1,
-                    ),
-                    expandedBorderRadius: BorderRadius.circular(12),
-                  ),
-                  listItemBuilder: (context, item, isSelected, onItemSelect) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item.name,
-                          style: const TextStyle(
-                            color: Color(0xff1E2E52),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            fontFamily: 'Gilroy',
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        Text(
-                          item.phone ?? '',
-                          style: TextStyle(
-                            color: const Color(0xff1E2E52).withOpacity(0.7),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w400,
-                            fontFamily: 'Gilroy',
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    );
-                  },
-                  headerBuilder: (context, selectedItem, enabled) {
-                    if (isLoading) {
-                      return const Center(
-                        child: SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
-                          ),
-                        ),
-                      );
-                    }
-
-                    return Text(
-                      selectedItem.name,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
-                      ),
-                    );
-                  },
-                  hintBuilder: (context, hint, enabled) {
-                    if (isLoading) {
-                      return const Center(
-                        child: SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
-                          ),
-                        ),
-                      );
-                    }
-
-                    return Text(
-                      AppLocalizations.of(context)!.translate('select_supplier'),
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
-                      ),
-                    );
-                  },
-                  noResultFoundBuilder: (context, text) {
-                    if (isLoading) {
-                      return const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(20.0),
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
-                          ),
-                        ),
-                      );
-                    }
-                    return Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(20.0),
-                        child: Text(
-                          AppLocalizations.of(context)!.translate('no_results'),
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontFamily: 'Gilroy',
-                            color: Color(0xff1E2E52),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                  excludeSelected: false,
-                  initialItem: (state is SupplierLoaded &&
-                      state.supplierList.contains(_selectedSupplierData))
-                      ? _selectedSupplierData
-                      : null,
-                  validator: (value) {
-                    if (value == null) {
-                      return AppLocalizations.of(context)!.translate('field_required');
-                    }
-                    return null;
-                  },
-                  onChanged: (value) {
-                    if (value != null) {
-                      setState(() {
-                        _selectedSupplierId = value.id.toString();
-                        _selectedSupplierData = value;
-                      });
-                      FocusScope.of(context).unfocus();
-                    }
-                  },
-                ),
-              ),
-            ],
-          );
-        },
       ),
     );
   }

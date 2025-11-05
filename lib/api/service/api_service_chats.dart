@@ -17,10 +17,10 @@ class ApiServiceDownload {
     final enteredDomainMap = await ApiService().getEnteredDomain();
     String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
 
-      print('=-=-=--=-=-=-=-==-=-=--=-=-=-=-=---======-=-=-=-=-=-=--=-=-=-=--=-==--=-=-=-=');
-      print('=-=-=--=-=-=-=-==-=-=--=-=-=-=-=---API-SERVICE-CHATS=START=====-=-=-=-=-=-=--=-=-=-=--=-==--=-=-=-=');
-      print('Полученный базовый домен: $enteredMainDomain');
-      print('=-=-=--=-=-=-=-==-=-=--=-=-=-=-=---API-SERVICE-CHATS=END=====-=-=-=-=-=-=--=-=-=-=--=-==--=-=-=-=');
+      //print('=-=-=--=-=-=-=-==-=-=--=-=-=-=-=---======-=-=-=-=-=-=--=-=-=-=--=-==--=-=-=-=');
+      //print('=-=-=--=-=-=-=-==-=-=--=-=-=-=-=---API-SERVICE-CHATS=START=====-=-=-=-=-=-=--=-=-=-=--=-==--=-=-=-=');
+      //print('Полученный базовый домен: $enteredMainDomain');
+      //print('=-=-=--=-=-=-=-==-=-=--=-=-=-=-=---API-SERVICE-CHATS=END=====-=-=-=-=-=-=--=-=-=-=--=-==--=-=-=-=');
 
 
       final String baseUrl = 'https://$enteredMainDomain';
@@ -41,7 +41,7 @@ class ApiServiceDownload {
         if (response.statusCode == 200) {
           await file.writeAsBytes(response.bodyBytes);
         } else {
-          print('Ошибка загрузки файла: ${response.statusCode}');
+          //print('Ошибка загрузки файла: ${response.statusCode}');
           return; // Выходим из функции, если произошла ошибка
         }
       }
@@ -49,7 +49,7 @@ class ApiServiceDownload {
       // Открываем файл
       await OpenFile.open(file.path);
     } catch (e) {
-      print('Ошибка загрузки файла!');
+      //print('Ошибка загрузки файла!');
     }
   }
 

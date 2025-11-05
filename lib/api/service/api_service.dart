@@ -75,7 +75,7 @@ import 'package:crm_task_manager/models/page_2/dashboard/debtors_model.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/creditors_model.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/illiquids_model.dart';
 import 'package:crm_task_manager/models/page_2/delivery_address_model.dart';
-import 'package:crm_task_manager/models/page_2/good_dashboard_warehouse_model.dart';
+import 'package:crm_task_manager/models/page_2/good_dashboard_warehouse_model.dart' as dgrmodel;
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_history_model.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
@@ -138,6 +138,7 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/batch_model.dart';
 import '../../models/cash_register_list_model.dart';
+import '../../models/dashboard_goods_movement_history_model.dart';
 import '../../models/domain_check.dart';
 import '../../models/income_categories_data_response.dart';
 import '../../models/login_model.dart';
@@ -1329,6 +1330,7 @@ Future<String> getStaticBaseUrl() async {
     bool? hasContact,
     bool? hasChat,
     bool? hasDeal,
+    bool? hasOrders,
     int? daysWithoutActivity,
     bool? hasNoReplies,
     bool? hasUnreadMessages,
@@ -1361,6 +1363,7 @@ Future<String> getStaticBaseUrl() async {
         (hasContact == true) ||
         (hasChat == true) ||
         (hasDeal == true) ||
+        (hasOrders == true) ||
         (hasNoReplies == true) ||
         (hasUnreadMessages == true) ||
         (daysWithoutActivity != null) ||
@@ -1425,6 +1428,9 @@ Future<String> getStaticBaseUrl() async {
     if (hasDeal == true) {
       path += '&withoutDeal=1';
     }
+    if (hasOrders == true) {
+      path += '&hasOrders=1';
+    }
     if (daysWithoutActivity != null) {
       path += '&lastUpdate=$daysWithoutActivity';
     }
@@ -1438,12 +1444,13 @@ Future<String> getStaticBaseUrl() async {
     }
 
     if (kDebugMode) {
-      //print('ApiService: getLeads - Final path: $path');
+      print('ApiService: getLeads - Final path: $path');
     }
     final response = await _getRequest(path);
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       if (data['result']['data'] != null) {
+        debugPrint("getLeadsResponse: $data", wrapWidth: 999999);
         return (data['result']['data'] as List)
             .map((json) => Lead.fromJson(json, leadStatusId ?? -1))
             .toList();
@@ -3120,30 +3127,103 @@ Future<List<Deal>> getDeals(
   }
 
 // Обновление статуса карточки Сделки в колонке
-  Future<void> updateDealStatus(int dealId, int position, List<int> statusIds) async {
-  // ИЗМЕНЕНО: принимаем List<int> вместо int
-  final path = await _appendQueryParams('/deal/change-multiple-status/$dealId');
-  if (kDebugMode) {
-    //print('ApiService: updateDealStatus - Generated path: $path');
+ Future<void> updateDealStatus(
+  int dealId, 
+  int currentStatusId,  // from_status_id
+  List<int> statusIds,   // to_status_id (один или несколько)
+  {
+    bool isMultiSelect = false,  // новый параметр
+    String? organizationId,
+    String? salesFunnelId,
   }
+) async {
+  
+  if (isMultiSelect) {
+    // ============ МУЛЬТИВЫБОР (как было) ============
+    final path = await _appendQueryParams('/deal/change-multiple-status/$dealId');
+    if (kDebugMode) {
+      print('ApiService: MULTI-SELECT mode');
+      print('ApiService: Path: $path');
+      print('ApiService: Statuses: $statusIds');
+    }
 
-  final response = await _postRequest(
-    path,
-    {
-      'position': 1,
-      'statuses': statusIds, // ИЗМЕНЕНО: отправляем массив
-    },
-  );
-
-  if (response.statusCode == 200) {
-    ////print('Статус задачи успешно обновлен.');
-  } else if (response.statusCode == 422) {
-    throw DealStatusUpdateException(
-      422,
-      'Вы не можете переместить задачу на этот статус',
+    final response = await _postRequest(
+      path,
+      {
+        'position': 1,
+        'statuses': statusIds,
+      },
     );
+
+    if (response.statusCode == 200) {
+      if (kDebugMode) {
+        print('✅ Статусы успешно обновлены (multi-select)');
+      }
+    } else if (response.statusCode == 422) {
+      throw DealStatusUpdateException(
+        422,
+        'Вы не можете переместить задачу на эти статусы',
+      );
+    } else {
+      throw Exception('Ошибка обновления статусов сделки!');
+    }
+    
   } else {
-    throw Exception('Ошибка обновления задач сделки!');
+    // ============ ОДИНОЧНЫЙ ВЫБОР (новая логика) ============
+    if (statusIds.isEmpty) {
+      throw Exception('Не выбран статус для перемещения');
+    }
+    
+    final int toStatusId = statusIds.first; // берём первый (и единственный)
+    
+    // Формируем URL с query параметрами
+    String path = '/deal/changeStatus1/$dealId';
+    final queryParams = <String, String>{};
+    
+    if (organizationId != null) {
+      queryParams['organization_id'] = organizationId;
+    }
+    if (salesFunnelId != null) {
+      queryParams['sales_funnel_id'] = salesFunnelId;
+    }
+    
+    // Добавляем параметры через _appendQueryParams или вручную
+    if (queryParams.isNotEmpty) {
+      final query = queryParams.entries
+          .map((e) => '${e.key}=${e.value}')
+          .join('&');
+      path = '$path?$query';
+    }
+    
+    if (kDebugMode) {
+      print('ApiService: SINGLE-SELECT mode');
+      print('ApiService: Path: $path');
+      print('ApiService: from_status_id: $currentStatusId → to_status_id: $toStatusId');
+    }
+
+    final response = await _postRequest(
+      path,
+      {
+        'from_status_id': currentStatusId,
+        'to_status_id': toStatusId,
+        'position': 1,
+        'organization_id': organizationId ?? '1',
+        'sales_funnel_id': salesFunnelId ?? '1',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      if (kDebugMode) {
+        print('✅ Статус успешно обновлён (single-select)');
+      }
+    } else if (response.statusCode == 422) {
+      throw DealStatusUpdateException(
+        422,
+        'Вы не можете переместить задачу на этот статус',
+      );
+    } else {
+      throw Exception('Ошибка обновления статуса сделки!');
+    }
   }
 }
 
@@ -3736,27 +3816,30 @@ Future<List<Deal>> getDeals(
   }
 
 // Обновление статуса карточки Задачи в колонке
-  Future<void> updateTaskStatus(int taskId, int position, int statusId) async {
-    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/task/changeStatus/$taskId');
-    if (kDebugMode) {
-      //print('ApiService: updateTaskStatus - Generated path: $path');
-    }
-
-    final response = await _postRequest(path, {
-      'position': 1,
-      'status_id': statusId,
-    });
-
-    if (response.statusCode == 200) {
-      ////print('Статус задачи успешно обновлен');
-    } else if (response.statusCode == 422) {
-      throw TaskStatusUpdateException(
-          422, 'Вы не можете переместить задачу на этот статус');
-    } else {
-      throw Exception('Ошибка обновления задач сделки!');
-    }
+ Future<void> updateTaskStatus(int taskId, int position, int statusId) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/task/changeStatus/$taskId');
+  if (kDebugMode) {
+    //print('ApiService: updateTaskStatus - Generated path: $path');
   }
+
+  final response = await _postRequest(path, {
+    'position': 1,
+    'status_id': statusId,
+  });
+
+  if (response.statusCode == 200) {
+    ////print('Статус задачи успешно обновлен');
+  } else if (response.statusCode == 422) {
+    // ПАРСИМ JSON ОТВЕТ ОТ СЕРВЕРА
+    final jsonResponse = json.decode(response.body);
+    // БЕРЁМ message ИЗ ОТВЕТА СЕРВЕРА
+    final errorMessage = jsonResponse['message'] ?? 'Вы не можете переместить задачу на этот статус';
+    throw TaskStatusUpdateException(422, errorMessage);
+  } else {
+    throw Exception('Ошибка обновления задач сделки!');
+  }
+}
 
   Map<String, dynamic> _handleTaskResponse(
       http.Response response, String operation) {
@@ -5288,258 +5371,228 @@ Future<List<Deal>> getDeals(
 
 //_________________________________ START_____API_SCREEN__CHATS____________________________________________//
 
-  Future<PaginationDTO<Chats>> getAllChats(
-    String endPoint, [
-    int page = 1,
-    String? search,
-    int? salesFunnelId,
-    Map<String, dynamic>? filters,
-  ]) async {
-    final token = await getToken();
-    String path = '/v2/chat/getMyChats/$endPoint?page=$page';
+Future<PaginationDTO<Chats>> getAllChats(
+  String endPoint, [
+  int page = 1,
+  String? search,
+  int? salesFunnelId,
+  Map<String, dynamic>? filters,
+]) async {
+  final token = await getToken();
+  String path = '/v2/chat/getMyChats/$endPoint?page=$page';
 
-    //print('ApiService.getAllChats: Initial path: $path');
-    //print('ApiService.getAllChats: Parameters - page: $page, search: $search, salesFunnelId: $salesFunnelId, filters: $filters');
+  path = await _appendQueryParams(path);
 
-    path = await _appendQueryParams(path);
+  if (search != null && search.isNotEmpty) {
+    path += '&search=${Uri.encodeComponent(search)}';
+  }
 
-    if (search != null && search.isNotEmpty) {
-      path += '&search=${Uri.encodeComponent(search)}';
-      //print('ApiService.getAllChats: Added search: $search');
-    }
+  if (salesFunnelId != null && endPoint == 'lead') {
+    path += '&funnel_id=$salesFunnelId';
+  }
 
-    if (salesFunnelId != null && endPoint == 'lead') {
-      path += '&funnel_id=$salesFunnelId';
-      //print('ApiService.getAllChats: Added funnel_id: $salesFunnelId');
-    }
-
-    if (filters != null) {
-      //print('ApiService.getAllChats: Processing filters: $filters');
-
-      if (endPoint == 'lead') {
-        // Менеджеры
-        if (filters['managers'] != null &&
-            (filters['managers'] as List).isNotEmpty) {
-          List<int> managerIds =
-              (filters['managers'] as List).map((m) => m.id as int).toList();
-          for (int managerId in managerIds) {
-            path += '&managers[]=$managerId';
+  if (filters != null) {
+    if (endPoint == 'lead') {
+      // ИСПРАВЛЕНО: Менеджеры - поддержка Map и объектов
+      if (filters['managers'] != null &&
+          (filters['managers'] as List).isNotEmpty) {
+        List<int> managerIds = (filters['managers'] as List).map((m) {
+          if (m is Map) {
+            return m['id'] as int;
           }
-          //print('ApiService.getAllChats: Added managers: $managerIds');
-        }
-
-        // Регионы
-        if (filters['regions'] != null &&
-            (filters['regions'] as List).isNotEmpty) {
-          List<int> regionIds =
-              (filters['regions'] as List).map((r) => r.id as int).toList();
-          for (int regionId in regionIds) {
-            path += '&regions[]=$regionId';
-          }
-          //print('ApiService.getAllChats: Added regions: $regionIds');
-        }
-
-        // Источники
-        if (filters['sources'] != null &&
-            (filters['sources'] as List).isNotEmpty) {
-          List<int> sourceIds =
-              (filters['sources'] as List).map((s) => s.id as int).toList();
-          for (int sourceId in sourceIds) {
-            path += '&sources[]=$sourceId';
-          }
-          //print('ApiService.getAllChats: Added sources: $sourceIds');
-        }
-
-        // Статусы
-        if (filters['statuses'] != null &&
-            (filters['statuses'] as List).isNotEmpty) {
-          List<String> statusIds = (filters['statuses'] as List).cast<String>();
-          for (String statusId in statusIds) {
-            path += '&leadStatus[]=$statusId';
-          }
-          //print('ApiService.getAllChats: Added statuses: $statusIds');
-        }
-
-        // Даты
-        if (filters['fromDate'] != null) {
-          path += '&from_date=${filters['fromDate'].toIso8601String()}';
-          //print('ApiService.getAllChats: Added from_date: ${filters['fromDate']}');
-        }
-        if (filters['toDate'] != null) {
-          path += '&to_date=${filters['toDate'].toIso8601String()}';
-          //print('ApiService.getAllChats: Added to_date: ${filters['toDate']}');
-        }
-
-        // Флаги
-        if (filters['hasSuccessDeals'] == true) {
-          path += '&has_success_deals=1';
-          //print('ApiService.getAllChats: Added has_success_deals=1');
-        }
-        if (filters['hasInProgressDeals'] == true) {
-          path += '&has_in_progress_deals=1';
-          //print('ApiService.getAllChats: Added has_in_progress_deals=1');
-        }
-        if (filters['hasFailureDeals'] == true) {
-          path += '&has_failure_deals=1';
-          //print('ApiService.getAllChats: Added has_failure_deals=1');
-        }
-        if (filters['hasNotices'] == true) {
-          path += '&has_notices=1';
-          //print('ApiService.getAllChats: Added has_notices=1');
-        }
-        if (filters['hasContact'] == true) {
-          path += '&has_contact=1';
-          //print('ApiService.getAllChats: Added has_contact=1');
-        }
-        if (filters['hasChat'] == true) {
-          path += '&has_chat=1';
-          //print('ApiService.getAllChats: Added has_chat=1');
-        }
-        if (filters['hasNoReplies'] == true) {
-          path += '&has_no_replies=1';
-          //print('ApiService.getAllChats: Added has_no_replies=1');
-        }
-        if (filters['hasUnreadMessages'] == true) {
-          path += '&unread_only=1';
-          //print('ApiService.getAllChats: Added has_unread_messages=1');
-        }
-        if (filters['hasDeal'] == true) {
-          path += '&has_deal=1';
-          //print('ApiService.getAllChats: Added has_deal=1');
-        }
-        if (filters['unreadOnly'] == true) {
-          path += '&unread_only=1';
-          //print('ApiService.getAllChats: Added unread_only=1');
-        }
-        if (filters['daysWithoutActivity'] != null &&
-            filters['daysWithoutActivity'] > 0) {
-          path += '&days_without_activity=${filters['daysWithoutActivity']}';
-          //print('ApiService.getAllChats: Added days_without_activity: ${filters['daysWithoutActivity']}');
-        }
-        if (filters['directory_values'] != null &&
-            (filters['directory_values'] as List).isNotEmpty) {
-          List<Map<String, dynamic>> directoryValues =
-              filters['directory_values'] as List<Map<String, dynamic>>;
-          for (var value in directoryValues) {
-            path +=
-                '&directory_values[${value['directory_id']}]=${value['entry_id']}';
-          }
-          //print('ApiService.getAllChats: Added directory_values: $directoryValues');
-        }
-      } else if (endPoint == 'task') {
-        // Обработка фильтров для task (без изменений)
-        if (filters['task_number'] != null &&
-            filters['task_number'].isNotEmpty) {
-          path += '&task_number=${Uri.encodeComponent(filters['task_number'])}';
-          //print('ApiService.getAllChats: Added task_number: ${filters['task_number']}');
-        }
-        if (filters['department_id'] != null) {
-          path += '&department_id=${filters['department_id']}';
-          //print('ApiService.getAllChats: Added department_id: ${filters['department_id']}');
-        }
-        if (filters['task_created_from'] != null) {
-          path += '&task_created_from=${filters['task_created_from']}';
-          //print('ApiService.getAllChats: Added task_created_from: ${filters['task_created_from']}');
-        }
-        if (filters['task_created_to'] != null) {
-          path += '&task_created_to=${filters['task_created_to']}';
-          //print('ApiService.getAllChats: Added task_created_to: ${filters['task_created_to']}');
-        }
-        if (filters['deadline_from'] != null) {
-          path += '&deadline_from=${filters['deadline_from']}';
-          //print('ApiService.getAllChats: Added deadline_from: ${filters['deadline_from']}');
-        }
-        if (filters['deadline_to'] != null) {
-          path += '&deadline_to=${filters['deadline_to']}';
-          //print('ApiService.getAllChats: Added deadline_to: ${filters['deadline_to']}');
-        }
-        if (filters['executor_ids'] != null &&
-            (filters['executor_ids'] as List).isNotEmpty) {
-          List<String> executorIds = (filters['executor_ids'] as List)
-              .map((id) => id.toString())
-              .toList();
-          for (String executorId in executorIds) {
-            path += '&executor_ids[]=$executorId';
-          }
-          //print('ApiService.getAllChats: Added executor_ids: $executorIds');
-        }
-        if (filters['author_ids'] != null &&
-            (filters['author_ids'] as List).isNotEmpty) {
-          List<int> authorIds = (filters['author_ids'] as List).cast<int>();
-          for (int authorId in authorIds) {
-            path += '&author_ids[]=$authorId';
-          }
-          //print('ApiService.getAllChats: Added author_ids: $authorIds');
-        }
-        if (filters['project_ids'] != null &&
-            (filters['project_ids'] as List).isNotEmpty) {
-          List<int> projectIds = (filters['project_ids'] as List).cast<int>();
-          for (int projectId in projectIds) {
-            path += '&project_ids[]=$projectId';
-          }
-          //print('ApiService.getAllChats: Added project_ids: $projectIds');
-        }
-        if (filters['task_status_ids'] != null &&
-            (filters['task_status_ids'] as List).isNotEmpty) {
-          List<int> taskStatusIds =
-              (filters['task_status_ids'] as List).cast<int>();
-          for (int statusId in taskStatusIds) {
-            path += '&task_status_ids[]=$statusId';
-          }
-          //print('ApiService.getAllChats: Added task_status_ids: $taskStatusIds');
-        }
-        if (filters['unread_only'] == true) {
-          path += '&unread_only=1';
-          //print('ApiService.getAllChats: Added unread_only=1');
+          return m.id as int; // Для объектов ManagerData
+        }).toList();
+        for (int managerId in managerIds) {
+          path += '&managers[]=$managerId';
         }
       }
-    }
 
-    final fullUrl = '$baseUrl$path';
-    //print('ApiService.getAllChats: Requesting URL: $fullUrl');
-
-    try {
-      final response = await http.get(
-        Uri.parse(fullUrl),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'User-Agent': 'FlutterApp/1.0',
-          'Cache-Control': 'no-cache',
-        },
-      );
-
-      //print('ApiService.getAllChats: Response status: ${response.statusCode}');
-      //print('ApiService.getAllChats: Response headers: ${response.headers}');
-
-      if (response.statusCode == 302) {
-        //print('ApiService.getAllChats: Got 302 redirect to: ${response.headers['location']}');
-        throw Exception('Получен редирект 302. Проверьте URL и авторизацию.');
-      }
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['result'] != null) {
-          final pagination = PaginationDTO<Chats>.fromJson(data['result'], (e) {
-            return Chats.fromJson(e);
-          });
-          //print('ApiService.getAllChats: Received ${pagination.data.length} chats for page $page');
-          //print('ApiService.getAllChats: Chat IDs: ${pagination.data.map((chat) => chat.id).toList()}');
-          return pagination;
-        } else {
-          //print('ApiService.getAllChats: No result found in response');
-          throw Exception('Результат отсутствует в ответе');
+      // ИСПРАВЛЕНО: Регионы - поддержка Map и объектов
+      if (filters['regions'] != null &&
+          (filters['regions'] as List).isNotEmpty) {
+        List<int> regionIds = (filters['regions'] as List).map((r) {
+          if (r is Map) {
+            return r['id'] as int;
+          }
+          return r.id as int; // Для объектов RegionData
+        }).toList();
+        for (int regionId in regionIds) {
+          path += '&regions[]=$regionId';
         }
-      } else {
-        //print('ApiService.getAllChats: Error ${response.statusCode}: ${response.body}');
-        throw Exception('Ошибка ${response.statusCode}: ${response.body}');
       }
-    } catch (e) {
-      //print('ApiService.getAllChats: Exception caught: $e');
-      rethrow;
+
+      // ИСПРАВЛЕНО: Источники - поддержка Map и объектов
+      if (filters['sources'] != null &&
+          (filters['sources'] as List).isNotEmpty) {
+        List<int> sourceIds = (filters['sources'] as List).map((s) {
+          if (s is Map) {
+            return s['id'] as int;
+          }
+          return s.id as int; // Для объектов SourceData
+        }).toList();
+        for (int sourceId in sourceIds) {
+          path += '&sources[]=$sourceId';
+        }
+      }
+
+      // Статусы (без изменений)
+      if (filters['statuses'] != null &&
+          (filters['statuses'] as List).isNotEmpty) {
+        List<String> statusIds = (filters['statuses'] as List).cast<String>();
+        for (String statusId in statusIds) {
+          path += '&leadStatus[]=$statusId';
+        }
+      }
+
+      // Даты (без изменений)
+      if (filters['fromDate'] != null) {
+        path += '&from_date=${filters['fromDate'].toIso8601String()}';
+      }
+      if (filters['toDate'] != null) {
+        path += '&to_date=${filters['toDate'].toIso8601String()}';
+      }
+
+      // Флаги (без изменений)
+      if (filters['hasSuccessDeals'] == true) {
+        path += '&has_success_deals=1';
+      }
+      if (filters['hasInProgressDeals'] == true) {
+        path += '&has_in_progress_deals=1';
+      }
+      if (filters['hasFailureDeals'] == true) {
+        path += '&has_failure_deals=1';
+      }
+      if (filters['hasNotices'] == true) {
+        path += '&has_notices=1';
+      }
+      if (filters['hasContact'] == true) {
+        path += '&has_contact=1';
+      }
+      if (filters['hasChat'] == true) {
+        path += '&has_chat=1';
+      }
+      if (filters['hasNoReplies'] == true) {
+        path += '&has_no_replies=1';
+      }
+      if (filters['hasUnreadMessages'] == true) {
+        path += '&unread_only=1';
+      }
+      if (filters['hasDeal'] == true) {
+        path += '&has_deal=1';
+      }
+      if (filters['unreadOnly'] == true) {
+        path += '&unread_only=1';
+      }
+      if (filters['daysWithoutActivity'] != null &&
+          filters['daysWithoutActivity'] > 0) {
+        path += '&days_without_activity=${filters['daysWithoutActivity']}';
+      }
+      if (filters['directory_values'] != null &&
+          (filters['directory_values'] as List).isNotEmpty) {
+        List<Map<String, dynamic>> directoryValues =
+            filters['directory_values'] as List<Map<String, dynamic>>;
+        for (var value in directoryValues) {
+          path +=
+              '&directory_values[${value['directory_id']}]=${value['entry_id']}';
+        }
+      }
+    } else if (endPoint == 'task') {
+      // Обработка фильтров для task (без изменений)
+      if (filters['task_number'] != null &&
+          filters['task_number'].isNotEmpty) {
+        path += '&task_number=${Uri.encodeComponent(filters['task_number'])}';
+      }
+      if (filters['department_id'] != null) {
+        path += '&department_id=${filters['department_id']}';
+      }
+      if (filters['task_created_from'] != null) {
+        path += '&task_created_from=${filters['task_created_from']}';
+      }
+      if (filters['task_created_to'] != null) {
+        path += '&task_created_to=${filters['task_created_to']}';
+      }
+      if (filters['deadline_from'] != null) {
+        path += '&deadline_from=${filters['deadline_from']}';
+      }
+      if (filters['deadline_to'] != null) {
+        path += '&deadline_to=${filters['deadline_to']}';
+      }
+      if (filters['executor_ids'] != null &&
+          (filters['executor_ids'] as List).isNotEmpty) {
+        List<String> executorIds = (filters['executor_ids'] as List)
+            .map((id) => id.toString())
+            .toList();
+        for (String executorId in executorIds) {
+          path += '&executor_ids[]=$executorId';
+        }
+      }
+      if (filters['author_ids'] != null &&
+          (filters['author_ids'] as List).isNotEmpty) {
+        List<int> authorIds = (filters['author_ids'] as List).cast<int>();
+        for (int authorId in authorIds) {
+          path += '&author_ids[]=$authorId';
+        }
+      }
+      if (filters['project_ids'] != null &&
+          (filters['project_ids'] as List).isNotEmpty) {
+        List<int> projectIds = (filters['project_ids'] as List).cast<int>();
+        for (int projectId in projectIds) {
+          path += '&project_ids[]=$projectId';
+        }
+      }
+      if (filters['task_status_ids'] != null &&
+          (filters['task_status_ids'] as List).isNotEmpty) {
+        List<int> taskStatusIds =
+            (filters['task_status_ids'] as List).cast<int>();
+        for (int statusId in taskStatusIds) {
+          path += '&task_status_ids[]=$statusId';
+        }
+      }
+      if (filters['unread_only'] == true) {
+        path += '&unread_only=1';
+      }
     }
   }
+
+  final fullUrl = '$baseUrl$path';
+  
+  // ДОБАВЛЕНО: Отладочный вывод
+  print('ApiService.getAllChats: Final URL: $fullUrl');
+
+  try {
+    final response = await http.get(
+      Uri.parse(fullUrl),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'User-Agent': 'FlutterApp/1.0',
+        'Cache-Control': 'no-cache',
+      },
+    );
+
+    if (response.statusCode == 302) {
+      throw Exception('Получен редирект 302. Проверьте URL и авторизацию.');
+    }
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['result'] != null) {
+        final pagination = PaginationDTO<Chats>.fromJson(data['result'], (e) {
+          return Chats.fromJson(e);
+        });
+        return pagination;
+      } else {
+        throw Exception('Результат отсутствует в ответе');
+      }
+    } else {
+      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+    }
+  } catch (e) {
+    print('ApiService.getAllChats: Error: $e');
+    rethrow;
+  }
+}
 Future<String> getDynamicBaseUrlFixed() async {
   // Сначала проверяем кешированное значение
   SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -8648,9 +8701,14 @@ Future<String> _appendQueryParams(String path) async {
   int perPage = 15,
   String? search,
   Map<String, dynamic>? filters,
+    bool? isService,
 }) async {
   String path = '/good/get/variant?page=$page&per_page=$perPage';
-  
+
+  if (isService != null) {
+    path += '&is_service=${isService ? 1 : 0}';
+  }
+
   if (search != null && search.isNotEmpty) {
     path += '&search=$search';
   }
@@ -8749,6 +8807,7 @@ Future<String> _appendQueryParams(String path) async {
   }
 
   Future<Map<String, dynamic>> createGoods({
+    required bool isService,
     required String name,
     required int parentId,
     required String description,
@@ -8787,6 +8846,7 @@ Future<String> _appendQueryParams(String path) async {
       request.fields['quantity'] = quantity.toString();
       request.fields['unit_id'] = unitId.toString();
       request.fields['is_active'] = isActive ? '1' : '0';
+      request.fields['is_service'] = isService ? '1' : '0';
 
       // Pass the actual labelId if it exists
       if (labelId != null) {
@@ -8879,6 +8939,7 @@ Future<String> _appendQueryParams(String path) async {
   }
 
   Future<Map<String, dynamic>> updateGoods({
+    required bool isService,
     required int goodId,
     required String name,
     required int parentId,
@@ -8926,6 +8987,7 @@ Future<String> _appendQueryParams(String path) async {
       request.fields['is_active'] = isActive ? '1' : '0';
       request.fields['label_id'] =
           labelId != null ? labelId.toString() : ''; // Add label fields
+      request.fields['is_service'] = isService ? '1' : '0';
       
       if (unitId != null) {
         request.fields['unit_id'] = unitId.toString();
@@ -10693,7 +10755,6 @@ Future<IncomingDocument> getIncomingDocumentById(int documentId) async {
     }
   }
 
-  // todo show 409 errors on every request with ApiException
   Future<IncomingDocumentHistoryResponse> getIncomingDocumentHistory(
       int documentId) async {
     String url = '/income-documents/history/$documentId';
@@ -14524,7 +14585,6 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         );
       }
     } catch (e) {
-      // todo rethrow
       throw e;
     }
   }
@@ -14568,35 +14628,60 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
   /// Получение списка должников
   Future<DebtorsResponse> getDebtorsList({
-    String? from,
-    String? to,
-    int? cashRegisterId,
-    int? supplierId,
-    int? clientId,
-    int? leadId,
-    String? operationType,
+    int? page,
+    int? perPage,
+    Map<String, dynamic>? filters,
     String? search,
   }) async {
     try {
       // Формируем параметры запроса
       Map<String, String> queryParams = {};
 
-      if (from != null) queryParams['from'] = from;
-      if (to != null) queryParams['to'] = to;
-      if (cashRegisterId != null) queryParams['cash_register_id'] = cashRegisterId.toString();
-      if (supplierId != null) queryParams['supplier_id'] = supplierId.toString();
-      if (clientId != null) queryParams['client_id'] = clientId.toString();
-      if (leadId != null) queryParams['lead_id'] = leadId.toString();
-      if (operationType != null) queryParams['operation_type'] = operationType;
-      if (search != null) queryParams['search'] = search;
+      if (page != null) queryParams['page'] = page.toString();
+      if (perPage != null) queryParams['per_page'] = perPage.toString();
+      if (search != null && search.isNotEmpty) queryParams['search'] = search;
+      if (filters != null) {
+        if (filters.containsKey('date_from') && filters['date_from'] is DateTime && filters['date_from'] != null) {
+          debugPrint("ApiService: filters['date_from']: ${filters['date_from']}");
+          final dateFrom = filters['date_from'] as DateTime;
+          queryParams['date_from'] = dateFrom.toIso8601String();
+        }
+        if (filters.containsKey('date_to') && filters['date_to'] is DateTime && filters['date_to'] != null) {
+          debugPrint("ApiService: filters['date_to']: ${filters['date_to']}");
+          final dateTo = filters['date_to'] as DateTime;
+          queryParams['date_to'] = dateTo.toIso8601String();
+        }
+        if (filters.containsKey('lead_id') && filters['lead_id'] != null) {
+          debugPrint("ApiService: filters['lead_id']: ${filters['lead_id']}");
+          queryParams['lead_id'] = filters['lead_id'].toString();
+        }
+        if (filters.containsKey('supplier_id') && filters['supplier_id'] != null) {
+          debugPrint("ApiService: filters['supplier_id']: ${filters['supplier_id']}");
+          queryParams['supplier_id'] = filters['supplier_id'].toString();
+        }
+        if (filters.containsKey('sum_from') && filters['sum_from'] != null) {
+          debugPrint("ApiService: filters['sum_from']: ${filters['sum_from']}");
+          queryParams['sum_from'] = filters['sum_from'].toString();
+        }
+        if (filters.containsKey('sum_to') && filters['sum_to'] != null) {
+          debugPrint("ApiService: filters['sum_to']: ${filters['sum_to']}");
+          queryParams['sum_to'] = filters['sum_to'].toString();
+        }
+      }
 
       var path = await _appendQueryParams('/fin/dashboard/debtors-list');
 
+      // Fix: Properly encode query parameters
       if (queryParams.isNotEmpty) {
-        path += '?${Uri.encodeQueryComponent(queryParams.entries.map((e) => '${e.key}=${e.value}').join('&'))}';
+        // Check if path already has query params (contains ?)
+        final separator = path.contains('?') ? '&' : '?';
+        final encodedParams = queryParams.entries
+            .map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+            .join('&');
+        path += '$separator$encodedParams';
       }
       if (kDebugMode) {
-        print('ApiService: getDebtorsList - Generated path: $path');
+        print('ApiService: getDebtorsList - Generated path: $path, filter: $filters');
       }
 
       final response = await _getRequest(path);
@@ -14615,7 +14700,6 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       throw e;
     }
   }
-
   /// Получение списка кредиторов
   Future<CreditorsResponse> getCreditorsList({
     int? page,
@@ -14649,13 +14733,13 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
           debugPrint("ApiService: filters['supplier_id']: ${filters['supplier_id']}");
           queryParams['supplier_id'] = filters['supplier_id'].toString();
         }
-        if (filters.containsKey('amountFrom') && filters['amountFrom'] != null) {
-          debugPrint("ApiService: filters['amountFrom']: ${filters['amountFrom']}");
-          queryParams['amount_from'] = filters['amountFrom'].toString();
+        if (filters.containsKey('sum_from') && filters['sum_from'] != null) {
+          debugPrint("ApiService: filters['sum_from']: ${filters['sum_from']}");
+          queryParams['sum_from'] = filters['sum_from'].toString();
         }
-        if (filters.containsKey('amountTo') && filters['amountTo'] != null) {
-          debugPrint("ApiService: filters['amountTo']: ${filters['amountTo']}");
-          queryParams['amount_to'] = filters['amountTo'].toString();
+        if (filters.containsKey('sum_to') && filters['sum_to'] != null) {
+          debugPrint("ApiService: filters['sum_to']: ${filters['sum_to']}");
+          queryParams['sum_to'] = filters['sum_to'].toString();
         }
       }
 
@@ -15664,7 +15748,11 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     var type = filters!['lead_id'] != null ? 'lead' : 'supplier';
     var id = filters['lead_id'] ?? filters['supplier_id'];
 
-    var path = await _appendQueryParams('/dashboard/act-of-reconciliation/$type/$id');
+    var queryString = queryParams.entries.map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}').join('&');
+
+    var path = await _appendQueryParams(
+      '/dashboard/act-of-reconciliation/$type/$id?$queryString',
+    );
 
     debugPrint("ApiService: getReconciliationAct path: $path");
 
@@ -15739,32 +15827,104 @@ Future<List<OrderStatusWarehouse>> getOrderStatusWarehouse() async {
   }
 }
 
-// Метод для получения Товаров
-Future<List<GoodDashboardWarehouse>> getGoodDashboardWarehouse() async {
-  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-  final path = await _appendQueryParams('/good');
-  if (kDebugMode) {
-    print('ApiService: getGoodDashboardWarehouse - Generated path: $path');
-  }
-
-  final response = await _getRequest(path);
-
-  if (response.statusCode == 200) {
-    final data = json.decode(response.body);
-    print('Полученные данные: $data');  // Для отладки
-    // Данные в result.data, плюс пагинация (игнорируем для списка)
-    final resultObj = data['result'] as Map<String, dynamic>?;
-    final dataList = resultObj?['data'] as List?;
-    if (dataList == null) {
-      return [];
+  Future<List<DashboardGoodsMovementHistory>> getDashboardGoodsMovementHistoryList(int goodId) async {
+    final path = await _appendQueryParams('/dashboard/good-movement-history/$goodId');
+    if (kDebugMode) {
+      print('ApiService: getDashboardGoodsMovementHistoryList - Generated path: $path');
     }
-    return dataList
-        .map((good) => GoodDashboardWarehouse.fromJson(good))
-        .toList();
-  } else {
-    throw Exception('Ошибка загрузки товаров');
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (kDebugMode) {
+        print('ApiService: Полученные данные истории движения товара $goodId: $data');
+      }
+      final resultList = data['result'] as List?;
+      if (resultList == null) {
+        return [];
+      }
+      return resultList
+          .map((item) => DashboardGoodsMovementHistory.fromJson(item))
+          .toList();
+    } else {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка при получении истории перемещений товаров!',
+        response.statusCode,
+      );
+    }
   }
-}
+
+  Future<dgrmodel.GoodDashboardWarehouseResponse> getGoodDashboardWarehousePage(int page) async {
+    try {
+      // Form path with page parameter
+      String basePath = '/good?page=$page';
+
+      // Add other query parameters (language, token, etc.)
+      final path = await _appendQueryParams(basePath);
+
+      if (kDebugMode) {
+        print('ApiService: getGoodDashboardWarehousePage - Loading page $page, path: $path');
+      }
+
+      // Execute GET request
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        if (kDebugMode) {
+          print('ApiService: Received data: $data');
+        }
+
+        // Parse response
+        final resultObj = data['result'] as Map<String, dynamic>?;
+
+        if (resultObj != null) {
+          // Parse data list
+          final dataList = resultObj['data'] as List? ?? [];
+          final goodsList = dataList
+              .map((good) => dgrmodel.GoodDashboardWarehouse.fromJson(good))
+              .toList();
+
+          // Parse pagination
+          if (resultObj['pagination'] != null) {
+            final pagination = dgrmodel.Pagination.fromJson(resultObj['pagination'] as Map<String, dynamic>);
+
+            if (kDebugMode) {
+              print('ApiService: Page $page loaded successfully with ${goodsList.length} items');
+              print('ApiService: Pagination - current: ${pagination.currentPage}, total pages: ${pagination.totalPages}');
+            }
+
+            return dgrmodel.GoodDashboardWarehouseResponse(
+              data: goodsList,
+              pagination: pagination,
+            );
+          } else {
+            return dgrmodel.GoodDashboardWarehouseResponse(
+              data: goodsList,
+              pagination: null,
+            );
+          }
+        } else {
+          // If result is empty, return empty response
+          return dgrmodel.GoodDashboardWarehouseResponse(
+            data: [],
+            pagination: null,
+          );
+        }
+      } else {
+        throw Exception('Ошибка при получении данных со страницы $page! Статус: ${response.statusCode}');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('ApiService: Error loading page $page: $e');
+      }
+      rethrow;
+    }
+  }
+
 
 // Метод для получения Статей расхода
 Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehouse() async {
@@ -15985,6 +16145,8 @@ Future<void> clearFieldConfigurationCache() async {
   Future<GoodsOpeningsResponse> getGoodsOpenings() async {
     String path = await _appendQueryParams('/good-initial-balance');
 
+    path += '&is_service=0';
+
     if (kDebugMode) {
       print('ApiService: getGoodsOpenings - path: $path');
     }
@@ -16010,6 +16172,9 @@ Future<void> clearFieldConfigurationCache() async {
   }) async {
     try {
       String path = await _appendQueryParams('/good/get/variant?page=$page&per_page=$perPage');
+
+      path += '&is_service=0';
+
       final response = await _getRequest(path);
 
       if (response.statusCode == 200) {
@@ -16595,6 +16760,8 @@ Future<void> clearFieldConfigurationCache() async {
     if (search != null && search.isNotEmpty) {
       path += '&search=$search';
     }
+
+    path += '&is_service=0';
 
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     path = await _appendQueryParams(path);

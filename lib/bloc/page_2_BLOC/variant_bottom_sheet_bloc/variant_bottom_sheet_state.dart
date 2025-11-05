@@ -7,6 +7,7 @@ class VariantBottomSheetState {
   final bool isLoading;
   final bool isLoadingMore;
   final bool isSearching;
+  final bool? isService;
 
   // Error
   final String? error;
@@ -50,6 +51,7 @@ class VariantBottomSheetState {
     this.searchVariants = const [],
     this.searchVariantsPagination,
     this.currentPage = 1,
+    this.isService,
   });
 
   factory VariantBottomSheetState.initial() {
@@ -74,6 +76,7 @@ class VariantBottomSheetState {
     List<Variant>? searchVariants,
     Object? searchVariantsPagination = _undefined,
     int? currentPage,
+    Object? isService = _undefined,
   }) {
     return VariantBottomSheetState(
       isLoading: isLoading ?? this.isLoading,
@@ -104,6 +107,7 @@ class VariantBottomSheetState {
           ? this.searchVariantsPagination
           : searchVariantsPagination as VariantPagination?,
       currentPage: currentPage ?? this.currentPage,
+      isService: isService == _undefined ? this.isService : isService as bool?,  // ADD THIS
     );
   }
 

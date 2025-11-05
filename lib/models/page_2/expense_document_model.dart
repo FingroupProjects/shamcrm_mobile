@@ -637,7 +637,7 @@ class Good {
       try {
         return int.parse(value);
       } catch (e) {
-        print('Error parsing int from string "$value": $e');
+        //print('Error parsing int from string "$value": $e');
         return null;
       }
     }
@@ -649,7 +649,7 @@ class Good {
     try {
       return DateTime.parse(dateStr);
     } catch (e) {
-      print('Error parsing date $dateStr: $e');
+      //print('Error parsing date $dateStr: $e');
       return null;
     }
   }
@@ -759,11 +759,11 @@ class GoodVariant {
       try {
         return int.parse(value);
       } catch (e) {
-        print('Error parsing int from string "$value": $e');
+        //print('Error parsing int from string "$value": $e');
         return null;
       }
     }
-    print('Unexpected type for int parsing: ${value.runtimeType}');
+    //print('Unexpected type for int parsing: ${value.runtimeType}');
     return null;
   }
 
@@ -772,7 +772,7 @@ class GoodVariant {
     try {
       return DateTime.parse(dateStr);
     } catch (e) {
-      print('Error parsing date $dateStr: $e');
+      //print('Error parsing date $dateStr: $e');
       return null;
     }
   }

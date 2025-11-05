@@ -261,7 +261,3 @@ class _AddCashRegisterOpeningScreenState extends State<AddCashRegisterOpeningScr
     );
   }
 }
-
-/*
-TODO: edit, edit bo'lganda update qilish, (details va contentdagi listni), edit dan turib delete qilish.
- */

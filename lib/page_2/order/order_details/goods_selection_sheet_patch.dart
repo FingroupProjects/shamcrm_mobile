@@ -61,7 +61,7 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
       final savedCurrencyId = prefs.getInt('currency_id');
 
       if (kDebugMode) {
-        print('ProductSelectionSheetAdd: Загружен currency_id из SharedPreferences: $savedCurrencyId');
+        //print('ProductSelectionSheetAdd: Загружен currency_id из SharedPreferences: $savedCurrencyId');
       }
 
       setState(() {
@@ -73,7 +73,7 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('ProductSelectionSheetAdd: Ошибка загрузки currency_id: $e');
+        //print('ProductSelectionSheetAdd: Ошибка загрузки currency_id: $e');
       }
       setState(() {
         currencyId = 1; // По умолчанию доллар
@@ -98,12 +98,12 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
         });
 
         if (kDebugMode) {
-          print('ProductSelectionSheetAdd: Загружен currency_id из API: ${settings.currencyId}');
+          //print('ProductSelectionSheetAdd: Загружен currency_id из API: ${settings.currencyId}');
         }
       }
     } catch (e) {
       if (kDebugMode) {
-        print('ProductSelectionSheetAdd: Ошибка загрузки currency_id из API: $e');
+        //print('ProductSelectionSheetAdd: Ошибка загрузки currency_id из API: $e');
       }
       setState(() {
         currencyId = 1; // По умолчанию доллар
@@ -117,7 +117,7 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
     String symbol = '₽'; // По умолчанию сум
 
     if (kDebugMode) {
-      print('ProductSelectionSheetAdd: _formatPrice вызван с currency_id: $currencyId');
+      //print('ProductSelectionSheetAdd: _formatPrice вызван с currency_id: $currencyId');
     }
 
     switch (currencyId) {
@@ -136,12 +136,12 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
       default:
         symbol = '₽';
         if (kDebugMode) {
-          print('ProductSelectionSheetAdd: Используется валюта по умолчанию (UZS) для currency_id: $currencyId');
+          //print('ProductSelectionSheetAdd: Используется валюта по умолчанию (UZS) для currency_id: $currencyId');
         }
     }
 
     if (kDebugMode) {
-      print('ProductSelectionSheetAdd: Выбранный символ валюты: $symbol для цены: $price');
+      //print('ProductSelectionSheetAdd: Выбранный символ валюты: $symbol для цены: $price');
     }
 
     return '${NumberFormat('#,##0', 'ru_RU').format(price)} $symbol';

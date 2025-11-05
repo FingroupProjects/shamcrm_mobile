@@ -120,21 +120,21 @@ class _InputFieldState extends State<InputField>
   }
 
   void _handleTextChange(String text) {
-    print('InputField: _handleTextChange called with text: "$text"');
+    //print('InputField: _handleTextChange called with text: "$text"');
 
     _displayText = text;
     _htmlContent = text;
 
     setState(() {
       if (text.startsWith('/')) {
-        print('InputField: Detected template query: ${text.substring(1)}');
+        //print('InputField: Detected template query: ${text.substring(1)}');
         _currentQuery = text.substring(1).toLowerCase();
         _showTemplates = true;
         context.read<TemplateBloc>().add(FilterTemplates(_currentQuery));
         _updateOverlay();
         _animationController.forward();
       } else {
-        print('InputField: Normal text input, hiding templates');
+        //print('InputField: Normal text input, hiding templates');
         _showTemplates = false;
         _animationController.reverse().then((_) => _removeOverlay());
       }
@@ -210,7 +210,7 @@ class _InputFieldState extends State<InputField>
 
   void _recordText() {
     final text = widget.messageController.text;
-    print('Saving text: $text');
+    //print('Saving text: $text');
     _closeFormattingPanel();
   }
 
@@ -1004,7 +1004,7 @@ class _InputFieldState extends State<InputField>
   }
 
   void _showTemplatesPanel(BuildContext context) {
-    print('InputField: Opening TemplatesPanel');
+    //print('InputField: Opening TemplatesPanel');
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1013,7 +1013,7 @@ class _InputFieldState extends State<InputField>
       isDismissible: true,
       builder: (BuildContext bottomSheetContext) => TemplatesPanel(
         onTemplateSelected: (String selectedText) {
-          print('InputField: Selected template text: $selectedText');
+          //print('InputField: Selected template text: $selectedText');
 
           Navigator.of(bottomSheetContext).pop();
 
@@ -1022,9 +1022,8 @@ class _InputFieldState extends State<InputField>
             _htmlContent = selectedText;
             _displayText = selectedText;
 
-            print(
-                'InputField: Message controller text: ${widget.messageController.text}');
-            print('InputField: Template successfully applied');
+            //print(   'InputField: Message controller text: ${widget.messageController.text}');
+            //print('InputField: Template successfully applied');
 
             widget.focusNode.requestFocus();
 

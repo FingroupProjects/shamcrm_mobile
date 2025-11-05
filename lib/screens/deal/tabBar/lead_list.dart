@@ -27,19 +27,20 @@ class LeadRadioGroupWidget extends StatefulWidget {
 class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
   List<LeadData> leadsList = [];
   LeadData? selectedLeadData;
+  bool _isInitialized = false; // ✅ NEW: Track if data has been loaded at least once
 
   @override
   void initState() {
     super.initState();
     if (kDebugMode) {
-      print('🟢 LeadWidget: initState - showDebt=${widget.showDebt}');
+      //print('🟢 LeadWidget: initState - showDebt=${widget.showDebt}');
     }
 
     // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Используем RefreshAllLeadEv для загрузки свежих данных
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         if (kDebugMode) {
-          print('🔥 LeadWidget: Forcing fresh data load (ignoring cache)');
+          //print('🔥 LeadWidget: Forcing fresh data load (ignoring cache)');
         }
         context.read<GetAllLeadBloc>().add(RefreshAllLeadEv(showDebt: widget.showDebt));
       }
@@ -53,8 +54,9 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
     // ✅ Перезагружаем данные если изменился параметр showDebt
     if (oldWidget.showDebt != widget.showDebt) {
       if (kDebugMode) {
-        print('🔄 LeadWidget: showDebt changed, reloading data');
+        //print('🔄 LeadWidget: showDebt changed, reloading data');
       }
+      _isInitialized = false; // ✅ Reset initialization flag when reloading
       context.read<GetAllLeadBloc>().add(RefreshAllLeadEv(showDebt: widget.showDebt));
     }
 
@@ -66,7 +68,7 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
 
   void _updateSelectedLeadData() {
     if (kDebugMode) {
-      print('🔄 LeadWidget: _updateSelectedLeadData started');
+      //print('🔄 LeadWidget: _updateSelectedLeadData started');
     }
 
     if (widget.selectedLead != null && leadsList.isNotEmpty) {
@@ -75,12 +77,12 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
               (lead) => lead.id.toString() == widget.selectedLead,
         );
         if (kDebugMode) {
-          print('🟢 LeadWidget: Selected lead found - ${selectedLeadData?.name}');
+          //print('🟢 LeadWidget: Selected lead found - ${selectedLeadData?.name}');
         }
       } catch (e) {
         selectedLeadData = null;
         if (kDebugMode) {
-          print('🔴 LeadWidget: Selected lead NOT found - searching for ${widget.selectedLead}');
+          //print('🔴 LeadWidget: Selected lead NOT found - searching for ${widget.selectedLead}');
         }
       }
     } else {
@@ -91,7 +93,7 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
   @override
   Widget build(BuildContext context) {
     if (kDebugMode) {
-      print('🟡 LeadWidget: build() called');
+      //print('🟡 LeadWidget: build() called');
     }
 
     return Column(
@@ -110,18 +112,20 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
         BlocBuilder<GetAllLeadBloc, GetAllLeadState>(
           builder: (context, state) {
             if (kDebugMode) {
-              print('🔵 LeadWidget BlocBuilder: state=${state.runtimeType}');
+              //print('🔵 LeadWidget BlocBuilder: state=${state.runtimeType}');
             }
 
             final isLoading = state is GetAllLeadLoading;
+            final isInitial = state is GetAllLeadInitial; // ✅ NEW: Check for initial state
 
             // ✅ ИСПРАВЛЕНИЕ: Обновляем список только при Success
             if (state is GetAllLeadSuccess) {
               leadsList = state.dataLead.result ?? [];
+              _isInitialized = true; // ✅ Mark as initialized after first successful load
               if (kDebugMode) {
-                print('🔵 LeadWidget BlocBuilder: SUCCESS - ${leadsList.length} leads loaded');
+                //print('🔵 LeadWidget BlocBuilder: SUCCESS - ${leadsList.length} leads loaded');
                 if (leadsList.isNotEmpty) {
-                  print('🔵 LeadWidget BlocBuilder: First lead = ${leadsList.first.name}');
+                  //print('🔵 LeadWidget BlocBuilder: First lead = ${leadsList.first.name}');
                 }
               }
               _updateSelectedLeadData();
@@ -129,13 +133,13 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
 
             if (state is GetAllLeadError) {
               if (kDebugMode) {
-                print('🔴 LeadWidget BlocBuilder: ERROR - ${state.message}');
+                //print('🔴 LeadWidget BlocBuilder: ERROR - ${state.message}');
               }
             }
 
-            // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Если загрузка, не показываем initialItem
+            // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Если загрузка ИЛИ начальное состояние, не показываем initialItem
             // Это предотвращает ошибку "initialItem must match with one of the item in items list"
-            final actualInitialItem = isLoading
+            final actualInitialItem = (isLoading || isInitial || !_isInitialized)
                 ? null
                 : (selectedLeadData != null &&
                 leadsList.isNotEmpty &&
@@ -144,16 +148,16 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                 : null;
 
             if (kDebugMode) {
-              print('🔵 LeadWidget: Rendering dropdown - items=${leadsList.length}, isLoading=$isLoading');
-              print('🔵 LeadWidget: actualInitialItem=${actualInitialItem?.name}');
+              //print('🔵 LeadWidget: Rendering dropdown - items=${leadsList.length}, isLoading=$isLoading, isInitial=$isInitial');
+              //print('🔵 LeadWidget: actualInitialItem=${actualInitialItem?.name}');
             }
 
             return CustomDropdown<LeadData>.search(
               closeDropDownOnClearFilterSearch: true,
-              items: leadsList, // ✅ Всегда показываем текущий список (не пустой во время загрузки)
+              items: leadsList.isEmpty ? [] : leadsList, // ✅ Provide empty list during initial state
               searchHintText: AppLocalizations.of(context)!.translate('search'),
               overlayHeight: 400,
-              enabled: !isLoading,
+              enabled: !isLoading && !isInitial, // ✅ Disable during initial state too
               decoration: CustomDropdownDecoration(
                 closedFillColor: const Color(0xffF4F7FD),
                 expandedFillColor: Colors.white,
@@ -198,7 +202,7 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                 );
               },
               headerBuilder: (context, selectedItem, enabled) {
-                if (isLoading) {
+                if (isLoading || isInitial) { // ✅ Show loading for both states
                   return const Center(
                     child: SizedBox(
                       width: 20,
@@ -239,7 +243,7 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                 );
               },
               hintBuilder: (context, hint, enabled) {
-                if (isLoading) {
+                if (isLoading || isInitial) { // ✅ Show loading for both states
                   return const Center(
                     child: SizedBox(
                       width: 20,
@@ -263,7 +267,7 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                 );
               },
               noResultFoundBuilder: (context, text) {
-                if (isLoading) {
+                if (isLoading || isInitial) { // ✅ Show loading for both states
                   return const Center(
                     child: Padding(
                       padding: EdgeInsets.all(20.0),
@@ -289,16 +293,16 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                 );
               },
               excludeSelected: false,
-              initialItem: actualInitialItem, // ✅ null во время загрузки
-              validator: (value) {
+              initialItem: actualInitialItem, // ✅ null во время загрузки И начального состояния
+              validator: _isInitialized ? (value) { // ✅ CRITICAL FIX: Only validate after initialization
                 if (value == null) {
                   return AppLocalizations.of(context)!.translate('field_required_project');
                 }
                 return null;
-              },
+              } : null, // ✅ No validator during initialization = no red error
               onChanged: (value) {
                 if (kDebugMode) {
-                  print('🟢 LeadWidget: onChanged - selected ${value?.name}');
+                  //print('🟢 LeadWidget: onChanged - selected ${value?.name}');
                 }
 
                 if (value != null) {

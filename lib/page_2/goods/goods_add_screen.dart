@@ -7,6 +7,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_character.dart';
+import 'package:crm_task_manager/custom_widget/simple_switch.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/image_list_poput.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/label_list.dart';
@@ -39,6 +40,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
   final TextEditingController unitIdController = TextEditingController();
   SubCategoryAttributesData? selectedCategory;
   bool isActive = true;
+  bool isService = false;
 
   List<SubCategoryAttributesData> subCategories = [];
   bool isCategoryValid = true;
@@ -319,6 +321,16 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                       onChanged: (value) {
                         setState(() {
                           selectedUnit = value;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    SimpleSwitch(
+                      title: AppLocalizations.of(context)!.translate('service'),
+                      value: isService,
+                      onChanged: (value) {
+                        setState(() {
+                          isService = value;
                         });
                       },
                     ),
@@ -1087,6 +1099,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
 
         context.read<GoodsBloc>().add(
               CreateGoods(
+                isService: isService,
                 name: goodsNameController.text.trim(),
                 parentId: selectedCategory!.id,
                 description: goodsDescriptionController.text.trim(),

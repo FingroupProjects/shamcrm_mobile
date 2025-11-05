@@ -62,12 +62,6 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
         final existingIndex = _items.indexWhere((item) => item['variantId'] == newItem['variantId']);
 
         if (existingIndex == -1) {
-          // Сворачиваем все предыдущие элементы
-          for (var item in _items) {
-            final variantId = item['variantId'] as int;
-            _collapsedItems[variantId] = true;
-          }
-          
           _items.add(newItem);
 
           final variantId = newItem['variantId'] as int;
@@ -158,6 +152,7 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
       backgroundColor: Colors.transparent,
       builder: (context) => VariantSelectionBottomSheet(
         existingItems: _items,
+        isService: false,
       ),
     );
     

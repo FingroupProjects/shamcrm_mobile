@@ -24,7 +24,7 @@ class LeadCache {
       await prefs.remove(key);
     }
     
-    print('LeadCache: FULL DATA CLEAR - Removed ${leadRelatedKeys.length} cache keys: $leadRelatedKeys');
+    //print('LeadCache: FULL DATA CLEAR - Removed ${leadRelatedKeys.length} cache keys: $leadRelatedKeys');
   }
 
   // Кэширование лидов для статуса БЕЗ изменения постоянного счетчика
@@ -38,9 +38,9 @@ class LeadCache {
     // Например, при первоначальной загрузке из API, но НЕ при пагинации
     if (updatePersistentCount) {
       await setPersistentLeadCount(statusId, leads.length);
-      print('LeadCache: Cached leads for statusId: $statusId, count: ${leads.length} (updated persistent count)');
+      //print('LeadCache: Cached leads for statusId: $statusId, count: ${leads.length} (updated persistent count)');
     } else {
-      print('LeadCache: Cached leads for statusId: $statusId, count: ${leads.length} (persistent count preserved)');
+      //print('LeadCache: Cached leads for statusId: $statusId, count: ${leads.length} (persistent count preserved)');
     }
   }
 
@@ -66,7 +66,7 @@ class LeadCache {
     Map<String, dynamic> counts = await getPersistentLeadCounts();
     counts['$statusId'] = count;
     await prefs.setString(_persistentLeadCountsKey, json.encode(counts));
-    print('LeadCache: Set persistent count for statusId $statusId: $count');
+    //print('LeadCache: Set persistent count for statusId $statusId: $count');
   }
 
   /// Получает постоянный счетчик для конкретного статуса
@@ -95,7 +95,7 @@ class LeadCache {
     }
     
     await prefs.setString(_persistentLeadCountsKey, json.encode(counts));
-    print('LeadCache: Updated persistent counts from API: $counts');
+    //print('LeadCache: Updated persistent counts from API: $counts');
   }
 
   // Временное обновление счетчика (для перемещения лидов)
@@ -135,7 +135,7 @@ class LeadCache {
     persistentCounts['$newStatusId'] = (persistentCounts['$newStatusId'] ?? 0) + 1;
     
     await prefs.setString(_persistentLeadCountsKey, json.encode(persistentCounts));
-    print('LeadCache: Updated persistent counts - old: $oldStatusId (${persistentCounts['$oldStatusId']}), new: $newStatusId (${persistentCounts['$newStatusId']})');
+    //print('LeadCache: Updated persistent counts - old: $oldStatusId (${persistentCounts['$oldStatusId']}), new: $newStatusId (${persistentCounts['$newStatusId']})');
   }
 
   // Перемещение лида между статусами БЕЗ автоматического обновления постоянных счетчиков
@@ -174,7 +174,7 @@ class LeadCache {
     // КРИТИЧНО: НЕ обновляем постоянные счетчики автоматически!
     // Они должны обновляться только через специальные методы
     
-    print('LeadCache: Moved lead ${lead.id}: $oldStatusId (${oldLeads.length}) -> $newStatusId (${newLeads.length}) - persistent counts preserved');
+    //print('LeadCache: Moved lead ${lead.id}: $oldStatusId (${oldLeads.length}) -> $newStatusId (${newLeads.length}) - persistent counts preserved');
   }
 
   // Стандартное обновление счетчика (для совместимости)
@@ -200,7 +200,7 @@ class LeadCache {
     
     // Также обновляем постоянный счетчик
     await setPersistentLeadCount(statusId, count);
-    print('LeadCache: Updated leads_count for statusId: $statusId to $count');
+    //print('LeadCache: Updated leads_count for statusId: $statusId to $count');
   }
 
   // Кэширование статусов с сохранением постоянных счетчиков
@@ -219,7 +219,7 @@ class LeadCache {
     // ВАЖНО: Обновляем постоянные счетчики из API данных
     await updatePersistentCountsFromStatuses(leadStatuses);
     
-    print('LeadCache: Cached statuses and updated persistent counts: $statusesToCache');
+    //print('LeadCache: Cached statuses and updated persistent counts: $statusesToCache');
   }
 
   // Получение кэшированных статусов с восстановлением постоянных счетчиков
@@ -241,7 +241,7 @@ class LeadCache {
         }
       }
       
-      print('LeadCache: Retrieved statuses with persistent counts: $statuses');
+      //print('LeadCache: Retrieved statuses with persistent counts: $statuses');
       return statuses;
     }
     return [];
@@ -256,14 +256,14 @@ class LeadCache {
     for (var key in leadKeys) {
       await prefs.remove(key);
     }
-    print('LeadCache: Cleared all leads');
+    //print('LeadCache: Cleared all leads');
   }
 
   static Future<void> clearLeadsForStatus(int? statusId) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final String key = 'cachedLeads_$statusId';
     await prefs.remove(key);
-    print('LeadCache: Cleared leads for statusId: $statusId');
+    //print('LeadCache: Cleared leads for statusId: $statusId');
   }
 
   static Future<void> clearLeadStatuses() async {
@@ -281,20 +281,20 @@ class LeadCache {
     for (var statusId in statusIds) {
       await prefs.remove('cachedLeads_$statusId');
     }
-    print('LeadCache: Cleared lead statuses and associated leads');
+    //print('LeadCache: Cleared lead statuses and associated leads');
   }
 
   static Future<void> clearCache() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.remove(_cachedLeadStatusesKey);
-    print('LeadCache: Cleared cache');
+    //print('LeadCache: Cleared cache');
   }
 
   // ДОПОЛНИТЕЛЬНЫЙ МЕТОД: Очистка только постоянных счетчиков (если нужна полная перезагрузка)
 static Future<void> clearPersistentCounts() async {
   final SharedPreferences prefs = await SharedPreferences.getInstance();
   await prefs.remove(_persistentLeadCountsKey);
-  print('LeadCache: CLEARED ALL persistent lead counts - complete reset');
+  //print('LeadCache: CLEARED ALL persistent lead counts - complete reset');
 }
 
 // НОВЫЙ МЕТОД: Полная радикальная очистка ВСЕХ данных без исключений
@@ -318,6 +318,6 @@ static Future<void> clearEverything() async {
     await prefs.remove(key);
   }
   
-  print('LeadCache: RADICAL CLEAR - Removed ALL ${leadRelatedKeys.length} lead-related keys: $leadRelatedKeys');
+  //print('LeadCache: RADICAL CLEAR - Removed ALL ${leadRelatedKeys.length} lead-related keys: $leadRelatedKeys');
 }
 }

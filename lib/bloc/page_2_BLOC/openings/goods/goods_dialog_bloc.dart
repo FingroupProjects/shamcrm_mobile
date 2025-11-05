@@ -41,7 +41,7 @@ class GoodsDialogBloc extends Bloc<GoodsDialogEvent, GoodsDialogState> {
     // Если у нас есть валидный кэш, используем его
     if (_isCacheValid && _cachedVariants != null) {
       if (kDebugMode) {
-        print('GoodsDialogBloc: Using cached variants data');
+        //print('GoodsDialogBloc: Using cached variants data');
       }
       emit(GoodsDialogLoaded(
         variants: _cachedVariants!,
@@ -77,7 +77,7 @@ class GoodsDialogBloc extends Bloc<GoodsDialogEvent, GoodsDialogState> {
       emit(GoodsDialogLoading());
 
       if (kDebugMode) {
-        print('GoodsDialogBloc: Loading first page of variants...');
+        //print('GoodsDialogBloc: Loading first page of variants...');
       }
 
       // Загружаем только первую страницу
@@ -85,7 +85,7 @@ class GoodsDialogBloc extends Bloc<GoodsDialogEvent, GoodsDialogState> {
       var firstPageVariants = firstPageResponse.result?.data ?? [];
 
       if (kDebugMode) {
-        print('GoodsDialogBloc: First page loaded with ${firstPageVariants.length} variants');
+        //print('GoodsDialogBloc: First page loaded with ${firstPageVariants.length} variants');
       }
 
       // Используем данные пагинации из ответа
@@ -106,7 +106,7 @@ class GoodsDialogBloc extends Bloc<GoodsDialogEvent, GoodsDialogState> {
 
       if (hasMorePages && !_isBackgroundLoading) {
         if (kDebugMode) {
-          print('GoodsDialogBloc: Starting background loading of remaining pages...');
+          //print('GoodsDialogBloc: Starting background loading of remaining pages...');
         }
         // Загружаем остальные страницы в фоне
         _loadRemainingPagesInBackground();
@@ -114,7 +114,7 @@ class GoodsDialogBloc extends Bloc<GoodsDialogEvent, GoodsDialogState> {
 
     } catch (e) {
       if (kDebugMode) {
-        print('GoodsDialogBloc: Error loading variants: $e');
+        //print('GoodsDialogBloc: Error loading variants: $e');
       }
       emit(GoodsDialogError(message: e.toString()));
     }
@@ -126,12 +126,12 @@ class GoodsDialogBloc extends Bloc<GoodsDialogEvent, GoodsDialogState> {
     // Запускаем асинхронную загрузку без await
     _fetchRemainingPages().then((_) {
       if (kDebugMode) {
-        print('GoodsDialogBloc: Background loading completed. Total variants: ${_cachedVariants?.length ?? 0}');
+        //print('GoodsDialogBloc: Background loading completed. Total variants: ${_cachedVariants?.length ?? 0}');
       }
       _isBackgroundLoading = false;
     }).catchError((error) {
       if (kDebugMode) {
-        print('GoodsDialogBloc: Error in background loading: $error');
+        //print('GoodsDialogBloc: Error in background loading: $error');
       }
       _isBackgroundLoading = false;
     });
@@ -146,7 +146,7 @@ class GoodsDialogBloc extends Bloc<GoodsDialogEvent, GoodsDialogState> {
       while (hasMorePages) {
         try {
           if (kDebugMode) {
-            print('GoodsDialogBloc: Loading page $currentPage in background...');
+            //print('GoodsDialogBloc: Loading page $currentPage in background...');
           }
 
           final pageResponse = await _apiService.getGoodVariantsForDropdown(page: currentPage, perPage: 20);
@@ -175,7 +175,7 @@ class GoodsDialogBloc extends Bloc<GoodsDialogEvent, GoodsDialogState> {
             add(UpdateGoodVariantsInBackground(allVariants, _totalPages));
 
             if (kDebugMode) {
-              print('GoodsDialogBloc: Background loaded page $currentPage, total: ${allVariants.length}');
+              //print('GoodsDialogBloc: Background loaded page $currentPage, total: ${allVariants.length}');
             }
           } else {
             hasMorePages = false;
@@ -188,7 +188,7 @@ class GoodsDialogBloc extends Bloc<GoodsDialogEvent, GoodsDialogState> {
 
         } catch (e) {
           if (kDebugMode) {
-            print('GoodsDialogBloc: Error loading page $currentPage in background: $e');
+            //print('GoodsDialogBloc: Error loading page $currentPage in background: $e');
           }
           hasMorePages = false;
         }
@@ -198,7 +198,7 @@ class GoodsDialogBloc extends Bloc<GoodsDialogEvent, GoodsDialogState> {
 
     } catch (e) {
       if (kDebugMode) {
-        print('GoodsDialogBloc: Error in _fetchRemainingPages: $e');
+        //print('GoodsDialogBloc: Error in _fetchRemainingPages: $e');
       }
     }
   }

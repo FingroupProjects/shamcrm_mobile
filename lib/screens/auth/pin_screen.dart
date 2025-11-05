@@ -23,17 +23,23 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:new_version_plus/new_version_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vibration/vibration.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:flutter/services.dart';
+
+import '../../update_dialog.dart';
 
 // [ИМПОРТЫ ОСТАЮТСЯ БЕЗ ИЗМЕНЕНИЙ]
 
 class PinScreen extends StatefulWidget {
   final RemoteMessage? initialMessage;
 
-  const PinScreen({Key? key, this.initialMessage}) : super(key: key);
+  const PinScreen({
+    Key? key,
+    this.initialMessage,
+  }) : super(key: key);
 
   @override
   _PinScreenState createState() => _PinScreenState();
@@ -64,7 +70,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
   @override
   void initState() {
     super.initState();
-    print('PinScreen: initState started');
+    //print('PinScreen: initState started');
     
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 500),
@@ -100,17 +106,43 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
     
     return false;
   }
+
+  Future<void> checkForNewVersion(BuildContext context) async {
+    try {
+      final newVersionPlus = NewVersionPlus();
+      final status = await newVersionPlus.getVersionStatus();
+      debugPrint("pinScreen. APP_VERSION: Current: ${status?.localVersion}, Store: ${status?.storeVersion}, CanUpdate: ${status?.canUpdate}");
+
+      if (!mounted || !context.mounted || status == null || status.canUpdate == false) return;
+
+      final localizations = AppLocalizations.of(context);
+
+      await UpdateDialog.show(
+        context: context,
+        status: status,
+        title: localizations?.translate('app_update_available_title') ?? 'Обновление',
+        message: localizations?.translate('app_update_available_message') ?? 'Доступна новая версия приложения',
+        updateButton: localizations?.translate('app_update_button') ?? 'Обновить',
+      );
+    } catch (e) {
+      print('PinScreen: Error checking version: $e');
+    }
+  }
+
   // ==========================================================================
   // ГЛАВНАЯ ИНИЦИАЛИЗАЦИЯ
   // ==========================================================================
 
   Future<void> _initializeWithInternetCheck() async {
     try {
-      print('PinScreen: Начало инициализации');
+      //print('PinScreen: Начало инициализации');
       
       setState(() {
         _isLoading = true;
       });
+
+      // Проверка обновления приложения
+      await checkForNewVersion(context);
 
       // ШАГ 1: Безопасная инициализация FirebaseApi
       await _initializeFirebaseApi();
@@ -119,7 +151,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
       try {
         await _apiService.clearCachedSalesFunnels();
       } catch (e) {
-        print('PinScreen: Ошибка очистки кэша: $e');
+        //print('PinScreen: Ошибка очистки кэша: $e');
       }
       
       // ШАГ 3: Проверка интернета
@@ -130,7 +162,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
         try {
           context.read<PermissionsBloc>().add(FetchPermissionsEvent());
         } catch (e) {
-          print('PinScreen: Ошибка загрузки разрешений: $e');
+          //print('PinScreen: Ошибка загрузки разрешений: $e');
         }
       }
 
@@ -142,21 +174,21 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
         _fetchTutorialProgress(),
         _fetchSettings(),
       ], eagerError: true).catchError((e) {
-        print('PinScreen: Ошибка загрузки данных: $e');
+        //print('PinScreen: Ошибка загрузки данных: $e');
       });
 try {
-  print('PinScreen: Загрузка конфигураций полей');
+  //print('PinScreen: Загрузка конфигураций полей');
   await _apiService.loadAndCacheAllFieldConfigurations();
-  print('PinScreen: Конфигурации полей загружены и закэшированы');
+  //print('PinScreen: Конфигурации полей загружены и закэшированы');
 } catch (e) {
-  print('PinScreen: Ошибка загрузки конфигураций полей: $e');
+  //print('PinScreen: Ошибка загрузки конфигураций полей: $e');
   // Не критично, продолжаем работу
 }
       // ШАГ 6: Проверка PIN
       await _checkSavedPin();
       
       // ШАГ 7: Биометрия
-      await _initBiometrics();
+        await _initBiometrics();
 
       if (mounted) {
         setState(() {
@@ -164,10 +196,10 @@ try {
         });
       }
       
-      print('PinScreen: Инициализация завершена успешно');
+      //print('PinScreen: Инициализация завершена успешно');
       
     } catch (e) {
-      print('PinScreen: Критическая ошибка инициализации: $e');
+      //print('PinScreen: Критическая ошибка инициализации: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -183,11 +215,11 @@ try {
 
   Future<void> _initializeFirebaseApi() async {
     try {
-      print('PinScreen: Инициализация FirebaseApi');
+      //print('PinScreen: Инициализация FirebaseApi');
       
       // Проверка 1: Firebase инициализирован?
       if (Firebase.apps.isEmpty) {
-        print('PinScreen: Firebase не инициализирован, пропуск FirebaseApi');
+        //print('PinScreen: Firebase не инициализирован, пропуск FirebaseApi');
         _firebaseApi = null;
         return;
       }
@@ -195,9 +227,9 @@ try {
       // Проверка 2: Default app доступен?
       try {
         final app = Firebase.app();
-        print('PinScreen: Firebase app доступен (${app.name})');
+        //print('PinScreen: Firebase app доступен (${app.name})');
       } catch (e) {
-        print('PinScreen: Firebase app недоступен: $e');
+        //print('PinScreen: Firebase app недоступен: $e');
         _firebaseApi = null;
         return;
       }
@@ -209,17 +241,17 @@ try {
       try {
         Firebase.app();
       } catch (e) {
-        print('PinScreen: Firebase app недоступен после задержки: $e');
+        //print('PinScreen: Firebase app недоступен после задержки: $e');
         _firebaseApi = null;
         return;
       }
 
       // Теперь безопасно создаём FirebaseApi
       _firebaseApi = FirebaseApi();
-      print('PinScreen: FirebaseApi успешно создан');
+      //print('PinScreen: FirebaseApi успешно создан');
       
     } catch (e) {
-      print('PinScreen: Ошибка создания FirebaseApi: $e');
+      //print('PinScreen: Ошибка создания FirebaseApi: $e');
       _firebaseApi = null;
     }
   }
@@ -235,7 +267,7 @@ try {
 
     while (!hasInternet && attempts < maxAttempts && mounted) {
       attempts++;
-      print('PinScreen: Проверка интернета (попытка $attempts)');
+      //print('PinScreen: Проверка интернета (попытка $attempts)');
       
       var connectivityResult = await (Connectivity().checkConnectivity());
       
@@ -250,14 +282,14 @@ try {
           
           if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
             hasInternet = true;
-            print('PinScreen: Интернет соединение установлено');
+            //print('PinScreen: Интернет соединение установлено');
           } else {
             if (mounted) {
               await _showNoInternetDialog(context);
             }
           }
         } catch (e) {
-          print('PinScreen: Ошибка проверки интернета: $e');
+          //print('PinScreen: Ошибка проверки интернета: $e');
           if (mounted) {
             await _showNoInternetDialog(context);
           }
@@ -272,7 +304,7 @@ try {
 
   Future<void> _fetchMiniAppSettings() async {
     try {
-      print('PinScreen: Загрузка MiniAppSettings');
+      //print('PinScreen: Загрузка MiniAppSettings');
       
       final prefs = await SharedPreferences.getInstance();
       final organizationId = await _apiService.getSelectedOrganization();
@@ -289,10 +321,10 @@ try {
         await prefs.setBool('has_bonus', settings.hasBonus);
         await prefs.setBool('identify_by_phone', settings.identifyByPhone);
         
-        print('PinScreen: MiniAppSettings сохранены успешно');
+        //print('PinScreen: MiniAppSettings сохранены успешно');
       }
     } catch (e) {
-      print('PinScreen: Ошибка загрузки MiniAppSettings: $e');
+      //print('PinScreen: Ошибка загрузки MiniAppSettings: $e');
       
       // Загружаем из кэша
       try {
@@ -301,17 +333,17 @@ try {
         if (savedSettings != null) {
           final settings = MiniAppSettings.fromJson(json.decode(savedSettings));
           await prefs.setInt('currency_id', settings.currencyId);
-          print('PinScreen: MiniAppSettings загружены из кэша');
+          //print('PinScreen: MiniAppSettings загружены из кэша');
         }
       } catch (cacheError) {
-        print('PinScreen: Ошибка загрузки из кэша: $cacheError');
+        //print('PinScreen: Ошибка загрузки из кэша: $cacheError');
       }
     }
   }
 
   Future<void> _fetchSettings() async {
     try {
-      print('PinScreen: Загрузка Settings');
+      //print('PinScreen: Загрузка Settings');
       
       final prefs = await SharedPreferences.getInstance();
       final organizationId = await _apiService.getSelectedOrganization();
@@ -339,10 +371,10 @@ try {
       );
 
 
-        print('PinScreen: Settings сохранены успешно');
+        //print('PinScreen: Settings сохранены успешно');
       }
     } catch (e) {
-      print('PinScreen: Ошибка загрузки Settings: $e');
+      //print('PinScreen: Ошибка загрузки Settings: $e');
       
       // Устанавливаем значения по умолчанию
       try {
@@ -352,14 +384,14 @@ try {
       await prefs.setBool('managing_deal_status_visibility', false);
 
       } catch (prefsError) {
-        print('PinScreen: Ошибка установки значений по умолчанию: $prefsError');
+        //print('PinScreen: Ошибка установки значений по умолчанию: $prefsError');
       }
     }
   }
 
   Future<void> _fetchTutorialProgress() async {
     try {
-      print('PinScreen: Загрузка TutorialProgress');
+      //print('PinScreen: Загрузка TutorialProgress');
       
       final prefs = await SharedPreferences.getInstance();
       final progress = await _apiService.getTutorialProgress();
@@ -369,10 +401,10 @@ try {
       });
       
       await prefs.setString('tutorial_progress', json.encode(progress['result']));
-      print('PinScreen: TutorialProgress обновлён сервера');
-      print('PinScreen: TutorialProgress обновлён с сервера');
+      //print('PinScreen: TutorialProgress обновлён сервера');
+      //print('PinScreen: TutorialProgress обновлён с сервера');
     } catch (e) {
-      print('PinScreen: Ошибка загрузки TutorialProgress: $e');
+      //print('PinScreen: Ошибка загрузки TutorialProgress: $e');
       
       // Загружаем из кэша
       try {
@@ -382,10 +414,10 @@ try {
           setState(() {
             tutorialProgress = json.decode(savedProgress);
           });
-          print('PinScreen: TutorialProgress загружен из кэша');
+          //print('PinScreen: TutorialProgress загружен из кэша');
         }
       } catch (cacheError) {
-        print('PinScreen: Ошибка загрузки из кэша: $cacheError');
+        //print('PinScreen: Ошибка загрузки из кэша: $cacheError');
       }
     }
   }
@@ -396,11 +428,11 @@ try {
 
   Future<void> _initBiometrics() async {
     try {
-      print('PinScreen: Инициализация биометрии');
+      //print('PinScreen: Инициализация биометрии');
       
       final localizations = AppLocalizations.of(context);
       if (localizations == null) {
-        print('PinScreen: Локализация не готова');
+        //print('PinScreen: Локализация не готова');
         return;
       }
 
@@ -408,36 +440,36 @@ try {
 
       if (_canCheckBiometrics) {
         _availableBiometrics = await _auth.getAvailableBiometrics();
-        print('PinScreen: Доступные биометрические методы: $_availableBiometrics');
+        //print('PinScreen: Доступные биометрические методы: $_availableBiometrics');
         
         if (_availableBiometrics.isNotEmpty) {
           if (Platform.isIOS && _availableBiometrics.contains(BiometricType.face)) {
-            print('PinScreen: Запуск Face ID');
+            //print('PinScreen: Запуск Face ID');
             _authenticate();
           } else if (Platform.isAndroid && _availableBiometrics.contains(BiometricType.strong)) {
-            print('PinScreen: Запуск отпечатка пальца');
+            //print('PinScreen: Запуск отпечатка пальца');
             _authenticate();
           }
         }
       } else {
-        print('PinScreen: Биометрия недоступна');
+        //print('PinScreen: Биометрия недоступна');
       }
     } on PlatformException catch (e) {
-      print('PinScreen: Ошибка инициализации биометрии: $e');
+      //print('PinScreen: Ошибка инициализации биометрии: $e');
     } catch (e) {
-      print('PinScreen: Неожиданная ошибка биометрии: $e');
+      //print('PinScreen: Неожиданная ошибка биометрии: $e');
     }
   }
 
   Future<void> _authenticate() async {
     try {
-      print('PinScreen: Попытка биометрической аутентификации');
+      //print('PinScreen: Попытка биометрической аутентификации');
       
       final localizations = AppLocalizations.of(context);
       if (localizations == null) return;
 
       if (!_canCheckBiometrics || _availableBiometrics.isEmpty) {
-        print('PinScreen: Биометрия недоступна для аутентификации');
+        //print('PinScreen: Биометрия недоступна для аутентификации');
         return;
       }
 
@@ -451,17 +483,17 @@ try {
       );
 
       if (didAuthenticate) {
-        print('PinScreen: Биометрическая аутентификация успешна');
+        //print('PinScreen: Биометрическая аутентификация успешна');
         if (mounted) {
           _navigateToHome();
         }
       } else {
-        print('PinScreen: Биометрическая аутентификация отменена');
+        //print('PinScreen: Биометрическая аутентификация отменена');
       }
     } on PlatformException catch (e) {
-      print('PinScreen: Ошибка биометрической аутентификации: $e');
+      //print('PinScreen: Ошибка биометрической аутентификации: $e');
     } catch (e) {
-      print('PinScreen: Неожиданная ошибка аутентификации: $e');
+      //print('PinScreen: Неожиданная ошибка аутентификации: $e');
     }
   }
 
@@ -471,13 +503,13 @@ try {
 
   Future<void> _loadUserRoleId() async {
     try {
-      print('PinScreen: Загрузка роли пользователя');
+      //print('PinScreen: Загрузка роли пользователя');
       
       SharedPreferences prefs = await SharedPreferences.getInstance();
       String userId = prefs.getString('userID') ?? '';
 
       if (userId.isEmpty) {
-        print('PinScreen: UserID не найден');
+        //print('PinScreen: UserID не найден');
         if (mounted) {
           setState(() {
             userRoleId = 0;
@@ -496,7 +528,7 @@ try {
             userRoleId = userProfile.role!.first.id;
           });
         }
-        print('PinScreen: Роль пользователя загружена: $userRoleId');
+        //print('PinScreen: Роль пользователя загружена: $userRoleId');
       }
 
       if (mounted) {
@@ -509,10 +541,10 @@ try {
           isPermissionsLoaded = true;
         });
         
-        print('PinScreen: Статусы загружены успешно');
+        //print('PinScreen: Статусы загружены успешно');
       }
     } catch (e) {
-      print('PinScreen: Ошибка загрузки роли пользователя: $e');
+      //print('PinScreen: Ошибка загрузки роли пользователя: $e');
       if (mounted) {
         setState(() {
           userRoleId = 0;
@@ -523,7 +555,7 @@ try {
 
   Future<void> _loadUserPhone() async {
     try {
-      print('PinScreen: Загрузка данных пользователя');
+      //print('PinScreen: Загрузка данных пользователя');
       
       SharedPreferences prefs = await SharedPreferences.getInstance();
 
@@ -539,18 +571,18 @@ try {
             _userImage = savedUserImage;
           });
         }
-        print('PinScreen: Данные пользователя загружены из кэша');
+        //print('PinScreen: Данные пользователя загружены из кэша');
         return;
       }
 
       String UUID = prefs.getString('userID') ?? '';
       
       if (UUID.isEmpty) {
-        print('PinScreen: UserID не найден');
+        //print('PinScreen: UserID не найден');
         return;
       }
 
-      print('PinScreen: Загрузка профиля пользователя с сервера');
+      //print('PinScreen: Загрузка профиля пользователя с сервера');
       UserByIdProfile userProfile = await _apiService.getUserById(int.parse(UUID));
 
       await prefs.setString('userName', userProfile.name);
@@ -565,9 +597,9 @@ try {
         });
       }
       
-      print('PinScreen: Данные пользователя загружены с сервера');
+      //print('PinScreen: Данные пользователя загружены с сервера');
     } catch (e) {
-      print('PinScreen: Ошибка загрузки данных пользователя: $e');
+      //print('PinScreen: Ошибка загрузки данных пользователя: $e');
       if (mounted) {
         setState(() {
           _userName = 'Не найдено';
@@ -580,21 +612,21 @@ try {
 
   Future<void> _checkSavedPin() async {
     try {
-      print('PinScreen: Проверка сохраненного PIN');
+      //print('PinScreen: Проверка сохраненного PIN');
       
       final prefs = await SharedPreferences.getInstance();
       final savedPin = prefs.getString('user_pin');
       
       if (savedPin == null) {
-        print('PinScreen: PIN не найден, переход на настройку');
+        //print('PinScreen: PIN не найден, переход на настройку');
         if (mounted) {
           Navigator.of(context).pushReplacementNamed('/pin_setup');
         }
       } else {
-        print('PinScreen: PIN найден');
+        //print('PinScreen: PIN найден');
       }
     } catch (e) {
-      print('PinScreen: Ошибка проверки PIN: $e');
+      //print('PinScreen: Ошибка проверки PIN: $e');
     }
   }
 
@@ -605,7 +637,7 @@ try {
   void _navigateToHome() {
     if (!mounted) return;
     
-    print('PinScreen: Навигация на главный экран');
+    //print('PinScreen: Навигация на главный экран');
     
     // Выполняем асинхронно чтобы не блокировать UI
     Future.delayed(Duration(milliseconds: 50), () {
@@ -615,22 +647,22 @@ try {
         try {
           // Загружаем tutorial progress если нужно
           if (tutorialProgress == null) {
-            print('PinScreen: Tutorial progress отсутствует, загружаем');
+            //print('PinScreen: Tutorial progress отсутствует, загружаем');
             await _fetchTutorialProgress();
           }
           
           // Обрабатываем initial message если есть
           if (widget.initialMessage != null) {
             if (_firebaseApi != null) {
-              print('PinScreen: Обработка initial message');
+              //print('PinScreen: Обработка initial message');
               await _firebaseApi!.handleMessage(widget.initialMessage!);
             } else {
-              print('PinScreen: FirebaseApi недоступен, initial message не обработано');
+              //print('PinScreen: FirebaseApi недоступен, initial message не обработано');
             }
           }
           
         } catch (e) {
-          print('PinScreen: Ошибка в post frame callback: $e');
+          //print('PinScreen: Ошибка в post frame callback: $e');
         }
       });
       
@@ -661,18 +693,18 @@ try {
       }
 
       if (_pin.length == 4) {
-        print('PinScreen: PIN введен, проверка');
+        //print('PinScreen: PIN введен, проверка');
         
         final prefs = await SharedPreferences.getInstance();
         final savedPin = prefs.getString('user_pin');
 
         if (_pin == savedPin) {
-          print('PinScreen: PIN корректен');
+          //print('PinScreen: PIN корректен');
           if (mounted) {
             _navigateToHome();
           }
         } else {
-          print('PinScreen: PIN некорректен');
+          //print('PinScreen: PIN некорректен');
           _triggerErrorEffect();
         }
       }
@@ -680,7 +712,7 @@ try {
   }
 
   void _triggerErrorEffect() async {
-    print('PinScreen: Эффект ошибки PIN');
+    //print('PinScreen: Эффект ошибки PIN');
     
     // Вибрация
     try {
@@ -716,7 +748,7 @@ try {
   }
 
   void _onExitPressed() {
-    print('PinScreen: Выход из приложения');
+    //print('PinScreen: Выход из приложения');
     SystemNavigator.pop();
   }
 
@@ -856,7 +888,7 @@ try {
 
   @override
   void dispose() {
-    print('PinScreen: dispose');
+    //print('PinScreen: dispose');
     _animationController.dispose();
     super.dispose();
   }

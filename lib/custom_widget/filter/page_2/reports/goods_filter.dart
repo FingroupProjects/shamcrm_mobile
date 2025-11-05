@@ -1,13 +1,10 @@
-import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
-
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/category_dashboard_warehouse/category_dashboard_warehouse_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/good_dashboard_warehouse/good_dashboard_warehouse_bloc.dart';
-import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/storage_dashboard/storage_dashboard_bloc.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/reports/category_dashboard_warehouse_widget.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/reports/good_dashboard_warehouse_widget.dart';
-// Убрали subCategoryAttribute_model — не нужно
-// Путь к нашему виджету товара (предполагаю screens/.../good...)
+import 'package:crm_task_manager/custom_widget/filter/page_2/reports/storage_dashboard_widget.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -21,16 +18,19 @@ class GoodsFilterScreen extends StatefulWidget {
   final String? categoryId;
   final String? daysWithoutMovement;
   final String? goodId;
+  final String? storageId;
 
   const GoodsFilterScreen({
     Key? key,
     this.onSelectedDataFilter,
+
     this.onResetFilters,
     this.initialAmountFrom,
     this.initialAmountTo,
     this.categoryId,
     this.daysWithoutMovement,
     this.goodId,
+    this.storageId,
   }) : super(key: key);
 
   @override
@@ -44,10 +44,12 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
   final ApiService _apiService = ApiService();
   Key _goodKey = UniqueKey();
   Key _categoryKey = UniqueKey();
+  Key _storageKey = UniqueKey();
 
 // Новое: локальные selected ID для dropdown
   String? selectedCategoryId;
   String? selectedGoodId;
+  String? selectedStorageId;
 
   @override
   void initState() {
@@ -57,6 +59,7 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
     _daysWithoutMovementController.text = widget.daysWithoutMovement ?? '';
     selectedCategoryId = widget.categoryId;
     selectedGoodId = widget.goodId;
+    selectedStorageId = widget.storageId;
     _loadFilterState();
   }
 
@@ -69,6 +72,7 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
 
       selectedCategoryId = prefs.getString('goods_category_id') ?? widget.categoryId;
       selectedGoodId = prefs.getString('goods_good_id') ?? widget.goodId;
+      selectedStorageId = prefs.getString('goods_storage_id') ?? widget.storageId;
 
 // Убрали поиск selectedCategory — виджеты сами найдут по id
     });
@@ -91,6 +95,12 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
     } else {
       await prefs.remove('goods_good_id');
     }
+
+    if (selectedStorageId != null && selectedStorageId!.isNotEmpty) {
+      await prefs.setString('goods_storage_id', selectedStorageId!);
+    } else {
+      await prefs.remove('goods_storage_id');
+    }
   }
 
   void _resetFilters() {
@@ -100,8 +110,10 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
       _daysWithoutMovementController.text = '';
       selectedCategoryId = null;
       selectedGoodId = null;
+      selectedStorageId = null;
       _categoryKey = UniqueKey();
       _goodKey = UniqueKey();
+      _storageKey = UniqueKey();
     });
     widget.onResetFilters?.call();
     _saveFilterState();
@@ -112,7 +124,8 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
         _amountToController.text.isNotEmpty ||
         _daysWithoutMovementController.text.isNotEmpty ||
         selectedCategoryId != null ||
-        selectedGoodId != null;
+        selectedGoodId != null ||
+        selectedStorageId != null;
   }
 
   String? _parseAmount(String text) {
@@ -136,6 +149,7 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
         'days_without_movement': _parseDays(_daysWithoutMovementController.text),
         'category_id': selectedCategoryId != null ? int.tryParse(selectedCategoryId!) : null,
         'good_id': selectedGoodId != null ? int.tryParse(selectedGoodId!) : null,
+        'storage_id': selectedStorageId != null ? int.tryParse(selectedStorageId!) : null,
       });
     }
     Navigator.pop(context);
@@ -166,6 +180,22 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
         onChanged: (id) {
           setState(() {
             selectedGoodId = id;
+          });
+          FocusScope.of(context).unfocus();
+        },
+      ),
+    );
+  }
+
+  Widget _buildStorageWidget() {
+    return BlocProvider<StorageDashboardBloc>(
+      create: (context) => StorageDashboardBloc(_apiService),
+      child: StorageDashboardWidget(
+        key: _storageKey,
+        selectedStorage: selectedStorageId,
+        onChanged: (id) {
+          setState(() {
+            selectedStorageId = id;
           });
           FocusScope.of(context).unfocus();
         },
@@ -280,52 +310,7 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            CustomTextField(
-                              controller: _amountFromController,
-                              keyboardType: TextInputType.number,
-                              hintText:
-                                  AppLocalizations.of(context)!.translate('enter_minimum_amount') ?? 'Введите минимальную сумму',
-                              label: AppLocalizations.of(context)!.translate('amount_from') ?? 'Сумма от',
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            CustomTextField(
-                              controller: _amountToController,
-                              keyboardType: TextInputType.number,
-                              hintText:
-                                  AppLocalizations.of(context)!.translate('enter_maximum_amount') ?? 'Введите максимальную сумму',
-                              label: AppLocalizations.of(context)!.translate('amount_to') ?? 'Сумма до',
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            CustomTextField(
-                              controller: _daysWithoutMovementController,
-                              keyboardType: TextInputType.number,
-                              hintText: AppLocalizations.of(context)!.translate('enter_days') ?? 'Введите количество дней',
-                              label: AppLocalizations.of(context)!.translate('days_without_movement') ?? 'Дни без движения',
-                            ),
+                            _buildStorageWidget(), // Виджет для хранилища
                           ],
                         ),
                       ),

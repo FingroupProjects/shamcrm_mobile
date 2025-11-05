@@ -72,11 +72,6 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
             .indexWhere((item) => item['variantId'] == newItem['variantId']);
 
         if (existingIndex == -1) {
-          for (var item in _items) {
-            final variantId = item['variantId'] as int;
-            _collapsedItems[variantId] = true;
-          }
-
           // ✅ Don't use the price from newItem - let user enter it
           final modifiedItem = Map<String, dynamic>.from(newItem);
           modifiedItem['price'] = 0.0;
@@ -195,6 +190,7 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
       backgroundColor: Colors.transparent,
       builder: (context) => VariantSelectionBottomSheet(
         existingItems: _items,
+        isService: false,
       ),
     );
 

@@ -87,7 +87,7 @@ class Unit {
       try {
         return int.parse(value);
       } catch (e) {
-        print('Error parsing int from string "$value": $e');
+        //print('Error parsing int from string "$value": $e');
         return null;
       }
     }
@@ -99,7 +99,7 @@ class Unit {
     try {
       return DateTime.parse(dateStr);
     } catch (e) {
-      print('Error parsing date $dateStr: $e');
+      //print('Error parsing date $dateStr: $e');
       return null;
     }
   }
@@ -126,7 +126,7 @@ class Unit {
         }
         return parsed; // Return as double (1.23, 90.30, etc.)
       } catch (e) {
-        print('Error parsing num from string "$value": $e');
+        //print('Error parsing num from string "$value": $e');
         return null;
       }
     }
@@ -202,6 +202,7 @@ class Goods {
   final List<Unit>? units;
   final List<Measurement>? measurements;
   final Unit? unit; // Добавляем поле unit для AddGoodsScreen и EditGoodsScreen
+  final bool? isService;
 
   Goods({
     required this.id,
@@ -229,6 +230,7 @@ class Goods {
     this.units,
     this.measurements,
     this.unit,
+    this.isService,
   });
 
   factory Goods.fromJson(Map<String, dynamic> json) {
@@ -282,7 +284,7 @@ class Goods {
                 break;
               }
             } catch (e) {
-              print('Ошибка парсинга даты скидки: $e');
+              //print('Ошибка парсинга даты скидки: $e');
             }
           }
         }
@@ -296,6 +298,16 @@ class Goods {
           isActive = json['is_active'] == 1;
         }
       }
+
+      bool? isService;
+      if (json['is_service'] != null) {
+        if (json['is_service'] is bool) {
+          isService = json['is_service'] as bool?;
+        } else if (json['is_service'] is int) {
+          isService = json['is_service'] == 1;
+        }
+      }
+
 
       List<Unit>? units;
       if (data['units'] != null && data['units'] is List) {
@@ -324,6 +336,7 @@ class Goods {
         discountedPrice: discountedPrice,
         discountPercent: discountPercent,
         isActive: isActive,
+        isService: isService,
         files: (json['files'] as List<dynamic>?)?.map((f) {
               return GoodsFile.fromJson(f as Map<String, dynamic>);
             }).toList() ??
@@ -351,8 +364,8 @@ class Goods {
 
       );
     } catch (e, stackTrace) {
-      print('GoodsModel: Ошибка парсинга товара: $e');
-      print(stackTrace);
+      //print('GoodsModel: Ошибка парсинга товара: $e');
+      //print(stackTrace);
       rethrow;
     }
   }
@@ -369,7 +382,7 @@ class Goods {
       // Формируем полный URL
       return 'https://shamcrm.com/storage/${mainFile.path}';
     } catch (e) {
-      print('Ошибка получения главного изображения: $e');
+      //print('Ошибка получения главного изображения: $e');
       return null;
     }
   }

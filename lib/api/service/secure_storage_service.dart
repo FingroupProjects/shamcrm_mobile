@@ -45,9 +45,9 @@ class AuthService {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(pinKey);
-      print('AuthService: PIN cleared successfully');
+      //print('AuthService: PIN cleared successfully');
     } catch (e) {
-      print('AuthService: Error clearing PIN: $e');
+      //print('AuthService: Error clearing PIN: $e');
     }
   }
 
@@ -57,7 +57,7 @@ class AuthService {
       final pin = await getPin();
       return pin != null && pin.isNotEmpty;
     } catch (e) {
-      print('AuthService: Error checking PIN existence: $e');
+      //print('AuthService: Error checking PIN existence: $e');
       return false;
     }
   }
@@ -66,9 +66,9 @@ class AuthService {
   Future<void> clearAllAuthData() async {
     try {
       await clearPin();
-      print('AuthService: All auth data cleared');
+      //print('AuthService: All auth data cleared');
     } catch (e) {
-      print('AuthService: Error clearing auth data: $e');
+      //print('AuthService: Error clearing auth data: $e');
     }
   }
 }

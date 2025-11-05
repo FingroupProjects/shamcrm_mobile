@@ -14,14 +14,14 @@ class CallStatistics {
 }
 
 class CallStatMonth {
-  final int month;
-  final int total;
-  final int outgoing;
-  final int missed;
-  final int unanswered;
-  final double averageAnswerTime;
-  final int notCalledBackCount;
-  final int incoming; // Новое поле
+  final num month;
+  final num total;
+  final num outgoing;
+  final num missed;
+  final num unanswered;
+  final num averageAnswerTime;
+  final num notCalledBackCount;
+  final num incoming; // Новое поле
 
   CallStatMonth({
     required this.month,
@@ -36,14 +36,14 @@ class CallStatMonth {
 
   factory CallStatMonth.fromJson(Map<String, dynamic> json) {
     return CallStatMonth(
-      month: json['month'] as int,
-      total: json['total'] as int,
-      outgoing: int.parse(json['outgoing'].toString()),
-      missed: int.parse(json['missed'].toString()),
-      unanswered: int.parse(json['unanswered'].toString()),
-      averageAnswerTime: (json['average_answer_time'] as num).toDouble(),
-      notCalledBackCount: json['not_called_back_count'] as int,
-      incoming: (json['total'] as int) - int.parse(json['outgoing'].toString()),
+      month: num.parse(json['month'].toString()),
+      total: num.parse(json['total'].toString()),
+      outgoing: num.parse(json['outgoing'].toString()),
+      missed: num.parse(json['missed'].toString()),
+      unanswered: num.parse(json['unanswered'].toString()),
+      averageAnswerTime: num.parse((json['average_answer_time'].toString())),
+      notCalledBackCount: num.parse(json['not_called_back_count'].toString()),
+      incoming: num.parse((json['total'].toString())) - num.parse(json['outgoing'].toString()),
     );
   }
 }

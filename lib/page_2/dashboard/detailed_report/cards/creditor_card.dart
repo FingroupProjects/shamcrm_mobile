@@ -52,11 +52,11 @@ class CreditorCard extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     '${localizations.translate('debt_amount') ?? 'debt_amount'}: ${parseNumberToString(creditor.debtAmount)}',
-                    style: const TextStyle(
-                      fontSize: 14,
+                     style: const TextStyle(
+                      fontSize: 15,
                       fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w400,
-                      color: Color(0xff99A4BA),
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xff1E2E52),
                     ),
                   ),
                 ],

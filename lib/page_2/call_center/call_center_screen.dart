@@ -2,7 +2,7 @@ import 'package:crm_task_manager/bloc/call_bloc/call_center_bloc.dart';
 import 'package:crm_task_manager/bloc/call_bloc/call_center_event.dart';
 import 'package:crm_task_manager/bloc/call_bloc/call_center_state.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
-import 'package:crm_task_manager/custom_widget/filter/call_center/call_center_screen.dart';
+import 'package:crm_task_manager/custom_widget/filter/call_center/call_center_filter_screen.dart';
 import 'package:crm_task_manager/custom_widget/filter/call_center/call_type_multi_select_widget.dart';
 import 'package:crm_task_manager/custom_widget/filter/call_center/rating_multi_select_widget.dart';
 import 'package:crm_task_manager/custom_widget/filter/call_center/status_multi_select_widget.dart';
@@ -229,11 +229,10 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
     DateTime? lastDate;
 
     for (var call in calls) {
-      final dateOnly =
-          DateTime(call.callDate.year, call.callDate.month, call.callDate.day);
+      final dateOnly = DateTime(call.callDate.year, call.callDate.month, call.callDate.day);
       if (lastDate == null || dateOnly != lastDate) {
         final header = _formatDateHeader(call.callDate);
-        result.add(header);
+        result.add(header);  // Now adding Map instead of String
         lastDate = dateOnly;
       }
       result.add(call);
@@ -241,16 +240,23 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
     return result;
   }
 
-  String _formatDateHeader(DateTime date) {
+  Map<String, String> _formatDateHeader(DateTime date) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final callDate = DateTime(date.year, date.month, date.day);
     final difference = today.difference(callDate).inDays;
 
-    if (difference == 0) return 'Сегодня';
-    if (difference == 1) return 'Вчера';
+    if (difference == 0) {
+      return {'date': 'Сегодня', 'year': DateFormat('yyyy', 'ru').format(date)};
+    }
+    if (difference == 1) {
+      return {'date': 'Вчера', 'year': DateFormat('yyyy', 'ru').format(date)};
+    }
 
-    return DateFormat('d MMMM', 'ru').format(date);
+    return {
+      'date': DateFormat('d MMMM', 'ru').format(date),
+      'year': DateFormat('yyyy', 'ru').format(date),
+    };
   }
 
   // Метод для создания контента страницы
@@ -292,17 +298,31 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
                 return const SizedBox.shrink();
               }
               final item = items[index];
-              if (item is String) {
+              if (item is Map<String, String>) {  // Changed from String to Map
                 return Padding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-                  child: Text(
-                    item,
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                      color: Colors.grey.shade700,
-                    ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        item['date'] ?? '',
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                      Text(
+                        item['year'] ?? '',
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                    ],
                   ),
                 );
               } else if (item is CallLogEntry) {
