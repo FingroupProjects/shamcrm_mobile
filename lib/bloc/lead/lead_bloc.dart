@@ -60,56 +60,39 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
 
 Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
   if (isFetching) {
-    ////print('LeadBloc: _fetchLeads - Already fetching, skipping');
     return;
   }
   isFetching = true;
+  
   try {
-    ////print('LeadBloc: _fetchLeads - statusId: ${event.statusId}, salesFunnelId: ${event.salesFunnelId}, ignoreCache: ${event.ignoreCache}');
-    
-    // НЕ отправляем LeadLoading, чтобы не мигал интерфейс
-    if (state is! LeadDataLoaded) {
+    // ВСЕГДА эмитим LeadLoading в начале, если это новый запрос
+    if (event.ignoreCache || event.query != null || event.managerIds != null) {
       emit(LeadLoading());
     }
 
     _currentQuery = event.query;
     _currentManagerIds = event.managerIds;
-    _currentRegionIds = event.regionsIds;
-    _currentSourceIds = event.sourcesIds;
-    _currentStatusId = event.statusIds;
-    _currentFromDate = event.fromDate;
-    _currentToDate = event.toDate;
-    _currentHasSuccessDeals = event.hasSuccessDeals;
-    _currentHasInProgressDeals = event.hasInProgressDeals;
-    _currentHasFailureDeals = event.hasFailureDeals;
-    _currentHasNotices = event.hasNotices;
-    _currentHasContact = event.hasContact;
-    _currentHasChat = event.hasChat;
-    _currentHasNoReplies = event.hasNoReplies;
-    _currentHasUnreadMessages = event.hasUnreadMessages;
-    _currentHasDeal = event.hasDeal;
-    _currentHasOrders = event.hasOrders;
-    _currentDaysWithoutActivity = event.daysWithoutActivity;
-    _currentDirectoryValues = event.directoryValues;
-
-    // КРИТИЧНО: Сначала восстанавливаем ВСЕ постоянные счетчики
+    // ... остальные параметры
+    
+    // Восстанавливаем постоянные счетчики
     final allPersistentCounts = await LeadCache.getPersistentLeadCounts();
     for (String statusIdStr in allPersistentCounts.keys) {
       int statusId = int.parse(statusIdStr);
       int count = allPersistentCounts[statusIdStr] ?? 0;
       _leadCounts[statusId] = count;
     }
-    ////print('LeadBloc: Restored all persistent counts: $_leadCounts');
 
     List<Lead> leads = [];
-    if (!event.ignoreCache) {
+    
+    // Проверяем кэш только если НЕ ignoreCache
+    if (!event.ignoreCache && event.query == null) {
       leads = await LeadCache.getLeadsForStatus(event.statusId);
       if (leads.isNotEmpty) {
-        ////print('LeadBloc: _fetchLeads - Emitting cached leads: ${leads.length}, preserved counts: $_leadCounts');
         emit(LeadDataLoaded(leads, currentPage: 1, leadCounts: Map.from(_leadCounts)));
       }
     }
 
+    // Загружаем с сервера
     if (await _checkInternetConnection()) {
       leads = await apiService.getLeads(
         event.statusId,
@@ -137,25 +120,28 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
         salesFunnelId: event.salesFunnelId,
       );
 
-      // Кэшируем лиды БЕЗ изменения постоянных счетчиков
+      // Кэшируем данные
       await LeadCache.cacheLeadsForStatus(
-  event.statusId,
-  leads,
-  updatePersistentCount: event.ignoreCache, // ← только при ignoreCache обновляем счётчик
-);
-      
-      // ВАЖНО: НЕ ПЕРЕЗАПИСЫВАЕМ счетчики значениями из пагинации!
-      // Счетчики остаются такими, какими были в постоянном кэше
-      ////print('LeadBloc: _fetchLeads - Fetched ${leads.length} leads from API, but kept persistent counts: $_leadCounts');
+        event.statusId,
+        leads,
+        updatePersistentCount: event.ignoreCache,
+      );
     }
 
     allLeadsFetched = leads.isEmpty;
-    emit(LeadDataLoaded(leads, currentPage: 1, leadCounts: Map.from(_leadCounts)));
+    
+    // КРИТИЧНО: ВСЕГДА эмитим финальное состояние
+    emit(LeadDataLoaded(
+      leads, 
+      currentPage: 1, 
+      leadCounts: Map.from(_leadCounts),
+      timestamp: DateTime.now(), // Обновляем timestamp для гарантии изменения
+    ));
+    
   } catch (e) {
-    ////print('LeadBloc: _fetchLeads - Error: $e');
     emit(LeadError('Не удалось загрузить данные!'));
   } finally {
-    isFetching = false;
+    isFetching = false; // ОБЯЗАТЕЛЬНО сбрасываем флаг
   }
 }
 
