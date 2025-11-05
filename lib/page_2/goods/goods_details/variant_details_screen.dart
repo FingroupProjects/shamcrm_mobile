@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
+import 'package:crm_task_manager/page_2/goods/goods_details/goods_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 
@@ -114,15 +115,20 @@ class _VariantDetailsScreenState extends State<VariantDetailsScreen> {
               if (images[index].isEmpty) {
                 return _buildPlaceholder();
               }
-              return ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  imageUrl,
-                  width: double.infinity,
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) {
-                    return _buildPlaceholder();
-                  },
+              return GestureDetector(
+                onTap: () {
+                  _openImageGallery(context, images, index);
+                },
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    imageUrl,
+                    width: double.infinity,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      return _buildPlaceholder();
+                    },
+                  ),
                 ),
               );
             },
@@ -153,6 +159,28 @@ class _VariantDetailsScreenState extends State<VariantDetailsScreen> {
       color: Colors.grey[200],
       child: const Center(
         child: Icon(Icons.image, size: 50, color: Colors.grey),
+      ),
+    );
+  }
+
+  void _openImageGallery(BuildContext context, List<String> imagePaths, int initialIndex) {
+    final List<String> imageUrls = imagePaths
+        .where((path) => path.isNotEmpty)
+        .map((path) => '$baseUrl/$path')
+        .toList();
+
+    if (imageUrls.isEmpty) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ImageGalleryViewer(
+          imageUrls: imageUrls,
+          initialIndex: initialIndex,
+          backgroundDecoration: const BoxDecoration(
+            color: Colors.black,
+          ),
+        ),
       ),
     );
   }
