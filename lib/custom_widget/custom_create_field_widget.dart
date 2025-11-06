@@ -6,7 +6,7 @@ import 'package:intl/intl.dart';
 class CustomFieldWidget extends StatelessWidget {
   final String fieldName;
   final TextEditingController valueController;
-  final VoidCallback onRemove;
+  final VoidCallback? onRemove;
   final bool isDirectory;
   final String? type;
     final bool isCustomField; // Новый флаг
@@ -16,7 +16,7 @@ class CustomFieldWidget extends StatelessWidget {
     Key? key,
     required this.fieldName,
     required this.valueController,
-    required this.onRemove,
+    this.onRemove,
     this.isDirectory = false,
     this.type,
         this.isCustomField = false, // По умолчанию false
@@ -197,6 +197,7 @@ class CustomFieldWidget extends StatelessWidget {
             ],
           ),
         ),
+        if (onRemove != null)
         IconButton(
           icon: const Icon(
             Icons.remove_circle,

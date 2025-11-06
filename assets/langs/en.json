@@ -55,6 +55,7 @@
   "invalid_email": "Please enter a valid email address",
   "profile_update_error": "An error occurred while updating the profile",
   "save": "Save",
+  "saving": "Saving...",
   "COMMENT_TITLE_SCREEN_Domain": "----------------------------Тексты для экрана Domain----------------------------",
   "enter your subdomain": "Enter your subdomain",
   "enter_subdomain": "Enter your subdomain",

@@ -55,6 +55,7 @@
   "invalid_email": "To'g'ri elektron pochta manzilini kiriting",
   "profile_update_error": "Profilni yangilashda xatolik yuz berdi",
   "save": "Saqlash",
+  "saving": "Saqlanmoqda...",
   "COMMENT_TITLE_SCREEN_Domain": "----------------------------Тексты для экрана Домена----------------------------",
   "enter_subdomain": "Subdomeningizni kiriting",
   "subdomain_hint": "Subdomen kiriting",

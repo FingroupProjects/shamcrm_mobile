@@ -11,7 +11,7 @@ class MainFieldDropdownWidget extends StatefulWidget {
   final Function(MainField) onSelectField;
   final TextEditingController controller;
   final Function(int) onSelectEntryId;
-  final VoidCallback onRemove;
+  final VoidCallback? onRemove;
   final int? initialEntryId;
 
   MainFieldDropdownWidget({
@@ -22,7 +22,7 @@ class MainFieldDropdownWidget extends StatefulWidget {
     this.selectedField,
     required this.controller,
     required this.onSelectEntryId,
-    required this.onRemove,
+    this.onRemove,
     this.initialEntryId,
   });
 
@@ -222,6 +222,7 @@ class _MainFieldDropdownWidgetState extends State<MainFieldDropdownWidget> {
           ),
         ),
         // const SizedBox(height: 8),
+        if (widget.onRemove != null)
         IconButton(
           icon: const Icon(
             Icons.remove_circle,
