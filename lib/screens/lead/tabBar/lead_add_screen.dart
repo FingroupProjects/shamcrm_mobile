@@ -78,6 +78,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
   // Режим настроек
   bool isSettingsMode = false;
   bool isSavingFieldOrder = false;
+  List<FieldConfiguration>? originalFieldConfigurations; // Для отслеживания изменений
 
   @override
   void initState() {
@@ -431,8 +432,9 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
           fieldType: type,
         );
 
-        // Очищаем кэш перед перезагрузкой
-        await ApiService().clearFieldConfigurationCacheForTable('leads');
+        // КЭШИРОВАНИЕ ОТКЛЮЧЕНО
+        // // Очищаем кэш перед перезагрузкой
+        // await ApiService().clearFieldConfigurationCacheForTable('leads');
 
         // После успешного добавления перезагружаем конфигурацию полей
         if (mounted) {
@@ -562,8 +564,9 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                     organizationId: ApiService().getSelectedOrganization().toString(),
                   );
 
-                  // Очищаем кэш перед перезагрузкой
-                  await ApiService().clearFieldConfigurationCacheForTable('leads');
+                  // КЭШИРОВАНИЕ ОТКЛЮЧЕНО
+                  // // Очищаем кэш перед перезагрузкой
+                  // await ApiService().clearFieldConfigurationCacheForTable('leads');
 
                   // После успешного добавления справочника перезагружаем конфигурацию полей
                   if (mounted) {
@@ -613,6 +616,82 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
         );
       }
     });
+  }
+
+  // Проверка, были ли изменения в конфигурации полей
+  bool _hasFieldChanges() {
+    if (originalFieldConfigurations == null) return false;
+    if (originalFieldConfigurations!.length != fieldConfigurations.length) return true;
+    
+    for (int i = 0; i < fieldConfigurations.length; i++) {
+      final current = fieldConfigurations[i];
+      final original = originalFieldConfigurations!.firstWhere(
+        (f) => f.id == current.id,
+        orElse: () => current,
+      );
+      
+      if (current.position != original.position) return true;
+    }
+    
+    return false;
+  }
+
+  // Диалог подтверждения выхода из режима настроек без сохранения
+  Future<bool> _showExitSettingsDialog() async {
+    return await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Text(
+            AppLocalizations.of(context)!.translate('warning'),
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: Color(0xff1E2E52),
+            ),
+          ),
+          content: Text(
+            AppLocalizations.of(context)!.translate('changes_will_not_be_saved'),
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 16,
+              fontWeight: FontWeight.w400,
+              color: Color(0xff1E2E52),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(
+                AppLocalizations.of(context)!.translate('cancel'),
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xff99A4BA),
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text(
+                AppLocalizations.of(context)!.translate('exit'),
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xffFF4757),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    ) ?? false;
   }
 
   // Получение отображаемого названия поля
@@ -882,6 +961,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
 
                     if (mounted) {
                       setState(() {
+                        originalFieldConfigurations = null; // Очищаем снимок после сохранения
                         isSettingsMode = false;
                       });
 
@@ -1089,10 +1169,53 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
               isSettingsMode ? Icons.close : Icons.settings,
               color: Color(0xff1E2E52),
             ),
-            onPressed: () {
-              setState(() {
-                isSettingsMode = !isSettingsMode;
-              });
+            onPressed: () async {
+              if (isSettingsMode) {
+                // Выходим из режима настроек
+                if (_hasFieldChanges()) {
+                  // Есть несохраненные изменения - показываем диалог
+                  final shouldExit = await _showExitSettingsDialog();
+                  if (!shouldExit) return;
+                  
+                  // Восстанавливаем оригинальную конфигурацию
+                  if (originalFieldConfigurations != null) {
+                    setState(() {
+                      fieldConfigurations = [...originalFieldConfigurations!];
+                      originalFieldConfigurations = null;
+                      isSettingsMode = false;
+                    });
+                  }
+                } else {
+                  // Нет изменений - просто выходим
+                  setState(() {
+                    originalFieldConfigurations = null;
+                    isSettingsMode = false;
+                  });
+                }
+              } else {
+                // Входим в режим настроек - сохраняем снимок конфигурации
+                setState(() {
+                  originalFieldConfigurations = fieldConfigurations.map((config) {
+                    return FieldConfiguration(
+                      id: config.id,
+                      tableName: config.tableName,
+                      fieldName: config.fieldName,
+                      position: config.position,
+                      required: config.required,
+                      isActive: config.isActive,
+                      isCustomField: config.isCustomField,
+                      createdAt: config.createdAt,
+                      updatedAt: config.updatedAt,
+                      customFieldId: config.customFieldId,
+                      directoryId: config.directoryId,
+                      type: config.type,
+                      isDirectory: config.isDirectory,
+                      showOnTable: config.showOnTable,
+                    );
+                  }).toList();
+                  isSettingsMode = true;
+                });
+              }
             },
             tooltip: isSettingsMode
                 ? AppLocalizations.of(context)!.translate('close')
@@ -1266,18 +1389,6 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                                 );
                               }).toList();
                             })(),
-
-                            // Описание (всегда показываем)
-                            CustomTextField(
-                              controller: descriptionController,
-                              hintText: AppLocalizations.of(context)!
-                                  .translate('description_details_lead_edit'),
-                              label: AppLocalizations.of(context)!
-                                  .translate('description_details_lead_add'),
-                              maxLines: 5,
-                              keyboardType: TextInputType.multiline,
-                            ),
-                            const SizedBox(height: 15),
 
                             // ТОЛЬКО пользовательские поля (те, которые добавлены через кнопку "Добавить поле")
                             ...customFields.where((field) {
