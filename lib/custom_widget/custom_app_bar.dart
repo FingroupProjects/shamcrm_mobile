@@ -154,6 +154,7 @@ final List<String>? initialDealNames; // Новый параметр
   final Function(Map<String, dynamic>)? onChatTaskFiltersApplied; // Для задач
   final VoidCallback? onChatLeadFiltersReset; // Сброс фильтров
   final bool hasActiveChatFilters; // Есть ли активные фильтры
+  final bool hasActiveEventFilters; // Есть ли активные фильтры для Event
   final Map<String, dynamic>? initialChatFilters; // Начальные фильтры
   final int? currentSalesFunnelId; // ID текущей воронки
   final bool showDashboardIcon; // Новый параметр
@@ -214,6 +215,7 @@ final List<String>? initialDealNames; // Новый параметр
     this.onChatLeadFiltersReset,
     this.onChatTaskFiltersApplied, // Новый параметр
     this.hasActiveChatFilters = false,
+    this.hasActiveEventFilters = false,
     this.initialChatFilters,
     this.initialManagersDeal,
     this.initialLeadsDeal,
@@ -365,8 +367,7 @@ class _CustomAppBarState extends State<CustomAppBar>
         });
       } else {
         setState(() {
-          _iconColor =
-              Colors.black; // Возвращаем черный цвет когда фильтры неактивны
+          _iconColor = Colors.black; // Возвращаем черный цвет когда фильтры неактивны
         });
       }
     });
@@ -448,9 +449,10 @@ class _CustomAppBarState extends State<CustomAppBar>
   @override
   void didUpdateWidget(CustomAppBar oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Синхронизируем _areFiltersActive с hasActiveChatFilters при обновлении виджета
-    if (widget.hasActiveChatFilters != oldWidget.hasActiveChatFilters) {
-      _setFiltersActive(widget.hasActiveChatFilters);
+    // Синхронизируем _areFiltersActive с hasActiveChatFilters и hasActiveEventFilters при обновлении виджета
+    if (widget.hasActiveChatFilters != oldWidget.hasActiveChatFilters ||
+        widget.hasActiveEventFilters != oldWidget.hasActiveEventFilters) {
+      _setFiltersActive(widget.hasActiveChatFilters || widget.hasActiveEventFilters);
     }
   }
 
@@ -1258,6 +1260,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                   'assets/icons/AppBar/filter.png',
                   width: 24,
                   height: 24,
+                  color: widget.hasActiveEventFilters ? Colors.blue : _iconColor,
                 ),
                 onPressed: () {
                   Navigator.push(
