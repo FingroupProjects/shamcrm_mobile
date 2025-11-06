@@ -652,6 +652,12 @@ int _tutorialStep = 0; // Добавляем шаг туториала
             initialNoticeManagerEventFromDate: _intialNoticeFromDate,
             initialNoticeManagerEventToDate: _intialNoticeToDate,
             onEventResetFilters: _resetFilters,
+            hasActiveEventFilters: _selectedManagers.isNotEmpty ||
+                _selectedStatuses != null ||
+                _fromDate != null ||
+                _toDate != null ||
+                _NoticefromDate != null ||
+                _NoticetoDate != null,
             textEditingController: textEditingController,
             focusNode: focusNode,
             showFilterTaskIcon: false,
