@@ -1,8 +1,6 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/supplier_return/supplier_return_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/supplier_return/supplier_return_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/supplier_return/supplier_return_state.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/variant_bloc/variant_bloc.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/variant_bloc/variant_event.dart';
 import 'package:crm_task_manager/custom_widget/compact_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
@@ -60,7 +58,6 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
   void initState() {
     super.initState();
     _dateController.text = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
-    context.read<VariantBloc>().add(FetchVariants());
 
     _tabController = TabController(length: 2, vsync: this);
   }
@@ -180,11 +177,6 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
       );
       return;
     }
-
-    context.read<VariantBloc>().add(FilterVariants({
-      'counterparty_id': int.parse(_selectedSupplier!),
-      'storage_id': int.parse(_selectedStorage!),
-    }));
 
     final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,

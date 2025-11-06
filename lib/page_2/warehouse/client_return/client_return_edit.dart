@@ -18,8 +18,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
-import '../../../bloc/page_2_BLOC/variant_bloc/variant_bloc.dart';
-import '../../../bloc/page_2_BLOC/variant_bloc/variant_event.dart';
 import '../incoming/variant_selection_bottom_sheet.dart';
 
 class EditClientReturnDocumentScreen extends StatefulWidget {
@@ -69,7 +67,6 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
   void initState() {
     super.initState();
     _initializeFormData();
-    context.read<VariantBloc>().add(FetchVariants());
     _tabController = TabController(length: 2, vsync: this);
   }
 
@@ -339,11 +336,6 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
       );
       return;
     }
-
-    context.read<VariantBloc>().add(FilterVariants({
-      'counterparty_id': _selectedLead!.id,
-      'storage_id': int.parse(_selectedStorage!),
-    }));
 
     final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
@@ -647,6 +639,22 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
             ),
           ),
         ),
+        // Подсказка для сохранения
+        if (_items.isNotEmpty)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text(
+              localizations?.translate('save_hint') ?? "После добавления товаров перейдите в \"Основное\" для сохранения",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w400,
+                color: Color(0xffbdc2cf),
+                height: 1.2,
+              ),
+            ),
+          ),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(

@@ -8,6 +8,10 @@
   "english": "English",
   "profile_editor": "Profile",
   "exit": "Exit",
+  "warning": "Warning",
+  "changes_will_not_be_saved": "Changes will not be saved. Are you sure you want to exit?",
+  "position_changes_will_not_be_saved": "Field position changes will not be saved. New added fields will remain visible.",
+  "dont_save": "Don't Save",
   "exit_account": "Exit Account",
   "error_text": "Error",
   "change_pin_code": "Change PIN-CODE",
@@ -55,6 +59,7 @@
   "invalid_email": "Please enter a valid email address",
   "profile_update_error": "An error occurred while updating the profile",
   "save": "Save",
+  "saving": "Saving...",
   "COMMENT_TITLE_SCREEN_Domain": "----------------------------Тексты для экрана Domain----------------------------",
   "enter your subdomain": "Enter your subdomain",
   "enter_subdomain": "Enter your subdomain",
@@ -1862,5 +1867,6 @@
   "movement_history": "Movement History",
   "income_document": "Income",
   "outcome_document": "Outcome",
-  "change_status": "Change Status"
+  "change_status": "Change Status",
+  "save_hint": "After adding items, go to 'Main' to save"
 }

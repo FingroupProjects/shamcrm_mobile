@@ -14,20 +14,14 @@ import 'package:crm_task_manager/custom_widget/custom_phone_for_lead_edit.dart';
 import 'package:crm_task_manager/custom_widget/file_picker_dialog.dart';
 import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/models/leadById_model.dart';
-import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/custom_field_model.dart';
-import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_create_custom.dart';
-import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_status_list_edit.dart';
-import 'package:crm_task_manager/screens/lead/tabBar/lead_details/price_type_widget.dart';
-import 'package:crm_task_manager/screens/lead/tabBar/lead_details/sales_funnel_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/region_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/source_lead_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-import 'package:crm_task_manager/screens/lead/tabBar/lead_details/add_custom_directory_dialog.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/main_field_dropdown_widget.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -35,12 +29,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
-import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
-import 'package:crm_task_manager/models/directory_model.dart' as directory_model;
-import 'package:file_picker/file_picker.dart';
 import 'dart:io';
+
+import '../../../page_2/dashboard/detailed_report/contents/goods_content.dart';
+import 'lead_details/add_custom_directory_dialog.dart';
+import 'lead_details/lead_create_custom.dart' show AddCustomFieldDialog;
 
 class LeadEditScreen extends StatefulWidget {
   final int leadId;
@@ -112,8 +107,11 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
   // Конфигурация полей
   List<FieldConfiguration> fieldConfigurations = [];
   bool isConfigurationLoaded = false;
-  Map<String, Widget> fieldWidgets = {};
-  List<String> fieldOrder = [];
+
+  // Режим настроек
+  bool isSettingsMode = false;
+  bool isSavingFieldOrder = false;
+  List<FieldConfiguration>? originalFieldConfigurations; // Для отслеживания изменений
 
   int? _selectedStatuses;
   String? selectedRegion;
@@ -123,9 +121,6 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
   String selectedDialCode = '+992';
   String selectedWhatsAppDialCode = '+992';
   String? _fullWhatsAppNumber; // Новая переменная для хранения полного номера WhatsApp
-  bool _isPhoneEdited = false;
-  bool _isWhatsAppEdited = false;
-  bool _showAdditionalFields = false;
   List<CustomField> customFields = [];
   final ApiService _apiService = ApiService();
   List<String> selectedFiles = [];
@@ -209,6 +204,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
         controller: TextEditingController(text: customField.value),
         uniqueId: '${Uuid().v4()}_init_custom_$i',
         type: customField.type ?? 'string',
+        isCustomField: true,
       ));
     }
 
@@ -260,48 +256,307 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
     }
   }
 
-  void _buildFieldsFromConfiguration() {
-    if (kDebugMode) {
-      print('LeadEditScreen: Building fields from configuration with ${fieldConfigurations.length} fields');
-    }
-
-    fieldWidgets.clear();
-    fieldOrder.clear();
-
-    for (var config in fieldConfigurations) {
-      if (!config.isActive) {
-        if (kDebugMode) {
-          print('LeadEditScreen: Skipping inactive field: ${config.fieldName}');
-        }
-        continue;
+  // Метод для отправки позиций полей на бэкенд
+  Future<void> _saveFieldOrderToBackend() async {
+    try {
+      // Подготовка данных для отправки
+      final List<Map<String, dynamic>> updates = [];
+      for (var config in fieldConfigurations) {
+        updates.add({
+          'id': config.id,
+          'position': config.position,
+          'is_active': config.isActive ? 1 : 0,
+          'is_required': config.required ? 1 : 0,
+          'show_on_table': config.showOnTable ? 1 : 0,
+        });
       }
 
-      Widget? widget = _buildFieldWidget(config);
-      if (widget != null) {
-        fieldWidgets[config.fieldName] = widget;
-        fieldOrder.add(config.fieldName);
+      // Отправка на бэкенд
+      await ApiService().updateFieldPositions(
+        tableName: 'leads',
+        updates: updates,
+      );
 
-        if (kDebugMode) {
-          print('LeadEditScreen: Added field widget for: ${config.fieldName} at position ${config.position}');
-        }
+      if (kDebugMode) {
+        print('LeadEditScreen: Field positions saved to backend');
       }
-    }
-
-    if (kDebugMode) {
-      print('LeadEditScreen: Total field widgets: ${fieldWidgets.length}');
+    } catch (e) {
+      if (kDebugMode) {
+        print('LeadEditScreen: Error saving field positions: $e');
+      }
+      // Показываем ошибку пользователю
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Ошибка сохранения настроек полей',
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
+              ),
+            ),
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            backgroundColor: Colors.red,
+            elevation: 3,
+            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
 
-  Widget? _buildFieldWidget(FieldConfiguration config) {
+  // Вспомогательный метод для создания/получения кастомного поля
+  CustomField _getOrCreateCustomField(FieldConfiguration config) {
+    // Ищем существующее поле по имени и флагу isCustomField
+    final existingField = customFields.firstWhere(
+          (field) => field.fieldName == config.fieldName && field.isCustomField == true,
+      orElse: () {
+        // Если не найдено, создаем новое с пустым контроллером
+        final newField = CustomField(
+          fieldName: config.fieldName,
+          uniqueId: Uuid().v4(),
+          controller: TextEditingController(),
+          type: config.type,
+          isCustomField: true,
+        );
+        customFields.add(newField);
+        return newField;
+      },
+    );
+
+    return existingField;
+  }
+
+  // Вспомогательный метод для создания/получения поля-справочника
+  CustomField _getOrCreateDirectoryField(FieldConfiguration config) {
+    final existingField = customFields.firstWhere(
+          (field) => field.directoryId == config.directoryId,
+      orElse: () {
+        final newField = CustomField(
+          fieldName: config.fieldName,
+          isDirectoryField: true,
+          directoryId: config.directoryId,
+          uniqueId: Uuid().v4(),
+          controller: TextEditingController(),
+        );
+        customFields.add(newField);
+        return newField;
+      },
+    );
+
+    return existingField;
+  }
+
+  Future<void> _addCustomField(String fieldName, String type) async {
+    // Если это не справочник, сначала добавляем через API
+    try {
+      await ApiService().addNewField(
+        tableName: 'leads',
+        fieldName: fieldName,
+        fieldType: type,
+      );
+
+      // КЭШИРОВАНИЕ ОТКЛЮЧЕНО
+      // // Очищаем кэш перед перезагрузкой
+      // await ApiService().clearFieldConfigurationCacheForTable('leads');
+
+      // После успешного добавления перезагружаем конфигурацию полей
+      if (mounted) {
+        context.read<FieldConfigurationBloc>().add(
+            FetchFieldConfiguration('leads')
+        );
+      }
+
+      // Добавляем поле локально только после успешного добавления на backend
+      if (mounted) {
+        setState(() {
+          customFields.add(CustomField(
+            fieldName: fieldName,
+            uniqueId: Uuid().v4(),
+            isDirectoryField: false,
+            directoryId: null,
+            type: type,
+            controller: TextEditingController(),
+            isCustomField: true,
+          ));
+        });
+      }
+
+      if (kDebugMode) {
+        print('LeadAddScreen: Successfully added custom field: $fieldName');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('LeadAddScreen: Error adding custom field: $e');
+      }
+
+      // Показываем ошибку пользователю
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Ошибка при добавлении поля: $e',
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
+              ),
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showAddFieldMenu() {
+    showMenu(
+      context: context,
+      position: RelativeRect.fromLTRB(300, 650, 200, 300),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      elevation: 4,
+      color: Colors.white,
+      items: [
+        PopupMenuItem(
+          value: 'manual',
+          child: Text(
+            AppLocalizations.of(context)!.translate('manual_input'),
+            style: TextStyle(
+              fontSize: 16,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w500,
+              color: Color(0xff1E2E52),
+            ),
+          ),
+        ),
+        PopupMenuItem(
+          value: 'directory',
+          child: Text(
+            AppLocalizations.of(context)!.translate('directory'),
+            style: TextStyle(
+              fontSize: 16,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w500,
+              color: Color(0xff1E2E52),
+            ),
+          ),
+        ),
+      ],
+    ).then((value) {
+      if (value == 'manual') {
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AddCustomFieldDialog(
+              onAddField: (fieldName, {String? type}) {
+                if (type != null) {
+                  _addCustomField(fieldName, type);
+                }
+              },
+            );
+          },
+        );
+      } else if (value == 'directory') {
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AddCustomDirectoryDialog(
+              onAddDirectory: (directory) async {
+                try {
+                  // Сначала связываем справочник через API
+                  await ApiService().linkDirectory(
+                    directoryId: directory.id,
+                    modelType: 'lead',
+                    organizationId: ApiService().getSelectedOrganization().toString(),
+                  );
+
+                  showCustomSnackBar(context: context, message: 'Справочник успешно добавлен', isSuccess: true);
+
+                  // КЭШИРОВАНИЕ ОТКЛЮЧЕНО
+                  // // Очищаем кэш перед перезагрузкой
+                  // await ApiService().clearFieldConfigurationCacheForTable('leads');
+
+                  // Добавляем справочник локально сразу после успешного связывания
+                  if (mounted) {
+                    setState(() {
+                      customFields.add(CustomField(
+                        fieldName: directory.name,
+                        uniqueId: Uuid().v4(),
+                        isDirectoryField: true,
+                        directoryId: directory.id,
+                        type: null,
+                        controller: TextEditingController(),
+                        isCustomField: false,
+                      ));
+                    });
+                  }
+
+                  // После успешного добавления справочника перезагружаем конфигурацию полей
+                  // Конфигурация с сервера уже будет содержать этот справочник
+                  if (mounted) {
+                    context.read<FieldConfigurationBloc>().add(
+                        FetchFieldConfiguration('leads')
+                    );
+                  }
+
+                  if (kDebugMode) {
+                    print('LeadAddScreen: Successfully linked directory: ${directory.name}');
+                  }
+                } catch (e) {
+                  if (kDebugMode) {
+                    print('LeadAddScreen: Error linking directory: $e');
+                  }
+
+                  // Показываем ошибку пользователю
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          e.toString(),
+                          style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white,
+                          ),
+                        ),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              },
+            );
+          },
+        );
+      }
+    });
+  }
+
+  // Метод для построения стандартных системных полей
+  Widget _buildStandardField(FieldConfiguration config) {
     switch (config.fieldName) {
       case 'name':
         return CustomTextField(
           controller: titleController,
           hintText: AppLocalizations.of(context)!.translate('enter_name_list'),
           label: AppLocalizations.of(context)!.translate('name_list'),
-          validator: (value) => value!.isEmpty
-              ? AppLocalizations.of(context)!.translate('field_required')
-              : null,
+          validator: config.required ? (value) {
+            if (value == null || value.isEmpty) {
+              return AppLocalizations.of(context)!.translate('field_required');
+            }
+            return null;
+          } : null,
         );
 
       case 'phone':
@@ -309,9 +564,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
           controller: phoneController,
           selectedDialCode: selectedDialCode,
           onInputChanged: (String number) {
-            setState(() {
-              _isPhoneEdited = true;
-            });
+            // Номер обновляется автоматически
           },
           label: AppLocalizations.of(context)!.translate('phone'),
         );
@@ -352,11 +605,17 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
           selectedDialCode: selectedWhatsAppDialCode,
           onInputChanged: (String number) {
             setState(() {
-              _isWhatsAppEdited = true;
               _fullWhatsAppNumber = number;
             });
           },
           label: 'WhatsApp',
+        );
+
+      case 'tg_nick':
+        return CustomTextField(
+          controller: telegramController,
+          hintText: AppLocalizations.of(context)!.translate('enter_telegram_username'),
+          label: AppLocalizations.of(context)!.translate('telegram'),
         );
 
       case 'insta_login':
@@ -373,13 +632,6 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
           label: AppLocalizations.of(context)!.translate('Facebook'),
         );
 
-      case 'tg_nick':
-        return CustomTextField(
-          controller: telegramController,
-          hintText: AppLocalizations.of(context)!.translate('enter_telegram_username'),
-          label: AppLocalizations.of(context)!.translate('telegram'),
-        );
-
       case 'email':
         return CustomTextField(
           controller: emailController,
@@ -389,11 +641,458 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
         );
 
       default:
-        if (kDebugMode) {
-          print('LeadEditScreen: Unknown field: ${config.fieldName}');
-        }
-        return null;
+        return SizedBox.shrink();
     }
+  }
+
+  // Метод для построения виджета на основе конфигурации поля
+  Widget _buildFieldWidget(FieldConfiguration config) {
+    // Сначала проверяем, является ли это кастомным полем
+    if (config.isCustomField) {
+      final customField = _getOrCreateCustomField(config);
+
+      return CustomFieldWidget(
+        fieldName: config.fieldName,
+        valueController: customField.controller,
+        type: config.type,
+        isDirectory: false,
+      );
+    }
+
+    // Затем проверяем, является ли это справочником
+    if (config.isDirectory && config.directoryId != null) {
+      final directoryField = _getOrCreateDirectoryField(config);
+
+      return MainFieldDropdownWidget(
+        directoryId: directoryField.directoryId!,
+        directoryName: directoryField.fieldName,
+        selectedField: directoryField.entryId != null
+            ? MainField(id: directoryField.entryId!, value: directoryField.controller.text)
+            : null,
+        onSelectField: (MainField selectedField) {
+          setState(() {
+            final index = customFields.indexWhere(
+                    (f) => f.directoryId == config.directoryId
+            );
+            if (index != -1) {
+              customFields[index] = directoryField.copyWith(
+                entryId: selectedField.id,
+                controller: TextEditingController(text: selectedField.value),
+              );
+            }
+          });
+        },
+        controller: directoryField.controller,
+        onSelectEntryId: (int entryId) {
+          setState(() {
+            final index = customFields.indexWhere(
+                    (f) => f.directoryId == config.directoryId
+            );
+            if (index != -1) {
+              customFields[index] = directoryField.copyWith(
+                entryId: entryId,
+              );
+            }
+          });
+        },
+        initialEntryId: directoryField.entryId,
+      );
+    }
+
+    // Иначе это стандартное системное поле
+    return _buildStandardField(config);
+  }
+
+  // Проверка, были ли изменения в конфигурации полей
+  bool _hasFieldChanges() {
+    if (originalFieldConfigurations == null) return false;
+    if (originalFieldConfigurations!.length != fieldConfigurations.length) return true;
+    
+    for (int i = 0; i < fieldConfigurations.length; i++) {
+      final current = fieldConfigurations[i];
+      final original = originalFieldConfigurations!.firstWhere(
+        (f) => f.id == current.id,
+        orElse: () => current,
+      );
+      
+      if (current.position != original.position) return true;
+    }
+    
+    return false;
+  }
+
+  // Диалог подтверждения выхода из режима настроек без сохранения
+  Future<bool> _showExitSettingsDialog() async {
+    return await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          title: Text(
+            AppLocalizations.of(context)!.translate('warning'),
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: Color(0xff1E2E52),
+            ),
+          ),
+          content: Text(
+            AppLocalizations.of(context)!.translate('position_changes_will_not_be_saved'),
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Color(0xff1E2E52),
+            ),
+          ),
+          actions: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: CustomButton(
+                    buttonText: AppLocalizations.of(context)!.translate('cancel'),
+                    onPressed: () => Navigator.of(context).pop(false),
+                    buttonColor: Color(0xff1E2E52),
+                    textColor: Colors.white,
+                  ),
+                ),
+                SizedBox(width: 8),
+                Expanded(
+                  child: CustomButton(
+                    buttonText: AppLocalizations.of(context)!.translate('dont_save'),
+                    onPressed: () => Navigator.of(context).pop(true),
+                    buttonColor: Colors.red,
+                    textColor: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    ) ?? false;
+  }
+
+  // Получение отображаемого названия поля
+  String _getFieldDisplayName(FieldConfiguration config) {
+    final localizations = AppLocalizations.of(context);
+    switch (config.fieldName) {
+      case 'name':
+        return localizations!.translate('name_list');
+      case 'phone':
+        return localizations!.translate('phone');
+      case 'manager_id':
+        return localizations!.translate('manager');
+      case 'region_id':
+        return localizations!.translate('region');
+      case 'source_id':
+        return localizations!.translate('source');
+      case 'wa_phone':
+        return 'Whatsapp';
+      case 'tg_nick':
+        return localizations!.translate('telegram');
+      case 'insta_login':
+        return localizations!.translate('instagram');
+      case 'facebook_login':
+        return localizations!.translate('Facebook');
+      case 'email':
+        return localizations!.translate('email');
+      default:
+        return config.fieldName;
+    }
+  }
+
+  // Получение типа поля для отображения
+  String _getFieldTypeLabel(FieldConfiguration config) {
+    if (config.isDirectory) {
+      return AppLocalizations.of(context)!.translate('directory');
+    } else if (config.isCustomField) {
+      return AppLocalizations.of(context)!.translate('custom_field');
+    } else {
+      return AppLocalizations.of(context)!.translate('system_field');
+    }
+  }
+
+  // Режим настроек - отображение списка полей с возможностью изменения порядка
+  Widget _buildSettingsMode() {
+    // Сортируем поля по position перед отображением
+    final sortedFields = [...fieldConfigurations]
+      ..sort((a, b) => a.position.compareTo(b.position));
+
+    return Column(
+      children: [
+        Expanded(
+          child: ReorderableListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: sortedFields.length + 1, // +1 для кнопки "Добавить поле"
+            proxyDecorator: (child, index, animation) {
+              // Добавляем тень и увеличение при перетаскивании
+              return AnimatedBuilder(
+                animation: animation,
+                builder: (BuildContext context, Widget? child) {
+                  final double animValue = Curves.easeInOut.transform(animation.value);
+                  final double scale = 1.0 + (animValue * 0.05); // Увеличение на 5%
+                  final double elevation = animValue * 12.0; // Тень до 12
+                  
+                  return Transform.scale(
+                    scale: scale,
+                    child: Material(
+                      elevation: elevation,
+                      shadowColor: Colors.black.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(12),
+                      color: Colors.transparent,
+                      child: child,
+                    ),
+                  );
+                },
+                child: child,
+              );
+            },
+            onReorder: (oldIndex, newIndex) {
+              // Игнорируем перемещение кнопки "Добавить поле" (последний элемент)
+              if (oldIndex == sortedFields.length || newIndex == sortedFields.length + 1) {
+                return;
+              }
+
+              setState(() {
+                if (newIndex > oldIndex) {
+                  newIndex -= 1;
+                }
+
+                // Не позволяем переместить на место кнопки
+                if (newIndex >= sortedFields.length) {
+                  newIndex = sortedFields.length - 1;
+                }
+
+                final item = sortedFields.removeAt(oldIndex);
+                sortedFields.insert(newIndex, item);
+
+                // Обновляем fieldConfigurations и position для всех полей
+                final updatedFields = <FieldConfiguration>[];
+                for (int i = 0; i < sortedFields.length; i++) {
+                  final config = sortedFields[i];
+                  updatedFields.add(FieldConfiguration(
+                    id: config.id,
+                    tableName: config.tableName,
+                    fieldName: config.fieldName,
+                    position: i + 1,
+                    required: config.required,
+                    isActive: config.isActive,
+                    isCustomField: config.isCustomField,
+                    createdAt: config.createdAt,
+                    updatedAt: config.updatedAt,
+                    customFieldId: config.customFieldId,
+                    directoryId: config.directoryId,
+                    type: config.type,
+                    isDirectory: config.isDirectory,
+                    showOnTable: config.showOnTable,
+                  ));
+                }
+
+                // Обновляем fieldConfigurations
+                fieldConfigurations = updatedFields;
+              });
+            },
+            itemBuilder: (context, index) {
+              // Последний элемент - кнопка "Добавить поле"
+              if (index == sortedFields.length) {
+                return Container(
+                  key: ValueKey('add_field_button'),
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: CustomButton(
+                    buttonText: AppLocalizations.of(context)!.translate('add_field'),
+                    buttonColor: Color(0xff1E2E52),
+                    textColor: Colors.white,
+                    onPressed: _showAddFieldMenu,
+                  ),
+                );
+              }
+
+              final config = sortedFields[index];
+              final displayName = _getFieldDisplayName(config);
+              final typeLabel = _getFieldTypeLabel(config);
+
+              return Container(
+                key: ValueKey('field_${config.id}'),
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Color(0xffE5E9F2),
+                    width: 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 4,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.drag_handle,
+                      color: Color(0xff99A4BA),
+                      size: 24,
+                    ),
+                    SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            displayName,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xff1E2E52),
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            typeLabel,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w400,
+                              color: Color(0xff99A4BA),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (config.required)
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Color(0xffFFE5E5),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          AppLocalizations.of(context)!.translate('required'),
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xffFF4757),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 4,
+                offset: Offset(0, -2),
+              ),
+            ],
+          ),
+          child: isSavingFieldOrder
+              ? Container(
+            height: 50,
+            decoration: BoxDecoration(
+              color: Color(0xff4759FF).withOpacity(0.7),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Center(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  Text(
+                    AppLocalizations.of(context)!.translate('saving'),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+              : CustomButton(
+            buttonText: AppLocalizations.of(context)!.translate('save'),
+            buttonColor: Color(0xff4759FF),
+            textColor: Colors.white,
+            onPressed: () async {
+              setState(() {
+                isSavingFieldOrder = true;
+              });
+
+              try {
+                // Сохраняем позиции полей на бэкенд
+                await _saveFieldOrderToBackend();
+
+                if (mounted) {
+                  setState(() {
+                    originalFieldConfigurations = null; // Очищаем снимок после сохранения
+                    isSettingsMode = false;
+                  });
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Настройки полей сохранены',
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white,
+                        ),
+                      ),
+                      behavior: SnackBarBehavior.floating,
+                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      backgroundColor: Colors.green,
+                      elevation: 3,
+                      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (kDebugMode) {
+                  print('LeadEditScreen: Error in save button: $e');
+                }
+              } finally {
+                if (mounted) {
+                  setState(() {
+                    isSavingFieldOrder = false;
+                  });
+                }
+              }
+            },
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -417,7 +1116,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
     super.dispose();
   }
 
-Future<void> _pickFile() async {
+  Future<void> _pickFile() async {
   // Вычисляем текущий общий размер файлов
   double totalSize = selectedFiles.fold<double>(
     0.0,
@@ -448,26 +1147,6 @@ Future<void> _pickFile() async {
       }
     });
   }
-}
-
-  void _addCustomField(String fieldName, {bool isDirectory = false, int? directoryId, String? type}) {
-    if (isDirectory && directoryId != null) {
-      bool directoryExists = customFields.any((field) => field.isDirectoryField && field.directoryId == directoryId);
-      if (directoryExists) {
-        return;
-      }
-    }
-
-    setState(() {
-      customFields.add(CustomField(
-        fieldName: fieldName,
-        controller: TextEditingController(),
-        isDirectoryField: isDirectory,
-        directoryId: directoryId,
-        uniqueId: '${Uuid().v4()}_${DateTime.now().millisecondsSinceEpoch}',
-        type: type ?? 'string',
-      ));
-    });
   }
 
   void _fetchAndAddDirectoryFields() {
@@ -538,88 +1217,26 @@ Future<void> _pickFile() async {
     });
   }
 
-  void _showAddFieldDialog() {
-    showMenu(
-      context: context,
-      position: RelativeRect.fromLTRB(300, 650, 200, 300),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      elevation: 4,
-      color: Colors.white,
-      items: [
-        PopupMenuItem(
-          value: 'manual',
-          child: Text(
-            AppLocalizations.of(context)!.translate('manual_input'),
-            style: TextStyle(
-              fontSize: 16,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w500,
-              color: Color(0xff1E2E52),
-            ),
+  Widget _buildFileSelection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          AppLocalizations.of(context)!.translate('file'),
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Gilroy',
+            color: Color(0xff1E2E52),
           ),
         ),
-        PopupMenuItem(
-          value: 'directory',
-          child: Text(
-            AppLocalizations.of(context)!.translate('directory'),
-            style: TextStyle(
-              fontSize: 16,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w500,
-              color: Color(0xff1E2E52),
-            ),
-          ),
-        ),
-      ],
-    ).then((value) {
-      if (value == 'manual') {
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AddCustomFieldDialog(
-              onAddField: (fieldName, {String? type}) {
-                _addCustomField(fieldName, type: type);
-              },
-            );
-          },
-        );
-      } else if (value == 'directory') {
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AddCustomDirectoryDialog(
-              onAddDirectory: (directory_model.Directory directory) {
-                _addCustomField(directory.name, isDirectory: true, directoryId: directory.id);
-              },
-            );
-          },
-        );
-      }
-    });
-  }
-
-Widget _buildFileSelection() {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        AppLocalizations.of(context)!.translate('file'),
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-          fontFamily: 'Gilroy',
-          color: Color(0xff1E2E52),
-        ),
-      ),
-      SizedBox(height: 16),
-      Container(
-        height: 120,
-        child: ListView.builder(
-          scrollDirection: Axis.horizontal,
-          itemCount: fileNames.isEmpty ? 1 : fileNames.length + 1,
-          itemBuilder: (context, index) {
+        SizedBox(height: 16),
+        Container(
+          height: 120,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: fileNames.isEmpty ? 1 : fileNames.length + 1,
+            itemBuilder: (context, index) {
             // Кнопка добавления файла
             if (fileNames.isEmpty || index == fileNames.length) {
               return Padding(
@@ -710,64 +1327,60 @@ Widget _buildFileSelection() {
               ),
             );
           },
+          ),
         ),
-      ),
-    ],
-  );
-}
+      ],
+    );
+  }
 
-
-/// Строит иконку файла или превью изображения
-Widget _buildFileIcon(String fileName, String fileExtension) {
-  // Список расширений изображений
-  final imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'heic', 'heif'];
-  
-  // Если файл - изображение, показываем превью
-  if (imageExtensions.contains(fileExtension)) {
-    final filePath = selectedFiles[fileNames.indexOf(fileName)];
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: Image.file(
-        File(filePath),
+  /// Строит иконку файла или превью изображения
+  Widget _buildFileIcon(String fileName, String fileExtension) {
+    // Список расширений изображений
+    final imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'heic', 'heif'];
+    
+    // Если файл - изображение, показываем превью
+    if (imageExtensions.contains(fileExtension)) {
+      final filePath = selectedFiles[fileNames.indexOf(fileName)];
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.file(
+          File(filePath),
+          width: 60,
+          height: 60,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            // Если не удалось загрузить превью, показываем иконку
+            return Image.asset(
+              'assets/icons/files/file.png',
+              width: 60,
+              height: 60,
+            );
+          },
+        ),
+      );
+    } else {
+      // Для остальных типов файлов показываем иконку по расширению
+      return Image.asset(
+        'assets/icons/files/$fileExtension.png',
         width: 60,
         height: 60,
-        fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
-          // Если не удалось загрузить превью, показываем иконку
+          // Если нет иконки для этого типа, показываем общую иконку файла
           return Image.asset(
             'assets/icons/files/file.png',
             width: 60,
             height: 60,
           );
         },
-      ),
-    );
-  } else {
-    // Для остальных типов файлов показываем иконку по расширению
-    return Image.asset(
-      'assets/icons/files/$fileExtension.png',
-      width: 60,
-      height: 60,
-      errorBuilder: (context, error, stackTrace) {
-        // Если нет иконки для этого типа, показываем общую иконку файла
-        return Image.asset(
-          'assets/icons/files/file.png',
-          width: 60,
-          height: 60,
-        );
-      },
-    );
+      );
+    }
   }
-}
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        forceMaterialTransparency: true,
-        backgroundColor: const Color.fromARGB(255, 255, 255, 255),
-        elevation: 0,
         title: Transform.translate(
           offset: const Offset(-10, 0),
           child: Text(
@@ -796,24 +1409,206 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
           ),
         ),
         leadingWidth: 40,
+        // Добавляем кнопку настроек
+        actions: [
+          IconButton(
+            icon: Icon(
+              isSettingsMode ? Icons.close : Icons.settings,
+              color: Color(0xff1E2E52),
+            ),
+            onPressed: () async {
+              if (isSettingsMode) {
+                // Выходим из режима настроек
+                if (_hasFieldChanges()) {
+                  // Есть несохраненные изменения - показываем диалог
+                  final shouldExit = await _showExitSettingsDialog();
+                  if (!shouldExit) return;
+
+                  // Восстанавливаем позиции, но сохраняем новые добавленные поля
+                  if (originalFieldConfigurations != null) {
+                    setState(() {
+                      // Находим новые поля (которые есть в текущей конфигурации, но нет в оригинальной)
+                      final newFields = fieldConfigurations.where((current) {
+                        return !originalFieldConfigurations!.any((original) => original.id == current.id);
+                      }).toList();
+                      
+                      // Восстанавливаем оригинальную конфигурацию
+                      fieldConfigurations = [...originalFieldConfigurations!];
+                      
+                      // Добавляем новые поля в конец списка
+                      if (newFields.isNotEmpty) {
+                        int maxPosition = fieldConfigurations.isEmpty ? 0 : fieldConfigurations.map((e) => e.position).reduce((a, b) => a > b ? a : b);
+                        for (int i = 0; i < newFields.length; i++) {
+                          fieldConfigurations.add(FieldConfiguration(
+                            id: newFields[i].id,
+                            tableName: newFields[i].tableName,
+                            fieldName: newFields[i].fieldName,
+                            position: maxPosition + i + 1,
+                            required: newFields[i].required,
+                            isActive: newFields[i].isActive,
+                            isCustomField: newFields[i].isCustomField,
+                            createdAt: newFields[i].createdAt,
+                            updatedAt: newFields[i].updatedAt,
+                            customFieldId: newFields[i].customFieldId,
+                            directoryId: newFields[i].directoryId,
+                            type: newFields[i].type,
+                            isDirectory: newFields[i].isDirectory,
+                            showOnTable: newFields[i].showOnTable,
+                          ));
+                        }
+                      }
+                      
+                      originalFieldConfigurations = null;
+                      isSettingsMode = false;
+                    });
+                  }
+                } else {
+                  // Нет изменений - просто выходим
+                  setState(() {
+                    originalFieldConfigurations = null;
+                    isSettingsMode = false;
+                  });
+                }
+              } else {
+                // Входим в режим настроек - сохраняем снимок конфигурации
+                setState(() {
+                  originalFieldConfigurations = fieldConfigurations.map((config) {
+                    return FieldConfiguration(
+                      id: config.id,
+                      tableName: config.tableName,
+                      fieldName: config.fieldName,
+                      position: config.position,
+                      required: config.required,
+                      isActive: config.isActive,
+                      isCustomField: config.isCustomField,
+                      createdAt: config.createdAt,
+                      updatedAt: config.updatedAt,
+                      customFieldId: config.customFieldId,
+                      directoryId: config.directoryId,
+                      type: config.type,
+                      isDirectory: config.isDirectory,
+                      showOnTable: config.showOnTable,
+                    );
+                  }).toList();
+                  isSettingsMode = true;
+                });
+              }
+            },
+            tooltip: isSettingsMode
+                ? AppLocalizations.of(context)!.translate('close')
+                : AppLocalizations.of(context)!.translate('appbar_settings'),
+          ),
+          // IconButton(
+          //   icon: Icon(Icons.refresh, color: Color(0xff1E2E52)),
+          //   onPressed: () async {
+          //     // Очищаем кэш и загружаем заново
+          //     await ApiService().clearFieldConfigurationCache();
+          //     await ApiService().loadAndCacheAllFieldConfigurations();
+          //
+          //     // Перезагружаем конфигурацию
+          //     context.read<FieldConfigurationBloc>().add(
+          //         FetchFieldConfiguration('leads')
+          //     );
+          //
+          //     ScaffoldMessenger.of(context).showSnackBar(
+          //       SnackBar(
+          //         content: Text('Конфигурация обновлена'),
+          //         backgroundColor: Colors.green,
+          //       ),
+          //     );
+          //   },
+          //   tooltip: 'Обновить структуру полей',
+          // ),
+        ],
+        backgroundColor: const Color.fromARGB(255, 255, 255, 255),
       ),
-      body: MultiBlocListener(
-        listeners: [
-          BlocListener<LeadBloc, LeadState>(
+      body: BlocConsumer<FieldConfigurationBloc, FieldConfigurationState>(
+        listener: (context, configState) {
+          if (kDebugMode) {
+            print('LeadEditScreen: FieldConfigurationBloc state changed: ${configState.runtimeType}');
+          }
+
+          if (configState is FieldConfigurationLoaded) {
+            if (kDebugMode) {
+              print('LeadAddScreen: Configuration loaded with ${configState.fields.length} fields');
+            }
+            // Используем порядок с сервера
+            setState(() {
+              fieldConfigurations = configState.fields;
+              isConfigurationLoaded = true;
+            });
+          } else if (configState is FieldConfigurationError) {
+            if (kDebugMode) {
+              print('LeadEditScreen: Configuration error: ${configState.message}');
+            }
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Ошибка загрузки конфигурации: ${configState.message}',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        },
+        builder: (context, configState) {
+          if (kDebugMode) {
+            print('LeadEditScreen: Building with state: ${configState.runtimeType}, isLoaded: $isConfigurationLoaded');
+          }
+
+          if (configState is FieldConfigurationLoading) {
+            return Center(
+              child: CircularProgressIndicator(
+                color: Color(0xff1E2E52),
+              ),
+            );
+          }
+
+          if (!isConfigurationLoaded) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(
+                    color: Color(0xff1E2E52),
+                  ),
+                  SizedBox(height: 16),
+                  Text('Загрузка конфигурации...'),
+                ],
+              ),
+            );
+          }
+
+          // Условное отображение: режим настроек или обычный режим
+          if (isSettingsMode) {
+            return _buildSettingsMode();
+          }
+
+          return BlocListener<LeadBloc, LeadState>(
             listener: (context, state) {
               if (state is LeadError) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
                       AppLocalizations.of(context)!.translate(state.message),
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontFamily: 'Gilroy',
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
                         color: Colors.white,
                       ),
                     ),
+                    behavior: SnackBarBehavior.floating,
+                    margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     backgroundColor: Colors.red,
+                    elevation: 0,
+                    duration: Duration(seconds: 3),
                   ),
                 );
               } else if (state is LeadSuccess) {
@@ -828,375 +1623,106 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
                         color: Colors.white,
                       ),
                     ),
+                    behavior: SnackBarBehavior.floating,
+                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     backgroundColor: Colors.green,
+                    elevation: 3,
+                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                    duration: Duration(seconds: 3),
                   ),
                 );
-                Navigator.pop(context, true);
+                Navigator.pop(context, widget.statusId);
+                context.read<LeadBloc>().add(FetchLeadStatuses());
               }
             },
-          ),
-          BlocListener<FieldConfigurationBloc, FieldConfigurationState>(
-            listener: (context, configState) {
-              if (kDebugMode) {
-                print('LeadEditScreen: FieldConfigurationBloc state changed: ${configState.runtimeType}');
-              }
+            child: Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        FocusScope.of(context).unfocus();
+                      },
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Динамическое построение полей на основе конфигурации с сервера
+                            // Сортируем по position перед отображением
+                            ...(() {
+                              final sorted = [...fieldConfigurations];
+                              sorted.sort((a, b) => a.position.compareTo(b.position));
+                              return sorted.map((config) {
+                                return Column(
+                                  children: [
+                                    _buildFieldWidget(config),
+                                    const SizedBox(height: 15),
+                                  ],
+                                );
+                              }).toList();
+                            })(),
 
-              if (configState is FieldConfigurationLoaded) {
-                if (kDebugMode) {
-                  print('LeadEditScreen: Configuration loaded with ${configState.fields.length} fields');
-                }
-
-                if (mounted) {
-                  setState(() {
-                    fieldConfigurations = configState.fields;
-                    isConfigurationLoaded = true;
-                  });
-
-                  _buildFieldsFromConfiguration();
-                }
-              } else if (configState is FieldConfigurationError) {
-                if (kDebugMode) {
-                  print('LeadEditScreen: Configuration error: ${configState.message}');
-                }
-
-                if (mounted) {
-                  setState(() {
-                    isConfigurationLoaded = false;
-                  });
-                }
-              }
-            },
-          ),
-        ],
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              Expanded(
-                child: GestureDetector(
-                  onTap: () {
-                    FocusScope.of(context).unfocus();
-                  },
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Используем конфигурацию если загружена
-                        if (isConfigurationLoaded && fieldWidgets.isNotEmpty) ...[
-                          for (var fieldName in fieldOrder) ...[
-                            fieldWidgets[fieldName]!,
-                            const SizedBox(height: 8),
-                          ],
-                        ] else ...[
-                          // Fallback: показываем все поля как раньше
-                          CustomTextField(
-                            controller: titleController,
-                            hintText: AppLocalizations.of(context)!.translate('enter_name_list'),
-                            label: AppLocalizations.of(context)!.translate('name_list'),
-                            validator: (value) => value!.isEmpty
-                                ? AppLocalizations.of(context)!.translate('field_required')
-                                : null,
-                          ),
-                          const SizedBox(height: 8),
-                          CustomPhoneNumberInput(
-                            controller: phoneController,
-                            selectedDialCode: selectedDialCode,
-                            onInputChanged: (String number) {
-                              setState(() {
-                                _isPhoneEdited = true;
-                              });
-                            },
-                            label: AppLocalizations.of(context)!.translate('phone'),
-                          ),
-                          const SizedBox(height: 8),
-                          ManagerRadioGroupWidget(
-                            selectedManager: selectedManager,
-                            onSelectManager: (ManagerData selectedManagerData) {
-                              setState(() {
-                                selectedManager = selectedManagerData.id.toString();
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 8),
-                          RegionRadioGroupWidget(
-                            selectedRegion: selectedRegion,
-                            onSelectRegion: (RegionData selectedRegionData) {
-                              setState(() {
-                                selectedRegion = selectedRegionData.id.toString();
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 8),
-                          SourceLeadWidget(
-                            selectedSourceLead: selectedSource,
-                            onChanged: (String? newValue) {
-                              setState(() {
-                                selectedSource = newValue;
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 8),
-                          CustomPhoneNumberInput(
-                            controller: whatsAppController,
-                            selectedDialCode: selectedWhatsAppDialCode,
-                            onInputChanged: (String number) {
-                              setState(() {
-                                _isWhatsAppEdited = true;
-                                _fullWhatsAppNumber = number;
-                              });
-                            },
-                            label: 'WhatsApp',
-                          ),
-                          const SizedBox(height: 8),
-                          CustomTextField(
-                            controller: instaLoginController,
-                            hintText: AppLocalizations.of(context)!.translate('enter_instagram_username'),
-                            label: AppLocalizations.of(context)!.translate('instagram'),
-                          ),
-                          const SizedBox(height: 8),
-                          CustomTextField(
-                            controller: facebookLoginController,
-                            hintText: AppLocalizations.of(context)!.translate('enter_facebook_username'),
-                            label: AppLocalizations.of(context)!.translate('Facebook'),
-                          ),
-                          const SizedBox(height: 8),
-                          CustomTextField(
-                            controller: telegramController,
-                            hintText: AppLocalizations.of(context)!.translate('enter_telegram_username'),
-                            label: AppLocalizations.of(context)!.translate('telegram'),
-                          ),
-                          const SizedBox(height: 8),
-                          CustomTextField(
-                            controller: emailController,
-                            hintText: AppLocalizations.of(context)!.translate('enter_email'),
-                            label: AppLocalizations.of(context)!.translate('email'),
-                            keyboardType: TextInputType.emailAddress,
-                          ),
-                          const SizedBox(height: 8),
-                        ],
-
-                        // Общие поля которые всегда показываются
-                        LeadStatusEditpWidget(
-                          selectedStatus: _selectedStatuses?.toString(),
-                          salesFunnelId: selectedSalesFunnel,
-                          onSelectStatus: (LeadStatus selectedStatusData) {
-                            setState(() {
-                              _selectedStatuses = selectedStatusData.id;
-                            });
-                          },
-                        ),
-                        const SizedBox(height: 8),
-
-                        SalesFunnelWidget(
-                          selectedSalesFunnel: selectedSalesFunnel,
-                          onChanged: (String? newValue) {
-                            setState(() {
-                              selectedSalesFunnel = newValue;
-                              _showDuplicateOptions = newValue != null && newValue != widget.salesFunnelId;
-                              if (_showDuplicateOptions && _duplicateOption == null) {
-                                _duplicateOption = DuplicateOption.duplicate;
-                              } else if (!_showDuplicateOptions) {
-                                _duplicateOption = null;
-                              }
-                            });
-                          },
-                        ),
-                        const SizedBox(height: 8),
-                        if (_showDuplicateOptions) ...[
-                          const SizedBox(height: 8),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                AppLocalizations.of(context)!.translate('duplicate_options'),
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                  fontFamily: 'Gilroy',
-                                  color: Color(0xff1E2E52),
-                                ),
-                              ),
-                              RadioListTile<DuplicateOption>(
-                                title: Text(
-                                  AppLocalizations.of(context)!.translate('duplicate'),
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontFamily: 'Gilroy',
-                                    color: Color(0xff1E2E52),
-                                  ),
-                                ),
-                                value: DuplicateOption.duplicate,
-                                groupValue: _duplicateOption,
-                                onChanged: (DuplicateOption? value) {
-                                  setState(() {
-                                    _duplicateOption = value;
-                                  });
-                                },
-                                activeColor: Color(0xff4759FF),
-                              ),
-                              RadioListTile<DuplicateOption>(
-                                title: Text(
-                                  AppLocalizations.of(context)!.translate('transfer_and_delete'),
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontFamily: 'Gilroy',
-                                    color: Color(0xff1E2E52),
-                                  ),
-                                ),
-                                value: DuplicateOption.transferAndDelete,
-                                groupValue: _duplicateOption,
-                                onChanged: (DuplicateOption? value) {
-                                  setState(() {
-                                    _duplicateOption = value;
-                                  });
-                                },
-                                activeColor: Color(0xff4759FF),
-                              ),
-                            ],
-                          ),
-                        ],
-                        const SizedBox(height: 8),
-                        CustomPhoneNumberInput(
-                          controller: whatsAppController,
-                          selectedDialCode: selectedWhatsAppDialCode,
-                          onInputChanged: (String number) {
-                            setState(() {
-                              _isWhatsAppEdited = true;
-                              _fullWhatsAppNumber = number; // Сохраняем полный номер
-                            });
-                          },
-                          label: 'WhatsApp',
-                        ),
-                        const SizedBox(height: 8),
-                        if (!_showAdditionalFields)
-                          CustomButton(
-                            buttonText: AppLocalizations.of(context)!.translate('additionally'),
-                            buttonColor: Color(0xff1E2E52),
-                            textColor: Colors.white,
-                            onPressed: () {
-                              setState(() {
-                                _showAdditionalFields = true;
-                              });
-                            },
-                          )
-                        else ...[
-                          CustomTextField(
-                            controller: instaLoginController,
-                            hintText: AppLocalizations.of(context)!.translate('enter_instagram_username'),
-                            label: AppLocalizations.of(context)!.translate('instagram'),
-                          ),
-                          const SizedBox(height: 8),
-                          CustomTextField(
-                            controller: facebookLoginController,
-                            hintText: AppLocalizations.of(context)!.translate('enter_facebook_username'),
-                            label: AppLocalizations.of(context)!.translate('Facebook'),
-                          ),
-                          const SizedBox(height: 8),
-                          CustomTextField(
-                            controller: telegramController,
-                            hintText: AppLocalizations.of(context)!.translate('enter_telegram_username'),
-                            label: AppLocalizations.of(context)!.translate('telegram'),
-                          ),
-                          const SizedBox(height: 8),
-                          CustomTextField(
-                            controller: emailController,
-                            hintText: AppLocalizations.of(context)!.translate('enter_email'),
-                            label: AppLocalizations.of(context)!.translate('email'),
-                            keyboardType: TextInputType.emailAddress,
-                          ),
-                          const SizedBox(height: 8),
-                          CustomTextFieldDate(
-                            controller: birthdayController,
-                            label: AppLocalizations.of(context)!.translate('birth_date'),
-                            withTime: false,
-                          ),
-                          if (widget.priceTypeId != null) ...[
-                            const SizedBox(height: 8),
-                            PriceTypeWidget(
-                              selectedPriceType: _selectedPriceType,
-                              onChanged: (String? newValue) {
-                                setState(() {
-                                  _selectedPriceType = newValue;
-                                });
-                              },
-                            ),
-                          ],
-                          const SizedBox(height: 8),
-                          CustomTextField(
-                            controller: descriptionController,
-                            hintText: AppLocalizations.of(context)!.translate('description_details_lead_edit'),
-                            label: AppLocalizations.of(context)!.translate('description_details_lead_add'),
-                            maxLines: 5,
-                            keyboardType: TextInputType.multiline,
-                          ),
-                          const SizedBox(height: 8),
-                          _buildFileSelection(),
-                          const SizedBox(height: 8),
-                          Column(
-                            children: [
-                              for (int index = 0; index < customFields.length; index++)
-                                Container(
-                                  key: ValueKey('${customFields[index].uniqueId}_$index'),
-                                  margin: EdgeInsets.only(bottom: 8),
-                                  child: customFields[index].isDirectoryField && customFields[index].directoryId != null
+                            // ТОЛЬКО пользовательские поля (те, которые добавлены через кнопку "Добавить поле")
+                            ...customFields.where((field) {
+                              // Исключаем поля, которые уже есть в серверной конфигурации
+                              return !fieldConfigurations.any((config) =>
+                              (config.isCustomField && config.fieldName == field.fieldName) ||
+                                  (config.isDirectory && config.directoryId == field.directoryId)
+                              );
+                            }).map((field) {
+                              return Column(
+                                children: [
+                                  field.isDirectoryField && field.directoryId != null
                                       ? MainFieldDropdownWidget(
-                                    key: ValueKey('dropdown_${customFields[index].uniqueId}_$index'),
-                                    directoryId: customFields[index].directoryId!,
-                                    directoryName: customFields[index].fieldName,
-                                    selectedField: customFields[index].entryId != null
-                                        ? MainField(id: customFields[index].entryId!, value: customFields[index].controller.text)
+                                    directoryId: field.directoryId!,
+                                    directoryName: field.fieldName,
+                                    selectedField: field.entryId != null
+                                        ? MainField(id: field.entryId!, value: field.controller.text)
                                         : null,
                                     onSelectField: (MainField selectedField) {
                                       setState(() {
-                                        customFields[index] = customFields[index].copyWith(
+                                        final idx = customFields.indexOf(field);
+                                        customFields[idx] = field.copyWith(
                                           entryId: selectedField.id,
-                                          controller: TextEditingController(text: selectedField.value),
+                                          controller: TextEditingController(
+                                              text: selectedField.value),
                                         );
                                       });
                                     },
-                                    controller: customFields[index].controller,
+                                    controller: field.controller,
                                     onSelectEntryId: (int entryId) {
                                       setState(() {
-                                        customFields[index] = customFields[index].copyWith(entryId: entryId);
+                                        final idx = customFields.indexOf(field);
+                                        customFields[idx] = field.copyWith(
+                                          entryId: entryId,
+                                        );
                                       });
-                                    },
-                                    onRemove: () {
-                                      setState(() {
-                                        customFields[index].dispose();
-                                        customFields.removeAt(index);
-                                      });
-                                    },
-                                    initialEntryId: customFields[index].entryId,
+                                    }
                                   )
                                       : CustomFieldWidget(
-                                    key: ValueKey('field_${customFields[index].uniqueId}_$index'),
-                                    fieldName: customFields[index].fieldName,
-                                    valueController: customFields[index].controller,
-                                    onRemove: () {
-                                      setState(() {
-                                        customFields[index].dispose();
-                                        customFields.removeAt(index);
-                                      });
-                                    },
-                                    type: customFields[index].type,
+                                    fieldName: field.fieldName,
+                                    valueController: field.controller,
+                                    type: field.type,
+                                    isDirectory: false,
                                   ),
-                                ),
-                            ],
-                          ),
-                          CustomButton(
-                            buttonText: AppLocalizations.of(context)!.translate('add_field'),
-                            buttonColor: Color(0xff1E2E52),
-                            textColor: Colors.white,
-                            onPressed: _showAddFieldDialog,
-                          ),
-                        ],
-                        const SizedBox(height: 20),
-                      ],
+                                  const SizedBox(height: 15),
+                                ],
+                              );
+                            }).toList(),
+
+                            // Файлы (всегда показываем)
+                            _buildFileSelection(),
+                            const SizedBox(height: 15),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
                 child: Row(
@@ -1253,6 +1779,13 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
                                     String fieldName = field.fieldName.trim();
                                     String fieldValue = field.controller.text.trim();
                                     String? fieldType = field.type;
+
+                                    // ВАЖНО: Нормализуем тип поля - преобразуем "text" в "string"
+                                    if (fieldType == 'text') {
+                                      fieldType = 'string';
+                                    }
+                                    // Если type null, устанавливаем string по умолчанию
+                                    fieldType ??= 'string';
 
                                     if (fieldType == 'number' && fieldValue.isNotEmpty) {
                                       if (!RegExp(r'^\d+$').hasMatch(fieldValue)) {
@@ -1314,7 +1847,7 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
                                       customFieldList.add({
                                         'key': fieldName,
                                         'value': fieldValue,
-                                        'type': fieldType ?? 'string',
+                                        'type': fieldType, // Теперь гарантированно один из: string, number, date, datetime
                                       });
                                     }
                                   }
@@ -1382,7 +1915,9 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
               ),
             ],
           ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }

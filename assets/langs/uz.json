@@ -7,6 +7,10 @@
   "uzbek": "O'zbek tili",
   "english": "Ingliz tili",
   "exit": "Chiqish",
+  "warning": "Ogohlantirish",
+  "changes_will_not_be_saved": "O'zgarishlar saqlanmaydi. Chiqishni xohlaysizmi?",
+  "position_changes_will_not_be_saved": "Maydon pozitsiyasi o'zgarishlari saqlanmaydi. Yangi qo'shilgan maydonlar ko'rinadi.",
+  "dont_save": "Saqlamaslik",
   "exit_account": "Akkauntdan chiqish",
   "profile_editor": "Profil",
   "error_text": "Xato",
@@ -55,6 +59,7 @@
   "invalid_email": "To'g'ri elektron pochta manzilini kiriting",
   "profile_update_error": "Profilni yangilashda xatolik yuz berdi",
   "save": "Saqlash",
+  "saving": "Saqlanmoqda...",
   "COMMENT_TITLE_SCREEN_Domain": "----------------------------Тексты для экрана Домена----------------------------",
   "enter_subdomain": "Subdomeningizni kiriting",
   "subdomain_hint": "Subdomen kiriting",
@@ -1861,5 +1866,6 @@
   "movement_history": "Harakatlar tarixi",
   "income_document": "Kirim",
   "outcome_document": "Chiqim",
-  "change_status": "Holatni o'zgartirish"
+  "change_status": "Holatni o'zgartirish",
+  "save_hint": "Mahsulotlarni qo'shgandan keyin saqlash uchun 'Asosiy'ga o'ting"
 }

@@ -4935,7 +4935,7 @@ Future<List<Deal>> getDeals(
       },
     );
 
-    if (response.statusCode != 200) {
+    if (response.statusCode != 200 && response.statusCode != 201) {
       throw ('Ошибка при связывании справочника: ${response.statusCode}');
     }
 
@@ -16135,6 +16135,96 @@ Future<void> clearFieldConfigurationCache() async {
     }
   }
 }
+
+// Метод для очистки кэша конфигурации конкретной таблицы
+Future<void> clearFieldConfigurationCacheForTable(String tableName) async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final organizationId = await getSelectedOrganization();
+    
+    final cacheKey = 'field_config_${tableName}_org_$organizationId';
+    await prefs.remove(cacheKey);
+    await prefs.remove('${cacheKey}_timestamp');
+    
+    if (kDebugMode) {
+      print('ApiService: Cleared field configuration cache for $tableName');
+    }
+  } catch (e) {
+    if (kDebugMode) {
+      print('ApiService: Error clearing field configuration cache for $tableName: $e');
+    }
+  }
+}
+
+// Метод для обновления позиций полей
+  Future<Map<String, dynamic>> updateFieldPositions({
+    required String tableName,
+    required List<Map<String, dynamic>> updates,
+  }) async {
+    try {
+      // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+      final path = await _appendQueryParams('/field-position?table=$tableName');
+
+      if (kDebugMode) {
+        print('ApiService: updateFieldPositions - Generated path: $path');
+        print('ApiService: updateFieldPositions - Updates: $updates');
+      }
+
+      // Подготавливаем тело запроса
+      final organizationId = await getSelectedOrganization();
+      final salesFunnelId = await getSelectedSalesFunnel();
+
+      final body = {
+        'updates': updates,
+        'organization_id': organizationId,
+        'sales_funnel_id': salesFunnelId,
+      };
+
+      final response = await _patchRequest(path, body);
+
+      if (response.statusCode == 200) {
+        if (kDebugMode) {
+          print('ApiService: Field positions updated successfully');
+        }
+        return {
+          'success': true,
+          'message': 'Field positions updated successfully',
+        };
+      } else {
+        throw Exception('Ошибка обновления позиций полей: ${response.statusCode}');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('ApiService: updateFieldPositions - Error: $e');
+      }
+      throw Exception('Ошибка обновления позиций полей: $e');
+    }
+  }
+
+  Future<dynamic> addNewField({
+    required String tableName,
+    required String fieldName,
+    required String fieldType,
+  }) async {
+    final path = await _appendQueryParams('/field-position');
+    final body = {"table": tableName, "field_name": fieldName, "type": fieldType};
+
+    try {
+      final response = await _postRequest(path, body);
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = json.decode(response.body);
+        return data;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при добавлении нового поля',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
 
 // _______________________________END SECTION FOR FIELD CONFIGURATION _______________________________
 
