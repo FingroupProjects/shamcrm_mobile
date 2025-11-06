@@ -9,6 +9,7 @@
   "exit": "Chiqish",
   "warning": "Ogohlantirish",
   "changes_will_not_be_saved": "O'zgarishlar saqlanmaydi. Chiqishni xohlaysizmi?",
+  "position_changes_will_not_be_saved": "Maydon pozitsiyasi o'zgarishlari saqlanmaydi. Yangi qo'shilgan maydonlar ko'rinadi.",
   "dont_save": "Saqlamaslik",
   "exit_account": "Akkauntdan chiqish",
   "profile_editor": "Profil",

@@ -536,7 +536,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
               onAddDirectory: (directory) async {
                 try {
                   // Сначала связываем справочник через API
-                 final response =  await ApiService().linkDirectory(
+                  await ApiService().linkDirectory(
                     directoryId: directory.id,
                     modelType: 'lead',
                     organizationId: ApiService().getSelectedOrganization().toString(),
@@ -640,7 +640,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
             ),
           ),
           content: Text(
-            AppLocalizations.of(context)!.translate('changes_will_not_be_saved'),
+            AppLocalizations.of(context)!.translate('position_changes_will_not_be_saved'),
             style: TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 16,
@@ -730,10 +730,25 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
             padding: const EdgeInsets.all(16),
             itemCount: sortedFields.length + 1, // +1 для кнопки "Добавить поле"
             proxyDecorator: (child, index, animation) {
-              // Убираем стандартный фиолетовый эффект при перетаскивании
-              return Material(
-                elevation: 0,
-                color: Colors.transparent,
+              // Добавляем тень и увеличение при перетаскивании
+              return AnimatedBuilder(
+                animation: animation,
+                builder: (BuildContext context, Widget? child) {
+                  final double animValue = Curves.easeInOut.transform(animation.value);
+                  final double scale = 1.0 + (animValue * 0.05); // Увеличение на 5%
+                  final double elevation = animValue * 12.0; // Тень до 12
+                  
+                  return Transform.scale(
+                    scale: scale,
+                    child: Material(
+                      elevation: elevation,
+                      shadowColor: Colors.black.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(12),
+                      color: Colors.transparent,
+                      child: child,
+                    ),
+                  );
+                },
                 child: child,
               );
             },
@@ -1160,10 +1175,40 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                   final shouldExit = await _showExitSettingsDialog();
                   if (!shouldExit) return;
                   
-                  // Восстанавливаем оригинальную конфигурацию
+                  // Восстанавливаем позиции, но сохраняем новые добавленные поля
                   if (originalFieldConfigurations != null) {
                     setState(() {
+                      // Находим новые поля (которые есть в текущей конфигурации, но нет в оригинальной)
+                      final newFields = fieldConfigurations.where((current) {
+                        return !originalFieldConfigurations!.any((original) => original.id == current.id);
+                      }).toList();
+                      
+                      // Восстанавливаем оригинальную конфигурацию
                       fieldConfigurations = [...originalFieldConfigurations!];
+                      
+                      // Добавляем новые поля в конец списка
+                      if (newFields.isNotEmpty) {
+                        int maxPosition = fieldConfigurations.isEmpty ? 0 : fieldConfigurations.map((e) => e.position).reduce((a, b) => a > b ? a : b);
+                        for (int i = 0; i < newFields.length; i++) {
+                          fieldConfigurations.add(FieldConfiguration(
+                            id: newFields[i].id,
+                            tableName: newFields[i].tableName,
+                            fieldName: newFields[i].fieldName,
+                            position: maxPosition + i + 1,
+                            required: newFields[i].required,
+                            isActive: newFields[i].isActive,
+                            isCustomField: newFields[i].isCustomField,
+                            createdAt: newFields[i].createdAt,
+                            updatedAt: newFields[i].updatedAt,
+                            customFieldId: newFields[i].customFieldId,
+                            directoryId: newFields[i].directoryId,
+                            type: newFields[i].type,
+                            isDirectory: newFields[i].isDirectory,
+                            showOnTable: newFields[i].showOnTable,
+                          ));
+                        }
+                      }
+                      
                       originalFieldConfigurations = null;
                       isSettingsMode = false;
                     });
