@@ -1,8 +1,6 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/movement/movement_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/movement/movement_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/movement/movement_state.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/variant_bloc/variant_bloc.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/variant_bloc/variant_event.dart';
 import 'package:crm_task_manager/custom_widget/compact_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
@@ -51,8 +49,7 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
   void initState() {
     super.initState();
     _dateController.text = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
-    context.read<VariantBloc>().add(FetchVariants());
-    
+
     _tabController = TabController(length: 2, vsync: this);
   }
 
@@ -147,10 +144,6 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
       );
       return;
     }
-
-    context.read<VariantBloc>().add(FilterVariants({
-      'storage_id': int.parse(_selectedSenderStorage!),
-    }));
 
     final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,

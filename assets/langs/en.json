@@ -1867,5 +1867,6 @@
   "movement_history": "Movement History",
   "income_document": "Income",
   "outcome_document": "Outcome",
-  "change_status": "Change Status"
+  "change_status": "Change Status",
+  "save_hint": "After adding items, go to 'Main' to save"
 }

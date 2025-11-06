@@ -1866,5 +1866,6 @@
   "movement_history": "Harakatlar tarixi",
   "income_document": "Kirim",
   "outcome_document": "Chiqim",
-  "change_status": "Holatni o'zgartirish"
+  "change_status": "Holatni o'zgartirish",
+  "save_hint": "Mahsulotlarni qo'shgandan keyin saqlash uchun 'Asosiy'ga o'ting"
 }

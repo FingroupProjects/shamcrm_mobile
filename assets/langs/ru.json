@@ -1873,5 +1873,6 @@
   "movement_history": "История движений",
   "income_document": "Приход",
   "outcome_document": "Расход",
-  "change_status": "Изменить статус"
+  "change_status": "Изменить статус",
+  "save_hint": "После добавления товаров перейдите в \"Основное\" для сохранения"
 }
