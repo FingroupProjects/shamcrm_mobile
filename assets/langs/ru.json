@@ -1186,7 +1186,7 @@
   "and_more": "и еще",
   "no_statuses_available": "Загрузка статусов",
   "unsuccessful": "Не успешно",
-  "notification_message_label": "Введите текст который получит клиент при переходе его заказа в этот статус",
+  "notification_message_label": "Введите текст который получит клиент при переходе его сделки в этот статус",
   "deal_number": "Номер сделки",
   "show_on_main_page": "Показать на карточке лида",
   "goods_not_found": "Товар не найден",
