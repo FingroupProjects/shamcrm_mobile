@@ -4935,7 +4935,7 @@ Future<List<Deal>> getDeals(
       },
     );
 
-    if (response.statusCode != 200) {
+    if (response.statusCode != 200 && response.statusCode != 201) {
       throw ('Ошибка при связывании справочника: ${response.statusCode}');
     }
 

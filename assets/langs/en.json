@@ -10,6 +10,7 @@
   "exit": "Exit",
   "warning": "Warning",
   "changes_will_not_be_saved": "Changes will not be saved. Are you sure you want to exit?",
+  "dont_save": "Don't Save",
   "exit_account": "Exit Account",
   "error_text": "Error",
   "change_pin_code": "Change PIN-CODE",

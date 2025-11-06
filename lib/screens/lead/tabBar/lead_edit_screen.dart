@@ -33,6 +33,10 @@ import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import 'dart:io';
 
+import '../../../page_2/dashboard/detailed_report/contents/goods_content.dart';
+import 'lead_details/add_custom_directory_dialog.dart';
+import 'lead_details/lead_create_custom.dart' show AddCustomFieldDialog;
+
 class LeadEditScreen extends StatefulWidget {
   final int leadId;
   final String leadName;
@@ -350,6 +354,195 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
     return existingField;
   }
 
+  Future<void> _addCustomField(String fieldName, String type) async {
+    // Если это не справочник, сначала добавляем через API
+    try {
+      await ApiService().addNewField(
+        tableName: 'leads',
+        fieldName: fieldName,
+        fieldType: type,
+      );
+
+      // КЭШИРОВАНИЕ ОТКЛЮЧЕНО
+      // // Очищаем кэш перед перезагрузкой
+      // await ApiService().clearFieldConfigurationCacheForTable('leads');
+
+      // После успешного добавления перезагружаем конфигурацию полей
+      if (mounted) {
+        context.read<FieldConfigurationBloc>().add(
+            FetchFieldConfiguration('leads')
+        );
+      }
+
+      // Добавляем поле локально только после успешного добавления на backend
+      if (mounted) {
+        setState(() {
+          customFields.add(CustomField(
+            fieldName: fieldName,
+            uniqueId: Uuid().v4(),
+            isDirectoryField: false,
+            directoryId: null,
+            type: type,
+            controller: TextEditingController(),
+            isCustomField: true,
+          ));
+        });
+      }
+
+      if (kDebugMode) {
+        print('LeadAddScreen: Successfully added custom field: $fieldName');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('LeadAddScreen: Error adding custom field: $e');
+      }
+
+      // Показываем ошибку пользователю
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Ошибка при добавлении поля: $e',
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
+              ),
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showAddFieldMenu() {
+    showMenu(
+      context: context,
+      position: RelativeRect.fromLTRB(300, 650, 200, 300),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      elevation: 4,
+      color: Colors.white,
+      items: [
+        PopupMenuItem(
+          value: 'manual',
+          child: Text(
+            AppLocalizations.of(context)!.translate('manual_input'),
+            style: TextStyle(
+              fontSize: 16,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w500,
+              color: Color(0xff1E2E52),
+            ),
+          ),
+        ),
+        PopupMenuItem(
+          value: 'directory',
+          child: Text(
+            AppLocalizations.of(context)!.translate('directory'),
+            style: TextStyle(
+              fontSize: 16,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w500,
+              color: Color(0xff1E2E52),
+            ),
+          ),
+        ),
+      ],
+    ).then((value) {
+      if (value == 'manual') {
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AddCustomFieldDialog(
+              onAddField: (fieldName, {String? type}) {
+                if (type != null) {
+                  _addCustomField(fieldName, type);
+                }
+              },
+            );
+          },
+        );
+      } else if (value == 'directory') {
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AddCustomDirectoryDialog(
+              onAddDirectory: (directory) async {
+                try {
+                  // Сначала связываем справочник через API
+                  final response =  await ApiService().linkDirectory(
+                    directoryId: directory.id,
+                    modelType: 'lead',
+                    organizationId: ApiService().getSelectedOrganization().toString(),
+                  );
+
+                  showCustomSnackBar(context: context, message: 'Справочник успешно добавлен', isSuccess: true);
+
+                  // КЭШИРОВАНИЕ ОТКЛЮЧЕНО
+                  // // Очищаем кэш перед перезагрузкой
+                  // await ApiService().clearFieldConfigurationCacheForTable('leads');
+
+                  // Добавляем справочник локально сразу после успешного связывания
+                  if (mounted) {
+                    setState(() {
+                      customFields.add(CustomField(
+                        fieldName: directory.name,
+                        uniqueId: Uuid().v4(),
+                        isDirectoryField: true,
+                        directoryId: directory.id,
+                        type: null,
+                        controller: TextEditingController(),
+                        isCustomField: false,
+                      ));
+                    });
+                  }
+
+                  // После успешного добавления справочника перезагружаем конфигурацию полей
+                  // Конфигурация с сервера уже будет содержать этот справочник
+                  if (mounted) {
+                    context.read<FieldConfigurationBloc>().add(
+                        FetchFieldConfiguration('leads')
+                    );
+                  }
+
+                  if (kDebugMode) {
+                    print('LeadAddScreen: Successfully linked directory: ${directory.name}');
+                  }
+                } catch (e) {
+                  if (kDebugMode) {
+                    print('LeadAddScreen: Error linking directory: $e');
+                  }
+
+                  // Показываем ошибку пользователю
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          e.toString(),
+                          style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white,
+                          ),
+                        ),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              },
+            );
+          },
+        );
+      }
+    });
+  }
+
   // Метод для построения стандартных системных полей
   Widget _buildStandardField(FieldConfiguration config) {
     switch (config.fieldName) {
@@ -534,9 +727,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
+          backgroundColor: Colors.white,
           title: Text(
             AppLocalizations.of(context)!.translate('warning'),
             style: TextStyle(
@@ -551,34 +742,32 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
             style: TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 16,
-              fontWeight: FontWeight.w400,
+              fontWeight: FontWeight.w500,
               color: Color(0xff1E2E52),
             ),
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: Text(
-                AppLocalizations.of(context)!.translate('cancel'),
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xff99A4BA),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: CustomButton(
+                    buttonText: AppLocalizations.of(context)!.translate('cancel'),
+                    onPressed: () => Navigator.of(context).pop(false),
+                    buttonColor: Color(0xff1E2E52),
+                    textColor: Colors.white,
+                  ),
                 ),
-              ),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: Text(
-                AppLocalizations.of(context)!.translate('exit'),
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xffFF4757),
+                SizedBox(width: 8),
+                Expanded(
+                  child: CustomButton(
+                    buttonText: AppLocalizations.of(context)!.translate('dont_save'),
+                    onPressed: () => Navigator.of(context).pop(true),
+                    buttonColor: Colors.red,
+                    textColor: Colors.white,
+                  ),
                 ),
-              ),
+              ],
             ),
           ],
         );
@@ -637,7 +826,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
         Expanded(
           child: ReorderableListView.builder(
             padding: const EdgeInsets.all(16),
-            itemCount: sortedFields.length,
+            itemCount: sortedFields.length + 1, // +1 для кнопки "Добавить поле"
             proxyDecorator: (child, index, animation) {
               // Убираем стандартный фиолетовый эффект при перетаскивании
               return Material(
@@ -647,9 +836,19 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
               );
             },
             onReorder: (oldIndex, newIndex) {
+              // Игнорируем перемещение кнопки "Добавить поле" (последний элемент)
+              if (oldIndex == sortedFields.length || newIndex == sortedFields.length + 1) {
+                return;
+              }
+
               setState(() {
                 if (newIndex > oldIndex) {
                   newIndex -= 1;
+                }
+
+                // Не позволяем переместить на место кнопки
+                if (newIndex >= sortedFields.length) {
+                  newIndex = sortedFields.length - 1;
                 }
 
                 final item = sortedFields.removeAt(oldIndex);
@@ -682,6 +881,20 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
               });
             },
             itemBuilder: (context, index) {
+              // Последний элемент - кнопка "Добавить поле"
+              if (index == sortedFields.length) {
+                return Container(
+                  key: ValueKey('add_field_button'),
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: CustomButton(
+                    buttonText: AppLocalizations.of(context)!.translate('add_field'),
+                    buttonColor: Color(0xff1E2E52),
+                    textColor: Colors.white,
+                    onPressed: _showAddFieldMenu,
+                  ),
+                );
+              }
+
               final config = sortedFields[index];
               final displayName = _getFieldDisplayName(config);
               final typeLabel = _getFieldTypeLabel(config);
@@ -775,93 +988,93 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
             ],
           ),
           child: isSavingFieldOrder
-            ? Container(
-                height: 50,
-                decoration: BoxDecoration(
-                  color: Color(0xff4759FF).withOpacity(0.7),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Center(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      ),
-                      SizedBox(width: 12),
-                      Text(
-                        AppLocalizations.of(context)!.translate('saving'),
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
+              ? Container(
+            height: 50,
+            decoration: BoxDecoration(
+              color: Color(0xff4759FF).withOpacity(0.7),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Center(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
                   ),
-                ),
-              )
-            : CustomButton(
-                buttonText: AppLocalizations.of(context)!.translate('save'),
-                buttonColor: Color(0xff4759FF),
-                textColor: Colors.white,
-                onPressed: () async {
+                  SizedBox(width: 12),
+                  Text(
+                    AppLocalizations.of(context)!.translate('saving'),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+              : CustomButton(
+            buttonText: AppLocalizations.of(context)!.translate('save'),
+            buttonColor: Color(0xff4759FF),
+            textColor: Colors.white,
+            onPressed: () async {
+              setState(() {
+                isSavingFieldOrder = true;
+              });
+
+              try {
+                // Сохраняем позиции полей на бэкенд
+                await _saveFieldOrderToBackend();
+
+                if (mounted) {
                   setState(() {
-                    isSavingFieldOrder = true;
+                    originalFieldConfigurations = null; // Очищаем снимок после сохранения
+                    isSettingsMode = false;
                   });
 
-                  try {
-                    // Сохраняем позиции полей на бэкенд
-                    await _saveFieldOrderToBackend();
-
-                    if (mounted) {
-                      setState(() {
-                        originalFieldConfigurations = null; // Очищаем снимок после сохранения
-                        isSettingsMode = false;
-                      });
-
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Настройки полей сохранены',
-                            style: TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white,
-                            ),
-                          ),
-                          behavior: SnackBarBehavior.floating,
-                          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          backgroundColor: Colors.green,
-                          elevation: 3,
-                          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                          duration: Duration(seconds: 2),
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Настройки полей сохранены',
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white,
                         ),
-                      );
-                    }
-                  } catch (e) {
-                    if (kDebugMode) {
-                      print('LeadEditScreen: Error in save button: $e');
-                    }
-                  } finally {
-                    if (mounted) {
-                      setState(() {
-                        isSavingFieldOrder = false;
-                      });
-                    }
-                  }
-                },
-              ),
+                      ),
+                      behavior: SnackBarBehavior.floating,
+                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      backgroundColor: Colors.green,
+                      elevation: 3,
+                      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (kDebugMode) {
+                  print('LeadEditScreen: Error in save button: $e');
+                }
+              } finally {
+                if (mounted) {
+                  setState(() {
+                    isSavingFieldOrder = false;
+                  });
+                }
+              }
+            },
+          ),
         ),
       ],
     );
@@ -1153,9 +1366,6 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        forceMaterialTransparency: true,
-        backgroundColor: const Color.fromARGB(255, 255, 255, 255),
-        elevation: 0,
         title: Transform.translate(
           offset: const Offset(-10, 0),
           child: Text(
@@ -1198,7 +1408,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                   // Есть несохраненные изменения - показываем диалог
                   final shouldExit = await _showExitSettingsDialog();
                   if (!shouldExit) return;
-                  
+
                   // Восстанавливаем оригинальную конфигурацию
                   if (originalFieldConfigurations != null) {
                     setState(() {
@@ -1243,25 +1453,117 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                 ? AppLocalizations.of(context)!.translate('close')
                 : AppLocalizations.of(context)!.translate('appbar_settings'),
           ),
+          // IconButton(
+          //   icon: Icon(Icons.refresh, color: Color(0xff1E2E52)),
+          //   onPressed: () async {
+          //     // Очищаем кэш и загружаем заново
+          //     await ApiService().clearFieldConfigurationCache();
+          //     await ApiService().loadAndCacheAllFieldConfigurations();
+          //
+          //     // Перезагружаем конфигурацию
+          //     context.read<FieldConfigurationBloc>().add(
+          //         FetchFieldConfiguration('leads')
+          //     );
+          //
+          //     ScaffoldMessenger.of(context).showSnackBar(
+          //       SnackBar(
+          //         content: Text('Конфигурация обновлена'),
+          //         backgroundColor: Colors.green,
+          //       ),
+          //     );
+          //   },
+          //   tooltip: 'Обновить структуру полей',
+          // ),
         ],
+        backgroundColor: const Color.fromARGB(255, 255, 255, 255),
       ),
-      body: MultiBlocListener(
-        listeners: [
-          BlocListener<LeadBloc, LeadState>(
+      body: BlocConsumer<FieldConfigurationBloc, FieldConfigurationState>(
+        listener: (context, configState) {
+          if (kDebugMode) {
+            print('LeadEditScreen: FieldConfigurationBloc state changed: ${configState.runtimeType}');
+          }
+
+          if (configState is FieldConfigurationLoaded) {
+            if (kDebugMode) {
+              print('LeadAddScreen: Configuration loaded with ${configState.fields.length} fields');
+            }
+            // Используем порядок с сервера
+            setState(() {
+              fieldConfigurations = configState.fields;
+              isConfigurationLoaded = true;
+            });
+          } else if (configState is FieldConfigurationError) {
+            if (kDebugMode) {
+              print('LeadEditScreen: Configuration error: ${configState.message}');
+            }
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Ошибка загрузки конфигурации: ${configState.message}',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        },
+        builder: (context, configState) {
+          if (kDebugMode) {
+            print('LeadEditScreen: Building with state: ${configState.runtimeType}, isLoaded: $isConfigurationLoaded');
+          }
+
+          if (configState is FieldConfigurationLoading) {
+            return Center(
+              child: CircularProgressIndicator(
+                color: Color(0xff1E2E52),
+              ),
+            );
+          }
+
+          if (!isConfigurationLoaded) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(
+                    color: Color(0xff1E2E52),
+                  ),
+                  SizedBox(height: 16),
+                  Text('Загрузка конфигурации...'),
+                ],
+              ),
+            );
+          }
+
+          // Условное отображение: режим настроек или обычный режим
+          if (isSettingsMode) {
+            return _buildSettingsMode();
+          }
+
+          return BlocListener<LeadBloc, LeadState>(
             listener: (context, state) {
               if (state is LeadError) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
                       AppLocalizations.of(context)!.translate(state.message),
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontFamily: 'Gilroy',
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
                         color: Colors.white,
                       ),
                     ),
+                    behavior: SnackBarBehavior.floating,
+                    margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     backgroundColor: Colors.red,
+                    elevation: 0,
+                    duration: Duration(seconds: 3),
                   ),
                 );
               } else if (state is LeadSuccess) {
@@ -1276,90 +1578,22 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                         color: Colors.white,
                       ),
                     ),
+                    behavior: SnackBarBehavior.floating,
+                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     backgroundColor: Colors.green,
+                    elevation: 3,
+                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                    duration: Duration(seconds: 3),
                   ),
                 );
-                Navigator.pop(context, true);
+                Navigator.pop(context, widget.statusId);
+                context.read<LeadBloc>().add(FetchLeadStatuses());
               }
             },
-          ),
-          BlocListener<FieldConfigurationBloc, FieldConfigurationState>(
-            listener: (context, configState) {
-              if (kDebugMode) {
-                print('LeadEditScreen: FieldConfigurationBloc state changed: ${configState.runtimeType}');
-              }
-
-              if (configState is FieldConfigurationLoaded) {
-                if (kDebugMode) {
-                  print('LeadEditScreen: Configuration loaded with ${configState.fields.length} fields');
-                }
-
-                if (mounted) {
-                  setState(() {
-                    fieldConfigurations = configState.fields;
-                    isConfigurationLoaded = true;
-                  });
-                }
-              } else if (configState is FieldConfigurationError) {
-                if (kDebugMode) {
-                  print('LeadEditScreen: Configuration error: ${configState.message}');
-                }
-
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Ошибка загрузки конфигурации: ${configState.message}',
-                        style: TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white,
-                        ),
-                      ),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              }
-            },
-          ),
-        ],
-        child: BlocBuilder<FieldConfigurationBloc, FieldConfigurationState>(
-          builder: (context, configState) {
-            if (kDebugMode) {
-              print('LeadEditScreen: Building with state: ${configState.runtimeType}, isLoaded: $isConfigurationLoaded');
-            }
-
-            if (configState is FieldConfigurationLoading && !isConfigurationLoaded) {
-              return Center(
-                child: CircularProgressIndicator(
-                  color: Color(0xff1E2E52),
-                ),
-              );
-            }
-
-            if (!isConfigurationLoaded) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircularProgressIndicator(
-                      color: Color(0xff1E2E52),
-                    ),
-                    SizedBox(height: 16),
-                    Text('Загрузка конфигурации...'),
-                  ],
-                ),
-              );
-            }
-
-            // Условное отображение: режим настроек или обычный режим
-            if (isSettingsMode) {
-              return _buildSettingsMode();
-            }
-
-            return Form(
+            child: Form(
               key: _formKey,
               child: Column(
                 children: [
@@ -1636,9 +1870,9 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
               ),
             ],
           ),
-        );
-          },
-        ),
+            ),
+          );
+        },
       ),
     );
   }

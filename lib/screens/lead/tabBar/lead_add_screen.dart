@@ -22,6 +22,7 @@ import 'package:crm_task_manager/screens/lead/tabBar/source_lead_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/add_custom_directory_dialog.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/main_field_dropdown_widget.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
@@ -415,16 +416,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
     }
   }
 
-  Future<void> _addCustomField(String fieldName, {bool isDirectory = false, int? directoryId, String? type}) async {
-    if (isDirectory && directoryId != null) {
-      bool directoryExists = customFields.any((field) => field.isDirectoryField && field.directoryId == directoryId);
-      if (directoryExists) {
-        return;
-      }
-    }
-
+  Future<void> _addCustomField(String fieldName, String type) async {
     // Если это не справочник, сначала добавляем через API
-    if (!isDirectory && type != null) {
       try {
         await ApiService().addNewField(
           tableName: 'leads',
@@ -449,11 +442,11 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
             customFields.add(CustomField(
               fieldName: fieldName,
               uniqueId: Uuid().v4(),
-              isDirectoryField: isDirectory,
-              directoryId: directoryId,
+              isDirectoryField: false,
+              directoryId: null,
               type: type,
               controller: TextEditingController(),
-              isCustomField: !isDirectory,
+              isCustomField: true,
             ));
           });
         }
@@ -483,21 +476,6 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
             ),
           );
         }
-      }
-    } else {
-      // Для справочников добавляем локально сразу
-      // (связывание через API происходит в другом месте)
-      setState(() {
-        customFields.add(CustomField(
-          fieldName: fieldName,
-          uniqueId: Uuid().v4(),
-          isDirectoryField: isDirectory,
-          directoryId: directoryId,
-          type: type,
-          controller: TextEditingController(),
-          isCustomField: !isDirectory,
-        ));
-      });
     }
   }
 
@@ -543,7 +521,9 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
           builder: (BuildContext context) {
             return AddCustomFieldDialog(
               onAddField: (fieldName, {String? type}) {
-                _addCustomField(fieldName, type: type);
+                if (type != null) {
+                  _addCustomField(fieldName, type);
+                }
               },
             );
           },
@@ -554,33 +534,40 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
           builder: (BuildContext context) {
             return AddCustomDirectoryDialog(
               onAddDirectory: (directory) async {
-                await _addCustomField(directory.name, isDirectory: true, directoryId: directory.id);
-
                 try {
                   // Сначала связываем справочник через API
-                  await ApiService().linkDirectory(
+                 final response =  await ApiService().linkDirectory(
                     directoryId: directory.id,
                     modelType: 'lead',
                     organizationId: ApiService().getSelectedOrganization().toString(),
                   );
 
+                 showCustomSnackBar(context: context, message: 'Справочник успешно добавлен');
+
                   // КЭШИРОВАНИЕ ОТКЛЮЧЕНО
                   // // Очищаем кэш перед перезагрузкой
                   // await ApiService().clearFieldConfigurationCacheForTable('leads');
 
+                  // Добавляем справочник локально сразу после успешного связывания
+                  if (mounted) {
+                    setState(() {
+                      customFields.add(CustomField(
+                        fieldName: directory.name,
+                        uniqueId: Uuid().v4(),
+                        isDirectoryField: true,
+                        directoryId: directory.id,
+                        type: null,
+                        controller: TextEditingController(),
+                        isCustomField: false,
+                      ));
+                    });
+                  }
+
                   // После успешного добавления справочника перезагружаем конфигурацию полей
+                  // Конфигурация с сервера уже будет содержать этот справочник
                   if (mounted) {
                     context.read<FieldConfigurationBloc>().add(
                       FetchFieldConfiguration('leads')
-                    );
-                  }
-
-                  // Добавляем справочник локально только после успешного связывания
-                  if (mounted) {
-                    await _addCustomField(
-                      directory.name,
-                      isDirectory: true,
-                      directoryId: directory.id
                     );
                   }
 
@@ -597,7 +584,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          'Ошибка при добавлении справочника: $e',
+                          e.toString(),
                           style: TextStyle(
                             fontFamily: 'Gilroy',
                             fontSize: 16,
@@ -642,9 +629,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
+          backgroundColor: Colors.white,
           title: Text(
             AppLocalizations.of(context)!.translate('warning'),
             style: TextStyle(
@@ -659,34 +644,32 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
             style: TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 16,
-              fontWeight: FontWeight.w400,
+              fontWeight: FontWeight.w500,
               color: Color(0xff1E2E52),
             ),
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: Text(
-                AppLocalizations.of(context)!.translate('cancel'),
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xff99A4BA),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: CustomButton(
+                    buttonText: AppLocalizations.of(context)!.translate('cancel'),
+                    onPressed: () => Navigator.of(context).pop(false),
+                    buttonColor: Color(0xff1E2E52),
+                    textColor: Colors.white,
+                  ),
                 ),
-              ),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: Text(
-                AppLocalizations.of(context)!.translate('exit'),
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xffFF4757),
+                SizedBox(width: 8),
+                Expanded(
+                  child: CustomButton(
+                    buttonText: AppLocalizations.of(context)!.translate('dont_save'),
+                    onPressed: () => Navigator.of(context).pop(true),
+                    buttonColor: Colors.red,
+                    textColor: Colors.white,
+                  ),
                 ),
-              ),
+              ],
             ),
           ],
         );
