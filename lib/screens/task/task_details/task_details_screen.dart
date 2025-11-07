@@ -454,9 +454,12 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
     if (task.directoryValues != null && task.directoryValues!.isNotEmpty) {
       for (var dirValue in task.directoryValues!) {
+        final values = dirValue.entry.values;
+        final fieldValue = values.isNotEmpty ? values.first.value : '';
+
         details.add({
           'label': '${dirValue.entry.directory.name}:',
-          'value': dirValue.entry.values['value'] ?? '',
+          'value': fieldValue,
         });
       }
     }
@@ -1165,14 +1168,18 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
               details.add({'label': '${field.key}:', 'value': field.value});
             }
 
-            if (state.task!.directoryValues != null && state.task!.directoryValues!.isNotEmpty) {
-              for (var dirValue in state.task!.directoryValues!) {
+            if (state.task.directoryValues != null && state.task!.directoryValues!.isNotEmpty) {
+              for (var dirValue in state.task.directoryValues!) {
+                final values = dirValue.entry.values; // This is a List
+                final fieldValue = values.isNotEmpty ? values.first.value : ''; // take first value safely
+
                 details.add({
                   'label': '${dirValue.entry.directory.name}:',
-                  'value': dirValue.entry.values['value'] ?? '',
+                  'value': fieldValue,
                 });
               }
             }
+
           } else {
             currentTask = null;
             details.clear();

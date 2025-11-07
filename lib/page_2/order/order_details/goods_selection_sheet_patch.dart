@@ -39,7 +39,7 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
   bool _showAllMode = false;
   Timer? _searchDebounce;
   int? currencyId;
-
+  
   // Для хранения выбранных товаров
   final Map<int, Variant> _selectedVariants = {};
   final Map<int, int> _selectedQuantities = {};

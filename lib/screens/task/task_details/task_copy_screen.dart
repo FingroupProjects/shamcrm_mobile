@@ -119,13 +119,13 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
           : '';
       selectedPriority = task.priority ?? 1;
       selectedProject = task.project?.id.toString();
-      
+
       if (!_canCreateTask && _hasTaskCreateForMySelfPermission && _currentUserId != null) {
         selectedUsers = [_currentUserId.toString()];
       } else {
         selectedUsers = task.user?.map((user) => user.id.toString()).toList();
       }
-      
+
       if (task.taskCustomFields.isNotEmpty) {
         customFields.addAll(task.taskCustomFields.map((field) => CustomField(
               fieldName: field.key,
@@ -136,15 +136,19 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
       }
 
       if (task.directoryValues != null && task.directoryValues!.isNotEmpty) {
-        customFields.addAll(task.directoryValues!.map((dirValue) => CustomField(
-              fieldName: dirValue.entry.directory.name,
-              controller: TextEditingController(text: dirValue.entry.values['value'] ?? ''),
-              isDirectoryField: true,
-              directoryId: dirValue.entry.directory.id,
-              entryId: dirValue.entry.id,
-              uniqueId: Uuid().v4(),
-            )));
+        customFields.addAll(task.directoryValues!.map((dirValue) {
+          final fieldValue = dirValue.entry.values.isNotEmpty ? dirValue.entry.values.first.value : '';
+          return CustomField(
+            fieldName: dirValue.entry.directory.name,
+            controller: TextEditingController(text: fieldValue),
+            isDirectoryField: true,
+            directoryId: dirValue.entry.directory.id,
+            entryId: dirValue.entry.id,
+            uniqueId: Uuid().v4(),
+          );
+        }));
       }
+
 
       if (task.files != null && task.files!.isNotEmpty) {
         fileNames = task.files!.map((file) => file.name).toList();
@@ -320,11 +324,11 @@ Widget _buildFileSelection() {
                 ),
               );
             }
-            
+
             // Отображение выбранных файлов
             final fileName = fileNames[index];
             final fileExtension = fileName.split('.').last.toLowerCase();
-            
+
             return Padding(
               padding: EdgeInsets.only(right: 16),
               child: Stack(
@@ -398,7 +402,7 @@ Widget _buildFileSelection() {
 Widget _buildFileIcon(String fileName, String fileExtension) {
   // Список расширений изображений
   final imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'heic', 'heif'];
-  
+
   // Если файл - изображение, показываем превью
   if (imageExtensions.contains(fileExtension)) {
     final filePath = selectedFiles[fileNames.indexOf(fileName)];

@@ -18,6 +18,7 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:crm_task_manager/custom_widget/custom_field_multi_select.dart';
 
 class DealManagerFilterScreen extends StatefulWidget {
   final Function(Map<String, dynamic>)? onManagersSelected;
@@ -35,6 +36,9 @@ class DealManagerFilterScreen extends StatefulWidget {
   final bool? initialHasTasks;
   final List<Map<String, dynamic>>? initialDirectoryValues;
   final List<String>? initialDealNames;
+  final List<String>? customFieldTitles;
+  final Map<String, List<String>>? customFieldValues;
+  final Map<String, List<String>>? initialCustomFieldSelections;
 
   DealManagerFilterScreen({
     Key? key,
@@ -53,6 +57,9 @@ class DealManagerFilterScreen extends StatefulWidget {
     this.initialHasTasks,
     this.initialDirectoryValues,
     this.initialDealNames,
+    this.customFieldTitles,
+    this.customFieldValues,
+    this.initialCustomFieldSelections,
   }) : super(key: key);
 
   @override
@@ -71,6 +78,16 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
   Map<int, MainField?> _selectedDirectoryFields = {};
   List<DirectoryLink> _directoryLinks = [];
   List<DealNameData> _selectedDealNames = [];
+  Map<String, List<String>> _selectedCustomFieldValues = {};
+
+  void _initializeCustomFieldSelections(Map<String, List<String>> initialSelections) {
+    final titles = widget.customFieldTitles ?? const [];
+    _selectedCustomFieldValues = {};
+    for (final title in titles) {
+      final initial = initialSelections[title];
+      _selectedCustomFieldValues[title] = initial != null ? List<String>.from(initial) : <String>[];
+    }
+  }
 
   @override
   void initState() {
@@ -87,6 +104,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
             .toList() ?? [];
     _loadFilterState();
     _fetchDirectoryLinks();
+    _initializeCustomFieldSelections(widget.initialCustomFieldSelections ?? const {});
   }
 
   Future<void> _loadFilterState() async {
@@ -243,6 +261,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                 _hasTasks = null;
                 _selectedDirectoryFields.clear();
                 _selectedDealNames.clear();
+                _selectedCustomFieldValues.clear();
                 for (var link in _directoryLinks) {
                   _selectedDirectoryFields[link.id] = null;
                 }
@@ -291,6 +310,15 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                     .toList(),
                 'names': _selectedDealNames.map((dealName) => dealName.title).toList(), // Добавляем names
               };
+              final customFieldFilters = <String, List<String>>{};
+              _selectedCustomFieldValues.forEach((key, values) {
+                if (values.isNotEmpty) {
+                  customFieldFilters[key] = List<String>.from(values);
+                }
+              });
+              if (customFieldFilters.isNotEmpty) {
+                filterData['custom_field_filters'] = customFieldFilters;
+              }
               if (_selectedManagers.isNotEmpty ||
                   _selectedLeads.isNotEmpty ||
                   _selectedStatuses != null ||
@@ -299,7 +327,8 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                   _daysWithoutActivity != null ||
                   _hasTasks != null ||
                   _selectedDirectoryFields.values.any((field) => field != null) ||
-                  _selectedDealNames.isNotEmpty) {
+                  _selectedDealNames.isNotEmpty ||
+                  customFieldFilters.isNotEmpty) {
                 widget.onManagersSelected?.call(filterData);
               }
               Navigator.pop(context);
@@ -423,6 +452,27 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                         ),
                       ),
                     ),
+                    if ((widget.customFieldTitles ?? const []).isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      for (final title in widget.customFieldTitles!)
+                        Card(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          color: Colors.white,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: CustomFieldMultiSelect(
+                              title: title,
+                              items: List<String>.from(widget.customFieldValues?[title] ?? const []),
+                              initialSelectedValues: _selectedCustomFieldValues[title],
+                              onChanged: (values) {
+                                setState(() {
+                                  _selectedCustomFieldValues[title] = List<String>.from(values);
+                                });
+                              },
+                            ),
+                          ),
+                        ),
+                    ],
                     if (_directoryLinks.isNotEmpty) ...[
                       for (var link in _directoryLinks)
                         Card(

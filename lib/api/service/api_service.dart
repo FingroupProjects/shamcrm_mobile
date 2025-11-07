@@ -2897,6 +2897,7 @@ class ApiService {
         List<Map<String, dynamic>>? directoryValues,
         List<String>? names, // Новое поле
         int? salesFunnelId,
+        Map<String, List<String>>? customFieldFilters,
       }) async {
     String path = '/deal?page=$page&per_page=$perPage';
     path = await _appendQueryParams(path);
@@ -2913,7 +2914,8 @@ class ApiService {
         (hasTasks == true) ||
         (statuses != null) ||
         (directoryValues != null && directoryValues.isNotEmpty) ||
-        (names != null && names.isNotEmpty); // Учитываем names
+        (names != null && names.isNotEmpty) ||
+        (customFieldFilters != null && customFieldFilters.isNotEmpty); // Учитываем кастомные поля
 
     if (dealStatusId != null && !hasFilters) {
       path += '&deal_statuses=$dealStatusId'; // changed FROM deal_status_id to deal_statuses
@@ -2959,6 +2961,22 @@ class ApiService {
       for (int i = 0; i < names.length; i++) {
         path += '&names[$i]=${Uri.encodeComponent(names[i])}'; // Кодируем названия
       }
+    }
+
+    if (customFieldFilters != null && customFieldFilters.isNotEmpty) {
+      int index = 0;
+      customFieldFilters.forEach((fieldKey, values) {
+        if (values.isEmpty) {
+          return;
+        }
+        final encodedKey = Uri.encodeQueryComponent(fieldKey);
+        path += '&custom_fields[$index][key]=$encodedKey';
+        for (int i = 0; i < values.length; i++) {
+          final encodedValue = Uri.encodeQueryComponent(values[i]);
+          path += '&custom_fields[$index][value][$i]=$encodedValue';
+        }
+        index++;
+      });
     }
 
     debugPrint("ApiService: getDeals - Generated path: $path");
@@ -3592,6 +3610,43 @@ class ApiService {
       bool showOnMainPage,
       List<int>? userIds, // ✅ НОВОЕ
       ) async {
+    final path = await _appendQueryParams('/deal/statuses/$dealStatusId');
+
+    if (kDebugMode) {
+      print('ApiService: updateDealStatusEdit - userIds: $userIds');
+    }
+
+    final organizationId = await getSelectedOrganization();
+    final salesFunnelId = await getSelectedSalesFunnel();
+
+    final payload = {
+      "title": title,
+      "day": day,
+      "color": "#000",
+      "is_success": isSuccess ? 1 : 0,
+      "is_failure": isFailure ? 1 : 0,
+      "notification_message": notificationMessage,
+      "show_on_main_page": showOnMainPage ? 1 : 0,
+      "organization_id": organizationId?.toString() ?? '',
+      if (salesFunnelId != null) "sales_funnel_id": salesFunnelId.toString(),
+      // ✅ НОВОЕ: Добавляем массив пользователей
+      if (userIds != null && userIds.isNotEmpty) "users": userIds,
+    };
+
+    if (kDebugMode) {
+      print('ApiService: updateDealStatusEdit payload: $payload');
+    }
+
+    final response = await _patchRequest(path, payload);
+
+    if (response.statusCode == 200) {
+      return {'result': 'Success'};
+    } else {
+      throw Exception('Failed to update dealStatus!');
+    }
+  }
+  Future<DealStatus> getDealStatus(int dealStatusId) async {
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/deal/statuses/$dealStatusId');
 
     if (kDebugMode) {
@@ -11380,6 +11435,74 @@ class ApiService {
       final token = await getToken();
       if (token == null) throw 'Токен не найден';
 
+      final uri = Uri.parse('$baseUrl$path');
+      final response = await http.post(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Device': 'mobile',
+        },
+        body: jsonEncode({
+          'ids': [documentId]
+        }),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // Успешно проведен
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+            message ?? 'Ошибка при проведении документа',
+            response.statusCode
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+// Отмена проведения документа реализации
+  Future<void> unApproveClientSaleDocument(int documentId) async {
+    const String url = '/expense-documents/unApprove';
+    final path = await _appendQueryParams(url);
+
+    try {
+      final token = await getToken();
+      if (token == null) throw Exception('Токен не найден');
+
+      final uri = Uri.parse('$baseUrl$path');
+      final response = await http.post(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Device': 'mobile',
+        },
+        body: jsonEncode({
+          'ids': [documentId]
+        }),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // Успешно отменено
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(message ?? 'Ошибка при отмене проведения документа', response.statusCode);
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+// Восстановление документа реализации
+  Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
+    try {
+      final token = await getToken();
+      if (token == null) throw 'Токен не найден';
+
       final pathWithParams = await _appendQueryParams('/expense-documents/restore');
       final uri = Uri.parse('$baseUrl$pathWithParams');
 
@@ -16324,6 +16447,60 @@ class ApiService {
   // response.result is list of strings
   Future<List<String>> getLeadCustomFieldValues(String key) async {
     final path = await _appendQueryParams('/lead/get/custom-field-values?key=$key');
+    if (kDebugMode) {
+      print('ApiService: getLeadCustomFieldValues - Generated path: $path');
+    }
+    final response = await _getRequest(path);
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final resultList = data['result'] as List?;
+      if (resultList == null) {
+        return [];
+      }
+      return resultList.map((value) => value.toString()).toList();
+    } else {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка загрузки значений пользовательского поля лидов',
+        response.statusCode,
+      );
+    }
+  }
+
+
+ // GET lead custom fields
+  // lead/get/custom-fields?organization_id=1&sales_funnel_id=1
+  // response.result is list of strings
+  Future<List<String>> getDealCustomFields() async {
+    final path = await _appendQueryParams('/deal/get/custom-fields');
+
+    if (kDebugMode) {
+      print('ApiService: getLeadCustomFields - Generated path: $path');
+    }
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final resultList = data['result'] as List?;
+      if (resultList == null) {
+        return [];
+      }
+      return resultList.map((field) => field.toString()).toList();
+    } else {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка загрузки пользовательских полей лидов',
+        response.statusCode,
+      );
+    }
+  }
+
+  // GET custom field values by key (we get key from getLeadCustomFields)
+  // lead/get/custom-field-values?key=aa&organization_id=1&sales_funnel_id=1
+  // response.result is list of strings
+  Future<List<String>> getDealCustomFieldValues(String key) async {
+    final path = await _appendQueryParams('/deal/get/custom-field-values?key=$key');
     if (kDebugMode) {
       print('ApiService: getLeadCustomFieldValues - Generated path: $path');
     }

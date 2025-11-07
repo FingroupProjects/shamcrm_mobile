@@ -334,7 +334,7 @@ class DirectoryValues {
 class DirectoryEntry {
   final int id;
   final DirectoryVV directory;
-  final Map<String, String> values;
+  final List<DirectoryValuePair> values; // Change to List
   final String createdAt;
 
   DirectoryEntry({
@@ -345,14 +345,39 @@ class DirectoryEntry {
   });
 
   factory DirectoryEntry.fromJson(Map<String, dynamic> json) {
+    final valuesJson = json['values'];
+    final valuesList = valuesJson is List
+        ? valuesJson
+        .map((v) => DirectoryValuePair.fromJson(v))
+        .toList()
+        : <DirectoryValuePair>[];
+
     return DirectoryEntry(
       id: json['id'] ?? 0,
       directory: DirectoryVV.fromJson(json['directory']),
-      values: Map<String, String>.from(json['values'] ?? {}),
+      values: valuesList,
       createdAt: json['created_at'] ?? '',
     );
   }
 }
+
+class DirectoryValuePair {
+  final String key;
+  final String value;
+
+  DirectoryValuePair({
+    required this.key,
+    required this.value,
+  });
+
+  factory DirectoryValuePair.fromJson(Map<String, dynamic> json) {
+    return DirectoryValuePair(
+      key: json['key'] ?? '',
+      value: json['value'] ?? '',
+    );
+  }
+}
+
 
 class DirectoryVV {
   final int id;

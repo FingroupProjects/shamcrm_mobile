@@ -640,6 +640,7 @@ Widget build(BuildContext context) {
               dealCustomFields: currentDeal!.dealCustomFields,
               directoryValues: currentDeal!.directoryValues,
               files: currentDeal!.files,
+              dealById: currentDeal!,
             ),
           ),
         );

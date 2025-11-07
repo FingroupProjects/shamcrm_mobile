@@ -197,7 +197,8 @@ class CustomFieldWidget extends StatelessWidget {
             ],
           ),
         ),
-        if (onRemove != null)IconButton(
+        if (onRemove != null)
+        IconButton(
           icon: const Icon(
             Icons.remove_circle,
             color: Color.fromARGB(255, 236, 64, 16),
