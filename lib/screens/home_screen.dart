@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/api/service/widget_service.dart';
 import 'package:crm_task_manager/page_2/dashboard/sales_dashboard_screen.dart';
 import 'package:crm_task_manager/page_2/goods/goods_screen.dart';
 import 'package:crm_task_manager/page_2/online_shop.dart';
@@ -41,13 +42,33 @@ class _HomeScreenState extends State<HomeScreen> {
   List<String> _inactiveIconsGroup1 = [];
   List<String> _inactiveIconsGroup2 = [];
 
-  @override
+@override
+void initState() {
+  super.initState();
+  initializeScreensWithPermissions();
+  
+  // ✅ Подписываемся на события от виджета
+  WidgetService.onNavigateFromWidget = (group, screenIndex) {
+    if (mounted) {
+      setState(() {
+        if (group == 1 && screenIndex < _widgetOptionsGroup1.length) {
+          _selectedIndexGroup1 = screenIndex;
+          _selectedIndexGroup2 = -1;
+        } else if (group == 2 && screenIndex < _widgetOptionsGroup2.length) {
+          _selectedIndexGroup2 = screenIndex;
+          _selectedIndexGroup1 = -1;
+        }
+      });
+    }
+  };
+}
 
-  void initState() {
-    super.initState();
-    initializeScreensWithPermissions();
-  }
-
+@override
+void dispose() {
+  // Очистка callback
+  WidgetService.onNavigateFromWidget = null;
+  super.dispose();
+}
   Future<void> initializeScreensWithPermissions() async {
     List<Widget> widgetsGroup1 = [];
     List<Widget> widgetsGroup2 = [];
