@@ -112,6 +112,8 @@ class CustomAppBar extends StatefulWidget {
   final int? initialManagerLeadDaysWithoutActivity;
   final List<Map<String, dynamic>>?
       initialDirectoryValuesLead; // Новый параметр для лидов
+  final Map<String, List<String>>?
+      initialLeadCustomFields; // Пользовательские поля для фильтра лидов
 
   final List? initialManagersDeal;
   final List? initialLeadsDeal;
@@ -154,6 +156,7 @@ final List<String>? initialDealNames; // Новый параметр
   final Function(Map<String, dynamic>)? onChatTaskFiltersApplied; // Для задач
   final VoidCallback? onChatLeadFiltersReset; // Сброс фильтров
   final bool hasActiveChatFilters; // Есть ли активные фильтры
+  final bool hasActiveEventFilters; // Есть ли активные фильтры для Event
   final Map<String, dynamic>? initialChatFilters; // Начальные фильтры
   final int? currentSalesFunnelId; // ID текущей воронки
   final bool showDashboardIcon; // Новый параметр
@@ -201,6 +204,7 @@ final List<String>? initialDealNames; // Новый параметр
     this.initialManagerLeadHasOrders,
     this.initialManagerLeadDaysWithoutActivity,
     this.initialDirectoryValuesLead, // Добавляем в конструктор
+    this.initialLeadCustomFields,
     this.initialDirectoryValuesTask, // Добавляем в конструктор
     this.showFilterIconOnSelectCallCenter =
         false, // Добавлено: по умолчанию false
@@ -214,6 +218,7 @@ final List<String>? initialDealNames; // Новый параметр
     this.onChatLeadFiltersReset,
     this.onChatTaskFiltersApplied, // Новый параметр
     this.hasActiveChatFilters = false,
+    this.hasActiveEventFilters = false,
     this.initialChatFilters,
     this.initialManagersDeal,
     this.initialLeadsDeal,
@@ -315,6 +320,8 @@ class _CustomAppBarState extends State<CustomAppBar>
   bool _canReadNotice = false;
   bool _canReadCalendar = false;
   bool _canReadGps = false; // Новая переменная для GPS
+  List<String> _customFieldTitles = [];
+  Map<String, List<String>> _customFieldValues = {};
 
   Color _iconColor = const Color.fromARGB(255, 0, 0, 0);
   late Timer _timer;
@@ -339,6 +346,7 @@ class _CustomAppBarState extends State<CustomAppBar>
     _loadNotificationState();
     _setUpSocketForNotifications();
     _setupFirebaseMessaging(); // Новый метод
+    loadLeadCustomFields(); // Загрузка пользовательских полей лидов
 
     _blinkController = AnimationController(
       vsync: this,
@@ -365,8 +373,7 @@ class _CustomAppBarState extends State<CustomAppBar>
         });
       } else {
         setState(() {
-          _iconColor =
-              Colors.black; // Возвращаем черный цвет когда фильтры неактивны
+          _iconColor = Colors.black; // Возвращаем черный цвет когда фильтры неактивны
         });
       }
     });
@@ -448,9 +455,10 @@ class _CustomAppBarState extends State<CustomAppBar>
   @override
   void didUpdateWidget(CustomAppBar oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Синхронизируем _areFiltersActive с hasActiveChatFilters при обновлении виджета
-    if (widget.hasActiveChatFilters != oldWidget.hasActiveChatFilters) {
-      _setFiltersActive(widget.hasActiveChatFilters);
+    // Синхронизируем _areFiltersActive с hasActiveChatFilters и hasActiveEventFilters при обновлении виджета
+    if (widget.hasActiveChatFilters != oldWidget.hasActiveChatFilters ||
+        widget.hasActiveEventFilters != oldWidget.hasActiveEventFilters) {
+      _setFiltersActive(widget.hasActiveChatFilters || widget.hasActiveEventFilters);
     }
   }
 
@@ -489,6 +497,43 @@ class _CustomAppBarState extends State<CustomAppBar>
       _hasNewNotification = hasNewNotification;
     });
   }
+
+  Future<void> loadLeadCustomFields() async {
+    try {
+      // 1️⃣ Load field titles first
+      final titles = await _apiService.getLeadCustomFields();
+
+      setState(() {
+        _customFieldTitles = titles;
+      });
+
+      // 2️⃣ Launch all requests in parallel, but handle each as it completes
+      for (final title in titles) {
+        // run in background without awaiting — don't block the loop
+        unawaited(_loadSingleCustomField(title));
+      }
+    } catch (e, st) {
+      if (kDebugMode) {
+        print('Error loading lead custom fields: $e\n$st');
+      }
+    }
+  }
+
+// Helper: load one field and update state immediately
+  Future<void> _loadSingleCustomField(String title) async {
+    try {
+      final values = await _apiService.getLeadCustomFieldValues(title);
+      if (!mounted) return;
+      setState(() {
+        _customFieldValues[title] = values;
+      });
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error loading values for "$title": $e');
+      }
+    }
+  }
+
 
   Future<void> _setUpSocketForNotifications() async {
     debugPrint(
@@ -1258,6 +1303,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                   'assets/icons/AppBar/filter.png',
                   width: 24,
                   height: 24,
+                  color: widget.hasActiveEventFilters ? Colors.blue : _iconColor,
                 ),
                 onPressed: () {
                   Navigator.push(
@@ -1696,6 +1742,9 @@ class _CustomAppBarState extends State<CustomAppBar>
           onResetFilters: widget.onLeadResetFilters,
           initialDirectoryValues:
               _safeConvertToMapList(widget.initialDirectoryValuesLead),
+          customFieldTitles: _customFieldTitles,
+          customFieldValues: _customFieldValues,
+          initialCustomFieldSelections: widget.initialLeadCustomFields,
         ),
       ),
     );

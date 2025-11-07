@@ -22,45 +22,45 @@ class FieldConfigurationBloc extends Bloc<FieldConfigurationEvent, FieldConfigur
     emit(FieldConfigurationLoading());
     
     try {
-      // СНАЧАЛА ПЫТАЕМСЯ ЗАГРУЗИТЬ ИЗ КЭША
-      if (kDebugMode) {
-        //print('FieldConfigurationBloc: Checking cache...');
-      }
+      // // СНАЧАЛА ПЫТАЕМСЯ ЗАГРУЗИТЬ ИЗ КЭША
+      // if (kDebugMode) {
+      //   //print('FieldConfigurationBloc: Checking cache...');
+      // }
+      // 
+      // final cachedConfig = await apiService.getCachedFieldConfiguration(
+      //   tableName: event.tableName,
+      // );
+      // 
+      // if (cachedConfig != null) {
+      //   if (kDebugMode) {
+      //     //print('FieldConfigurationBloc: Found cached configuration with ${cachedConfig.result.length} fields');
+      //   }
+      //   
+      //   // Получаем ВСЕ поля (не фильтруем по isActive) и сортируем по position
+      //   final allFields = cachedConfig.result
+      //       .toList()
+      //     ..sort((a, b) => a.position.compareTo(b.position));
+      //   
+      //   if (kDebugMode) {
+      //     //print('FieldConfigurationBloc: All fields count: ${allFields.length}');
+      //     for (var field in allFields) {
+      //       //print('FieldConfigurationBloc: Field - name: ${field.fieldName}, position: ${field.position}, isActive: ${field.isActive}, isCustom: ${field.isCustomField}, isDirectory: ${field.isDirectory}');
+      //     }
+      //   }
+      //   
+      //   emit(FieldConfigurationLoaded(allFields));
+      //   
+      //   if (kDebugMode) {
+      //     //print('FieldConfigurationBloc: Successfully emitted FieldConfigurationLoaded state from cache');
+      //   }
+      //   
+      //   return;
+      // }
       
-      final cachedConfig = await apiService.getCachedFieldConfiguration(
-        tableName: event.tableName,
-      );
-      
-      if (cachedConfig != null) {
-        if (kDebugMode) {
-          //print('FieldConfigurationBloc: Found cached configuration with ${cachedConfig.result.length} fields');
-        }
-        
-        // Получаем ВСЕ поля (не фильтруем по isActive) и сортируем по position
-        final allFields = cachedConfig.result
-            .toList()
-          ..sort((a, b) => a.position.compareTo(b.position));
-        
-        if (kDebugMode) {
-          //print('FieldConfigurationBloc: All fields count: ${allFields.length}');
-          for (var field in allFields) {
-            //print('FieldConfigurationBloc: Field - name: ${field.fieldName}, position: ${field.position}, isActive: ${field.isActive}, isCustom: ${field.isCustomField}, isDirectory: ${field.isDirectory}');
-          }
-        }
-        
-        emit(FieldConfigurationLoaded(allFields));
-        
-        if (kDebugMode) {
-          //print('FieldConfigurationBloc: Successfully emitted FieldConfigurationLoaded state from cache');
-        }
-        
-        return;
-      }
-      
-      // ЕСЛИ КЭША НЕТ - ЗАГРУЖАЕМ С СЕРВЕРА
-      if (kDebugMode) {
-        //print('FieldConfigurationBloc: No cache found, fetching from API...');
-      }
+      // // ЕСЛИ КЭША НЕТ - ЗАГРУЖАЕМ С СЕРВЕРА
+      // if (kDebugMode) {
+      //   //print('FieldConfigurationBloc: No cache found, fetching from API...');
+      // }
       
       final response = await apiService.getFieldPositions(
         tableName: event.tableName,
@@ -70,11 +70,11 @@ class FieldConfigurationBloc extends Bloc<FieldConfigurationEvent, FieldConfigur
         //print('FieldConfigurationBloc: API response received with ${response.result.length} fields');
       }
       
-      // Сохраняем в кэш
-      await apiService.cacheFieldConfiguration(
-        tableName: event.tableName,
-        configuration: response,
-      );
+      // // Сохраняем в кэш
+      // await apiService.cacheFieldConfiguration(
+      //   tableName: event.tableName,
+      //   configuration: response,
+      // );
       
       // Получаем ВСЕ поля (не фильтруем по isActive) и сортируем по position
       final allFields = response.result
@@ -83,9 +83,9 @@ class FieldConfigurationBloc extends Bloc<FieldConfigurationEvent, FieldConfigur
       
       if (kDebugMode) {
         //print('FieldConfigurationBloc: All fields count: ${allFields.length}');
-        for (var field in allFields) {
-          //print('FieldConfigurationBloc: Field - name: ${field.fieldName}, position: ${field.position}, isActive: ${field.isActive}, isCustom: ${field.isCustomField}, isDirectory: ${field.isDirectory}');
-        }
+        // for (var field in allFields) {
+        //   //print('FieldConfigurationBloc: Field - name: ${field.fieldName}, position: ${field.position}, isActive: ${field.isActive}, isCustom: ${field.isCustomField}, isDirectory: ${field.isDirectory}');
+        // }
       }
       
       emit(FieldConfigurationLoaded(allFields));
