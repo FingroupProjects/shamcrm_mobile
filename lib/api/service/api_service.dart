@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 import 'package:crm_task_manager/models/LeadStatusForFilter.dart';
@@ -1437,11 +1438,55 @@ class ApiService {
       path += '&lastUpdate=$daysWithoutActivity';
     }
     if (directoryValues != null && directoryValues.isNotEmpty) {
-      for (int i = 0; i < directoryValues.length; i++) {
-        final directoryId = directoryValues[i]['directory_id'];
-        final entryId = directoryValues[i]['entry_id'];
-        path += '&directory_values[$i][directory_id]=$directoryId';
-        path += '&directory_values[$i][entry_id]=$entryId';
+      final Map<String, LinkedHashSet<String>> groupedDirectoryValues = {};
+
+      for (final dynamic rawValue in directoryValues) {
+        if (rawValue is! Map) {
+          continue;
+        }
+
+        final Map value = rawValue;
+        final directoryIdRaw = value['directory_id'];
+        final entryIdRaw = value['entry_id'];
+
+        if (directoryIdRaw == null || entryIdRaw == null) {
+          continue;
+        }
+
+        final directoryId = directoryIdRaw.toString();
+        final Iterable<String> entryIds = entryIdRaw is List
+            ? entryIdRaw
+                .where((entry) => entry != null && entry.toString().isNotEmpty)
+                .map((entry) => entry.toString())
+            : [entryIdRaw.toString()];
+
+        if (entryIds.isEmpty) {
+          continue;
+        }
+
+        final entries = groupedDirectoryValues.putIfAbsent(
+          directoryId,
+          () => LinkedHashSet<String>(),
+        );
+        entries.addAll(entryIds);
+      }
+
+      if (groupedDirectoryValues.isNotEmpty) {
+        var directoryIndex = 0;
+        groupedDirectoryValues.forEach((directoryId, entryIds) {
+          if (entryIds.isEmpty) {
+            return;
+          }
+          path += '&directory_values[$directoryIndex][directory_id]=$directoryId';
+
+          var entryIndex = 0;
+          for (final entryId in entryIds) {
+            path += '&directory_values[$directoryIndex][entry_id][$entryIndex]=$entryId';
+            entryIndex++;
+          }
+
+          directoryIndex++;
+        });
       }
     }
     if (customFieldFilters != null && customFieldFilters.isNotEmpty) {

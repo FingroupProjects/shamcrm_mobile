@@ -1,11 +1,9 @@
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/custom_widget/custom_field_multi_select.dart';
-import 'package:crm_task_manager/custom_widget/filter/lead/lead_status_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/multi_manager_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/multi_region_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/multi_source_list.dart';
-import 'package:crm_task_manager/custom_widget/filter/deal/deal_directory_dropdown_widget.dart';
-import 'package:crm_task_manager/models/lead_model.dart';
+import 'package:crm_task_manager/custom_widget/filter/lead/multi_directory_dropdown_widget.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
 import 'package:crm_task_manager/models/source_list_model.dart';
@@ -97,7 +95,7 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
 
   int? _daysWithoutActivity;
 
-  Map<int, MainField?> _selectedDirectoryFields = {};
+  Map<int, List<MainField>> _selectedDirectoryFields = {};
   List<DirectoryLink> _directoryLinks = [];
   Map<String, List<String>> _selectedCustomFieldValues = {};
 
@@ -197,22 +195,40 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
       if (response.data != null) {
         setState(() {
           _directoryLinks = response.data!;
+          final initialDirectoryValues = widget.initialDirectoryValues ?? const [];
+          final Map<int, List<MainField>> updatedSelections = {};
+
           for (var link in _directoryLinks) {
-            _selectedDirectoryFields[link.id] = null;
-          }
-          // Восстановление начальных значений справочников
-          if (widget.initialDirectoryValues != null) {
-            for (var value in widget.initialDirectoryValues!) {
-              final directoryId = value['directory_id'];
-              final entryId = value['entry_id'];
-              final link = _directoryLinks.firstWhere(
-                (link) => link.directory.id == directoryId,
-                orElse: () => _directoryLinks[0],
-              );
-              final field = MainField(id: entryId, value: '');
-              _selectedDirectoryFields[link.id] = field;
+            final existingSelection = _selectedDirectoryFields[link.id] ?? const <MainField>[];
+
+            if (existingSelection.isNotEmpty) {
+              updatedSelections[link.id] = List<MainField>.from(existingSelection);
+              continue;
             }
+
+            final initialSelections = initialDirectoryValues
+                .where((value) => value['directory_id'] == link.directory.id)
+                .map((value) {
+                  final entryIdRaw = value['entry_id'];
+                  final int? entryId = entryIdRaw is int
+                      ? entryIdRaw
+                      : int.tryParse(entryIdRaw?.toString() ?? '');
+                  if (entryId == null) {
+                    return null;
+                  }
+                  final entryValue = value['entry_name']?.toString() ??
+                      value['entry_value']?.toString() ??
+                      value['value']?.toString() ??
+                      '';
+                  return MainField(id: entryId, value: entryValue);
+                })
+                .whereType<MainField>()
+                .toList();
+
+            updatedSelections[link.id] = initialSelections;
           }
+
+          _selectedDirectoryFields = updatedSelections;
         });
       }
     } catch (e) {
@@ -259,7 +275,7 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
                 _daysWithoutActivity = null;
                 _selectedDirectoryFields.clear();
                 for (var link in _directoryLinks) {
-                  _selectedDirectoryFields[link.id] = null;
+                  _selectedDirectoryFields[link.id] = <MainField>[];
                 }
                 _initializeCustomFieldSelections(const <String, List<String>>{});
               });
@@ -286,6 +302,10 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
           TextButton(
             onPressed: () async {
               await LeadCache.clearAllLeads();
+              final directoryIdByLinkId = {
+                for (var link in _directoryLinks) link.id: link.directory.id,
+              };
+
               Map<String, dynamic> filterData = {
                 'managers': _selectedManagers,
                 'regions': _selectedRegions,
@@ -305,14 +325,16 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
                 'hasOrders': _hasOrders,
                 'daysWithoutActivity': _daysWithoutActivity,
                 'directory_values': _selectedDirectoryFields.entries
-                    .where((entry) => entry.value != null)
-                    .map((entry) => {
-                          'directory_id': _directoryLinks
-                              .firstWhere((link) => link.id == entry.key)
-                              .directory
-                              .id,
-                          'entry_id': entry.value!.id,
-                        })
+                    .expand((entry) {
+                      final directoryId = directoryIdByLinkId[entry.key];
+                      if (directoryId == null || entry.value.isEmpty) {
+                        return const Iterable<Map<String, dynamic>>.empty();
+                      }
+                      return entry.value.map((field) => {
+                            'directory_id': directoryId,
+                            'entry_id': field.id,
+                          });
+                    })
                     .toList(),
               };
               final customFieldFilters = <String, List<String>>{};
@@ -341,7 +363,7 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
                   _hasDeal == true ||
                   _hasOrders == true ||
                   _daysWithoutActivity != null ||
-                  _selectedDirectoryFields.values.any((field) => field != null) ||
+                  _selectedDirectoryFields.values.any((fields) => fields.isNotEmpty) ||
                   customFieldFilters.isNotEmpty) {
                 widget.onManagersSelected?.call(filterData);
               }
@@ -498,15 +520,15 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
                           color: Colors.white,
                           child: Padding(
                             padding: const EdgeInsets.all(8),
-                            child: DirectoryDropdownWidget(
+                            child: MultiDirectoryDropdownWidget(
                               directoryId: link.directory.id,
                               directoryName: link.directory.name,
-                              onSelectField: (MainField? field) {
+                              onSelectField: (List<MainField> fields) {
                                 setState(() {
-                                  _selectedDirectoryFields[link.id] = field;
+                                  _selectedDirectoryFields[link.id] = List<MainField>.from(fields);
                                 });
                               },
-                              initialField: _selectedDirectoryFields[link.id],
+                              initialFields: _selectedDirectoryFields[link.id],
                             ),
                           ),
                         ),
@@ -563,7 +585,7 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
                             (value) => setState(() => _hasDeal = value),
                           ),
                           _buildSwitchTile(
-                            AppLocalizations.of(context)!.translate('withOrders') ?? 'С заказами',
+                            AppLocalizations.of(context)?.translate('withOrders') ?? 'С заказами',
                             _hasOrders ?? false,
                             (value) => setState(() => _hasOrders = value),
                           ),
