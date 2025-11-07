@@ -1,12 +1,12 @@
 buildscript {
-    ext.kotlin_version = '1.9.22'  // Версия Kotlin
+    ext.kotlin_version = '2.2.21'  // ✅ ПОСЛЕДНЯЯ ВЕРСИЯ
     repositories {
         google()
         mavenCentral()
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.3.0' // Версия плагина Android Gradle
+        classpath 'com.android.tools.build:gradle:8.6.1'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
@@ -30,4 +30,3 @@ subprojects {
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
 }
-
