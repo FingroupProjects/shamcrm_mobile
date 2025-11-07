@@ -32,7 +32,7 @@ class SupplierReturnDocumentEditScreen extends StatefulWidget {
   _SupplierReturnDocumentEditScreenState createState() => _SupplierReturnDocumentEditScreenState();
 }
 
-class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumentEditScreen> 
+class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumentEditScreen>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _dateController = TextEditingController();
@@ -195,7 +195,7 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
 
       _listKey.currentState?.removeItem(
         index,
-        (context, animation) => _buildSelectedItemCard(index, removedItem, animation),
+            (context, animation) => _buildSelectedItemCard(index, removedItem, animation),
         duration: const Duration(milliseconds: 300),
       );
 
@@ -422,11 +422,11 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
         comment: _commentController.text.trim(),
         counterpartyId: int.parse(_selectedSupplier!),
         documentGoods: _items.map((item) => {
-              'good_id': item['variantId'],
-              'quantity': int.tryParse(item['quantity'].toString()),
-              'price': _parsePriceAsNumber(item['price']),
-              'unit_id': item['unit_id'],
-            }).toList(),
+          'good_id': item['variantId'],
+          'quantity': int.tryParse(item['quantity'].toString()),
+          'price': _parsePriceAsNumber(item['price']),
+          'unit_id': item['unit_id'],
+        }).toList(),
         organizationId: widget.document.organizationId ?? 1,
         salesFunnelId: 1,
       ));
@@ -770,29 +770,29 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
         ),
         child: _isLoading
             ? const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
+          width: 18,
+          height: 18,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+          ),
+        )
             : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.save_outlined, color: Colors.white, size: 18),
-                  const SizedBox(width: 6),
-                  Text(
-                    localizations.translate('save') ?? 'Обновить',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.save_outlined, color: Colors.white, size: 18),
+            const SizedBox(width: 6),
+            Text(
+              localizations.translate('save') ?? 'Обновить',
+              style: const TextStyle(
+                fontSize: 14,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
               ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1033,7 +1033,7 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
                           const SizedBox(height: 4),
                           CompactTextField(
                             controller:
-                                priceController ?? TextEditingController(),
+                            priceController ?? TextEditingController(),
                             focusNode: priceFocusNode,
                             hintText: AppLocalizations.of(context)?.translate('price') ?? 'Цена',
                             keyboardType: const TextInputType.numberWithOptions(

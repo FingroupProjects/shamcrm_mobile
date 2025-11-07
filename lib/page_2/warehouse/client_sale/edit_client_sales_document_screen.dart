@@ -127,11 +127,11 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
 
         _priceControllers[variantId] = TextEditingController(text: parseNumberToString(price * amount));
         _quantityControllers[variantId] = TextEditingController(text: quantity.toString());
-        
+
         // ✅ НОВОЕ: Создаём FocusNode для существующих товаров
         _quantityFocusNodes[variantId] = FocusNode();
         _priceFocusNodes[variantId] = FocusNode();
-        
+
         _priceErrors[variantId] = false;
         _quantityErrors[variantId] = false;
       }
@@ -196,14 +196,14 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
     }
   }
 
-   void _removeItem(int index) {
+  void _removeItem(int index) {
     if (mounted) {
       final removedItem = _items[index];
       final variantId = removedItem['variantId'] as int;
 
       _listKey.currentState?.removeItem(
         index,
-        (context, animation) =>
+            (context, animation) =>
             _buildSelectedItemCard(index, removedItem, animation),
         duration: const Duration(milliseconds: 300),
       );
@@ -268,11 +268,11 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
     }
     // Если результат null, сбрасываем фокус с небольшой задержкой
 // Если результат null (пользователь закрыл окно без выбора), убеждаемся, что фокус сброшен
-  if (result == null) {
-    FocusScope.of(context).unfocus();
-  } else {
-    _handleVariantSelection(result);
-  }
+    if (result == null) {
+      FocusScope.of(context).unfocus();
+    } else {
+      _handleVariantSelection(result);
+    }
   }
 
 // ✅ ИСПРАВЛЕНО: функция _updateItemPrice
@@ -368,18 +368,18 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
       final variantId = item['variantId'] as int;
       final quantityController = _quantityControllers[variantId];
       final priceController = _priceControllers[variantId];
-      
+
       if (quantityController != null && quantityController.text.trim().isEmpty) {
         _quantityFocusNodes[variantId]?.requestFocus();
         return;
       }
-      
+
       if (priceController != null && priceController.text.trim().isEmpty) {
         _priceFocusNodes[variantId]?.requestFocus();
         return;
       }
     }
-    
+
     FocusScope.of(context).unfocus();
   }
 
@@ -1038,7 +1038,7 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
                           const SizedBox(height: 4),
                           CompactTextField(
                             controller:
-                                priceController ?? TextEditingController(),
+                            priceController ?? TextEditingController(),
                             focusNode: priceFocusNode,
                             hintText: AppLocalizations.of(context)?.translate('price') ?? 'Цена',
                             keyboardType: const TextInputType.numberWithOptions(
@@ -1084,29 +1084,29 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
         ),
         child: _isLoading
             ? const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
+          width: 18,
+          height: 18,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+          ),
+        )
             : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.save_outlined, color: Colors.white, size: 18),
-                  const SizedBox(width: 6),
-                  Text(
-                    localizations.translate('save') ?? 'Обновить',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.save_outlined, color: Colors.white, size: 18),
+            const SizedBox(width: 6),
+            Text(
+              localizations.translate('save') ?? 'Обновить',
+              style: const TextStyle(
+                fontSize: 14,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
               ),
+            ),
+          ],
+        ),
       ),
     );
   }

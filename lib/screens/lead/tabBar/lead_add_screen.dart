@@ -418,64 +418,64 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
 
   Future<void> _addCustomField(String fieldName, String type) async {
     // Если это не справочник, сначала добавляем через API
-      try {
-        await ApiService().addNewField(
-          tableName: 'leads',
-          fieldName: fieldName,
-          fieldType: type,
-        );
+    try {
+      await ApiService().addNewField(
+        tableName: 'leads',
+        fieldName: fieldName,
+        fieldType: type,
+      );
 
-        // КЭШИРОВАНИЕ ОТКЛЮЧЕНО
-        // // Очищаем кэш перед перезагрузкой
-        // await ApiService().clearFieldConfigurationCacheForTable('leads');
+      // КЭШИРОВАНИЕ ОТКЛЮЧЕНО
+      // // Очищаем кэш перед перезагрузкой
+      // await ApiService().clearFieldConfigurationCacheForTable('leads');
 
-        // После успешного добавления перезагружаем конфигурацию полей
-        if (mounted) {
-          context.read<FieldConfigurationBloc>().add(
+      // После успешного добавления перезагружаем конфигурацию полей
+      if (mounted) {
+        context.read<FieldConfigurationBloc>().add(
             FetchFieldConfiguration('leads')
-          );
-        }
+        );
+      }
 
-        // Добавляем поле локально только после успешного добавления на backend
-        if (mounted) {
-          setState(() {
-            customFields.add(CustomField(
-              fieldName: fieldName,
-              uniqueId: Uuid().v4(),
-              isDirectoryField: false,
-              directoryId: null,
-              type: type,
-              controller: TextEditingController(),
-              isCustomField: true,
-            ));
-          });
-        }
+      // Добавляем поле локально только после успешного добавления на backend
+      if (mounted) {
+        setState(() {
+          customFields.add(CustomField(
+            fieldName: fieldName,
+            uniqueId: Uuid().v4(),
+            isDirectoryField: false,
+            directoryId: null,
+            type: type,
+            controller: TextEditingController(),
+            isCustomField: true,
+          ));
+        });
+      }
 
-        if (kDebugMode) {
-          print('LeadAddScreen: Successfully added custom field: $fieldName');
-        }
-      } catch (e) {
-        if (kDebugMode) {
-          print('LeadAddScreen: Error adding custom field: $e');
-        }
+      if (kDebugMode) {
+        print('LeadAddScreen: Successfully added custom field: $fieldName');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('LeadAddScreen: Error adding custom field: $e');
+      }
 
-        // Показываем ошибку пользователю
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Ошибка при добавлении поля: $e',
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
+      // Показываем ошибку пользователю
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Ошибка при добавлении поля: $e',
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
               ),
-              backgroundColor: Colors.red,
             ),
-          );
-        }
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -542,7 +542,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                     organizationId: ApiService().getSelectedOrganization().toString(),
                   );
 
-                 showCustomSnackBar(context: context, message: 'Справочник успешно добавлен');
+                  showCustomSnackBar(context: context, message: 'Справочник успешно добавлен');
 
                   // КЭШИРОВАНИЕ ОТКЛЮЧЕНО
                   // // Очищаем кэш перед перезагрузкой
@@ -567,7 +567,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                   // Конфигурация с сервера уже будет содержать этот справочник
                   if (mounted) {
                     context.read<FieldConfigurationBloc>().add(
-                      FetchFieldConfiguration('leads')
+                        FetchFieldConfiguration('leads')
                     );
                   }
 
@@ -609,17 +609,17 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
   bool _hasFieldChanges() {
     if (originalFieldConfigurations == null) return false;
     if (originalFieldConfigurations!.length != fieldConfigurations.length) return true;
-    
+
     for (int i = 0; i < fieldConfigurations.length; i++) {
       final current = fieldConfigurations[i];
       final original = originalFieldConfigurations!.firstWhere(
-        (f) => f.id == current.id,
+            (f) => f.id == current.id,
         orElse: () => current,
       );
-      
+
       if (current.position != original.position) return true;
     }
-    
+
     return false;
   }
 
@@ -737,7 +737,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                   final double animValue = Curves.easeInOut.transform(animation.value);
                   final double scale = 1.0 + (animValue * 0.05); // Увеличение на 5%
                   final double elevation = animValue * 12.0; // Тень до 12
-                  
+
                   return Transform.scale(
                     scale: scale,
                     child: Material(
@@ -912,93 +912,93 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
             ],
           ),
           child: isSavingFieldOrder
-            ? Container(
-                height: 50,
-                decoration: BoxDecoration(
-                  color: Color(0xff4759FF).withOpacity(0.7),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Center(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      ),
-                      SizedBox(width: 12),
-                      Text(
-                        AppLocalizations.of(context)!.translate('saving'),
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
+              ? Container(
+            height: 50,
+            decoration: BoxDecoration(
+              color: Color(0xff4759FF).withOpacity(0.7),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Center(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
                   ),
-                ),
-              )
-            : CustomButton(
-                buttonText: AppLocalizations.of(context)!.translate('save'),
-                buttonColor: Color(0xff4759FF),
-                textColor: Colors.white,
-                onPressed: () async {
+                  SizedBox(width: 12),
+                  Text(
+                    AppLocalizations.of(context)!.translate('saving'),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+              : CustomButton(
+            buttonText: AppLocalizations.of(context)!.translate('save'),
+            buttonColor: Color(0xff4759FF),
+            textColor: Colors.white,
+            onPressed: () async {
+              setState(() {
+                isSavingFieldOrder = true;
+              });
+
+              try {
+                // Сохраняем позиции полей на бэкенд
+                await _saveFieldOrderToBackend();
+
+                if (mounted) {
                   setState(() {
-                    isSavingFieldOrder = true;
+                    originalFieldConfigurations = null; // Очищаем снимок после сохранения
+                    isSettingsMode = false;
                   });
 
-                  try {
-                    // Сохраняем позиции полей на бэкенд
-                    await _saveFieldOrderToBackend();
-
-                    if (mounted) {
-                      setState(() {
-                        originalFieldConfigurations = null; // Очищаем снимок после сохранения
-                        isSettingsMode = false;
-                      });
-
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Настройки полей сохранены',
-                            style: TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white,
-                            ),
-                          ),
-                          behavior: SnackBarBehavior.floating,
-                          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          backgroundColor: Colors.green,
-                          elevation: 3,
-                          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                          duration: Duration(seconds: 2),
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Настройки полей сохранены',
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white,
                         ),
-                      );
-                    }
-                  } catch (e) {
-                    if (kDebugMode) {
-                      print('LeadAddScreen: Error in save button: $e');
-                    }
-                  } finally {
-                    if (mounted) {
-                      setState(() {
-                        isSavingFieldOrder = false;
-                      });
-                    }
-                  }
-                },
-              ),
+                      ),
+                      behavior: SnackBarBehavior.floating,
+                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      backgroundColor: Colors.green,
+                      elevation: 3,
+                      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (kDebugMode) {
+                  print('LeadAddScreen: Error in save button: $e');
+                }
+              } finally {
+                if (mounted) {
+                  setState(() {
+                    isSavingFieldOrder = false;
+                  });
+                }
+              }
+            },
+          ),
         ),
       ],
     );
@@ -1174,7 +1174,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                   // Есть несохраненные изменения - показываем диалог
                   final shouldExit = await _showExitSettingsDialog();
                   if (!shouldExit) return;
-                  
+
                   // Восстанавливаем позиции, но сохраняем новые добавленные поля
                   if (originalFieldConfigurations != null) {
                     setState(() {
@@ -1182,10 +1182,10 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                       final newFields = fieldConfigurations.where((current) {
                         return !originalFieldConfigurations!.any((original) => original.id == current.id);
                       }).toList();
-                      
+
                       // Восстанавливаем оригинальную конфигурацию
                       fieldConfigurations = [...originalFieldConfigurations!];
-                      
+
                       // Добавляем новые поля в конец списка
                       if (newFields.isNotEmpty) {
                         int maxPosition = fieldConfigurations.isEmpty ? 0 : fieldConfigurations.map((e) => e.position).reduce((a, b) => a > b ? a : b);
@@ -1208,7 +1208,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                           ));
                         }
                       }
-                      
+
                       originalFieldConfigurations = null;
                       isSettingsMode = false;
                     });
@@ -1430,28 +1430,28 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                                 children: [
                                   field.isDirectoryField && field.directoryId != null
                                       ? MainFieldDropdownWidget(
-                                    directoryId: field.directoryId!,
-                                    directoryName: field.fieldName,
-                                    selectedField: null,
-                                    onSelectField: (MainField selectedField) {
-                                      setState(() {
-                                        final idx = customFields.indexOf(field);
-                                        customFields[idx] = field.copyWith(
-                                          entryId: selectedField.id,
-                                          controller: TextEditingController(
-                                              text: selectedField.value),
-                                        );
-                                      });
-                                    },
-                                    controller: field.controller,
-                                    onSelectEntryId: (int entryId) {
-                                      setState(() {
-                                        final idx = customFields.indexOf(field);
-                                        customFields[idx] = field.copyWith(
-                                          entryId: entryId,
-                                        );
-                                      });
-                                    }
+                                      directoryId: field.directoryId!,
+                                      directoryName: field.fieldName,
+                                      selectedField: null,
+                                      onSelectField: (MainField selectedField) {
+                                        setState(() {
+                                          final idx = customFields.indexOf(field);
+                                          customFields[idx] = field.copyWith(
+                                            entryId: selectedField.id,
+                                            controller: TextEditingController(
+                                                text: selectedField.value),
+                                          );
+                                        });
+                                      },
+                                      controller: field.controller,
+                                      onSelectEntryId: (int entryId) {
+                                        setState(() {
+                                          final idx = customFields.indexOf(field);
+                                          customFields[idx] = field.copyWith(
+                                            entryId: entryId,
+                                          );
+                                        });
+                                      }
                                   )
                                       : CustomFieldWidget(
                                     fieldName: field.fieldName,

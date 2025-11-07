@@ -1,3 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="permission_contacts">Мы используем ваши контакты, чтобы вы могли легко выбрать номер клиента и быстро добавить его как лида. Мы загружаем на сервер только данные выбранного контакта — ваша полная адресная книга никогда не загружается автоматически.</string>
+    <string name="app_name">shamCRM</string>
+    <string name="widget_description">Быстрый доступ к разделам shamCRM</string>
 </resources>

@@ -2,6 +2,7 @@ import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/firebase_api.dart';
 import 'package:crm_task_manager/api/service/secure_storage_service.dart';
+import 'package:crm_task_manager/api/service/widget_service.dart';
 import 'package:crm_task_manager/bloc/My-Task_Status_Name/statusName_bloc.dart';
 import 'package:crm_task_manager/bloc/Task_Status_Name/statusName_bloc.dart';
 import 'package:crm_task_manager/bloc/auth_bloc_pin/forgot_auth_bloc.dart';
@@ -151,7 +152,8 @@ void main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
     //print("====================== MAIN START ======================");
-    
+        WidgetService.initialize();
+
     // ШАГ 1: Безопасная инициализация Firebase
     await _initializeFirebase();
 
@@ -179,7 +181,7 @@ void main() async {
       //print('main: Invalid session detected, clearing all data');
       await _clearAllApplicationData(apiService, authService);
     }
-
+    
     // ШАГ 5: App Tracking Transparency
     await AppTrackingTransparency.requestTrackingAuthorization();
 

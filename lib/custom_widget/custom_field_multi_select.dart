@@ -29,7 +29,8 @@ class CustomFieldMultiSelect extends StatefulWidget {
   });
 
   @override
-  State<CustomFieldMultiSelect> createState() => _CustomFieldMultiSelectState();
+  State<CustomFieldMultiSelect> createState() =>
+      _CustomFieldMultiSelectState();
 }
 
 class _CustomFieldMultiSelectState extends State<CustomFieldMultiSelect> {
@@ -46,7 +47,8 @@ class _CustomFieldMultiSelectState extends State<CustomFieldMultiSelect> {
   @override
   void initState() {
     super.initState();
-    _selectedValues = List<String>.from(widget.initialSelectedValues ?? const []);
+    _selectedValues =
+        List<String>.from(widget.initialSelectedValues ?? const []);
     _allSelected = _isEverythingSelected(_selectedValues);
   }
 
@@ -54,7 +56,8 @@ class _CustomFieldMultiSelectState extends State<CustomFieldMultiSelect> {
   void didUpdateWidget(CustomFieldMultiSelect oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.initialSelectedValues != widget.initialSelectedValues) {
-      _selectedValues = List<String>.from(widget.initialSelectedValues ?? const []);
+      _selectedValues =
+          List<String>.from(widget.initialSelectedValues ?? const []);
       _allSelected = _isEverythingSelected(_selectedValues);
     }
     if (!listEquals(oldWidget.items, widget.items)) {
@@ -112,15 +115,19 @@ class _CustomFieldMultiSelectState extends State<CustomFieldMultiSelect> {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   width: 1,
-                  color: field.hasError ? Colors.red : const Color(0xFFE5E7EB),
+                  color: field.hasError
+                      ? Colors.red
+                      : const Color(0xFFE5E7EB),
                 ),
               ),
               child: CustomDropdown<String>.multiSelectSearch(
                 items: widget.items,
-                initialItems:
-                    widget.items.where((item) => _selectedValues.contains(item)).toList(),
+                initialItems: widget.items
+                    .where((item) => _selectedValues.contains(item))
+                    .toList(),
                 searchHintText: widget.searchHintText ?? 'Поиск',
-                overlayHeight: widget.overlayHeight ?? MediaQuery.of(context).size.height * 0.5,
+                overlayHeight: widget.overlayHeight ??
+                    MediaQuery.of(context).size.height * 0.5,
                 decoration: widget.decoration ??
                     CustomDropdownDecoration(
                       closedFillColor: const Color(0xffF4F7FD),
@@ -137,7 +144,8 @@ class _CustomFieldMultiSelectState extends State<CustomFieldMultiSelect> {
                       expandedBorderRadius: BorderRadius.circular(12),
                     ),
                 listItemBuilder: (context, item, isSelected, onItemSelect) {
-                  final isFirstItem = widget.items.isNotEmpty && widget.items.first == item;
+                  final isFirstItem = widget.items.isNotEmpty &&
+                      widget.items.first == item;
 
                   if (isFirstItem) {
                     return Column(
@@ -232,7 +240,9 @@ class _CustomFieldMultiSelectState extends State<CustomFieldMultiSelect> {
                   width: 1,
                 ),
                 borderRadius: BorderRadius.circular(4),
-                color: _allSelected ? const Color(0xff1E2E52) : Colors.transparent,
+                color: _allSelected
+                    ? const Color(0xff1E2E52)
+                    : Colors.transparent,
               ),
               child: _allSelected
                   ? const Icon(
@@ -275,7 +285,9 @@ class _CustomFieldMultiSelectState extends State<CustomFieldMultiSelect> {
                   width: 1,
                 ),
                 borderRadius: BorderRadius.circular(4),
-                color: isSelected ? const Color(0xff1E2E52) : Colors.transparent,
+                color: isSelected
+                    ? const Color(0xff1E2E52)
+                    : Colors.transparent,
               ),
               child: isSelected
                   ? const Icon(
@@ -298,4 +310,4 @@ class _CustomFieldMultiSelectState extends State<CustomFieldMultiSelect> {
     );
   }
 }
- 
+

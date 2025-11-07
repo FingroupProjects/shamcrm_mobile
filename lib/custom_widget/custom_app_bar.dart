@@ -1779,9 +1779,9 @@ class _CustomAppBarState extends State<CustomAppBar>
           onResetFilters: widget.onLeadResetFilters,
           initialDirectoryValues:
               _safeConvertToMapList(widget.initialDirectoryValuesLead),
-          // customFieldTitles: _customFieldTitles,
-          // customFieldValues: _customFieldValues,
-          // initialCustomFieldSelections: widget.initialLeadCustomFields,
+          customFieldTitles: _customFieldTitles,
+          customFieldValues: _customFieldValues,
+          initialCustomFieldSelections: widget.initialLeadCustomFields,
         ),
       ),
     );

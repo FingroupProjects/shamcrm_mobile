@@ -63,14 +63,14 @@ class _EditMovementDocumentScreenState extends State<EditMovementDocumentScreen>
   }
 
   void _initializeFormData() {
-    _dateController.text = widget.document.date != null 
+    _dateController.text = widget.document.date != null
         ? DateFormat('dd/MM/yyyy HH:mm').format(widget.document.date!)
         : DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
-    
+
     _commentController.text = widget.document.comment ?? '';
     _selectedSenderStorage = widget.document.sender_storage_id?.id.toString() ?? widget.document.storage?.id.toString();
     _selectedRecipientStorage = widget.document.recipient_storage_id?.id.toString();
-    
+
     // Преобразуем существующие товары
     if (widget.document.documentGoods != null) {
       for (var good in widget.document.documentGoods!) {
@@ -78,15 +78,15 @@ class _EditMovementDocumentScreenState extends State<EditMovementDocumentScreen>
         final quantity = good.quantity ?? 0;
 
         // ✅ NEW: Try multiple sources for units
-        final availableUnits = good.good?.units ?? 
-                              (good.unit != null ? [good.unit!] : []);
-        
+        final availableUnits = good.good?.units ??
+            (good.unit != null ? [good.unit!] : []);
+
         // ✅ NEW: Get selected unit from document_goods level first
-        final selectedUnitObj = good.unit ?? 
-                               (availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: 'шт'));
-        
+        final selectedUnitObj = good.unit ??
+            (availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: 'шт'));
+
         final amount = selectedUnitObj.amount ?? 1;
-        
+
         _items.add({
           'id': good.good?.id ?? 0,
           'variantId': variantId,
@@ -97,9 +97,9 @@ class _EditMovementDocumentScreenState extends State<EditMovementDocumentScreen>
           'amount': amount,
           'availableUnits': availableUnits,
         });
-        
+
         _quantityControllers[variantId] = TextEditingController(text: quantity.toString());
-        
+
         // ✅ НОВОЕ: Создаём FocusNode для существующих товаров
         _quantityFocusNodes[variantId] = FocusNode();
         _quantityErrors[variantId] = false;
@@ -164,7 +164,7 @@ class _EditMovementDocumentScreenState extends State<EditMovementDocumentScreen>
 
       _listKey.currentState?.removeItem(
         index,
-        (context, animation) =>
+            (context, animation) =>
             _buildSelectedItemCard(index, removedItem, animation),
         duration: const Duration(milliseconds: 300),
       );
@@ -200,16 +200,16 @@ class _EditMovementDocumentScreenState extends State<EditMovementDocumentScreen>
         isService: false,
       ),
     );
-    
+
     if (result != null) {
       _handleVariantSelection(result);
     }
- // Если результат null (пользователь закрыл окно без выбора), убеждаемся, что фокус сброшен
-  if (result == null) {
-    FocusScope.of(context).unfocus();
-  } else {
-    _handleVariantSelection(result);
-  }
+    // Если результат null (пользователь закрыл окно без выбора), убеждаемся, что фокус сброшен
+    if (result == null) {
+      FocusScope.of(context).unfocus();
+    } else {
+      _handleVariantSelection(result);
+    }
   }
 
   void _updateItemQuantity(int variantId, String value) {
@@ -264,13 +264,13 @@ class _EditMovementDocumentScreenState extends State<EditMovementDocumentScreen>
         return;
       }
     }
-    
+
     FocusScope.of(context).unfocus();
   }
 
   void _updateDocument() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     if (_items.isEmpty) {
       _showSnackBar(
         AppLocalizations.of(context)!.translate('add_at_least_one_item'),
@@ -659,29 +659,29 @@ class _EditMovementDocumentScreenState extends State<EditMovementDocumentScreen>
         ),
         child: _isLoading
             ? const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
+          width: 18,
+          height: 18,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+          ),
+        )
             : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.save_outlined, color: Colors.white, size: 18),
-                  const SizedBox(width: 6),
-                  Text(
-                    localizations.translate('save'),
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.save_outlined, color: Colors.white, size: 18),
+            const SizedBox(width: 6),
+            Text(
+              localizations.translate('save'),
+              style: const TextStyle(
+                fontSize: 14,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
               ),
+            ),
+          ],
+        ),
       ),
     );
   }

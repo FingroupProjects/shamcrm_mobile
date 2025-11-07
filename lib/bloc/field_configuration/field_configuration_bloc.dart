@@ -22,7 +22,6 @@ class FieldConfigurationBloc extends Bloc<FieldConfigurationEvent, FieldConfigur
     emit(FieldConfigurationLoading());
     
     try {
-      // КЭШИРОВАНИЕ ОТКЛЮЧЕНО - ВСЕГДА ЗАГРУЖАЕМ С СЕРВЕРА
       // // СНАЧАЛА ПЫТАЕМСЯ ЗАГРУЗИТЬ ИЗ КЭША
       // if (kDebugMode) {
       //   //print('FieldConfigurationBloc: Checking cache...');
@@ -58,10 +57,10 @@ class FieldConfigurationBloc extends Bloc<FieldConfigurationEvent, FieldConfigur
       //   return;
       // }
       
-      // ЗАГРУЖАЕМ С СЕРВЕРА
-      if (kDebugMode) {
-        //print('FieldConfigurationBloc: No cache found, fetching from API...');
-      }
+      // // ЕСЛИ КЭША НЕТ - ЗАГРУЖАЕМ С СЕРВЕРА
+      // if (kDebugMode) {
+      //   //print('FieldConfigurationBloc: No cache found, fetching from API...');
+      // }
       
       final response = await apiService.getFieldPositions(
         tableName: event.tableName,
@@ -71,7 +70,6 @@ class FieldConfigurationBloc extends Bloc<FieldConfigurationEvent, FieldConfigur
         //print('FieldConfigurationBloc: API response received with ${response.result.length} fields');
       }
       
-      // КЭШИРОВАНИЕ ОТКЛЮЧЕНО
       // // Сохраняем в кэш
       // await apiService.cacheFieldConfiguration(
       //   tableName: event.tableName,

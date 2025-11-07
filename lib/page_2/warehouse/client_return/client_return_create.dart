@@ -130,7 +130,7 @@ class CreateClientReturnDocumentScreenState extends State<CreateClientReturnDocu
 
       _listKey.currentState?.removeItem(
         index,
-        (context, animation) =>
+            (context, animation) =>
             _buildSelectedItemCard(index, removedItem, animation),
         duration: const Duration(milliseconds: 300),
       );
@@ -376,9 +376,9 @@ class CreateClientReturnDocumentScreenState extends State<CreateClientReturnDocu
 
     try {
       DateTime? parsedDate =
-          DateFormat('dd/MM/yyyy HH:mm').parse(_dateController.text);
+      DateFormat('dd/MM/yyyy HH:mm').parse(_dateController.text);
       String isoDate =
-          DateFormat("yyyy-MM-ddTHH:mm:ss.SSS'Z'").format(parsedDate);
+      DateFormat("yyyy-MM-ddTHH:mm:ss.SSS'Z'").format(parsedDate);
 
       final bloc = context.read<ClientReturnBloc>();
       bloc.add(CreateClientReturnDocument(
@@ -486,7 +486,7 @@ class CreateClientReturnDocumentScreenState extends State<CreateClientReturnDocu
                       tabs: [
                         Tab(
                             text:
-                                localizations.translate('main') ?? 'Основное'),
+                            localizations.translate('main') ?? 'Основное'),
                         Tab(text: localizations.translate('goods') ?? 'Товары'),
                       ],
                     ),
@@ -731,7 +731,7 @@ class CreateClientReturnDocumentScreenState extends State<CreateClientReturnDocu
       controller: _commentController,
       label: localizations.translate('comment') ?? 'Примечание',
       hintText:
-          localizations.translate('enter_comment') ?? 'Введите примечание',
+      localizations.translate('enter_comment') ?? 'Введите примечание',
       maxLines: 3,
       keyboardType: TextInputType.multiline,
     );
@@ -858,10 +858,10 @@ class CreateClientReturnDocumentScreenState extends State<CreateClientReturnDocu
                         const SizedBox(height: 4),
                         CompactTextField(
                           controller:
-                              quantityController ?? TextEditingController(),
+                          quantityController ?? TextEditingController(),
                           focusNode: quantityFocusNode,
                           hintText: AppLocalizations.of(context)!
-                                  .translate('quantity') ??
+                              .translate('quantity') ??
                               'Количество',
                           keyboardType: TextInputType.number,
                           inputFormatters: [
@@ -904,12 +904,12 @@ class CreateClientReturnDocumentScreenState extends State<CreateClientReturnDocu
                             Container(
                               height: 48,
                               padding:
-                                  const EdgeInsets.symmetric(horizontal: 8),
+                              const EdgeInsets.symmetric(horizontal: 8),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFF4F7FD),
                                 borderRadius: BorderRadius.circular(8),
                                 border:
-                                    Border.all(color: const Color(0xFFE5E7EB)),
+                                Border.all(color: const Color(0xFFE5E7EB)),
                               ),
                               child: DropdownButtonHideUnderline(
                                 child: DropdownButton<String>(
@@ -934,8 +934,8 @@ class CreateClientReturnDocumentScreenState extends State<CreateClientReturnDocu
                                   onChanged: (String? newValue) {
                                     if (newValue != null) {
                                       final selectedUnit =
-                                          availableUnits.firstWhere(
-                                        (unit) => (unit.name) == newValue,
+                                      availableUnits.firstWhere(
+                                            (unit) => (unit.name) == newValue,
                                       );
                                       _updateItemUnit(
                                           variantId, newValue, selectedUnit.id);
@@ -948,12 +948,12 @@ class CreateClientReturnDocumentScreenState extends State<CreateClientReturnDocu
                             Container(
                               height: 48,
                               padding:
-                                  const EdgeInsets.symmetric(horizontal: 8),
+                              const EdgeInsets.symmetric(horizontal: 8),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFF4F7FD),
                                 borderRadius: BorderRadius.circular(8),
                                 border:
-                                    Border.all(color: const Color(0xFFE5E7EB)),
+                                Border.all(color: const Color(0xFFE5E7EB)),
                               ),
                               alignment: Alignment.centerLeft,
                               child: Text(
@@ -988,10 +988,10 @@ class CreateClientReturnDocumentScreenState extends State<CreateClientReturnDocu
                           const SizedBox(height: 4),
                           CompactTextField(
                             controller:
-                                priceController ?? TextEditingController(),
+                            priceController ?? TextEditingController(),
                             focusNode: priceFocusNode,
                             hintText: AppLocalizations.of(context)!
-                                    .translate('price') ??
+                                .translate('price') ??
                                 'Цена',
                             keyboardType: const TextInputType.numberWithOptions(
                                 decimal: true),
@@ -1084,30 +1084,30 @@ class CreateClientReturnDocumentScreenState extends State<CreateClientReturnDocu
               ),
               child: _isLoading
                   ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
                   : Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.save_outlined,
-                            color: Colors.white, size: 18),
-                        const SizedBox(width: 6),
-                        Text(
-                          localizations.translate('save') ?? 'Сохранить',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.save_outlined,
+                      color: Colors.white, size: 18),
+                  const SizedBox(width: 6),
+                  Text(
+                    localizations.translate('save') ?? 'Сохранить',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
                     ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

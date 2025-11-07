@@ -222,8 +222,7 @@ class _MainFieldDropdownWidgetState extends State<MainFieldDropdownWidget> {
           ),
         ),
         // const SizedBox(height: 8),
-        if (widget.onRemove != null)
-        IconButton(
+        if(widget.onRemove != null) IconButton(
           icon: const Icon(
             Icons.remove_circle,
             color: Color.fromARGB(255, 236, 64, 16),

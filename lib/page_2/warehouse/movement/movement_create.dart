@@ -24,7 +24,7 @@ class CreateMovementDocumentScreen extends StatefulWidget {
   CreateMovementDocumentScreenState createState() => CreateMovementDocumentScreenState();
 }
 
-class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScreen> 
+class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScreen>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _dateController = TextEditingController();
@@ -40,9 +40,9 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
   final Map<int, FocusNode> _quantityFocusNodes = {};
 
   final Map<int, bool> _quantityErrors = {};
-  
+
   final Map<int, bool> _collapsedItems = {};
-  
+
   late TabController _tabController;
 
   @override
@@ -64,7 +64,7 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
             final variantId = item['variantId'] as int;
             _collapsedItems[variantId] = true;
           }
-          
+
           _items.add(newItem);
 
           final variantId = newItem['variantId'] as int;
@@ -109,7 +109,7 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
 
       _listKey.currentState?.removeItem(
         index,
-        (context, animation) => _buildSelectedItemCard(index, removedItem, animation),
+            (context, animation) => _buildSelectedItemCard(index, removedItem, animation),
         duration: const Duration(milliseconds: 300),
       );
 
@@ -123,12 +123,12 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
         _quantityFocusNodes.remove(variantId);
 
         _quantityErrors.remove(variantId);
-        
+
         _collapsedItems.remove(variantId);
       });
     }
   }
-  
+
   void _toggleItemCollapse(int variantId) {
     setState(() {
       _collapsedItems[variantId] = !(_collapsedItems[variantId] ?? false);
@@ -154,7 +154,7 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
         isService: false,
       ),
     );
-    
+
     if (result == null) {
       FocusScope.of(context).unfocus();
     } else {
@@ -218,7 +218,7 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
 
   void _createDocument({bool approve = false}) async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     if (_items.isEmpty) {
       _showSnackBar(
         AppLocalizations.of(context)!.translate('add_at_least_one_item') ?? 'Добавьте хотя бы один товар',
@@ -336,7 +336,7 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    
+
     return WillPopScope(
       onWillPop: () async {
         if (_items.isNotEmpty) {
@@ -650,29 +650,29 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
               ),
               child: _isLoading
                   ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
                   : Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.save_outlined, color: Colors.white, size: 18),
-                        const SizedBox(width: 6),
-                        Text(
-                          localizations.translate('save') ?? 'Сохранить',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.save_outlined, color: Colors.white, size: 18),
+                  const SizedBox(width: 6),
+                  Text(
+                    localizations.translate('save') ?? 'Сохранить',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
                     ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -859,7 +859,7 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
                                     onChanged: (String? newValue) {
                                       if (newValue != null) {
                                         final selectedUnit = availableUnits.firstWhere(
-                                          (unit) => (unit.name) == newValue,
+                                              (unit) => (unit.name) == newValue,
                                         );
                                         _updateItemUnit(variantId, newValue, selectedUnit.id);
                                       }
@@ -906,7 +906,7 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
     _commentController.dispose();
     _scrollController.dispose();
     _tabController.dispose();
-    
+
     for (var focusNode in _quantityFocusNodes.values) {
       focusNode.dispose();
     }
@@ -914,7 +914,7 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
     for (var controller in _quantityControllers.values) {
       controller.dispose();
     }
-    
+
     super.dispose();
   }
 }

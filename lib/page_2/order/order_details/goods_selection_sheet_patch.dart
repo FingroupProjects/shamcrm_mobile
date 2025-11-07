@@ -54,18 +54,18 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
     _loadSettings();
   }
 
- Future<void> _initializeBaseUrl() async {
-  try {
-    final staticBaseUrl = await _apiService.getStaticBaseUrl();
-    setState(() {
-      baseUrl = staticBaseUrl;
-    });
-  } catch (error) {
-    setState(() {
-      baseUrl = 'https://shamcrm.com/storage';
-    });
+  Future<void> _initializeBaseUrl() async {
+    try {
+      final staticBaseUrl = await _apiService.getStaticBaseUrl();
+      setState(() {
+        baseUrl = staticBaseUrl;
+      });
+    } catch (error) {
+      setState(() {
+        baseUrl = 'https://shamcrm.com/storage';
+      });
+    }
   }
-}
 
   // Метод загрузки currencyId из SharedPreferences
   Future<void> _loadCurrencyId() async {
@@ -284,14 +284,14 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
   void _returnSelectedProducts() {
     final selectedProducts = _selectedVariants.values
         .map((variant) => {
-              'id': variant.id,
-              'name': _getDisplayName(variant),
-              'price': variant.price ?? 0.0,
-              'quantity': _selectedQuantities[variant.id] ?? 1,
-              'imagePath': variant.good?.files.isNotEmpty == true
-                  ? variant.good!.files[0].path
-                  : null,
-            })
+      'id': variant.id,
+      'name': _getDisplayName(variant),
+      'price': variant.price ?? 0.0,
+      'quantity': _selectedQuantities[variant.id] ?? 1,
+      'imagePath': variant.good?.files.isNotEmpty == true
+          ? variant.good!.files[0].path
+          : null,
+    })
         .toList();
 
     if (selectedProducts.isEmpty) {
@@ -505,17 +505,17 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
                 prefixIcon: const Icon(Icons.search, color: Color(0xff4759FF)),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.clear, color: Color(0xff99A4BA)),
-                        onPressed: () {
-                          _searchController.clear();
-                          // Вместо SearchAll('') возвращаемся к предыдущему режиму
-                          if (_showAllMode) {
-                            _bloc.add(FetchVariants());
-                          } else {
-                            _bloc.add(FetchCategories());
-                          }
-                        },
-                      )
+                  icon: const Icon(Icons.clear, color: Color(0xff99A4BA)),
+                  onPressed: () {
+                    _searchController.clear();
+                    // Вместо SearchAll('') возвращаемся к предыдущему режиму
+                    if (_showAllMode) {
+                      _bloc.add(FetchVariants());
+                    } else {
+                      _bloc.add(FetchCategories());
+                    }
+                  },
+                )
                     : null,
                 filled: true,
                 fillColor: const Color(0xFFF4F7FD),
@@ -752,29 +752,29 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
                 ),
                 child: category.image != null && category.image!.isNotEmpty
                     ? ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: CachedNetworkImage(
-                          imageUrl: 'https://shamcrm.com/storage/${category.image}',
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => const Center(
-                            child: SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                          ),
-                          errorWidget: (context, url, error) => Icon(
-                            level > 0 ? Icons.subdirectory_arrow_right : Icons.category,
-                            color: const Color(0xff4759FF),
-                            size: level > 0 ? 20 : 28,
-                          ),
-                        ),
-                      )
-                    : Icon(
-                        level > 0 ? Icons.subdirectory_arrow_right : Icons.category,
-                        color: const Color(0xff4759FF),
-                        size: level > 0 ? 20 : 28,
+                  borderRadius: BorderRadius.circular(10),
+                  child: CachedNetworkImage(
+                    imageUrl: 'https://shamcrm.com/storage/${category.image}',
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => const Center(
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
                       ),
+                    ),
+                    errorWidget: (context, url, error) => Icon(
+                      level > 0 ? Icons.subdirectory_arrow_right : Icons.category,
+                      color: const Color(0xff4759FF),
+                      size: level > 0 ? 20 : 28,
+                    ),
+                  ),
+                )
+                    : Icon(
+                  level > 0 ? Icons.subdirectory_arrow_right : Icons.category,
+                  color: const Color(0xff4759FF),
+                  size: level > 0 ? 20 : 28,
+                ),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -810,8 +810,8 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
   }
 
   Widget _buildCategoryVariants(AppLocalizations localizations, VariantBottomSheetState state) {
-    String emptyMessageKey = state.categoryVariants.isEmpty 
-        ? 'no_goods_in_category' 
+    String emptyMessageKey = state.categoryVariants.isEmpty
+        ? 'no_goods_in_category'
         : 'no_variants_found';
 
     return _buildVariantsList(
@@ -1018,29 +1018,29 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
       ),
       child: imageUrl != null
           ? ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: CachedNetworkImage(
-                imageUrl: imageUrl,
-                fit: BoxFit.cover,
-                placeholder: (context, url) => const Center(
-                  child: SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                ),
-                errorWidget: (context, url, error) => const Icon(
-                  Icons.shopping_cart_outlined,
-                  color: Color(0xff4759FF),
-                  size: 24,
-                ),
-              ),
-            )
-          : const Icon(
-              Icons.shopping_cart_outlined,
-              color: Color(0xff4759FF),
-              size: 24,
+        borderRadius: BorderRadius.circular(8),
+        child: CachedNetworkImage(
+          imageUrl: imageUrl,
+          fit: BoxFit.cover,
+          placeholder: (context, url) => const Center(
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
             ),
+          ),
+          errorWidget: (context, url, error) => const Icon(
+            Icons.shopping_cart_outlined,
+            color: Color(0xff4759FF),
+            size: 24,
+          ),
+        ),
+      )
+          : const Icon(
+        Icons.shopping_cart_outlined,
+        color: Color(0xff4759FF),
+        size: 24,
+      ),
     );
   }
 

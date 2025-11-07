@@ -88,6 +88,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   int? _daysWithoutActivity;
   List<Map<String, dynamic>> _directoryValues = [];
   List<Map<String, dynamic>> _initialDirectoryValues = [];
+  Map<String, List<String>> _selectedCustomFieldFilters = {};
+  Map<String, List<String>> _initialCustomFieldFilters = {};
   List<ManagerData> _initialSelectedManagers = [];
   List<RegionData> _initialSelectedRegions = [];
   List<SourceData> _initialSelectedSources = [];
@@ -116,6 +118,30 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   List<int>? _selectedManagerIds;
     bool _isFilterLoading = false; // НОВЫЙ флаг для отслеживания загрузки после фильтрации
   bool _shouldShowLoader = false; // НОВЫЙ флаг для принудительного показа лоадера
+
+
+  Map<String, List<String>> _cloneCustomFieldFilters(Map<String, List<String>> source) {
+    final result = <String, List<String>>{};
+    source.forEach((key, value) {
+      result[key] = List<String>.from(value);
+    });
+    return result;
+  }
+
+  Map<String, List<String>> _parseCustomFieldFilters(
+      Map<String, dynamic>? raw) {
+    if (raw == null) return {};
+    final result = <String, List<String>>{};
+    raw.forEach((key, value) {
+      if (value is List) {
+        result[key] = value.map((e) => e.toString()).toList();
+      }
+    });
+    return result;
+  }
+
+  bool get _hasActiveCustomFieldFilters => _selectedCustomFieldFilters.values
+      .any((values) => values.isNotEmpty);
 
 
   @override
@@ -524,6 +550,7 @@ Future<void> _onRefresh(int currentStatusId) async {
         _hasOrders = false;
         _daysWithoutActivity = null;
         _directoryValues = [];
+        _selectedCustomFieldFilters = {};
         _initialSelectedManagers = [];
         _initialSelectedRegions = [];
         _initialSelectedSources = [];
@@ -542,6 +569,7 @@ Future<void> _onRefresh(int currentStatusId) async {
         _initialHasOrders = false;
         _initialDaysWithoutActivity = null;
         _initialDirectoryValues = [];
+        _initialCustomFieldFilters = {};
         _lastSearchQuery = '';
         _searchController.clear();
       });
@@ -554,6 +582,10 @@ Future<void> _onRefresh(int currentStatusId) async {
   //print('LeadScreen: _handleManagerSelected - START');
   
   // КРИТИЧНО: Сначала показываем лоадер и скрываем старые данные
+  final customFieldFiltersRaw =
+      managers['custom_field_filters'] as Map<String, dynamic>?;
+  final parsedCustomFieldFilters =
+      _parseCustomFieldFilters(customFieldFiltersRaw);
   if (mounted) {
     setState(() {
       _isFilterLoading = true;
@@ -577,6 +609,8 @@ Future<void> _onRefresh(int currentStatusId) async {
       _hasOrders = managers['hasOrders'];
       _daysWithoutActivity = managers['daysWithoutActivity'];
       _directoryValues = managers['directory_values'] ?? [];
+      _selectedCustomFieldFilters =
+          _cloneCustomFieldFilters(parsedCustomFieldFilters);
       _initialSelectedManagers = managers['managers'];
       _initialSelectedRegions = managers['regions'];
       _initialSelectedSources = managers['sources'];
@@ -595,6 +629,8 @@ Future<void> _onRefresh(int currentStatusId) async {
       _initialHasOrders = managers['hasOrders'];
       _initialDaysWithoutActivity = managers['daysWithoutActivity'];
       _initialDirectoryValues = managers['directory_values'] ?? [];
+      _initialCustomFieldFilters =
+          _cloneCustomFieldFilters(parsedCustomFieldFilters);
     });
   }
 
@@ -631,6 +667,7 @@ Future<void> _onRefresh(int currentStatusId) async {
     hasOrders: _hasOrders,
     daysWithoutActivity: _daysWithoutActivity,
     directoryValues: _directoryValues,
+    customFieldFilters: _selectedCustomFieldFilters,
     salesFunnelId: _selectedFunnel?.id,
     query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
     ignoreCache: true,
@@ -847,6 +884,7 @@ Future<void> _onRefresh(int currentStatusId) async {
             initialManagerLeadHasOrders: _initialHasOrders,
             initialManagerLeadDaysWithoutActivity: _initialDaysWithoutActivity,
             initialDirectoryValuesLead: _initialDirectoryValues,
+            initialLeadCustomFields: _initialCustomFieldFilters,
             onLeadResetFilters: _resetFilters,
             textEditingController: textEditingController,
             focusNode: focusNode,
@@ -885,7 +923,8 @@ Future<void> _onRefresh(int currentStatusId) async {
                       _hasUnreadMessages == false &&
                       _hasDeal == false &&
                       _hasOrders == false &&
-                      _directoryValues.isEmpty) {
+                      _directoryValues.isEmpty &&
+                      !_hasActiveCustomFieldFilters) {
                     if (mounted) {
                       setState(() {
                         _showCustomTabBar = true;
@@ -924,6 +963,7 @@ Future<void> _onRefresh(int currentStatusId) async {
                       hasOrders: _hasOrders,
                       daysWithoutActivity: _daysWithoutActivity,
                       directoryValues: _directoryValues,
+                      customFieldFilters: _selectedCustomFieldFilters,
                       salesFunnelId: _selectedFunnel?.id,
                     ));
                     //print('LeadScreen: FetchLeads dispatched with filters after clear, salesFunnelId: ${_selectedFunnel?.id}');
@@ -936,6 +976,7 @@ Future<void> _onRefresh(int currentStatusId) async {
                     managerIds: _selectedManagerIds,
                     query: _searchController.text.isNotEmpty ? _searchController.text : null,
                     directoryValues: _directoryValues,
+                    customFieldFilters: _selectedCustomFieldFilters,
                     salesFunnelId: _selectedFunnel?.id,
                   ));
                   //print('LeadScreen: FetchLeads dispatched with managerIds after clear, salesFunnelId: ${_selectedFunnel?.id}');
@@ -1078,113 +1119,127 @@ Future<void> _onRefresh(int currentStatusId) async {
     );
   }
 
-  Widget searchWidget(List<Lead> leads) {
-     if (_isFilterLoading) {
+ Widget searchWidget(List<Lead> leads) {
+  final currentStatusId = _tabTitles.isNotEmpty 
+      ? _tabTitles[_currentTabIndex]['id'] 
+      : 0;
+
+  // Показываем лоадер если флаги активны
+  if (_isFilterLoading || _shouldShowLoader) {
     return const Center(
       child: PlayStoreImageLoading(
         size: 80.0,
         duration: Duration(milliseconds: 1000),
-      ),
-    );
-  }
-  
-    final currentStatusId = _tabTitles.isNotEmpty ? _tabTitles[_currentTabIndex]['id'] : 0;
-    if (_isSearching && leads.isEmpty) {
-      return Center(
-        child: Text(
-          AppLocalizations.of(context)!.translate('nothing_found'),
-          style: const TextStyle(
-            fontSize: 18,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w500,
-            color: Color(0xff99A4BA),
-          ),
-        ),
-      );
-    } else if (_isManager && leads.isEmpty) {
-      return Center(
-        child: Text(
-          AppLocalizations.of(context)!.translate('no_leads_for_selected_manager'),
-          style: const TextStyle(
-            fontSize: 18,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w500,
-            color: Color(0xff99A4BA),
-          ),
-        ),
-      );
-    } else if (leads.isEmpty) {
-      return Center(
-        child: Text(
-          AppLocalizations.of(context)!.translate('nothing_lead_for_manager'),
-          style: const TextStyle(
-            fontSize: 18,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w500,
-            color: Color(0xff99A4BA),
-          ),
-        ),
-      );
-    }
-    return RefreshIndicator(
-      onRefresh: () => _onRefresh(currentStatusId),
-      color: const Color(0xff1E2E52),
-      backgroundColor: Colors.white,
-      child: ListView.builder(
-        itemCount: leads.length,
-        itemBuilder: (context, index) {
-          final lead = leads[index];
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: LeadCard(
-              lead: lead,
-              title: lead.leadStatus?.title ?? "",
-              statusId: lead.statusId,
-              onStatusUpdated: () {
-                //print('LeadScreen: Lead status updated');
-              },
-              onStatusId: (StatusLeadId) {
-                //print('LeadScreen: onStatusId called with id: $StatusLeadId');
-                final index = _tabTitles.indexWhere((status) => status['id'] == StatusLeadId);
-                if (index != -1) {
-                  _tabController.animateTo(index);
-                }
-              },
-            ),
-          );
-        },
       ),
     );
   }
 
-  Widget _buildManagerView() {
-      // КРИТИЧНО: Если флаг установлен - показываем ТОЛЬКО лоадер, игнорируя BlocBuilder
-  if (_shouldShowLoader || _isFilterLoading) {
-    //print('LeadScreen: _buildManagerView - Showing loader');
-    return const Center(
-      child: PlayStoreImageLoading(
-        size: 80.0,
-        duration: Duration(milliseconds: 1000),
+  if (_isSearching && leads.isEmpty) {
+    return Center(
+      child: Text(
+        AppLocalizations.of(context)!.translate('nothing_found'),
+        style: const TextStyle(
+          fontSize: 18,
+          fontFamily: 'Gilroy',
+          fontWeight: FontWeight.w500,
+          color: Color(0xff99A4BA),
+        ),
+      ),
+    );
+  } else if (_isManager && leads.isEmpty) {
+    return Center(
+      child: Text(
+        AppLocalizations.of(context)!
+            .translate('no_leads_for_selected_manager'),
+        style: const TextStyle(
+          fontSize: 18,
+          fontFamily: 'Gilroy',
+          fontWeight: FontWeight.w500,
+          color: Color(0xff99A4BA),
+        ),
+      ),
+    );
+  } else if (leads.isEmpty) {
+    return Center(
+      child: Text(
+        AppLocalizations.of(context)!
+            .translate('nothing_lead_for_manager'),
+        style: const TextStyle(
+          fontSize: 18,
+          fontFamily: 'Gilroy',
+          fontWeight: FontWeight.w500,
+          color: Color(0xff99A4BA),
+        ),
       ),
     );
   }
-    return BlocBuilder<LeadBloc, LeadState>(
-      builder: (context, state) {
-        final currentStatusId = _tabTitles.isNotEmpty ? _tabTitles[_tabController.index]['id'] : 0;
-          // Если идёт загрузка - показываем лоадер
-      if (state is LeadLoading) {
-        //print('LeadScreen: _buildManagerView - LeadLoading state, showing loader');
-        return const Center(
-          child: PlayStoreImageLoading(
-            size: 80.0,
-            duration: Duration(milliseconds: 1000),
+
+  return RefreshIndicator(
+    onRefresh: () => _onRefresh(currentStatusId),
+    color: const Color(0xff1E2E52),
+    backgroundColor: Colors.white,
+    child: ListView.builder(
+      itemCount: leads.length,
+      itemBuilder: (context, index) {
+        final lead = leads[index];
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: LeadCard(
+            lead: lead,
+            title: lead.leadStatus?.title ?? "",
+            statusId: lead.statusId,
+            onStatusUpdated: () {},
+            onStatusId: (StatusLeadId) {
+              final index = _tabTitles.indexWhere(
+                  (status) => status['id'] == StatusLeadId);
+              if (index != -1) {
+                _tabController.animateTo(index);
+              }
+            },
           ),
         );
+      },
+    ),
+  );
+}
+
+ Widget _buildManagerView() {
+  return BlocListener<LeadBloc, LeadState>(
+    listener: (context, state) {
+      // Сбрасываем флаги когда данные загружены или произошла ошибка
+      if ((state is LeadDataLoaded || state is LeadError) && 
+          mounted && 
+          (_isFilterLoading || _shouldShowLoader)) {
+        setState(() {
+          _isFilterLoading = false;
+          _shouldShowLoader = false;
+          //print('LeadScreen: _buildManagerView - Loader flags reset');
+        });
       }
+    },
+    child: BlocBuilder<LeadBloc, LeadState>(
+      builder: (context, state) {
+        final currentStatusId = _tabTitles.isNotEmpty 
+            ? _tabTitles[_tabController.index]['id'] 
+            : 0;
+
+        // Показываем лоадер только если флаги активны ИЛИ состояние - LeadLoading
+        if (_shouldShowLoader || _isFilterLoading || state is LeadLoading) {
+          //print('LeadScreen: _buildManagerView - Showing loader');
+          return const Center(
+            child: PlayStoreImageLoading(
+              size: 80.0,
+              duration: Duration(milliseconds: 1000),
+            ),
+          );
+        }
+
         if (state is LeadDataLoaded) {
           final List<Lead> leads = state.leads;
           final statusId = _tabTitles[_tabController.index]['id'];
-          final filteredLeads = leads.where((lead) => lead.statusId == statusId).toList();
+          final filteredLeads = leads
+              .where((lead) => lead.statusId == statusId)
+              .toList();
 
           if (filteredLeads.isEmpty) {
             return RefreshIndicator(
@@ -1195,9 +1250,11 @@ Future<void> _onRefresh(int currentStatusId) async {
                 child: SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   child: Text(
-                    _selectedManagers != null
-                        ? AppLocalizations.of(context)!.translate('selected_manager_has_any_lead')
-                        : AppLocalizations.of(context)!.translate('nothing_found'),
+                    _selectedManagers.isNotEmpty
+                        ? AppLocalizations.of(context)!
+                            .translate('selected_manager_has_any_lead')
+                        : AppLocalizations.of(context)!
+                            .translate('nothing_found'),
                     style: const TextStyle(
                       fontSize: 18,
                       fontFamily: 'Gilroy',
@@ -1219,15 +1276,16 @@ Future<void> _onRefresh(int currentStatusId) async {
               itemBuilder: (context, index) {
                 final lead = filteredLeads[index];
                 return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 8),
                   child: LeadCard(
                     lead: lead,
                     title: lead.leadStatus?.title ?? "",
                     statusId: lead.statusId,
                     onStatusUpdated: () {},
                     onStatusId: (StatusLeadId) {
-                      //print('LeadScreen: onStatusId called with id: $StatusLeadId');
-                      final index = _tabTitles.indexWhere((status) => status['id'] == StatusLeadId);
+                      final index = _tabTitles.indexWhere(
+                          (status) => status['id'] == StatusLeadId);
                       if (index != -1) {
                         _tabController.animateTo(index);
                       }
@@ -1238,18 +1296,27 @@ Future<void> _onRefresh(int currentStatusId) async {
             ),
           );
         }
-        if (state is LeadLoading) {
-          return const Center(
-            child: PlayStoreImageLoading(
-              size: 80.0,
-              duration: Duration(milliseconds: 1000),
+
+        // Если состояние LeadError - показываем ошибку
+        if (state is LeadError) {
+          return Center(
+            child: Text(
+              state.message,
+              style: const TextStyle(
+                fontSize: 18,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w500,
+                color: Colors.red,
+              ),
             ),
           );
         }
+
         return const SizedBox();
       },
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildCustomTabBar() {
     return SingleChildScrollView(
@@ -1514,6 +1581,8 @@ Widget _buildTabBarView() {
           setState(() {
             _isFilterLoading = false; // ← НОВОЕ: сбрасываем флаг после загрузки
                         _shouldShowLoader = false; // ← НОВОЕ: разрешаем показывать данные
+                                  _isSwitchingFunnel = false; // На всякий случай
+
 
           });
         }

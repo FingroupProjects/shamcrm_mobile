@@ -56,12 +56,15 @@ class _SupplierCardState extends State<SupplierCard> {
                 MaterialPageRoute(
                   builder: (context) => EditSupplierScreen(supplier: widget.supplier),
                 ),
-              ).then((_) {
-                if (widget.onUpdate != null) {
-                  widget.onUpdate!();
-                } else {
-                  // BLoC использует сохраненный query
-                  context.read<SupplierBloc>().add(FetchSupplier());
+              ).then((wasUpdated) {
+                // Перезагружаем список только если были сохранены изменения
+                if (wasUpdated == true) {
+                  if (widget.onUpdate != null) {
+                    widget.onUpdate!();
+                  } else {
+                    // BLoC использует сохраненный query
+                    context.read<SupplierBloc>().add(FetchSupplier());
+                  }
                 }
               });
             }
