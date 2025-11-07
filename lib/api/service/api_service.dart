@@ -1335,6 +1335,7 @@ class ApiService {
         bool? hasNoReplies,
         bool? hasUnreadMessages,
         List<Map<String, dynamic>>? directoryValues,
+        Map<String, List<String>>? customFieldFilters,
         int? salesFunnelId, // Новый параметр
       }) async {
     // Формируем базовый путь
@@ -1368,7 +1369,8 @@ class ApiService {
         (hasUnreadMessages == true) ||
         (daysWithoutActivity != null) ||
         (statuses != null) ||
-        (directoryValues != null && directoryValues.isNotEmpty);
+        (directoryValues != null && directoryValues.isNotEmpty) ||
+        (customFieldFilters != null && customFieldFilters.isNotEmpty);
 
     if (leadStatusId != null && !hasFilters) {
       path += '&lead_status_id=$leadStatusId';
@@ -1441,6 +1443,21 @@ class ApiService {
         path += '&directory_values[$i][directory_id]=$directoryId';
         path += '&directory_values[$i][entry_id]=$entryId';
       }
+    }
+    if (customFieldFilters != null && customFieldFilters.isNotEmpty) {
+      int index = 0;
+      customFieldFilters.forEach((fieldKey, values) {
+        if (values.isEmpty) {
+          return;
+        }
+        final encodedKey = Uri.encodeQueryComponent(fieldKey);
+        path += '&custom_fields[$index][key]=$encodedKey';
+        for (int i = 0; i < values.length; i++) {
+          final encodedValue = Uri.encodeQueryComponent(values[i]);
+          path += '&custom_fields[$index][value][$i]=$encodedValue';
+        }
+        index++;
+      });
     }
 
     if (kDebugMode) {
@@ -16226,6 +16243,59 @@ class ApiService {
       }
     } catch (e) {
       rethrow;
+    }
+  }
+
+  // GET lead custom fields
+  // lead/get/custom-fields?organization_id=1&sales_funnel_id=1
+  // response.result is list of strings
+  Future<List<String>> getLeadCustomFields() async {
+    final path = await _appendQueryParams('/lead/get/custom-fields');
+
+    if (kDebugMode) {
+      print('ApiService: getLeadCustomFields - Generated path: $path');
+    }
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final resultList = data['result'] as List?;
+      if (resultList == null) {
+        return [];
+      }
+      return resultList.map((field) => field.toString()).toList();
+    } else {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка загрузки пользовательских полей лидов',
+        response.statusCode,
+      );
+    }
+  }
+
+  // GET custom field values by key (we get key from getLeadCustomFields)
+  // lead/get/custom-field-values?key=aa&organization_id=1&sales_funnel_id=1
+  // response.result is list of strings
+  Future<List<String>> getLeadCustomFieldValues(String key) async {
+    final path = await _appendQueryParams('/lead/get/custom-field-values?key=$key');
+    if (kDebugMode) {
+      print('ApiService: getLeadCustomFieldValues - Generated path: $path');
+    }
+    final response = await _getRequest(path);
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final resultList = data['result'] as List?;
+      if (resultList == null) {
+        return [];
+      }
+      return resultList.map((value) => value.toString()).toList();
+    } else {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка загрузки значений пользовательского поля лидов',
+        response.statusCode,
+      );
     }
   }
 

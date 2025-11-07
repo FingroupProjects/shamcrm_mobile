@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
+import 'package:crm_task_manager/custom_widget/custom_field_multi_select.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/lead_status_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/multi_manager_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/multi_region_list.dart';
@@ -37,6 +38,9 @@ class ManagerFilterScreen extends StatefulWidget {
   final int? initialDaysWithoutActivity;
   final VoidCallback? onResetFilters;
   final List<Map<String, dynamic>>? initialDirectoryValues;
+  final List<String>? customFieldTitles;
+  final Map<String, List<String>>? customFieldValues;
+  final Map<String, List<String>>? initialCustomFieldSelections;
 
 
   ManagerFilterScreen({
@@ -62,6 +66,9 @@ class ManagerFilterScreen extends StatefulWidget {
     this.initialDaysWithoutActivity,
     this.onResetFilters,
     this.initialDirectoryValues, 
+    this.customFieldTitles,
+    this.customFieldValues,
+    this.initialCustomFieldSelections,
   }) : super(key: key);
 
   @override
@@ -92,6 +99,18 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
 
   Map<int, MainField?> _selectedDirectoryFields = {};
   List<DirectoryLink> _directoryLinks = [];
+  Map<String, List<String>> _selectedCustomFieldValues = {};
+
+  void _initializeCustomFieldSelections(
+      Map<String, List<String>> initialSelections) {
+    final titles = widget.customFieldTitles ?? const [];
+    _selectedCustomFieldValues = {};
+    for (final title in titles) {
+      final initial = initialSelections[title];
+      _selectedCustomFieldValues[title] =
+          initial != null ? List<String>.from(initial) : <String>[];
+    }
+  }
 
   Widget _buildSwitchTile(String title, bool value, Function(bool) onChanged) {
     return SwitchListTile(
@@ -168,6 +187,8 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
     _hasOrders = widget.initialHasOrders;
     _daysWithoutActivity = widget.initialDaysWithoutActivity;
     _fetchDirectoryLinks();
+    _initializeCustomFieldSelections(
+        widget.initialCustomFieldSelections ?? const <String, List<String>>{});
   }
 
   Future<void> _fetchDirectoryLinks() async {
@@ -240,6 +261,7 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
                 for (var link in _directoryLinks) {
                   _selectedDirectoryFields[link.id] = null;
                 }
+                _initializeCustomFieldSelections(const <String, List<String>>{});
               });
             },
             style: TextButton.styleFrom(
@@ -293,6 +315,15 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
                         })
                     .toList(),
               };
+              final customFieldFilters = <String, List<String>>{};
+              _selectedCustomFieldValues.forEach((key, values) {
+                if (values.isNotEmpty) {
+                  customFieldFilters[key] = List<String>.from(values);
+                }
+              });
+              if (customFieldFilters.isNotEmpty) {
+                filterData['custom_field_filters'] = customFieldFilters;
+              }
               if (_selectedManagers.isNotEmpty ||
                   _selectedRegions.isNotEmpty ||
                   _selectedSources.isNotEmpty ||
@@ -310,7 +341,8 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
                   _hasDeal == true ||
                   _hasOrders == true ||
                   _daysWithoutActivity != null ||
-                  _selectedDirectoryFields.values.any((field) => field != null)) {
+                  _selectedDirectoryFields.values.any((field) => field != null) ||
+                  customFieldFilters.isNotEmpty) {
                 widget.onManagersSelected?.call(filterData);
               }
               Navigator.pop(context);
@@ -434,6 +466,31 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
                         ),
                       ),
                     ),
+                if ((widget.customFieldTitles ?? const []).isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  for (final title in widget.customFieldTitles!)
+                    Card(
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      color: Colors.white,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: CustomFieldMultiSelect(
+                          title: title,
+                          items: List<String>.from(
+                              widget.customFieldValues?[title] ?? const []),
+                          initialSelectedValues:
+                              _selectedCustomFieldValues[title],
+                          onChanged: (values) {
+                            setState(() {
+                              _selectedCustomFieldValues[title] =
+                                  List<String>.from(values);
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+                ],
                     if (_directoryLinks.isNotEmpty) ...[
                       for (var link in _directoryLinks)
                         Card(

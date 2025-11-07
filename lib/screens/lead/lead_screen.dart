@@ -88,6 +88,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   int? _daysWithoutActivity;
   List<Map<String, dynamic>> _directoryValues = [];
   List<Map<String, dynamic>> _initialDirectoryValues = [];
+  Map<String, List<String>> _selectedCustomFieldFilters = {};
+  Map<String, List<String>> _initialCustomFieldFilters = {};
   List<ManagerData> _initialSelectedManagers = [];
   List<RegionData> _initialSelectedRegions = [];
   List<SourceData> _initialSelectedSources = [];
@@ -116,6 +118,30 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   List<int>? _selectedManagerIds;
     bool _isFilterLoading = false; // НОВЫЙ флаг для отслеживания загрузки после фильтрации
   bool _shouldShowLoader = false; // НОВЫЙ флаг для принудительного показа лоадера
+
+
+  Map<String, List<String>> _cloneCustomFieldFilters(Map<String, List<String>> source) {
+    final result = <String, List<String>>{};
+    source.forEach((key, value) {
+      result[key] = List<String>.from(value);
+    });
+    return result;
+  }
+
+  Map<String, List<String>> _parseCustomFieldFilters(
+      Map<String, dynamic>? raw) {
+    if (raw == null) return {};
+    final result = <String, List<String>>{};
+    raw.forEach((key, value) {
+      if (value is List) {
+        result[key] = value.map((e) => e.toString()).toList();
+      }
+    });
+    return result;
+  }
+
+  bool get _hasActiveCustomFieldFilters => _selectedCustomFieldFilters.values
+      .any((values) => values.isNotEmpty);
 
 
   @override
@@ -524,6 +550,7 @@ Future<void> _onRefresh(int currentStatusId) async {
         _hasOrders = false;
         _daysWithoutActivity = null;
         _directoryValues = [];
+        _selectedCustomFieldFilters = {};
         _initialSelectedManagers = [];
         _initialSelectedRegions = [];
         _initialSelectedSources = [];
@@ -542,6 +569,7 @@ Future<void> _onRefresh(int currentStatusId) async {
         _initialHasOrders = false;
         _initialDaysWithoutActivity = null;
         _initialDirectoryValues = [];
+        _initialCustomFieldFilters = {};
         _lastSearchQuery = '';
         _searchController.clear();
       });
@@ -554,6 +582,10 @@ Future<void> _onRefresh(int currentStatusId) async {
   //print('LeadScreen: _handleManagerSelected - START');
   
   // КРИТИЧНО: Сначала показываем лоадер и скрываем старые данные
+  final customFieldFiltersRaw =
+      managers['custom_field_filters'] as Map<String, dynamic>?;
+  final parsedCustomFieldFilters =
+      _parseCustomFieldFilters(customFieldFiltersRaw);
   if (mounted) {
     setState(() {
       _isFilterLoading = true;
@@ -577,6 +609,8 @@ Future<void> _onRefresh(int currentStatusId) async {
       _hasOrders = managers['hasOrders'];
       _daysWithoutActivity = managers['daysWithoutActivity'];
       _directoryValues = managers['directory_values'] ?? [];
+      _selectedCustomFieldFilters =
+          _cloneCustomFieldFilters(parsedCustomFieldFilters);
       _initialSelectedManagers = managers['managers'];
       _initialSelectedRegions = managers['regions'];
       _initialSelectedSources = managers['sources'];
@@ -595,6 +629,8 @@ Future<void> _onRefresh(int currentStatusId) async {
       _initialHasOrders = managers['hasOrders'];
       _initialDaysWithoutActivity = managers['daysWithoutActivity'];
       _initialDirectoryValues = managers['directory_values'] ?? [];
+      _initialCustomFieldFilters =
+          _cloneCustomFieldFilters(parsedCustomFieldFilters);
     });
   }
 
@@ -631,6 +667,7 @@ Future<void> _onRefresh(int currentStatusId) async {
     hasOrders: _hasOrders,
     daysWithoutActivity: _daysWithoutActivity,
     directoryValues: _directoryValues,
+    customFieldFilters: _selectedCustomFieldFilters,
     salesFunnelId: _selectedFunnel?.id,
     query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
     ignoreCache: true,
@@ -847,6 +884,7 @@ Future<void> _onRefresh(int currentStatusId) async {
             initialManagerLeadHasOrders: _initialHasOrders,
             initialManagerLeadDaysWithoutActivity: _initialDaysWithoutActivity,
             initialDirectoryValuesLead: _initialDirectoryValues,
+            initialLeadCustomFields: _initialCustomFieldFilters,
             onLeadResetFilters: _resetFilters,
             textEditingController: textEditingController,
             focusNode: focusNode,
@@ -885,7 +923,8 @@ Future<void> _onRefresh(int currentStatusId) async {
                       _hasUnreadMessages == false &&
                       _hasDeal == false &&
                       _hasOrders == false &&
-                      _directoryValues.isEmpty) {
+                      _directoryValues.isEmpty &&
+                      !_hasActiveCustomFieldFilters) {
                     if (mounted) {
                       setState(() {
                         _showCustomTabBar = true;
@@ -924,6 +963,7 @@ Future<void> _onRefresh(int currentStatusId) async {
                       hasOrders: _hasOrders,
                       daysWithoutActivity: _daysWithoutActivity,
                       directoryValues: _directoryValues,
+                      customFieldFilters: _selectedCustomFieldFilters,
                       salesFunnelId: _selectedFunnel?.id,
                     ));
                     //print('LeadScreen: FetchLeads dispatched with filters after clear, salesFunnelId: ${_selectedFunnel?.id}');
@@ -936,6 +976,7 @@ Future<void> _onRefresh(int currentStatusId) async {
                     managerIds: _selectedManagerIds,
                     query: _searchController.text.isNotEmpty ? _searchController.text : null,
                     directoryValues: _directoryValues,
+                    customFieldFilters: _selectedCustomFieldFilters,
                     salesFunnelId: _selectedFunnel?.id,
                   ));
                   //print('LeadScreen: FetchLeads dispatched with managerIds after clear, salesFunnelId: ${_selectedFunnel?.id}');

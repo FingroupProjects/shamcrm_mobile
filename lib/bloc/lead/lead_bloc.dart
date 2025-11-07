@@ -30,6 +30,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
   int? _currentDaysWithoutActivity;
   bool isFetching = false; // Новый флаг
   List<Map<String, dynamic>>? _currentDirectoryValues; // Новый параметр
+  Map<String, List<String>>? _currentCustomFieldFilters;
 
 
   LeadBloc(this.apiService) : super(LeadInitial()) {
@@ -87,6 +88,7 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
     _currentHasOrders = event.hasOrders;
     _currentDaysWithoutActivity = event.daysWithoutActivity;
     _currentDirectoryValues = event.directoryValues;
+    _currentCustomFieldFilters = event.customFieldFilters;
 
     // КРИТИЧНО: Восстанавливаем ВСЕ постоянные счетчики
     final allPersistentCounts = await LeadCache.getPersistentLeadCounts();
@@ -130,6 +132,7 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
         hasOrders: event.hasOrders,
         daysWithoutActivity: event.daysWithoutActivity,
         directoryValues: event.directoryValues,
+        customFieldFilters: event.customFieldFilters,
         salesFunnelId: event.salesFunnelId,
       );
 
@@ -344,6 +347,7 @@ Future<void> _fetchLeadStatuses(FetchLeadStatuses event, Emitter<LeadState> emit
         hasOrders: _currentHasOrders,
         daysWithoutActivity: _currentDaysWithoutActivity,
                 directoryValues: _currentDirectoryValues, // Передаем сохраненные значения
+        customFieldFilters: _currentCustomFieldFilters,
 
       );
 
