@@ -1,6 +1,4 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/write_off/write_off_bloc.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/variant_bloc/variant_bloc.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/variant_bloc/variant_event.dart';
 import 'package:crm_task_manager/custom_widget/compact_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
@@ -61,7 +59,6 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
   void initState() {
     super.initState();
     _initializeFormData();
-    context.read<VariantBloc>().add(FetchVariants());
     _tabController = TabController(length: 2, vsync: this);
   }
 
@@ -116,6 +113,12 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
         final existingIndex = _items.indexWhere((item) => item['variantId'] == newItem['variantId']);
 
         if (existingIndex == -1) {
+          // ✅ Сворачиваем все предыдущие карточки
+          for (var item in _items) {
+            final variantId = item['variantId'] as int;
+            _collapsedItems[variantId] = true;
+          }
+
           _items.add(newItem);
 
           final variantId = newItem['variantId'] as int;
@@ -161,7 +164,7 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
 
       _listKey.currentState?.removeItem(
         index,
-        (context, animation) => _buildSelectedItemCard(index, removedItem, animation),
+            (context, animation) => _buildSelectedItemCard(index, removedItem, animation),
         duration: const Duration(milliseconds: 300),
       );
 
@@ -263,7 +266,7 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
 
   void _updateDocument() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     if (_items.isEmpty) {
       _showSnackBar(
         AppLocalizations.of(context)?.translate('add_at_least_one_item') ?? 'Добавьте хотя бы один товар',
@@ -291,13 +294,13 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
     bool hasErrors = false;
     setState(() {
       _quantityErrors.clear();
-      
+
       for (var item in _items) {
         final variantId = item['variantId'] as int;
         final quantityController = _quantityControllers[variantId];
-        
-        if (quantityController == null || 
-            quantityController.text.trim().isEmpty || 
+
+        if (quantityController == null ||
+            quantityController.text.trim().isEmpty ||
             (int.tryParse(quantityController.text) ?? 0) <= 0) {
           _quantityErrors[variantId] = true;
           hasErrors = true;
@@ -500,6 +503,22 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
             ),
           ),
         ),
+        // Подсказка для сохранения
+        if (_items.isNotEmpty)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text(
+              localizations.translate('save_hint') ?? "После добавления товаров перейдите в \"Основное\" для сохранения",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w400,
+                color: Color(0xffbdc2cf),
+                height: 1.2,
+              ),
+            ),
+          ),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
@@ -627,29 +646,29 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
         ),
         child: _isLoading
             ? const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
+          width: 18,
+          height: 18,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+          ),
+        )
             : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.save_outlined, color: Colors.white, size: 18),
-                  const SizedBox(width: 6),
-                  Text(
-                    localizations.translate('save') ?? 'Обновить',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.save_outlined, color: Colors.white, size: 18),
+            const SizedBox(width: 6),
+            Text(
+              localizations.translate('save') ?? 'Обновить',
+              style: const TextStyle(
+                fontSize: 14,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
               ),
+            ),
+          ],
+        ),
       ),
     );
   }

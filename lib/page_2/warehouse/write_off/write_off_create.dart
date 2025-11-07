@@ -1,6 +1,4 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/write_off/write_off_bloc.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/variant_bloc/variant_bloc.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/variant_bloc/variant_event.dart';
 import 'package:crm_task_manager/custom_widget/compact_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
@@ -51,7 +49,6 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
   void initState() {
     super.initState();
     _dateController.text = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
-    context.read<VariantBloc>().add(FetchVariants());
 
     _tabController = TabController(length: 2, vsync: this);
   }
@@ -62,6 +59,11 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
         final existingIndex = _items.indexWhere((item) => item['variantId'] == newItem['variantId']);
 
         if (existingIndex == -1) {
+          for (var item in _items) {
+            final variantId = item['variantId'] as int;
+            _collapsedItems[variantId] = true;
+          }
+
           _items.add(newItem);
 
           final variantId = newItem['variantId'] as int;
@@ -105,7 +107,7 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
 
       _listKey.currentState?.removeItem(
         index,
-        (context, animation) => _buildSelectedItemCard(index, removedItem, animation),
+            (context, animation) => _buildSelectedItemCard(index, removedItem, animation),
         duration: const Duration(milliseconds: 300),
       );
 
@@ -231,13 +233,13 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
     bool hasErrors = false;
     setState(() {
       _quantityErrors.clear();
-      
+
       for (var item in _items) {
         final variantId = item['variantId'] as int;
         final quantityController = _quantityControllers[variantId];
-        
-        if (quantityController == null || 
-            quantityController.text.trim().isEmpty || 
+
+        if (quantityController == null ||
+            quantityController.text.trim().isEmpty ||
             (int.tryParse(quantityController.text) ?? 0) <= 0) {
           _quantityErrors[variantId] = true;
           hasErrors = true;
@@ -314,70 +316,70 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
-     return WillPopScope(
-    onWillPop: () async {
-      // Если есть товары в списке, показываем диалог подтверждения
-      if (_items.isNotEmpty) {
-        final shouldExit = await ConfirmExitDialog.show(context);
-        return shouldExit;
-      }
-      // Если товаров нет, разрешаем выход
-      return true;
-    },
-    child: KeyboardDismissible(
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        appBar: _buildAppBar(localizations),
-        body: BlocListener<WriteOffBloc, WriteOffState>(
-          listener: (context, state) {
-            setState(() => _isLoading = false);
+    return WillPopScope(
+      onWillPop: () async {
+        // Если есть товары в списке, показываем диалог подтверждения
+        if (_items.isNotEmpty) {
+          final shouldExit = await ConfirmExitDialog.show(context);
+          return shouldExit;
+        }
+        // Если товаров нет, разрешаем выход
+        return true;
+      },
+      child: KeyboardDismissible(
+        child: Scaffold(
+          backgroundColor: Colors.white,
+          appBar: _buildAppBar(localizations),
+          body: BlocListener<WriteOffBloc, WriteOffState>(
+            listener: (context, state) {
+              setState(() => _isLoading = false);
 
-            if (state is WriteOffCreateSuccess && mounted) {
-              Navigator.pop(context, true);
-            }
-          },
-          child: Form(
-            key: _formKey,
-            child: Column(
-              children: [
-                Container(
-                  color: Colors.white,
-                  child: TabBar(
-                    controller: _tabController,
-                    labelColor: const Color(0xff4759FF),
-                    unselectedLabelColor: const Color(0xff99A4BA),
-                    indicatorColor: const Color(0xff4759FF),
-                    indicatorWeight: 3,
-                    labelStyle: const TextStyle(
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w600,
+              if (state is WriteOffCreateSuccess && mounted) {
+                Navigator.pop(context, true);
+              }
+            },
+            child: Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  Container(
+                    color: Colors.white,
+                    child: TabBar(
+                      controller: _tabController,
+                      labelColor: const Color(0xff4759FF),
+                      unselectedLabelColor: const Color(0xff99A4BA),
+                      indicatorColor: const Color(0xff4759FF),
+                      indicatorWeight: 3,
+                      labelStyle: const TextStyle(
+                        fontSize: 16,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w600,
+                      ),
+                      unselectedLabelStyle: const TextStyle(
+                        fontSize: 16,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                      ),
+                      tabs: [
+                        Tab(text: localizations.translate('main') ?? 'Основное'),
+                        Tab(text: localizations.translate('goods') ?? 'Товары'),
+                      ],
                     ),
-                    unselectedLabelStyle: const TextStyle(
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
+                  ),
+                  Expanded(
+                    child: TabBarView(
+                      controller: _tabController,
+                      children: [
+                        _KeepAliveWrapper(child: _buildMainTab(localizations)),
+                        _KeepAliveWrapper(child: _buildGoodsTab(localizations)),
+                      ],
                     ),
-                    tabs: [
-                      Tab(text: localizations.translate('main') ?? 'Основное'),
-                      Tab(text: localizations.translate('goods') ?? 'Товары'),
-                    ],
                   ),
-                ),
-                Expanded(
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _KeepAliveWrapper(child: _buildMainTab(localizations)),
-                      _KeepAliveWrapper(child: _buildGoodsTab(localizations)),
-                    ],
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
-      ),
       ), );
   }
 
@@ -483,6 +485,22 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
             ),
           ),
         ),
+        // Подсказка для сохранения
+        if (_items.isNotEmpty)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text(
+              localizations.translate('save_hint') ?? "После добавления товаров перейдите в \"Основное\" для сохранения",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w400,
+                color: Color(0xffbdc2cf),
+                height: 1.2,
+              ),
+            ),
+          ),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
@@ -616,29 +634,29 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
               ),
               child: _isLoading
                   ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
                   : Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.save_outlined, color: Colors.white, size: 18),
-                        const SizedBox(width: 6),
-                        Text(
-                          localizations.translate('save') ?? 'Сохранить',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.save_outlined, color: Colors.white, size: 18),
+                  const SizedBox(width: 6),
+                  Text(
+                    localizations.translate('save') ?? 'Сохранить',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
                     ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -814,7 +832,7 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
                                   onChanged: (String? newValue) {
                                     if (newValue != null) {
                                       final selectedUnit = availableUnits.firstWhere(
-                                        (unit) => (unit.name) == newValue,
+                                            (unit) => (unit.name) == newValue,
                                       );
                                       _updateItemUnit(variantId, newValue, selectedUnit.id);
                                     }
