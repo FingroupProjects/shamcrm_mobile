@@ -112,6 +112,8 @@ class CustomAppBar extends StatefulWidget {
   final int? initialManagerLeadDaysWithoutActivity;
   final List<Map<String, dynamic>>?
       initialDirectoryValuesLead; // Новый параметр для лидов
+  final Map<String, List<String>>?
+      initialLeadCustomFields; // Пользовательские поля для фильтра лидов
 
   final List? initialManagersDeal;
   final List? initialLeadsDeal;
@@ -202,6 +204,7 @@ final List<String>? initialDealNames; // Новый параметр
     this.initialManagerLeadHasOrders,
     this.initialManagerLeadDaysWithoutActivity,
     this.initialDirectoryValuesLead, // Добавляем в конструктор
+    this.initialLeadCustomFields,
     this.initialDirectoryValuesTask, // Добавляем в конструктор
     this.showFilterIconOnSelectCallCenter =
         false, // Добавлено: по умолчанию false
@@ -317,6 +320,11 @@ class _CustomAppBarState extends State<CustomAppBar>
   bool _canReadNotice = false;
   bool _canReadCalendar = false;
   bool _canReadGps = false; // Новая переменная для GPS
+  List<String> _customFieldTitles = [];
+  Map<String, List<String>> _customFieldValues = {};
+  // DEAL custom fields (отдельное хранилище для сделок)
+  List<String> _dealCustomFieldTitles = [];
+  Map<String, List<String>> _dealCustomFieldValues = {};
 
   Color _iconColor = const Color.fromARGB(255, 0, 0, 0);
   late Timer _timer;
@@ -341,6 +349,9 @@ class _CustomAppBarState extends State<CustomAppBar>
     _loadNotificationState();
     _setUpSocketForNotifications();
     _setupFirebaseMessaging(); // Новый метод
+    loadLeadCustomFields(); // Загрузка пользовательских полей лидов
+    // Загрузка пользовательских полей сделок
+    loadDealCustomFields();
 
     _blinkController = AnimationController(
       vsync: this,
@@ -491,6 +502,75 @@ class _CustomAppBarState extends State<CustomAppBar>
       _hasNewNotification = hasNewNotification;
     });
   }
+
+  Future<void> loadLeadCustomFields() async {
+    try {
+      // 1️⃣ Load field titles first
+      final titles = await _apiService.getLeadCustomFields();
+
+      setState(() {
+        _customFieldTitles = titles;
+      });
+
+      // 2️⃣ Launch all requests in parallel, but handle each as it completes
+      for (final title in titles) {
+        // run in background without awaiting — don't block the loop
+        unawaited(_loadSingleCustomField(title));
+      }
+    } catch (e, st) {
+      if (kDebugMode) {
+        print('Error loading lead custom fields: $e\n$st');
+      }
+    }
+  }
+
+// Helper: load one field and update state immediately
+  Future<void> _loadSingleCustomField(String title) async {
+    try {
+      final values = await _apiService.getLeadCustomFieldValues(title);
+      if (!mounted) return;
+      setState(() {
+        _customFieldValues[title] = values;
+      });
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error loading values for "$title": $e');
+      }
+    }
+  }
+
+  // -------- DEAL custom fields loading --------
+  Future<void> loadDealCustomFields() async {
+    try {
+      final titles = await _apiService.getDealCustomFields();
+      if (!mounted) return;
+      setState(() {
+        _dealCustomFieldTitles = titles;
+      });
+      for (final title in titles) {
+        unawaited(_loadSingleDealCustomField(title));
+      }
+    } catch (e, st) {
+      if (kDebugMode) {
+        print('Error loading deal custom fields: $e\n$st');
+      }
+    }
+  }
+
+  Future<void> _loadSingleDealCustomField(String title) async {
+    try {
+      final values = await _apiService.getDealCustomFieldValues(title);
+      if (!mounted) return;
+      setState(() {
+        _dealCustomFieldValues[title] = values;
+      });
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error loading deal custom values for "$title": $e');
+      }
+    }
+  }
+
 
   Future<void> _setUpSocketForNotifications() async {
     debugPrint(
@@ -1699,6 +1779,9 @@ class _CustomAppBarState extends State<CustomAppBar>
           onResetFilters: widget.onLeadResetFilters,
           initialDirectoryValues:
               _safeConvertToMapList(widget.initialDirectoryValuesLead),
+          // customFieldTitles: _customFieldTitles,
+          // customFieldValues: _customFieldValues,
+          // initialCustomFieldSelections: widget.initialLeadCustomFields,
         ),
       ),
     );
@@ -1726,6 +1809,9 @@ class _CustomAppBarState extends State<CustomAppBar>
               widget.initialManagerDealDaysWithoutActivity,
           initialDirectoryValues:
               _safeConvertToMapList(widget.initialDirectoryValuesDeal),
+          customFieldTitles: _dealCustomFieldTitles,
+          customFieldValues: _dealCustomFieldValues,
+          initialCustomFieldSelections: null,
         ),
       ),
     );

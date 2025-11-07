@@ -409,8 +409,8 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     if (deal.directoryValues != null && deal.directoryValues!.isNotEmpty) {
       for (var dirValue in deal.directoryValues!) {
         details.add({
-          'label': '${dirValue.entry?.directory.name}:',
-          'value': dirValue.entry?.values.first.value ?? '',
+          'label': '${dirValue.entry.directory.name}:',
+          'value': dirValue.entry.values['value'] ?? '',
         });
       }
     }
@@ -640,6 +640,7 @@ Widget build(BuildContext context) {
               dealCustomFields: currentDeal!.dealCustomFields,
               directoryValues: currentDeal!.directoryValues,
               files: currentDeal!.files,
+              dealById: currentDeal!,
             ),
           ),
         );

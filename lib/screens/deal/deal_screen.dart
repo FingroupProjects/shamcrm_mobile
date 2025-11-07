@@ -71,6 +71,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   int? _daysWithoutActivity;
   bool? _hasTasks = false;
   List<Map<String, dynamic>> _selectedDirectoryValues = [];
+  Map<String, List<String>>? _selectedDealCustomFieldFilters;
 
   List<ManagerData> _initialselectedManagers = [];
     
@@ -513,6 +514,7 @@ Future<void> _loadFilterState() async {
       hasTasks: _hasTasks,
       directoryValues: _selectedDirectoryValues,
       salesFunnelId: _selectedFunnel?.id,
+      customFieldFilters: _selectedDealCustomFieldFilters,
     ));
     await _saveFilterState();
   }
@@ -569,6 +571,8 @@ Future<void> _handleManagerSelected(Map managers) async {
                 })
             .toList() ??
         [];
+    final Map<String, dynamic>? rawCustom = managers['custom_field_filters'] as Map<String, dynamic>?;
+    _selectedDealCustomFieldFilters = rawCustom?.map((k, v) => MapEntry(k, (v as List).map((e) => e.toString()).toList()));
     _initialDirectoryValues = List.from(_selectedDirectoryValues);
     _initialSelectedDealNames = List.from(_selectedDealNames);
   });
@@ -587,6 +591,7 @@ Future<void> _handleManagerSelected(Map managers) async {
     directoryValues: _selectedDirectoryValues,
     names: _selectedDealNames.map((dealName) => dealName.title).toList(), // Передаем names
     salesFunnelId: _selectedFunnel?.id,
+    customFieldFilters: _selectedDealCustomFieldFilters,
   ));
   await _saveFilterState();
 }
@@ -604,7 +609,8 @@ Future<void> _handleManagerSelected(Map managers) async {
       currentStatusId,
       statusIds: _selectedStatuses,
       query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-      salesFunnelId: _selectedFunnel?.id,
+    salesFunnelId: _selectedFunnel?.id,
+    customFieldFilters: _selectedDealCustomFieldFilters,
     ));
   }
 
@@ -624,7 +630,8 @@ Future<void> _handleManagerSelected(Map managers) async {
       fromDate: _fromDate,
       toDate: _toDate,
       query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-      salesFunnelId: _selectedFunnel?.id,
+    salesFunnelId: _selectedFunnel?.id,
+    customFieldFilters: _selectedDealCustomFieldFilters,
     ));
   }
 
@@ -647,7 +654,8 @@ Future<void> _handleManagerSelected(Map managers) async {
       fromDate: _fromDate,
       toDate: _toDate,
       query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-      salesFunnelId: _selectedFunnel?.id,
+    salesFunnelId: _selectedFunnel?.id,
+    customFieldFilters: _selectedDealCustomFieldFilters,
     ));
   }
 
@@ -765,7 +773,8 @@ Future<void> _handleManagerSelected(Map managers) async {
                       leadIds: _selectedLeads.isNotEmpty
                           ? _selectedLeads.map((lead) => lead.id).toList()
                           : null,
-                      salesFunnelId: _selectedFunnel?.id,
+                    salesFunnelId: _selectedFunnel?.id,
+                    customFieldFilters: _selectedDealCustomFieldFilters,
                     ));
                   }
                 } else if (_selectedManagerIds != null && _selectedManagerIds!.isNotEmpty) {
@@ -776,6 +785,7 @@ Future<void> _handleManagerSelected(Map managers) async {
                     managerIds: _selectedManagerIds,
                     query: _searchController.text.isNotEmpty ? _searchController.text : null,
                     salesFunnelId: _selectedFunnel?.id,
+                    customFieldFilters: _selectedDealCustomFieldFilters,
                   ));
                 }
               }
@@ -1217,6 +1227,7 @@ Widget _buildTabBarView() {
                     daysWithoutActivity: _daysWithoutActivity,
                     hasTasks: _hasTasks,
                     directoryValues: _selectedDirectoryValues,
+                    customFieldFilters: _selectedDealCustomFieldFilters,
                   ));
                   //print('DealScreen: FetchDeals dispatched for statusId: $currentStatusId');
                 }
@@ -1336,6 +1347,7 @@ children: _tabTitles.map((status) {
           daysWithoutActivity: _daysWithoutActivity,
           hasTasks: _hasTasks,
           directoryValues: _selectedDirectoryValues,
+          customFieldFilters: _selectedDealCustomFieldFilters,
         ));
         //print('DealScreen: FetchDeals dispatched for statusId: $newStatusId');
       }
