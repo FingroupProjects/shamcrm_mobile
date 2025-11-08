@@ -382,6 +382,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
       }
     }
   }
+
   CustomField _getOrCreateCustomField(FieldConfiguration config) {
     final existingField = customFields.firstWhere(
           (field) => field.fieldName == config.fieldName && field.isCustomField,
@@ -424,8 +425,6 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
 
     return existingField;
   }
-
-
 
   // Метод для построения стандартных системных полей
   Widget? _buildStandardField(FieldConfiguration config) {
@@ -1609,7 +1608,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                   isSuccess: true,
                 );
                 if (context.mounted) {
-                  Navigator.pop(context, widget.statusId);
+                  Navigator.pop(context, true);
                   context.read<TaskBloc>().add(FetchTaskStatuses());
                 }
               }
