@@ -1456,8 +1456,8 @@ class ApiService {
         final directoryId = directoryIdRaw.toString();
         final Iterable<String> entryIds = entryIdRaw is List
             ? entryIdRaw
-                .where((entry) => entry != null && entry.toString().isNotEmpty)
-                .map((entry) => entry.toString())
+            .where((entry) => entry != null && entry.toString().isNotEmpty)
+            .map((entry) => entry.toString())
             : [entryIdRaw.toString()];
 
         if (entryIds.isEmpty) {
@@ -1466,7 +1466,7 @@ class ApiService {
 
         final entries = groupedDirectoryValues.putIfAbsent(
           directoryId,
-          () => LinkedHashSet<String>(),
+              () => LinkedHashSet<String>(),
         );
         entries.addAll(entryIds);
       }
@@ -3610,43 +3610,6 @@ class ApiService {
       bool showOnMainPage,
       List<int>? userIds, // ✅ НОВОЕ
       ) async {
-    final path = await _appendQueryParams('/deal/statuses/$dealStatusId');
-
-    if (kDebugMode) {
-      print('ApiService: updateDealStatusEdit - userIds: $userIds');
-    }
-
-    final organizationId = await getSelectedOrganization();
-    final salesFunnelId = await getSelectedSalesFunnel();
-
-    final payload = {
-      "title": title,
-      "day": day,
-      "color": "#000",
-      "is_success": isSuccess ? 1 : 0,
-      "is_failure": isFailure ? 1 : 0,
-      "notification_message": notificationMessage,
-      "show_on_main_page": showOnMainPage ? 1 : 0,
-      "organization_id": organizationId?.toString() ?? '',
-      if (salesFunnelId != null) "sales_funnel_id": salesFunnelId.toString(),
-      // ✅ НОВОЕ: Добавляем массив пользователей
-      if (userIds != null && userIds.isNotEmpty) "users": userIds,
-    };
-
-    if (kDebugMode) {
-      print('ApiService: updateDealStatusEdit payload: $payload');
-    }
-
-    final response = await _patchRequest(path, payload);
-
-    if (response.statusCode == 200) {
-      return {'result': 'Success'};
-    } else {
-      throw Exception('Failed to update dealStatus!');
-    }
-  }
-  Future<DealStatus> getDealStatus(int dealStatusId) async {
-    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/deal/statuses/$dealStatusId');
 
     if (kDebugMode) {
@@ -11435,74 +11398,6 @@ class ApiService {
       final token = await getToken();
       if (token == null) throw 'Токен не найден';
 
-      final uri = Uri.parse('$baseUrl$path');
-      final response = await http.post(
-        uri,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Device': 'mobile',
-        },
-        body: jsonEncode({
-          'ids': [documentId]
-        }),
-      );
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        // Успешно проведен
-      } else {
-        final message = _extractErrorMessageFromResponse(response);
-        throw ApiException(
-            message ?? 'Ошибка при проведении документа',
-            response.statusCode
-        );
-      }
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-// Отмена проведения документа реализации
-  Future<void> unApproveClientSaleDocument(int documentId) async {
-    const String url = '/expense-documents/unApprove';
-    final path = await _appendQueryParams(url);
-
-    try {
-      final token = await getToken();
-      if (token == null) throw Exception('Токен не найден');
-
-      final uri = Uri.parse('$baseUrl$path');
-      final response = await http.post(
-        uri,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Device': 'mobile',
-        },
-        body: jsonEncode({
-          'ids': [documentId]
-        }),
-      );
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        // Успешно отменено
-      } else {
-        final message = _extractErrorMessageFromResponse(response);
-        throw ApiException(message ?? 'Ошибка при отмене проведения документа', response.statusCode);
-      }
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-// Восстановление документа реализации
-  Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
-    try {
-      final token = await getToken();
-      if (token == null) throw 'Токен не найден';
-
       final pathWithParams = await _appendQueryParams('/expense-documents/restore');
       final uri = Uri.parse('$baseUrl$pathWithParams');
 
@@ -16468,7 +16363,7 @@ class ApiService {
   }
 
 
- // GET lead custom fields
+  // GET deal custom fields
   // lead/get/custom-fields?organization_id=1&sales_funnel_id=1
   // response.result is list of strings
   Future<List<String>> getDealCustomFields() async {
