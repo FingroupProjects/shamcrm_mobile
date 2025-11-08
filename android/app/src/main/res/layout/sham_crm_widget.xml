@@ -5,10 +5,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@drawable/widget_background"
-    android:elevation="8dp"
-    android:padding="16dp"
-    android:clickable="true"
-    android:focusable="true">
+    android:padding="16dp">
 
     <!-- Заголовок -->
     <LinearLayout
@@ -22,7 +19,6 @@
             android:layout_width="32dp"
             android:layout_height="32dp"
             android:src="@mipmap/ic_launcher"
-            android:contentDescription="@string/app_name"
             android:background="@drawable/circle_avatar"
             android:padding="4dp" />
 
@@ -33,8 +29,7 @@
             android:text="shamCRM"
             android:textColor="#1E2E52"
             android:textSize="20sp"
-            android:textStyle="bold"
-            android:fontFamily="sans-serif-medium" />
+            android:textStyle="bold" />
     </LinearLayout>
 
     <!-- 5 кнопок с подписями -->
@@ -53,10 +48,7 @@
             android:layout_weight="1"
             android:orientation="vertical"
             android:gravity="center"
-            android:padding="6dp"
-            android:clickable="true"
-            android:focusable="true"
-            android:background="?attr/selectableItemBackgroundBorderless">
+            android:padding="8dp">
 
             <ImageView
                 android:id="@+id/icon_dashboard"
@@ -70,8 +62,7 @@
                 android:layout_marginTop="4dp"
                 android:text="Дашборд"
                 android:textSize="10sp"
-                android:textColor="#555555"
-                android:fontFamily="sans-serif" />
+                android:textColor="#666666" />
         </LinearLayout>
 
         <!-- Задачи -->
@@ -82,10 +73,7 @@
             android:layout_weight="1"
             android:orientation="vertical"
             android:gravity="center"
-            android:padding="6dp"
-            android:clickable="true"
-            android:focusable="true"
-            android:background="?attr/selectableItemBackgroundBorderless">
+            android:padding="8dp">
 
             <ImageView
                 android:id="@+id/icon_tasks"
@@ -99,7 +87,7 @@
                 android:layout_marginTop="4dp"
                 android:text="Задачи"
                 android:textSize="10sp"
-                android:textColor="#555555" />
+                android:textColor="#666666" />
         </LinearLayout>
 
         <!-- Лиды -->
@@ -110,10 +98,7 @@
             android:layout_weight="1"
             android:orientation="vertical"
             android:gravity="center"
-            android:padding="6dp"
-            android:clickable="true"
-            android:focusable="true"
-            android:background="?attr/selectableItemBackgroundBorderless">
+            android:padding="8dp">
 
             <ImageView
                 android:id="@+id/icon_leads"
@@ -127,7 +112,7 @@
                 android:layout_marginTop="4dp"
                 android:text="Лиды"
                 android:textSize="10sp"
-                android:textColor="#555555" />
+                android:textColor="#666666" />
         </LinearLayout>
 
         <!-- Сделки -->
@@ -138,10 +123,7 @@
             android:layout_weight="1"
             android:orientation="vertical"
             android:gravity="center"
-            android:padding="6dp"
-            android:clickable="true"
-            android:focusable="true"
-            android:background="?attr/selectableItemBackgroundBorderless">
+            android:padding="8dp">
 
             <ImageView
                 android:id="@+id/icon_deals"
@@ -155,7 +137,7 @@
                 android:layout_marginTop="4dp"
                 android:text="Сделки"
                 android:textSize="10sp"
-                android:textColor="#555555" />
+                android:textColor="#666666" />
         </LinearLayout>
 
         <!-- Чаты -->
@@ -166,10 +148,7 @@
             android:layout_weight="1"
             android:orientation="vertical"
             android:gravity="center"
-            android:padding="6dp"
-            android:clickable="true"
-            android:focusable="true"
-            android:background="?attr/selectableItemBackgroundBorderless">
+            android:padding="8dp">
 
             <ImageView
                 android:id="@+id/icon_chats"
@@ -183,7 +162,7 @@
                 android:layout_marginTop="4dp"
                 android:text="Чаты"
                 android:textSize="10sp"
-                android:textColor="#555555" />
+                android:textColor="#666666" />
         </LinearLayout>
 
     </LinearLayout>
