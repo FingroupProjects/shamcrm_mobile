@@ -57,7 +57,6 @@ class _DealAddScreenState extends State<DealAddScreen> {
   bool isEndDateInvalid = false;
   bool isTitleInvalid = false;
   bool isManagerInvalid = false;
-  bool _showAdditionalFields = false;
   bool isManagerManuallySelected = false;
   List<String> selectedFiles = [];
   List<String> fileNames = [];
@@ -1256,7 +1255,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
           //
           //     // Перезагружаем конфигурацию
           //     context.read<FieldConfigurationBloc>().add(
-          //         FetchFieldConfiguration('leads')
+          //         FetchFieldConfiguration('deals')
           //     );
           //
           //     ScaffoldMessenger.of(context).showSnackBar(
