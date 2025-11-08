@@ -16101,6 +16101,7 @@ class ApiService {
     }
   }
 
+  // not used
 // Новый метод для сохранения конфигурации в кэш
   Future<void> cacheFieldConfiguration({
     required String tableName,
@@ -16128,6 +16129,7 @@ class ApiService {
     // }
   }
 
+  // not used
 // Новый метод для получения конфигурации из кэша
   Future<FieldConfigurationResponse?> getCachedFieldConfiguration({
     required String tableName,
@@ -16161,6 +16163,7 @@ class ApiService {
     // }
   }
 
+  // not used
 // Метод для загрузки и кэширования всех конфигураций
   Future<void> loadAndCacheAllFieldConfigurations() async {
     try {
@@ -16173,6 +16176,7 @@ class ApiService {
       for (final tableName in tables) {
         try {
           final config = await getFieldPositions(tableName: tableName);
+          // not used as this method is not used
           await cacheFieldConfiguration(tableName: tableName, configuration: config);
 
           if (kDebugMode) {
@@ -16195,6 +16199,7 @@ class ApiService {
     }
   }
 
+  // not used
 // Метод для очистки кэша конфигураций (при смене организации)
   Future<void> clearFieldConfigurationCache() async {
     try {
@@ -16219,6 +16224,7 @@ class ApiService {
     }
   }
 
+  // not used
 // Метод для очистки кэша конфигурации конкретной таблицы
   Future<void> clearFieldConfigurationCacheForTable(String tableName) async {
     try {

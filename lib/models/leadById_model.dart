@@ -354,25 +354,35 @@ class DirectoryFieldValue {
     );
   }
 }
-  class DirectoryByLead{
+
+  class DirectoryByLead {
     final int id;
     final String name;
     final String? createdAt;
+    final bool? isMain;
+    final bool? showToIndex;
+    final int? fieldsCount;
+    final int? entriesCount;
 
     DirectoryByLead({
       required this.id,
       required this.name,
       this.createdAt,
+      this.isMain,
+      this.showToIndex,
+      this.fieldsCount,
+      this.entriesCount,
     });
 
     factory DirectoryByLead.fromJson(Map<String, dynamic> json) {
-      //print('Directory: Parsing JSON for directory: ${json['id']}');
-      final directory = DirectoryByLead(
+      return DirectoryByLead(
         id: json['id'] ?? 0,
         name: json['name'] ?? '',
         createdAt: json['created_at'],
+        isMain: json['is_main'],
+        showToIndex: json['show_to_index'],
+        fieldsCount: json['fields_count'],
+        entriesCount: json['entries_count'],
       );
-      //print('Directory: Directory created: id=${directory.id}, name=${directory.name}');
-      return directory;
     }
   }

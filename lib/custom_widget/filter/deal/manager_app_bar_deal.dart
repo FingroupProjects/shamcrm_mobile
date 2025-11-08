@@ -12,7 +12,6 @@ import 'package:crm_task_manager/models/directory_link_model.dart';
 import 'package:crm_task_manager/models/lead_multi_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
-import 'package:crm_task_manager/models/directory_model.dart';
 import 'package:crm_task_manager/screens/deal/deal_cache.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -67,6 +66,10 @@ class DealManagerFilterScreen extends StatefulWidget {
 }
 
 class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
+  // Custom fields (deal) loaded inside the filter screen
+  List<String> _customFieldTitles = [];
+  Map<String, List<String>> _customFieldValues = {};
+
   List _selectedManagers = [];
   List _selectedLeads = [];
   int? _selectedStatuses;
@@ -81,12 +84,11 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
   Map<String, List<String>> _selectedCustomFieldValues = {};
 
   void _initializeCustomFieldSelections(Map<String, List<String>> initialSelections) {
-    final titles = widget.customFieldTitles ?? const [];
     _selectedCustomFieldValues = {};
-    for (final title in titles) {
-      final initial = initialSelections[title];
-      _selectedCustomFieldValues[title] = initial != null ? List<String>.from(initial) : <String>[];
-    }
+    // Initialize from provided initial selections; keys will be reconciled after titles load
+    initialSelections.forEach((title, values) {
+      _selectedCustomFieldValues[title] = List<String>.from(values);
+    });
   }
 
   @override
@@ -104,7 +106,15 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
             .toList() ?? [];
     _loadFilterState();
     _fetchDirectoryLinks();
+    // Prefill from props if provided (backward compatible)
+    if ((widget.customFieldTitles ?? const []).isNotEmpty) {
+      _customFieldTitles = List<String>.from(widget.customFieldTitles!);
+    }
+    if ((widget.customFieldValues ?? const {}).isNotEmpty) {
+      _customFieldValues = Map<String, List<String>>.from(widget.customFieldValues!);
+    }
     _initializeCustomFieldSelections(widget.initialCustomFieldSelections ?? const {});
+    _loadDealCustomFields();
   }
 
   Future<void> _loadFilterState() async {
@@ -141,6 +151,38 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Ошибка при загрузке справочников: $e')),
       );
+    }
+  }
+
+  // -------- DEAL custom fields loading (moved here from app bar) --------
+  Future<void> _loadDealCustomFields() async {
+    try {
+      final titles = await ApiService().getDealCustomFields();
+      if (!mounted) return;
+      setState(() {
+        _customFieldTitles = titles;
+        // ensure selected map contains keys for all titles
+        for (final title in titles) {
+          _selectedCustomFieldValues[title] = _selectedCustomFieldValues[title] ?? <String>[];
+        }
+      });
+      for (final title in titles) {
+        _loadSingleDealCustomField(title);
+      }
+    } catch (_) {
+      // ignore errors silently to not break filter UI
+    }
+  }
+
+  Future<void> _loadSingleDealCustomField(String title) async {
+    try {
+      final values = await ApiService().getDealCustomFieldValues(title);
+      if (!mounted) return;
+      setState(() {
+        _customFieldValues[title] = values;
+      });
+    } catch (_) {
+      // ignore per-field loading errors
     }
   }
 
@@ -452,9 +494,9 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                         ),
                       ),
                     ),
-                    if ((widget.customFieldTitles ?? const []).isNotEmpty) ...[
+                    if (_customFieldTitles.isNotEmpty) ...[
                       const SizedBox(height: 8),
-                      for (final title in widget.customFieldTitles!)
+                      for (final title in _customFieldTitles)
                         Card(
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           color: Colors.white,
@@ -462,7 +504,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                             padding: const EdgeInsets.all(8),
                             child: CustomFieldMultiSelect(
                               title: title,
-                              items: List<String>.from(widget.customFieldValues?[title] ?? const []),
+                              items: List<String>.from(_customFieldValues[title] ?? const []),
                               initialSelectedValues: _selectedCustomFieldValues[title],
                               onChanged: (values) {
                                 setState(() {

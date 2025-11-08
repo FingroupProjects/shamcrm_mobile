@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/custom_widget/custom_field_multi_select.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/multi_manager_list.dart';
@@ -98,10 +99,13 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
   Map<int, List<MainField>> _selectedDirectoryFields = {};
   List<DirectoryLink> _directoryLinks = [];
   Map<String, List<String>> _selectedCustomFieldValues = {};
+  // Пользовательские поля лидов
+  final ApiService _apiService = ApiService();
+  List<String> _customFieldTitles = [];
+  Map<String, List<String>> _customFieldValues = {};
 
-  void _initializeCustomFieldSelections(
-      Map<String, List<String>> initialSelections) {
-    final titles = widget.customFieldTitles ?? const [];
+  void _initializeCustomFieldSelections(Map<String, List<String>> initialSelections) {
+    final titles = _customFieldTitles;
     _selectedCustomFieldValues = {};
     for (final title in titles) {
       final initial = initialSelections[title];
@@ -187,6 +191,7 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
     _fetchDirectoryLinks();
     _initializeCustomFieldSelections(
         widget.initialCustomFieldSelections ?? const <String, List<String>>{});
+    _loadLeadCustomFields();
   }
 
   Future<void> _fetchDirectoryLinks() async {
@@ -235,6 +240,36 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Ошибка при загрузке справочников: $e')),
       );
+    }
+  }
+
+  Future<void> _loadLeadCustomFields() async {
+    try {
+      final titles = await _apiService.getLeadCustomFields();
+      if (!mounted) return;
+      setState(() {
+        _customFieldTitles = titles;
+      });
+      // Инициализируем выбранные значения на основе входящих selection'ов, когда появились заголовки
+      _initializeCustomFieldSelections(
+          widget.initialCustomFieldSelections ?? const <String, List<String>>{});
+      for (final title in titles) {
+        unawaited(_loadSingleCustomField(title));
+      }
+    } catch (e) {
+      // проглатываем, показывать UI всё равно можно
+    }
+  }
+
+  Future<void> _loadSingleCustomField(String title) async {
+    try {
+      final values = await _apiService.getLeadCustomFieldValues(title);
+      if (!mounted) return;
+      setState(() {
+        _customFieldValues[title] = values;
+      });
+    } catch (e) {
+      // игнорируем отдельные ошибки загрузки полей
     }
   }
 
@@ -488,9 +523,9 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
                         ),
                       ),
                     ),
-                if ((widget.customFieldTitles ?? const []).isNotEmpty) ...[
+                if (_customFieldTitles.isNotEmpty) ...[
                   const SizedBox(height: 8),
-                  for (final title in widget.customFieldTitles!)
+                  for (final title in _customFieldTitles)
                     Card(
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
@@ -499,8 +534,7 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
                         padding: const EdgeInsets.all(8),
                         child: CustomFieldMultiSelect(
                           title: title,
-                          items: List<String>.from(
-                              widget.customFieldValues?[title] ?? const []),
+                          items: List<String>.from(_customFieldValues[title] ?? const []),
                           initialSelectedValues:
                               _selectedCustomFieldValues[title],
                           onChanged: (values) {
