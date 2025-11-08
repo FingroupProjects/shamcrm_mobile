@@ -1344,7 +1344,7 @@ class ApiService {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     path = await _appendQueryParams(path);
     if (kDebugMode) {
-      //print('ApiService: getLeads - After _appendQueryParams: $path');
+      print('ApiService: getLeads - After _appendQueryParams: $path');
     }
 
     // Добавляем sales_funnel_id из аргумента, если он передан
@@ -4308,10 +4308,10 @@ class ApiService {
       if (customFields != null && customFields.isNotEmpty) {
         for (int i = 0; i < customFields.length; i++) {
           var field = customFields[i];
-          request.fields['task_custom_fields[$i][key]'] = field['key'] ?? '';
-          request.fields['task_custom_fields[$i][value]'] =
+          request.fields['custom_fields[$i][key]'] = field['key'] ?? '';
+          request.fields['custom_fields[$i][value]'] =
               field['value'] ?? '';
-          request.fields['task_custom_fields[$i][type]'] =
+          request.fields['custom_fields[$i][type]'] =
               field['type'] ?? 'string';
         }
       }
@@ -4475,11 +4475,11 @@ class ApiService {
       if (customFields != null && customFields.isNotEmpty) {
         for (int i = 0; i < customFields.length; i++) {
           var field = customFields[i];
-          request.fields['task_custom_fields[$i][key]'] =
+          request.fields['custom_fields[$i][key]'] =
               field['key']!.toString();
-          request.fields['task_custom_fields[$i][value]'] =
+          request.fields['custom_fields[$i][value]'] =
               field['value']!.toString();
-          request.fields['task_custom_fields[$i][type]'] =
+          request.fields['custom_fields[$i][type]'] =
               field['type']?.toString() ?? 'string';
         }
       }
@@ -16101,6 +16101,7 @@ class ApiService {
     }
   }
 
+  // not used
 // Новый метод для сохранения конфигурации в кэш
   Future<void> cacheFieldConfiguration({
     required String tableName,
@@ -16128,6 +16129,7 @@ class ApiService {
     // }
   }
 
+  // not used
 // Новый метод для получения конфигурации из кэша
   Future<FieldConfigurationResponse?> getCachedFieldConfiguration({
     required String tableName,
@@ -16161,6 +16163,7 @@ class ApiService {
     // }
   }
 
+  // not used
 // Метод для загрузки и кэширования всех конфигураций
   Future<void> loadAndCacheAllFieldConfigurations() async {
     try {
@@ -16173,6 +16176,7 @@ class ApiService {
       for (final tableName in tables) {
         try {
           final config = await getFieldPositions(tableName: tableName);
+          // not used as this method is not used
           await cacheFieldConfiguration(tableName: tableName, configuration: config);
 
           if (kDebugMode) {
@@ -16195,6 +16199,7 @@ class ApiService {
     }
   }
 
+  // not used
 // Метод для очистки кэша конфигураций (при смене организации)
   Future<void> clearFieldConfigurationCache() async {
     try {
@@ -16219,6 +16224,7 @@ class ApiService {
     }
   }
 
+  // not used
 // Метод для очистки кэша конфигурации конкретной таблицы
   Future<void> clearFieldConfigurationCacheForTable(String tableName) async {
     try {

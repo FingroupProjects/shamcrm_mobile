@@ -10,7 +10,7 @@ class MultiDirectoryDropdownWidget extends StatefulWidget {
   final Function(List<MainField>) onSelectField;
   final List<MainField>? initialFields;
 
-  MultiDirectoryDropdownWidget({
+  const MultiDirectoryDropdownWidget({
     super.key,
     required this.directoryId,
     required this.directoryName,
@@ -27,7 +27,7 @@ class _MultiDirectoryDropdownWidgetState extends State<MultiDirectoryDropdownWid
   List<MainField> _selectedFields = [];
   String? errorMessage;
   bool _isLoading = false;
-  bool _allSelected = false;
+  bool allSelected = false;
 
   final TextStyle statusTextStyle = const TextStyle(
     fontSize: 16,
@@ -44,105 +44,77 @@ class _MultiDirectoryDropdownWidgetState extends State<MultiDirectoryDropdownWid
   }
 
   @override
-  void didUpdateWidget(MultiDirectoryDropdownWidget oldWidget) {
+  void didUpdateWidget(covariant MultiDirectoryDropdownWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (widget.directoryId != oldWidget.directoryId) {
+      setState(() {
+        mainFieldsList = [];
+        _selectedFields = [];
+        allSelected = false;
+        errorMessage = null;
+      });
+      _fetchMainFields();
+    }
     if (widget.initialFields != oldWidget.initialFields) {
       _syncSelectedFields();
     }
   }
 
   void _syncSelectedFields() {
-    final initial = widget.initialFields ?? const <MainField>[];
-    final availableIds = mainFieldsList.map((field) => field.id).toSet();
-    final filteredInitial = initial
-        .where((field) => availableIds.contains(field.id))
-        .map(
-          (field) => mainFieldsList.firstWhere(
-            (item) => item.id == field.id,
-            orElse: () => field,
-          ),
-        )
+    final initial = widget.initialFields ?? [];
+    final initialIds = initial.map((e) => e.id).toSet();
+    final filtered = mainFieldsList
+        .where((item) => initialIds.contains(item.id))
         .toList();
 
     setState(() {
-      _selectedFields = filteredInitial;
-      _allSelected = mainFieldsList.isNotEmpty && filteredInitial.length == mainFieldsList.length;
+      _selectedFields = filtered;
+      allSelected = mainFieldsList.isNotEmpty && _selectedFields.length == mainFieldsList.length;
     });
   }
 
   Future<void> _fetchMainFields() async {
-    if (mounted) {
-      setState(() {
-        _isLoading = true;
-      });
-    } else {
+    if (!mounted) return;
+    setState(() {
       _isLoading = true;
-    }
+      errorMessage = null;
+    });
+
     try {
       final response = await ApiService().getMainFields(widget.directoryId);
-      if (mounted) {
-        setState(() {
-          mainFieldsList = response.result ?? [];
-        });
-        _syncSelectedFields();
-      }
+      if (!mounted) return;
+      setState(() {
+        mainFieldsList = response.result ?? [];
+      });
+      _syncSelectedFields();
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          errorMessage = e.toString();
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              errorMessage!,
-              style: statusTextStyle.copyWith(color: Colors.white),
-            ),
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            backgroundColor: Colors.red,
-            elevation: 3,
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
+      if (!mounted) return;
+      setState(() {
+        errorMessage = e.toString();
+      });
     } finally {
       if (mounted) {
         setState(() {
           _isLoading = false;
         });
-      } else {
-        _isLoading = false;
       }
     }
   }
 
-  bool get _isAllSelected =>
-      mainFieldsList.isNotEmpty && _selectedFields.length == mainFieldsList.length;
-
   void _toggleSelectAll() {
-    if (mainFieldsList.isEmpty) {
-      return;
-    }
+    if (mainFieldsList.isEmpty || _isLoading || errorMessage != null) return;
 
     setState(() {
-      if (_isAllSelected) {
-        _selectedFields = [];
-        _allSelected = false;
-      } else {
-        _selectedFields = List<MainField>.from(mainFieldsList);
-        _allSelected = true;
-      }
+      allSelected = !allSelected;
+      _selectedFields = allSelected ? List<MainField>.from(mainFieldsList) : [];
     });
-
     widget.onSelectField(_selectedFields);
   }
 
   @override
   Widget build(BuildContext context) {
+    final hasError = errorMessage != null;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -157,109 +129,110 @@ class _MultiDirectoryDropdownWidgetState extends State<MultiDirectoryDropdownWid
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               width: 1,
-              color: const Color(0xFFE5E7EB),
+              color: hasError ? Colors.red : const Color(0xFFE5E7EB),
             ),
           ),
-          child: errorMessage != null
-              ? const SizedBox.shrink()
-          : CustomDropdown<MainField>.multiSelectSearch(
-              items: mainFieldsList,
-              initialItems: _selectedFields,
-              searchHintText: AppLocalizations.of(context)!.translate('search'),
-              overlayHeight: 400,
-              decoration: CustomDropdownDecoration(
-                closedFillColor: const Color(0xffF4F7FD),
-                expandedFillColor: Colors.white,
-                closedBorder: Border.all(
-                  color: Colors.transparent,
-                  width: 1,
-                ),
-                closedBorderRadius: BorderRadius.circular(12),
-                expandedBorder: Border.all(
-                  color: const Color(0xFFE5E7EB),
-                  width: 1,
-                ),
-                expandedBorderRadius: BorderRadius.circular(12),
-              ),
-              listItemBuilder: (context, item, isSelected, onItemSelect) {
-                if (mainFieldsList.isNotEmpty && mainFieldsList.indexOf(item) == 0) {
-                  return Column(
-                    children: [
-                      _buildSelectAllTile(),
-                      const Divider(
-                        height: 20,
-                        color: Color(0xFFE5E7EB),
-                      ),
-                      _buildListItem(item, isSelected, onItemSelect),
-                    ],
-                  );
-                }
-
-                return _buildListItem(item, isSelected, onItemSelect);
-              },
-              headerListBuilder: (context, hint, enabled) {
-                if (_selectedFields.isEmpty) {
-                  return Text(
-                    AppLocalizations.of(context)!.translate('select_field'),
-                    style: statusTextStyle,
-                  );
-                }
-
-                final display = _selectedFields.take(3).map((field) => field.value).join(', ');
-                final suffix = _selectedFields.length > 3
-                    ? ' +${_selectedFields.length - 3}'
-                    : '';
-
-                return Text(
-                  '$display$suffix',
-                  style: statusTextStyle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                );
-              },
-              hintBuilder: (context, hint, enabled) => Text(
-                AppLocalizations.of(context)!.translate('select_field'),
-                style: statusTextStyle.copyWith(fontSize: 14),
-              ),
-              onListChanged: (values) {
-                setState(() {
-                  _selectedFields = List<MainField>.from(values);
-                  _allSelected = values.length == mainFieldsList.length && mainFieldsList.isNotEmpty;
-                });
-                widget.onSelectField(_selectedFields);
-              },
+          child: _isLoading
+              ? const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Center(child: CircularProgressIndicator()),
+          )
+              : hasError
+              ? Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            child: Text(
+              errorMessage!,
+              style: const TextStyle(color: Colors.red, fontSize: 16),
             ),
+          )
+              : CustomDropdown<MainField>.multiSelectSearch(
+            items: mainFieldsList,
+            initialItems: _selectedFields,
+            searchHintText: AppLocalizations.of(context)!.translate('search'),
+            overlayHeight: 400,
+            decoration: CustomDropdownDecoration(
+              closedFillColor: const Color(0xffF4F7FD),
+              expandedFillColor: Colors.white,
+              closedBorder: Border.all(color: Colors.transparent, width: 1),
+              closedBorderRadius: BorderRadius.circular(12),
+              expandedBorder: Border.all(color: const Color(0xFFE5E7EB), width: 1),
+              expandedBorderRadius: BorderRadius.circular(12),
+            ),
+            listItemBuilder: (context, item, isSelected, onItemSelect) {
+              if (mainFieldsList.isNotEmpty && mainFieldsList.indexOf(item) == 0) {
+                return Column(
+                  children: [
+                    _buildSelectAllTile(),
+                    const Divider(height: 20, color: Color(0xFFE5E7EB)),
+                    _buildListItem(item, isSelected, onItemSelect),
+                  ],
+                );
+              }
+              return _buildListItem(item, isSelected, onItemSelect);
+            },
+            headerListBuilder: (context, hint, enabled) {
+              if (_selectedFields.isEmpty) {
+                return Text(
+                  AppLocalizations.of(context)!.translate('select_field'),
+                  style: statusTextStyle,
+                );
+              }
+              final display = _selectedFields.map((field) => field.value).join(', ');
+              return Text(
+                display,
+                style: statusTextStyle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              );
+            },
+            hintBuilder: (context, hint, enabled) => Text(
+              AppLocalizations.of(context)!.translate('select_field'),
+              style: statusTextStyle.copyWith(fontSize: 14),
+            ),
+            onListChanged: (values) {
+              setState(() {
+                _selectedFields = List<MainField>.from(values);
+                allSelected = _selectedFields.length == mainFieldsList.length && mainFieldsList.isNotEmpty;
+              });
+              widget.onSelectField(_selectedFields);
+            },
+          ),
         ),
+        if (hasError)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              errorMessage!,
+              style: const TextStyle(
+                color: Colors.red,
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          ),
       ],
     );
   }
 
   Widget _buildSelectAllTile() {
-    final label = AppLocalizations.of(context)?.translate('select_all') ?? 'Выбрать все';
+    final label = AppLocalizations.of(context)!.translate('select_all');
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: GestureDetector(
-        onTap: _isLoading ? null : _toggleSelectAll,
+        onTap: _isLoading || errorMessage != null ? null : _toggleSelectAll,
         child: Row(
           children: [
             Container(
               width: 18,
               height: 18,
               decoration: BoxDecoration(
-                border: Border.all(
-                  color: const Color(0xff1E2E52),
-                  width: 1,
-                ),
+                border: Border.all(color: const Color(0xff1E2E52), width: 1),
                 borderRadius: BorderRadius.circular(4),
-                color: _allSelected ? const Color(0xff1E2E52) : Colors.transparent,
+                color: allSelected ? const Color(0xff1E2E52) : Colors.transparent,
               ),
-              child: _allSelected
-                  ? const Icon(
-                      Icons.check,
-                      color: Colors.white,
-                      size: 14,
-                    )
+              child: allSelected
+                  ? const Icon(Icons.check, color: Colors.white, size: 14)
                   : null,
             ),
             const SizedBox(width: 12),
@@ -286,19 +259,12 @@ class _MultiDirectoryDropdownWidgetState extends State<MultiDirectoryDropdownWid
               width: 18,
               height: 18,
               decoration: BoxDecoration(
-                border: Border.all(
-                  color: const Color(0xff1E2E52),
-                  width: 1,
-                ),
+                border: Border.all(color: const Color(0xff1E2E52), width: 1),
                 borderRadius: BorderRadius.circular(4),
                 color: isSelected ? const Color(0xff1E2E52) : Colors.transparent,
               ),
               child: isSelected
-                  ? const Icon(
-                      Icons.check,
-                      color: Colors.white,
-                      size: 14,
-                    )
+                  ? const Icon(Icons.check, color: Colors.white, size: 14)
                   : null,
             ),
             const SizedBox(width: 12),

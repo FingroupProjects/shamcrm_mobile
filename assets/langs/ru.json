@@ -971,6 +971,7 @@
   "confirm_delete_subcategory": "Подтвердите удаление подкатегории!",
   "view_subcategory": "Просмотр подкатегории",
   "error_loading_data": "Ошибка загрузки данных!",
+  "select_value": "Выберите значение",
   "retry": "Повторить попытку",
   "no_products": "Товаров нету",
   "update": "Обновить",

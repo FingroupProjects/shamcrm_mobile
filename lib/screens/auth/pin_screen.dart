@@ -178,7 +178,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
       });
 try {
   //print('PinScreen: Загрузка конфигураций полей');
-  await _apiService.loadAndCacheAllFieldConfigurations();
+  // await _apiService.loadAndCacheAllFieldConfigurations();
   //print('PinScreen: Конфигурации полей загружены и закэшированы');
 } catch (e) {
   //print('PinScreen: Ошибка загрузки конфигураций полей: $e');

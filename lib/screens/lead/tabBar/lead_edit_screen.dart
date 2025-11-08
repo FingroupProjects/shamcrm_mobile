@@ -1747,7 +1747,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                 );
                               } else {
                                 return CustomButton(
-                                  buttonText: AppLocalizations.of(context)!.translate('add'),
+                                  buttonText: AppLocalizations.of(context)!.translate('save'),
                                   buttonColor: const Color(0xff4759FF),
                                   textColor: Colors.white,
                                   onPressed: () {

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/custom_widget/custom_field_multi_select.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/multi_manager_list.dart';
@@ -9,6 +10,7 @@ import 'package:crm_task_manager/models/region_model.dart';
 import 'package:crm_task_manager/models/source_list_model.dart';
 import 'package:crm_task_manager/models/directory_link_model.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
+import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/screens/lead/lead_cache.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -98,10 +100,17 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
   Map<int, List<MainField>> _selectedDirectoryFields = {};
   List<DirectoryLink> _directoryLinks = [];
   Map<String, List<String>> _selectedCustomFieldValues = {};
+  // Пользовательские поля лидов
+  final ApiService _apiService = ApiService();
+  List<String> _customFieldTitles = [];
+  Map<String, List<String>> _customFieldValues = {};
+  
+  // Field configuration
+  List<FieldConfiguration> _fieldConfigurations = [];
+  bool _isConfigurationLoaded = false;
 
-  void _initializeCustomFieldSelections(
-      Map<String, List<String>> initialSelections) {
-    final titles = widget.customFieldTitles ?? const [];
+  void _initializeCustomFieldSelections(Map<String, List<String>> initialSelections) {
+    final titles = _customFieldTitles;
     _selectedCustomFieldValues = {};
     for (final title in titles) {
       final initial = initialSelections[title];
@@ -167,6 +176,11 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
   @override
   void initState() {
     super.initState();
+    
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadFieldConfiguration();
+    });
+    
     _selectedManagers = widget.initialManagers ?? [];
     _selectedRegions = widget.initialRegions ?? [];
     _selectedSources = widget.initialSources ?? [];
@@ -187,6 +201,7 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
     _fetchDirectoryLinks();
     _initializeCustomFieldSelections(
         widget.initialCustomFieldSelections ?? const <String, List<String>>{});
+    _loadLeadCustomFields();
   }
 
   Future<void> _fetchDirectoryLinks() async {
@@ -235,6 +250,164 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Ошибка при загрузке справочников: $e')),
       );
+    }
+  }
+
+  Future<void> _loadLeadCustomFields() async {
+    try {
+      final titles = await _apiService.getLeadCustomFields();
+      if (!mounted) return;
+      setState(() {
+        _customFieldTitles = titles;
+      });
+      // Инициализируем выбранные значения на основе входящих selection'ов, когда появились заголовки
+      _initializeCustomFieldSelections(
+          widget.initialCustomFieldSelections ?? const <String, List<String>>{});
+      for (final title in titles) {
+        unawaited(_loadSingleCustomField(title));
+      }
+    } catch (e) {
+      // проглатываем, показывать UI всё равно можно
+    }
+  }
+
+  Future<void> _loadSingleCustomField(String title) async {
+    try {
+      final values = await _apiService.getLeadCustomFieldValues(title);
+      if (!mounted) return;
+      setState(() {
+        _customFieldValues[title] = values;
+      });
+    } catch (e) {
+      // игнорируем отдельные ошибки загрузки полей
+    }
+  }
+
+  Future<void> _loadFieldConfiguration() async {
+    try {
+      final response = await _apiService.getFieldPositions(tableName: 'leads');
+      if (!mounted) return;
+      
+      // Фильтруем только активные поля и сортируем по position
+      final activeFields = response.result
+          .where((field) => field.isActive)
+          .toList()
+        ..sort((a, b) => a.position.compareTo(b.position));
+      
+      setState(() {
+        _fieldConfigurations = activeFields;
+        _isConfigurationLoaded = true;
+      });
+    } catch (e) {
+      // В случае ошибки показываем поля в стандартном порядке
+      if (mounted) {
+        setState(() {
+          _isConfigurationLoaded = true;
+        });
+      }
+    }
+  }
+
+  Widget? _buildFieldWidgetByConfig(FieldConfiguration config) {
+    switch (config.fieldName) {
+      case 'manager_id':
+        return Card(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          color: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: ManagerMultiSelectWidget(
+              selectedManagers: _selectedManagers.map((m) => m.id.toString()).toList(),
+              onSelectManagers: (List<ManagerData> selectedUsersData) {
+                setState(() => _selectedManagers = selectedUsersData);
+              },
+            ),
+          ),
+        );
+        
+      case 'region_id':
+        return Card(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          color: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: RegionsMultiSelectWidget(
+              selectedRegions: _selectedRegions.map((r) => r.id.toString()).toList(),
+              onSelectRegions: (List<RegionData> selectedRegionsData) {
+                setState(() => _selectedRegions = selectedRegionsData);
+              },
+            ),
+          ),
+        );
+        
+      case 'source_id':
+        return Card(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          color: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: SourcesMultiSelectWidget(
+              selectedSources: _selectedSources.map((s) => s.id.toString()).toList(),
+              onSelectSources: (List<SourceData> selectedSourcesData) {
+                setState(() => _selectedSources = selectedSourcesData);
+              },
+            ),
+          ),
+        );
+        
+      default:
+        // Проверяем custom field
+        if (config.isCustomField && _customFieldTitles.contains(config.fieldName)) {
+          return Card(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            color: Colors.white,
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: CustomFieldMultiSelect(
+                title: config.fieldName,
+                items: List<String>.from(_customFieldValues[config.fieldName] ?? const []),
+                initialSelectedValues: _selectedCustomFieldValues[config.fieldName],
+                onChanged: (values) {
+                  setState(() {
+                    _selectedCustomFieldValues[config.fieldName] = List<String>.from(values);
+                  });
+                },
+              ),
+            ),
+          );
+        }
+        
+        // Проверяем directory
+        if (config.isDirectory && config.directoryId != null) {
+          try {
+            final link = _directoryLinks.firstWhere(
+              (l) => l.directory.id == config.directoryId,
+            );
+            
+            return Card(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              color: Colors.white,
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: MultiDirectoryDropdownWidget(
+                  directoryId: link.directory.id,
+                  directoryName: link.directory.name,
+                  onSelectField: (List<MainField> fields) {
+                    setState(() {
+                      _selectedDirectoryFields[link.id] = List<MainField>.from(fields);
+                    });
+                  },
+                  initialFields: _selectedDirectoryFields[link.id],
+                ),
+              ),
+            );
+          } catch (e) {
+            // Директория не найдена в списке, пропускаем
+            return null;
+          }
+        }
+        
+        return null;
     }
   }
 
@@ -425,115 +598,71 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
               child: SingleChildScrollView(
                 child: Column(
                   children: [
-                    Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
-                      child: Padding(
-                        padding: const EdgeInsets.all(8),
-                        child: ManagerMultiSelectWidget(
-                          selectedManagers: _selectedManagers.map((manager) => manager.id.toString()).toList(),
-                          onSelectManagers: (List<ManagerData> selectedUsersData) {
-                            setState(() {
-                              _selectedManagers = selectedUsersData;
-                            });
-                          },
+                    // Поля по position из field configuration
+                    if (_isConfigurationLoaded && _fieldConfigurations.isNotEmpty)
+                      ..._fieldConfigurations.map((config) {
+                        final widget = _buildFieldWidgetByConfig(config);
+                        if (widget == null) return SizedBox.shrink();
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: widget,
+                        );
+                      })
+                    else if (!_isConfigurationLoaded)
+                      // Показываем loader пока грузится конфигурация
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: CircularProgressIndicator(),
                         ),
-                      ),
-                    ),
-                    // const SizedBox(height: 8),
-                    // Card(
-                    //   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    //   color: Colors.white,
-                    //   child: Padding(
-                    //     padding: const EdgeInsets.all(8),
-                    //     child: LeadStatusRadioGroupWidget(
-                    //       selectedStatus: _selectedStatuses?.toString(),
-                    //       onSelectStatus: (LeadStatus selectedStatusData) {
-                    //         setState(() {
-                    //           _selectedStatuses = selectedStatusData.id;
-                    //         });
-                    //       },
-                    //     ),
-                    //   ),
-                    // ),
-                    const SizedBox(height: 8),
-                    Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
-                      child: Padding(
-                        padding: const EdgeInsets.all(8),
-                        child: RegionsMultiSelectWidget(
-                          selectedRegions: _selectedRegions.map((region) => region.id.toString()).toList(),
-                          onSelectRegions: (List<RegionData> selectedRegionsData) {
-                            setState(() {
-                              _selectedRegions = selectedRegionsData;
-                            });
-                          },
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
-                      child: Padding(
-                        padding: const EdgeInsets.all(8),
-                        child: SourcesMultiSelectWidget(
-                          selectedSources: _selectedSources.map((source) => source.id.toString()).toList(),
-                          onSelectSources: (List<SourceData> selectedSourcesData) {
-                            setState(() {
-                              _selectedSources = selectedSourcesData;
-                            });
-                          },
-                        ),
-                      ),
-                    ),
-                if ((widget.customFieldTitles ?? const []).isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  for (final title in widget.customFieldTitles!)
-                    Card(
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
-                      child: Padding(
-                        padding: const EdgeInsets.all(8),
-                        child: CustomFieldMultiSelect(
-                          title: title,
-                          items: List<String>.from(
-                              widget.customFieldValues?[title] ?? const []),
-                          initialSelectedValues:
-                              _selectedCustomFieldValues[title],
-                          onChanged: (values) {
-                            setState(() {
-                              _selectedCustomFieldValues[title] =
-                                  List<String>.from(values);
-                            });
-                          },
-                        ),
-                      ),
-                    ),
-                ],
-                    if (_directoryLinks.isNotEmpty) ...[
-                      for (var link in _directoryLinks)
+                      )
+                    else
+                      // Fallback: показываем поля в стандартном порядке если конфигурация пуста
+                      ...[
                         Card(
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           color: Colors.white,
                           child: Padding(
                             padding: const EdgeInsets.all(8),
-                            child: MultiDirectoryDropdownWidget(
-                              directoryId: link.directory.id,
-                              directoryName: link.directory.name,
-                              onSelectField: (List<MainField> fields) {
-                                setState(() {
-                                  _selectedDirectoryFields[link.id] = List<MainField>.from(fields);
-                                });
+                            child: ManagerMultiSelectWidget(
+                              selectedManagers: _selectedManagers.map((m) => m.id.toString()).toList(),
+                              onSelectManagers: (List<ManagerData> selectedUsersData) {
+                                setState(() => _selectedManagers = selectedUsersData);
                               },
-                              initialFields: _selectedDirectoryFields[link.id],
                             ),
                           ),
                         ),
-                      const SizedBox(height: 8),
-                    ],
+                        const SizedBox(height: 8),
+                        Card(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          color: Colors.white,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: RegionsMultiSelectWidget(
+                              selectedRegions: _selectedRegions.map((r) => r.id.toString()).toList(),
+                              onSelectRegions: (List<RegionData> selectedRegionsData) {
+                                setState(() => _selectedRegions = selectedRegionsData);
+                              },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Card(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          color: Colors.white,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: SourcesMultiSelectWidget(
+                              selectedSources: _selectedSources.map((s) => s.id.toString()).toList(),
+                              onSelectSources: (List<SourceData> selectedSourcesData) {
+                                setState(() => _selectedSources = selectedSourcesData);
+                              },
+                            ),
+                          ),
+                        ),
+                      ],
+                    
+                    // Switches - всегда в конце
                     Card(
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       color: Colors.white,
@@ -592,6 +721,8 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
                         ],
                       ),
                     ),
+                    
+                    // Days without activity slider - всегда последний
                     Card(
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       color: Colors.white,
