@@ -319,7 +319,7 @@ class _CustomAppBarState extends State<CustomAppBar>
   bool _canReadCallCenter = false;
   bool _canReadNotice = false;
   bool _canReadCalendar = false;
-  bool _canReadGps = false; // Новая переменная для GPS
+  bool _canReadGps = false; // Новая переменная для GPS®
   // DEAL custom fields were moved to filter screen
 
   Color _iconColor = const Color.fromARGB(255, 0, 0, 0);

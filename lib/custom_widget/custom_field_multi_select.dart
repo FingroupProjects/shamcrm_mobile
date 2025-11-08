@@ -84,7 +84,7 @@ class _CustomFieldMultiSelectState extends State<CustomFieldMultiSelect> {
           children: [
             if (widget.title != null) ...[
               Text(
-                widget.title!,
+                "Доп. поле (${widget.title!})",
                 style: itemStyle.copyWith(fontWeight: FontWeight.w400),
               ),
               const SizedBox(height: 8),

@@ -1344,7 +1344,7 @@ class ApiService {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     path = await _appendQueryParams(path);
     if (kDebugMode) {
-      //print('ApiService: getLeads - After _appendQueryParams: $path');
+      print('ApiService: getLeads - After _appendQueryParams: $path');
     }
 
     // Добавляем sales_funnel_id из аргумента, если он передан
