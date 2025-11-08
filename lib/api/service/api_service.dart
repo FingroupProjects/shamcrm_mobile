@@ -4308,10 +4308,10 @@ class ApiService {
       if (customFields != null && customFields.isNotEmpty) {
         for (int i = 0; i < customFields.length; i++) {
           var field = customFields[i];
-          request.fields['task_custom_fields[$i][key]'] = field['key'] ?? '';
-          request.fields['task_custom_fields[$i][value]'] =
+          request.fields['custom_fields[$i][key]'] = field['key'] ?? '';
+          request.fields['custom_fields[$i][value]'] =
               field['value'] ?? '';
-          request.fields['task_custom_fields[$i][type]'] =
+          request.fields['custom_fields[$i][type]'] =
               field['type'] ?? 'string';
         }
       }
@@ -4475,11 +4475,11 @@ class ApiService {
       if (customFields != null && customFields.isNotEmpty) {
         for (int i = 0; i < customFields.length; i++) {
           var field = customFields[i];
-          request.fields['task_custom_fields[$i][key]'] =
+          request.fields['custom_fields[$i][key]'] =
               field['key']!.toString();
-          request.fields['task_custom_fields[$i][value]'] =
+          request.fields['custom_fields[$i][value]'] =
               field['value']!.toString();
-          request.fields['task_custom_fields[$i][type]'] =
+          request.fields['custom_fields[$i][type]'] =
               field['type']?.toString() ?? 'string';
         }
       }

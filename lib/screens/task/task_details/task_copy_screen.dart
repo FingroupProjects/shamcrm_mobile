@@ -128,7 +128,7 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
 
       if (task.taskCustomFields.isNotEmpty) {
         customFields.addAll(task.taskCustomFields.map((field) => CustomField(
-              fieldName: field.key,
+              fieldName: field.name,
               controller: TextEditingController(text: field.value),
               uniqueId: Uuid().v4(),
               type: field.type,

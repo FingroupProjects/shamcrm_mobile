@@ -97,7 +97,7 @@ class TaskById {
       author: json['author'] != null && json['author'] is Map<String, dynamic>
           ? AuthorTask.fromJson(json['author'])
           : null,
-      taskCustomFields: (json['task_custom_fields'] as List<dynamic>?)
+      taskCustomFields: (json['custom_fields'] as List<dynamic>?)
               ?.map((field) => TaskCustomFieldsById.fromJson(field))
               .toList() ??
           [],
@@ -150,13 +150,13 @@ class TaskFiles {
 
 class TaskCustomFieldsById {
   final int id;
-  final String key;
+  final String name;
   final String value;
   final String type;
 
   TaskCustomFieldsById({
     required this.id,
-    required this.key,
+    required this.name,
     required this.value,
     required this.type,
   });
@@ -164,7 +164,7 @@ class TaskCustomFieldsById {
   factory TaskCustomFieldsById.fromJson(Map<String, dynamic> json) {
     return TaskCustomFieldsById(
       id: json['id'] ?? 0,
-      key: json['key'] ?? '',
+      name: json['name'] ?? '',
       value: json['value'] ?? '', type: '',
     );
   }

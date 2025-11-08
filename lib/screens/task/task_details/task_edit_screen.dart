@@ -18,7 +18,6 @@ import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_withPriority.dart';
 import 'package:crm_task_manager/custom_widget/file_picker_dialog.dart';
-import 'package:crm_task_manager/models/directory_model.dart' as directory_model;
 import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
 import 'package:crm_task_manager/models/project_task_model.dart';
@@ -165,8 +164,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
     _selectedStatuses = widget.statusId;
     if (widget.startDate != null) {
       DateTime parsedStartDate = DateTime.parse(widget.startDate!);
-      startDateController.text =
-          DateFormat('dd/MM/yyyy').format(parsedStartDate);
+      startDateController.text = DateFormat('dd/MM/yyyy').format(parsedStartDate);
     }
     if (widget.endDate != null) {
       DateTime parsedEndDate = DateTime.parse(widget.endDate!);
@@ -174,47 +172,14 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
     }
     descriptionController.text = widget.description ?? '';
     selectedProject = widget.project;
-    
+
     if (!_canUpdateTask && _hasTaskCreateForMySelfPermission && _currentUserId != null) {
       selectedUsers = [_currentUserId.toString()];
     } else {
       selectedUsers = widget.user?.map((e) => e.toString()).toList() ?? [];
     }
-    
+
     selectedPriority = widget.priority ?? 1;
-
-    for (var customField in widget.taskCustomFields) {
-      final controller = TextEditingController(text: customField.value);
-      customFields.add(CustomField(
-        fieldName: customField.key,
-        controller: controller,
-        uniqueId: Uuid().v4(),
-        type: customField.type,
-      ));
-    }
-
-    if (widget.directoryValues != null && widget.directoryValues!.isNotEmpty) {
-      final seen = <String>{};
-      final uniqueDirectoryValues = widget.directoryValues!.where((dirValue) {
-        final key = '${dirValue.entry.directory.id}_${dirValue.entry.id}';
-        return seen.add(key);
-      }).toList();
-
-      for (var dirValue in uniqueDirectoryValues) {
-        final controller =
-        TextEditingController(
-          text: (dirValue.entry.values.isNotEmpty ? dirValue.entry.values.first.value : ''),
-        );
-        customFields.add(CustomField(
-          fieldName: dirValue.entry.directory.name,
-          controller: controller,
-          isDirectoryField: true,
-          directoryId: dirValue.entry.directory.id,
-          entryId: dirValue.entry.id,
-          uniqueId: Uuid().v4(),
-        ));
-      }
-    }
   }
 
   void _loadInitialData() {
@@ -417,17 +382,17 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
       }
     }
   }
-
-  // Вспомогательный метод для создания/получения кастомного поля
   CustomField _getOrCreateCustomField(FieldConfiguration config) {
     final existingField = customFields.firstWhere(
           (field) => field.fieldName == config.fieldName && field.isCustomField,
       orElse: () {
+        // ✅ Only create new field if it doesn't exist
+        // This happens when user adds a NEW custom field via UI
         final newField = CustomField(
           fieldName: config.fieldName,
           uniqueId: Uuid().v4(),
-          controller: TextEditingController(),
-          type: config.type,
+          controller: TextEditingController(), // Empty for new fields
+          type: config.type ?? 'string',
           isCustomField: true,
         );
         customFields.add(newField);
@@ -438,17 +403,19 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
     return existingField;
   }
 
-  // Вспомогательный метод для создания/получения поля-справочника
   CustomField _getOrCreateDirectoryField(FieldConfiguration config) {
+    // First, try to find existing field in customFields
     final existingField = customFields.firstWhere(
           (field) => field.directoryId == config.directoryId,
       orElse: () {
+        // ✅ Only create new field if it doesn't exist
+        // This happens when user adds a NEW directory field via UI
         final newField = CustomField(
           fieldName: config.fieldName,
           isDirectoryField: true,
           directoryId: config.directoryId,
           uniqueId: Uuid().v4(),
-          controller: TextEditingController(),
+          controller: TextEditingController(), // Empty for new fields
         );
         customFields.add(newField);
         return newField;
@@ -457,6 +424,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
 
     return existingField;
   }
+
+
 
   // Метод для построения стандартных системных полей
   Widget? _buildStandardField(FieldConfiguration config) {
@@ -538,6 +507,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
           },
         );
 
+      case 'file':
+        return _buildFileSelection();
       default:
         return null;
     }
@@ -1510,29 +1481,83 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
           if (kDebugMode) {
             print('Task: Configuration loaded with ${configState.fields.length} fields');
           }
+
           setState(() {
             fieldConfigurations = configState.fields;
             isConfigurationLoaded = true;
+
+            // ✅ ONLY initialize custom fields here, ONCE
+            // Check if already initialized to prevent duplicates
+            if (customFields.isEmpty) {
+              // Initialize custom fields from widget data
+              for (var customField in widget.taskCustomFields) {
+                if (kDebugMode) {
+                  print('Loading custom field: ${customField.name} with value: ${customField.value}');
+                }
+
+                final controller = TextEditingController(text: customField.value);
+                customFields.add(CustomField(
+                  fieldName: customField.name,
+                  controller: controller,
+                  uniqueId: Uuid().v4(),
+                  type: customField.type ?? 'string',
+                  isCustomField: true,
+                ));
+              }
+
+              // Initialize directory values from widget data
+              if (widget.directoryValues != null && widget.directoryValues!.isNotEmpty) {
+                final seen = <String>{};
+                final uniqueDirectoryValues = widget.directoryValues!.where((dirValue) {
+                  final key = '${dirValue.entry.directory.id}_${dirValue.entry.id}';
+                  return seen.add(key);
+                }).toList();
+
+                for (var dirValue in uniqueDirectoryValues) {
+                  // Check if already exists to prevent duplicates
+                  final exists = customFields.any((f) =>
+                  f.isDirectoryField &&
+                      f.directoryId == dirValue.entry.directory.id
+                  );
+
+                  if (!exists) {
+                    final controller = TextEditingController(
+                      text: (dirValue.entry.values.isNotEmpty
+                          ? dirValue.entry.values.first.value
+                          : ''),
+                    );
+                    customFields.add(CustomField(
+                      fieldName: dirValue.entry.directory.name,
+                      controller: controller,
+                      isDirectoryField: true,
+                      directoryId: dirValue.entry.directory.id,
+                      entryId: dirValue.entry.id,
+                      uniqueId: Uuid().v4(),
+                    ));
+                  }
+                }
+              }
+            }
           });
         } else if (configState is FieldConfigurationError) {
-          if (kDebugMode) {
-            print('Task: Configuration error: ${configState.message}');
-          }
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Ошибка загрузки конфигурации: ${configState.message}',
-                style: const TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
+            if (kDebugMode) {
+              print('Task: Configuration error: ${configState.message}');
+            }
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Ошибка загрузки конфигурации: ${configState.message}',
+                  style: const TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
                 ),
+                backgroundColor: Colors.red,
               ),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
+            );
+          }
       }, builder: (context, configState) {
         if (kDebugMode) {
           print('TaskAddScreen: Building with state: ${configState.runtimeType}, isLoaded: $isConfigurationLoaded');
@@ -1727,16 +1752,12 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                               return;
                             }
 
-                            List<Map<String, dynamic>>
-                            customFieldList = [];
-                            List<Map<String, int>> directoryValues =
-                            [];
+                            List<Map<String, dynamic>> customFieldList = [];
+                            List<Map<String, int>> directoryValues = [];
 
                             for (var field in customFields) {
-                              String fieldName =
-                              field.fieldName.trim();
-                              String fieldValue =
-                              field.controller.text.trim();
+                              String fieldName = field.fieldName.trim();
+                              String fieldValue = field.controller.text.trim();
                               String? fieldType = field.type;
 
                               // ВАЖНО: Нормализуем тип поля - преобразуем "text" в "string"
@@ -1798,12 +1819,11 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                   'directory_id': field.directoryId!,
                                   'entry_id': field.entryId!,
                                 });
-                              } else if (fieldName.isNotEmpty &&
-                                  fieldValue.isNotEmpty) {
+                              } else if (fieldName.isNotEmpty && fieldValue.isNotEmpty) {
                                 customFieldList.add({
                                   'key': fieldName,
                                   'value': fieldValue,
-                                  'type': fieldType, // Теперь гарантированно один из: string, number, date, datetime
+                                  'type': fieldType,
                                 });
                               }
                             }

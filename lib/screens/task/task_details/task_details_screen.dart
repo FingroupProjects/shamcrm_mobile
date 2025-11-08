@@ -449,7 +449,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     ];
 
     for (var field in task.taskCustomFields) {
-      details.add({'label': '${field.key}:', 'value': field.value});
+      details.add({'label': '${field.name}:', 'value': field.value});
     }
 
     if (task.directoryValues != null && task.directoryValues!.isNotEmpty) {
@@ -1165,7 +1165,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
             ];
 
             for (var field in state.task!.taskCustomFields) {
-              details.add({'label': '${field.key}:', 'value': field.value});
+              details.add({'label': '${field.name}:', 'value': field.value});
             }
 
             if (state.task.directoryValues != null && state.task!.directoryValues!.isNotEmpty) {
