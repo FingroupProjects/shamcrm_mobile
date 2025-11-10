@@ -382,7 +382,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   String formatDate(String? dateString) {
     if (dateString == null || dateString.isEmpty) return '';
     try {
-      final parsedDate = DateTime.parse(dateString).toLocal();
+      final parsedDate = DateTime.parse(dateString);
       return DateFormat('dd.MM.yy HH:mm').format(parsedDate);
     } catch (e) {
       return AppLocalizations.of(context)!.translate('invalid_format');

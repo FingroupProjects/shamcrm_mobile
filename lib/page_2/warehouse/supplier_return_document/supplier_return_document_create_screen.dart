@@ -1,8 +1,6 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/supplier_return/supplier_return_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/supplier_return/supplier_return_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/supplier_return/supplier_return_state.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/variant_bloc/variant_bloc.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/variant_bloc/variant_event.dart';
 import 'package:crm_task_manager/custom_widget/compact_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
@@ -10,11 +8,13 @@ import 'package:crm_task_manager/custom_widget/keyboard_dismissible.dart';
 import 'package:crm_task_manager/custom_widget/price_input_formatter.dart';
 import 'package:crm_task_manager/custom_widget/quantity_input_formatter.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
+import 'package:crm_task_manager/page_2/warehouse/incoming/info_panel.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/storage_widget.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/supplier_widget.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/variant_selection_bottom_sheet.dart';
 import 'package:crm_task_manager/page_2/widgets/confirm_exit_dialog.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -52,12 +52,12 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
   final Map<int, bool> _collapsedItems = {};
 
   late TabController _tabController;
+  bool _showInfoPanel = false;
 
   @override
   void initState() {
     super.initState();
     _dateController.text = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
-    context.read<VariantBloc>().add(FetchVariants());
 
     _tabController = TabController(length: 2, vsync: this);
   }
@@ -69,6 +69,11 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
             .indexWhere((item) => item['variantId'] == newItem['variantId']);
 
         if (existingIndex == -1) {
+          for (var item in _items) {
+            final variantId = item['variantId'] as int;
+            _collapsedItems[variantId] = true;
+          }
+
           // ✅ Don't use the price from newItem - let user enter it
           final modifiedItem = Map<String, dynamic>.from(newItem);
           modifiedItem['price'] = 0.0;
@@ -125,7 +130,7 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
 
       _listKey.currentState?.removeItem(
         index,
-        (context, animation) => _buildSelectedItemCard(index, removedItem, animation),
+            (context, animation) => _buildSelectedItemCard(index, removedItem, animation),
         duration: const Duration(milliseconds: 300),
       );
 
@@ -173,11 +178,6 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
       return;
     }
 
-    context.read<VariantBloc>().add(FilterVariants({
-      'counterparty_id': int.parse(_selectedSupplier!),
-      'storage_id': int.parse(_selectedStorage!),
-    }));
-
     final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
@@ -192,11 +192,11 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
       _handleVariantSelection(result);
     }
     // Если результат null (пользователь закрыл окно без выбора), убеждаемся, что фокус сброшен
-  if (result == null) {
-    FocusScope.of(context).unfocus();
-  } else {
-    _handleVariantSelection(result);
-  }
+    if (result == null) {
+      FocusScope.of(context).unfocus();
+    } else {
+      _handleVariantSelection(result);
+    }
   }
 
   // ✅ FIXED: Remove amount multiplication from all calculations
@@ -242,6 +242,9 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
           _items[index]['price'] = inputPrice;
           final quantity = _items[index]['quantity'] ?? 0;
           _items[index]['total'] = (quantity * inputPrice).round();
+
+          // ⭐ Проверяем, заполнены ли оба поля (quantity и price)
+          _checkAndShowInfoPanel(variantId);
         }
         _priceErrors[variantId] = false;
       });
@@ -265,6 +268,9 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
           _items[index]['quantity'] = quantity;
           final price = _items[index]['price'] ?? 0.0;
           _items[index]['total'] = (quantity * price).round();
+
+          // ⭐ Проверяем, заполнены ли оба поля (quantity и price)
+          _checkAndShowInfoPanel(variantId);
         }
         _quantityErrors[variantId] = false;
       });
@@ -276,6 +282,23 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
           _items[index]['total'] = 0.0;
         }
       });
+    }
+  }
+
+// Обновите метод _checkAndShowInfoPanel:
+  void _checkAndShowInfoPanel(int variantId) {
+    final index = _items.indexWhere((item) => item['variantId'] == variantId);
+    if (index != -1) {
+      final item = _items[index];
+      final hasQuantity = item.containsKey('quantity') && (item['quantity'] ?? 0) > 0;
+      final hasPrice = (item['price'] ?? 0.0) > 0;
+
+      // ⭐ Показываем панель только если оба поля заполнены
+      if (hasQuantity && hasPrice) {
+        setState(() {
+          _showInfoPanel = true;
+        });
+      }
     }
   }
 
@@ -571,22 +594,30 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
             ),
           ),
         ),
-        // Подсказка для сохранения
-        if (_items.isNotEmpty)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: const Text(
-              'После добавления товаров перейдите в "Основное" для сохранения', // localizations.translate('save_hint')
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w400,
-                color: Color(0xffbdc2cf),
-                height: 1.2,
-              ),
-            ),
+        // ✅ Информационная панель
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: InfoPanel(
+            show: _showInfoPanel,
+            duration: const Duration(seconds: 4),
+            message:
+            localizations.translate('goods_added_go_to_main') ??
+                'Товары добавлены. Перейдите в «Основное», чтобы сохранить.',
+            actionText: localizations.translate('go') ?? 'Перейти',
+            onActionTap: () {
+              _priceFocusNodes.forEach((_, node) => node.unfocus());
+              _quantityFocusNodes.forEach((_, node) => node.unfocus());
+              _tabController.animateTo(0);
+              // ⭐ НЕ сбрасываем _showInfoPanel здесь, пусть таймер это сделает
+            },
+            onDismiss: () {
+              // ⭐ Сбрасываем только при автоматическом скрытии (по таймеру)
+              if (mounted) {
+                setState(() => _showInfoPanel = false);
+              }
+            },
           ),
+        ),
         // Кнопка "Добавить товар"
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -790,29 +821,29 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
               ),
               child: _isLoading
                   ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
                   : Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.save_outlined, color: Colors.white, size: 18),
-                        const SizedBox(width: 6),
-                        Text(
-                          localizations.translate('save') ?? 'Сохранить',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.save_outlined, color: Colors.white, size: 18),
+                  const SizedBox(width: 6),
+                  Text(
+                    localizations.translate('save') ?? 'Сохранить',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
                     ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -1014,7 +1045,7 @@ class _SupplierReturnDocumentCreateScreenState extends State<SupplierReturnDocum
                                   onChanged: (String? newValue) {
                                     if (newValue != null) {
                                       final selectedUnit = availableUnits.firstWhere(
-                                        (unit) => (unit.name) == newValue,
+                                            (unit) => (unit.name) == newValue,
                                       );
                                       _updateItemUnit(variantId, newValue, selectedUnit.id);
                                     }

@@ -1,8 +1,6 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_state.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/variant_bloc/variant_bloc.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/variant_bloc/variant_event.dart';
 import 'package:crm_task_manager/custom_widget/compact_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
@@ -33,7 +31,7 @@ class IncomingDocumentEditScreen extends StatefulWidget {
   _IncomingDocumentEditScreenState createState() => _IncomingDocumentEditScreenState();
 }
 
-class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen> 
+class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _dateController = TextEditingController();
@@ -48,44 +46,43 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
   // Контроллеры для редактирования полей товаров
   final Map<int, TextEditingController> _priceControllers = {};
   final Map<int, TextEditingController> _quantityControllers = {};
-  
+
   // ✅ НОВОЕ: FocusNode для управления фокусом
   final Map<int, FocusNode> _quantityFocusNodes = {};
   final Map<int, FocusNode> _priceFocusNodes = {};
-  
+
   // Для отслеживания ошибок валидации
   final Map<int, bool> _priceErrors = {};
   final Map<int, bool> _quantityErrors = {};
-  
+
   // Для сворачивания/разворачивания карточек
   final Map<int, bool> _collapsedItems = {};
-  
+
   late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
     _initializeFormData();
-    context.read<VariantBloc>().add(FetchVariants());
     _tabController = TabController(length: 2, vsync: this);
   }
 
   void _initializeFormData() {
-    _dateController.text = widget.document.date != null 
+    _dateController.text = widget.document.date != null
         ? DateFormat('dd/MM/yyyy HH:mm').format(widget.document.date!)
         : DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
-    
+
     _commentController.text = widget.document.comment ?? '';
     _selectedStorage = widget.document.storage?.id.toString();
     _selectedSupplier = widget.document.model?.id.toString();
-    
+
     // Преобразуем существующие товары
     if (widget.document.documentGoods != null) {
       for (var good in widget.document.documentGoods!) {
         final variantId = good.variantId ?? good.good?.id ?? 0;
         final quantity = good.quantity ?? 0;
         final price = double.tryParse(good.price ?? '0') ?? 0.0;
-        
+
         final availableUnits = good.good?.units ?? (good.unit != null ? [good.unit!] : []);
         Unit? selectedUnitObj;
         double amount = 1.0; // USE 1 for amount DO NOT CALCUALTE TOTAL WITH AMOUNT
@@ -104,7 +101,7 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
         // Fallback if not found
         selectedUnitObj ??= good.unit ?? (availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: 'шт'));
         debugPrint("amount of unit '${selectedUnitObj.name}': $amount");
-        
+
         _items.add({
           'id': good.good?.id ?? 0,
           'variantId': variantId,
@@ -117,15 +114,15 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
           'amount': amount,
           'availableUnits': availableUnits,
         });
-        
+
         // Создаем контроллеры с существующими значениями
         _priceControllers[variantId] = TextEditingController(text: parseNumberToString(price * amount));
         _quantityControllers[variantId] = TextEditingController(text: quantity.toString());
-        
+
         // ✅ НОВОЕ: Создаём FocusNode для существующих товаров
         _quantityFocusNodes[variantId] = FocusNode();
         _priceFocusNodes[variantId] = FocusNode();
-        
+
         _priceErrors[variantId] = false;
         _quantityErrors[variantId] = false;
       }
@@ -139,6 +136,11 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
             .indexWhere((item) => item['variantId'] == newItem['variantId']);
 
         if (existingIndex == -1) {
+          for (var item in _items) {
+            final variantId = item['variantId'] as int;
+            _collapsedItems[variantId] = true;
+          }
+
           // ✅ Don't use the price from newItem - let user enter it
           final modifiedItem = Map<String, dynamic>.from(newItem);
           modifiedItem['price'] = 0.0; // Set to 0 instead of using default price
@@ -196,7 +198,7 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
 
       _listKey.currentState?.removeItem(
         index,
-        (context, animation) => _buildSelectedItemCard(index, removedItem, animation),
+            (context, animation) => _buildSelectedItemCard(index, removedItem, animation),
         duration: const Duration(milliseconds: 300),
       );
 
@@ -215,12 +217,12 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
 
         _priceErrors.remove(variantId);
         _quantityErrors.remove(variantId);
-        
+
         _collapsedItems.remove(variantId);
       });
     }
   }
-  
+
   void _toggleItemCollapse(int variantId) {
     setState(() {
       _collapsedItems[variantId] = !(_collapsedItems[variantId] ?? false);
@@ -237,16 +239,16 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
         isService: false,
       ),
     );
-    
+
     if (result != null) {
       _handleVariantSelection(result);
     }
-  // Если результат null (пользователь закрыл окно без выбора), убеждаемся, что фокус сброшен
-  if (result == null) {
-    FocusScope.of(context).unfocus();
-  } else {
-    _handleVariantSelection(result);
-  }
+    // Если результат null (пользователь закрыл окно без выбора), убеждаемся, что фокус сброшен
+    if (result == null) {
+      FocusScope.of(context).unfocus();
+    } else {
+      _handleVariantSelection(result);
+    }
   }
 
   void _updateItemUnit(int variantId, String newUnit, int? newUnitId) {
@@ -339,18 +341,18 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
       final variantId = item['variantId'] as int;
       final quantityController = _quantityControllers[variantId];
       final priceController = _priceControllers[variantId];
-      
+
       if (quantityController != null && quantityController.text.trim().isEmpty) {
         _quantityFocusNodes[variantId]?.requestFocus();
         return;
       }
-      
+
       if (priceController != null && priceController.text.trim().isEmpty) {
         _priceFocusNodes[variantId]?.requestFocus();
         return;
       }
     }
-    
+
     FocusScope.of(context).unfocus();
   }
 
@@ -366,7 +368,7 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
 
   void _updateDocument() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     if (_items.isEmpty) {
       _showSnackBar(
         AppLocalizations.of(context)!.translate('add_at_least_one_item') ??
@@ -375,7 +377,7 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
       );
       return;
     }
-    
+
     if (_selectedStorage == null) {
       _showSnackBar(
         AppLocalizations.of(context)!.translate('select_storage') ??
@@ -384,7 +386,7 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
       );
       return;
     }
-    
+
     if (_selectedSupplier == null) {
       _showSnackBar(
         AppLocalizations.of(context)!.translate('select_supplier') ??
@@ -399,21 +401,21 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
     setState(() {
       _priceErrors.clear();
       _quantityErrors.clear();
-      
+
       for (var item in _items) {
         final variantId = item['variantId'] as int;
         final quantityController = _quantityControllers[variantId];
         final priceController = _priceControllers[variantId];
-        
-        if (quantityController == null || 
-            quantityController.text.trim().isEmpty || 
+
+        if (quantityController == null ||
+            quantityController.text.trim().isEmpty ||
             (int.tryParse(quantityController.text) ?? 0) <= 0) {
           _quantityErrors[variantId] = true;
           hasErrors = true;
         }
-        
-        if (priceController == null || 
-            priceController.text.trim().isEmpty || 
+
+        if (priceController == null ||
+            priceController.text.trim().isEmpty ||
             (double.tryParse(priceController.text) ?? -1) < 0) {
           _priceErrors[variantId] = true;
           hasErrors = true;
@@ -628,6 +630,22 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
             ),
           ),
         ),
+        // Подсказка для сохранения
+        if (_items.isNotEmpty)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text(
+              localizations.translate('save_hint') ?? "После добавления товаров перейдите в \"Основное\" для сохранения",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w400,
+                color: Color(0xffbdc2cf),
+                height: 1.2,
+              ),
+            ),
+          ),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
@@ -799,7 +817,7 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
     final quantityController = _quantityControllers[variantId];
     final quantityFocusNode = _quantityFocusNodes[variantId];
     final priceFocusNode = _priceFocusNodes[variantId];
-    
+
     final isCollapsed = _collapsedItems[variantId] ?? false;
 
     return FadeTransition(
@@ -1010,7 +1028,7 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
                           const SizedBox(height: 4),
                           CompactTextField(
                             controller:
-                                priceController ?? TextEditingController(),
+                            priceController ?? TextEditingController(),
                             focusNode: priceFocusNode,
                             hintText: AppLocalizations.of(context)!.translate('price') ?? 'Цена',
                             keyboardType: const TextInputType.numberWithOptions(
@@ -1056,29 +1074,29 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
         ),
         child: _isLoading
             ? const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
+          width: 18,
+          height: 18,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+          ),
+        )
             : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.save_outlined, color: Colors.white, size: 18),
-                  const SizedBox(width: 6),
-                  Text(
-                    localizations.translate('save') ?? 'Обновить',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.save_outlined, color: Colors.white, size: 18),
+            const SizedBox(width: 6),
+            Text(
+              localizations.translate('save') ?? 'Обновить',
+              style: const TextStyle(
+                fontSize: 14,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
               ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1089,21 +1107,21 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
     _commentController.dispose();
     _scrollController.dispose();
     _tabController.dispose();
-    
+
     for (var focusNode in _quantityFocusNodes.values) {
       focusNode.dispose();
     }
     for (var focusNode in _priceFocusNodes.values) {
       focusNode.dispose();
     }
-    
+
     for (var controller in _priceControllers.values) {
       controller.dispose();
     }
     for (var controller in _quantityControllers.values) {
       controller.dispose();
     }
-    
+
     super.dispose();
   }
 }

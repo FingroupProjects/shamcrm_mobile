@@ -18,8 +18,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
-import '../../../bloc/page_2_BLOC/variant_bloc/variant_bloc.dart';
-import '../../../bloc/page_2_BLOC/variant_bloc/variant_event.dart';
 import '../incoming/variant_selection_bottom_sheet.dart';
 
 class EditClientReturnDocumentScreen extends StatefulWidget {
@@ -69,7 +67,6 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
   void initState() {
     super.initState();
     _initializeFormData();
-    context.read<VariantBloc>().add(FetchVariants());
     _tabController = TabController(length: 2, vsync: this);
   }
 
@@ -145,6 +142,11 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
             .indexWhere((item) => item['variantId'] == newItem['variantId']);
 
         if (existingIndex == -1) {
+          for (var item in _items) {
+            final variantId = item['variantId'] as int;
+            _collapsedItems[variantId] = true;
+          }
+
           // ✅ Don't use the price from newItem - let user enter it
           final modifiedItem = Map<String, dynamic>.from(newItem);
           modifiedItem['price'] = 0.0; // Set to 0 instead of using default price
@@ -286,7 +288,7 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
 
       _listKey.currentState?.removeItem(
         index,
-        (context, animation) =>
+            (context, animation) =>
             _buildSelectedItemCard(index, removedItem, animation),
         duration: const Duration(milliseconds: 300),
       );
@@ -334,11 +336,6 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
       );
       return;
     }
-
-    context.read<VariantBloc>().add(FilterVariants({
-      'counterparty_id': _selectedLead!.id,
-      'storage_id': int.parse(_selectedStorage!),
-    }));
 
     final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
@@ -642,6 +639,22 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
             ),
           ),
         ),
+        // Подсказка для сохранения
+        if (_items.isNotEmpty)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text(
+              localizations?.translate('save_hint') ?? "После добавления товаров перейдите в \"Основное\" для сохранения",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w400,
+                color: Color(0xffbdc2cf),
+                height: 1.2,
+              ),
+            ),
+          ),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
@@ -1024,7 +1037,7 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
                           const SizedBox(height: 4),
                           CompactTextField(
                             controller:
-                                priceController ?? TextEditingController(),
+                            priceController ?? TextEditingController(),
                             focusNode: priceFocusNode,
                             hintText: AppLocalizations.of(context)?.translate('price') ?? 'Цена',
                             keyboardType: const TextInputType.numberWithOptions(
@@ -1070,29 +1083,29 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
         ),
         child: _isLoading
             ? const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
+          width: 18,
+          height: 18,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+          ),
+        )
             : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.save_outlined, color: Colors.white, size: 18),
-                  const SizedBox(width: 6),
-                  Text(
-                    localizations?.translate('save') ?? 'Обновить',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.save_outlined, color: Colors.white, size: 18),
+            const SizedBox(width: 6),
+            Text(
+              localizations?.translate('save') ?? 'Обновить',
+              style: const TextStyle(
+                fontSize: 14,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
               ),
+            ),
+          ],
+        ),
       ),
     );
   }

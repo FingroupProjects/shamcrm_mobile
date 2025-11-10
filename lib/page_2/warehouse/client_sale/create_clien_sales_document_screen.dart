@@ -18,8 +18,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
-import '../../../bloc/page_2_BLOC/variant_bloc/variant_bloc.dart';
-import '../../../bloc/page_2_BLOC/variant_bloc/variant_event.dart';
 import '../../../bloc/lead_list/lead_list_bloc.dart';
 import '../../../bloc/lead_list/lead_list_event.dart';
 
@@ -63,13 +61,13 @@ class CreateClienSalesDocumentScreenState
     super.initState();
     _dateController.text =
         DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
-    
+
     // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Принудительно сбрасываем кэш лидов
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         // Вариант 1: Если есть событие ResetLeadState
         // context.read<GetAllLeadBloc>().add(ResetLeadState());
-        
+
         // Вариант 2: Принудительно загружаем заново (даже если есть кэш)
         context.read<GetAllLeadBloc>().add(GetAllLeadEv(
           showDebt: true,
@@ -77,8 +75,7 @@ class CreateClienSalesDocumentScreenState
         ));
       }
     });
-    
-    context.read<VariantBloc>().add(FetchVariants());
+
     _tabController = TabController(length: 2, vsync: this);
   }
 
@@ -89,6 +86,11 @@ class CreateClienSalesDocumentScreenState
             .indexWhere((item) => item['variantId'] == newItem['variantId']);
 
         if (existingIndex == -1) {
+          for (var item in _items) {
+            final variantId = item['variantId'] as int;
+            _collapsedItems[variantId] = true;
+          }
+
           // ✅ Создаем копию item
           final modifiedItem = Map<String, dynamic>.from(newItem);
 
@@ -152,7 +154,7 @@ class CreateClienSalesDocumentScreenState
 
       _listKey.currentState?.removeItem(
         index,
-        (context, animation) =>
+            (context, animation) =>
             _buildSelectedItemCard(index, removedItem, animation),
         duration: const Duration(milliseconds: 300),
       );
@@ -202,11 +204,6 @@ class CreateClienSalesDocumentScreenState
       );
       return;
     }
-
-    context.read<VariantBloc>().add(FilterVariants({
-          'counterparty_id': _selectedLead!.id,
-          'storage_id': int.parse(_selectedStorage!),
-        }));
 
     final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
@@ -401,9 +398,9 @@ class CreateClienSalesDocumentScreenState
 
     try {
       DateTime? parsedDate =
-          DateFormat('dd/MM/yyyy HH:mm').parse(_dateController.text);
+      DateFormat('dd/MM/yyyy HH:mm').parse(_dateController.text);
       String isoDate =
-          DateFormat("yyyy-MM-ddTHH:mm:ss.SSS'Z'").format(parsedDate);
+      DateFormat("yyyy-MM-ddTHH:mm:ss.SSS'Z'").format(parsedDate);
 
       final bloc = context.read<ClientSaleBloc>();
       bloc.add(CreateClientSalesDocument(
@@ -510,7 +507,7 @@ class CreateClienSalesDocumentScreenState
                       tabs: [
                         Tab(
                             text:
-                                localizations.translate('main') ?? 'Основное'),
+                            localizations.translate('main') ?? 'Основное'),
                         Tab(text: localizations.translate('goods') ?? 'Товары'),
                       ],
                     ),
@@ -598,6 +595,22 @@ class CreateClienSalesDocumentScreenState
             ),
           ),
         ),
+        // Подсказка для сохранения
+        if (_items.isNotEmpty)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text(
+              localizations.translate('save_hint') ?? "После добавления товаров перейдите в \"Основное\" для сохранения",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w400,
+                color: Color(0xffbdc2cf),
+                height: 1.2,
+              ),
+            ),
+          ),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
@@ -739,7 +752,7 @@ class CreateClienSalesDocumentScreenState
       controller: _commentController,
       label: localizations.translate('comment') ?? 'Примечание',
       hintText:
-          localizations.translate('enter_comment') ?? 'Введите примечание',
+      localizations.translate('enter_comment') ?? 'Введите примечание',
       maxLines: 3,
       keyboardType: TextInputType.multiline,
     );
@@ -866,10 +879,10 @@ class CreateClienSalesDocumentScreenState
                         const SizedBox(height: 4),
                         CompactTextField(
                           controller:
-                              quantityController ?? TextEditingController(),
+                          quantityController ?? TextEditingController(),
                           focusNode: quantityFocusNode,
                           hintText: AppLocalizations.of(context)!
-                                  .translate('quantity') ??
+                              .translate('quantity') ??
                               'Количество',
                           keyboardType: TextInputType.number,
                           inputFormatters: [
@@ -912,12 +925,12 @@ class CreateClienSalesDocumentScreenState
                             Container(
                               height: 48,
                               padding:
-                                  const EdgeInsets.symmetric(horizontal: 8),
+                              const EdgeInsets.symmetric(horizontal: 8),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFF4F7FD),
                                 borderRadius: BorderRadius.circular(8),
                                 border:
-                                    Border.all(color: const Color(0xFFE5E7EB)),
+                                Border.all(color: const Color(0xFFE5E7EB)),
                               ),
                               child: DropdownButtonHideUnderline(
                                 child: DropdownButton<String>(
@@ -942,8 +955,8 @@ class CreateClienSalesDocumentScreenState
                                   onChanged: (String? newValue) {
                                     if (newValue != null) {
                                       final selectedUnit =
-                                          availableUnits.firstWhere(
-                                        (unit) => (unit.name) == newValue,
+                                      availableUnits.firstWhere(
+                                            (unit) => (unit.name) == newValue,
                                       );
                                       _updateItemUnit(
                                           variantId, newValue, selectedUnit.id);
@@ -956,12 +969,12 @@ class CreateClienSalesDocumentScreenState
                             Container(
                               height: 48,
                               padding:
-                                  const EdgeInsets.symmetric(horizontal: 8),
+                              const EdgeInsets.symmetric(horizontal: 8),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFF4F7FD),
                                 borderRadius: BorderRadius.circular(8),
                                 border:
-                                    Border.all(color: const Color(0xFFE5E7EB)),
+                                Border.all(color: const Color(0xFFE5E7EB)),
                               ),
                               alignment: Alignment.centerLeft,
                               child: Text(
@@ -996,10 +1009,10 @@ class CreateClienSalesDocumentScreenState
                           const SizedBox(height: 4),
                           CompactTextField(
                             controller:
-                                priceController ?? TextEditingController(),
+                            priceController ?? TextEditingController(),
                             focusNode: priceFocusNode,
                             hintText: AppLocalizations.of(context)!
-                                    .translate('price') ??
+                                .translate('price') ??
                                 'Цена',
                             keyboardType: const TextInputType.numberWithOptions(
                                 decimal: true),
@@ -1091,30 +1104,30 @@ class CreateClienSalesDocumentScreenState
               ),
               child: _isLoading
                   ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
                   : Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.save_outlined,
-                            color: Colors.white, size: 18),
-                        const SizedBox(width: 6),
-                        Text(
-                          localizations.translate('save') ?? 'Сохранить',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.save_outlined,
+                      color: Colors.white, size: 18),
+                  const SizedBox(width: 6),
+                  Text(
+                    localizations.translate('save') ?? 'Сохранить',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
                     ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

@@ -122,5 +122,19 @@
 	<true/>
 	<key>com.apple.security.device.microphone</key>
 	<true/>
+	<!-- Deep Link для виджета -->
+<key>CFBundleURLTypes</key>
+<array>
+    <dict>
+        <key>CFBundleTypeRole</key>
+        <string>Editor</string>
+        <key>CFBundleURLName</key>
+        <string>com.softtech.crm_task_manager</string>
+        <key>CFBundleURLSchemes</key>
+        <array>
+            <string>shamcrm</string>
+        </array>
+    </dict>
+</array>
 </dict>
 </plist>

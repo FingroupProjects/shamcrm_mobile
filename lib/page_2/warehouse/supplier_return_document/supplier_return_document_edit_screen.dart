@@ -1,8 +1,6 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/supplier_return/supplier_return_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/supplier_return/supplier_return_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/supplier_return/supplier_return_state.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/variant_bloc/variant_bloc.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/variant_bloc/variant_event.dart';
 import 'package:crm_task_manager/custom_widget/compact_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
@@ -34,7 +32,7 @@ class SupplierReturnDocumentEditScreen extends StatefulWidget {
   _SupplierReturnDocumentEditScreenState createState() => _SupplierReturnDocumentEditScreenState();
 }
 
-class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumentEditScreen> 
+class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumentEditScreen>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _dateController = TextEditingController();
@@ -67,7 +65,6 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
   void initState() {
     super.initState();
     _initializeFormData();
-    context.read<VariantBloc>().add(FetchVariants());
     _tabController = TabController(length: 2, vsync: this);
   }
 
@@ -136,6 +133,11 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
             .indexWhere((item) => item['variantId'] == newItem['variantId']);
 
         if (existingIndex == -1) {
+          for (var item in _items) {
+            final variantId = item['variantId'] as int;
+            _collapsedItems[variantId] = true;
+          }
+
           // ✅ Don't use the price from newItem - let user enter it
           final modifiedItem = Map<String, dynamic>.from(newItem);
           modifiedItem['price'] = 0.0; // Set to 0 instead of using default price
@@ -193,7 +195,7 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
 
       _listKey.currentState?.removeItem(
         index,
-        (context, animation) => _buildSelectedItemCard(index, removedItem, animation),
+            (context, animation) => _buildSelectedItemCard(index, removedItem, animation),
         duration: const Duration(milliseconds: 300),
       );
 
@@ -420,11 +422,11 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
         comment: _commentController.text.trim(),
         counterpartyId: int.parse(_selectedSupplier!),
         documentGoods: _items.map((item) => {
-              'good_id': item['variantId'],
-              'quantity': int.tryParse(item['quantity'].toString()),
-              'price': _parsePriceAsNumber(item['price']),
-              'unit_id': item['unit_id'],
-            }).toList(),
+          'good_id': item['variantId'],
+          'quantity': int.tryParse(item['quantity'].toString()),
+          'price': _parsePriceAsNumber(item['price']),
+          'unit_id': item['unit_id'],
+        }).toList(),
         organizationId: widget.document.organizationId ?? 1,
         salesFunnelId: 1,
       ));
@@ -768,29 +770,29 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
         ),
         child: _isLoading
             ? const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
+          width: 18,
+          height: 18,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+          ),
+        )
             : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.save_outlined, color: Colors.white, size: 18),
-                  const SizedBox(width: 6),
-                  Text(
-                    localizations.translate('save') ?? 'Обновить',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.save_outlined, color: Colors.white, size: 18),
+            const SizedBox(width: 6),
+            Text(
+              localizations.translate('save') ?? 'Обновить',
+              style: const TextStyle(
+                fontSize: 14,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
               ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1031,7 +1033,7 @@ class _SupplierReturnDocumentEditScreenState extends State<SupplierReturnDocumen
                           const SizedBox(height: 4),
                           CompactTextField(
                             controller:
-                                priceController ?? TextEditingController(),
+                            priceController ?? TextEditingController(),
                             focusNode: priceFocusNode,
                             hintText: AppLocalizations.of(context)?.translate('price') ?? 'Цена',
                             keyboardType: const TextInputType.numberWithOptions(

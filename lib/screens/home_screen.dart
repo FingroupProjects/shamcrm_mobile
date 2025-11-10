@@ -1,10 +1,12 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/api/service/widget_service.dart';
 import 'package:crm_task_manager/page_2/dashboard/sales_dashboard_screen.dart';
 import 'package:crm_task_manager/page_2/goods/goods_screen.dart';
 import 'package:crm_task_manager/page_2/online_shop.dart';
 import 'package:crm_task_manager/page_2/order/order_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/warehouse_screen.dart';
 import 'package:crm_task_manager/screens/MyNavBar.dart';
+import 'package:crm_task_manager/screens/background_data_loader_service.dart';
 import 'package:crm_task_manager/screens/chats/chats_screen.dart';
 import 'package:crm_task_manager/screens/dashboard/dashboard_screen.dart';
 import 'package:crm_task_manager/screens/deal/deal_screen.dart';
@@ -14,7 +16,8 @@ import 'package:crm_task_manager/page_2/category/category_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // Добавляем для чтения hasMiniApp
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../page_2/money/money_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -23,12 +26,14 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _selectedIndexGroup1 = -1;  
+  int _selectedIndexGroup1 = 0; // ✅ ИСПРАВЛЕНИЕ: Начинаем с 0 вместо -1
   int _selectedIndexGroup2 = -1;  
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
   final ApiService _apiService = ApiService();
-  bool _isPushHandled = false;  
+  bool _isPushHandled = false;
+  bool _isBackgroundLoading = false;
+  bool _isInitialized = false; // ✅ НОВОЕ: Флаг инициализации
 
   List<Widget> _widgetOptionsGroup1 = [];
   List<Widget> _widgetOptionsGroup2 = [];
@@ -42,11 +47,92 @@ class _HomeScreenState extends State<HomeScreen> {
   List<String> _inactiveIconsGroup2 = [];
 
   @override
-
   void initState() {
     super.initState();
+    
+    // ✅ ИСПРАВЛЕНИЕ: Инициализируем экраны СИНХРОННО
+    _initializeScreensSync();
+    
+    // ✅ Подписываемся на события от виджета
+    WidgetService.onNavigateFromWidget = (group, screenIndex) {
+      if (mounted) {
+        setState(() {
+          if (group == 1 && screenIndex < _widgetOptionsGroup1.length) {
+            _selectedIndexGroup1 = screenIndex;
+            _selectedIndexGroup2 = -1;
+          } else if (group == 2 && screenIndex < _widgetOptionsGroup2.length) {
+            _selectedIndexGroup2 = screenIndex;
+            _selectedIndexGroup1 = -1;
+          }
+        });
+      }
+    };
+
+    // 🚀 Запускаем фоновую загрузку ПОСЛЕ отрисовки первого кадра
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !_isBackgroundLoading) {
+        _loadDataInBackground();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetService.onNavigateFromWidget = null;
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  // ==========================================================================
+  // ✅ СИНХРОННАЯ ИНИЦИАЛИЗАЦИЯ ЭКРАНОВ (БЕЗ МОРГАНИЯ)
+  // ==========================================================================
+
+  void _initializeScreensSync() {
+    // ✅ Добавляем заглушку сразу, чтобы не было моргания
+    _widgetOptionsGroup1 = [EmptyScreen()];
+    _isInitialized = false;
+    
+    // Запускаем асинхронную загрузку разрешений
     initializeScreensWithPermissions();
   }
+
+  // ==========================================================================
+  // 🚀 ФОНОВАЯ ЗАГРУЗКА ДАННЫХ
+  // ==========================================================================
+  
+  Future<void> _loadDataInBackground() async {
+    if (_isBackgroundLoading) return;
+    
+    setState(() {
+      _isBackgroundLoading = true;
+    });
+
+    try {
+      //print('HomeScreen: 🚀 Начало фоновой загрузки данных');
+      
+      final apiService = context.read<ApiService>();
+      final backgroundLoader = BackgroundDataLoaderService(
+        apiService: apiService,
+        context: context,
+      );
+
+      await backgroundLoader.loadAllDataInBackground();
+      
+      //print('HomeScreen: ✅ Фоновая загрузка завершена успешно');
+    } catch (e) {
+      //print('HomeScreen: ❌ Ошибка фоновой загрузки: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isBackgroundLoading = false;
+        });
+      }
+    }
+  }
+
+  // ==========================================================================
+  // ИНИЦИАЛИЗАЦИЯ ЭКРАНОВ С РАЗРЕШЕНИЯМИ
+  // ==========================================================================
 
   Future<void> initializeScreensWithPermissions() async {
     List<Widget> widgetsGroup1 = [];
@@ -112,19 +198,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // ========== КЛЮЧЕВАЯ ЛОГИКА ==========
     
-    // Проверяем доступ к складскому учёту
     bool hasWarehouseAccess = false;
     if (await _apiService.hasPermission('accounting_of_goods') || 
         await _apiService.hasPermission('accounting_money')) {
       hasWarehouseAccess = true;
     }
 
-    // Проверяем доступ к заказам
     bool hasOrderAccess = await _apiService.hasPermission('order.read');
 
-    // ЛОГИКА ВЗАИМОИСКЛЮЧЕНИЯ:
     if (hasWarehouseAccess) { 
-      /*Если есть складской учёт → добавляем WarehouseAccountingScreen и OrderScreen (если есть доступ) */
       widgetsGroup1.add(WarehouseAccountingScreen());
       titleKeysGroup1.add('appbar_warehouse');
       navBarTitleKeysGroup1.add('appbar_warehouse');
@@ -132,33 +214,32 @@ class _HomeScreenState extends State<HomeScreen> {
       inactiveIconsGroup1.add('assets/icons/MyNavBar/google-docs (5).png');
       hasAvailableScreens = true;
  
-      // Добавляем OrderScreen во вторую группу, если естьдоступ 
       if (hasOrderAccess) { 
         widgetsGroup2.add(OrderScreen()); 
-        titleKeysGroup2.add('appbar_orders'); // Используем ключ 'orders' для локализации 
+        titleKeysGroup2.add('appbar_orders');
         navBarTitleKeysGroup2.add('appbar_orders'); 
-        activeIconsGroup2.add('assets/icons/MyNavBar/orderon.png'); // Убедитесь, что иконка существует 
+        activeIconsGroup2.add('assets/icons/MyNavBar/orderon.png');
         inactiveIconsGroup2.add('assets/icons/MyNavBar/order_OFF.png'); 
         hasAvailableScreens = true; 
       }
       
-      // НЕ добавляем OnlineStoreScreen!
-      
     } else {
-      // Если НЕТ складского учёта → добавляем OnlineStoreScreen
-      // (внутри него уже есть заказы)
       if (hasOrderAccess) {
-        
+        widgetsGroup2.add(OnlineStoreScreen());
+        titleKeysGroup2.add('appbar_online_store');
+        navBarTitleKeysGroup2.add('appbar_online_store');
+        activeIconsGroup2.add('assets/icons/MyNavBar/category_ON.png');
+        inactiveIconsGroup2.add('assets/icons/MyNavBar/category_OFF.png');
+        hasAvailableScreens = true;
+      }
+    }
 
-      widgetsGroup2.add(OnlineStoreScreen());
-      titleKeysGroup2.add('appbar_online_store');
-      navBarTitleKeysGroup2.add('appbar_online_store');
-      activeIconsGroup2.add('assets/icons/MyNavBar/category_ON.png');
-      inactiveIconsGroup2.add('assets/icons/MyNavBar/category_OFF.png');
-      hasAvailableScreens = true;
-      
-      // НЕ добавляем OrderScreen отдельно!
-    } }
+    // ✅ ИСПРАВЛЕНИЕ: Если нет экранов в группе 1, добавляем EmptyScreen
+    if (widgetsGroup1.isEmpty) {
+      widgetsGroup1.add(EmptyScreen());
+      titleKeysGroup1.add('');
+      navBarTitleKeysGroup1.add('');
+    }
 
     if (mounted) {
       setState(() {
@@ -172,9 +253,13 @@ class _HomeScreenState extends State<HomeScreen> {
         _activeIconsGroup2 = activeIconsGroup2;
         _inactiveIconsGroup1 = inactiveIconsGroup1;
         _inactiveIconsGroup2 = inactiveIconsGroup2;
+        _isInitialized = true;
         
-        // Если текущий пользователь находится во второй группе, но она пуста,
-        // переключаем на первую группу
+        // ✅ Если выбранный индекс больше чем количество экранов, сбрасываем
+        if (_selectedIndexGroup1 >= widgetsGroup1.length) {
+          _selectedIndexGroup1 = 0;
+        }
+        
         if (_selectedIndexGroup2 != -1 && widgetsGroup2.isEmpty) {
           _selectedIndexGroup1 = 0;
           _selectedIndexGroup2 = -1;
@@ -188,18 +273,16 @@ class _HomeScreenState extends State<HomeScreen> {
     super.didChangeDependencies();
     final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
 
-    if (args != null && !_isPushHandled) {
+    if (args != null && !_isPushHandled && _isInitialized) {
       setState(() {
         if (args['group'] == 1) {
           _selectedIndexGroup1 = args['screenIndex'] ?? 0;
           _selectedIndexGroup2 = -1;
         } else if (args['group'] == 2) {
-          // Проверяем, есть ли элементы во второй группе
           if (_widgetOptionsGroup2.isNotEmpty) {
             _selectedIndexGroup2 = args['screenIndex'] ?? 0;
             _selectedIndexGroup1 = -1;
           } else {
-            // Если нет элементов во второй группе, переключаемся на первую
             _selectedIndexGroup1 = 0;
             _selectedIndexGroup2 = -1;
           }
@@ -213,51 +296,53 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     Widget currentWidget;
     
-    // Определяем, какой экран показывать
+    // ✅ ИСПРАВЛЕНИЕ: Всегда показываем валидный виджет
     if (_selectedIndexGroup1 != -1 && _selectedIndexGroup1 < _widgetOptionsGroup1.length) {
       currentWidget = _widgetOptionsGroup1[_selectedIndexGroup1];
     } else if (_selectedIndexGroup2 != -1 && _selectedIndexGroup2 < _widgetOptionsGroup2.length) {
       currentWidget = _widgetOptionsGroup2[_selectedIndexGroup2];
+    } else if (_widgetOptionsGroup1.isNotEmpty) {
+      currentWidget = _widgetOptionsGroup1[0];
     } else {
       currentWidget = EmptyScreen();
     }
     
-    // ИСПРАВЛЕНИЕ: Оборачиваем currentWidget в SafeArea для bottom padding на iOS
-    // Это предотвратит перекрытие кнопок/элементов внизу body nav bar'ом
     Widget safeBody = SafeArea(
-      bottom: true,  // Только bottom, чтобы не влиять на top (appBar уже есть)
+      bottom: true,
       child: currentWidget,
     );
     
     return Scaffold(
-      body: safeBody,  // Используем safeBody вместо currentWidget
+      body: safeBody,
       backgroundColor: Colors.white,
-      bottomNavigationBar: MyNavBar(
-        currentIndexGroup1: _selectedIndexGroup1,
-        currentIndexGroup2: _selectedIndexGroup2,
-        onItemSelected: (groupIndex, itemIndex) {
-          setState(() {
-            if (groupIndex == 1) {
-              _selectedIndexGroup1 = itemIndex;
-              _selectedIndexGroup2 = -1;
-            } else if (groupIndex == 2) {
-              _selectedIndexGroup2 = itemIndex;
-              _selectedIndexGroup1 = -1;
-            }
-            _isSearching = false;
-          });
-        },
-        navBarTitlesGroup1: _navBarTitleKeysGroup1
-            .map((key) => AppLocalizations.of(context)!.translate(key))
-            .toList(),
-        navBarTitlesGroup2: _navBarTitleKeysGroup2
-            .map((key) => AppLocalizations.of(context)!.translate(key))
-            .toList(),
-        activeIconsGroup1: _activeIconsGroup1,
-        activeIconsGroup2: _activeIconsGroup2,
-        inactiveIconsGroup1: _inactiveIconsGroup1,
-        inactiveIconsGroup2: _inactiveIconsGroup2,
-      ),
+      bottomNavigationBar: _isInitialized
+          ? MyNavBar(
+              currentIndexGroup1: _selectedIndexGroup1,
+              currentIndexGroup2: _selectedIndexGroup2,
+              onItemSelected: (groupIndex, itemIndex) {
+                setState(() {
+                  if (groupIndex == 1) {
+                    _selectedIndexGroup1 = itemIndex;
+                    _selectedIndexGroup2 = -1;
+                  } else if (groupIndex == 2) {
+                    _selectedIndexGroup2 = itemIndex;
+                    _selectedIndexGroup1 = -1;
+                  }
+                  _isSearching = false;
+                });
+              },
+              navBarTitlesGroup1: _navBarTitleKeysGroup1
+                  .map((key) => key.isEmpty ? '' : AppLocalizations.of(context)!.translate(key))
+                  .toList(),
+              navBarTitlesGroup2: _navBarTitleKeysGroup2
+                  .map((key) => key.isEmpty ? '' : AppLocalizations.of(context)!.translate(key))
+                  .toList(),
+              activeIconsGroup1: _activeIconsGroup1,
+              activeIconsGroup2: _activeIconsGroup2,
+              inactiveIconsGroup1: _inactiveIconsGroup1,
+              inactiveIconsGroup2: _inactiveIconsGroup2,
+            )
+          : SizedBox.shrink(), // Скрываем навбар пока не инициализировано
     );
   }
 }
