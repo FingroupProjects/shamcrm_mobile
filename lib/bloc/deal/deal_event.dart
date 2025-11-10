@@ -124,9 +124,10 @@ class UpdateDeal extends DealEvent {
   final List<Map<String, dynamic>>? customFields; // Изменён тип
   final List<Map<String, int>>? directoryValues;
   final AppLocalizations localizations;
-  final List<String>? filePaths;
-  final List<DealFiles> existingFiles;
   final List<int>? dealStatusIds; // ✅ НОВОЕ: массив ID статусов
+  final List<FileHelper>? files; // Новое поле для путей к файлам
+
+
   UpdateDeal({
     required this.dealId,
     required this.name,
@@ -141,8 +142,7 @@ class UpdateDeal extends DealEvent {
     this.customFields,
     this.directoryValues,
     required this.localizations,
-    this.filePaths,
-    required this.existingFiles,
+    this.files,
     this.dealStatusIds, // ✅ НОВОЕ
   });
 }
