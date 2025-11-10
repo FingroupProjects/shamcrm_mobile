@@ -1949,8 +1949,6 @@ class ApiService {
             directoryValues[i]['entry_id'].toString();
       }
     }
-    if (kDebugMode) 
-      // print("createLeadWithData: data['files']: ${data['files']}");
     // Добавляем файлы
     if (data['files'] != null && (data['files'] as List).isNotEmpty) {
       final filesList = data['files'] as List<FileHelper>;
@@ -3478,10 +3476,8 @@ class ApiService {
     required int? leadId,
     List<Map<String, dynamic>>? customFields,
     List<Map<String, int>>? directoryValues,
-    List<String>? filePaths,
+    List<FileHelper>? files,
     List<int>? dealStatusIds, // ✅ НОВОЕ
-
-    List<DealFiles>? existingFiles,
   }) async {
     // Формируем путь с query-параметрами
     final updatedPath = await _appendQueryParams('/deal/$dealId');
@@ -3538,15 +3534,18 @@ class ApiService {
       }
     }
 
-    if (existingFiles != null && existingFiles.isNotEmpty) {
-      final existingFileIds = existingFiles.map((file) => file.id).toList();
-      request.fields['existing_files'] = jsonEncode(existingFileIds);
-    }
-
-    if (filePaths != null && filePaths.isNotEmpty) {
-      for (var filePath in filePaths) {
-        final file = await http.MultipartFile.fromPath('files[]', filePath);
-        request.files.add(file);
+    if (files != null && files.isNotEmpty) {
+      for (var fileData in files) {
+        try {
+          final file = await http.MultipartFile.fromPath(
+            'files[]',
+            fileData.path,
+            filename: fileData.name,
+          );
+          request.files.add(file);
+        } catch (e) {
+          debugPrint("Error adding file ${fileData.name}: $e");
+        }
       }
     }
 

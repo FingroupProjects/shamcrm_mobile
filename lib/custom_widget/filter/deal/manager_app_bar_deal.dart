@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
@@ -10,6 +11,7 @@ import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/models/deal_name_list.dart';
 import 'package:crm_task_manager/models/directory_link_model.dart';
 import 'package:crm_task_manager/models/lead_multi_model.dart';
+import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
 import 'package:crm_task_manager/screens/deal/deal_cache.dart';
@@ -66,9 +68,13 @@ class DealManagerFilterScreen extends StatefulWidget {
 }
 
 class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
+  final ApiService _apiService = ApiService();
+
   // Custom fields (deal) loaded inside the filter screen
   List<String> _customFieldTitles = [];
   Map<String, List<String>> _customFieldValues = {};
+  List<FieldConfiguration> _fieldConfigurations = [];
+  bool _isConfigurationLoaded = false;
 
   List _selectedManagers = [];
   List _selectedLeads = [];
@@ -84,16 +90,30 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
   Map<String, List<String>> _selectedCustomFieldValues = {};
 
   void _initializeCustomFieldSelections(Map<String, List<String>> initialSelections) {
+    final titles = _customFieldTitles;
+
+    if (titles.isEmpty) {
+      _selectedCustomFieldValues = {
+        for (final entry in initialSelections.entries)
+          entry.key: List<String>.from(entry.value),
+      };
+      return;
+    }
+
     _selectedCustomFieldValues = {};
-    // Initialize from provided initial selections; keys will be reconciled after titles load
-    initialSelections.forEach((title, values) {
-      _selectedCustomFieldValues[title] = List<String>.from(values);
-    });
+    for (final title in titles) {
+      final initial = initialSelections[title];
+      _selectedCustomFieldValues[title] =
+          initial != null ? List<String>.from(initial) : <String>[];
+    }
   }
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadFieldConfiguration();
+    });
     _selectedManagers = widget.initialManagers ?? [];
     _selectedLeads = widget.initialLeads ?? [];
     _selectedStatuses = widget.initialStatuses;
@@ -138,13 +158,46 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
 
   Future<void> _fetchDirectoryLinks() async {
     try {
-      final response = await ApiService().getDealDirectoryLinks();
+      final response = await _apiService.getDealDirectoryLinks();
       if (response.data != null) {
         setState(() {
           _directoryLinks = response.data!;
+          final initialDirectoryValues = widget.initialDirectoryValues ?? const [];
+          final updatedSelections = <int, MainField?>{};
+
           for (var link in _directoryLinks) {
-            _selectedDirectoryFields[link.id] = _selectedDirectoryFields[link.id] ?? null;
+            if (_selectedDirectoryFields.containsKey(link.id)) {
+              updatedSelections[link.id] = _selectedDirectoryFields[link.id];
+              continue;
+            }
+
+            final initialSelections = initialDirectoryValues
+                .where((value) => value['directory_id'] == link.directory.id)
+                .map((value) {
+                  final entryIdRaw = value['entry_id'];
+                  final int? entryId = entryIdRaw is int
+                      ? entryIdRaw
+                      : int.tryParse(entryIdRaw?.toString() ?? '');
+                  if (entryId == null) {
+                    return null;
+                  }
+                  final entryValue = value['entry_name']?.toString() ??
+                      value['entry_value']?.toString() ??
+                      value['value']?.toString() ??
+                      '';
+                  if (entryValue.isEmpty) {
+                    return null;
+                  }
+                  return MainField(id: entryId, value: entryValue);
+                })
+                .whereType<MainField>()
+                .toList();
+
+            updatedSelections[link.id] =
+                initialSelections.isNotEmpty ? initialSelections.first : null;
           }
+
+          _selectedDirectoryFields = updatedSelections;
         });
       }
     } catch (e) {
@@ -157,17 +210,14 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
   // -------- DEAL custom fields loading (moved here from app bar) --------
   Future<void> _loadDealCustomFields() async {
     try {
-      final titles = await ApiService().getDealCustomFields();
+      final titles = await _apiService.getDealCustomFields();
       if (!mounted) return;
       setState(() {
         _customFieldTitles = titles;
-        // ensure selected map contains keys for all titles
-        for (final title in titles) {
-          _selectedCustomFieldValues[title] = _selectedCustomFieldValues[title] ?? <String>[];
-        }
       });
+      _initializeCustomFieldSelections(widget.initialCustomFieldSelections ?? const {});
       for (final title in titles) {
-        _loadSingleDealCustomField(title);
+        unawaited(_loadSingleDealCustomField(title));
       }
     } catch (_) {
       // ignore errors silently to not break filter UI
@@ -176,13 +226,163 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
 
   Future<void> _loadSingleDealCustomField(String title) async {
     try {
-      final values = await ApiService().getDealCustomFieldValues(title);
+      final values = await _apiService.getDealCustomFieldValues(title);
       if (!mounted) return;
       setState(() {
         _customFieldValues[title] = values;
+        _selectedCustomFieldValues[title] =
+            _selectedCustomFieldValues[title] ?? <String>[];
       });
     } catch (_) {
       // ignore per-field loading errors
+    }
+  }
+
+  Future<void> _loadFieldConfiguration() async {
+    try {
+      final response = await _apiService.getFieldPositions(tableName: 'deals');
+      if (!mounted) return;
+
+      final activeFields = response.result
+          .where((field) => field.isActive)
+          .toList()
+        ..sort((a, b) => a.position.compareTo(b.position));
+
+      setState(() {
+        _fieldConfigurations = activeFields;
+        _isConfigurationLoaded = true;
+      });
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _isConfigurationLoaded = true;
+        });
+      }
+    }
+  }
+
+  Widget? _buildFieldWidgetByConfig(FieldConfiguration config) {
+    switch (config.fieldName) {
+      case 'name':
+      case 'deal_name':
+      case 'names':
+        return Card(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          color: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: DealNamesMultiSelectWidget(
+              selectedDealNames: _selectedDealNames.map((dealName) => dealName.title).toList(),
+              onSelectDealNames: (List<DealNameData> selectedDealNamesData) {
+                setState(() {
+                  _selectedDealNames = selectedDealNamesData;
+                });
+              },
+            ),
+          ),
+        );
+      case 'manager_id':
+        return Card(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          color: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: ManagerMultiSelectWidget(
+              selectedManagers: _selectedManagers.map((manager) => manager.id.toString()).toList(),
+              onSelectManagers: (List<ManagerData> selectedUsersData) {
+                setState(() {
+                  _selectedManagers = selectedUsersData;
+                });
+              },
+            ),
+          ),
+        );
+      case 'lead_id':
+      case 'lead':
+      case 'leads':
+        return Card(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          color: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: LeadMultiSelectWidget(
+              selectedLeads: _selectedLeads.map((lead) => lead.id.toString()).toList(),
+              onSelectLeads: (List<LeadData> selectedUsersData) {
+                setState(() {
+                  _selectedLeads = selectedUsersData;
+                });
+              },
+            ),
+          ),
+        );
+      case 'status_id':
+      case 'status':
+      case 'statuses':
+        return Card(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          color: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: DealStatusRadioGroupWidget(
+              selectedStatus: _selectedStatuses?.toString(),
+              onSelectStatus: (DealStatus selectedStatusData) {
+                setState(() {
+                  _selectedStatuses = selectedStatusData.id;
+                });
+              },
+            ),
+          ),
+        );
+      default:
+        if (config.isCustomField && _customFieldTitles.contains(config.fieldName)) {
+          return Card(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            color: Colors.white,
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: CustomFieldMultiSelect(
+                title: config.fieldName,
+                items: List<String>.from(_customFieldValues[config.fieldName] ?? const []),
+                initialSelectedValues: _selectedCustomFieldValues[config.fieldName],
+                onChanged: (values) {
+                  setState(() {
+                    _selectedCustomFieldValues[config.fieldName] = List<String>.from(values);
+                  });
+                },
+              ),
+            ),
+          );
+        }
+
+        if (config.isDirectory && config.directoryId != null) {
+          try {
+            final link = _directoryLinks.firstWhere(
+              (l) => l.directory.id == config.directoryId,
+            );
+
+            return Card(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              color: Colors.white,
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: DirectoryDropdownWidget(
+                  directoryId: link.directory.id,
+                  directoryName: link.directory.name,
+                  onSelectField: (MainField? field) {
+                    setState(() {
+                      _selectedDirectoryFields[link.id] = field;
+                    });
+                  },
+                  initialField: _selectedDirectoryFields[link.id],
+                ),
+              ),
+            );
+          } catch (_) {
+            return null;
+          }
+        }
+
+        return null;
     }
   }
 
@@ -307,6 +507,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                 for (var link in _directoryLinks) {
                   _selectedDirectoryFields[link.id] = null;
                 }
+                _initializeCustomFieldSelections(const {});
               });
             },
             style: TextButton.styleFrom(
@@ -431,111 +632,130 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
               child: SingleChildScrollView(
                 child: Column(
                   children: [
-                    Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
-                      child: Padding(
-                        padding: const EdgeInsets.all(8),
-                        child: DealNamesMultiSelectWidget(
-                          selectedDealNames: _selectedDealNames.map((dealName) => dealName.title).toList(),
-                          onSelectDealNames: (List<DealNameData> selectedDealNamesData) {
-                            setState(() {
-                              _selectedDealNames = selectedDealNamesData;
-                            });
-                          },
+                    if (_isConfigurationLoaded && _fieldConfigurations.isNotEmpty)
+                      ..._fieldConfigurations.map((config) {
+                        final widget = _buildFieldWidgetByConfig(config);
+                        if (widget == null) return SizedBox.shrink();
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: widget,
+                        );
+                      })
+                    else if (!_isConfigurationLoaded)
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: CircularProgressIndicator(),
                         ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
-                      child: Padding(
-                        padding: const EdgeInsets.all(8),
-                        child: ManagerMultiSelectWidget(
-                          selectedManagers: _selectedManagers.map((manager) => manager.id.toString()).toList(),
-                          onSelectManagers: (List<ManagerData> selectedUsersData) {
-                            setState(() {
-                              _selectedManagers = selectedUsersData;
-                            });
-                          },
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
-                      child: Padding(
-                        padding: const EdgeInsets.all(8),
-                        child: LeadMultiSelectWidget(
-                          selectedLeads: _selectedLeads.map((lead) => lead.id.toString()).toList(),
-                          onSelectLeads: (List<LeadData> selectedUsersData) {
-                            setState(() {
-                              _selectedLeads = selectedUsersData;
-                            });
-                          },
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
-                      child: Padding(
-                        padding: const EdgeInsets.all(8),
-                        child: DealStatusRadioGroupWidget(
-                          selectedStatus: _selectedStatuses?.toString(),
-                          onSelectStatus: (DealStatus selectedStatusData) {
-                            setState(() {
-                              _selectedStatuses = selectedStatusData.id;
-                            });
-                          },
-                        ),
-                      ),
-                    ),
-                    if (_customFieldTitles.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      for (final title in _customFieldTitles)
+                      )
+                    else
+                      ...[
                         Card(
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           color: Colors.white,
                           child: Padding(
                             padding: const EdgeInsets.all(8),
-                            child: CustomFieldMultiSelect(
-                              title: title,
-                              items: List<String>.from(_customFieldValues[title] ?? const []),
-                              initialSelectedValues: _selectedCustomFieldValues[title],
-                              onChanged: (values) {
+                            child: DealNamesMultiSelectWidget(
+                              selectedDealNames: _selectedDealNames.map((dealName) => dealName.title).toList(),
+                              onSelectDealNames: (List<DealNameData> selectedDealNamesData) {
                                 setState(() {
-                                  _selectedCustomFieldValues[title] = List<String>.from(values);
+                                  _selectedDealNames = selectedDealNamesData;
                                 });
                               },
                             ),
                           ),
                         ),
-                    ],
-                    if (_directoryLinks.isNotEmpty) ...[
-                      for (var link in _directoryLinks)
+                        const SizedBox(height: 8),
                         Card(
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           color: Colors.white,
                           child: Padding(
                             padding: const EdgeInsets.all(8),
-                            child: DirectoryDropdownWidget(
-                              directoryId: link.directory.id,
-                              directoryName: link.directory.name,
-                              onSelectField: (MainField? field) {
+                            child: ManagerMultiSelectWidget(
+                              selectedManagers: _selectedManagers.map((manager) => manager.id.toString()).toList(),
+                              onSelectManagers: (List<ManagerData> selectedUsersData) {
                                 setState(() {
-                                  _selectedDirectoryFields[link.id] = field;
+                                  _selectedManagers = selectedUsersData;
                                 });
                               },
-                              initialField: _selectedDirectoryFields[link.id],
                             ),
                           ),
                         ),
-                      const SizedBox(height: 8),
-                    ],
+                        const SizedBox(height: 8),
+                        Card(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          color: Colors.white,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: LeadMultiSelectWidget(
+                              selectedLeads: _selectedLeads.map((lead) => lead.id.toString()).toList(),
+                              onSelectLeads: (List<LeadData> selectedUsersData) {
+                                setState(() {
+                                  _selectedLeads = selectedUsersData;
+                                });
+                              },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Card(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          color: Colors.white,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: DealStatusRadioGroupWidget(
+                              selectedStatus: _selectedStatuses?.toString(),
+                              onSelectStatus: (DealStatus selectedStatusData) {
+                                setState(() {
+                                  _selectedStatuses = selectedStatusData.id;
+                                });
+                              },
+                            ),
+                          ),
+                        ),
+                        if (_customFieldTitles.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          for (final title in _customFieldTitles)
+                            Card(
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              color: Colors.white,
+                              child: Padding(
+                                padding: const EdgeInsets.all(8),
+                                child: CustomFieldMultiSelect(
+                                  title: title,
+                                  items: List<String>.from(_customFieldValues[title] ?? const []),
+                                  initialSelectedValues: _selectedCustomFieldValues[title],
+                                  onChanged: (values) {
+                                    setState(() {
+                                      _selectedCustomFieldValues[title] = List<String>.from(values);
+                                    });
+                                  },
+                                ),
+                              ),
+                            ),
+                        ],
+                        if (_directoryLinks.isNotEmpty) ...[
+                          for (var link in _directoryLinks)
+                            Card(
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              color: Colors.white,
+                              child: Padding(
+                                padding: const EdgeInsets.all(8),
+                                child: DirectoryDropdownWidget(
+                                  directoryId: link.directory.id,
+                                  directoryName: link.directory.name,
+                                  onSelectField: (MainField? field) {
+                                    setState(() {
+                                      _selectedDirectoryFields[link.id] = field;
+                                    });
+                                  },
+                                  initialField: _selectedDirectoryFields[link.id],
+                                ),
+                              ),
+                            ),
+                          const SizedBox(height: 8),
+                        ],
+                      ],
                     Card(
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       color: Colors.white,

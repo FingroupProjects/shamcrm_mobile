@@ -15,10 +15,12 @@ import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/bloc/field_configuration/field_configuration_bloc.dart';
 import 'package:crm_task_manager/bloc/field_configuration/field_configuration_event.dart';
 import 'package:crm_task_manager/bloc/field_configuration/field_configuration_state.dart';
+import 'package:crm_task_manager/custom_widget/delete_file_dialog.dart' show DeleteFileDialog;
 import 'package:crm_task_manager/custom_widget/file_picker_dialog.dart';
 import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/models/dealById_model.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
+import 'package:crm_task_manager/models/file_helper.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
@@ -94,12 +96,9 @@ class _DealEditScreenState extends State<DealEditScreen> {
   String? selectedLead;
   List<CustomField> customFields = [];
   bool isEndDateInvalid = false;
-  List<String> selectedFiles = [];
-  List<String> fileNames = [];
-  List<String> fileSizes = [];
-  List<DealFiles> existingFiles = [];
-  List<String> newFiles = [];
   List<int> _selectedStatusIds = []; // ✅ НОВОЕ: список выбранных ID
+  List<FileHelper> files = [];
+
 
   // Конфигурация полей (как в лидах)
 
@@ -123,13 +122,13 @@ class _DealEditScreenState extends State<DealEditScreen> {
       }
     });
     if (widget.files != null) {
-      existingFiles = widget.files!;
-      setState(() {
-        fileNames.addAll(existingFiles.map((file) => file.name));
-        fileSizes.addAll(existingFiles.map(
-            (file) => '${(file.path.length / 1024).toStringAsFixed(3)}KB'));
-        selectedFiles.addAll(existingFiles.map((file) => file.path));
-      });
+      files = widget.files!.map((file) {
+        return FileHelper(
+          id: file.id,
+          name: file.name,
+          path: file.path,
+        );
+      }).toList();
     }
   }
 
@@ -509,9 +508,9 @@ class _DealEditScreenState extends State<DealEditScreen> {
             }
           },
         );
-      case 'file':
-        // Показ блока файлов согласно позиции в конфигурации
-        return _buildFileSelection();
+      // case 'file':
+      //   // Показ блока файлов согласно позиции в конфигурации
+      //   return _buildFileSelection();
       default:
         return const SizedBox.shrink();
     }
@@ -583,8 +582,8 @@ class _DealEditScreenState extends State<DealEditScreen> {
         return loc.translate('description_list');
       case 'deal_status_id':
         return loc.translate('status');
-      case 'file':
-        return loc.translate('file');
+      // case 'file':
+      //   return loc.translate('file');
       default:
         return config.fieldName;
     }
@@ -978,8 +977,19 @@ class _DealEditScreenState extends State<DealEditScreen> {
 
   Future<void> _pickFile() async {
     // Вычисляем текущий общий размер файлов
-    double totalSize = selectedFiles.fold<double>
-      (0.0, (sum, file) => sum + File(file).lengthSync() / (1024 * 1024),);
+    double totalSize = files.fold<double>(0.0, (sum, file) {
+      if (file.path.startsWith('http://') || file.path.startsWith('https://')) {
+        int index = files.indexOf(file);
+        if (index >= 0 && index < files.length) {
+          final size = files[index].size;
+          final parsed = num.tryParse(size.toString());
+          return sum + (parsed != null ? parsed / 1024.0 : 0);
+        }
+        return sum;
+      }
+
+      return sum + File(file.path).lengthSync() / (1024 * 1024);
+    });
 
     // Показываем диалог выбора типа файла
     final List<PickedFileInfo>? pickedFiles = await FilePickerDialog.show(
@@ -999,12 +1009,67 @@ class _DealEditScreenState extends State<DealEditScreen> {
     if (pickedFiles != null && pickedFiles.isNotEmpty) {
       setState(() {
         for (var file in pickedFiles) {
-          selectedFiles.add(file.path);
-          fileNames.add(file.name);
-          fileSizes.add(file.sizeKB);
+          // selectedFiles.add(file.path);
+          // fileNames.add(file.name);
+          // fileSizes.add(file.sizeKB);
+
+          files.add(FileHelper(id: 0, name: file.name, path: file.path, size: file.sizeKB));
         }
       });
     }
+  }
+
+  void showDeleteFileDialog({required int fileId, required int index}) {
+    bool isDeleting = false;
+
+    showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return DeleteFileDialog(
+          isDeleting: isDeleting,
+          fileId: fileId,
+          onDelete: (fileId) async {
+            if (files[index].id == 0) {
+              setState(() {
+                files.removeAt(index);
+              });
+              Navigator.of(context).pop(true);
+              return;
+            }
+
+            isDeleting = true;
+            setState(() {});
+
+            final response = await _apiService.deleteTaskFile(fileId);
+            if (response['result'] == 'Success') {
+              setState(() {
+                files.removeAt(index);
+              });
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    AppLocalizations.of(context)!.translate('error_delete_file'),
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+
+            Navigator.of(context).pop(true);
+          },
+          onCancel: () {
+            Navigator.of(context).pop(false);
+          },
+        );
+      },
+    );
   }
 
   Widget _buildFileSelection() {
@@ -1025,9 +1090,10 @@ class _DealEditScreenState extends State<DealEditScreen> {
           height: 120,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            itemCount: fileNames.isEmpty ? 1 : fileNames.length + 1,
+            itemCount: files.isEmpty ? 1 : files.length + 1,
             itemBuilder: (context, index) {
-              if (fileNames.isEmpty || index == fileNames.length) {
+              // Кнопка добавления файла
+              if (files.isEmpty || index == files.length) {
                 return Padding(
                   padding: EdgeInsets.only(right: 16),
                   child: GestureDetector(
@@ -1036,11 +1102,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
                       width: 100,
                       child: Column(
                         children: [
-                          Image.asset(
-                            'assets/icons/files/add.png',
-                            width: 60,
-                            height: 60,
-                          ),
+                          Image.asset('assets/icons/files/add.png', width: 60, height: 60),
                           SizedBox(height: 8),
                           Text(
                             AppLocalizations.of(context)!.translate('add_file'),
@@ -1058,7 +1120,8 @@ class _DealEditScreenState extends State<DealEditScreen> {
                 );
               }
 
-              final fileName = fileNames[index];
+              // Отображение выбранных файлов
+              final fileName = files[index].name;
               final fileExtension = fileName.split('.').last.toLowerCase();
 
               return Padding(
@@ -1069,18 +1132,8 @@ class _DealEditScreenState extends State<DealEditScreen> {
                       width: 100,
                       child: Column(
                         children: [
-                          Image.asset(
-                            'assets/icons/files/$fileExtension.png',
-                            width: 60,
-                            height: 60,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Image.asset(
-                                'assets/icons/files/file.png',
-                                width: 60,
-                                height: 60,
-                              );
-                            },
-                          ),
+                          // НОВОЕ: Используем метод _buildFileIcon для показа превью или иконки
+                          buildFileIcon(files, fileName, fileExtension),
                           SizedBox(height: 8),
                           Text(
                             fileName,
@@ -1096,24 +1149,31 @@ class _DealEditScreenState extends State<DealEditScreen> {
                         ],
                       ),
                     ),
+                    // Кнопка удаления файла
                     Positioned(
                       right: -2,
                       top: -6,
                       child: GestureDetector(
                         onTap: () {
-                          setState(() {
-                            selectedFiles.removeAt(index);
-                            fileNames.removeAt(index);
-                            fileSizes.removeAt(index);
-                          });
+                          showDeleteFileDialog(
+                            fileId: files[index].id,
+                            index: index,
+                          );
                         },
                         child: Container(
                           padding: EdgeInsets.all(4),
-                          child: Icon(
-                            Icons.close,
-                            size: 16,
-                            color: Color(0xff1E2E52),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 4,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
                           ),
+                          child: Icon(Icons.close, size: 16, color: Color(0xff1E2E52)),
                         ),
                       ),
                     ),
@@ -1404,7 +1464,10 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                 );
                               }).toList(),
 
-                              
+                              // Всегда показываем выбор файлов
+                              const SizedBox(height: 16),
+                              _buildFileSelection(),
+                              const SizedBox(height: 16),
                             ],
                           ),
                         ),
@@ -1535,8 +1598,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                           customFields: customFieldList,
                                           directoryValues: directoryValues,
                                           localizations: localizations,
-                                          filePaths: newFiles,
-                                          existingFiles: existingFiles,
+                                          files: files,
                                           dealStatusIds: _selectedStatusIds,
                                         ));
                                       } else {

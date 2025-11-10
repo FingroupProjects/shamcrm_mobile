@@ -319,8 +319,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         leadId: event.leadId,
         customFields: event.customFields,
         directoryValues: event.directoryValues,
-        filePaths: event.filePaths,
-        existingFiles: event.existingFiles,
+        files: event.files,
         dealStatusIds: event.dealStatusIds,
       );
 
