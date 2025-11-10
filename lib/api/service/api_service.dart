@@ -6,6 +6,7 @@ import 'package:crm_task_manager/models/LeadStatusForFilter.dart';
 import 'package:crm_task_manager/models/api_exception_model.dart';
 import 'package:crm_task_manager/models/author_data_response.dart';
 import 'package:crm_task_manager/models/calendar_model.dart';
+import 'package:crm_task_manager/models/file_helper.dart';
 import 'package:crm_task_manager/models/money/add_cash_desk_model.dart';
 import 'package:crm_task_manager/models/money/cash_register_model.dart';
 import 'package:crm_task_manager/models/money/expense_model.dart';
@@ -1893,10 +1894,7 @@ class ApiService {
   }
 
 // Обновленный метод createLead
-  Future<Map<String, dynamic>> createLeadWithData(
-      Map<String, dynamic> data, {
-        List<String>? filePaths,
-      }) async {
+  Future<Map<String, dynamic>> createLeadWithData(Map<String, dynamic> data) async {
     // Формируем путь с query-параметрами
     final updatedPath = await _appendQueryParams('/lead');
     if (kDebugMode) {
@@ -1951,12 +1949,30 @@ class ApiService {
             directoryValues[i]['entry_id'].toString();
       }
     }
-
+    if (kDebugMode) 
+      print("createLeadWithData: data['files']: ${data['files']}");
     // Добавляем файлы
-    if (filePaths != null && filePaths.isNotEmpty) {
-      for (var filePath in filePaths) {
-        final file = await http.MultipartFile.fromPath('files[]', filePath);
-        request.files.add(file);
+    if (data['files'] != null && (data['files'] as List).isNotEmpty) {
+      final filesList = data['files'] as List<FileHelper>;
+      for (var fileData in filesList) {
+        try {
+          // ON EDIT LEAD USED
+          // if (fileData.path.startsWith('http')) {
+          //   // If it's a URL, you need to download it first or send as URL
+          //   // For now, skip URLs
+          //   debugPrint("Skipping URL file: ${fileData.path}");
+          //   continue;
+          // }
+
+          final file = await http.MultipartFile.fromPath(
+            'files[]',
+            fileData.path,
+            filename: fileData.name,
+          );
+          request.files.add(file);
+        } catch (e) {
+          debugPrint("Error adding file ${fileData.name}: $e");
+        }
       }
     }
 
@@ -2176,7 +2192,7 @@ class ApiService {
     }
 
     if (data['files'] != null && (data['files'] as List).isNotEmpty) {
-      final filesList = data['files'] as List<LeadEditFiles>;
+      final filesList = data['files'] as List<FileHelper>;
       for (var fileData in filesList) {
         try {
           if (fileData.path.startsWith('http')) {

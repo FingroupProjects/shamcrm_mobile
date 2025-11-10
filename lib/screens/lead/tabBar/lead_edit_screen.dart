@@ -14,8 +14,8 @@ import 'package:crm_task_manager/custom_widget/custom_phone_for_lead_edit.dart';
 import 'package:crm_task_manager/custom_widget/delete_file_dialog.dart';
 import 'package:crm_task_manager/custom_widget/file_picker_dialog.dart';
 import 'package:crm_task_manager/models/field_configuration.dart';
+import 'package:crm_task_manager/models/file_helper.dart';
 import 'package:crm_task_manager/models/leadById_model.dart';
-import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
@@ -92,24 +92,6 @@ class LeadEditScreen extends StatefulWidget {
 
 enum DuplicateOption { duplicate, transferAndDelete }
 
-class LeadEditFiles {
-  final int id;
-  final String name;
-  final String path;
-  final String? size;
-
-  LeadEditFiles({required this.name, required this.id, this.size, required this.path});
-
-  // Преобразует объект в карту (JSON) для передачи в BLoC
-  // при вызове API — данные файла, отправляемые на бэкенд
-  Map<String, dynamic> toJson() {
-    return {
-      'name': name,
-      'size': size,
-    };
-  }
-}
-
 class _LeadEditScreenState extends State<LeadEditScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController titleController = TextEditingController();
@@ -143,7 +125,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
   String? _fullWhatsAppNumber; // Новая переменная для хранения полного номера WhatsApp
   List<CustomField> customFields = [];
   final ApiService _apiService = ApiService();
-  List<LeadEditFiles> files = [];
+  List<FileHelper> files = [];
   String? selectedSalesFunnel;
   DuplicateOption? _duplicateOption;
   bool _showDuplicateOptions = false;
@@ -246,7 +228,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
 
     if (widget.existedFiles != null) {
       files = widget.existedFiles!.map((file) {
-        return LeadEditFiles(
+        return FileHelper(
           id: file.id,
           name: file.name,
           path: file.path,
@@ -1171,7 +1153,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
           // fileNames.add(file.name);
           // fileSizes.add(file.sizeKB);
 
-          files.add(LeadEditFiles(id: 0, name: file.name, path: file.path, size: file.sizeKB));
+          files.add(FileHelper(id: 0, name: file.name, path: file.path, size: file.sizeKB));
         }
       });
     }
@@ -1306,7 +1288,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                       child: Column(
                         children: [
                           // НОВОЕ: Используем метод _buildFileIcon для показа превью или иконки
-                          _buildFileIcon(fileName, fileExtension),
+                          buildFileIcon(files, fileName, fileExtension),
                           SizedBox(height: 8),
                           Text(
                             fileName,
@@ -1358,49 +1340,6 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
         ),
       ],
     );
-  }
-
-  /// Строит иконку файла или превью изображения
-  Widget _buildFileIcon(String fileName, String fileExtension) {
-    // Список расширений изображений
-    final imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'heic', 'heif'];
-
-    // Если файл - изображение, показываем превью
-    if (imageExtensions.contains(fileExtension)) {
-      final filePath = files.firstWhere((file) => file.name == fileName).path;
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: Image.file(
-          File(filePath),
-          width: 60,
-          height: 60,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            // Если не удалось загрузить превью, показываем иконку
-            return Image.asset(
-              'assets/icons/files/file.png',
-              width: 60,
-              height: 60,
-            );
-          },
-        ),
-      );
-    } else {
-      // Для остальных типов файлов показываем иконку по расширению
-      return Image.asset(
-        'assets/icons/files/$fileExtension.png',
-        width: 60,
-        height: 60,
-        errorBuilder: (context, error, stackTrace) {
-          // Если нет иконки для этого типа, показываем общую иконку файла
-          return Image.asset(
-            'assets/icons/files/file.png',
-            width: 60,
-            height: 60,
-          );
-        },
-      );
-    }
   }
 
   @override

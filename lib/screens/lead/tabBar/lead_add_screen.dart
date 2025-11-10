@@ -10,6 +10,9 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/custom_widget/custom_phone_number_input.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
+import 'package:crm_task_manager/custom_widget/delete_file_dialog.dart';
+import 'package:crm_task_manager/custom_widget/file_picker_dialog.dart';
+import 'package:crm_task_manager/models/file_helper.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/field_configuration.dart';
@@ -45,6 +48,7 @@ class LeadAddScreen extends StatefulWidget {
 
 class _LeadAddScreenState extends State<LeadAddScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final _apiService = ApiService();
 
   // Контроллеры для стандартных полей
   final TextEditingController titleController = TextEditingController();
@@ -72,9 +76,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
   bool isConfigurationLoaded = false;
 
   // Переменные для файлов
-  List<String> selectedFiles = [];
-  List<String> fileNames = [];
-  List<String> fileSizes = [];
+  List<FileHelper> files = [];
 
   // Режим настроек
   bool isSettingsMode = false;
@@ -119,7 +121,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
       }
 
       // Отправка на бэкенд
-      await ApiService().updateFieldPositions(
+      await _apiService.updateFieldPositions(
         tableName: 'leads',
         updates: updates,
       );
@@ -357,69 +359,53 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
   }
 
   Future<void> _pickFile() async {
-    try {
-      FilePickerResult? result =
-      await FilePicker.platform.pickFiles(allowMultiple: true);
-
-      if (result != null) {
-        double totalSize = selectedFiles.fold<double>(
-          0.0,
-              (sum, file) => sum + File(file).lengthSync() / (1024 * 1024),
-        );
-
-        double newFilesSize = result.files.fold<double>(
-          0.0,
-              (sum, file) => sum + file.size / (1024 * 1024),
-        );
-
-        if (totalSize + newFilesSize > 50) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                AppLocalizations.of(context)!.translate('file_size_too_large'),
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              backgroundColor: Colors.red,
-              elevation: 3,
-              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              duration: Duration(seconds: 3),
-            ),
-          );
-          return;
+    // Вычисляем текущий общий размер файлов
+    double totalSize = files.fold<double>(0.0, (sum, file) {
+      if (file.path.startsWith('http://') || file.path.startsWith('https://')) {
+        int index = files.indexOf(file);
+        if (index >= 0 && index < files.length) {
+          final size = files[index].size;
+          final parsed = num.tryParse(size.toString());
+          return sum + (parsed != null ? parsed / 1024.0 : 0);
         }
-
-        setState(() {
-          for (var file in result.files) {
-            selectedFiles.add(file.path!);
-            fileNames.add(file.name);
-            fileSizes.add('${(file.size / 1024).toStringAsFixed(3)}KB');
-          }
-        });
+        return sum;
       }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Ошибка при выборе файла!"),
-          backgroundColor: Colors.red,
-        ),
-      );
+
+      return sum + File(file.path).lengthSync() / (1024 * 1024);
+    });
+
+    // Показываем диалог выбора типа файла
+    final List<PickedFileInfo>? pickedFiles = await FilePickerDialog.show(
+      context: context,
+      allowMultiple: true,
+      maxSizeMB: 50.0,
+      currentTotalSizeMB: totalSize,
+      fileLabel: AppLocalizations.of(context)!.translate('file'),
+      galleryLabel: AppLocalizations.of(context)!.translate('gallery'),
+      cameraLabel: AppLocalizations.of(context)!.translate('camera'),
+      cancelLabel: AppLocalizations.of(context)!.translate('cancel'),
+      fileSizeTooLargeMessage: AppLocalizations.of(context)!.translate('file_size_too_large'),
+      errorPickingFileMessage: AppLocalizations.of(context)!.translate('error_picking_file'),
+    );
+
+    // Если файлы выбраны, добавляем их
+    if (pickedFiles != null && pickedFiles.isNotEmpty) {
+      setState(() {
+        for (var file in pickedFiles) {
+          // selectedFiles.add(file.path);
+          // fileNames.add(file.name);
+          // fileSizes.add(file.sizeKB);
+
+          files.add(FileHelper(id: 0, name: file.name, path: file.path, size: file.sizeKB));
+        }
+      });
     }
   }
 
   Future<void> _addCustomField(String fieldName, String type) async {
     // Если это не справочник, сначала добавляем через API
     try {
-      await ApiService().addNewField(
+      await _apiService.addNewField(
         tableName: 'leads',
         fieldName: fieldName,
         fieldType: type,
@@ -536,10 +522,10 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
               onAddDirectory: (directory) async {
                 try {
                   // Сначала связываем справочник через API
-                  await ApiService().linkDirectory(
+                  await _apiService.linkDirectory(
                     directoryId: directory.id,
                     modelType: 'lead',
-                    organizationId: ApiService().getSelectedOrganization().toString(),
+                    organizationId: _apiService.getSelectedOrganization().toString(),
                   );
 
                   showCustomSnackBar(context: context, message: 'Справочник успешно добавлен');
@@ -1022,9 +1008,10 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
           height: 120,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            itemCount: fileNames.isEmpty ? 1 : fileNames.length + 1,
+            itemCount: files.isEmpty ? 1 : files.length + 1,
             itemBuilder: (context, index) {
-              if (fileNames.isEmpty || index == fileNames.length) {
+              // Кнопка добавления файла
+              if (files.isEmpty || index == files.length) {
                 return Padding(
                   padding: EdgeInsets.only(right: 16),
                   child: GestureDetector(
@@ -1033,11 +1020,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                       width: 100,
                       child: Column(
                         children: [
-                          Image.asset(
-                            'assets/icons/files/add.png',
-                            width: 60,
-                            height: 60,
-                          ),
+                          Image.asset('assets/icons/files/add.png', width: 60, height: 60),
                           SizedBox(height: 8),
                           Text(
                             AppLocalizations.of(context)!.translate('add_file'),
@@ -1055,7 +1038,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                 );
               }
 
-              final fileName = fileNames[index];
+              // Отображение выбранных файлов
+              final fileName = files[index].name;
               final fileExtension = fileName.split('.').last.toLowerCase();
 
               return Padding(
@@ -1066,18 +1050,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                       width: 100,
                       child: Column(
                         children: [
-                          Image.asset(
-                            'assets/icons/files/$fileExtension.png',
-                            width: 60,
-                            height: 60,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Image.asset(
-                                'assets/icons/files/file.png',
-                                width: 60,
-                                height: 60,
-                              );
-                            },
-                          ),
+                          // НОВОЕ: Используем метод _buildFileIcon для показа превью или иконки
+                          buildFileIcon(files, fileName, fileExtension),
                           SizedBox(height: 8),
                           Text(
                             fileName,
@@ -1093,24 +1067,31 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                         ],
                       ),
                     ),
+                    // Кнопка удаления файла
                     Positioned(
                       right: -2,
                       top: -6,
                       child: GestureDetector(
                         onTap: () {
-                          setState(() {
-                            selectedFiles.removeAt(index);
-                            fileNames.removeAt(index);
-                            fileSizes.removeAt(index);
-                          });
+                          showDeleteFileDialog(
+                            fileId: files[index].id,
+                            index: index,
+                          );
                         },
                         child: Container(
                           padding: EdgeInsets.all(4),
-                          child: Icon(
-                            Icons.close,
-                            size: 16,
-                            color: Color(0xff1E2E52),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 4,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
                           ),
+                          child: Icon(Icons.close, size: 16, color: Color(0xff1E2E52)),
                         ),
                       ),
                     ),
@@ -1683,12 +1664,65 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
         customFields: customFieldMap,
         directoryValues: directoryValues,
         localizations: localizations,
-        filePaths: selectedFiles,
+        files: files,
         isSystemManager: isSystemManager,
       ));
     }
   }
 
+  void showDeleteFileDialog({required int fileId, required int index}) {
+
+    bool isDeleting = false;
+
+    showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return DeleteFileDialog(
+          isDeleting: isDeleting,
+          fileId: fileId,
+          onDelete: (fileId) async {
+            if (files[index].id == 0) {
+              setState(() {
+                files.removeAt(index);
+              });
+              Navigator.of(context).pop(true);
+              return;
+            }
+
+            isDeleting = true;
+            setState(() {});
+
+            final response = await _apiService.deleteTaskFile(fileId);
+            if (response['result'] == 'Success') {
+              setState(() {
+                files.removeAt(index);
+              });
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    AppLocalizations.of(context)!.translate('error_delete_file'),
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+
+            Navigator.of(context).pop(true);
+          },
+          onCancel: () {
+            Navigator.of(context).pop(false);
+          },
+        );
+      },
+    );
+  }
 
   @override
   void dispose() {
