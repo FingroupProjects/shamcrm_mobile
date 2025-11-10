@@ -42,8 +42,8 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
   String _userName = '';
   String _userNameProfile = '';
   String _userImage = '';
-  bool _isLoading = true;
-  bool _isInitialized = false; // ✅ НОВОЕ: предотвращение повторной инициализации
+  bool _isLoading = true; // ✅ Начинаем с true - показываем анимацию сразу
+  bool _isInitialized = false;
   final ApiService _apiService = ApiService();
   
   FirebaseApi? _firebaseApi;
@@ -67,28 +67,26 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
       }
     });
 
-    // ✅ ИСПРАВЛЕНИЕ: Запускаем инициализацию сразу, без addPostFrameCallback
+    // ✅ ИСПРАВЛЕНИЕ: Запускаем инициализацию сразу
+    // Не нужно setState - _isLoading уже true
     _initializeMinimal();
   }
 
   // ==========================================================================
-  // МИНИМАЛЬНАЯ ИНИЦИАЛИЗАЦИЯ - ТОЛЬКО КРИТИЧЕСКИ ВАЖНОЕ
+  // МИНИМАЛЬНАЯ ИНИЦИАЛИЗАЦИЯ
   // ==========================================================================
 
   Future<void> _initializeMinimal() async {
-    // ✅ Защита от повторного вызова
     if (_isInitialized) return;
     _isInitialized = true;
 
     try {
-      setState(() {
-        _isLoading = true;
-      });
-
-      // ШАГ 1: Проверка обновления (опционально, быстро)
+      // ✅ НЕ вызываем setState здесь - _isLoading уже true!
+      
+      // ШАГ 1: Проверка обновления (быстро, не блокирует)
       _checkForNewVersionSilently();
 
-      // ШАГ 2: Критическая проверка интернета (ОДИН РАЗ)
+      // ШАГ 2: Критическая проверка интернета
       final hasInternet = await _checkInternetConnectionOnce();
       if (!hasInternet) {
         if (mounted) {
@@ -96,13 +94,13 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
             _isLoading = false;
           });
         }
-        return; // Останавливаем инициализацию
+        return;
       }
 
       // ШАГ 3: Инициализация FirebaseApi
       await _initializeFirebaseApi();
 
-      // ШАГ 4: Загрузка только имени и аватара пользователя (из кэша)
+      // ШАГ 4: Загрузка базовой информации (из кэша - быстро)
       await _loadUserBasicInfo();
 
       // ШАГ 5: Проверка PIN
@@ -111,6 +109,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
       // ШАГ 6: Биометрия
       await _initBiometrics();
 
+      // ✅ Только ЗДЕСЬ убираем загрузку
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -118,7 +117,6 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
       }
       
     } catch (e) {
-      //print('PinScreen: Критическая ошибка инициализации: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -129,38 +127,34 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
   }
 
   // ==========================================================================
-  // ПРОВЕРКА ИНТЕРНЕТА - ИСПРАВЛЕННАЯ (БЕЗ ДВОЙНЫХ ДИАЛОГОВ)
+  // ПРОВЕРКА ИНТЕРНЕТА
   // ==========================================================================
 
   Future<bool> _checkInternetConnectionOnce() async {
     int maxAttempts = 3;
 
     for (int attempt = 1; attempt <= maxAttempts; attempt++) {
-      // Проверка connectivity
       var connectivityResult = await Connectivity().checkConnectivity();
       
       if (connectivityResult == ConnectivityResult.none) {
-        // Показываем диалог ОДИН РАЗ
         final shouldRetry = await _showNoInternetDialog(context);
         if (!shouldRetry) {
-          return false; // Пользователь отменил
+          return false;
         }
-        continue; // Повторяем проверку
+        continue;
       }
 
-      // Проверка реального доступа к интернету
       try {
         final result = await InternetAddress.lookup('google.com')
             .timeout(Duration(seconds: 5));
         
         if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
-          return true; // ✅ Интернет есть
+          return true;
         }
       } catch (e) {
         //print('PinScreen: Ошибка проверки интернета (попытка $attempt): $e');
       }
 
-      // Если это не последняя попытка, показываем диалог
       if (attempt < maxAttempts) {
         final shouldRetry = await _showNoInternetDialog(context);
         if (!shouldRetry) {
@@ -169,7 +163,6 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
       }
     }
 
-    // После всех попыток - блокируем вход
     if (mounted) {
       _showErrorDialog(
         'Нет подключения',
@@ -180,14 +173,13 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
   }
 
   // ==========================================================================
-  // ЗАГРУЗКА ТОЛЬКО БАЗОВОЙ ИНФОРМАЦИИ ПОЛЬЗОВАТЕЛЯ
+  // ЗАГРУЗКА БАЗОВОЙ ИНФОРМАЦИИ
   // ==========================================================================
 
   Future<void> _loadUserBasicInfo() async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
 
-      // Загружаем только из кэша (мгновенно)
       String? savedUserName = prefs.getString('userName');
       String? savedUserNameProfile = prefs.getString('userNameProfile');
       String? savedUserImage = prefs.getString('userImage');
@@ -205,7 +197,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
   }
 
   // ==========================================================================
-  // ПРОВЕРКА ОБНОВЛЕНИЙ (БЕЗ БЛОКИРОВКИ)
+  // ПРОВЕРКА ОБНОВЛЕНИЙ
   // ==========================================================================
 
   Future<void> _checkForNewVersionSilently() async {
@@ -217,7 +209,6 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
       if (mounted && context.mounted && status != null && status.canUpdate == true) {
         final localizations = AppLocalizations.of(context);
         
-        // Показываем диалог обновления ПОСЛЕ инициализации
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted && context.mounted) {
             UpdateDialog.show(
@@ -231,12 +222,12 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
         });
       }
     } catch (e) {
-      // Игнорируем ошибки проверки обновлений
+      // Игнорируем
     }
   }
 
   // ==========================================================================
-  // ОСТАЛЬНЫЕ МЕТОДЫ БЕЗ ИЗМЕНЕНИЙ
+  // FIREBASE
   // ==========================================================================
 
   Future<void> _initializeFirebaseApi() async {
@@ -268,6 +259,10 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
       _firebaseApi = null;
     }
   }
+
+  // ==========================================================================
+  // PIN И БИОМЕТРИЯ
+  // ==========================================================================
 
   Future<void> _checkSavedPin() async {
     try {
@@ -335,6 +330,10 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
     }
   }
 
+  // ==========================================================================
+  // НАВИГАЦИЯ
+  // ==========================================================================
+
   void _navigateToHome() {
     if (!mounted) return;
     
@@ -356,6 +355,10 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
       }
     });
   }
+
+  // ==========================================================================
+  // ОБРАБОТКА PIN
+  // ==========================================================================
 
   void _onNumberPressed(String number) async {
     if (_pin.length < 4) {
@@ -419,6 +422,10 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
     SystemNavigator.pop();
   }
 
+  // ==========================================================================
+  // ДИАЛОГИ
+  // ==========================================================================
+
   void _showErrorDialog(String title, String message) {
     if (!mounted) return;
     
@@ -439,7 +446,6 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
-              // Перезапускаем инициализацию
               setState(() {
                 _isInitialized = false;
                 _isLoading = true;
@@ -462,7 +468,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
       barrierColor: Colors.black54,
       builder: (BuildContext context) {
         return WillPopScope(
-          onWillPop: () async => false, // Блокируем кнопку назад
+          onWillPop: () async => false,
           child: Dialog(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16.0),
@@ -508,7 +514,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
                     children: [
                       TextButton(
                         onPressed: () {
-                          Navigator.of(context).pop(false); // Отмена
+                          Navigator.of(context).pop(false);
                         },
                         child: Text(
                           'Отмена',
@@ -522,7 +528,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
                       ),
                       ElevatedButton(
                         onPressed: () {
-                          Navigator.of(context).pop(true); // Повторить
+                          Navigator.of(context).pop(true);
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.blueAccent,
@@ -558,6 +564,10 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
     return result ?? false;
   }
 
+  // ==========================================================================
+  // ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ
+  // ==========================================================================
+
   String getGreetingMessage() {
     final hour = DateTime.now().hour;
     final localizations = AppLocalizations.of(context);
@@ -580,18 +590,15 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
     super.dispose();
   }
 
+  // ==========================================================================
+  // BUILD - БЕЗ БЕЛОГО ЭКРАНА
+  // ==========================================================================
+
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
     
-    if (localizations == null) {
-      return Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
-
+    // ✅ ИСПРАВЛЕНИЕ: Показываем анимацию сразу, даже если localizations == null
     if (_isLoading) {
       return Scaffold(
         backgroundColor: Colors.white,
@@ -604,6 +611,20 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
       );
     }
 
+    // Если localizations не готов после загрузки - показываем лоадер
+    if (localizations == null) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(
+          child: PlayStoreImageLoading(
+            size: 80.0,
+            duration: Duration(milliseconds: 1000),
+          ),
+        ),
+      );
+    }
+
+    // ✅ Основной UI - показывается только когда все готово
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
