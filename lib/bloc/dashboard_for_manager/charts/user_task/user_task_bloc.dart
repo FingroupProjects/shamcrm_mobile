@@ -25,7 +25,6 @@ class UserBlocManager extends Bloc<UserEvent, UserState> {
       List<double>? cachedData = await UserTaskCompletionCacheHandler.getUserTaskCompletionData();
 
       if (cachedData != null) {
-        print("📦 Данные о задачах пользователя загружены из кэша.");
         emit(UserLoaded(data: cachedData));
       }
 
@@ -35,7 +34,6 @@ class UserBlocManager extends Bloc<UserEvent, UserState> {
       if (isInternetAvailable) {
         final data = await apiService.getUserStatsManager();
         if (cachedData == null || !_areListsEqual(data.finishedTasksPercent, cachedData)) {
-          print("✅ Данные с сервера отличаются. Обновляем кэш.");
           
           // Сохраняем новые данные в кэше
           await UserTaskCompletionCacheHandler.saveUserTaskCompletionData(data.finishedTasksPercent);
@@ -43,16 +41,13 @@ class UserBlocManager extends Bloc<UserEvent, UserState> {
           // Обновляем UI с новыми данными
           emit(UserLoaded(data: data.finishedTasksPercent));
         } else {
-          print("🔄 ВЫПОЛНЕНИЕ ЦЕЛЕЙ Данные с сервера совпадают с кэшированными. Обновление не требуется.");
         }
       } else {
-        print("🚫 Нет подключения к интернету.");
         if (cachedData == null) {
           emit(UserError(message: "Нет данных и отсутствует подключение к интернету."));
         }
       }
     } catch (e) {
-      print("❌ Ошибка: $e");
       emit(UserError(message: e.toString()));
     }
   }

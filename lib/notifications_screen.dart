@@ -10,11 +10,13 @@ import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/screens/chats/chat_sms_screen.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
+import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_details_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class NotificationsScreen extends StatefulWidget {
   @override
@@ -59,6 +61,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             .clear();
       }
     });
+    SharedPreferences.getInstance().then((prefs) {
+    prefs.setBool('hasNewNotification', false); // Сбрасываем флаг
+  });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -125,189 +130,183 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         ],
       ),
       body: BlocBuilder<NotificationBloc, NotificationState>(
-        builder: (context, state) {
-          if (state is NotificationLoading) {
-            return const Center(
-                child: CircularProgressIndicator(color: Color(0xff1E2E52)));
-          } else if (state is NotificationError) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              // ScaffoldMessenger.of(context).showSnackBar(
-              //   SnackBar(
-              //     content: Text(
-              //       '${state.message}',
-              //       style: TextStyle(
-              //         fontFamily: 'Gilroy',
-              //         fontSize: 16,
-              //         fontWeight: FontWeight.w500,
-              //         color: Colors.white,
-              //       ),
-              //     ),
-              //     behavior: SnackBarBehavior.floating,
-              //     margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              //     shape: RoundedRectangleBorder(
-              //       borderRadius: BorderRadius.circular(12),
-              //     ),
-              //     backgroundColor: Colors.red,
-              //     elevation: 3,
-              //     padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              //     duration: Duration(seconds: 3),
-              //   ),
-              // );
-            }
-            );
-          } else if (state is NotificationDataLoaded) {
-            final notifications = state.notifications;
-            return RefreshIndicator(
-              color: Color(0xff1E2E52),
-              backgroundColor: Colors.white,
-              onRefresh: _onRefresh,
-              child: notifications.isEmpty
-                  ? ListView(
-                      physics: AlwaysScrollableScrollPhysics(),
-                      children: [
-                        SizedBox(
-                            height: MediaQuery.of(context).size.height * 0.4),
-                        Center(child: Text(AppLocalizations.of(context)!.translate('no_notifications_yet'))),
-                      ],
-                    )
-                  : ListView.builder(
-                      controller: _scrollController,
-                      physics: AlwaysScrollableScrollPhysics(),
-                      itemCount: notifications.length +
-                          (notificationBloc.allNotificationsFetched ? 0 : 1),
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 8, horizontal: 16),
-                      itemBuilder: (context, index) {
-                        if (index == notifications.length) {
-                          return const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 16),
-                          );
-                        }
+  builder: (context, state) {
+    //print("🔄 [UI] Состояние BLoC: ${state.runtimeType}");
+    if (state is NotificationLoading) {
+      //print("🔄 [UI] Загрузка...");
+      return const Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+    } else if (state is NotificationError) {
+      //print("❌ [UI] Ошибка: ${state.message}");
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              state.message,
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
+              ),
+            ),
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            backgroundColor: Colors.red,
+            elevation: 3,
+            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      });
+      return Center(child: Text(state.message));
+    } else if (state is NotificationDataLoaded) {
+      //print("✅ [UI] Данные загружены, уведомлений: ${state.notifications.length}");
+      final notifications = state.notifications;
+      return RefreshIndicator(
+        color: Color(0xff1E2E52),
+        backgroundColor: Colors.white,
+        onRefresh: _onRefresh,
+        child: notifications.isEmpty
+            ? ListView(
+                physics: AlwaysScrollableScrollPhysics(),
+                children: [
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.4),
+                  Center(child: Text(AppLocalizations.of(context)!.translate('no_notifications_yet'))),
+                ],
+              )
+            : ListView.builder(
+                controller: _scrollController,
+                physics: AlwaysScrollableScrollPhysics(),
+                itemCount: notifications.length + (notificationBloc.allNotificationsFetched ? 0 : 1),
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                itemBuilder: (context, index) {
+                  if (index == notifications.length) {
+                    //print("🔄 [UI] Показ индикатора загрузки для пагинации");
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      child: Center(child: CircularProgressIndicator(color: Color(0xff1E2E52))),
+                    );
+                  }
 
-                        final notification = notifications[index];
-
-                        return Dismissible(
-                          key: Key(notification.id.toString()),
-                          direction: DismissDirection.endToStart,
-                          background: Container(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.red,
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.05),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            alignment: Alignment.centerRight,
-                            child: const Icon(
-                              Icons.delete,
-                              color: Colors.white,
-                              size: 24,
-                            ),
+                  final notification = notifications[index];
+                  //print("🔔 [UI] Рендеринг уведомления ID: ${notification.id}, сообщение: ${notification.message}");
+                  return Dismissible(
+                    key: Key(notification.id.toString()),
+                    direction: DismissDirection.endToStart,
+                    background: Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
                           ),
-                          onDismissed: (direction) {
-                            setState(() {
-                              notifications.removeAt(index);
-                            });
-                            notificationBloc.add(DeleteNotification(notification.id));
-                          },
-                          child: Container(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.05),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              leading: const Icon(
-                                Icons.notifications,
-                                color: Color(0xff1E2E52),
-                                size: 24,
-                              ),
-                              title: Text(
-                                notification.type == 'message'
-                                    ? AppLocalizations.of(context)!.translate('new_message')
-                                    : notification.type == 'dealDeadLineNotification'
-                                        ? AppLocalizations.of(context)!.translate('deal_reminder')
-                                        : notification.type == 'notice'
-                                            ? AppLocalizations.of(context)!.translate('note_reminder')
-                                            : notification.type == 'task'
-                                                ? AppLocalizations.of(context)!.translate('task_new')
-                                                : notification.type ==  'taskFinished'
-                                                    ? AppLocalizations.of(context)!.translate('task_closed')
-                                                    : notification.type =='taskOutDated'
-                                                        ? AppLocalizations.of(context)!.translate('task_deadline_reminder')
-                                                        : notification.type == 'lead'
-                                                            ? AppLocalizations.of(context)!.translate('assigned_as_lead_manager')
-                                                            : notification.type,
-                                style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xff1E2E52)),
-                              ),
-                              subtitle: Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      notification.message,
-                                      style: const TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w400,
-                                          color: Color(0xff5A6B87)),
-                                      overflow: TextOverflow.ellipsis,
-                                      softWrap: false,
-                                    ),
-                                  ),
-                                  SizedBox(width: 6),
-                                  Text(
-                                    DateFormat('dd.MM.yyyy HH:mm').format(
-                                        notification.createdAt
-                                            .add(Duration(hours: 5))),
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      fontFamily: 'Gilroy',
-                                      color: Color(0xff1E2E52),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              onTap: () {
-                                navigateToScreen(notification.type,
-                                    notification.id, notification.modelId);
-                              },
-                            ),
-                          ),
-                        );
-                      },
+                        ],
+                      ),
+                      alignment: Alignment.centerRight,
+                      child: const Icon(Icons.delete, color: Colors.white, size: 24),
                     ),
-            );
-          }
-          return Container();
-        },
-      ),
+                    onDismissed: (direction) {
+                      //print("🗑️ [UI] Удаление уведомления ID: ${notification.id}");
+                      setState(() {
+                        notifications.removeAt(index);
+                      });
+                      notificationBloc.add(DeleteNotification(notification.id));
+                    },
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(Icons.notifications, color: Color(0xff1E2E52), size: 24),
+                        title: Text(
+                          notification.type == 'message'
+                              ? AppLocalizations.of(context)!.translate('new_message')
+                              : notification.type == 'dealDeadLineNotification'
+                                  ? AppLocalizations.of(context)!.translate('deal_reminder')
+                                  : notification.type == 'notice'
+                                      ? AppLocalizations.of(context)!.translate('note_reminder')
+                                      : notification.type == 'task'
+                                          ? AppLocalizations.of(context)!.translate('task_new')
+                                          : notification.type == 'taskFinished'
+                                              ? AppLocalizations.of(context)!.translate('task_closed')
+                                              : notification.type == 'taskOutDated'
+                                                  ? AppLocalizations.of(context)!.translate('task_deadline_reminder')
+                                                  : notification.type == 'lead'
+                                                      ? AppLocalizations.of(context)!.translate('task_deadline_reminder')
+                                                      : notification.type == 'myTaskOutDated'
+                                                          ? AppLocalizations.of(context)!.translate('Напоминание о просрочке мои задачи')
+                                                          : notification.type == 'updateLeadStatus'
+                                                              ? AppLocalizations.of(context)!.translate('Статус лида изменен!')
+                                                              : notification.type,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xff1E2E52),
+                          ),
+                        ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              notification.message,
+                              maxLines: 2,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w400,
+                                color: Color(0xff5A6B87),
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              softWrap: true,
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                Text(
+                                  DateFormat('dd.MM.yyyy HH:mm').format(notification.createdAt.add(Duration(hours: 5))),
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    fontFamily: 'Gilroy',
+                                    color: Color(0xff1E2E52),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        onTap: () {
+                          //print("🔔 [UI] Нажатие на уведомление ID: ${notification.id}, тип: ${notification.type}");
+                          navigateToScreen(notification.type, notification.id, notification.modelId);
+                        },
+                      ),
+                    ),
+                  );
+                },
+              ),
+      );
+    }
+    //print("⚠️ [UI] Неизвестное состояние, возвращаем пустой контейнер");
+    return Container();
+  },
+),
     );
   }
 
   Future<void> navigateToScreen(
       String type, int notificationId, int chatId) async {
     setState(() {
-      (notificationBloc.state as NotificationDataLoaded)
-          .notifications
-          .removeWhere((notification) => notification.id == notificationId);
+      (notificationBloc.state as NotificationDataLoaded).notifications.removeWhere((notification) => notification.id == notificationId);
     });
 
     notificationBloc.add(DeleteNotification(notificationId));
@@ -343,7 +342,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     lastMessage: "",
                     messageType: "",
                     createDate: "",
-                    unredMessage: 0,
+                    unreadCount: 0,
                     canSendMessage: getChatById.canSendMessage,
                     chatUsers: [],
                   ).toChatItem(),
@@ -369,7 +368,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     lastMessage: "",
                     messageType: "",
                     createDate: "",
-                    unredMessage: 0,
+                    unreadCount: 0,
                     canSendMessage: getChatById.canSendMessage,
                     chatUsers: [],
                   ).toChatItem(),
@@ -383,12 +382,20 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         } else if (getChatById.type == "corporate") {
           final getChatById = await ApiService().getChatById(chatId);
           String? chatName;
-          chatName = getChatById.group != null
-              ? getChatById.group!.name
-              : getChatById.chatUsers.length > 1
-                  ? '${getChatById.chatUsers[1].participant.name}'
-                  : getChatById.chatUsers[0].participant.name;
-
+            final prefs = await SharedPreferences.getInstance();
+            String userId = prefs.getString('userID').toString();
+            if (getChatById.group != null) {
+              chatName = getChatById.group!.name;
+            } else {
+              int userIndex = getChatById.chatUsers.indexWhere(
+                  (user) => user.participant.id.toString() == userId);
+              if (userIndex != -1) {
+                int otherUserIndex = (userIndex == 0) ? 1 : 0;
+                chatName = '${getChatById.chatUsers[otherUserIndex].participant.name}';
+              } else {
+                chatName = getChatById.chatUsers[0].participant.name;
+              }
+            }
           navigatorKey.currentState?.push(
             MaterialPageRoute(
               builder: (context) => BlocProvider(
@@ -402,7 +409,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     lastMessage: "",
                     messageType: "",
                     createDate: "",
-                    unredMessage: 0,
+                    unreadCount: 0,
                     canSendMessage: getChatById.canSendMessage,
                     chatUsers: [],
                   ).toChatItem(),
@@ -413,11 +420,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               ),
             ),
           );
+           if (mounted) {
+      notificationBloc.add(FetchNotifications());
+    }
         }
       } catch (e) {
         Navigator.of(context).pop();
         if (e.toString().contains('404')) {
-          // Handle 404 error (resource not found)
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Ресурс не найден для задачи.'),
@@ -425,12 +434,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             ),
           );
         } else {
-          print("Ошибка загрузки данных!");
+          //print("Ошибка загрузки данных!");
         }
       }
-    } else if (type == 'task' ||
-        type == 'taskFinished' ||
-        type == 'taskOutDated') {
+    } else if (type == 'task' || type == 'taskFinished' || type == 'taskOutDated') {
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -445,7 +452,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         final taskDetails = await ApiService().getTaskById(chatId);
         Navigator.of(context).pop();
 
-        print('Переход на экран задачи с ID: $chatId');
+        //print('Переход на экран задачи с ID: $chatId');
         navigatorKey.currentState?.push(
           MaterialPageRoute(
             builder: (context) => TaskDetailsScreen(
@@ -453,17 +460,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               taskName: taskDetails.name,
               taskStatus: '',
               statusId: 1,
+              taskNumber: 0,
               taskCustomFields: [],
             ),
           ),
         );
       } catch (e) {
         Navigator.of(context).pop();
-        print("Ошибка загрузки данных!");
+        //print("Ошибка загрузки данных!");
       }
     } else if (type == 'notice') {
-      // Переход на экран лида
-      print('Переход на экран лида с ID: $chatId');
+      //print('Переход на экран лида с ID: $chatId');
       navigatorKey.currentState?.push(
         MaterialPageRoute(
           builder: (context) => LeadDetailsScreen(
@@ -475,8 +482,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         ),
       );
     } else if (type == 'dealDeadLineNotification') {
-      // Переход на экран сделки
-      print('Переход на экран сделки с ID: $chatId');
+      //print('Переход на экран сделки с ID: $chatId');
       List<DealCustomField> defaultCustomFields = [
         DealCustomField(id: 1, key: '', value: ''),
         DealCustomField(id: 2, key: '', value: ''),
@@ -493,7 +499,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           ),
         ),
       );
-    } else if (type == 'lead') {
+    } else if (type == 'lead' || type =='updateLeadStatus') {
       List<LeadCustomField> defaultCustomFields = [
         LeadCustomField(id: 1, key: '', value: ''),
         LeadCustomField(id: 2, key: '', value: ''),
@@ -508,8 +514,21 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           ),
         ),
       );
+    } else if (type =='myTaskOutDated') {
+      navigatorKey.currentState?.push(
+        MaterialPageRoute(
+          builder: (context) => MyTaskDetailsScreen(
+            taskId: chatId.toString(),
+            taskName: '',
+            taskStatus: '',
+            statusId: 1,
+            taskNumber: 0,
+          ),
+        ),
+      );
     } else {
-      print('navigateToScreen: Неизвестный тип: $type');
+      //print('navigateToScreen: Неизвестный тип: $type');
     }
   }
 }
+

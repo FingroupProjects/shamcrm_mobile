@@ -19,7 +19,7 @@ class ForgotPinBloc extends Bloc<ForgotPinEvent, ForgotPinState> {
     emit(ForgotPinLoading());
     try {
       // Логируем входящие данные для дебага
-      print('Запрос на получение временного PIN для логина: ${event.login}');
+      //print('Запрос на получение временного PIN для логина: ${event.login}');
 
       final loginModel = LoginModel(
         login: event.login,
@@ -33,7 +33,7 @@ class ForgotPinBloc extends Bloc<ForgotPinEvent, ForgotPinState> {
       emit(ForgotPinSuccess(int.parse(pin)));
     } catch (error) {
       // Логируем ошибку и передаем её в состояние ошибки
-      print('Ошибка при запросе временного PIN!rror');
+      //print('Ошибка при запросе временного PIN!rror');
       emit(ForgotPinFailure(error.toString()));
     }
   }

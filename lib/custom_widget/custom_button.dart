@@ -2,17 +2,19 @@
 
   class CustomButton extends StatelessWidget {
     final String buttonText;
-    final VoidCallback onPressed;
+    final VoidCallback? onPressed;
     final Color buttonColor;
     final Color textColor;
     final Widget? child;
+    final bool isLoading;
 
     CustomButton({
       required this.buttonText,
       required this.onPressed,
       required this.buttonColor,
       required this.textColor,
-      this.child, 
+      this.child,
+      this.isLoading = false,
     });
 
     @override
@@ -27,12 +29,21 @@
             ),
             padding: EdgeInsets.symmetric(vertical: 12),
           ),
-          onPressed: onPressed,
-          child: child ?? 
-              Text(
-                buttonText,
-                style: TextStyle(fontSize: 14, color: textColor, fontFamily: 'Gilroy'),
-              ),
+          onPressed: isLoading ? null : onPressed,
+          child: isLoading
+              ? SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(textColor),
+                  ),
+                )
+              : (child ?? 
+                  Text(
+                    buttonText,
+                    style: TextStyle(fontSize: 14, color: textColor, fontFamily: 'Gilroy'),
+                  )),
         ),
       );
     }

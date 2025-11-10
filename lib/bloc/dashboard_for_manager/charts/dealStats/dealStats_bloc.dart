@@ -30,37 +30,29 @@ class DealStatsManagerBloc extends Bloc<DealStatsEventManager, DealStatsStateMan
   ) async {
     try {
       emit(DealStatsLoadingManager());
-      print("🔄 Начата загрузка данных...");
 
       // Попытка загрузить данные из кеша
       final cachedData = await DealStatsCacheManager.getDealStatsDataManager();
       if (cachedData != null) {
-        print("📦 Найдены данные в кеше Deal Stats: $cachedData");
         emit(DealStatsLoadedManager(dealStatsData: DealStatsResponseManager(data: cachedData)));
       } else {
-        print("⚠️ Данные не найдены в кэше.");
       }
 
       // Проверка интернет-соединения
       if (await _checkInternetConnection()) {
-        print("🌐 Интернет-соединение установлено. Загружаем данные с сервера...");
         final serverData = await apiService.getDealStatsManagerData();
 
         // Обновление кеша, если данные отличаются
         if (cachedData == null || cachedData != serverData.data) {
-          print("🔄 СТАТИСТИКА СДЕЛОК Данные из кэша совпадают с сервером.");
           await DealStatsCacheManager.saveDealStatsDataManager(serverData.data);
         } else {
-          print("✅ Кэш уже содержит актуальные данные.");
         }
 
         emit(DealStatsLoadedManager(dealStatsData: serverData));
       } else if (cachedData == null) {
-        print("❌ Нет подключения к интернету и данных в кэше.");
         emit(DealStatsErrorManager(message: 'Нет подключения к интернету и данных в кеше.'));
       }
     } catch (e) {
-      print("⚠️ Ошибка загрузки данных: $e");
       emit(DealStatsErrorManager(message: e.toString()));
     }
   }

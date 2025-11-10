@@ -62,10 +62,6 @@ class _LeadConversionChartState extends State<LeadConversionChart> {
     return BlocBuilder<DashboardConversionBloc, DashboardConversionState>(
       builder: (context, state) {
         if (state is DashboardConversionError) {
-          print('===================================SMS INTERNET DASHBAORD===============================');
-          print(state.message);
-          print('===================================SMS INTERNET DASHBAORD===============================');
-
         ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -374,6 +370,7 @@ class _LeadConversionChartState extends State<LeadConversionChart> {
                     borderData: FlBorderData(
                       show: true,
                       border: Border(
+                        
                         bottom: BorderSide(color: Colors.grey.withOpacity(0.2)),
                         left: BorderSide(color: Colors.grey.withOpacity(0.2)),
                       ),

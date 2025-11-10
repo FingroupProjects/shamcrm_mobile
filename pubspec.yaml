@@ -1,7 +1,7 @@
 name: crm_task_manager
 description: "A new Flutter project."
 
-version: 1.0.0+2
+version: 2.1.67+89
 
 environment:
   sdk: ^3.5.3
@@ -10,33 +10,31 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   flutter_bloc: ^8.1.6
   http: ^1.2.2
   equatable: ^2.0.5
   shared_preferences: ^2.3.5
-  intl: ^0.19.0
+  intl: ^0.20.2 
   open_file: ^3.5.9
   path_provider: ^2.1.5
-  dropdown_search: ^5.0.2
+  dropdown_search: ^6.0.2
   dart_pusher_channels: ^1.2.3
-  social_media_recorder: ^1.1.13
+  social_media_recorder: ^1.2.1
   fl_chart: ^0.69.0
   firebase_core: ^3.6.0
-  firebase_messaging: ^15.1.3
+  firebase_messaging: ^15.2.9
   flutter_background: ^1.3.0
   flutter_secure_storage: ^9.2.2
   dio: ^5.7.0
   chat_bubbles: ^1.6.0
   just_audio: ^0.9.18
   audioplayers: ^6.1.0
-  file_picker: ^8.1.3
+  file_picker: ^10.3.3
   voice_message_package:
     git:
-      url: https://github.com/DiyorjonNasriddinov/voice_message_player.git
-  ffmpeg_kit_flutter: ^6.0.3
+      url: https://github.com/noolfj/voice_message_playerCustom.git
+  # ffmpeg_kit_flutter: ^6.0.3
   http_parser: ^4.0.2
   flutter_unfocuser: ^1.0.0
   infinite_scroll_pagination: ^4.0.0
@@ -44,22 +42,42 @@ dependencies:
   radio_group_v2: ^3.2.1
   animated_custom_dropdown: ^3.1.1
   flutter_svg: ^2.0.16
-  image_gallery_saver_plus: ^3.0.5
+  image_gallery_saver_plus: ^4.0.1
   flutter_launcher_icons: ^0.14.1
   flutter_native_splash: ^2.4.3
   local_auth: ^2.3.0
   vibration: ^2.0.1
   device_info_plus: ^11.1.1
-  image_picker: ^1.1.2
+  image_picker: ^1.2.0
   app_tracking_transparency: ^2.0.6
   url_launcher: ^6.3.1
   flutter_localization: ^0.3.1
-  qr_code_scanner: ^1.0.1
-  scan: ^1.6.0
   restart_app: ^1.3.2
-  flutter_slidable: ^3.1.2
+  scrollable_positioned_list: ^0.3.8
+  auto_size_text: ^3.0.0
+  flutter_contacts: ^1.1.9+2
+  tutorial_coach_mark: ^1.2.13
+  reorderables: ^0.6.0
+  table_calendar: ^3.2.0
+  cached_network_image: ^3.4.1
+  mobile_scanner: ^7.0.1
+  connectivity_plus: ^6.1.4
+  permission_handler: ^11.4.0
+  photo_view: ^0.15.0
+  new_version_plus: ^0.1.1
+
+  flutter_html: ^3.0.0
+  flutter_quill: ^11.4.2
+  audio_service: ^0.18.18
+  audio_metadata_reader: ^1.4.2
+  flutter_slidable: ^4.0.1
+  json_annotation: ^4.9.0
+  json_serializable: ^6.11.1
+  build_runner: ^2.8.0
+
+
   
-  # bottom_navy_bar: ^6.1.0
+  
 bottom_navy_bar:
   path: lib/widgets/bottom_navy_bar.dart
 
@@ -67,29 +85,17 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  # The "flutter_lints" package below contains a set of recommended lints to
-  # encourage good coding practices. The lint set provided by the package is
-  # activated in the `analysis_options.yaml` file located at the root of your
-  # package. See that file for information about deactivating specific lint
-  # rules and activating additional ones.
   flutter_lints: ^5.0.0
+
 flutter_native_splash:
   android: true
   #  ios: true
-  image: assets/icons/playstore.png # Убедитесь, что путь правильный
+  image: assets/icons/playstore.png
 
-#  color: "#000000"
-#  fullscreen: true
-# For information on the generic Dart part of this file, see the
-# following page: https://dart.dev/tools/pub/pubspec
-# The following section is specific to Flutter packages.
 flutter:
-  # The following line ensures that the Material Icons font is
-  # included with your application, so that you can use the icons in
-  # the material Icons class.
+
   uses-material-design: true
 
-  # To add assets to your application, add an assets section, like this:
   assets:
     - assets/icons/MyNavBar/
     - assets/icons/AppBar/
@@ -98,6 +104,16 @@ flutter:
     - assets/icons/tabBar/
     - assets/icons/leads/
     - assets/icons/chats/
+    - assets/icons/chats/menu_icons/pin.svg
+    - assets/icons/history.png
+    - assets/icons/history2.png
+    - assets/icons/chats/menu_icons/pin_list.svg
+    - assets/icons/chats/menu_icons/edit.svg
+    - assets/icons/chats/menu_icons/delete.svg
+    - assets/icons/chats/menu_icons/delete-red.svg
+    - assets/icons/chats/menu_icons/reply.svg
+    - assets/icons/chats/menu_icons/copy.svg
+    - assets/icons/chats/menu_icons/open.svg
     - assets/icons/1c/
     - assets/icons/
     - assets/icons/shamCRM.jpg
@@ -105,18 +121,32 @@ flutter:
     - assets/images/avatar2.png
     - assets/icons/languages/
     - assets/langs/
-    # - assets/audio/sender_voice_message.mp3
-    # - assets/audio/receiver_voice_message.mp3
-  #   - images/a_dot_ham.jpeg
-  # An image asset can refer to one or more resolution-specific "variants", see
-  # https://flutter.dev/to/resolution-aware-images
-  # For details regarding adding assets from package dependencies, see
-  # https://flutter.dev/to/asset-from-package
-  # To add custom fonts to your application, add a fonts section here,
-  # in this "flutter" section. Each entry in this list should have a
-  # "family" key with the font family name, and a "fonts" key with a
-  # list giving the asset and other descriptors for the font. For
-  # example:
+    - assets/icons/icon-fire-color.png
+    - assets/icons/icon-fire-no-color.png
+    - assets/icons/files/apk.png
+    - assets/icons/files/csv.png
+    - assets/icons/files/docx.png
+    - assets/icons/files/doc.png
+    - assets/icons/files/exe.png
+    - assets/icons/files/gif.png
+    - assets/icons/files/jpg.png
+    - assets/icons/files/pdf.png
+    - assets/icons/files/png.png
+    - assets/icons/files/svg.png
+    - assets/icons/files/txt.png
+    - assets/icons/files/xls.png
+    - assets/icons/files/zip.png
+    - assets/icons/files/add.png
+    - assets/icons/files/file.png
+    - assets/icons/files/ppt.png
+    - assets/icons/files/pptx.png
+    - assets/icons/Profile/support_chat.png
+    - assets/audio/
+    - assets/page_2/icons/
+    - assets/audio/voice_operator.mp3
+    - assets/icons/MyNavBar/money_ON.png
+
+
   fonts:
     - family: Gilroy
       fonts:
@@ -128,13 +158,9 @@ flutter:
         - asset: assets/fonts/Golos-Regular.ttf
         - asset: assets/fonts/Golos-Bold.ttf
           weight: 700
-  #   - family: Trajan Pro
-  #     fonts:
-  #       - asset: fonts/TrajanPro.ttf
-  #       - asset: fonts/TrajanPro_Bold.ttf
-  #         weight: 700
-  #
-  # For details regarding fonts from package dependencies,
-  # see https://flutter.dev/to/font-from-package
+
 flutter_intl:
   enabled: true
+
+dependency_overrides:
+  intl: ^0.20.2  

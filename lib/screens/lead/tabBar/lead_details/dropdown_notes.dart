@@ -11,10 +11,12 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+
 class NotesWidget extends StatefulWidget {
   final int leadId;
-
-  NotesWidget({required this.leadId});
+  final int? managerId; // Добавляем managerId
+  NotesWidget({Key? key, required this.leadId, this.managerId})
+      : super(key: key);
 
   @override
   _NotesWidgetState createState() => _NotesWidgetState();
@@ -69,6 +71,7 @@ class _NotesWidgetState extends State<NotesWidget> {
     return BlocBuilder<NotesBloc, NotesState>(
       builder: (context, state) {
         if (state is NotesLoading) {
+          // Можно добавить индикатор загрузки, если нужно
         } else if (state is NotesLoaded) {
           notes = state.notes;
         } else if (state is NotesError) {
@@ -136,7 +139,6 @@ class _NotesWidgetState extends State<NotesWidget> {
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                // Icon(Icons.note_add, size: 48, color: Color(0xff1E2E52)),
                 SizedBox(height: 0),
                 Text(
                   AppLocalizations.of(context)!.translate('empty'),
@@ -158,10 +160,12 @@ class _NotesWidgetState extends State<NotesWidget> {
 
   Widget _buildNoteItem(Notes note) {
     final formattedDate = note.date != null
-        ? DateFormat('dd-MM-yyyy HH:mm')
-            .format(DateTime.parse(note.date!).add(Duration(hours: 5)))
-        : AppLocalizations.of(context)!.translate('not_specified');
-
+        ? DateFormat('dd.MM.yyyy HH:mm')
+            .format(DateTime.parse(note.date!).add(Duration(hours: 5))) : null;
+    final createDate = note.createDate != null
+        ? DateFormat('dd.MM.yyyy HH:mm')
+            .format(DateTime.parse(note.createDate!).add(Duration(hours: 5)))
+        : AppLocalizations.of(context)!.translate('');
     return GestureDetector(
       onTap: _canUpdateNotes ? () => _showEditNoteDialog(note) : null,
       child: Padding(
@@ -187,9 +191,20 @@ class _NotesWidgetState extends State<NotesWidget> {
                         note.title,
                         style: TaskCardStyles.titleStyle,
                       ),
+                      if (formattedDate != null) ...[
+                        SizedBox(height: 4),
+                        Text(
+                          "${AppLocalizations.of(context)!.translate('date_reminder')} $formattedDate",
+                          style: TaskCardStyles.priorityStyle.copyWith(
+                          color: Color(0xff1E2E52),
+                        ),
+                        ),
+                      ],
                       SizedBox(height: 4),
                       Text(
-                        formattedDate,
+                        AppLocalizations.of(context)!
+                                .translate('created_at_contact') +
+                            createDate,
                         style: TaskCardStyles.priorityStyle.copyWith(
                           color: Color(0xff1E2E52),
                         ),
@@ -254,7 +269,10 @@ class _NotesWidgetState extends State<NotesWidget> {
         return Padding(
           padding:
               EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-          child: CreateNotesDialog(leadId: widget.leadId),
+          child: CreateNotesDialog(
+            leadId: widget.leadId,
+            managerId: widget.managerId, // Передаем managerId
+          ),
         );
       },
     );
@@ -264,7 +282,10 @@ class _NotesWidgetState extends State<NotesWidget> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => EventDetailsScreen(noticeId: note.id),
+        builder: (context) => EventDetailsScreen(
+          noticeId: note.id,
+          source: 'Lead', // Добавляем параметр source
+        ),
       ),
     );
   }
