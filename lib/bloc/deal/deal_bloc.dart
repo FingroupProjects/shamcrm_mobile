@@ -285,7 +285,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         leadId: event.leadId,
         customFields: event.customFields,
         directoryValues: event.directoryValues,
-        filePaths: event.filePaths,
+        files: event.files,
       );
       if (result['success']) {
         emit(DealSuccess(event.localizations.translate('deal_created_successfully')));

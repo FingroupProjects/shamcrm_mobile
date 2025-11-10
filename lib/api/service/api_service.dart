@@ -1950,20 +1950,12 @@ class ApiService {
       }
     }
     if (kDebugMode) 
-      print("createLeadWithData: data['files']: ${data['files']}");
+      // print("createLeadWithData: data['files']: ${data['files']}");
     // Добавляем файлы
     if (data['files'] != null && (data['files'] as List).isNotEmpty) {
       final filesList = data['files'] as List<FileHelper>;
       for (var fileData in filesList) {
         try {
-          // ON EDIT LEAD USED
-          // if (fileData.path.startsWith('http')) {
-          //   // If it's a URL, you need to download it first or send as URL
-          //   // For now, skip URLs
-          //   debugPrint("Skipping URL file: ${fileData.path}");
-          //   continue;
-          // }
-
           final file = await http.MultipartFile.fromPath(
             'files[]',
             fileData.path,
@@ -3370,7 +3362,7 @@ class ApiService {
     int? leadId,
     List<Map<String, dynamic>>? customFields,
     List<Map<String, int>>? directoryValues,
-    List<String>? filePaths,
+    List<FileHelper>? files,
   }) async {
     try {
       // Формируем путь с query-параметрами
@@ -3427,10 +3419,18 @@ class ApiService {
         }
       }
 
-      if (filePaths != null && filePaths.isNotEmpty) {
-        for (var filePath in filePaths) {
-          final file = await http.MultipartFile.fromPath('files[]', filePath);
-          request.files.add(file);
+      if (files != null && files.isNotEmpty) {
+        for (var fileData in files) {
+          try {
+            final file = await http.MultipartFile.fromPath(
+              'files[]',
+              fileData.path,
+              filename: fileData.name,
+            );
+            request.files.add(file);
+          } catch (e) {
+            debugPrint("Error adding file ${fileData.name}: $e");
+          }
         }
       }
 
@@ -3494,14 +3494,17 @@ class ApiService {
     request.fields['name'] = name;
     request.fields['deal_status_id'] = dealStatusId.toString();
     if (managerId != null) request.fields['manager_id'] = managerId.toString();
-    if (startDate != null)
+    if (startDate != null) {
       request.fields['start_date'] = DateFormat('yyyy-MM-dd').format(startDate);
-    if (endDate != null)
+    }
+    if (endDate != null) {
       request.fields['end_date'] = DateFormat('yyyy-MM-dd').format(endDate);
+    }
     if (sum.isNotEmpty) request.fields['sum'] = sum;
     if (description != null) request.fields['description'] = description;
-    if (dealtypeId != null)
+    if (dealtypeId != null) {
       request.fields['deal_type_id'] = dealtypeId.toString();
+    }
     if (leadId != null) request.fields['lead_id'] = leadId.toString();
     // ✅ НОВОЕ: Отправляем массив статусов
     if (dealStatusIds != null && dealStatusIds.isNotEmpty) {
@@ -8199,8 +8202,9 @@ class ApiService {
     if (title != null) request.fields['title'] = title;
     request.fields['body'] = body;
     request.fields['lead_id'] = leadId.toString();
-    if (date != null)
+    if (date != null) {
       request.fields['date'] = DateFormat('yyyy-MM-dd HH:mm').format(date);
+    }
     request.fields['send_notification'] = sendNotification.toString();
 
     // Добавляем пользователей
