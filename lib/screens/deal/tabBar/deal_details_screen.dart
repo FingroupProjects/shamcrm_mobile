@@ -423,9 +423,9 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     switch (fc.fieldName) {
       case 'name':
         return AppLocalizations.of(context)!.translate('name_deal_details');
-      case 'lead':
+      case 'lead_id':
         return AppLocalizations.of(context)!.translate('lead_deal_card');
-      case 'manager':
+      case 'manager_id':
         return AppLocalizations.of(context)!.translate('manager_details');
       case 'start_date':
         return AppLocalizations.of(context)!.translate('start_date_details');
@@ -435,7 +435,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
         return AppLocalizations.of(context)!.translate('summa_details');
       case 'description':
         return AppLocalizations.of(context)!.translate('description_details');
-      case 'author':
+      case 'author_id' || 'author':
         return AppLocalizations.of(context)!.translate('author_details');
       case 'created_at':
         return AppLocalizations.of(context)!.translate('creation_date_details');
@@ -540,10 +540,6 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
 
     for (var fc in _fieldConfiguration) {
       final fieldValue = _getFieldValue(fc, deal);
-
-      if (fieldValue.isEmpty) {
-        continue;
-      }
 
       final fieldName = _getFieldName(fc);
       debugPrint("Adding field: $fieldName with value: $fieldValue");

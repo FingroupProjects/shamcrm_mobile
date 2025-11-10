@@ -124,6 +124,8 @@ class CustomAppBar extends StatefulWidget {
   final int? initialManagerDealDaysWithoutActivity;
   final List<Map<String, dynamic>>?
       initialDirectoryValuesDeal; // Добавляем начальные значения справочников
+  final Map<String, List<String>>?
+      initialDealCustomFields; // Пользовательские поля для фильтра сделок
 
   final List? initialManagersEvent;
   final int? initialManagerEventStatuses;
@@ -285,6 +287,7 @@ final List<String>? initialDealNames; // Новый параметр
     this.initialDepartment,
     this.onLeadsDealSelected,
     this.initialDirectoryValuesDeal, // Добавляем в конструктор
+    this.initialDealCustomFields,
 
     this.titleWidget, // Добавляем в конструктор
     this.onFiltersReset,
@@ -1734,7 +1737,7 @@ class _CustomAppBarState extends State<CustomAppBar>
               widget.initialManagerDealDaysWithoutActivity,
           initialDirectoryValues:
               _safeConvertToMapList(widget.initialDirectoryValuesDeal),
-          initialCustomFieldSelections: null,
+          initialCustomFieldSelections: widget.initialDealCustomFields,
         ),
       ),
     );

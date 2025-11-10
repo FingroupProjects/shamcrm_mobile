@@ -11,6 +11,7 @@ import 'package:crm_task_manager/bloc/task_by_id/taskById_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/file_utils.dart';
 import 'package:crm_task_manager/main.dart';
+import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/taskbyId_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
@@ -173,6 +174,10 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   final GlobalKey keyTaskForReview = GlobalKey();
   final GlobalKey keyTaskHistory = GlobalKey();
 
+  //
+  List<FieldConfiguration> _fieldConfiguration = [];
+  bool _isConfigurationLoaded = false;
+
   // List<TargetFocus> targets = [];
   // bool _isTutorialShown = false;
   // bool _isTutorialInProgress = false;
@@ -186,7 +191,31 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     context
         .read<TaskByIdBloc>()
         .add(FetchTaskByIdEvent(taskId: int.parse(widget.taskId)));
+    _loadFieldConfiguration();
     // _fetchTutorialProgress();
+  }
+
+  Future<void> _loadFieldConfiguration() async {
+    try {
+      final response = await _apiService.getFieldPositions(tableName: 'tasks');
+      if (!mounted) return;
+
+      // Фильтруем только активные поля и сортируем по position
+      final activeFields = response.result.where((field) => field.isActive).toList()
+        ..sort((a, b) => a.position.compareTo(b.position));
+
+      setState(() {
+        _fieldConfiguration = activeFields;
+        _isConfigurationLoaded = true;
+      });
+    } catch (e) {
+      // В случае ошибки показываем поля в стандартном порядке
+      if (mounted) {
+        setState(() {
+          _isConfigurationLoaded = true;
+        });
+      }
+    }
   }
 
   Future<void> _checkPermissions() async {
@@ -378,90 +407,192 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   //   }
   // }
 
+  // void _updateDetails(TaskById? task) {
+  //   if (task == null) {
+  //     currentTask = null;
+  //     details.clear();
+  //     _isAuthor = false; // Обновляем _isAuthor
+  //     return;
+  //   }
+  //
+  //   currentTask = task;
+  //   _isAuthor = _currentUserId != null && task.author?.id != null && _currentUserId == task.author!.id;
+  //
+  //   final Map<int, String> priorityLevels = {
+  //     1: AppLocalizations.of(context)!.translate('normal'),
+  //     2: AppLocalizations.of(context)!.translate('normal'),
+  //     3: AppLocalizations.of(context)!.translate('urgent'),
+  //   };
+  //
+  //   details = [
+  //     {
+  //       'label': AppLocalizations.of(context)!.translate('task_name'),
+  //       'value': task.name ?? ''
+  //     },
+  //     {
+  //       'label': AppLocalizations.of(context)!.translate('priority_level_colon'),
+  //       'value': priorityLevels[task.priority] ?? AppLocalizations.of(context)!.translate('normal'),
+  //     },
+  //     {
+  //       'label': AppLocalizations.of(context)!.translate('description_details'),
+  //       'value': task.description?.isNotEmpty == true ? task.description! : ''
+  //     },
+  //     {
+  //       'label': AppLocalizations.of(context)!.translate('assignee'),
+  //       'value': task.user != null && task.user!.isNotEmpty
+  //           ? task.user!.map((user) => '${user.name} ${user.lastname ?? ''}').join(', ')
+  //           : '',
+  //     },
+  //     {
+  //       'label': AppLocalizations.of(context)!.translate('project_details'),
+  //       'value': task.project?.name ?? ''
+  //     },
+  //     {
+  //       'label': AppLocalizations.of(context)!.translate('dead_line'),
+  //       'value': task.endDate != null && task.endDate!.isNotEmpty
+  //           ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.endDate!))
+  //           : ''
+  //     },
+  //     {
+  //       'label': AppLocalizations.of(context)!.translate('status_details'),
+  //       'value': task.taskStatus?.taskStatus?.name ?? '',
+  //     },
+  //     {
+  //       'label': AppLocalizations.of(context)!.translate('author_details'),
+  //       'value': task.author?.name ?? ''
+  //     },
+  //     {
+  //       'label': AppLocalizations.of(context)!.translate('creation_date_details'),
+  //       'value': formatDate(task.createdAt)
+  //     },
+  //     if (task.deal != null && (task.deal?.name?.isNotEmpty == true))
+  //       {
+  //         'label': AppLocalizations.of(context)!.translate('task_by_deal'),
+  //         'value': task.deal!.name!
+  //       },
+  //     if (task.files != null && task.files!.isNotEmpty)
+  //       {
+  //         'label': AppLocalizations.of(context)!.translate('files_details'),
+  //         'value': task.files!.length.toString() + ' ' + AppLocalizations.of(context)!.translate('files'),
+  //       },
+  //   ];
+  //
+  //   for (var field in task.taskCustomFields) {
+  //     details.add({'label': '${field.name}:', 'value': field.value});
+  //   }
+  //
+  //   if (task.directoryValues != null && task.directoryValues!.isNotEmpty) {
+  //     for (var dirValue in task.directoryValues!) {
+  //       final values = dirValue.entry.values;
+  //       final fieldValue = values.isNotEmpty ? values.first.value : '';
+  //
+  //       details.add({
+  //         'label': '${dirValue.entry.directory.name}:',
+  //         'value': fieldValue,
+  //       });
+  //     }
+  //   }
+  // }
+
   void _updateDetails(TaskById? task) {
-    if (task == null) {
-      currentTask = null;
-      details.clear();
-      _isAuthor = false; // Обновляем _isAuthor
+    currentTask = task;
+    details.clear();
+
+    if (task == null || !_isConfigurationLoaded) {
+      _isAuthor = false;
       return;
     }
 
-    currentTask = task;
-    _isAuthor = _currentUserId != null && task.author?.id != null && _currentUserId == task.author!.id;
+    _isAuthor = _currentUserId != null &&
+        task.author?.id != null &&
+        _currentUserId == task.author!.id;
 
-    final Map<int, String> priorityLevels = {
+    for (var fc in _fieldConfiguration) {
+      final value = _getFieldValue(fc, task);
+      final label = _getFieldName(fc);
+
+      details.add({'label': label, 'value': value});
+    }
+  }
+
+  String _getFieldName(FieldConfiguration fc) {
+    if (fc.isCustomField || fc.isDirectory) {
+      return '${fc.fieldName}:';
+    }
+
+    switch (fc.fieldName) {
+      case 'name':          return AppLocalizations.of(context)!.translate('task_name');
+      case 'priority':      return AppLocalizations.of(context)!.translate('priority_level_colon');
+      case 'description':   return AppLocalizations.of(context)!.translate('description_details');
+      case 'user':          return AppLocalizations.of(context)!.translate('assignee');
+      case 'project':       return AppLocalizations.of(context)!.translate('project_details');
+      case 'endDate':       return AppLocalizations.of(context)!.translate('dead_line');
+      case 'taskStatus':    return AppLocalizations.of(context)!.translate('status_details');
+      case 'author':        return AppLocalizations.of(context)!.translate('author_details');
+      case 'createdAt':     return AppLocalizations.of(context)!.translate('creation_date_details');
+      case 'deal':          return AppLocalizations.of(context)!.translate('task_by_deal');
+      case 'files':         return AppLocalizations.of(context)!.translate('files_details');
+      default:              return '${fc.fieldName}:';
+    }
+  }
+
+  String _getFieldValue(FieldConfiguration fc, TaskById task) {
+    if (fc.isCustomField && fc.customFieldId != null) {
+      for (final field in task.taskCustomFields) {
+        if (field.id == fc.customFieldId) {
+          if (field.value.isNotEmpty) {
+            return field.value;
+          }
+          break;
+        }
+      }
+      return '';
+    }
+
+    if (fc.isDirectory && fc.directoryId != null) {
+      for (var dirValue in task.directoryValues ?? []) {
+        if (dirValue.entry.directory.id == fc.directoryId) {
+
+          List<String> values = [];
+          for (var fieldValue in dirValue.entry.values) {
+            if (fieldValue.value.isNotEmpty) {
+              values.add(fieldValue.value);
+            }
+          }
+
+          if (values.isNotEmpty) {
+            return values.join(', ');
+          }
+        }
+      }
+      return '';
+    }
+
+    final priorityLevels = {
       1: AppLocalizations.of(context)!.translate('normal'),
       2: AppLocalizations.of(context)!.translate('normal'),
       3: AppLocalizations.of(context)!.translate('urgent'),
     };
 
-    details = [
-      {
-        'label': AppLocalizations.of(context)!.translate('task_name'),
-        'value': task.name ?? ''
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('priority_level_colon'),
-        'value': priorityLevels[task.priority] ?? AppLocalizations.of(context)!.translate('normal'),
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('description_details'),
-        'value': task.description?.isNotEmpty == true ? task.description! : ''
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('assignee'),
-        'value': task.user != null && task.user!.isNotEmpty
-            ? task.user!.map((user) => '${user.name} ${user.lastname ?? ''}').join(', ')
-            : '',
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('project_details'),
-        'value': task.project?.name ?? ''
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('dead_line'),
-        'value': task.endDate != null && task.endDate!.isNotEmpty
-            ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.endDate!))
-            : ''
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('status_details'),
-        'value': task.taskStatus?.taskStatus?.name ?? '',
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('author_details'),
-        'value': task.author?.name ?? ''
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('creation_date_details'),
-        'value': formatDate(task.createdAt)
-      },
-      if (task.deal != null && (task.deal?.name?.isNotEmpty == true))
-        {
-          'label': AppLocalizations.of(context)!.translate('task_by_deal'),
-          'value': task.deal!.name!
-        },
-      if (task.files != null && task.files!.isNotEmpty)
-        {
-          'label': AppLocalizations.of(context)!.translate('files_details'),
-          'value': task.files!.length.toString() + ' ' + AppLocalizations.of(context)!.translate('files'),
-        },
-    ];
-
-    for (var field in task.taskCustomFields) {
-      details.add({'label': '${field.name}:', 'value': field.value});
-    }
-
-    if (task.directoryValues != null && task.directoryValues!.isNotEmpty) {
-      for (var dirValue in task.directoryValues!) {
-        final values = dirValue.entry.values;
-        final fieldValue = values.isNotEmpty ? values.first.value : '';
-
-        details.add({
-          'label': '${dirValue.entry.directory.name}:',
-          'value': fieldValue,
-        });
-      }
+    switch (fc.fieldName) {
+      case 'name':        return task.name ?? '';
+      case 'priority':    return priorityLevels[task.priority] ?? AppLocalizations.of(context)!.translate('normal');
+      case 'description': return task.description ?? '';
+      case 'user':
+        if (task.user == null || task.user!.isEmpty) return '';
+        return task.user!.map((u) => '${u.name} ${u.lastname ?? ''}').join(', ');
+      case 'project':     return task.project?.name ?? '';
+      case 'endDate':
+        if (task.endDate == null || task.endDate!.isEmpty) return '';
+        return DateFormat('dd.MM.yyyy').format(DateTime.parse(task.endDate!));
+      case 'taskStatus':  return task.taskStatus?.taskStatus?.name ?? '';
+      case 'author':      return task.author?.name ?? '';
+      case 'createdAt':   return formatDate(task.createdAt);
+      case 'deal':        return task.deal?.name ?? '';
+      case 'files':
+        if (task.files == null || task.files!.isEmpty) return '';
+        return '${task.files!.length} ${AppLocalizations.of(context)!.translate('files')}';
+      default:            return '';
     }
   }
 
@@ -1100,86 +1231,89 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       child: BlocBuilder<TaskByIdBloc, TaskByIdState>(
         builder: (context, state) {
           // Удаляем вызов _updateDetails из BlocBuilder, чтобы избежать setState
+          // if (state is TaskByIdLoaded) {
+          //   // Обновляем данные без setState
+          //   currentTask = state.task;
+          //   _isAuthor = _currentUserId != null && state.task.author?.id != null && _currentUserId == state.task!.author!.id;
+          //
+          //   final Map<int, String> priorityLevels = {
+          //     1: AppLocalizations.of(context)!.translate('normal'),
+          //     2: AppLocalizations.of(context)!.translate('normal'),
+          //     3: AppLocalizations.of(context)!.translate('urgent'),
+          //   };
+          //
+          //   details = [
+          //     {
+          //       'label': AppLocalizations.of(context)!.translate('task_name'),
+          //       'value': state.task!.name ?? ''
+          //     },
+          //     {
+          //       'label': AppLocalizations.of(context)!.translate('priority_level_colon'),
+          //       'value': priorityLevels[state.task!.priority] ?? AppLocalizations.of(context)!.translate('normal'),
+          //     },
+          //     {
+          //       'label': AppLocalizations.of(context)!.translate('description_details'),
+          //       'value': state.task!.description?.isNotEmpty == true ? state.task!.description! : ''
+          //     },
+          //     {
+          //       'label': AppLocalizations.of(context)!.translate('assignee'),
+          //       'value': state.task!.user != null && state.task!.user!.isNotEmpty
+          //           ? state.task!.user!.map((user) => '${user.name} ${user.lastname ?? ''}').join(', ')
+          //           : '',
+          //     },
+          //     {
+          //       'label': AppLocalizations.of(context)!.translate('project_details'),
+          //       'value': state.task!.project?.name ?? ''
+          //     },
+          //     {
+          //       'label': AppLocalizations.of(context)!.translate('dead_line'),
+          //       'value': state.task!.endDate != null && state.task!.endDate!.isNotEmpty
+          //           ? DateFormat('dd.MM.yyyy').format(DateTime.parse(state.task!.endDate!))
+          //           : ''
+          //     },
+          //     {
+          //       'label': AppLocalizations.of(context)!.translate('status_details'),
+          //       'value': state.task!.taskStatus?.taskStatus?.name ?? '',
+          //     },
+          //     {
+          //       'label': AppLocalizations.of(context)!.translate('author_details'),
+          //       'value': state.task!.author?.name ?? ''
+          //     },
+          //     {
+          //       'label': AppLocalizations.of(context)!.translate('creation_date_details'),
+          //       'value': formatDate(state.task!.createdAt)
+          //     },
+          //     if (state.task!.deal != null && (state.task!.deal?.name?.isNotEmpty == true))
+          //       {
+          //         'label': AppLocalizations.of(context)!.translate('task_by_deal'),
+          //         'value': state.task!.deal!.name!
+          //       },
+          //     if (state.task!.files != null && state.task!.files!.isNotEmpty)
+          //       {
+          //         'label': AppLocalizations.of(context)!.translate('files_details'),
+          //         'value': state.task!.files!.length.toString() + ' ' + AppLocalizations.of(context)!.translate('files'),
+          //       },
+          //   ];
+          //
+          //   for (var field in state.task!.taskCustomFields) {
+          //     details.add({'label': '${field.name}:', 'value': field.value});
+          //   }
+          //
+          //   if (state.task.directoryValues != null && state.task!.directoryValues!.isNotEmpty) {
+          //     for (var dirValue in state.task.directoryValues!) {
+          //       final values = dirValue.entry.values; // This is a List
+          //       final fieldValue = values.isNotEmpty ? values.first.value : ''; // take first value safely
+          //
+          //       details.add({
+          //         'label': '${dirValue.entry.directory.name}:',
+          //         'value': fieldValue,
+          //       });
+          //     }
+          //   }
+          //
+          // }
           if (state is TaskByIdLoaded) {
-            // Обновляем данные без setState
-            currentTask = state.task;
-            _isAuthor = _currentUserId != null && state.task.author?.id != null && _currentUserId == state.task!.author!.id;
-
-            final Map<int, String> priorityLevels = {
-              1: AppLocalizations.of(context)!.translate('normal'),
-              2: AppLocalizations.of(context)!.translate('normal'),
-              3: AppLocalizations.of(context)!.translate('urgent'),
-            };
-
-            details = [
-              {
-                'label': AppLocalizations.of(context)!.translate('task_name'),
-                'value': state.task!.name ?? ''
-              },
-              {
-                'label': AppLocalizations.of(context)!.translate('priority_level_colon'),
-                'value': priorityLevels[state.task!.priority] ?? AppLocalizations.of(context)!.translate('normal'),
-              },
-              {
-                'label': AppLocalizations.of(context)!.translate('description_details'),
-                'value': state.task!.description?.isNotEmpty == true ? state.task!.description! : ''
-              },
-              {
-                'label': AppLocalizations.of(context)!.translate('assignee'),
-                'value': state.task!.user != null && state.task!.user!.isNotEmpty
-                    ? state.task!.user!.map((user) => '${user.name} ${user.lastname ?? ''}').join(', ')
-                    : '',
-              },
-              {
-                'label': AppLocalizations.of(context)!.translate('project_details'),
-                'value': state.task!.project?.name ?? ''
-              },
-              {
-                'label': AppLocalizations.of(context)!.translate('dead_line'),
-                'value': state.task!.endDate != null && state.task!.endDate!.isNotEmpty
-                    ? DateFormat('dd.MM.yyyy').format(DateTime.parse(state.task!.endDate!))
-                    : ''
-              },
-              {
-                'label': AppLocalizations.of(context)!.translate('status_details'),
-                'value': state.task!.taskStatus?.taskStatus?.name ?? '',
-              },
-              {
-                'label': AppLocalizations.of(context)!.translate('author_details'),
-                'value': state.task!.author?.name ?? ''
-              },
-              {
-                'label': AppLocalizations.of(context)!.translate('creation_date_details'),
-                'value': formatDate(state.task!.createdAt)
-              },
-              if (state.task!.deal != null && (state.task!.deal?.name?.isNotEmpty == true))
-                {
-                  'label': AppLocalizations.of(context)!.translate('task_by_deal'),
-                  'value': state.task!.deal!.name!
-                },
-              if (state.task!.files != null && state.task!.files!.isNotEmpty)
-                {
-                  'label': AppLocalizations.of(context)!.translate('files_details'),
-                  'value': state.task!.files!.length.toString() + ' ' + AppLocalizations.of(context)!.translate('files'),
-                },
-            ];
-
-            for (var field in state.task!.taskCustomFields) {
-              details.add({'label': '${field.name}:', 'value': field.value});
-            }
-
-            if (state.task.directoryValues != null && state.task!.directoryValues!.isNotEmpty) {
-              for (var dirValue in state.task.directoryValues!) {
-                final values = dirValue.entry.values; // This is a List
-                final fieldValue = values.isNotEmpty ? values.first.value : ''; // take first value safely
-
-                details.add({
-                  'label': '${dirValue.entry.directory.name}:',
-                  'value': fieldValue,
-                });
-              }
-            }
-
+            _updateDetails(state.task);
           } else {
             currentTask = null;
             details.clear();
