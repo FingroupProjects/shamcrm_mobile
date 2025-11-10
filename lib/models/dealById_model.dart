@@ -17,7 +17,6 @@ class DealById {
   final AuthorDeal? author;
   final DealStatusById? dealStatus;
   final List<DealStatusById> dealStatuses;
-  final List<DealCustomFieldsById> dealCustomFields;
   final List<CustomFieldValue> customFieldValues; // ✅ НОВОЕ: для customFieldValues из API
   final List<DirectoryValue> directoryValues;
   final List<DealFiles> files;
@@ -37,7 +36,6 @@ class DealById {
     this.author,
     this.dealStatus,
     this.dealStatuses = const [],
-    this.dealCustomFields = const [],
     this.customFieldValues = const [], // ✅ НОВОЕ
     this.directoryValues = const [],
     this.files = const [],
@@ -72,10 +70,6 @@ class DealById {
       dealStatuses: _parseList<DealStatusById>(
         json['deal_statuses'],
             (item) => DealStatusById.fromJson(item as Map<String, dynamic>),
-      ),
-      dealCustomFields: _parseList<DealCustomFieldsById>(
-        json['deal_custom_fields'],
-            (item) => DealCustomFieldsById.fromJson(item as Map<String, dynamic>),
       ),
       // ✅ НОВОЕ: парсим customFieldValues
       customFieldValues: _parseList<CustomFieldValue>(
@@ -115,7 +109,6 @@ class DealById {
     'author': author?.toJson(),
     'deal_status': dealStatus?.toJson(),
     'deal_statuses': dealStatuses.map((e) => e.toJson()).toList(),
-    'deal_custom_fields': dealCustomFields.map((e) => e.toJson()).toList(),
     'customFieldValues': customFieldValues.map((e) => e.toJson()).toList(),
     'directory_values': directoryValues.map((e) => e.toJson()).toList(),
     'files': files.map((e) => e.toJson()).toList(),
@@ -136,7 +129,6 @@ class DealById {
     AuthorDeal? author,
     DealStatusById? dealStatus,
     List<DealStatusById>? dealStatuses,
-    List<DealCustomFieldsById>? dealCustomFields,
     List<CustomFieldValue>? customFieldValues,
     List<DirectoryValue>? directoryValues,
     List<DealFiles>? files,
@@ -156,7 +148,6 @@ class DealById {
       author: author ?? this.author,
       dealStatus: dealStatus ?? this.dealStatus,
       dealStatuses: dealStatuses ?? this.dealStatuses,
-      dealCustomFields: dealCustomFields ?? this.dealCustomFields,
       customFieldValues: customFieldValues ?? this.customFieldValues,
       directoryValues: directoryValues ?? this.directoryValues,
       files: files ?? this.files,
@@ -353,37 +344,6 @@ class DealStatusById {
 
   @override
   int get hashCode => id.hashCode;
-}
-
-/// Represents custom fields for a deal (old format)
-class DealCustomFieldsById {
-  final int id;
-  final String key;
-  final String value;
-  final String? type;
-
-  const DealCustomFieldsById({
-    required this.id,
-    required this.key,
-    required this.value,
-    this.type,
-  });
-
-  factory DealCustomFieldsById.fromJson(Map<String, dynamic> json) {
-    return DealCustomFieldsById(
-      id: json['id'] as int? ?? 0,
-      key: json['key'] as String? ?? '',
-      value: json['value'] as String? ?? '',
-      type: json['type'] as String?,
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'key': key,
-    'value': value,
-    if (type != null) 'type': type,
-  };
 }
 
 /// Represents a directory value associated with a deal

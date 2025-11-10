@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:crm_task_manager/api/service/api_service.dart';
@@ -13,6 +12,7 @@ import 'package:crm_task_manager/custom_widget/file_utils.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/dealById_model.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
+import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_delete.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/dropdown_history.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/deal_task_screen.dart';
@@ -20,13 +20,9 @@ import 'package:crm_task_manager/screens/deal/tabBar/deal_edit_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:open_file/open_file.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
@@ -83,8 +79,11 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
   bool _isTutorialInProgress = false;
   Map<String, dynamic>? tutorialProgress;
   bool _isDownloading = false; // Флаг загрузки
-  Map<int, double> _downloadProgress =
-      {}; // Прогресс загрузки для каждого файла
+  Map<int, double> _downloadProgress = {}; // Прогресс загрузки для каждого файла
+
+  //Конфигурация полей
+  List<FieldConfiguration> _fieldConfiguration = [];
+  bool _isConfigurationLoaded = false;
 
   @override
   void initState() {
@@ -95,6 +94,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
           .add(FetchDealByIdEvent(dealId: int.parse(widget.dealId)));
     });
     _fetchTutorialProgress();
+    _loadFieldConfiguration();
   }
 
   void _initTargets() {
@@ -347,70 +347,232 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     }
   }
 
-  void _updateDetails(DealById deal) {
-    currentDeal = deal;
-    details = [
-      {
-        'label': AppLocalizations.of(context)!.translate('name_deal_details'),
-        'value': deal.name
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('lead_deal_card'),
-        'value': deal.lead?.name ?? ''
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('manager_details'),
-        'value': deal.manager?.name ?? 'Система'
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('start_date_details'),
-        'value': formatDate(deal.startDate)
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('end_date_details'),
-        'value': formatDate(deal.endDate)
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('summa_details'),
-        'value': deal.sum.toString()
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('description_details'),
-        'value': deal.description ?? ''
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('author_details'),
-        'value': deal.author?.name ?? ''
-      },
-      {
-        'label':
-            AppLocalizations.of(context)!.translate('creation_date_details'),
-        'value': formatDate(deal.createdAt)
-      },
-      // ✅ НОВОЕ: Отображение статусов
-    {
-      'label': AppLocalizations.of(context)!.translate('status_history'),
-      'value': deal.dealStatuses != null && deal.dealStatuses!.isNotEmpty
-          ? deal.dealStatuses!.map((s) => s.title).join(', ')
-          : (deal.dealStatus?.title ?? '')
-    },
-      if (deal.files != null && deal.files!.isNotEmpty)
-        {
-          'label': AppLocalizations.of(context)!.translate('files_details'),
-          'value':
-              '${deal.files!.length} ${AppLocalizations.of(context)!.translate('files')}'
-        }, // Добавляем файлы
-    ];
-
-    for (var field in deal.dealCustomFields) {
-      details.add({'label': '${field.key}:', 'value': field.value});
+  // void _updateDetails(DealById deal) {
+  //   currentDeal = deal;
+  //   details = [
+  //     {
+  //       'label': AppLocalizations.of(context)!.translate('name_deal_details'),
+  //       'value': deal.name
+  //     },
+  //     {
+  //       'label': AppLocalizations.of(context)!.translate('lead_deal_card'),
+  //       'value': deal.lead?.name ?? ''
+  //     },
+  //     {
+  //       'label': AppLocalizations.of(context)!.translate('manager_details'),
+  //       'value': deal.manager?.name ?? 'Система'
+  //     },
+  //     {
+  //       'label': AppLocalizations.of(context)!.translate('start_date_details'),
+  //       'value': formatDate(deal.startDate)
+  //     },
+  //     {
+  //       'label': AppLocalizations.of(context)!.translate('end_date_details'),
+  //       'value': formatDate(deal.endDate)
+  //     },
+  //     {
+  //       'label': AppLocalizations.of(context)!.translate('summa_details'),
+  //       'value': deal.sum.toString()
+  //     },
+  //     {
+  //       'label': AppLocalizations.of(context)!.translate('description_details'),
+  //       'value': deal.description ?? ''
+  //     },
+  //     {
+  //       'label': AppLocalizations.of(context)!.translate('author_details'),
+  //       'value': deal.author?.name ?? ''
+  //     },
+  //     {
+  //       'label':
+  //           AppLocalizations.of(context)!.translate('creation_date_details'),
+  //       'value': formatDate(deal.createdAt)
+  //     },
+  //     // ✅ НОВОЕ: Отображение статусов
+  //   {
+  //     'label': AppLocalizations.of(context)!.translate('status_history'),
+  //     'value': deal.dealStatuses != null && deal.dealStatuses!.isNotEmpty
+  //         ? deal.dealStatuses!.map((s) => s.title).join(', ')
+  //         : (deal.dealStatus?.title ?? '')
+  //   },
+  //     if (deal.files != null && deal.files!.isNotEmpty)
+  //       {
+  //         'label': AppLocalizations.of(context)!.translate('files_details'),
+  //         'value':
+  //             '${deal.files!.length} ${AppLocalizations.of(context)!.translate('files')}'
+  //       }, // Добавляем файлы
+  //   ];
+  //
+  //   for (var field in deal.dealCustomFields) {
+  //     details.add({'label': '${field.key}:', 'value': field.value});
+  //   }
+  //
+  //   if (deal.directoryValues != null && deal.directoryValues!.isNotEmpty) {
+  //     for (var dirValue in deal.directoryValues!) {
+  //       details.add({
+  //         'label': '${dirValue.entry.directory.name}:',
+  //         'value': dirValue.entry.values['value'] ?? '',
+  //       });
+  //     }
+  //   }
+  // }
+  String _getFieldName(FieldConfiguration fc) {
+    if (fc.isCustomField || fc.isDirectory) {
+      return '${fc.fieldName}:';
     }
 
-    if (deal.directoryValues != null && deal.directoryValues!.isNotEmpty) {
-      for (var dirValue in deal.directoryValues!) {
-        details.add({
-          'label': '${dirValue.entry.directory.name}:',
-          'value': dirValue.entry.values['value'] ?? '',
+    switch (fc.fieldName) {
+      case 'name':
+        return AppLocalizations.of(context)!.translate('name_deal_details');
+      case 'lead':
+        return AppLocalizations.of(context)!.translate('lead_deal_card');
+      case 'manager':
+        return AppLocalizations.of(context)!.translate('manager_details');
+      case 'start_date':
+        return AppLocalizations.of(context)!.translate('start_date_details');
+      case 'end_date':
+        return AppLocalizations.of(context)!.translate('end_date_details');
+      case 'sum':
+        return AppLocalizations.of(context)!.translate('summa_details');
+      case 'description':
+        return AppLocalizations.of(context)!.translate('description_details');
+      case 'author':
+        return AppLocalizations.of(context)!.translate('author_details');
+      case 'created_at':
+        return AppLocalizations.of(context)!.translate('creation_date_details');
+      case 'status':
+        return AppLocalizations.of(context)!.translate('status_history');
+      case 'files':
+        return AppLocalizations.of(context)!.translate('files_details');
+      default:
+        return '${fc.fieldName}:';
+    }
+  }
+
+  String _getFieldValue(FieldConfiguration fc, DealById deal) {
+    if (fc.isCustomField && fc.customFieldId != null) {
+      for (final field in deal.customFieldValues) {
+        if (field.id == fc.customFieldId) {
+          if (field.value.isNotEmpty) {
+            return field.value;
+          }
+          break;
+        }
+      }
+      return '';
+    }
+
+    if (fc.isDirectory && fc.directoryId != null) {
+      for (var dirValue in deal.directoryValues) {
+        if (dirValue.entry.directory.id == fc.directoryId) {
+          List<String> values = [];
+
+          final value = dirValue.entry.values['value'];
+          if (value != null && value.toString().isNotEmpty) {
+            values.add(value.toString());
+          }
+
+          if (values.isNotEmpty) {
+            return values.join(', ');
+          }
+        }
+      }
+          return '';
+    }
+
+    switch (fc.fieldName) {
+      case 'name':
+        return deal.name;
+
+      case 'lead':
+        return deal.lead?.name ?? '';
+
+      case 'manager':
+        return deal.manager?.name ?? 'Система';
+
+      case 'start_date':
+        return formatDate(deal.startDate);
+
+      case 'end_date':
+        return formatDate(deal.endDate);
+
+      case 'sum':
+        return deal.sum.toString();
+
+      case 'description':
+        return deal.description ?? '';
+
+      case 'author':
+        return deal.author?.name ?? '';
+
+      case 'created_at':
+        return formatDate(deal.createdAt);
+
+      case 'status':
+      // Show status history if available, otherwise current status
+        if (deal.dealStatuses.isNotEmpty) {
+          return deal.dealStatuses.map((s) => s.title).join(', ');
+        }
+        return deal.dealStatus?.title ?? '';
+
+      case 'files':
+        if (deal.files.isNotEmpty) {
+          return '${deal.files.length} ${AppLocalizations.of(context)!.translate('files')}';
+        }
+        return '';
+
+      default:
+        return '';
+    }
+  }
+
+  void _updateDetails(DealById deal) {
+    currentDeal = deal;
+    details.clear();
+
+    if (!_isConfigurationLoaded) {
+      return;
+    }
+
+    debugPrint("Deal custom fields:");
+    for (var field in deal.customFieldValues) {
+      debugPrint("Custom Field - ID: ${field.id}, Value: ${field.value}");
+    }
+
+    for (var fc in _fieldConfiguration) {
+      final fieldValue = _getFieldValue(fc, deal);
+
+      if (fieldValue.isEmpty) {
+        continue;
+      }
+
+      final fieldName = _getFieldName(fc);
+      debugPrint("Adding field: $fieldName with value: $fieldValue");
+
+      details.add({
+        'label': fieldName,
+        'value': fieldValue,
+      });
+    }
+  }
+
+  Future<void> _loadFieldConfiguration() async {
+    try {
+      final response = await _apiService.getFieldPositions(tableName: 'deals');
+      if (!mounted) return;
+
+      // Фильтруем только активные поля и сортируем по position
+      final activeFields = response.result.where((field) => field.isActive).toList()
+        ..sort((a, b) => a.position.compareTo(b.position));
+
+      setState(() {
+        _fieldConfiguration = activeFields;
+        _isConfigurationLoaded = true;
+      });
+    } catch (e) {
+      // В случае ошибки показываем поля в стандартном порядке
+      if (mounted) {
+        setState(() {
+          _isConfigurationLoaded = true;
         });
       }
     }
@@ -637,7 +799,7 @@ Widget build(BuildContext context) {
               createdAt: createdAtDateString,
               sum: currentDeal!.sum.toString(),
               description: currentDeal!.description ?? '',
-              dealCustomFields: currentDeal!.dealCustomFields,
+              // dealCustomFields: currentDeal!.dealCustomFields,
               directoryValues: currentDeal!.directoryValues,
               files: currentDeal!.files,
               dealById: currentDeal!,
@@ -646,9 +808,8 @@ Widget build(BuildContext context) {
         );
 
         if (shouldUpdate == true) {
-          context
-              .read<DealByIdBloc>()
-              .add(FetchDealByIdEvent(dealId: currentDeal!.id));
+          _loadFieldConfiguration();
+          context.read<DealByIdBloc>().add(FetchDealByIdEvent(dealId: currentDeal!.id));
           context.read<DealBloc>().add(FetchDealStatuses());
         }
       }

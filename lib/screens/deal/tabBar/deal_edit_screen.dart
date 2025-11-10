@@ -50,7 +50,7 @@ class DealEditScreen extends StatefulWidget {
   final String? description;
   final String? sum;
   final int statusId;
-  final List<DealCustomFieldsById> dealCustomFields;
+  // final List<DealCustomFieldsById> dealCustomFields;
   final List<DirectoryValue>? directoryValues;
   final List<DealFiles>? files;
   final List<DealStatusById>? dealStatuses; // ✅ НОВОЕ: массив статусов
@@ -68,7 +68,7 @@ class DealEditScreen extends StatefulWidget {
     this.createdAt,
     this.description,
     this.sum,
-    required this.dealCustomFields,
+    // required this.dealCustomFields,
     this.directoryValues,
     this.files,
     this.dealStatuses, // ✅ ДОБАВЬТЕ ЭТУ СТРОКУ В КОНСТРУКТОР!
@@ -150,16 +150,6 @@ class _DealEditScreenState extends State<DealEditScreen> {
     startDateController.text = widget.startDate ?? '';
     endDateController.text = widget.endDate ?? '';
     sumController.text = widget.sum ?? '';
-
-    // Initialize from deal_custom_fields (old format)
-    for (var customField in widget.dealCustomFields) {
-      customFields.add(CustomField(
-        fieldName: customField.key,
-        controller: TextEditingController(text: customField.value),
-        uniqueId: Uuid().v4(),
-        type: customField.type ?? 'string',
-      ));
-    }
 
     // ✅ НОВОЕ: Initialize from customFieldValues
     if (widget.dealById?.customFieldValues != null) {
@@ -1398,17 +1388,17 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                               customFields[index] = field.copyWith(entryId: entryId);
                                             });
                                           },
-                                          onRemove: () {
-                                            setState(() { customFields.removeAt(index); });
-                                          },
+                                          // onRemove: () {
+                                          //   setState(() { customFields.removeAt(index); });
+                                          // },
                                           initialEntryId: field.entryId,
                                         )
                                       : CustomFieldWidget(
                                           fieldName: field.fieldName,
                                           valueController: field.controller,
-                                          onRemove: () {
-                                            setState(() { customFields.removeAt(index); });
-                                          },
+                                          // onRemove: () {
+                                          //   setState(() { customFields.removeAt(index); });
+                                          // },
                                           type: field.type,
                                         ),
                                 );

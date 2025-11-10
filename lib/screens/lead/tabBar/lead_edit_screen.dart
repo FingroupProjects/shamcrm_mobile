@@ -11,9 +11,11 @@ import 'package:crm_task_manager/bloc/sales_funnel/sales_funnel_event.dart';
 import 'package:crm_task_manager/custom_widget/country_data_list.dart';
 import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/custom_widget/custom_phone_for_lead_edit.dart';
+import 'package:crm_task_manager/custom_widget/delete_file_dialog.dart';
 import 'package:crm_task_manager/custom_widget/file_picker_dialog.dart';
 import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/models/leadById_model.dart';
+import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
@@ -53,9 +55,9 @@ class LeadEditScreen extends StatefulWidget {
   final String? email;
   final String? description;
   final int statusId;
-  final List<LeadCustomFieldsById> leadCustomFields;
+  final List<LeadCustomFieldValues> leadCustomFieldValues;
   final List<DirectoryValue> directoryValues;
-  final List<LeadFiles>? files;
+  final List<LeadFiles>? existedFiles;
   final String? priceTypeId;
   final String? priceTypeName;
   final String? salesFunnelId;
@@ -76,9 +78,9 @@ class LeadEditScreen extends StatefulWidget {
     this.whatsApp,
     this.email,
     this.description,
-    required this.leadCustomFields,
+    required this.leadCustomFieldValues,
     required this.directoryValues,
-    this.files,
+    this.existedFiles,
     this.priceTypeId,
     this.priceTypeName,
     this.salesFunnelId,
@@ -89,6 +91,24 @@ class LeadEditScreen extends StatefulWidget {
 }
 
 enum DuplicateOption { duplicate, transferAndDelete }
+
+class LeadEditFiles {
+  final int id;
+  final String name;
+  final String path;
+  final String? size;
+
+  LeadEditFiles({required this.name, required this.id, this.size, required this.path});
+
+  // Преобразует объект в карту (JSON) для передачи в BLoC
+  // при вызове API — данные файла, отправляемые на бэкенд
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'size': size,
+    };
+  }
+}
 
 class _LeadEditScreenState extends State<LeadEditScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
@@ -123,11 +143,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
   String? _fullWhatsAppNumber; // Новая переменная для хранения полного номера WhatsApp
   List<CustomField> customFields = [];
   final ApiService _apiService = ApiService();
-  List<String> selectedFiles = [];
-  List<String> fileNames = [];
-  List<String> fileSizes = [];
-  List<LeadFiles> existingFiles = [];
-  List<String> newFiles = [];
+  List<LeadEditFiles> files = [];
   String? selectedSalesFunnel;
   DuplicateOption? _duplicateOption;
   bool _showDuplicateOptions = false;
@@ -197,10 +213,10 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
     selectedSource = widget.sourceId;
     selectedManager = widget.manager;
 
-    for (int i = 0; i < widget.leadCustomFields.length; i++) {
-      var customField = widget.leadCustomFields[i];
+    for (int i = 0; i < widget.leadCustomFieldValues.length; i++) {
+      var customField = widget.leadCustomFieldValues[i];
       customFields.add(CustomField(
-        fieldName: customField.key,
+        fieldName: customField.customField?.name ?? '',
         controller: TextEditingController(text: customField.value),
         uniqueId: '${Uuid().v4()}_init_custom_$i',
         type: customField.type ?? 'string',
@@ -228,13 +244,14 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
       }
     }
 
-    if (widget.files != null) {
-      existingFiles = widget.files!;
-      setState(() {
-        fileNames.addAll(existingFiles.map((file) => file.name));
-        fileSizes.addAll(existingFiles.map((file) => '${(file.path.length / 1024).toStringAsFixed(3)}KB'));
-        selectedFiles.addAll(existingFiles.map((file) => file.path));
-      });
+    if (widget.existedFiles != null) {
+      files = widget.existedFiles!.map((file) {
+        return LeadEditFiles(
+          id: file.id,
+          name: file.name,
+          path: file.path,
+        );
+      }).toList();
     }
 
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
@@ -1118,10 +1135,19 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
 
   Future<void> _pickFile() async {
     // Вычисляем текущий общий размер файлов
-    double totalSize = selectedFiles.fold<double>(
-      0.0,
-          (sum, file) => sum + File(file).lengthSync() / (1024 * 1024),
-    );
+    double totalSize = files.fold<double>(0.0, (sum, file) {
+      if (file.path.startsWith('http://') || file.path.startsWith('https://')) {
+        int index = files.indexOf(file);
+        if (index >= 0 && index < files.length) {
+          final size = files[index].size;
+          final parsed = num.tryParse(size.toString());
+          return sum + (parsed != null ? parsed / 1024.0 : 0);
+        }
+        return sum;
+      }
+
+      return sum + File(file.path).lengthSync() / (1024 * 1024);
+    });
 
     // Показываем диалог выбора типа файла
     final List<PickedFileInfo>? pickedFiles = await FilePickerDialog.show(
@@ -1141,9 +1167,11 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
     if (pickedFiles != null && pickedFiles.isNotEmpty) {
       setState(() {
         for (var file in pickedFiles) {
-          selectedFiles.add(file.path);
-          fileNames.add(file.name);
-          fileSizes.add(file.sizeKB);
+          // selectedFiles.add(file.path);
+          // fileNames.add(file.name);
+          // fileSizes.add(file.sizeKB);
+
+          files.add(LeadEditFiles(id: 0, name: file.name, path: file.path, size: file.sizeKB));
         }
       });
     }
@@ -1235,10 +1263,10 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
           height: 120,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            itemCount: fileNames.isEmpty ? 1 : fileNames.length + 1,
+            itemCount: files.isEmpty ? 1 : files.length + 1,
             itemBuilder: (context, index) {
               // Кнопка добавления файла
-              if (fileNames.isEmpty || index == fileNames.length) {
+              if (files.isEmpty || index == files.length) {
                 return Padding(
                   padding: EdgeInsets.only(right: 16),
                   child: GestureDetector(
@@ -1266,7 +1294,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
               }
 
               // Отображение выбранных файлов
-              final fileName = fileNames[index];
+              final fileName = files[index].name;
               final fileExtension = fileName.split('.').last.toLowerCase();
 
               return Padding(
@@ -1300,11 +1328,10 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                       top: -6,
                       child: GestureDetector(
                         onTap: () {
-                          setState(() {
-                            selectedFiles.removeAt(index);
-                            fileNames.removeAt(index);
-                            fileSizes.removeAt(index);
-                          });
+                          showDeleteFileDialog(
+                                  fileId: files[index].id,
+                                  index: index,
+                                );
                         },
                         child: Container(
                           padding: EdgeInsets.all(4),
@@ -1340,7 +1367,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
 
     // Если файл - изображение, показываем превью
     if (imageExtensions.contains(fileExtension)) {
-      final filePath = selectedFiles[fileNames.indexOf(fileName)];
+      final filePath = files.firstWhere((file) => file.name == fileName).path;
       return ClipRRect(
         borderRadius: BorderRadius.circular(8),
         child: Image.file(
@@ -1634,7 +1661,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                     duration: Duration(seconds: 3),
                   ),
                 );
-                Navigator.pop(context, widget.statusId);
+                Navigator.pop(context, true); // Возвращаем true при успешном сохранении
                 context.read<LeadBloc>().add(FetchLeadStatuses());
               }
             },
@@ -1863,6 +1890,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                       bool isSystemManager = selectedManager == "-1" || selectedManager == "0";
                                       final leadBloc = context.read<LeadBloc>();
                                       final localizations = AppLocalizations.of(context)!;
+
                                       leadBloc.add(UpdateLead(
                                         leadId: widget.leadId,
                                         name: titleController.text,
@@ -1882,8 +1910,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                         directoryValues: directoryValues,
                                         localizations: localizations,
                                         isSystemManager: isSystemManager,
-                                        filePaths: newFiles,
-                                        existingFiles: existingFiles,
+                                        files: files,
                                         priceTypeId: _selectedPriceType,
                                         salesFunnelId: selectedSalesFunnel,
                                         duplicate: duplicateValue,
@@ -1919,6 +1946,60 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
           );
         },
       ),
+    );
+  }
+
+  void showDeleteFileDialog({required int fileId, required int index}) {
+
+    bool isDeleting = false;
+
+    showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return DeleteFileDialog(
+          isDeleting: isDeleting,
+          fileId: fileId,
+          onDelete: (fileId) async {
+            if (files[index].id == 0) {
+              setState(() {
+                files.removeAt(index);
+              });
+              Navigator.of(context).pop(true);
+              return;
+            }
+
+            isDeleting = true;
+            setState(() {});
+
+            final response = await _apiService.deleteTaskFile(fileId);
+            if (response['result'] == 'Success') {
+              setState(() {
+                files.removeAt(index);
+              });
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    AppLocalizations.of(context)!.translate('error_delete_file'),
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+
+            Navigator.of(context).pop(true);
+          },
+          onCancel: () {
+            Navigator.of(context).pop(false);
+          },
+        );
+      },
     );
   }
 }

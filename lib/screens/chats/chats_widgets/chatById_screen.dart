@@ -360,7 +360,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                                     managerId: parsedUserId,
                                                     leadStatusId: profile.leadStatus?.id ?? 0,
                                                     localizations: localizations,
-                                                    existingFiles: [], customFields: [], directoryValues: [], isSystemManager: false, filePaths: [],
+                                                    // existingFiles: [],
+                                                    customFields: [], directoryValues: [], isSystemManager: false,
+                                                    // filePaths: [],
                                                   ));
 
                                                   await completer.future;

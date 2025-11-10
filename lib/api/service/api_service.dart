@@ -127,6 +127,7 @@ import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/models/user_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_dropdown_bottom_dialog.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_dropdown_bottom_dialog.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_edit_screen.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_dropdown_bottom_dialog.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_dropdown_bottom_dialog.dart';
@@ -2119,7 +2120,6 @@ class ApiService {
   Future<Map<String, dynamic>> updateLeadWithData({
     required int leadId,
     required Map<String, dynamic> data,
-    List<String>? filePaths,
   }) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/lead/$leadId');
@@ -2174,9 +2174,30 @@ class ApiService {
       request.fields['price_type_id'] =
           data['price_type_id'].toString(); // Добавляем price_type_id
     }
-    if (data['existing_file_ids'] != null) {
-      request.fields['existing_files'] = jsonEncode(data['existing_file_ids']);
+
+    if (data['files'] != null && (data['files'] as List).isNotEmpty) {
+      final filesList = data['files'] as List<LeadEditFiles>;
+      for (var fileData in filesList) {
+        try {
+          if (fileData.path.startsWith('http')) {
+            // If it's a URL, you need to download it first or send as URL
+            // For now, skip URLs
+            debugPrint("Skipping URL file: ${fileData.path}");
+            continue;
+          }
+
+          final file = await http.MultipartFile.fromPath(
+            'files[]',
+            fileData.path,
+            filename: fileData.name,
+          );
+          request.files.add(file);
+        } catch (e) {
+          debugPrint("Error adding file ${fileData.name}: $e");
+        }
+      }
     }
+
     // Добавляем sales_funnel_id из данных, если он присутствует
     if (data['sales_funnel_id'] != null) {
       request.fields['sales_funnel_id'] = data['sales_funnel_id'].toString();
@@ -2208,13 +2229,6 @@ class ApiService {
             value['directory_id'].toString();
         request.fields['directory_values[$i][entry_id]'] =
             value['entry_id'].toString();
-      }
-    }
-
-    if (filePaths != null && filePaths.isNotEmpty) {
-      for (var filePath in filePaths) {
-        final file = await http.MultipartFile.fromPath('files[]', filePath);
-        request.files.add(file);
       }
     }
 

@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/models/leadById_model.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_edit_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
 abstract class LeadEvent {}
@@ -166,10 +167,9 @@ class UpdateLead extends LeadEvent {
   final String? waPhone;
   final List<Map<String, dynamic>>? customFields; // Изменён тип
   final List<Map<String, int>>? directoryValues;
-  final List<String>? filePaths;
   final bool isSystemManager;
   final AppLocalizations localizations;
-  final List<LeadFiles> existingFiles;
+  final List<LeadEditFiles>? files;
   final String? priceTypeId; // Новое поле
     final String? salesFunnelId; // ДОБАВЛЕННОЕ ПОЛЕ
     final String? duplicate; // Новое поле
@@ -192,10 +192,9 @@ class UpdateLead extends LeadEvent {
     this.waPhone,
     this.customFields,
     this.directoryValues,
-    this.filePaths,
     required this.localizations,
     this.isSystemManager = false,
-    required this.existingFiles,
+    this.files,
     this.priceTypeId,
         this.salesFunnelId, // ДОБАВЛЕННЫЙ ПАРАМЕТР
     this.duplicate, // Новое поле]  
@@ -223,6 +222,7 @@ class DeleteLeadStatuses extends LeadEvent {
     this.localizations,
   );
 }
+
 
 class UpdateLeadStatusEdit extends LeadEvent {
   final int leadStatusId;

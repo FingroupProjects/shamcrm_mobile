@@ -25,7 +25,7 @@ import 'package:crm_task_manager/models/sales_funnel_model.dart';
     final Author? author;
     final String? description;
     final LeadStatusById? leadStatus;
-    final List<LeadCustomFieldsById> leadCustomFields;
+    final List<LeadCustomFieldValues> leadCustomFieldValues;
     final List<DirectoryValue> directoryValues;
     final List<LeadChat> chats;
     final List<LeadFiles>? files; // Добавляем поле для файлов
@@ -54,7 +54,7 @@ import 'package:crm_task_manager/models/sales_funnel_model.dart';
       this.salesFunnel,
       this.description,
       this.leadStatus,
-      required this.leadCustomFields,
+      this.leadCustomFieldValues = const [],
       required this.directoryValues,
       required this.chats,
       this.files,
@@ -116,8 +116,8 @@ import 'package:crm_task_manager/models/sales_funnel_model.dart';
                 json['leadStatus'] is Map<String, dynamic>
             ? LeadStatusById.fromJson(json['leadStatus'])
             : null,
-        leadCustomFields: (json['lead_custom_fields'] as List<dynamic>?)
-                ?.map((field) => LeadCustomFieldsById.fromJson(field))
+        leadCustomFieldValues: (json['customFieldValues'] as List<dynamic>?)
+                ?.map((field) => LeadCustomFieldValues.fromJson(field))
                 .toList() ??
             [],
         directoryValues: directoryValues,
@@ -240,29 +240,101 @@ import 'package:crm_task_manager/models/sales_funnel_model.dart';
     }
   }
 
-  class LeadCustomFieldsById {
-    final int id;
-    final String key;
-    final String value;
-    final String? type; // Добавлено поле type
+  // class LeadCustomFieldsById {
+  //   final int id;
+  //   final String key;
+  //   final String value;
+  //   final String? type; // Добавлено поле type
+  //
+  //   LeadCustomFieldsById({
+  //     required this.id,
+  //     required this.key,
+  //     required this.value,
+  //     this.type,
+  //   });
+  //
+  //   factory LeadCustomFieldsById.fromJson(Map<String, dynamic> json) {
+  //     //print('LeadCustomFieldsById: Parsing JSON for custom field: ${json['id']}');
+  //     final field = LeadCustomFieldsById(
+  //       id: json['id'] ?? 0,
+  //       key: json['key'] ?? '',
+  //       value: json['value'] ?? '',
+  //       type: json['type'],
+  //     );
+  //     //print('LeadCustomFieldsById: Field created: id=${field.id}, key=${field.key}, value=${field.value}');
+  //     return field;
+  //   }
+  // }
 
-    LeadCustomFieldsById({
+  class LeadCustomFieldValues {
+    final int id;
+    final int customFieldId;
+    final int? organizationId;
+    final int? modelId;
+    final String? modelType;
+    final String value;
+    final String? type;
+    final String? createdAt;
+    final String? updatedAt;
+    final LeadCustomFieldMeta? customField;
+
+    LeadCustomFieldValues({
       required this.id,
-      required this.key,
+      required this.customFieldId,
+      this.organizationId,
+      this.modelId,
+      this.modelType,
       required this.value,
       this.type,
+      this.createdAt,
+      this.updatedAt,
+      this.customField,
     });
 
-    factory LeadCustomFieldsById.fromJson(Map<String, dynamic> json) {
-      //print('LeadCustomFieldsById: Parsing JSON for custom field: ${json['id']}');
-      final field = LeadCustomFieldsById(
+    factory LeadCustomFieldValues.fromJson(Map<String, dynamic> json) {
+      return LeadCustomFieldValues(
         id: json['id'] ?? 0,
-        key: json['key'] ?? '',
-        value: json['value'] ?? '',
+        customFieldId: json['custom_field_id'] ?? 0,
+        organizationId: json['organization_id'],
+        modelId: json['model_id'],
+        modelType: json['model_type'],
+        value: json['value']?.toString() ?? '',
         type: json['type'],
+        createdAt: json['created_at'],
+        updatedAt: json['updated_at'],
+        customField: json['custom_field'] != null && json['custom_field'] is Map<String, dynamic>
+            ? LeadCustomFieldMeta.fromJson(json['custom_field'])
+            : null,
       );
-      //print('LeadCustomFieldsById: Field created: id=${field.id}, key=${field.key}, value=${field.value}');
-      return field;
+    }
+  }
+
+  class LeadCustomFieldMeta {
+    final int id;
+    final String name;
+    final bool isActive;
+    final String? type;
+    final String? createdAt;
+    final String? updatedAt;
+
+    LeadCustomFieldMeta({
+      required this.id,
+      required this.name,
+      required this.isActive,
+      this.type,
+      this.createdAt,
+      this.updatedAt,
+    });
+
+    factory LeadCustomFieldMeta.fromJson(Map<String, dynamic> json) {
+      return LeadCustomFieldMeta(
+        id: json['id'] ?? 0,
+        name: json['name'] ?? '',
+        isActive: json['is_active'] == 1 || json['is_active'] == true,
+        type: json['type'],
+        createdAt: json['created_at'],
+        updatedAt: json['updated_at'],
+      );
     }
   }
 
