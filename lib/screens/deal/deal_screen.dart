@@ -82,9 +82,8 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   bool? _initialHasTasks;
   int? _initialDaysWithoutActivity;
   List<Map<String, dynamic>> _initialDirectoryValues = [];
-  List<DealNameData> _initialSelectedDealNames = [];
-  List<DealNameData> _selectedDealNames = [];
-  Map<String, List<String>>? _initialDealCustomFieldFilters;
+List<DealNameData> _initialSelectedDealNames = [];
+List<DealNameData> _selectedDealNames = [];
   final GlobalKey keySearchIcon = GlobalKey();
   final GlobalKey keyMenuIcon = GlobalKey();
 
@@ -314,73 +313,41 @@ Future<void> _onRefresh() async {
     );
   }
 
-  Future<void> _loadFilterState() async {
-    final prefs = await SharedPreferences.getInstance();
-
-    Map<String, List<String>>? loadedCustomFields;
-    final customFieldsRaw = prefs.getString('deal_selected_custom_fields');
-    if (customFieldsRaw != null && customFieldsRaw.isNotEmpty) {
-      try {
-        final decoded = Map<String, dynamic>.from(jsonDecode(customFieldsRaw));
-        loadedCustomFields = decoded.map(
-          (key, value) => MapEntry(
-            key,
-            (value as List).map((item) => item.toString()).toList(),
-          ),
-        );
-        if (loadedCustomFields.isEmpty) {
-          loadedCustomFields = null;
-        }
-      } catch (_) {
-        loadedCustomFields = null;
-      }
-    }
-
-    setState(() {
-      _selectedManagers = (jsonDecode(prefs.getString('deal_selected_managers') ?? '[]') as List)
-          .map((m) => ManagerData.fromJson(m))
-          .toList();
-      _selectedLeads = (jsonDecode(prefs.getString('deal_selected_leads') ?? '[]') as List)
-          .map((l) => LeadData.fromJson(l))
-          .toList();
-      _selectedStatuses = prefs.getInt('deal_selected_statuses');
-      final fromDateRaw = prefs.getString('deal_from_date');
-      _fromDate = fromDateRaw != null && fromDateRaw.isNotEmpty ? DateTime.parse(fromDateRaw) : null;
-      final toDateRaw = prefs.getString('deal_to_date');
-      _toDate = toDateRaw != null && toDateRaw.isNotEmpty ? DateTime.parse(toDateRaw) : null;
-      _daysWithoutActivity = prefs.getInt('deal_days_without_activity');
-      _hasTasks = prefs.getBool('deal_has_tasks') ?? false;
-      _selectedDirectoryValues = (jsonDecode(prefs.getString('deal_selected_directory_values') ?? '[]') as List)
-          .map((d) => Map<String, dynamic>.from(d))
-          .toList();
-      _selectedDealNames = (jsonDecode(prefs.getString('deal_selected_names') ?? '[]') as List)
-          .map((name) => DealNameData(id: 0, title: name))
-          .toList();
-      _selectedDealCustomFieldFilters = loadedCustomFields;
-
-      _initialselectedManagers = List.from(_selectedManagers);
-      _initialselectedLeads = List.from(_selectedLeads);
-      _initialSelStatus = _selectedStatuses;
-      _intialFromDate = _fromDate;
-      _intialToDate = _toDate;
-      _initialHasTasks = _hasTasks;
-      _initialDaysWithoutActivity = _daysWithoutActivity;
-      _initialDirectoryValues = List.from(_selectedDirectoryValues);
-      _initialSelectedDealNames = List.from(_selectedDealNames);
-      _initialDealCustomFieldFilters =
-          _cloneCustomFieldFilters(_selectedDealCustomFieldFilters);
-    });
-  }
-
-  Map<String, List<String>>? _cloneCustomFieldFilters(
-      Map<String, List<String>>? source) {
-    if (source == null) {
-      return null;
-    }
-    return source.map(
-      (key, value) => MapEntry(key, List<String>.from(value)),
-    );
-  }
+Future<void> _loadFilterState() async {
+  final prefs = await SharedPreferences.getInstance();
+  setState(() {
+    _selectedManagers = (jsonDecode(prefs.getString('deal_selected_managers') ?? '[]') as List)
+        .map((m) => ManagerData.fromJson(m))
+        .toList();
+    _selectedLeads = (jsonDecode(prefs.getString('deal_selected_leads') ?? '[]') as List)
+        .map((l) => LeadData.fromJson(l))
+        .toList();
+    _selectedStatuses = prefs.getInt('deal_selected_statuses');
+    _fromDate = prefs.getString('deal_from_date') != null
+        ? DateTime.parse(prefs.getString('deal_from_date')!)
+        : null;
+    _toDate = prefs.getString('deal_to_date') != null
+        ? DateTime.parse(prefs.getString('deal_to_date')!)
+        : null;
+    _daysWithoutActivity = prefs.getInt('deal_days_without_activity');
+    _hasTasks = prefs.getBool('deal_has_tasks') ?? false;
+    _selectedDirectoryValues = (jsonDecode(prefs.getString('deal_selected_directory_values') ?? '[]') as List)
+        .map((d) => Map<String, dynamic>.from(d))
+        .toList();
+    _selectedDealNames = (jsonDecode(prefs.getString('deal_selected_names') ?? '[]') as List)
+        .map((name) => DealNameData(id: 0, title: name))
+        .toList();
+    _initialselectedManagers = List.from(_selectedManagers);
+    _initialselectedLeads = List.from(_selectedLeads);
+    _initialSelStatus = _selectedStatuses;
+    _intialFromDate = _fromDate;
+    _intialToDate = _toDate;
+    _initialHasTasks = _hasTasks;
+    _initialDaysWithoutActivity = _daysWithoutActivity;
+    _initialDirectoryValues = List.from(_selectedDirectoryValues);
+    _initialSelectedDealNames = List.from(_selectedDealNames);
+  });
+}
 
  Future<void> _saveFilterState() async {
   final prefs = await SharedPreferences.getInstance();
@@ -393,14 +360,6 @@ Future<void> _onRefresh() async {
   await prefs.setBool('deal_has_tasks', _hasTasks ?? false);
   await prefs.setString('deal_selected_directory_values', jsonEncode(_selectedDirectoryValues));
   await prefs.setString('deal_selected_names', jsonEncode(_selectedDealNames.map((dealName) => dealName.title).toList()));
-    if (_selectedDealCustomFieldFilters != null && _selectedDealCustomFieldFilters!.isNotEmpty) {
-      await prefs.setString(
-        'deal_selected_custom_fields',
-        jsonEncode(_selectedDealCustomFieldFilters),
-      );
-    } else {
-      await prefs.remove('deal_selected_custom_fields');
-    }
 }
 
   void _onScroll() {
@@ -583,8 +542,6 @@ void _resetFilters() {
     _initialDaysWithoutActivity = null;
     _initialDirectoryValues = [];
     _initialSelectedDealNames = [];
-    _selectedDealCustomFieldFilters = null;
-    _initialDealCustomFieldFilters = null;
   });
   _dealBloc.add(FetchDealStatuses(salesFunnelId: _selectedFunnel?.id));
 }
@@ -618,8 +575,6 @@ Future<void> _handleManagerSelected(Map managers) async {
     _selectedDealCustomFieldFilters = rawCustom?.map((k, v) => MapEntry(k, (v as List).map((e) => e.toString()).toList()));
     _initialDirectoryValues = List.from(_selectedDirectoryValues);
     _initialSelectedDealNames = List.from(_selectedDealNames);
-    _initialDealCustomFieldFilters =
-        _cloneCustomFieldFilters(_selectedDealCustomFieldFilters);
   });
 
   final currentStatusId = _tabTitles[_currentTabIndex]['id'];
@@ -770,7 +725,6 @@ Future<void> _handleManagerSelected(Map managers) async {
             initialManagerDealHasTasks: _initialHasTasks,
             initialDirectoryValuesDeal: _initialDirectoryValues,
             initialDealNames: _initialSelectedDealNames.map((dealName) => dealName.title).toList(), // Передаем начальные имена
-            initialDealCustomFields: _initialDealCustomFieldFilters,
             onDealResetFilters: _resetFilters,
             textEditingController: textEditingController,
             focusNode: focusNode,

@@ -139,20 +139,12 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
 
   Future<void> _loadFilterState() async {
     final prefs = await SharedPreferences.getInstance();
-    final storedDirectoryFields =
-        (jsonDecode(prefs.getString('deal_selected_directory_fields') ?? '{}') as Map)
-            .map((key, value) =>
-                MapEntry(int.parse(key), value != null ? MainField.fromJson(jsonDecode(value)) : null));
-    final storedDealNames =
-        (jsonDecode(prefs.getString('deal_selected_names') ?? '[]') as List)
-            .map((name) => DealNameData(id: 0, title: name))
-            .toList();
-
     setState(() {
-      _selectedDirectoryFields = storedDirectoryFields;
-      if (_selectedDealNames.isEmpty) {
-        _selectedDealNames = storedDealNames;
-      }
+      _selectedDirectoryFields = (jsonDecode(prefs.getString('deal_selected_directory_fields') ?? '{}') as Map)
+          .map((key, value) => MapEntry(int.parse(key), value != null ? MainField.fromJson(jsonDecode(value)) : null));
+      _selectedDealNames = (jsonDecode(prefs.getString('deal_selected_names') ?? '[]') as List)
+          .map((name) => DealNameData(id: 0, title: name))
+          .toList();
     });
   }
 
@@ -174,6 +166,11 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
           final updatedSelections = <int, MainField?>{};
 
           for (var link in _directoryLinks) {
+            if (_selectedDirectoryFields.containsKey(link.id)) {
+              updatedSelections[link.id] = _selectedDirectoryFields[link.id];
+              continue;
+            }
+
             final initialSelections = initialDirectoryValues
                 .where((value) => value['directory_id'] == link.directory.id)
                 .map((value) {
@@ -196,16 +193,8 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                 .whereType<MainField>()
                 .toList();
 
-            if (initialSelections.isNotEmpty) {
-              updatedSelections[link.id] = initialSelections.first;
-              continue;
-            }
-
-            if (_selectedDirectoryFields.containsKey(link.id)) {
-              updatedSelections[link.id] = _selectedDirectoryFields[link.id];
-            } else {
-              updatedSelections[link.id] = null;
-            }
+            updatedSelections[link.id] =
+                initialSelections.isNotEmpty ? initialSelections.first : null;
           }
 
           _selectedDirectoryFields = updatedSelections;
