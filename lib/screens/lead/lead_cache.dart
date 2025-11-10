@@ -27,22 +27,32 @@ class LeadCache {
     //print('LeadCache: FULL DATA CLEAR - Removed ${leadRelatedKeys.length} cache keys: $leadRelatedKeys');
   }
 
-  // Кэширование лидов для статуса БЕЗ изменения постоянного счетчика
-  static Future<void> cacheLeadsForStatus(int? statusId, List<Lead> leads, {bool updatePersistentCount = false}) async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final String key = 'cachedLeads_$statusId';
-    final String encodedLeads = json.encode(leads.map((lead) => lead.toJson()).toList());
-    await prefs.setString(key, encodedLeads);
-    
-    // ВАЖНО: Обновляем постоянный счетчик ТОЛЬКО если это явно запрошено
-    // Например, при первоначальной загрузке из API, но НЕ при пагинации
-    if (updatePersistentCount) {
-      await setPersistentLeadCount(statusId, leads.length);
-      //print('LeadCache: Cached leads for statusId: $statusId, count: ${leads.length} (updated persistent count)');
-    } else {
-      //print('LeadCache: Cached leads for statusId: $statusId, count: ${leads.length} (persistent count preserved)');
-    }
+static Future<void> cacheLeadsForStatus(
+  int? statusId, 
+  List<Lead> leads, 
+  {
+    bool updatePersistentCount = false,
+    int? actualTotalCount, // ← НОВЫЙ параметр для реального счётчика из API статусов
   }
+) async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  final String key = 'cachedLeads_$statusId';
+  final String encodedLeads = json.encode(leads.map((lead) => lead.toJson()).toList());
+  await prefs.setString(key, encodedLeads);
+  
+  // КРИТИЧНО: Обновляем постоянный счетчик ТОЛЬКО реальным значением из API статусов
+  // НЕ используем leads.length, так как это только текущая страница (20 элементов)
+  if (updatePersistentCount && actualTotalCount != null) {
+    await setPersistentLeadCount(statusId, actualTotalCount); // ← Реальный счётчик из API статусов
+    //print('LeadCache: Cached ${leads.length} leads for statusId: $statusId, REAL total count: $actualTotalCount (updated persistent count)');
+  } else if (updatePersistentCount && actualTotalCount == null) {
+    // Если actualTotalCount не передан, но updatePersistentCount = true,
+    // НЕ обновляем счётчик вообще (сохраняем старое значение)
+    //print('LeadCache: Cached ${leads.length} leads for statusId: $statusId, but actualTotalCount is NULL - persistent count NOT updated');
+  } else {
+    //print('LeadCache: Cached ${leads.length} leads for statusId: $statusId (persistent count preserved)');
+  }
+}
 
   // Получение лидов для статуса
   static Future<List<Lead>> getLeadsForStatus(int? statusId) async {

@@ -1078,113 +1078,127 @@ Future<void> _onRefresh(int currentStatusId) async {
     );
   }
 
-  Widget searchWidget(List<Lead> leads) {
-     if (_isFilterLoading) {
+ Widget searchWidget(List<Lead> leads) {
+  final currentStatusId = _tabTitles.isNotEmpty 
+      ? _tabTitles[_currentTabIndex]['id'] 
+      : 0;
+
+  // Показываем лоадер если флаги активны
+  if (_isFilterLoading || _shouldShowLoader) {
     return const Center(
       child: PlayStoreImageLoading(
         size: 80.0,
         duration: Duration(milliseconds: 1000),
-      ),
-    );
-  }
-  
-    final currentStatusId = _tabTitles.isNotEmpty ? _tabTitles[_currentTabIndex]['id'] : 0;
-    if (_isSearching && leads.isEmpty) {
-      return Center(
-        child: Text(
-          AppLocalizations.of(context)!.translate('nothing_found'),
-          style: const TextStyle(
-            fontSize: 18,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w500,
-            color: Color(0xff99A4BA),
-          ),
-        ),
-      );
-    } else if (_isManager && leads.isEmpty) {
-      return Center(
-        child: Text(
-          AppLocalizations.of(context)!.translate('no_leads_for_selected_manager'),
-          style: const TextStyle(
-            fontSize: 18,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w500,
-            color: Color(0xff99A4BA),
-          ),
-        ),
-      );
-    } else if (leads.isEmpty) {
-      return Center(
-        child: Text(
-          AppLocalizations.of(context)!.translate('nothing_lead_for_manager'),
-          style: const TextStyle(
-            fontSize: 18,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w500,
-            color: Color(0xff99A4BA),
-          ),
-        ),
-      );
-    }
-    return RefreshIndicator(
-      onRefresh: () => _onRefresh(currentStatusId),
-      color: const Color(0xff1E2E52),
-      backgroundColor: Colors.white,
-      child: ListView.builder(
-        itemCount: leads.length,
-        itemBuilder: (context, index) {
-          final lead = leads[index];
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: LeadCard(
-              lead: lead,
-              title: lead.leadStatus?.title ?? "",
-              statusId: lead.statusId,
-              onStatusUpdated: () {
-                //print('LeadScreen: Lead status updated');
-              },
-              onStatusId: (StatusLeadId) {
-                //print('LeadScreen: onStatusId called with id: $StatusLeadId');
-                final index = _tabTitles.indexWhere((status) => status['id'] == StatusLeadId);
-                if (index != -1) {
-                  _tabController.animateTo(index);
-                }
-              },
-            ),
-          );
-        },
       ),
     );
   }
 
-  Widget _buildManagerView() {
-      // КРИТИЧНО: Если флаг установлен - показываем ТОЛЬКО лоадер, игнорируя BlocBuilder
-  if (_shouldShowLoader || _isFilterLoading) {
-    //print('LeadScreen: _buildManagerView - Showing loader');
-    return const Center(
-      child: PlayStoreImageLoading(
-        size: 80.0,
-        duration: Duration(milliseconds: 1000),
+  if (_isSearching && leads.isEmpty) {
+    return Center(
+      child: Text(
+        AppLocalizations.of(context)!.translate('nothing_found'),
+        style: const TextStyle(
+          fontSize: 18,
+          fontFamily: 'Gilroy',
+          fontWeight: FontWeight.w500,
+          color: Color(0xff99A4BA),
+        ),
+      ),
+    );
+  } else if (_isManager && leads.isEmpty) {
+    return Center(
+      child: Text(
+        AppLocalizations.of(context)!
+            .translate('no_leads_for_selected_manager'),
+        style: const TextStyle(
+          fontSize: 18,
+          fontFamily: 'Gilroy',
+          fontWeight: FontWeight.w500,
+          color: Color(0xff99A4BA),
+        ),
+      ),
+    );
+  } else if (leads.isEmpty) {
+    return Center(
+      child: Text(
+        AppLocalizations.of(context)!
+            .translate('nothing_lead_for_manager'),
+        style: const TextStyle(
+          fontSize: 18,
+          fontFamily: 'Gilroy',
+          fontWeight: FontWeight.w500,
+          color: Color(0xff99A4BA),
+        ),
       ),
     );
   }
-    return BlocBuilder<LeadBloc, LeadState>(
-      builder: (context, state) {
-        final currentStatusId = _tabTitles.isNotEmpty ? _tabTitles[_tabController.index]['id'] : 0;
-          // Если идёт загрузка - показываем лоадер
-      if (state is LeadLoading) {
-        //print('LeadScreen: _buildManagerView - LeadLoading state, showing loader');
-        return const Center(
-          child: PlayStoreImageLoading(
-            size: 80.0,
-            duration: Duration(milliseconds: 1000),
+
+  return RefreshIndicator(
+    onRefresh: () => _onRefresh(currentStatusId),
+    color: const Color(0xff1E2E52),
+    backgroundColor: Colors.white,
+    child: ListView.builder(
+      itemCount: leads.length,
+      itemBuilder: (context, index) {
+        final lead = leads[index];
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: LeadCard(
+            lead: lead,
+            title: lead.leadStatus?.title ?? "",
+            statusId: lead.statusId,
+            onStatusUpdated: () {},
+            onStatusId: (StatusLeadId) {
+              final index = _tabTitles.indexWhere(
+                  (status) => status['id'] == StatusLeadId);
+              if (index != -1) {
+                _tabController.animateTo(index);
+              }
+            },
           ),
         );
+      },
+    ),
+  );
+}
+
+ Widget _buildManagerView() {
+  return BlocListener<LeadBloc, LeadState>(
+    listener: (context, state) {
+      // Сбрасываем флаги когда данные загружены или произошла ошибка
+      if ((state is LeadDataLoaded || state is LeadError) && 
+          mounted && 
+          (_isFilterLoading || _shouldShowLoader)) {
+        setState(() {
+          _isFilterLoading = false;
+          _shouldShowLoader = false;
+          //print('LeadScreen: _buildManagerView - Loader flags reset');
+        });
       }
+    },
+    child: BlocBuilder<LeadBloc, LeadState>(
+      builder: (context, state) {
+        final currentStatusId = _tabTitles.isNotEmpty 
+            ? _tabTitles[_tabController.index]['id'] 
+            : 0;
+
+        // Показываем лоадер только если флаги активны ИЛИ состояние - LeadLoading
+        if (_shouldShowLoader || _isFilterLoading || state is LeadLoading) {
+          //print('LeadScreen: _buildManagerView - Showing loader');
+          return const Center(
+            child: PlayStoreImageLoading(
+              size: 80.0,
+              duration: Duration(milliseconds: 1000),
+            ),
+          );
+        }
+
         if (state is LeadDataLoaded) {
           final List<Lead> leads = state.leads;
           final statusId = _tabTitles[_tabController.index]['id'];
-          final filteredLeads = leads.where((lead) => lead.statusId == statusId).toList();
+          final filteredLeads = leads
+              .where((lead) => lead.statusId == statusId)
+              .toList();
 
           if (filteredLeads.isEmpty) {
             return RefreshIndicator(
@@ -1195,9 +1209,11 @@ Future<void> _onRefresh(int currentStatusId) async {
                 child: SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   child: Text(
-                    _selectedManagers != null
-                        ? AppLocalizations.of(context)!.translate('selected_manager_has_any_lead')
-                        : AppLocalizations.of(context)!.translate('nothing_found'),
+                    _selectedManagers.isNotEmpty
+                        ? AppLocalizations.of(context)!
+                            .translate('selected_manager_has_any_lead')
+                        : AppLocalizations.of(context)!
+                            .translate('nothing_found'),
                     style: const TextStyle(
                       fontSize: 18,
                       fontFamily: 'Gilroy',
@@ -1219,15 +1235,16 @@ Future<void> _onRefresh(int currentStatusId) async {
               itemBuilder: (context, index) {
                 final lead = filteredLeads[index];
                 return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 8),
                   child: LeadCard(
                     lead: lead,
                     title: lead.leadStatus?.title ?? "",
                     statusId: lead.statusId,
                     onStatusUpdated: () {},
                     onStatusId: (StatusLeadId) {
-                      //print('LeadScreen: onStatusId called with id: $StatusLeadId');
-                      final index = _tabTitles.indexWhere((status) => status['id'] == StatusLeadId);
+                      final index = _tabTitles.indexWhere(
+                          (status) => status['id'] == StatusLeadId);
                       if (index != -1) {
                         _tabController.animateTo(index);
                       }
@@ -1238,18 +1255,27 @@ Future<void> _onRefresh(int currentStatusId) async {
             ),
           );
         }
-        if (state is LeadLoading) {
-          return const Center(
-            child: PlayStoreImageLoading(
-              size: 80.0,
-              duration: Duration(milliseconds: 1000),
+
+        // Если состояние LeadError - показываем ошибку
+        if (state is LeadError) {
+          return Center(
+            child: Text(
+              state.message,
+              style: const TextStyle(
+                fontSize: 18,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w500,
+                color: Colors.red,
+              ),
             ),
           );
         }
+
         return const SizedBox();
       },
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildCustomTabBar() {
     return SingleChildScrollView(
@@ -1514,6 +1540,8 @@ Widget _buildTabBarView() {
           setState(() {
             _isFilterLoading = false; // ← НОВОЕ: сбрасываем флаг после загрузки
                         _shouldShowLoader = false; // ← НОВОЕ: разрешаем показывать данные
+                                  _isSwitchingFunnel = false; // На всякий случай
+
 
           });
         }
