@@ -10,6 +10,8 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
+import 'package:crm_task_manager/custom_widget/file_picker_dialog.dart';
+import 'package:crm_task_manager/models/file_helper.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/directory_model.dart';
@@ -54,9 +56,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
   bool isStartDateInvalid = false;
   bool isEndDateInvalid = false;
   bool _showAdditionalFields = false;
-  List<String> selectedFiles = [];
-  List<String> fileNames = [];
-  List<String> fileSizes = [];
+  List<FileHelper> files = [];
 
   @override
   void initState() {
@@ -75,64 +75,49 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
   }
 
   Future<void> _pickFile() async {
-    try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(allowMultiple: true);
-      //print('LeadDealAddScreen: FilePicker result: ${result?.files.map((f) => f.name).toList()}');
-      if (result != null) {
-        double totalSize = selectedFiles.fold<double>(
-          0.0,
-          (sum, file) => sum + File(file).lengthSync() / (1024 * 1024),
-        );
-        double newFilesSize = result.files.fold<double>(
-          0.0,
-          (sum, file) => sum + file.size / (1024 * 1024),
-        );
-        //print('LeadDealAddScreen: Total size: $totalSize MB, New files size: $newFilesSize MB');
-
-        if (totalSize + newFilesSize > 50) {
-          //print('LeadDealAddScreen: File size exceeds 50MB limit');
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                AppLocalizations.of(context)!.translate('file_size_too_large'),
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              backgroundColor: Colors.red,
-              elevation: 3,
-              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              duration: Duration(seconds: 3),
-            ),
-          );
-          return;
+    // Вычисляем текущий общий размер файлов
+    double totalSize = files.fold<double>(0.0, (sum, file) {
+      if (file.path.startsWith('http://') || file.path.startsWith('https://')) {
+        int index = files.indexOf(file);
+        if (index >= 0 && index < files.length) {
+          final size = files[index].size;
+          final parsed = num.tryParse(size.toString());
+          return sum + (parsed != null ? parsed / 1024.0 : 0);
         }
-
-        setState(() {
-          for (var file in result.files) {
-            selectedFiles.add(file.path!);
-            fileNames.add(file.name);
-            fileSizes.add('${(file.size / 1024).toStringAsFixed(3)}KB');
-          }
-          //print('LeadDealAddScreen: Added files: $fileNames');
-        });
+        return sum;
       }
-    } catch (e) {
-      //print('LeadDealAddScreen: Error picking file: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Ошибка при выборе файла!"),
-          backgroundColor: Colors.red,
-        ),
-      );
+
+      return sum + File(file.path).lengthSync() / (1024 * 1024);
+    });
+
+    // Показываем диалог выбора типа файла
+    final List<PickedFileInfo>? pickedFiles = await FilePickerDialog.show(
+      context: context,
+      allowMultiple: true,
+      maxSizeMB: 50.0,
+      currentTotalSizeMB: totalSize,
+      fileLabel: AppLocalizations.of(context)!.translate('file'),
+      galleryLabel: AppLocalizations.of(context)!.translate('gallery'),
+      cameraLabel: AppLocalizations.of(context)!.translate('camera'),
+      cancelLabel: AppLocalizations.of(context)!.translate('cancel'),
+      fileSizeTooLargeMessage: AppLocalizations.of(context)!.translate('file_size_too_large'),
+      errorPickingFileMessage: AppLocalizations.of(context)!.translate('error_picking_file'),
+    );
+
+    // Если файлы выбраны, добавляем их
+    if (pickedFiles != null && pickedFiles.isNotEmpty) {
+      setState(() {
+        for (var file in pickedFiles) {
+          // selectedFiles.add(file.path);
+          // fileNames.add(file.name);
+          // fileSizes.add(file.sizeKB);
+
+          files.add(FileHelper(id: 0, name: file.name, path: file.path, size: file.sizeKB));
+        }
+      });
     }
   }
+
 
   Widget _buildFileSelection() {
     //print('LeadDealAddScreen: Building file selection with ${fileNames.length} files');
@@ -153,9 +138,9 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
           height: 120,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            itemCount: fileNames.isEmpty ? 1 : fileNames.length + 1,
+            itemCount: files.isEmpty ? 1 : files.length + 1,
             itemBuilder: (context, index) {
-              if (fileNames.isEmpty || index == fileNames.length) {
+              if (files.isEmpty || index == files.length) {
                 return Padding(
                   padding: EdgeInsets.only(right: 16),
                   child: GestureDetector(
@@ -182,7 +167,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                 );
               }
 
-              final fileName = fileNames[index];
+              final fileName = files[index].name;
               final fileExtension = fileName.split('.').last.toLowerCase();
               //print('LeadDealAddScreen: Displaying file: $fileName');
               return Padding(
@@ -222,9 +207,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                       child: GestureDetector(
                         onTap: () {
                           setState(() {
-                            selectedFiles.removeAt(index);
-                            fileNames.removeAt(index);
-                            fileSizes.removeAt(index);
+                            files.removeAt(index);
                             //print('LeadDealAddScreen: Removed file: $fileName');
                           });
                         },
@@ -832,7 +815,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
       description: descriptionController.text.isEmpty ? null : descriptionController.text,
       customFields: customFieldMap,
       directoryValues: directoryValues,
-      filePaths: selectedFiles,
+      files: files,
       localizations: localizations,
     ));
     //print('LeadDealAddScreen: Dispatched CreateDeal event');

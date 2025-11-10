@@ -1866,7 +1866,6 @@
   "quantity_label": "Количество",
   "price_label": "Цена",
   "document_type_label": "Тип документа",
-  "not_specified": "Не указано",
   "no_movements_found": "Движения не найдены",
   "no_movements_hint": "Для этого товара нет истории движений",
   "goods_movement_history_title": "История движения товара",
@@ -1875,5 +1874,6 @@
   "income_document": "Приход",
   "outcome_document": "Расход",
   "change_status": "Изменить статус",
-  "save_hint": "После добавления товаров перейдите в \"Основное\" для сохранения"
+  "save_hint": "После добавления товаров перейдите в \"Основное\" для сохранения",
+  "error_delete_file":"Ошибка при удалении файла"
 }

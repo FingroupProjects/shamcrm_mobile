@@ -536,7 +536,7 @@ class _CustomAppBarState extends State<CustomAppBar>
           'X-Tenant': '$enteredDomain-back'
         },
         onAuthFailed: (exception, trace) {
-          debugPrint(exception);
+          debugPrint('Auth failed: ${exception.toString()}');
         },
       ),
     );

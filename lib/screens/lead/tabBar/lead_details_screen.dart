@@ -14,6 +14,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/order_by_lead/order_bloc.dart'
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_by_lead/order_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/file_utils.dart';
+import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/models/leadById_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/history_dialog.dart';
 import 'package:crm_task_manager/screens/lead/export_lead_to_contact.dart';
@@ -36,9 +37,6 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:dio/dio.dart';
-import 'package:open_file/open_file.dart';
-import 'package:path_provider/path_provider.dart';
 
 class LeadDetailsScreen extends StatefulWidget {
   final String leadId;
@@ -194,6 +192,10 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   Set<String> _normalizedContactPhones = {};
   bool _isLoadingContacts = true;
 
+  // Field configuration
+  List<FieldConfiguration> _fieldConfiguration = [];
+  bool _isConfigurationLoaded = false;
+
   @override
   void initState() {
     super.initState();
@@ -214,6 +216,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     });
     _fetchTutorialProgress();
     _listenToPrefsChanges();
+    _loadFieldConfiguration();
   }
 
   Future<void> _loadContactsToCache() async {
@@ -518,97 +521,285 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     });
   }
 
-  void _updateDetails(LeadById lead) {
-    currentLead = lead;
-    details = [
-      {
-        'label': AppLocalizations.of(context)!.translate('lead_name'),
-        'value': lead.name
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('phone_use'),
-        'value': lead.phone ?? ''
-      },
-      if (lead.manager != null)
-        {
-          'label':
-          '${AppLocalizations.of(context)!.translate('manager_details')}',
-          'value': '${lead.manager!.name} ${lead.manager!.lastname ?? ''}'
-        }
-      else
-        {'label': '', 'value': 'become_manager'},
-      {
-        'label': '${AppLocalizations.of(context)!.translate('region_details')}',
-        'value': lead.region?.name ?? ''
-      },
-      {
-        'label': '${AppLocalizations.of(context)!.translate('source_details')}',
-        'value': lead.source?.name ?? ''
-      },
-      {'label': 'WhatsApp:', 'value': lead.whatsApp ?? ''},
-      {'label': 'Instagram:', 'value': lead.instagram ?? ''},
-      {'label': 'Facebook:', 'value': lead.facebook ?? ''},
-      {'label': 'Telegram:', 'value': lead.telegram ?? ''},
-      {
-        'label': '${AppLocalizations.of(context)!.translate('email_details')}',
-        'value': lead.email ?? ''
-      },
-      if (lead.phone_verified_at != null)
-        {
-          'label': '${AppLocalizations.of(context)!.translate('birthday_details')}',
-          'value': formatDate(lead.birthday)
-        },
-      if (lead.phone_verified_at != null)
-        {
-          'label': '${AppLocalizations.of(context)!.translate('price_type_details')}',
-          'value': lead.priceType?.name ?? ''
-        },
-      {
-        'label':
-        '${AppLocalizations.of(context)!.translate('description_details_lead')}',
-        'value': lead.description ?? ''
-      },
-      {
-        'label': '${AppLocalizations.of(context)!.translate('author_details')}',
-        'value': lead.author?.name ?? ''
-      },
-      {
-        'label': '${AppLocalizations.of(context)!.translate('sales_funnel_details')}',
-        'value': lead.salesFunnel?.name ?? ''
-      },
-      {
-        'label':
-        '${AppLocalizations.of(context)!.translate('created_at_details')}',
-        'value': formatDate(lead.createdAt)
-      },
-      {
-        'label': '${AppLocalizations.of(context)!.translate('status_details')}',
-        'value': lead.leadStatus?.title ?? ''
-      },
-      if (lead.files != null && lead.files!.isNotEmpty)
-        {
-          'label': AppLocalizations.of(context)!.translate('files_details'),
-          'value':
-          '${lead.files!.length} ${AppLocalizations.of(context)!.translate('files')}'
-        },
-    ];
-    for (var field in lead.leadCustomFields) {
-      // print(
-      //     'LeadDetailsScreen: Adding custom field - key: ${field.key}, value: ${field.value}');
-      details.add({'label': '${field.key}:', 'value': field.value});
-    }
-    for (var dirValue in lead.directoryValues) {
-      if (dirValue.entry != null) {
-        final directoryName = dirValue.entry!.directory.name;
+  // void _updateDetails(LeadById lead) {
+  //   currentLead = lead;
+    // details = [
+    //   {
+    //     'label': AppLocalizations.of(context)!.translate('lead_name'),
+    //     'value': lead.name
+    //   },
+    //   {
+    //     'label': AppLocalizations.of(context)!.translate('phone_use'),
+    //     'value': lead.phone ?? ''
+    //   },
+    //   if (lead.manager != null)
+    //     {
+    //       'label':
+    //       '${AppLocalizations.of(context)!.translate('manager_details')}',
+    //       'value': '${lead.manager!.name} ${lead.manager!.lastname ?? ''}'
+    //     }
+    //   else
+    //     {'label': '', 'value': 'become_manager'},
+    //   {
+    //     'label': '${AppLocalizations.of(context)!.translate('region_details')}',
+    //     'value': lead.region?.name ?? ''
+    //   },
+    //   {
+    //     'label': '${AppLocalizations.of(context)!.translate('source_details')}',
+    //     'value': lead.source?.name ?? ''
+    //   },
+    //   {'label': 'WhatsApp:', 'value': lead.whatsApp ?? ''},
+    //   {'label': 'Instagram:', 'value': lead.instagram ?? ''},
+    //   {'label': 'Facebook:', 'value': lead.facebook ?? ''},
+    //   {'label': 'Telegram:', 'value': lead.telegram ?? ''},
+    //   {
+    //     'label': '${AppLocalizations.of(context)!.translate('email_details')}',
+    //     'value': lead.email ?? ''
+    //   },
+    //   if (lead.phone_verified_at != null)
+    //     {
+    //       'label': '${AppLocalizations.of(context)!.translate('birthday_details')}',
+    //       'value': formatDate(lead.birthday)
+    //     },
+    //   if (lead.phone_verified_at != null)
+    //     {
+    //       'label': '${AppLocalizations.of(context)!.translate('price_type_details')}',
+    //       'value': lead.priceType?.name ?? ''
+    //     },
+    //   {
+    //     'label':
+    //     '${AppLocalizations.of(context)!.translate('description_details_lead')}',
+    //     'value': lead.description ?? ''
+    //   },
+    //   {
+    //     'label': '${AppLocalizations.of(context)!.translate('author_details')}',
+    //     'value': lead.author?.name ?? ''
+    //   },
+    //   {
+    //     'label': '${AppLocalizations.of(context)!.translate('sales_funnel_details')}',
+    //     'value': lead.salesFunnel?.name ?? ''
+    //   },
+    //   {
+    //     'label':
+    //     '${AppLocalizations.of(context)!.translate('created_at_details')}',
+    //     'value': formatDate(lead.createdAt)
+    //   },
+    //   {
+    //     'label': '${AppLocalizations.of(context)!.translate('status_details')}',
+    //     'value': lead.leadStatus?.title ?? ''
+    //   },
+    //   if (lead.files != null && lead.files!.isNotEmpty)
+    //     {
+    //       'label': AppLocalizations.of(context)!.translate('files_details'),
+    //       'value':
+    //       '${lead.files!.length} ${AppLocalizations.of(context)!.translate('files')}'
+    //     },
+    // ];
+    // for (var field in lead.leadCustomFields) {
+    //   details.add({'label': '${field.key}:', 'value': field.value});
+    // }
+    // for (var dirValue in lead.directoryValues) {
+    //   if (dirValue.entry != null) {
+    //     final directoryName = dirValue.entry!.directory.name;
+    //
+    //     // Проходим по всем полям в values
+    //     for (var fieldValue in dirValue.entry!.values) {
+    //       details.add({
+    //         'label': '$directoryName',
+    //         'value': fieldValue.value
+    //       });
+    //     }
+    //   }
+    // }
+  // }
 
-        // Проходим по всем полям в values
-        for (var fieldValue in dirValue.entry!.values) {
-          details.add({
-            'label': '$directoryName',
-            'value': fieldValue.value
-          });
+
+  String _getFieldName(FieldConfiguration fc) {
+    if (fc.isCustomField || fc.isDirectory) {
+      return '${fc.fieldName}:';
+    }
+
+    switch (fc.fieldName) {
+      case 'name':
+        return AppLocalizations.of(context)!.translate('lead_name');
+      case 'phone':
+        return AppLocalizations.of(context)!.translate('phone_use');
+      case 'manager_id':
+        return AppLocalizations.of(context)!.translate('manager_details');
+      case 'region_id':
+        return AppLocalizations.of(context)!.translate('region_details');
+      case 'source_id':
+        return AppLocalizations.of(context)!.translate('source_details');
+      case 'whatsapp':
+        return 'WhatsApp:';
+      case 'instagram':
+        return 'Instagram:';
+      case 'facebook':
+        return 'Facebook:';
+      case 'telegram':
+        return 'Telegram:';
+      case 'email':
+        return AppLocalizations.of(context)!.translate('email_details');
+      case 'birthday':
+        return AppLocalizations.of(context)!.translate('birthday_details');
+      case 'price_type':
+        return AppLocalizations.of(context)!.translate('price_type_details');
+      case 'description':
+        return AppLocalizations.of(context)!.translate('description_details_lead');
+      case 'author':
+        return AppLocalizations.of(context)!.translate('author_details');
+      case 'sales_funnel':
+        return AppLocalizations.of(context)!.translate('sales_funnel_details');
+      case 'created_at':
+        return AppLocalizations.of(context)!.translate('created_at_details');
+      case 'status':
+        return AppLocalizations.of(context)!.translate('status_details');
+      case 'files':
+        return AppLocalizations.of(context)!.translate('files_details');
+      default:
+        return '${fc.fieldName}:';
+    }
+  }
+
+  String _getFieldValue(FieldConfiguration fc, LeadById lead) {
+    if (fc.isCustomField && fc.customFieldId != null) {
+      for (final field in lead.leadCustomFieldValues) {
+        if (field.customFieldId == fc.customFieldId) {
+          if (field.value.isNotEmpty) {
+            return field.value;
+          }
+          break;
         }
       }
+
+      for (final field in lead.leadCustomFieldValues) {
+        if (field.id == fc.customFieldId) {
+          if (field.value.isNotEmpty) {
+            return field.value;
+          }
+          break;
+        }
+      }
+      return '';
+    }
+
+    if (fc.isDirectory && fc.directoryId != null) {
+      for (var dirValue in lead.directoryValues) {
+        if (dirValue.entry != null && dirValue.entry!.directory.id == fc.directoryId) {
+
+          List<String> values = [];
+          for (var fieldValue in dirValue.entry!.values) {
+            if (fieldValue.value.isNotEmpty) {
+              values.add(fieldValue.value);
+            }
+          }
+
+          if (values.isNotEmpty) {
+            return values.join(', ');
+          }
+        }
+      }
+      return '';
+    }
+
+    switch (fc.fieldName) {
+      case 'name':
+        return lead.name;
+
+      case 'phone':
+        return lead.phone ?? '';
+
+      case 'manager_id':
+        if (lead.manager != null) {
+          return '${lead.manager!.name} ${lead.manager!.lastname ?? ''}';
+        }
+        return 'become_manager';
+
+      case 'region_id':
+        return lead.region?.name ?? '';
+
+      case 'source_id':
+        return lead.source?.name ?? '';
+
+      case 'whatsapp':
+        return lead.whatsApp ?? '';
+
+      case 'instagram':
+        return lead.instagram ?? '';
+
+      case 'facebook':
+        return lead.facebook ?? '';
+
+      case 'telegram':
+        return lead.telegram ?? '';
+
+      case 'email':
+        return lead.email ?? '';
+
+      case 'birthday':
+      // Only show birthday if phone is verified
+        if (lead.phone_verified_at != null) {
+          return formatDate(lead.birthday);
+        }
+        return '';
+
+      case 'price_type':
+      // Only show price type if phone is verified
+        if (lead.phone_verified_at != null) {
+          return lead.priceType?.name ?? '';
+        }
+        return '';
+
+      case 'description':
+        return lead.description ?? '';
+
+      case 'author':
+        return lead.author?.name ?? '';
+
+      case 'sales_funnel':
+        return lead.salesFunnel?.name ?? '';
+
+      case 'created_at':
+        return formatDate(lead.createdAt);
+
+      case 'status':
+        return lead.leadStatus?.title ?? '';
+
+      case 'files':
+        if (lead.files != null && lead.files!.isNotEmpty) {
+          return '${lead.files!.length} ${AppLocalizations.of(context)!.translate('files')}';
+        }
+        return '';
+
+      default:
+        return '';
+    }
+  }
+
+  void _updateDetails(LeadById lead) {
+    currentLead = lead;
+    details.clear();
+
+    if (!_isConfigurationLoaded) {
+      return;
+    }
+
+    debugPrint("Lead custom fields:");
+    for (var field in lead.leadCustomFieldValues) {
+      debugPrint("Custom Field - ID: ${field.id}, Value: ${field.value}");
+    }
+
+    for (var fc in _fieldConfiguration) {
+      debugPrint("Processing field: ${fc.fieldName}");
+      final fieldValue = _getFieldValue(fc, lead);
+
+      final fieldName = _getFieldName(fc);
+      debugPrint("Adding field: $fieldName with value: $fieldValue");
+
+      details.add({
+        'label': fieldName,
+        'value': fieldValue,
+      });
     }
   }
 
@@ -862,9 +1053,9 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                             whatsApp: currentLead!.whatsApp,
                             email: currentLead!.email,
                             description: currentLead!.description,
-                            leadCustomFields: currentLead!.leadCustomFields,
+                            leadCustomFieldValues: currentLead!.leadCustomFieldValues,
                             directoryValues: currentLead!.directoryValues,
-                            files: currentLead!.files,
+                            existedFiles: currentLead!.files,
                             // phoneVerifiedAt: currentLead!.phone_verified_at,
                             // verificationCode: currentLead!.verification_code,
                             priceTypeId: currentLead!.priceType?.id.toString(),
@@ -1146,6 +1337,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         ],
       );
     }
+
     if (label == 'WhatsApp:') {
       return GestureDetector(
         onTap: () => _openWhatsApp(value),
@@ -1162,58 +1354,42 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       );
     }
 
-    if (label == '' && value == 'become_manager') {
-      return Padding(
-        padding: EdgeInsets.only(left: 0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            Text(
-              '${AppLocalizations.of(context)!.translate('manager_details')}  ',
-              style: TextStyle(
-                fontSize: 16,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w400,
-                color: Color(0xff99A4BA),
+    if (value == 'become_manager') {
+      return GestureDetector(
+        onTap: () {
+          _assignManager();
+        },
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+          decoration: BoxDecoration(
+            color: Color(0xff1E2E52),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.person_add_alt_1,
+                color: Colors.white,
+                size: 20,
               ),
-            ),
-            GestureDetector(
-              onTap: () {
-                _assignManager();
-              },
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 5, vertical: 5),
-                decoration: BoxDecoration(
-                  color: Color(0xff1E2E52),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.person_add_alt_1,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                    SizedBox(width: 12),
-                    Text(
-                      AppLocalizations.of(context)!.translate('become_manager'),
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
+              SizedBox(width: 12),
+              Text(
+                AppLocalizations.of(context)!.translate('become_manager'),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       );
     }
+
     return Text(
       value,
       style: TextStyle(
@@ -1290,6 +1466,29 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     setState(() {
       selectedOrganization = prefs.getString('selectedOrganization');
     });
+  }
+
+  Future<void> _loadFieldConfiguration() async {
+    try {
+      final response = await _apiService.getFieldPositions(tableName: 'leads');
+      if (!mounted) return;
+
+      // Фильтруем только активные поля и сортируем по position
+      final activeFields = response.result.where((field) => field.isActive).toList()
+        ..sort((a, b) => a.position.compareTo(b.position));
+
+      setState(() {
+        _fieldConfiguration = activeFields;
+        _isConfigurationLoaded = true;
+      });
+    } catch (e) {
+      // В случае ошибки показываем поля в стандартном порядке
+      if (mounted) {
+        setState(() {
+          _isConfigurationLoaded = true;
+        });
+      }
+    }
   }
 
   Future<void> _makePhoneCall(String phoneNumber) async {
@@ -1434,7 +1633,9 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         managerId: parsedUserId,
         leadStatusId: currentLead?.leadStatus?.id ?? 0,
         localizations: localizations,
-        existingFiles: currentLead!.files ?? [], customFields: [], directoryValues: [], isSystemManager: false, filePaths: [],
+        // existingFiles: currentLead!.files ?? [],
+        customFields: [], directoryValues: [], isSystemManager: false,
+        // filePaths: [],
       ));
 
       await completer.future;

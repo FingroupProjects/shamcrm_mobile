@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/models/dealById_model.dart';
+import 'package:crm_task_manager/models/file_helper.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
 abstract class DealEvent {}
@@ -90,7 +91,7 @@ class CreateDeal extends DealEvent {
   final int? leadId;
     final List<Map<String, dynamic>>? customFields; // Изменяем тип
   final List<Map<String, int>>? directoryValues;
-  final List<String>? filePaths; // Новое поле для файлов
+  final List<FileHelper>? files; // Новое поле для файлов
   final AppLocalizations localizations;
 
   CreateDeal({
@@ -105,7 +106,7 @@ class CreateDeal extends DealEvent {
     this.leadId,
     this.customFields,
     this.directoryValues,
-    this.filePaths, // Добавляем в конструктор
+    this.files, // Добавляем в конструктор
     required this.localizations,
   });
 }

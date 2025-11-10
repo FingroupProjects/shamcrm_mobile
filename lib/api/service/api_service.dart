@@ -6,6 +6,7 @@ import 'package:crm_task_manager/models/LeadStatusForFilter.dart';
 import 'package:crm_task_manager/models/api_exception_model.dart';
 import 'package:crm_task_manager/models/author_data_response.dart';
 import 'package:crm_task_manager/models/calendar_model.dart';
+import 'package:crm_task_manager/models/file_helper.dart';
 import 'package:crm_task_manager/models/money/add_cash_desk_model.dart';
 import 'package:crm_task_manager/models/money/cash_register_model.dart';
 import 'package:crm_task_manager/models/money/expense_model.dart';
@@ -127,6 +128,7 @@ import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/models/user_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_dropdown_bottom_dialog.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_dropdown_bottom_dialog.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_edit_screen.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_dropdown_bottom_dialog.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_dropdown_bottom_dialog.dart';
@@ -1892,10 +1894,7 @@ class ApiService {
   }
 
 // Обновленный метод createLead
-  Future<Map<String, dynamic>> createLeadWithData(
-      Map<String, dynamic> data, {
-        List<String>? filePaths,
-      }) async {
+  Future<Map<String, dynamic>> createLeadWithData(Map<String, dynamic> data) async {
     // Формируем путь с query-параметрами
     final updatedPath = await _appendQueryParams('/lead');
     if (kDebugMode) {
@@ -1950,12 +1949,22 @@ class ApiService {
             directoryValues[i]['entry_id'].toString();
       }
     }
-
+    if (kDebugMode) 
+      // print("createLeadWithData: data['files']: ${data['files']}");
     // Добавляем файлы
-    if (filePaths != null && filePaths.isNotEmpty) {
-      for (var filePath in filePaths) {
-        final file = await http.MultipartFile.fromPath('files[]', filePath);
-        request.files.add(file);
+    if (data['files'] != null && (data['files'] as List).isNotEmpty) {
+      final filesList = data['files'] as List<FileHelper>;
+      for (var fileData in filesList) {
+        try {
+          final file = await http.MultipartFile.fromPath(
+            'files[]',
+            fileData.path,
+            filename: fileData.name,
+          );
+          request.files.add(file);
+        } catch (e) {
+          debugPrint("Error adding file ${fileData.name}: $e");
+        }
       }
     }
 
@@ -2119,7 +2128,6 @@ class ApiService {
   Future<Map<String, dynamic>> updateLeadWithData({
     required int leadId,
     required Map<String, dynamic> data,
-    List<String>? filePaths,
   }) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/lead/$leadId');
@@ -2174,9 +2182,30 @@ class ApiService {
       request.fields['price_type_id'] =
           data['price_type_id'].toString(); // Добавляем price_type_id
     }
-    if (data['existing_file_ids'] != null) {
-      request.fields['existing_files'] = jsonEncode(data['existing_file_ids']);
+
+    if (data['files'] != null && (data['files'] as List).isNotEmpty) {
+      final filesList = data['files'] as List<FileHelper>;
+      for (var fileData in filesList) {
+        try {
+          if (fileData.path.startsWith('http')) {
+            // If it's a URL, you need to download it first or send as URL
+            // For now, skip URLs
+            debugPrint("Skipping URL file: ${fileData.path}");
+            continue;
+          }
+
+          final file = await http.MultipartFile.fromPath(
+            'files[]',
+            fileData.path,
+            filename: fileData.name,
+          );
+          request.files.add(file);
+        } catch (e) {
+          debugPrint("Error adding file ${fileData.name}: $e");
+        }
+      }
     }
+
     // Добавляем sales_funnel_id из данных, если он присутствует
     if (data['sales_funnel_id'] != null) {
       request.fields['sales_funnel_id'] = data['sales_funnel_id'].toString();
@@ -2208,13 +2237,6 @@ class ApiService {
             value['directory_id'].toString();
         request.fields['directory_values[$i][entry_id]'] =
             value['entry_id'].toString();
-      }
-    }
-
-    if (filePaths != null && filePaths.isNotEmpty) {
-      for (var filePath in filePaths) {
-        final file = await http.MultipartFile.fromPath('files[]', filePath);
-        request.files.add(file);
       }
     }
 
@@ -3340,7 +3362,7 @@ class ApiService {
     int? leadId,
     List<Map<String, dynamic>>? customFields,
     List<Map<String, int>>? directoryValues,
-    List<String>? filePaths,
+    List<FileHelper>? files,
   }) async {
     try {
       // Формируем путь с query-параметрами
@@ -3397,10 +3419,18 @@ class ApiService {
         }
       }
 
-      if (filePaths != null && filePaths.isNotEmpty) {
-        for (var filePath in filePaths) {
-          final file = await http.MultipartFile.fromPath('files[]', filePath);
-          request.files.add(file);
+      if (files != null && files.isNotEmpty) {
+        for (var fileData in files) {
+          try {
+            final file = await http.MultipartFile.fromPath(
+              'files[]',
+              fileData.path,
+              filename: fileData.name,
+            );
+            request.files.add(file);
+          } catch (e) {
+            debugPrint("Error adding file ${fileData.name}: $e");
+          }
         }
       }
 
@@ -3464,14 +3494,17 @@ class ApiService {
     request.fields['name'] = name;
     request.fields['deal_status_id'] = dealStatusId.toString();
     if (managerId != null) request.fields['manager_id'] = managerId.toString();
-    if (startDate != null)
+    if (startDate != null) {
       request.fields['start_date'] = DateFormat('yyyy-MM-dd').format(startDate);
-    if (endDate != null)
+    }
+    if (endDate != null) {
       request.fields['end_date'] = DateFormat('yyyy-MM-dd').format(endDate);
+    }
     if (sum.isNotEmpty) request.fields['sum'] = sum;
     if (description != null) request.fields['description'] = description;
-    if (dealtypeId != null)
+    if (dealtypeId != null) {
       request.fields['deal_type_id'] = dealtypeId.toString();
+    }
     if (leadId != null) request.fields['lead_id'] = leadId.toString();
     // ✅ НОВОЕ: Отправляем массив статусов
     if (dealStatusIds != null && dealStatusIds.isNotEmpty) {
@@ -8169,8 +8202,9 @@ class ApiService {
     if (title != null) request.fields['title'] = title;
     request.fields['body'] = body;
     request.fields['lead_id'] = leadId.toString();
-    if (date != null)
+    if (date != null) {
       request.fields['date'] = DateFormat('yyyy-MM-dd HH:mm').format(date);
+    }
     request.fields['send_notification'] = sendNotification.toString();
 
     // Добавляем пользователей

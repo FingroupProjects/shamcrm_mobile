@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/screens/lead/lead_cache.dart';
+import 'package:flutter/cupertino.dart' show debugPrint;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'lead_event.dart';
 import 'lead_state.dart';
@@ -411,10 +412,10 @@ Future<void> _createLead(CreateLead event, Emitter<LeadState> emit) async {
     if (event.birthday != null) requestData['birthday'] = event.birthday!.toIso8601String();
     if (event.email != null) requestData['email'] = event.email;
     if (event.description != null) requestData['description'] = event.description;
+    if (event.files != null) requestData['files'] = event.files;
 
     final result = await apiService.createLeadWithData(
       requestData,
-      filePaths: event.filePaths,
     );
 
     if (result['success']) {
@@ -443,7 +444,9 @@ Future<void> _updateLead(UpdateLead event, Emitter<LeadState> emit) async {
     return;
   }
 
-  try {
+  debugPrint("files: ${event.files}");
+
+  // try {
     final Map<String, dynamic> requestData = {
       'name': event.name,
       'lead_status_id': event.leadStatusId,
@@ -459,10 +462,10 @@ Future<void> _updateLead(UpdateLead event, Emitter<LeadState> emit) async {
       if (event.waPhone != null) 'wa_phone': event.waPhone,
       if (event.priceTypeId != null) 'price_type_id': event.priceTypeId, // Добавляем price_type_id
             if (event.salesFunnelId != null) 'sales_funnel_id': event.salesFunnelId, // ДОБАВЛЕННАЯ СТРОКА
-if (event.duplicate != null) 'duplicate': event.duplicate, // Добавляем duplicate
+      if (event.duplicate != null) 'duplicate': event.duplicate, // Добавляем duplicate
       'lead_custom_fields': event.customFields ?? [],
       'directory_values': event.directoryValues ?? [],
-      'existing_file_ids': event.existingFiles.map((file) => file.id).toList(),
+      if (event.files != null) 'files': event.files
     };
 
     if (event.isSystemManager) {
@@ -474,7 +477,6 @@ if (event.duplicate != null) 'duplicate': event.duplicate, // Добавляем
     final result = await apiService.updateLeadWithData(
       leadId: event.leadId,
       data: requestData,
-      filePaths: event.filePaths,
     );
 
     if (result['success']) {
@@ -482,9 +484,9 @@ if (event.duplicate != null) 'duplicate': event.duplicate, // Добавляем
     } else {
       emit(LeadError(result['message']));
     }
-  } catch (e) {
-    emit(LeadError(event.localizations.translate('error_update_lead')));
-  }
+  // } catch (e) {
+  //   emit(LeadError(event.localizations.translate('error_update_lead')));
+  // }
 }
 
   Future<void> _createLeadStatus(
