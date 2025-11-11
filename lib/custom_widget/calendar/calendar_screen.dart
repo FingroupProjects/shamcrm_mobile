@@ -163,7 +163,7 @@ void _changeView(String view) {
             taskStatus: '',
             statusId: 1,
             taskNumber: 0,
-            taskCustomFields: [],
+            customFields: [],
             initialDate: _selectedDate,
           ),
         ),

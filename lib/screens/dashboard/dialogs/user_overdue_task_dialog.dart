@@ -236,7 +236,7 @@ class _UserOverdueTasksDialogState extends State<UserOverdueTasksDialog> {
               taskId: (task.id ?? 0).toString(),
               taskName: task.name ?? '',
               taskStatus: task.taskStatus?.name ?? '',
-              taskCustomFields: [],
+              customFields: [],
             ),
           ),
         );

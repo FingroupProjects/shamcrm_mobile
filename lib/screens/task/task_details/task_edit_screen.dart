@@ -52,7 +52,7 @@ class TaskEditScreen extends StatefulWidget {
   final String? createdAt;
   final String? description;
   final int? priority;
-  final List<TaskCustomFieldsById> taskCustomFields;
+  final List<CustomFieldsById> taskCustomFields;
   final List<TaskFiles>? files;
   final List<DirectoryValues>? directoryValues;
 
@@ -1464,7 +1464,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
             print('Task: Configuration loaded with ${configState.fields.length} fields');
           }
 
-          setState(() {
+          // setState(() {
             fieldConfigurations = configState.fields;
             isConfigurationLoaded = true;
 
@@ -1520,7 +1520,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                 }
               }
             }
-          });
+          // });
         } else if (configState is FieldConfigurationError) {
             if (kDebugMode) {
               print('Task: Configuration error: ${configState.message}');

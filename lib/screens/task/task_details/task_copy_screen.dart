@@ -126,8 +126,8 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
         selectedUsers = task.user?.map((user) => user.id.toString()).toList();
       }
 
-      if (task.taskCustomFields.isNotEmpty) {
-        customFields.addAll(task.taskCustomFields.map((field) => CustomField(
+      if (task.customFields.isNotEmpty) {
+        customFields.addAll(task.customFields.map((field) => CustomField(
               fieldName: field.name,
               controller: TextEditingController(text: field.value),
               uniqueId: Uuid().v4(),

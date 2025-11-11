@@ -152,7 +152,7 @@ class _TaskByIdScreenState extends State<TaskByIdScreen> {
                   taskName: task.name,
                   taskStatus: task.taskStatus?.taskStatus?.name ?? '',
                   statusId: task.taskStatus?.id ?? 0,
-                  taskCustomFields: [],
+                  customFields: [],
                 ),
               ),
             );

@@ -218,7 +218,7 @@ class _TaskCardState extends State<TaskCard> {
                 description: widget.task.description, // Описание задачи
                 project: widget.task.project?.name ?? widget.project ??
                     AppLocalizations.of(context)!.translate('no_project'),
-                taskCustomFields: widget.task.taskCustomFields,
+                customFields: widget.task.customFields,
               ),
             ),
           );

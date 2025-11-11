@@ -19,7 +19,8 @@ class TaskById {
   final int priority;
   final ChatById? chat;
   final AuthorTask? author;
-  final List<TaskCustomFieldsById> taskCustomFields;
+  // final List<TaskCustomFieldsById> taskCustomFields;
+  final List<CustomFieldsById> customFields;
   final String? taskFile;
   final int isFinished;
   final List<TaskFiles>? files;
@@ -42,7 +43,7 @@ class TaskById {
     required this.priority,
     this.chat,
     this.author,
-    required this.taskCustomFields,
+    required this.customFields,
     this.taskFile,
     this.files,
     required this.isFinished,
@@ -97,8 +98,8 @@ class TaskById {
       author: json['author'] != null && json['author'] is Map<String, dynamic>
           ? AuthorTask.fromJson(json['author'])
           : null,
-      taskCustomFields: (json['custom_fields'] as List<dynamic>?)
-              ?.map((field) => TaskCustomFieldsById.fromJson(field))
+      customFields: (json['custom_fields'] as List<dynamic>?)
+              ?.map((field) => CustomFieldsById.fromJson(field))
               .toList() ??
           [],
       isFinished: json['is_finished'] is int ? json['is_finished'] : 0,
@@ -148,24 +149,25 @@ class TaskFiles {
   }
 }
 
-class TaskCustomFieldsById {
+class CustomFieldsById {
   final int id;
   final String name;
   final String value;
   final String type;
 
-  TaskCustomFieldsById({
+  CustomFieldsById({
     required this.id,
     required this.name,
     required this.value,
     required this.type,
   });
 
-  factory TaskCustomFieldsById.fromJson(Map<String, dynamic> json) {
-    return TaskCustomFieldsById(
-      id: json['id'] ?? 0,
+  factory CustomFieldsById.fromJson(Map<String, dynamic> json) {
+    return CustomFieldsById(
+      id: json['field_id'] ?? 0,
       name: json['name'] ?? '',
-      value: json['value'] ?? '', type: '',
+      value: json['value'] ?? '',
+      type: json['type'] ?? '',
     );
   }
 }
