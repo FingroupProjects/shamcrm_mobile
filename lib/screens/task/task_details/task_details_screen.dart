@@ -45,7 +45,7 @@ class TaskDetailsScreen extends StatefulWidget {
   final String? endDate;
   final String? sum;
   final int? priority;
-  final List<TaskCustomField> taskCustomFields;
+  final List<CustomFields> customFields;
   final String? taskFile;
   final List<TaskFiles>? files;
   final DateTime? initialDate;
@@ -65,7 +65,7 @@ class TaskDetailsScreen extends StatefulWidget {
     this.sum,
     this.files,
     this.priority,
-    required this.taskCustomFields,
+    required this.customFields,
     this.taskFile,
     this.initialDate,
   });
@@ -495,6 +495,13 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   // }
 
   void _updateDetails(TaskById? task) {
+
+    debugPrint("Custom Fields");
+    debugPrint("${task?.customFields.map((e) => e.name).toList()}");
+    debugPrint("${task?.customFields.map((e) => e.id).toList()}");
+    debugPrint("${task?.customFields.map((e) => e.value).toList()}");
+    debugPrint("${task?.customFields.map((e) => e.type).toList()}");
+
     currentTask = task;
     details.clear();
 
@@ -524,7 +531,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       case 'name':          return AppLocalizations.of(context)!.translate('task_name');
       case 'priority':      return AppLocalizations.of(context)!.translate('priority_level_colon');
       case 'description':   return AppLocalizations.of(context)!.translate('description_details');
-      case 'user':          return AppLocalizations.of(context)!.translate('assignee');
+      case 'executor':          return AppLocalizations.of(context)!.translate('assignee');
       case 'project':       return AppLocalizations.of(context)!.translate('project_details');
       case 'endDate':       return AppLocalizations.of(context)!.translate('dead_line');
       case 'taskStatus':    return AppLocalizations.of(context)!.translate('status_details');
@@ -538,7 +545,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
   String _getFieldValue(FieldConfiguration fc, TaskById task) {
     if (fc.isCustomField && fc.customFieldId != null) {
-      for (final field in task.taskCustomFields) {
+      for (final field in task.customFields) {
         if (field.id == fc.customFieldId) {
           if (field.value.isNotEmpty) {
             return field.value;
@@ -578,7 +585,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       case 'name':        return task.name ?? '';
       case 'priority':    return priorityLevels[task.priority] ?? AppLocalizations.of(context)!.translate('normal');
       case 'description': return task.description ?? '';
-      case 'user':
+      case 'executor':
         if (task.user == null || task.user!.isEmpty) return '';
         return task.user!.map((u) => '${u.name} ${u.lastname ?? ''}').join(', ');
       case 'project':     return task.project?.name ?? '';
@@ -716,7 +723,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                           startDate: currentTask!.startDate,
                           endDate: currentTask!.endDate,
                           createdAt: createdAtString,
-                          taskCustomFields: currentTask!.taskCustomFields,
+                          taskCustomFields: currentTask!.customFields,
                           files: currentTask!.files,
                           directoryValues: currentTask!.directoryValues,
                         ),
@@ -977,7 +984,6 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                   dealStatus: "",
                   statusId: 0,
                   sum: '',
-                  dealCustomFields: [],
                 ),
               ),
             );
@@ -1072,13 +1078,13 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
               SizedBox(
                 height: 400,
                 child: ListView.builder(
-                  itemExtent: 40,
+                  itemExtent: 56,
                   itemCount: userList.length,
                   itemBuilder: (context, index) {
                     return ListTile(
                       contentPadding: EdgeInsets.symmetric(
                           horizontal: 16,
-                          vertical: 2),
+                          vertical: 0),
                       title: Text(
                         '${index + 1}. ${userList[index]}',
                         style: TextStyle(

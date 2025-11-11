@@ -412,7 +412,7 @@ Future<void> _createLead(CreateLead event, Emitter<LeadState> emit) async {
     if (event.birthday != null) requestData['birthday'] = event.birthday!.toIso8601String();
     if (event.email != null) requestData['email'] = event.email;
     if (event.description != null) requestData['description'] = event.description;
-    if (event.files != null) requestData['files'] = event.files;
+    if (event.files != null && event.files!.isNotEmpty) requestData['files'] = event.files;
 
     final result = await apiService.createLeadWithData(
       requestData,

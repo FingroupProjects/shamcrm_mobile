@@ -16454,6 +16454,65 @@ class ApiService {
       );
     }
   }
+  //  ================================= TASK CUSTOM FIELDS ================================
+
+  Future<List<String>> getTaskCustomFields() async {
+    final path = await _appendQueryParams('/field-position?table=tasks');
+
+    if (kDebugMode) {
+      print('ApiService: getTaskCustomFields - Generated path: $path');
+    }
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final resultList = data['result'] as List<dynamic>?;
+      final ls = resultList
+          ?.where((e) => e['is_custom_field'] == true)
+          .map((e) => e['field_name'] as String)
+          .toList()
+          ?? <String>[];
+
+      if (kDebugMode) {
+        print('ApiService: getTaskCustomFields - Response status: ${response.statusCode}');
+        print('ApiService: getTaskCustomFields - Response ls: $ls');
+      }
+
+      return ls;
+    } else {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка загрузки пользовательских полей задач',
+        response.statusCode,
+      );
+    }
+  }
+
+  // GET custom field values by key (we get key from getLeadCustomFields)
+  // lead/get/custom-field-values?key=aa&organization_id=1&sales_funnel_id=1
+  // response.result is list of strings
+  Future<List<String>> getTaskCustomFieldValues(String key) async {
+    final path = await _appendQueryParams('/task/get/custom-field-values?key=$key');
+    if (kDebugMode) {
+      print('ApiService: getTaskCustomFieldValues - Generated path: $path');
+    }
+    final response = await _getRequest(path);
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final resultList = data['result'] as List?;
+      if (resultList == null) {
+        return [];
+      }
+      return resultList.map((value) => value.toString()).toList();
+    } else {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка загрузки значений пользовательского поля задач',
+          response.statusCode,
+        );
+      }
+    }
 
 // _______________________________END SECTION FOR FIELD CONFIGURATION _______________________________
 

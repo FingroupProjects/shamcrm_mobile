@@ -412,7 +412,7 @@ class FirebaseApi {
               taskStatus: '',
               statusId: 1,
               taskNumber: taskNumber,
-              taskCustomFields: [],
+              customFields: [],
             ),
           ),
         );
@@ -494,10 +494,6 @@ class FirebaseApi {
               sum: '',
               dealStatus: '',
               statusId: 1,
-              dealCustomFields: [
-                DealCustomField(id: 1, key: '', value: ''),
-                DealCustomField(id: 2, key: '', value: '')
-              ],
             ),
           ),
         );

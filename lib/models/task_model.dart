@@ -19,8 +19,9 @@ class Task {
   final List<UserTaskImage>? usersImage;
   final TaskFile? file;
   final int priority;
-  final List<TaskCustomField> taskCustomFields;
+  // final List<TaskCustomField> taskCustomFields;
   final int? overdue;
+  final List<CustomFields> customFields;
 
   Task({
     required this.id,
@@ -37,7 +38,8 @@ class Task {
     this.user,
     this.file,
     required this.priority,
-    required this.taskCustomFields,
+    // required this.taskCustomFields,
+    required this.customFields,
     this.overdue,
     this.deal,
   });
@@ -84,8 +86,12 @@ class Task {
                 ? TaskFile.fromJson(json['file'])
                 : TaskFile(name: json['file'].toString(), size: 'Неизвестно'))
             : null,
-        taskCustomFields: (json['task_custom_fields'] as List?)
-                ?.map((field) => TaskCustomField.fromJson(field))
+        // taskCustomFields: (json['task_custom_fields'] as List?)
+        //         ?.map((field) => TaskCustomField.fromJson(field))
+        //         .toList() ??
+        //     [],
+        customFields: (json['custom_fields'] as List?)
+                ?.map((field) => CustomFields.fromJson(field))
                 .toList() ??
             [],
       );
@@ -100,7 +106,7 @@ class Task {
         description: 'Ошибка при получении данных',
         statusId: taskStatusId,
         priority: 1,
-        taskCustomFields: [],
+        customFields: [],
       );
     }
   }
@@ -120,41 +126,40 @@ class Task {
       'users': usersImage?.map((e) => e.toJson()).toList(),
       'file': file?.toJson(),
       'priority_level': priority,
-      'task_custom_fields': taskCustomFields.map((e) => e.toJson()).toList(),
+      'custom_fields': customFields.map((e) => e.toJson()).toList(),
       'overdue': overdue,
     };
   }
 }
 
-class TaskCustomField {
-  final int id;
-  final String key;
+class CustomFields {
+  final String name;
   final String value;
+  final int fieldId;
+  final String? type;
 
-  TaskCustomField({
-    required this.id,
-    required this.key,
+  CustomFields({
+    required this.name,
     required this.value,
+    required this.fieldId,
+    this.type,
   });
 
-  factory TaskCustomField.fromJson(Map<String, dynamic> json) {
-    try {
-      return TaskCustomField(
-        id: json['id'] ?? 0,
-        key: json['key'] ?? '',
-        value: json['value'] ?? '',
+  factory CustomFields.fromJson(Map<String, dynamic> json) {
+      return CustomFields(
+        name: json['name'] is String ? json['name'] : '',
+        value: json['value'] is String ? json['value'] : '',
+        fieldId: json['field_id'] is int ? json['field_id'] : 0,
+        type: json['type'] is String ? json['type'] : null,
       );
-    } catch (e) {
-      //print('Error parsing TaskCustomField: $e');
-      return TaskCustomField(id: 0, key: 'Unknown', value: 'Unknown');
-    }
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
-      'key': key,
+      'name': name,
       'value': value,
+      'field_id': fieldId,
+      'type': type,
     };
   }
 }

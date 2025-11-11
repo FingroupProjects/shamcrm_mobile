@@ -39,7 +39,6 @@ class DealDetailsScreen extends StatefulWidget {
   final String? lead;
   final int? leadId;
   final String? description;
-  final List<DealCustomField> dealCustomFields;
 
   DealDetailsScreen({
     required this.dealId,
@@ -54,7 +53,6 @@ class DealDetailsScreen extends StatefulWidget {
     this.lead,
     this.leadId,
     this.description,
-    required this.dealCustomFields,
   });
 
   @override
@@ -451,7 +449,8 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
   String _getFieldValue(FieldConfiguration fc, DealById deal) {
     if (fc.isCustomField && fc.customFieldId != null) {
       for (final field in deal.customFieldValues) {
-        if (field.id == fc.customFieldId) {
+        if (field.customFieldId == fc.customFieldId) {
+          debugPrint("Matching custom field found: ${field.customField?.name} with value: ${field.value}");
           if (field.value.isNotEmpty) {
             return field.value;
           }
@@ -535,7 +534,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
 
     debugPrint("Deal custom fields:");
     for (var field in deal.customFieldValues) {
-      debugPrint("Custom Field - ID: ${field.id}, Value: ${field.value}");
+      debugPrint("Custom Field - name: ${field.customField?.name}, Value: ${field.value}");
     }
 
     for (var fc in _fieldConfiguration) {
