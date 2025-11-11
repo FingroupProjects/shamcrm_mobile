@@ -104,6 +104,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   Map<String, Widget> fieldWidgets = {};
   List<String> fieldOrder = [];
 
+  late MainFieldBloc _mainFieldBloc;
+
   // Режим настроек
   bool isSettingsMode = false;
   bool isSavingFieldOrder = false;
@@ -129,6 +131,13 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadFieldConfiguration();
     });
+    _mainFieldBloc = MainFieldBloc();
+  }
+
+  @override
+  void dispose() {
+    _mainFieldBloc.close();
+    super.dispose();
   }
 
   Future<void> _checkPermissions() async {
@@ -343,7 +352,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
       }
 
       // Отправка на бэкенд
-      await ApiService().updateFieldPositions(
+      await _apiService.updateFieldPositions(
         tableName: 'tasks',
         updates: updates,
       );
@@ -506,8 +515,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
           },
         );
 
-      case 'file':
-        return _buildFileSelection();
+      // case 'file':
+      //   return _buildFileSelection();
       default:
         return null;
     }
@@ -681,10 +690,10 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
         return;
       }
       try {
-        await ApiService().linkDirectory(
+        await _apiService.linkDirectory(
           directoryId: directoryId,
           modelType: 'task',
-          organizationId: ApiService().getSelectedOrganization().toString(),
+          organizationId: _apiService.getSelectedOrganization().toString(),
         );
 
         if (mounted) {
@@ -733,7 +742,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
 
     // Добавление пользовательского поля через API, затем локально
     try {
-      await ApiService().addNewField(
+      await _apiService.addNewField(
         tableName: 'tasks',
         fieldName: fieldName,
         fieldType: type ?? 'string',
@@ -896,6 +905,29 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
       },
     ) ??
         false;
+  }
+
+  bool _areFieldConfigurationsEqual(
+    List<FieldConfiguration> first,
+    List<FieldConfiguration> second,
+  ) {
+    if (identical(first, second)) return true;
+    if (first.length != second.length) return false;
+    for (var i = 0; i < first.length; i++) {
+      final a = first[i];
+      final b = second[i];
+      if (a.id != b.id ||
+          a.position != b.position ||
+          a.isActive != b.isActive ||
+          a.required != b.required ||
+          a.showOnTable != b.showOnTable ||
+          a.fieldName != b.fieldName ||
+          a.directoryId != b.directoryId ||
+          a.type != b.type) {
+        return false;
+      }
+    }
+    return true;
   }
 
   Widget _buildSettingsMode() {
@@ -1181,8 +1213,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
         return loc.translate('projects');
       case 'deadline':
         return loc.translate('deadline');
-      case 'file':
-        return loc.translate('file');
+      // case 'file':
+      //   return loc.translate('file');
       default:
         return config.fieldName;
     }
@@ -1439,8 +1471,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
           //   icon: Icon(Icons.refresh, color: Color(0xff1E2E52)),
           //   onPressed: () async {
           //     // Очищаем кэш и загружаем заново
-          //     await ApiService().clearFieldConfigurationCache();
-          //     await ApiService().loadAndCacheAllFieldConfigurations();
+          //     await _apiService.clearFieldConfigurationCache();
+          //     await _apiService.loadAndCacheAllFieldConfigurations();
           //
           //     // Перезагружаем конфигурацию
           //     context.read<FieldConfigurationBloc>().add(
@@ -1458,70 +1490,77 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
           // ),
         ],
       ),
-      body: BlocConsumer<FieldConfigurationBloc, FieldConfigurationState>(listener: (context, configState) {
-        if (configState is FieldConfigurationLoaded) {
-          if (kDebugMode) {
-            print('Task: Configuration loaded with ${configState.fields.length} fields');
+      body: BlocConsumer<FieldConfigurationBloc, FieldConfigurationState>(
+        listenWhen: (previous, current) {
+          if (previous is FieldConfigurationLoaded && current is FieldConfigurationLoaded) {
+            return !_areFieldConfigurationsEqual(previous.fields, current.fields);
           }
+          return true;
+        },
+        listener: (context, configState) {
+          if (configState is FieldConfigurationLoaded) {
+            if (kDebugMode) {
+              print('Task: Configuration loaded with ${configState.fields.length} fields');
+            }
 
-          // setState(() {
-            fieldConfigurations = configState.fields;
-            isConfigurationLoaded = true;
+            setState(() {
+              fieldConfigurations = configState.fields;
+              isConfigurationLoaded = true;
 
-            // ✅ ONLY initialize custom fields here, ONCE
-            // Check if already initialized to prevent duplicates
-            if (customFields.isEmpty) {
-              // Initialize custom fields from widget data
-              for (var customField in widget.taskCustomFields) {
-                if (kDebugMode) {
-                  print('Loading custom field: ${customField.name} with value: ${customField.value}');
+              // ✅ ONLY initialize custom fields here, ONCE
+              // Check if already initialized to prevent duplicates
+              if (customFields.isEmpty) {
+                // Initialize custom fields from widget data
+                for (var customField in widget.taskCustomFields) {
+                  if (kDebugMode) {
+                    print('Loading custom field: ${customField.name} with value: ${customField.value}');
+                  }
+
+                  final controller = TextEditingController(text: customField.value);
+                  customFields.add(CustomField(
+                    fieldName: customField.name,
+                    controller: controller,
+                    uniqueId: Uuid().v4(),
+                    type: customField.type,
+                    isCustomField: true,
+                  ));
                 }
 
-                final controller = TextEditingController(text: customField.value);
-                customFields.add(CustomField(
-                  fieldName: customField.name,
-                  controller: controller,
-                  uniqueId: Uuid().v4(),
-                  type: customField.type ?? 'string',
-                  isCustomField: true,
-                ));
-              }
+                // Initialize directory values from widget data
+                if (widget.directoryValues != null && widget.directoryValues!.isNotEmpty) {
+                  final seen = <String>{};
+                  final uniqueDirectoryValues = widget.directoryValues!.where((dirValue) {
+                    final key = '${dirValue.entry.directory.id}_${dirValue.entry.id}';
+                    return seen.add(key);
+                  }).toList();
 
-              // Initialize directory values from widget data
-              if (widget.directoryValues != null && widget.directoryValues!.isNotEmpty) {
-                final seen = <String>{};
-                final uniqueDirectoryValues = widget.directoryValues!.where((dirValue) {
-                  final key = '${dirValue.entry.directory.id}_${dirValue.entry.id}';
-                  return seen.add(key);
-                }).toList();
-
-                for (var dirValue in uniqueDirectoryValues) {
-                  // Check if already exists to prevent duplicates
-                  final exists = customFields.any((f) =>
-                  f.isDirectoryField &&
-                      f.directoryId == dirValue.entry.directory.id
-                  );
-
-                  if (!exists) {
-                    final controller = TextEditingController(
-                      text: (dirValue.entry.values.isNotEmpty
-                          ? dirValue.entry.values.first.value
-                          : ''),
+                  for (var dirValue in uniqueDirectoryValues) {
+                    // Check if already exists to prevent duplicates
+                    final exists = customFields.any((f) =>
+                        f.isDirectoryField &&
+                        f.directoryId == dirValue.entry.directory.id
                     );
-                    customFields.add(CustomField(
-                      fieldName: dirValue.entry.directory.name,
-                      controller: controller,
-                      isDirectoryField: true,
-                      directoryId: dirValue.entry.directory.id,
-                      entryId: dirValue.entry.id,
-                      uniqueId: Uuid().v4(),
-                    ));
+
+                    if (!exists) {
+                      final controller = TextEditingController(
+                        text: (dirValue.entry.values.isNotEmpty
+                            ? dirValue.entry.values.first.value
+                            : ''),
+                      );
+                      customFields.add(CustomField(
+                        fieldName: dirValue.entry.directory.name,
+                        controller: controller,
+                        isDirectoryField: true,
+                        directoryId: dirValue.entry.directory.id,
+                        entryId: dirValue.entry.id,
+                        uniqueId: Uuid().v4(),
+                      ));
+                    }
                   }
                 }
               }
-            }
-          // });
-        } else if (configState is FieldConfigurationError) {
+            });
+          } else if (configState is FieldConfigurationError) {
             if (kDebugMode) {
               print('Task: Configuration error: ${configState.message}');
             }
@@ -1540,7 +1579,14 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
               ),
             );
           }
-      }, builder: (context, configState) {
+        },
+        buildWhen: (previous, current) {
+          if (previous is FieldConfigurationLoaded && current is FieldConfigurationLoaded) {
+            return !_areFieldConfigurationsEqual(previous.fields, current.fields);
+          }
+          return previous.runtimeType != current.runtimeType;
+        },
+        builder: (context, configState) {
         if (kDebugMode) {
           print('TaskAddScreen: Building with state: ${configState.runtimeType}, isLoaded: $isConfigurationLoaded');
         }
@@ -1572,10 +1618,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
           return _buildSettingsMode();
         }
 
-        return MultiBlocProvider(
-          providers: [
-            BlocProvider(create: (context) => MainFieldBloc()),
-          ],
+        return BlocProvider.value(
+          value: _mainFieldBloc,
           child: BlocListener<TaskBloc, TaskState>(
             listener: (context, state) {
               if (state is TaskError) {
@@ -1661,6 +1705,11 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                 ],
                               );
                             }),
+
+                            // Всегда показываем выбор файлов внизу
+                            const SizedBox(height: 16),
+                            _buildFileSelection(),
+                            const SizedBox(height: 80), // Отступ внизу для кнопок
                           ],
                         ),
                       ),
