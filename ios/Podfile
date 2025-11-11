@@ -39,11 +39,10 @@ target 'Runner' do
   end
 end
 
-# ✅ ДОБАВЛЕНО: Widget Extension target
-target 'ShamCRMWidget' do
-  use_frameworks!
-  # НЕ добавляем flutter_install_all_ios_pods - виджет должен быть независимым
-end
+# ❌ ВРЕМЕННО ОТКЛЮЧЕНО: Раскомментируйте когда исправим проблему
+# target 'ShamCRMWidgetExtension' do
+#   use_frameworks!
+# end
 
 post_install do |installer|
   installer.pods_project.targets.each do |target|
@@ -53,10 +52,10 @@ post_install do |installer|
       # Устанавливаем минимальную версию iOS
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
       
-      # ✅ ВАЖНО: Skip Install для всех Pod targets кроме Widget
-      if target.name != 'ShamCRMWidget'
-        config.build_settings['SKIP_INSTALL'] = 'NO'
-      end
+      # ✅ Skip Install для Pod targets
+      # if target.name != 'ShamCRMWidgetExtension'
+      #   config.build_settings['SKIP_INSTALL'] = 'NO'
+      # end
       
       # Отключаем Bitcode
       config.build_settings['ENABLE_BITCODE'] = 'NO'
@@ -67,7 +66,7 @@ post_install do |installer|
         'PERMISSION_MICROPHONE=1',
       ]
       
-      # M1/M2 Mac fix (раскомментировано)
+      # M1/M2 Mac fix
       config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
     end
   end
