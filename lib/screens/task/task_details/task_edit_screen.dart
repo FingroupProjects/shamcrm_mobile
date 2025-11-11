@@ -1081,13 +1081,6 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                         ],
                       ),
                     ),
-                    // Закомментировано - красная кнопка удаления пока не нужна
-                    // Понадобится позже для удаления кастомных полей
-                    // SizedBox(width: 8),
-                    // IconButton(
-                    //   icon: Icon(Icons.remove_circle, color: Colors.red),
-                    //   onPressed: () {},
-                    // ),
                   ],
                 ),
               );
@@ -1199,6 +1192,17 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
     );
   }
 
+  // Получение типа поля для отображения
+  String _getFieldTypeLabel(FieldConfiguration config) {
+    if (config.isDirectory) {
+      return AppLocalizations.of(context)!.translate('directory');
+    } else if (config.isCustomField) {
+      return AppLocalizations.of(context)!.translate('custom_field');
+    } else {
+      return AppLocalizations.of(context)!.translate('system_field');
+    }
+  }
+
   // Получение отображаемого названия поля
   String _getFieldDisplayName(FieldConfiguration config) {
     final loc = AppLocalizations.of(context)!;
@@ -1217,17 +1221,6 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
       //   return loc.translate('file');
       default:
         return config.fieldName;
-    }
-  }
-
-  // Получение типа поля для отображения
-  String _getFieldTypeLabel(FieldConfiguration config) {
-    if (config.isDirectory) {
-      return AppLocalizations.of(context)!.translate('directory');
-    } else if (config.isCustomField) {
-      return AppLocalizations.of(context)!.translate('custom_field');
-    } else {
-      return AppLocalizations.of(context)!.translate('system_field');
     }
   }
 

@@ -814,30 +814,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                         ],
                       ),
                     ),
-                    if (config.required)
-                      Container(
-                        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Color(0xffFFE5E5),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          AppLocalizations.of(context)!.translate('required'),
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xffFF4757),
-                          ),
-                        ),
-                      ),
-                    // Закомментировано - красная кнопка удаления пока не нужна
-                    // Понадобится позже для удаления кастомных полей
-                    // SizedBox(width: 8),
-                    // IconButton(
-                    //   icon: Icon(Icons.remove_circle, color: Colors.red),
-                    //   onPressed: () {},
-                    // ),
                   ],
                 ),
               );

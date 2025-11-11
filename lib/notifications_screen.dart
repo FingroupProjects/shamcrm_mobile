@@ -495,7 +495,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             sum: '',
             dealStatus: '',
             statusId: 1,
-            dealCustomFields: defaultCustomFields,
           ),
         ),
       );

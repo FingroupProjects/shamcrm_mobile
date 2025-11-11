@@ -984,7 +984,6 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                   dealStatus: "",
                   statusId: 0,
                   sum: '',
-                  dealCustomFields: [],
                 ),
               ),
             );

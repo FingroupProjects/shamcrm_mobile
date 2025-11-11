@@ -256,7 +256,6 @@ class _DealsWidgetState extends State<DealsWidget> {
           sum: deal.sum?.toString() ?? '',
           dealStatus: '',
           statusId: 1,
-          dealCustomFields: defaultCustomFields,
         ),
       ),
     ).then((_) {
