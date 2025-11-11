@@ -570,6 +570,8 @@
   "nothing_task_for_manager": "Ko'rsatish uchun vazifalar yo'q",
   "status_updated_successfully": "Status muvaffaqiyatli yangilandi",
   "events": "Voqealar",
+  "history_dialog_event": "voqea",
+  "history_dialog_events": "voqealar",
   "title": "Mavzu:",
   "body": "Tavsif:",
   "Дата создание": "Yaratilgan sana:",

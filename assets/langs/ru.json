@@ -577,6 +577,8 @@
   "nothing_task_for_manager": "Нет задач для отображения",
   "status_updated_successfully": "Статус обновлен успешно",
   "events": "События",
+  "history_dialog_event": "событие",
+  "history_dialog_events": "события",
   "appbar_events": "События",
   "title": "Тематика:",
   "body": "Описание:",

@@ -6,6 +6,7 @@ import 'package:crm_task_manager/bloc/history_lead_notice_deal/history_lead_noti
 import 'package:crm_task_manager/models/lead_history_model.dart';
 import 'package:crm_task_manager/models/notice_history_model.dart';
 import 'package:crm_task_manager/models/deal_history_model.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -22,6 +23,7 @@ class _HistoryDialogState extends State<HistoryDialog> {
   int _selectedTab = 0;
   final Set<int> expandedNoticeIds = {};
   final Set<int> expandedDealIds = {};
+  int _noticeCount = 0;
 
   @override
   void initState() {
@@ -55,9 +57,9 @@ class _HistoryDialogState extends State<HistoryDialog> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Text(
-          'История',
-          style: TextStyle(
+        Text(
+          AppLocalizations.of(context)!.translate('history'),
+          style: const TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
@@ -73,18 +75,34 @@ class _HistoryDialogState extends State<HistoryDialog> {
   }
 
   Widget _buildTabs() {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFFF4F7FD),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          _buildTab('Лид', 0),
-          _buildTab('Заметки', 1),
-          _buildTab('Сделки', 2),
-        ],
-      ),
+    return BlocBuilder<HistoryLeadsBloc, HistoryState>(
+      builder: (context, state) {
+        if (state is NoticeHistoryLoaded) {
+          _noticeCount = state.history.fold(0, (sum, notice) => sum + notice.history.length);
+        }
+
+        final localizations = AppLocalizations.of(context)!;
+
+        final eventsTabTitle = _noticeCount == 1
+            ? '$_noticeCount ${localizations.translate('history_dialog_event')}'
+            : _noticeCount > 1
+                ? '$_noticeCount ${localizations.translate('history_dialog_events')}'
+                : localizations.translate('history_dialog_events');
+
+        return Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFF4F7FD),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            children: [
+              _buildTab(localizations.translate('tab_lead'), 0),
+              _buildTab(eventsTabTitle, 1),
+              _buildTab(localizations.translate('deals'), 2),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -156,10 +174,10 @@ class _HistoryDialogState extends State<HistoryDialog> {
   // MARK: - Лид
   Widget _buildLeadHistoryContent(List<LeadHistory> history) {
     if (history.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
-          'Нет данных для отображения',
-          style: TextStyle(fontSize: 14, fontFamily: 'Gilroy', fontWeight: FontWeight.w500, color: Color(0xff8F9BB3)),
+          AppLocalizations.of(context)!.translate('no_data_to_display'),
+          style: const TextStyle(fontSize: 14, fontFamily: 'Gilroy', fontWeight: FontWeight.w500, color: Color(0xff8F9BB3)),
         ),
       );
     }
@@ -192,7 +210,7 @@ class _HistoryDialogState extends State<HistoryDialog> {
                 Container(
                   constraints: const BoxConstraints(maxWidth: 150),
                   child: Text(
-                    '${item.user?.fullName ?? 'Система'} ${_formatDate(item.date)}',
+                    '${item.user?.fullName ?? AppLocalizations.of(context)!.translate('system_text')} ${_formatDate(item.date)}',
                     style: const TextStyle(fontSize: 14, fontFamily: 'Gilroy', fontWeight: FontWeight.w600, color: Color(0xFF1E2E52)),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 2,
@@ -208,10 +226,10 @@ class _HistoryDialogState extends State<HistoryDialog> {
     );
   }
 
-  // MARK: - Заметки
+  // MARK: - События
   Widget _buildNoticeHistoryContent(List<NoticeHistory> notices) {
     if (notices.isEmpty) {
-      return const Center(child: Text('Нет данных для отображения', style: TextStyle(fontSize: 14, fontFamily: 'Gilroy', fontWeight: FontWeight.w500, color: Color(0xff8F9BB3))));
+      return Center(child: Text(AppLocalizations.of(context)!.translate('no_data_to_display'), style: const TextStyle(fontSize: 14, fontFamily: 'Gilroy', fontWeight: FontWeight.w500, color: Color(0xff8F9BB3))));
     }
     return SingleChildScrollView(
       child: Column(
@@ -274,7 +292,7 @@ class _HistoryDialogState extends State<HistoryDialog> {
                 Container(
                   constraints: const BoxConstraints(maxWidth: 150),
                   child: Text(
-                    '${item.user?.fullName ?? 'Система'} ${_formatDate(item.date)}',
+                    '${item.user?.fullName ?? AppLocalizations.of(context)!.translate('system_text')} ${_formatDate(item.date)}',
                     style: const TextStyle(fontSize: 14, fontFamily: 'Gilroy', fontWeight: FontWeight.w600, color: Color(0xFF1E2E52)),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 2,
@@ -293,7 +311,7 @@ class _HistoryDialogState extends State<HistoryDialog> {
   // MARK: - Сделки
   Widget _buildDealHistoryContent(List<DealHistoryLead> deals) {
     if (deals.isEmpty) {
-      return const Center(child: Text('Нет данных для отображения', style: TextStyle(fontSize: 14, fontFamily: 'Gilroy', fontWeight: FontWeight.w500, color: Color(0xff8F9BB3))));
+      return Center(child: Text(AppLocalizations.of(context)!.translate('no_data_to_display'), style: const TextStyle(fontSize: 14, fontFamily: 'Gilroy', fontWeight: FontWeight.w500, color: Color(0xff8F9BB3))));
     }
     return SingleChildScrollView(
       child: Column(
@@ -356,7 +374,7 @@ class _HistoryDialogState extends State<HistoryDialog> {
                 Container(
                   constraints: const BoxConstraints(maxWidth: 150),
                   child: Text(
-                    '${item.user?.fullName ?? 'Система'} ${_formatDate(item.date)}',
+                    '${item.user?.fullName ?? AppLocalizations.of(context)!.translate('system_text')} ${_formatDate(item.date)}',
                     style: const TextStyle(fontSize: 14, fontFamily: 'Gilroy', fontWeight: FontWeight.w600, color: Color(0xFF1E2E52)),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 2,
@@ -377,11 +395,9 @@ class _HistoryDialogState extends State<HistoryDialog> {
     final List<Widget> widgets = [];
 
     for (final change in changesList) {
-      for (final MapEntry(:key, :value) in change.body.entries) {
-        if (value is! ChangeValue) continue;
-
-        final prev = value.previousValue ?? '';
-        final next = value.newValue ?? '';
+      for (final MapEntry(key: key, value: ChangeValue changeValue) in change.body.entries) {
+        final prev = changeValue.previousValue ?? '';
+        final next = changeValue.newValue ?? '';
         final prevText = prev.isEmpty ? '—' : prev;
         final nextText = next.isEmpty ? '—' : next;
 
@@ -431,6 +447,8 @@ class _HistoryDialogState extends State<HistoryDialog> {
     'body': 'Описание',
     'date': 'Напоминание',
     'notifications_sent': 'Уведомления',
+    'conclusion': 'Заключение',
+    'Send notification': 'Отправлены уведомления',
   };
 
   static const Map<String, String> _dealFieldNames = {
