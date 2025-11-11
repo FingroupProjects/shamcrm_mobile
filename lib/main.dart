@@ -665,7 +665,7 @@ class _MyAppState extends State<MyApp> {
             if (!widget.sessionValid) {
               WidgetsBinding.instance.addPostFrameCallback((_) async {
                 if (mounted) {
-                  await checkForNewVersion(context);
+                  // await checkForNewVersion(context);
                 }
               });
               return AuthScreen();
@@ -674,14 +674,14 @@ class _MyAppState extends State<MyApp> {
             if (widget.token == null) {
               WidgetsBinding.instance.addPostFrameCallback((_) async {
                 if (mounted) {
-                  await checkForNewVersion(context);
+                  // await checkForNewVersion(context);
                 }
               });
               return AuthScreen();
             } else if (widget.pin == null) {
               WidgetsBinding.instance.addPostFrameCallback((_) async {
                 if (mounted) {
-                  await checkForNewVersion(context);
+                  // await checkForNewVersion(context);
                 }
               });
               return PinSetupScreen();
