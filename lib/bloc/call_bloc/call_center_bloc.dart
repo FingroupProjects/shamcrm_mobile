@@ -91,6 +91,7 @@ class CallCenterBloc extends Bloc<CallCenterEvent, CallCenterState> {
         calls: calls,
         currentPage: currentPage,
         totalPages: totalPages,
+        currentFilter: event.callType,
       ));
     } catch (e) {
       if (kDebugMode) {
