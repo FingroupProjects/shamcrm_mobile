@@ -576,7 +576,7 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
                 fontSize: 12,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w400,
-                color: Color(0xffbdc2cf),
+                color: Color(0xffaeb4c3),
                 height: 1.2,
               ),
             ),

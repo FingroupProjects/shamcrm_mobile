@@ -264,8 +264,6 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
   Widget? _buildFieldWidgetByConfig(FieldConfiguration config) {
     switch (config.fieldName) {
       case 'name':
-      case 'deal_name':
-      case 'names':
         return Card(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           color: Colors.white,
@@ -298,8 +296,6 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
           ),
         );
       case 'lead_id':
-      case 'lead':
-      case 'leads':
         return Card(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           color: Colors.white,
@@ -315,9 +311,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
             ),
           ),
         );
-      case 'status_id':
-      case 'status':
-      case 'statuses':
+      case 'deal_status_id':
         return Card(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           color: Colors.white,
