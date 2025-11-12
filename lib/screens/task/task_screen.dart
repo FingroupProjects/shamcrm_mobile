@@ -84,8 +84,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   bool _initialHasFile = false;
   bool _initialHasDeal = false;
   bool _initialUrgent = false;
-  List<String> _selectedAuthors = []; 
-  List<String> _initialSelectedAuthors = []; 
+  List<String> _selectedAuthors = [];
+  List<String> _initialSelectedAuthors = [];
   String? _selectedDepartment;
   String? _initialSelectedDepartment;
   final GlobalKey keySearchIcon = GlobalKey();
@@ -129,7 +129,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     _checkPermissions();
   }
 
-Future<void> _loadFilterState() async {
+  Future<void> _loadFilterState() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _selectedUsers = (jsonDecode(prefs.getString('task_selected_users') ?? '[]') as List)
@@ -172,40 +172,40 @@ Future<void> _loadFilterState() async {
       _initialSelectedAuthors = List.from(_selectedAuthors);
       _initialSelectedDepartment = _selectedDepartment;
       _initialDirectoryValues = List.from(_selectedDirectoryValues);
-      
+
     });
   }
-void _onScroll() {
-  if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
-    final taskBloc = BlocProvider.of<TaskBloc>(context);
-    if (taskBloc.state is TaskDataLoaded) {
-      final state = taskBloc.state as TaskDataLoaded;
-      if (!taskBloc.allTasksFetched) {
-        final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-        taskBloc.add(FetchMoreTasks(
-          currentStatusId,
-          state.currentPage,
-          query: _lastSearchQuery,
-          userIds: _selectedUsers.map((user) => user.id).toList(),
-          statusIds: _selectedStatuses,
-          fromDate: _fromDate,
-          toDate: _toDate,
-          overdue: _isOverdue,
-          hasFile: _hasFile,
-          hasDeal: _hasDeal,
-          urgent: _isUrgent,
-          deadlinefromDate: _deadlinefromDate,
-          deadlinetoDate: _deadlinetoDate,
-          project: _selectedProject,
-          authors: _selectedAuthors,
-          department: _selectedDepartment,
-          directoryValues: _selectedDirectoryValues, // Передаем directoryValues
-        ));
+  void _onScroll() {
+    if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
+      final taskBloc = BlocProvider.of<TaskBloc>(context);
+      if (taskBloc.state is TaskDataLoaded) {
+        final state = taskBloc.state as TaskDataLoaded;
+        if (!taskBloc.allTasksFetched) {
+          final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+          taskBloc.add(FetchMoreTasks(
+            currentStatusId,
+            state.currentPage,
+            query: _lastSearchQuery,
+            userIds: _selectedUsers.map((user) => user.id).toList(),
+            statusIds: _selectedStatuses,
+            fromDate: _fromDate,
+            toDate: _toDate,
+            overdue: _isOverdue,
+            hasFile: _hasFile,
+            hasDeal: _hasDeal,
+            urgent: _isUrgent,
+            deadlinefromDate: _deadlinefromDate,
+            deadlinetoDate: _deadlinetoDate,
+            project: _selectedProject,
+            authors: _selectedAuthors,
+            department: _selectedDepartment,
+            directoryValues: _selectedDirectoryValues, // Передаем directoryValues
+          ));
+        }
       }
     }
   }
-}
-Future<void> _saveFilterState() async {
+  Future<void> _saveFilterState() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('task_selected_users', jsonEncode(_selectedUsers.map((u) => u.toJson()).toList()));
     await prefs.setInt('task_selected_statuses', _selectedStatuses ?? 0);
@@ -371,9 +371,9 @@ Future<void> _saveFilterState() async {
       deadlinetoDate: _deadlinetoDate,
       project: _selectedProject,
       authors: _selectedAuthors,
-      department: _selectedDepartment, 
+      department: _selectedDepartment,
       directoryValues: _selectedDirectoryValues, // Передаем directoryValues
-      
+
     ));
   }
 
@@ -391,11 +391,11 @@ Future<void> _saveFilterState() async {
       _hasDeal = filterData['hasDeal'] ?? false;
       _isUrgent = filterData['urgent'] ?? false;
       _selectedProject = filterData['project'];
-      _selectedAuthors = filterData['authors'] ?? []; 
+      _selectedAuthors = filterData['authors'] ?? [];
       _selectedDirectoryValues = (filterData['directory_values'] as List?)?.map((item) => {
-          'directory_id': item['directory_id'],
-          'entry_id': item['entry_id'],
-        }).toList() ?? []; // Добавляем directory_values
+        'directory_id': item['directory_id'],
+        'entry_id': item['entry_id'],
+      }).toList() ?? []; // Добавляем directory_values
 
       _initialselectedUsers = filterData['users'] ?? [];
       _initialSelStatus = filterData['statuses'];
@@ -518,8 +518,8 @@ Future<void> _saveFilterState() async {
       _deadlinefromDate = null;
       _deadlinetoDate = null;
       _selectedProject = null;
-      _selectedAuthors = []; 
-_selectedDirectoryValues = []; // Очищаем directoryValues
+      _selectedAuthors = [];
+      _selectedDirectoryValues = []; // Очищаем directoryValues
       _initialselectedUsers = [];
       _initialSelStatus = null;
       _intialFromDate = null;
@@ -530,7 +530,7 @@ _selectedDirectoryValues = []; // Очищаем directoryValues
       _initialUrgent = false;
       _intialDeadlineFromDate = null;
       _intialDeadlineToDate = null;
-      _initialSelectedAuthors = []; 
+      _initialSelectedAuthors = [];
       _selectedDepartment = null;
       _initialSelectedDepartment = null;
     });
@@ -599,6 +599,7 @@ _selectedDirectoryValues = []; // Очищаем directoryValues
             focusNode: focusNode,
             showMenuIcon: _showCustomTabBar,
             showFilterIconOnSelectTask: !_showCustomTabBar,
+            hasActiveTaskFilters: !_showCustomTabBar,
             showFilterIcon: false,
             showCallCenter: true,
             showMyTaskIcon: true,
@@ -672,19 +673,19 @@ _selectedDirectoryValues = []; // Очищаем directoryValues
       body: isClickAvatarIcon
           ? ProfileScreen()
           : Column(
-              children: [
-                const SizedBox(height: 15),
-                if (!_isSearching &&
-                    _selectedUserId == null &&
-                    _showCustomTabBar)
-                  _buildCustomTabBar(),
-                Expanded(
-                  child: _selectedUserId != null
-                      ? _buildUserView()
-                      : _buildTabBarView(),
-                ),
-              ],
-            ),
+        children: [
+          const SizedBox(height: 15),
+          if (!_isSearching &&
+              _selectedUserId == null &&
+              _showCustomTabBar)
+            _buildCustomTabBar(),
+          Expanded(
+            child: _selectedUserId != null
+                ? _buildUserView()
+                : _buildTabBarView(),
+          ),
+        ],
+      ),
     );
   }
 
@@ -800,7 +801,7 @@ _selectedDirectoryValues = []; // Очищаем directoryValues
                   final task = tasks[index];
                   return Padding(
                     padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: TaskCard(
                       task: task,
                       name: task.taskStatus?.taskStatus?.name ?? "",
@@ -894,10 +895,10 @@ _selectedDirectoryValues = []; // Очищаем directoryValues
         if (state is TaskLoaded) {
           final statusId = _tabTitles[index]['id'];
           final taskStatus = state.taskStatuses.firstWhere(
-            (status) => status.id == statusId,
+                (status) => status.id == statusId,
             // orElse: () => null,
           );
-          taskCount = taskStatus?.tasksCount ?? "0"; 
+          taskCount = taskStatus?.tasksCount ?? "0";
         }
         return GestureDetector(
           key: _tabKeys[index],
@@ -927,7 +928,7 @@ _selectedDirectoryValues = []; // Очищаем directoryValues
                   offset: const Offset(12, 0),
                   child: Container(
                     padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
@@ -942,7 +943,7 @@ _selectedDirectoryValues = []; // Очищаем directoryValues
                       taskCount.toString(),
                       style: TextStyle(
                         color:
-                            isActive ? Colors.black : const Color(0xff99A4BA),
+                        isActive ? Colors.black : const Color(0xff99A4BA),
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),
@@ -983,9 +984,9 @@ _selectedDirectoryValues = []; // Очищаем directoryValues
         context.read<TaskBloc>().add(FetchTasks(_currentTabIndex));
       });
 
-          if (_tabTitles.isEmpty) {
-        await TaskCache.clearAllTasks(); 
-        await TaskCache.clearCache(); 
+      if (_tabTitles.isEmpty) {
+        await TaskCache.clearAllTasks();
+        await TaskCache.clearCache();
       }
 
       final taskBloc = BlocProvider.of<TaskBloc>(context);
@@ -999,13 +1000,13 @@ _selectedDirectoryValues = []; // Очищаем directoryValues
         if (state is TaskLoaded) {
           await TaskCache.cacheTaskStatuses(state.taskStatuses
               .map((status) =>
-                  {'id': status.id, 'title': status.taskStatus?.name ?? ""})
+          {'id': status.id, 'title': status.taskStatus?.name ?? ""})
               .toList());
           setState(() {
             _tabTitles = state.taskStatuses
                 .where((status) => _canReadTaskStatus)
                 .map((status) =>
-                    {'id': status.id, 'title': status.taskStatus!.name ?? ""})
+            {'id': status.id, 'title': status.taskStatus!.name ?? ""})
                 .toList();
             _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
 
@@ -1066,7 +1067,7 @@ _selectedDirectoryValues = []; // Очищаем directoryValues
             Navigator.pushAndRemoveUntil(
               context,
               MaterialPageRoute(builder: (context) => LoginScreen()),
-              (Route<dynamic> route) => false,
+                  (Route<dynamic> route) => false,
             );
           } else if (state.message.contains(
             AppLocalizations.of(context)!.translate('no_internet_connection'),
@@ -1154,7 +1155,7 @@ _selectedDirectoryValues = []; // Очищаем directoryValues
     if (keyContext != null) {
       final box = keyContext.findRenderObject() as RenderBox;
       final position =
-          box.localToGlobal(Offset.zero, ancestor: context.findRenderObject());
+      box.localToGlobal(Offset.zero, ancestor: context.findRenderObject());
       final tabWidth = box.size.width;
 
       if (position.dx < 0 ||
