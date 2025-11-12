@@ -76,7 +76,6 @@ dependencies:
   build_runner: ^2.8.0
   # home_widget: ^0.8.1
 
-
   
   
 bottom_navy_bar:
@@ -164,4 +163,11 @@ flutter_intl:
   enabled: true
 
 dependency_overrides:
-  intl: ^0.20.2  
+  intl: ^0.20.2
+  record: ^5.1.2
+  record_linux: ^1.0.0
+  record_platform_interface: ^1.2.0
+  record_android: ^1.0.0
+  record_darwin: ^1.0.0
+  record_web: ^1.0.0
+  record_windows: ^1.0.0
