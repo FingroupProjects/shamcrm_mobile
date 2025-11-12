@@ -115,6 +115,8 @@ class DealBloc extends Bloc<DealEvent, DealState> {
 
       allDealsFetched = deals.isEmpty;
       emit(DealDataLoaded(deals, currentPage: 1, dealCounts: dealCounts));
+
+      debugPrint("deal_bloc.dart DealDataLoaded.deals: ${deals.length}, statusId: ${event.statusId}");
     } catch (e) {
       //print('DealBloc: _fetchDeals - Error: $e');
       emit(DealError('Не удалось загрузить данные!'));

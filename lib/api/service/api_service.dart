@@ -2972,9 +2972,55 @@ class ApiService {
       path += '&created_from=$formattedFromDate&created_to=$formattedToDate';
     }
     if (directoryValues != null && directoryValues.isNotEmpty) {
-      for (int i = 0; i < directoryValues.length; i++) {
-        path += '&directory_values[$i][directory_id]=${directoryValues[i]['directory_id']}';
-        path += '&directory_values[$i][entry_id]=${directoryValues[i]['entry_id']}';
+      final Map<String, LinkedHashSet<String>> groupedDirectoryValues = {};
+
+      for (final dynamic rawValue in directoryValues) {
+        if (rawValue is! Map) {
+          continue;
+        }
+
+        final Map value = rawValue;
+        final directoryIdRaw = value['directory_id'];
+        final entryIdRaw = value['entry_id'];
+
+        if (directoryIdRaw == null || entryIdRaw == null) {
+          continue;
+        }
+
+        final directoryId = directoryIdRaw.toString();
+        final Iterable<String> entryIds = entryIdRaw is List
+            ? entryIdRaw
+            .where((entry) => entry != null && entry.toString().isNotEmpty)
+            .map((entry) => entry.toString())
+            : [entryIdRaw.toString()];
+
+        if (entryIds.isEmpty) {
+          continue;
+        }
+
+        final entries = groupedDirectoryValues.putIfAbsent(
+          directoryId,
+              () => LinkedHashSet<String>(),
+        );
+        entries.addAll(entryIds);
+      }
+
+      if (groupedDirectoryValues.isNotEmpty) {
+        var directoryIndex = 0;
+        groupedDirectoryValues.forEach((directoryId, entryIds) {
+          if (entryIds.isEmpty) {
+            return;
+          }
+          path += '&directory_values[$directoryIndex][directory_id]=$directoryId';
+
+          var entryIndex = 0;
+          for (final entryId in entryIds) {
+            path += '&directory_values[$directoryIndex][entry_id][$entryIndex]=$entryId';
+            entryIndex++;
+          }
+
+          directoryIndex++;
+        });
       }
     }
     if (names != null && names.isNotEmpty) {

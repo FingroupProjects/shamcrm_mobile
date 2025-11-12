@@ -157,6 +157,8 @@ final List<String>? initialDealNames; // Новый параметр
   final VoidCallback? onChatLeadFiltersReset; // Сброс фильтров
   final bool hasActiveChatFilters; // Есть ли активные фильтры
   final bool hasActiveEventFilters; // Есть ли активные фильтры для Event
+  final bool hasActiveDealFilters; // Есть ли активные фильтры для сделок
+  final bool hasActiveTaskFilters; // Есть ли активные фильтры для задач
   final Map<String, dynamic>? initialChatFilters; // Начальные фильтры
   final int? currentSalesFunnelId; // ID текущей воронки
   final bool showDashboardIcon; // Новый параметр
@@ -219,6 +221,8 @@ final List<String>? initialDealNames; // Новый параметр
     this.onChatTaskFiltersApplied, // Новый параметр
     this.hasActiveChatFilters = false,
     this.hasActiveEventFilters = false,
+    this.hasActiveDealFilters = false,
+    this.hasActiveTaskFilters = false,
     this.initialChatFilters,
     this.initialManagersDeal,
     this.initialLeadsDeal,
@@ -333,8 +337,11 @@ class _CustomAppBarState extends State<CustomAppBar>
 
     _searchController = widget.textEditingController;
     focusNode = widget.focusNode;
-// Устанавливаем начальное состояние фильтров на основе hasActiveChatFilters
-    _areFiltersActive = widget.hasActiveChatFilters;
+// Устанавливаем начальное состояние фильтров на основе активности любых фильтров
+    _areFiltersActive = widget.hasActiveChatFilters ||
+        widget.hasActiveEventFilters ||
+        widget.hasActiveDealFilters ||
+        widget.hasActiveTaskFilters;
     _iconColor = _areFiltersActive ? Colors.blue : Colors.black;
     if (_cachedUserImage.isNotEmpty) {
       _userImage = _cachedUserImage;
@@ -455,8 +462,13 @@ class _CustomAppBarState extends State<CustomAppBar>
     super.didUpdateWidget(oldWidget);
     // Синхронизируем _areFiltersActive с hasActiveChatFilters и hasActiveEventFilters при обновлении виджета
     if (widget.hasActiveChatFilters != oldWidget.hasActiveChatFilters ||
-        widget.hasActiveEventFilters != oldWidget.hasActiveEventFilters) {
-      _setFiltersActive(widget.hasActiveChatFilters || widget.hasActiveEventFilters);
+        widget.hasActiveEventFilters != oldWidget.hasActiveEventFilters ||
+        widget.hasActiveDealFilters != oldWidget.hasActiveDealFilters ||
+        widget.hasActiveTaskFilters != oldWidget.hasActiveTaskFilters) {
+      _setFiltersActive(widget.hasActiveChatFilters ||
+          widget.hasActiveEventFilters ||
+          widget.hasActiveDealFilters ||
+          widget.hasActiveTaskFilters);
     }
   }
 
@@ -1528,11 +1540,12 @@ class _CustomAppBarState extends State<CustomAppBar>
                               child: Row(
                                 children: [
                                   _isFiltering
-                                      ? Icon(Icons.close)
+                                      ? Icon(Icons.close, color: _iconColor)
                                       : Image.asset(
                                           'assets/icons/AppBar/filter.png',
                                           width: 24,
                                           height: 24,
+                                          color: _iconColor,
                                         ),
                                   SizedBox(width: 8),
                                   Text(AppLocalizations.of(context)!
@@ -1546,15 +1559,16 @@ class _CustomAppBarState extends State<CustomAppBar>
                               child: Row(
                                 children: [
                                   _isFiltering
-                                      ? Icon(Icons.close)
+                                      ? Icon(Icons.close, color: _iconColor)
                                       : Image.asset(
                                           'assets/icons/AppBar/filter.png',
                                           width: 24,
                                           height: 24,
+                                          color: _iconColor,
                                         ),
                                   SizedBox(width: 8),
                                   Text(AppLocalizations.of(context)!
-                                      .translate('filtr')),
+                                      .translate('filter')),
                                 ],
                               ),
                             ),
@@ -1576,11 +1590,12 @@ class _CustomAppBarState extends State<CustomAppBar>
                               child: Row(
                                 children: [
                                   _isTaskFiltering
-                                      ? Icon(Icons.close)
+                                      ? Icon(Icons.close, color: _iconColor)
                                       : Image.asset(
                                           'assets/icons/AppBar/filter.png',
                                           width: 24,
                                           height: 24,
+                                          color: _iconColor,
                                         ),
                                   SizedBox(width: 8),
                                   Text(AppLocalizations.of(context)!

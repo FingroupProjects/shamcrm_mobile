@@ -599,6 +599,7 @@ _selectedDirectoryValues = []; // Очищаем directoryValues
             focusNode: focusNode,
             showMenuIcon: _showCustomTabBar,
             showFilterIconOnSelectTask: !_showCustomTabBar,
+            hasActiveTaskFilters: !_showCustomTabBar,
             showFilterIcon: false,
             showCallCenter: true,
             showMyTaskIcon: true,

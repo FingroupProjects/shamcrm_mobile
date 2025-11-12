@@ -678,7 +678,7 @@ Future<void> _showDatePicker(BuildContext context, List<Message> messages) async
 
 int _findMessageIndexByDate(List<Message> messages, DateTime targetDate) {
   for (int i = messages.length - 1; i >= 0; i--) {
-    final messageDate = DateTime.parse(messages[i].createMessateTime);
+    final messageDate = DateTime.parse(messages[i].createMessateTime).toLocal();
     if (isSameDay(messageDate, targetDate)) {
       return i; // Возвращаем индекс последнего сообщения за дату
     }
@@ -1285,7 +1285,7 @@ Widget messageListUi() {
                   itemBuilder: (context, index) {
                     final message = messages[index];
                     final messageDate =
-                        DateTime.parse(message.createMessateTime);
+                        DateTime.parse(message.createMessateTime).toLocal();
 
                     bool shouldShowDate = false;
                     if (index == messages.length - 1) {
@@ -1293,7 +1293,8 @@ Widget messageListUi() {
                     } else {
                       final previousMessage = messages[index + 1];
                       final previousMessageDate =
-                          DateTime.parse(previousMessage.createMessateTime);
+                          DateTime.parse(previousMessage.createMessateTime)
+                              .toLocal();
                       shouldShowDate =
                           !isSameDay(messageDate, previousMessageDate);
                     }
