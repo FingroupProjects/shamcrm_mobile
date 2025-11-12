@@ -227,310 +227,258 @@ class _UserOverdueTasksDialogState extends State<UserOverdueTasksDialog> {
   }
 
   Widget _buildTaskCard(OverdueTask task) {
-    return InkWell(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => TaskDetailsScreen(
-              taskId: (task.id ?? 0).toString(),
-              taskName: task.name ?? '',
-              taskStatus: task.taskStatus?.name ?? '',
-              taskCustomFields: [],
+  return InkWell(
+    onTap: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => TaskDetailsScreen(
+            taskId: (task.id ?? 0).toString(),
+            taskName: task.name ?? '',
+            taskStatus: task.taskStatus?.name ?? '',
+            taskCustomFields: [],
+          ),
+        ),
+      );
+    },
+    child: Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xffE2E8F0), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xff1E2E52).withOpacity(0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // === ЗАГОЛОВОК С НОМЕРОМ, НАЗВАНИЕМ И ПРОСРОЧКОЙ ===
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: const BoxDecoration(
+              color: Color(0xffF8FAFC),
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
+              ),
+              border: Border(
+                left: BorderSide(width: 4, color: Color(0xff1E2E52)),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Номер задачи
+                if (task.taskNumber != null)
+                  Text(
+                    '${AppLocalizations.of(context)!.translate('task')} №${task.taskNumber}',
+                    style: const TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xff64748B),
+                    ),
+                  ),
+
+                const SizedBox(height: 4),
+
+                // Название + Просрочка
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        task.name ??
+                            AppLocalizations.of(context)!
+                                .translate('unknown_dialog'),
+                        style: const TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xff1E2E52),
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    _buildOverdueBadge(task),
+                  ],
+                ),
+              ],
             ),
           ),
-        );
-      },
-      child: Container(
-        width: double.infinity,
-        margin: const EdgeInsets.only(bottom: 16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xffE2E8F0), width: 1),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xff1E2E52).withOpacity(0.08),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+
+          // === СПИСОК ДЕТАЛЕЙ ===
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                // Проект
+                if (task.project != null) ...[
+                  _buildDetailRow(
+                    icon: Icons.folder_outlined,
+                    label: AppLocalizations.of(context)!.translate('project_label'),
+                    value: task.project!.name ??
+                        AppLocalizations.of(context)!.translate('unknown_dialog'),
+                    onTap: () {
+                      showFullTextDialog(
+                        AppLocalizations.of(context)!.translate('project_label'),
+                        task.project!.name ??
+                            AppLocalizations.of(context)!.translate('unknown_dialog'),
+                        context,
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  _buildDivider(),
+                  const SizedBox(height: 12),
+                ],
+
+                // Автор
+                if (task.author != null) ...[
+                  _buildDetailRow(
+                    icon: Icons.person_outline,
+                    label: AppLocalizations.of(context)!.translate('author_label'),
+                    value: task.author!.name ??
+                        AppLocalizations.of(context)!.translate('unknown_dialog'),
+                    onTap: () {
+                      showFullTextDialog(
+                        AppLocalizations.of(context)!.translate('author_label'),
+                        task.author!.name ??
+                            AppLocalizations.of(context)!.translate('unknown_dialog'),
+                        context,
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  _buildDivider(),
+                  const SizedBox(height: 12),
+                ],
+
+                // Даты (От - До в одной строке)
+                Row(
+                  children: [
+                    // Дата "От"
+                    Expanded(
+                      child: _buildDetailRow(
+                        icon: Icons.calendar_today_outlined,
+                        label: AppLocalizations.of(context)!.translate('from_label'),
+                        value: DateFormatter.toDDMMYYYY(task.from),
+                        compact: true,
+                      ),
+                    ),
+                    
+                    const SizedBox(width: 16),
+                    
+                    // Дата "До"
+                    Expanded(
+                      child: _buildDetailRow(
+                        icon: Icons.event_outlined,
+                        label: AppLocalizations.of(context)!.translate('to_label'),
+                        value: DateFormatter.toDDMMYYYY(task.to),
+                        compact: true,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-          ],
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+// === ВСПОМОГАТЕЛЬНЫЙ ВИДЖЕТ ДЛЯ СТРОКИ ДЕТАЛИ ===
+Widget _buildDetailRow({
+  required IconData icon,
+  required String label,
+  required String value,
+  VoidCallback? onTap,
+  bool compact = false,
+}) {
+  return Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      // Иконка
+      Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: const Color(0xffF1F5F9),
+          borderRadius: BorderRadius.circular(6),
         ),
+        child: Icon(
+          icon,
+          size: 16,
+          color: const Color(0xff64748B),
+        ),
+      ),
+      
+      const SizedBox(width: 10),
+      
+      // Текст
+      Expanded(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // === ЗАГОЛОВОК С OVERDUE ===
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: const BoxDecoration(
-                color: Color(0xffF8FAFC),
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(12),
-                  topRight: Radius.circular(12),
-                ),
-                border: Border(
-                  left: BorderSide(width: 4, color: Color(0xff1E2E52)),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // === СТРОКА 1: "Задача №1" ===
-                  if (task.taskNumber != null)
-                    Text(
-                      '${AppLocalizations.of(context)!.translate('task')} №${task.taskNumber}',
-                      style: const TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                            color: Color(0xff1E2E52),
-                      ),
-                    ),
-
-                  const SizedBox(height: 4),
-
-                  // === СТРОКА 2: Название + Overdue ===
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      // Название задачи
-                      Expanded(
-                        child: Text(
-                          task.name ??
-                              AppLocalizations.of(context)!
-                                  .translate('unknown_dialog'),
-                          style: const TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xff1E2E52),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-
-                      // Просрочка (справа)
-                      _buildOverdueBadge(task),
-                    ],
-                  ),
-                ],
+            Text(
+              label,
+              style: const TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: Color(0xff64748B),
               ),
             ),
-            // Task details: First row (Project and Author)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Row(
-                children: [
-                  // Project
-                  if (task.project != null)
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xffF1F5F9),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: const Color(0xffCBD5E1),
-                            width: 1,
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '${AppLocalizations.of(context)!.translate('project_label')}:',
-                              style: const TextStyle(
-                                fontFamily: 'Gilroy',
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xff475569),
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            GestureDetector(
-                              onTap: () {
-                                showFullTextDialog(
-                                  AppLocalizations.of(context)!.translate('project_label'),
-                                  task.project!.name ??
-                                      AppLocalizations.of(context)!
-                                          .translate('unknown_dialog'),
-                                  context,
-                                );
-                              },
-                              child: Text(
-                                task.project!.name ??
-                                    AppLocalizations.of(context)!
-                                        .translate('unknown_dialog'),
-                                style: const TextStyle(
-                                  fontFamily: 'Gilroy',
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xff1E2E52),
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                  if (task.project != null && task.author != null)
-                    const SizedBox(width: 12),
-
-                  // Author
-                  if (task.author != null)
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xffF1F5F9),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: const Color(0xffCBD5E1),
-                            width: 1,
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '${AppLocalizations.of(context)!.translate('author_label')}:',
-                              style: const TextStyle(
-                                fontFamily: 'Gilroy',
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xff475569),
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            GestureDetector(
-                              onTap: () {
-                                showFullTextDialog(
-                                  AppLocalizations.of(context)!.translate('author_label'),
-                                  task.author!.name ??
-                                      AppLocalizations.of(context)!
-                                          .translate('unknown_dialog'),
-                                  context,
-                                );
-                              },
-                              child: Text(
-                                task.author!.name ??
-                                    AppLocalizations.of(context)!
-                                        .translate('unknown_dialog'),
-                                style: const TextStyle(
-                                  fontFamily: 'Gilroy',
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xff1E2E52),
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-
-            // Task details: Second row (Date range)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: Row(
-                children: [
-                  // From date
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xffF1F5F9),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: const Color(0xffCBD5E1),
-                          width: 1,
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${AppLocalizations.of(context)!.translate('from_label')}:',
-                            style: const TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xff475569),
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            DateFormatter.toDDMMYYYY(task.from),
-                            style: const TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xff1E2E52),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(width: 12),
-
-                  // To date
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xffF1F5F9),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: const Color(0xffCBD5E1),
-                          width: 1,
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${AppLocalizations.of(context)!.translate('to_label')}:',
-                            style: const TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xff475569),
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            DateFormatter.toDDMMYYYY(task.to),
-                            style: const TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xff1E2E52),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
+            const SizedBox(height: 2),
+            GestureDetector(
+              onTap: onTap,
+              child: Text(
+                value,
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: compact ? 13 : 14,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xff1E2E52),
+                  decoration: onTap != null ? TextDecoration.underline : null,
+                  decorationColor: onTap != null ? const Color(0xff1E2E52) : null,
+                ),
+                maxLines: compact ? 1 : 2,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
         ),
       ),
-    );
-  }
+    ],
+  );
+}
+
+// === РАЗДЕЛИТЕЛЬ ===
+Widget _buildDivider() {
+  return Container(
+    height: 1,
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        colors: [
+          const Color(0xffE2E8F0).withOpacity(0),
+          const Color(0xffE2E8F0),
+          const Color(0xffE2E8F0).withOpacity(0),
+        ],
+      ),
+    ),
+  );
+}
 
   @override
   Widget build(BuildContext context) {

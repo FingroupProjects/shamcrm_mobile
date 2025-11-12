@@ -50,7 +50,7 @@ class BackgroundDataLoaderService {
   }
 
   // ==========================================================================
-  // ЗАГРУЗКА РАЗРЕШЕНИЙ
+  // MARK: ЗАГРУЗКА РАЗРЕШЕНИЙ
   // ==========================================================================
 
   Future<void> _loadPermissions() async {
@@ -178,51 +178,62 @@ class BackgroundDataLoaderService {
   }
 
   Future<void> _loadSettings() async {
+  try {
+    print('BackgroundLoader: Загрузка Settings');
+
+    final prefs = await SharedPreferences.getInstance();
+    final organizationId = await _apiService.getSelectedOrganization();
+
+    final response = await _apiService.getSettings(organizationId);
+
+    if (response['result'] != null) {
+      // Сохраняем localization
+      String? localization = response['result']['localization'];
+      
+      // Логика: если localization == null, используем "+992"
+      String defaultDialCode = (localization != null && localization.isNotEmpty) 
+          ? localization 
+          : '+992';
+      
+      await prefs.setString('default_dial_code', defaultDialCode);
+      
+      await prefs.setBool(
+        'department_enabled',
+        _toBool(response['result']['department'])
+      );
+
+      await prefs.setBool(
+        'integration_with_1C',
+        _toBool(response['result']['integration_with_1C'])
+      );
+
+      await prefs.setBool(
+        'good_measurement',
+        _toBool(response['result']['good_measurement'])
+      );
+
+      await prefs.setBool(
+        'managing_deal_status_visibility',
+        _toBool(response['result']['managing_deal_status_visibility'])
+      );
+
+      print('BackgroundLoader: Settings сохранены, default_dial_code = $defaultDialCode');
+    }
+  } catch (e) {
+    print('BackgroundLoader: Ошибка загрузки Settings: $e');
+
+    // Устанавливаем значения по умолчанию
     try {
-      //print('BackgroundLoader: Загрузка Settings');
-
       final prefs = await SharedPreferences.getInstance();
-      final organizationId = await _apiService.getSelectedOrganization();
-
-      final response = await _apiService.getSettings(organizationId);
-
-      if (response['result'] != null) {
-        await prefs.setBool(
-          'department_enabled',
-          _toBool(response['result']['department'])
-        );
-
-        await prefs.setBool(
-          'integration_with_1C',
-          _toBool(response['result']['integration_with_1C'])
-        );
-
-        await prefs.setBool(
-          'good_measurement',
-          _toBool(response['result']['good_measurement'])
-        );
-
-        await prefs.setBool(
-          'managing_deal_status_visibility',
-          _toBool(response['result']['managing_deal_status_visibility'])
-        );
-
-        //print('BackgroundLoader: Settings сохранены');
-      }
-    } catch (e) {
-      //print('BackgroundLoader: Ошибка загрузки Settings: $e');
-
-      // Устанавливаем значения по умолчанию
-      try {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool('integration_with_1C', false);
-        await prefs.setBool('good_measurement', false);
-        await prefs.setBool('managing_deal_status_visibility', false);
-      } catch (prefsError) {
-        //print('BackgroundLoader: Ошибка установки значений по умолчанию: $prefsError');
-      }
+      await prefs.setBool('integration_with_1C', false);
+      await prefs.setBool('good_measurement', false);
+      await prefs.setBool('managing_deal_status_visibility', false);
+      await prefs.setString('default_dial_code', '+992');
+    } catch (prefsError) {
+      print('BackgroundLoader: Ошибка установки значений по умолчанию: $prefsError');
     }
   }
+}
 
   // ==========================================================================
   // ЗАГРУЗКА TUTORIAL PROGRESS
