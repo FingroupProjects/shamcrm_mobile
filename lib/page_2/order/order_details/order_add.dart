@@ -1,9 +1,7 @@
-import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_event.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_state.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/deliviry_adress/delivery_address_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/deliviry_adress/delivery_address_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc.dart';
@@ -18,24 +16,19 @@ import 'package:crm_task_manager/models/page_2/delivery_address_model.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/models/page_2/order_status_model.dart';
 import 'package:crm_task_manager/page_2/order/order_details/branch_dropdown_list.dart';
-import 'package:crm_task_manager/page_2/order/order_details/branch_method_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/delivery_address_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/delivery_method_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/goods_selection_sheet_patch.dart';
-import 'package:crm_task_manager/page_2/order/order_details/payment_method_dropdown.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/lead_with_manager.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/manager_for_lead.dart';
-import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
-import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-import '../../../custom_widget/country_data_list.dart';
 
 class OrderAddScreen extends StatefulWidget {
   final Order? order;
@@ -69,6 +62,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
 
   bool isManagerManuallySelected = false;
   int? currencyId; // Поле для хранения currency_id
+  final Map<int, TextEditingController> _quantityControllers = {};
 
   @override
   void initState() {
@@ -195,7 +189,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
         symbol = 'TJS';
         break;
       default:
-        symbol = 'UZS';
+        symbol = '\$';
         if (kDebugMode) {
           //print('OrderAddScreen: Используется валюта по умолчанию (UZS) для currency_id: $currencyId');
         }
@@ -248,6 +242,10 @@ Future<void> _initializeBaseUrl() async {
     _phoneController.dispose();
     _deliveryAddressController.dispose();
     _commentController.dispose();
+    for (final controller in _quantityControllers.values) {
+      controller.dispose();
+    }
+    _quantityControllers.clear();
     super.dispose();
   }
 
@@ -323,18 +321,81 @@ Future<void> _initializeBaseUrl() async {
     }
   }
 
-  void _updateQuantity(int index, int newQuantity) {
-    if (mounted) {
-      setState(() {
-        if (newQuantity > 0) _items[index]['quantity'] = newQuantity;
-      });
+  TextEditingController _getQuantityController(int index) {
+    assert(index >= 0 && index < _items.length, 'Index вне диапазона списка товаров');
+    final item = _items[index];
+    final key = identityHashCode(item);
+    final currentText = '${item['quantity'] ?? 1}';
+    final existingController = _quantityControllers[key];
+    if (existingController != null) {
+      if (existingController.text != currentText) {
+        existingController.value = TextEditingValue(
+          text: currentText,
+          selection: TextSelection.collapsed(offset: currentText.length),
+        );
+      }
+      return existingController;
     }
+    final controller = TextEditingController(text: currentText);
+    _quantityControllers[key] = controller;
+    return controller;
+  }
+
+  void _syncQuantityController(int index) {
+    if (index < 0 || index >= _items.length) return;
+    final key = identityHashCode(_items[index]);
+    final controller = _quantityControllers[key];
+    if (controller == null) return;
+
+    final text = '${_items[index]['quantity'] ?? 1}';
+    if (controller.text == text) return;
+
+    controller.value = TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
+    );
+  }
+
+  void _handleQuantityInput(int index, String value) {
+    if (value.isEmpty) {
+      return;
+    }
+
+    final parsedValue = int.tryParse(value);
+    if (parsedValue == null) {
+      _syncQuantityController(index);
+      return;
+    }
+
+    _updateQuantity(index, parsedValue);
+  }
+
+  void _handleQuantityEditingComplete(int index) {
+    _syncQuantityController(index);
+    FocusScope.of(context).unfocus();
+  }
+
+  void _updateQuantity(int index, int newQuantity) {
+    if (!mounted || index < 0 || index >= _items.length) return;
+
+    final normalizedQuantity = newQuantity < 1 ? 1 : newQuantity;
+
+    setState(() {
+      _items[index]['quantity'] = normalizedQuantity;
+    });
+
+    _syncQuantityController(index);
   }
 
   void _removeItem(int index) {
-    if (mounted) {
-      setState(() => _items.removeAt(index));
-    }
+    if (!mounted || index < 0 || index >= _items.length) return;
+
+    final key = identityHashCode(_items[index]);
+    final controller = _quantityControllers.remove(key);
+    controller?.dispose();
+
+    setState(() => _items.removeAt(index));
+    FocusScope.of(context).unfocus();
   }
 
   void _showAddAddressDialog(BuildContext context) {
@@ -471,6 +532,10 @@ Future<void> _initializeBaseUrl() async {
                 mounted) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 setState(() {
+                  for (final controller in _quantityControllers.values) {
+                    controller.dispose();
+                  }
+                  _quantityControllers.clear();
                   _items = state.orderDetails!.goods
                       .map((good) => {
                             'id': good.goodId,
@@ -890,22 +955,61 @@ Future<void> _initializeBaseUrl() async {
                         color: const Color(0xffF4F7FD)),
                     child: Row(
                       children: [
-                        IconButton(
-                            icon: const Icon(Icons.remove, size: 20),
-                            color: const Color(0xff1E2E52),
-                            onPressed: () => _updateQuantity(
-                                index, (item['quantity'] ?? 1) - 1)),
-                        Text('${item['quantity'] ?? 1}',
+                        GestureDetector(
+                          onTap: () =>
+                              _updateQuantity(index, (item['quantity'] ?? 1) - 1),
+                          behavior: HitTestBehavior.opaque,
+                          child: const Padding(
+                            padding: EdgeInsets.all(8),
+                            child: Icon(
+                              Icons.remove,
+                              size: 20,
+                              color: Color(0xff1E2E52),
+                            ),
+                          ),
+                        ),
+                        SizedBox(
+                          width: 36,
+                          child: TextField(
+                            controller: _getQuantityController(index),
+                            keyboardType: TextInputType.number,
+                            textAlign: TextAlign.center,
                             style: const TextStyle(
-                                fontSize: 16,
-                                fontFamily: 'Gilroy',
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xff1E2E52))),
-                        IconButton(
-                            icon: const Icon(Icons.add, size: 20),
-                            color: const Color(0xff1E2E52),
-                            onPressed: () => _updateQuantity(
-                                index, (item['quantity'] ?? 1) + 1)),
+                              fontSize: 16,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xff1E2E52),
+                            ),
+                            decoration: const InputDecoration(
+                              isDense: true,
+                              contentPadding: EdgeInsets.symmetric(vertical: 8),
+                              border: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              disabledBorder: InputBorder.none,
+                            ),
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                            ],
+                            onChanged: (value) => _handleQuantityInput(index, value),
+                            onEditingComplete: () =>
+                                _handleQuantityEditingComplete(index),
+                            onSubmitted: (value) => _handleQuantityInput(index, value),
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () =>
+                              _updateQuantity(index, (item['quantity'] ?? 1) + 1),
+                          behavior: HitTestBehavior.opaque,
+                          child: const Padding(
+                            padding: EdgeInsets.all(8),
+                            child: Icon(
+                              Icons.add,
+                              size: 20,
+                              color: Color(0xff1E2E52),
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),

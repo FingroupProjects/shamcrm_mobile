@@ -134,7 +134,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         symbol = 'TJS';
         break;
       default:
-        symbol = 'UZS';
+        symbol = '\$';
         if (kDebugMode) {
           //print('OrderDetailsScreen: Используется валюта по умолчанию (UZS) для currency_id: $currencyId');
         }
@@ -194,10 +194,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         : AppLocalizations.of(context)!.translate('');
 
     details = [
-      {
-        'label': AppLocalizations.of(context)!.translate('order_number'),
-        'value': order.orderNumber
-      },
       {
         'label': AppLocalizations.of(context)!.translate('client'),
         'value': order.lead.name

@@ -11,11 +11,13 @@ class CallCenterLoaded extends CallCenterState {
   final List<CallLogEntry> calls;
   final int currentPage;
   final int totalPages;
+  final CallType? currentFilter;
 
   CallCenterLoaded({
     required this.calls,
     required this.currentPage,
     required this.totalPages,
+    this.currentFilter,
   });
 
   CallCenterLoaded merge(List<CallLogEntry> newCalls, {required int newPage}) {
@@ -24,16 +26,18 @@ class CallCenterLoaded extends CallCenterState {
     //print("  - New calls: ${newCalls.length}");
     //print("  - Current page: $currentPage");
     //print("  - New page: $newPage");
-    
+    //print("  - Current filter: $currentFilter"); // ✅ Added for debugging
+
     final merged = CallCenterLoaded(
       calls: [...calls, ...newCalls],
       currentPage: newPage,
       totalPages: totalPages,
+      currentFilter: currentFilter, // ✅ MUST preserve the filter!
     );
-    
+
     //print("  - Total calls after merge: ${merged.calls.length}");
     //print("  - New current page: ${merged.currentPage}");
-    
+
     return merged;
   }
 }

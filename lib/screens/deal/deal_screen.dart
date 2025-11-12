@@ -791,7 +791,9 @@ Future<void> _handleManagerSelected(Map managers) async {
                   if (!_isSearching && _selectedManagerId == null && _showCustomTabBar)
                     _buildCustomTabBar(),
                   Expanded(
-                    child: _isSearching || _selectedManagerId != null
+                    // TODO should be checked
+                    // child: _isSearching || _selectedManagerId != null
+                    child: _isSearching || !_showCustomTabBar
                         ? _buildManagerView()
                         : _buildTabBarView(),
                   ),
@@ -880,9 +882,12 @@ Future<void> _handleManagerSelected(Map managers) async {
   Widget _buildManagerView() {
     return BlocBuilder<DealBloc, DealState>(
       builder: (context, state) {
+        debugPrint("DealsScreen: Building manager view");
         if (state is DealDataLoaded) {
+          debugPrint("DealsScreen: Building manager view with deals: ${state.deals.length}");
           final List<Deal> deals = state.deals;
           if (deals.isEmpty) {
+            debugPrint("DealsScreen: Building manager view No deals found for manager");
             return Center(
               child: Text(
                 _selectedManagerIds?.isNotEmpty == true
@@ -918,6 +923,7 @@ Future<void> _handleManagerSelected(Map managers) async {
           );
         }
         if (state is DealLoading) {
+          debugPrint("DealsScreen: Building manager view Loading state");
           return const Center(
             child: PlayStoreImageLoading(
               size: 80.0,

@@ -213,7 +213,7 @@ class _WareHouseScreenState extends State<WareHouseScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Error: ${state.message}',
+                      localizations.translate(state.message),
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         fontSize: 16,

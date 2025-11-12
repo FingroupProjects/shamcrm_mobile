@@ -36,6 +36,8 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
   final PageController _pageController = PageController();
   int _currentPageIndex = 0;
 
+  CallType? _expectedFilter;
+
   // Массив фильтров для удобного управления
   final List<CallType?> _filterTypes = [null, CallType.incoming, CallType.outgoing, CallType.missed];
   final List<String> _filterLabels = ['Все', 'Входящие', 'Исходящие', 'Пропущенные'];
@@ -85,9 +87,10 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
   void _filterCalls(CallType? filter) {
     setState(() {
       _selectedFilter = filter;
+      _expectedFilter = filter; // Track expected filter
       _updateFiltersState();
-      context.read<CallCenterBloc>().add(LoadCalls(callType: filter));
     });
+    context.read<CallCenterBloc>().add(LoadCalls(callType: filter));
   }
 
   // Новый метод для обработки смены страницы через swipe
@@ -95,6 +98,7 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
     setState(() {
       _currentPageIndex = index;
       _selectedFilter = _filterTypes[index];
+      _expectedFilter = _filterTypes[index];
     });
     _filterCalls(_filterTypes[index]);
   }
@@ -111,16 +115,18 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
   void _onSearch(String query) {
     setState(() {
       _searchQuery = query;
+      _expectedFilter = _selectedFilter;
     });
 
     _updateFiltersState();
 
     context.read<CallCenterBloc>().add(LoadCalls(
-          callType: _selectedFilter,
-          page: 1,
-          searchQuery: query,
-        ));
+      callType: _selectedFilter,
+      page: 1,
+      searchQuery: query,
+    ));
   }
+
 
   void _resetSearch() {
     setState(() {
@@ -263,6 +269,21 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
   Widget _buildPageContent() {
     return BlocBuilder<CallCenterBloc, CallCenterState>(
       builder: (context, state) {
+        if (state is CallCenterLoaded) {
+          final stateFilter = state.currentFilter;
+          if (stateFilter != _expectedFilter) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: PlayStoreImageLoading(
+                  size: 80.0,
+                  duration: Duration(milliseconds: 1000),
+                ),
+              ),
+            );
+          }
+        }
+
         if (state is CallCenterLoading) {
           return const Center(
             child: Padding(
@@ -298,7 +319,7 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
                 return const SizedBox.shrink();
               }
               final item = items[index];
-              if (item is Map<String, String>) {  // Changed from String to Map
+              if (item is Map<String, String>) {
                 return Padding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
                   child: Row(
