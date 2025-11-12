@@ -492,6 +492,7 @@
   "selected_users": "Selected Users: ",
   "user": "User",
   "select_user": "Select User",
+  "please_select_manager": "Please select a manager",
   "chat_deleted_successfully": "Chat deleted successfully",
   "you_dont_delete_this_group": "You cannot delete this group!",
   "error_delete_chat": "Error deleting chat!",

@@ -218,7 +218,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
         symbol = 'TJS';
         break;
       default:
-        symbol = '₽';
+        symbol = '\$';
         if (kDebugMode) {
           //print('OrderEditScreen: Используется валюта по умолчанию (UZS) для currency_id: $currencyId');
         }

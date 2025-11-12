@@ -478,6 +478,7 @@
   "create": "Yaratish",
   "select_at_least_one_user": "Kamida bitta foydalanuvchini tanlang",
   "please_select_user": "Iltimos, foydalanuvchini tanlang",
+  "please_select_manager": "Iltimos, menejerni tanlang",
   "delete_sms": "Xabar o'chirilsinmi?",
   "confirm_delete_sms": "Haqiqatan ham ushbu xabarni o'chirmoqchimisiz?",
   "add_user": "A'zo qo'shish",
