@@ -26,6 +26,7 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -56,6 +57,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
     final ApiService _apiService = ApiService();
 
   int? currencyId; // Поле для хранения currency_id
+  final Map<int, TextEditingController> _quantityControllers = {};
 
   @override
   void initState() {
@@ -89,6 +91,9 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
             updatedAt: '',
           )
         : null;
+
+    debugPrint("_selectedDeliveryAddress");
+    debugPrint(_selectedDeliveryAddress?.address);
 
     if (widget.order.branchId != null && widget.order.branchName != null) {
       _selectedBranch = Branch(
@@ -250,6 +255,10 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   void dispose() {
     _phoneController.dispose();
     _commentController.dispose();
+    for (final controller in _quantityControllers.values) {
+      controller.dispose();
+    }
+    _quantityControllers.clear();
     super.dispose();
   }
 
@@ -305,18 +314,81 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
     }
   }
 
-  void _updateQuantity(int index, int newQuantity) {
-    if (mounted) {
-      setState(() {
-        if (newQuantity > 0) _items[index]['quantity'] = newQuantity;
-      });
+  TextEditingController _getQuantityController(int index) {
+    assert(index >= 0 && index < _items.length, 'Index вне диапазона списка товаров');
+    final item = _items[index];
+    final key = identityHashCode(item);
+    final currentText = '${item['quantity'] ?? 1}';
+    final existingController = _quantityControllers[key];
+    if (existingController != null) {
+      if (existingController.text != currentText) {
+        existingController.value = TextEditingValue(
+          text: currentText,
+          selection: TextSelection.collapsed(offset: currentText.length),
+        );
+      }
+      return existingController;
     }
+    final controller = TextEditingController(text: currentText);
+    _quantityControllers[key] = controller;
+    return controller;
+  }
+
+  void _syncQuantityController(int index) {
+    if (index < 0 || index >= _items.length) return;
+    final key = identityHashCode(_items[index]);
+    final controller = _quantityControllers[key];
+    if (controller == null) return;
+
+    final text = '${_items[index]['quantity'] ?? 1}';
+    if (controller.text == text) return;
+
+    controller.value = TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
+    );
+  }
+
+  void _handleQuantityInput(int index, String value) {
+    if (value.isEmpty) {
+      return;
+    }
+
+    final parsedValue = int.tryParse(value);
+    if (parsedValue == null) {
+      _syncQuantityController(index);
+      return;
+    }
+
+    _updateQuantity(index, parsedValue);
+  }
+
+  void _handleQuantityEditingComplete(int index) {
+    _syncQuantityController(index);
+    FocusScope.of(context).unfocus();
+  }
+
+  void _updateQuantity(int index, int newQuantity) {
+    if (!mounted || index < 0 || index >= _items.length) return;
+
+    final normalizedQuantity = newQuantity < 1 ? 1 : newQuantity;
+
+    setState(() {
+      _items[index]['quantity'] = normalizedQuantity;
+    });
+
+    _syncQuantityController(index);
   }
 
   void _removeItem(int index) {
-    if (mounted) {
-      setState(() => _items.removeAt(index));
-    }
+    if (!mounted || index < 0 || index >= _items.length) return;
+
+    final key = identityHashCode(_items[index]);
+    final controller = _quantityControllers.remove(key);
+    controller?.dispose();
+
+    setState(() => _items.removeAt(index));
+    FocusScope.of(context).unfocus();
   }
 
   void _showAddAddressDialog(BuildContext context) {
@@ -469,8 +541,11 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                             selectedLead: _selectedLead?.id.toString(),
                             onSelectLead: (LeadData lead) {
                               if (mounted) {
+
+                                if (_selectedLead?.id == lead.id) return;
                                 setState(() {
                                   _selectedLead = lead;
+                                  debugPrint("setting selected address null");
                                   _selectedDeliveryAddress = null;
                                 });
                                 context.read<DeliveryAddressBloc>().add(FetchDeliveryAddresses(
@@ -523,6 +598,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                             onSelectDeliveryMethod: (value) {
                               WidgetsBinding.instance.addPostFrameCallback((_) {
                                 if (mounted) {
+                                  if (_deliveryMethod == value) return;
                                   setState(() {
                                     _deliveryMethod = value;
                                     _selectedDeliveryAddress = null;
@@ -835,24 +911,57 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                     ),
                     child: Row(
                       children: [
-                        IconButton(
-                          icon: const Icon(Icons.remove, size: 20),
-                          color: const Color(0xff1E2E52),
-                          onPressed: () => _updateQuantity(index, (item['quantity'] ?? 1) - 1),
-                        ),
-                        Text(
-                          '${item['quantity'] ?? 1}',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xff1E2E52),
+                        GestureDetector(
+                          onTap: () => _updateQuantity(index, (item['quantity'] ?? 1) - 1),
+                          behavior: HitTestBehavior.opaque,
+                          child: const Padding(
+                            padding: EdgeInsets.all(8),
+                            child: Icon(
+                              Icons.remove,
+                              size: 20,
+                              color: Color(0xff1E2E52),
+                            ),
                           ),
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.add, size: 20),
-                          color: const Color(0xff1E2E52),
-                          onPressed: () => _updateQuantity(index, (item['quantity'] ?? 1) + 1),
+                        SizedBox(
+                          width: 36,
+                          child: TextField(
+                            controller: _getQuantityController(index),
+                            keyboardType: TextInputType.number,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xff1E2E52),
+                            ),
+                            decoration: const InputDecoration(
+                              isDense: true,
+                              contentPadding: EdgeInsets.symmetric(vertical: 8),
+                              border: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              disabledBorder: InputBorder.none,
+                            ),
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                            ],
+                            onChanged: (value) => _handleQuantityInput(index, value),
+                            onEditingComplete: () => _handleQuantityEditingComplete(index),
+                            onSubmitted: (value) => _handleQuantityInput(index, value),
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () => _updateQuantity(index, (item['quantity'] ?? 1) + 1),
+                          behavior: HitTestBehavior.opaque,
+                          child: const Padding(
+                            padding: EdgeInsets.all(8),
+                            child: Icon(
+                              Icons.add,
+                              size: 20,
+                              color: Color(0xff1E2E52),
+                            ),
+                          ),
                         ),
                       ],
                     ),
