@@ -195,10 +195,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
 
     details = [
       {
-        'label': AppLocalizations.of(context)!.translate('order_number'),
-        'value': order.orderNumber
-      },
-      {
         'label': AppLocalizations.of(context)!.translate('client'),
         'value': order.lead.name
       },
