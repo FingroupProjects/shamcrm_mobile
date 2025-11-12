@@ -1,9 +1,7 @@
-import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_event.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_state.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/deliviry_adress/delivery_address_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/deliviry_adress/delivery_address_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc.dart';
@@ -18,24 +16,19 @@ import 'package:crm_task_manager/models/page_2/delivery_address_model.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/models/page_2/order_status_model.dart';
 import 'package:crm_task_manager/page_2/order/order_details/branch_dropdown_list.dart';
-import 'package:crm_task_manager/page_2/order/order_details/branch_method_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/delivery_address_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/delivery_method_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/goods_selection_sheet_patch.dart';
-import 'package:crm_task_manager/page_2/order/order_details/payment_method_dropdown.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/lead_with_manager.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/manager_for_lead.dart';
-import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
-import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-import '../../../custom_widget/country_data_list.dart';
 
 class OrderAddScreen extends StatefulWidget {
   final Order? order;
@@ -65,10 +58,11 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   String? baseUrl;
   String? selectedManager;
   bool isManagerInvalid = false;
-    final ApiService _apiService = ApiService();
+  final ApiService _apiService = ApiService();
 
   bool isManagerManuallySelected = false;
   int? currencyId; // Поле для хранения currency_id
+  final Map<int, TextEditingController> _quantityControllers = {};
 
   @override
   void initState() {
@@ -83,12 +77,12 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
     if (widget.order != null) {
       _items = widget.order!.goods
           .map((good) => {
-                'id': good.goodId,
-                'name': good.goodName,
-                'price': good.price,
-                'quantity': good.quantity,
-                'imagePath': null,
-              })
+        'id': good.goodId,
+        'name': good.goodName,
+        'price': good.price,
+        'quantity': good.quantity,
+        'imagePath': null,
+      })
           .toList();
       selectedLead = widget.order!.lead.id.toString();
       _deliveryMethod = widget.order!.delivery
@@ -97,13 +91,13 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
       selectedDialCode = widget.order!.phone;
       _selectedDeliveryAddress = widget.order!.deliveryAddress != null
           ? DeliveryAddress(
-              id: widget.order!.deliveryAddressId ?? 0,
-              address: widget.order!.deliveryAddress ?? '',
-              leadId: widget.order!.lead.id,
-              isActive: 0,
-              createdAt: '',
-              updatedAt: '',
-            )
+        id: widget.order!.deliveryAddressId ?? 0,
+        address: widget.order!.deliveryAddress ?? '',
+        leadId: widget.order!.lead.id,
+        isActive: 0,
+        createdAt: '',
+        updatedAt: '',
+      )
           : null;
     }
 
@@ -230,24 +224,28 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
     }
   }
 
-Future<void> _initializeBaseUrl() async {
-  try {
-    final staticBaseUrl = await _apiService.getStaticBaseUrl();
-    setState(() {
-      baseUrl = staticBaseUrl;
-    });
-  } catch (error) {
-    setState(() {
-      baseUrl = 'https://shamcrm.com/storage';
-    });
+  Future<void> _initializeBaseUrl() async {
+    try {
+      final staticBaseUrl = await _apiService.getStaticBaseUrl();
+      setState(() {
+        baseUrl = staticBaseUrl;
+      });
+    } catch (error) {
+      setState(() {
+        baseUrl = 'https://shamcrm.com/storage';
+      });
+    }
   }
-}
 
   @override
   void dispose() {
     _phoneController.dispose();
     _deliveryAddressController.dispose();
     _commentController.dispose();
+    for (final controller in _quantityControllers.values) {
+      controller.dispose();
+    }
+    _quantityControllers.clear();
     super.dispose();
   }
 
@@ -257,7 +255,7 @@ Future<void> _initializeBaseUrl() async {
       height: 48,
       color: Colors.grey[200],
       child:
-          const Center(child: Icon(Icons.image, color: Colors.grey, size: 24)),
+      const Center(child: Icon(Icons.image, color: Colors.grey, size: 24)),
     );
   }
 
@@ -280,26 +278,26 @@ Future<void> _initializeBaseUrl() async {
           orderStatus: OrderStatusName(id: 0, name: ''),
           goods: _items
               .map((item) => Good(
-                    good: GoodItem(
-                      id: item['id'],
-                      name: item['name'],
-                      description: '',
-                      quantity: item['quantity'],
-                      files: item['imagePath'] != null
-                          ? [
-                              GoodFile(
-                                id: 0,
-                                name: '',
-                                path: item['imagePath'],
-                              )
-                            ]
-                          : [],
-                    ),
-                    goodId: item['id'],
-                    goodName: item['name'],
-                    price: item['price'],
-                    quantity: item['quantity'],
-                  ))
+            good: GoodItem(
+              id: item['id'],
+              name: item['name'],
+              description: '',
+              quantity: item['quantity'],
+              files: item['imagePath'] != null
+                  ? [
+                GoodFile(
+                  id: 0,
+                  name: '',
+                  path: item['imagePath'],
+                )
+              ]
+                  : [],
+            ),
+            goodId: item['id'],
+            goodName: item['name'],
+            price: item['price'],
+            quantity: item['quantity'],
+          ))
               .toList(),
           organizationId: widget.organizationId,
         );
@@ -313,33 +311,96 @@ Future<void> _initializeBaseUrl() async {
     if (result != null && result is List<Map<String, dynamic>> && mounted) {
       setState(() {
         _items.addAll(result.map((item) => {
-              'id': item['id'],
-              'name': item['name'],
-              'price': item['price'],
-              'quantity': item['quantity'],
-              'imagePath': item['imagePath'],
-            }));
+          'id': item['id'],
+          'name': item['name'],
+          'price': item['price'],
+          'quantity': item['quantity'],
+          'imagePath': item['imagePath'],
+        }));
       });
     }
+  }
+
+  TextEditingController _getQuantityController(int index) {
+    assert(index >= 0 && index < _items.length, 'Index вне диапазона списка товаров');
+    final item = _items[index];
+    final key = identityHashCode(item);
+    final currentText = '${item['quantity'] ?? 1}';
+    final existingController = _quantityControllers[key];
+    if (existingController != null) {
+      if (existingController.text != currentText) {
+        existingController.value = TextEditingValue(
+          text: currentText,
+          selection: TextSelection.collapsed(offset: currentText.length),
+        );
+      }
+      return existingController;
+    }
+    final controller = TextEditingController(text: currentText);
+    _quantityControllers[key] = controller;
+    return controller;
+  }
+
+  void _syncQuantityController(int index) {
+    if (index < 0 || index >= _items.length) return;
+    final key = identityHashCode(_items[index]);
+    final controller = _quantityControllers[key];
+    if (controller == null) return;
+
+    final text = '${_items[index]['quantity'] ?? 1}';
+    if (controller.text == text) return;
+
+    controller.value = TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
+    );
+  }
+
+  void _handleQuantityInput(int index, String value) {
+    if (value.isEmpty) {
+      return;
+    }
+
+    final parsedValue = int.tryParse(value);
+    if (parsedValue == null) {
+      _syncQuantityController(index);
+      return;
+    }
+
+    _updateQuantity(index, parsedValue);
+  }
+
+  void _handleQuantityEditingComplete(int index) {
+    _syncQuantityController(index);
+    FocusScope.of(context).unfocus();
   }
 
   void _updateQuantity(int index, int newQuantity) {
-    if (mounted) {
-      setState(() {
-        if (newQuantity > 0) _items[index]['quantity'] = newQuantity;
-      });
-    }
+    if (!mounted || index < 0 || index >= _items.length) return;
+
+    final normalizedQuantity = newQuantity < 1 ? 1 : newQuantity;
+
+    setState(() {
+      _items[index]['quantity'] = normalizedQuantity;
+    });
+
+    _syncQuantityController(index);
   }
 
   void _removeItem(int index) {
-    if (mounted) {
-      setState(() => _items.removeAt(index));
-    }
+    if (!mounted || index < 0 || index >= _items.length) return;
+
+    final key = identityHashCode(_items[index]);
+    final controller = _quantityControllers.remove(key);
+    controller?.dispose();
+
+    setState(() => _items.removeAt(index));
+    FocusScope.of(context).unfocus();
   }
 
   void _showAddAddressDialog(BuildContext context) {
     final TextEditingController addressController = TextEditingController();
-    
+
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -383,16 +444,16 @@ Future<void> _initializeBaseUrl() async {
                 );
                 return;
               }
-              
+
               Navigator.of(dialogContext).pop();
-              
+
               // Вызываем bloc событие для добавления адреса
               context.read<OrderBloc>().add(
-                    AddMiniAppAddress(
-                      address: addressController.text.trim(),
-                      leadId: int.parse(selectedLead ?? '0'),
-                    ),
-                  );
+                AddMiniAppAddress(
+                  address: addressController.text.trim(),
+                  leadId: int.parse(selectedLead ?? '0'),
+                ),
+              );
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xff4759FF),
@@ -456,10 +517,10 @@ Future<void> _initializeBaseUrl() async {
               );
               // Обновляем список адресов доставки
               context.read<DeliveryAddressBloc>().add(
-                    FetchDeliveryAddresses(
-                      leadId: int.parse(selectedLead ?? '0'),
-                    ),
-                  );
+                FetchDeliveryAddresses(
+                  leadId: int.parse(selectedLead ?? '0'),
+                ),
+              );
             } else if (state is OrderCreateAddressError) {
               showCustomSnackBar(
                 context: context,
@@ -471,16 +532,20 @@ Future<void> _initializeBaseUrl() async {
                 mounted) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 setState(() {
+                  for (final controller in _quantityControllers.values) {
+                    controller.dispose();
+                  }
+                  _quantityControllers.clear();
                   _items = state.orderDetails!.goods
                       .map((good) => {
-                            'id': good.goodId,
-                            'name': good.goodName,
-                            'price': good.price,
-                            'quantity': good.quantity,
-                            'imagePath': good.good.files.isNotEmpty
-                                ? good.good.files[0].path
-                                : null,
-                          })
+                    'id': good.goodId,
+                    'name': good.goodName,
+                    'price': good.price,
+                    'quantity': good.quantity,
+                    'imagePath': good.good.files.isNotEmpty
+                        ? good.good.files[0].path
+                        : null,
+                  })
                       .toList();
                   _phoneController.text = state.orderDetails!.phone;
                   selectedDialCode = state.orderDetails!.phone;
@@ -491,16 +556,16 @@ Future<void> _initializeBaseUrl() async {
                       ? AppLocalizations.of(context)!.translate('delivery')
                       : AppLocalizations.of(context)!.translate('self_delivery');
                   _selectedDeliveryAddress =
-                      state.orderDetails!.deliveryAddress != null
-                          ? DeliveryAddress(
-                              id: state.orderDetails!.deliveryAddressId ?? 0,
-                              address: state.orderDetails!.deliveryAddress ?? '',
-                              leadId: state.orderDetails!.lead.id,
-                              isActive: 0,
-                              createdAt: '',
-                              updatedAt: '',
-                            )
-                          : null;
+                  state.orderDetails!.deliveryAddress != null
+                      ? DeliveryAddress(
+                    id: state.orderDetails!.deliveryAddressId ?? 0,
+                    address: state.orderDetails!.deliveryAddress ?? '',
+                    leadId: state.orderDetails!.lead.id,
+                    isActive: 0,
+                    createdAt: '',
+                    updatedAt: '',
+                  )
+                      : null;
                 });
               });
             }
@@ -517,7 +582,7 @@ Future<void> _initializeBaseUrl() async {
                     child: SingleChildScrollView(
                       key: const Key('order_add_scroll_view'),
                       padding:
-                          const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -540,8 +605,8 @@ Future<void> _initializeBaseUrl() async {
                                           managerBlocState.dataManager.result ?? [];
                                       try {
                                         final matchingManager = managers.firstWhere(
-                                          (manager) =>
-                                              manager.id == selectedLeadData.managerId,
+                                              (manager) =>
+                                          manager.id == selectedLeadData.managerId,
                                         );
                                         selectedManager = matchingManager.id.toString();
                                       } catch (e) {
@@ -796,26 +861,26 @@ Future<void> _initializeBaseUrl() async {
             height: 48,
             child: item['imagePath'] != null && baseUrl != null
                 ? ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.network(
-                      '$baseUrl/${item['imagePath']}',
-                      width: 48,
-                      height: 48,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) =>
-                          _buildPlaceholderImage(),
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return const Center(
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Color(0xff4759FF)),
-                          ),
-                        );
-                      },
+              borderRadius: BorderRadius.circular(8),
+              child: Image.network(
+                '$baseUrl/${item['imagePath']}',
+                width: 48,
+                height: 48,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) =>
+                    _buildPlaceholderImage(),
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return const Center(
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor:
+                      AlwaysStoppedAnimation<Color>(Color(0xff4759FF)),
                     ),
-                  )
+                  );
+                },
+              ),
+            )
                 : _buildPlaceholderImage(),
           ),
           const SizedBox(width: 12),
@@ -890,22 +955,61 @@ Future<void> _initializeBaseUrl() async {
                         color: const Color(0xffF4F7FD)),
                     child: Row(
                       children: [
-                        IconButton(
-                            icon: const Icon(Icons.remove, size: 20),
-                            color: const Color(0xff1E2E52),
-                            onPressed: () => _updateQuantity(
-                                index, (item['quantity'] ?? 1) - 1)),
-                        Text('${item['quantity'] ?? 1}',
+                        GestureDetector(
+                          onTap: () =>
+                              _updateQuantity(index, (item['quantity'] ?? 1) - 1),
+                          behavior: HitTestBehavior.opaque,
+                          child: const Padding(
+                            padding: EdgeInsets.all(8),
+                            child: Icon(
+                              Icons.remove,
+                              size: 20,
+                              color: Color(0xff1E2E52),
+                            ),
+                          ),
+                        ),
+                        SizedBox(
+                          width: 36,
+                          child: TextField(
+                            controller: _getQuantityController(index),
+                            keyboardType: TextInputType.number,
+                            textAlign: TextAlign.center,
                             style: const TextStyle(
-                                fontSize: 16,
-                                fontFamily: 'Gilroy',
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xff1E2E52))),
-                        IconButton(
-                            icon: const Icon(Icons.add, size: 20),
-                            color: const Color(0xff1E2E52),
-                            onPressed: () => _updateQuantity(
-                                index, (item['quantity'] ?? 1) + 1)),
+                              fontSize: 16,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xff1E2E52),
+                            ),
+                            decoration: const InputDecoration(
+                              isDense: true,
+                              contentPadding: EdgeInsets.symmetric(vertical: 8),
+                              border: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              disabledBorder: InputBorder.none,
+                            ),
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                            ],
+                            onChanged: (value) => _handleQuantityInput(index, value),
+                            onEditingComplete: () =>
+                                _handleQuantityEditingComplete(index),
+                            onSubmitted: (value) => _handleQuantityInput(index, value),
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () =>
+                              _updateQuantity(index, (item['quantity'] ?? 1) + 1),
+                          behavior: HitTestBehavior.opaque,
+                          child: const Padding(
+                            padding: EdgeInsets.all(8),
+                            child: Icon(
+                              Icons.add,
+                              size: 20,
+                              color: Color(0xff1E2E52),
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -991,7 +1095,7 @@ Future<void> _initializeBaseUrl() async {
                     return;
                   }
                   if (_deliveryMethod ==
-                          AppLocalizations.of(context)!.translate('delivery') &&
+                      AppLocalizations.of(context)!.translate('delivery') &&
                       _selectedDeliveryAddress == null) {
                     showCustomSnackBar(
                       context: context,
@@ -1011,14 +1115,14 @@ Future<void> _initializeBaseUrl() async {
                     leadId: widget.leadId ?? int.parse(selectedLead ?? '0'),
                     delivery: !isPickup,
                     deliveryAddress:
-                        isPickup ? null : _selectedDeliveryAddress?.address,
+                    isPickup ? null : _selectedDeliveryAddress?.address,
                     deliveryAddressId: isPickup ? null : _selectedDeliveryAddress?.id,
                     goods: _items
                         .map((item) => {
-                              'variant_id': item['id'].toString(),
-                              'quantity': item['quantity'] ?? 1,
-                              'price': item['price'].toString(),
-                            })
+                      'variant_id': item['id'].toString(),
+                      'quantity': item['quantity'] ?? 1,
+                      'price': item['price'].toString(),
+                    })
                         .toList(),
                     organizationId: widget.organizationId ?? 1,
                     statusId: selectedStatusId ?? 1,

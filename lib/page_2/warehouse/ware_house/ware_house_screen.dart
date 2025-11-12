@@ -72,7 +72,7 @@ class _WareHouseScreenState extends State<WareHouseScreen> {
 
   void _onScroll() {
     if (_scrollController.position.pixels >=
-            _scrollController.position.maxScrollExtent - 200 &&
+        _scrollController.position.maxScrollExtent - 200 &&
         !_isLoadingMore &&
         !_hasReachedMax) {
       setState(() {
@@ -85,7 +85,7 @@ class _WareHouseScreenState extends State<WareHouseScreen> {
 
   void _onSearch(String query) {
     debugPrint('WareHouseScreen: Поиск складов с запросом: $query');
-    
+
     setState(() {
       _isSearching = query.isNotEmpty;
     });
@@ -137,20 +137,20 @@ class _WareHouseScreenState extends State<WareHouseScreen> {
       // ИЗМЕНЕНО: Показываем FAB только если есть право на создание
       floatingActionButton: _hasCreatePermission
           ? FloatingActionButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => AddWarehouseScreen(),
-                  ),
-                ).then((value) {
-                  final query = _currentFilters['query'] as String?;
-                  context.read<WareHouseBloc>().add(FetchWareHouse(query: query));
-                });
-              },
-              backgroundColor: const Color(0xff1E2E52),
-              child: const Icon(Icons.add, color: Colors.white),
-            )
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => AddWarehouseScreen(),
+            ),
+          ).then((value) {
+            final query = _currentFilters['query'] as String?;
+            context.read<WareHouseBloc>().add(FetchWareHouse(query: query));
+          });
+        },
+        backgroundColor: const Color(0xff1E2E52),
+        child: const Icon(Icons.add, color: Colors.white),
+      )
           : null,
       body: BlocBuilder<WareHouseBloc, WareHouseState>(
         builder: (context, state) {
@@ -213,7 +213,7 @@ class _WareHouseScreenState extends State<WareHouseScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Error: ${state.message}',
+                      localizations.translate(state.message),
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         fontSize: 16,

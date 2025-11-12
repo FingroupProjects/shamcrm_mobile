@@ -26,6 +26,7 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -53,9 +54,10 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   String? _fullPhoneNumber; // Полный номер телефона с кодом страны
   String? baseUrl;
   List<Branch> branches = [];
-    final ApiService _apiService = ApiService();
+  final ApiService _apiService = ApiService();
 
   int? currencyId; // Поле для хранения currency_id
+  final Map<int, TextEditingController> _quantityControllers = {};
 
   @override
   void initState() {
@@ -81,14 +83,17 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
     selectedManager = widget.order.manager?.id.toString();
     _selectedDeliveryAddress = widget.order.deliveryAddress != null
         ? DeliveryAddress(
-            id: widget.order.deliveryAddressId ?? 0,
-            address: widget.order.deliveryAddress ?? '',
-            leadId: widget.order.lead.id,
-            isActive: 0,
-            createdAt: '',
-            updatedAt: '',
-          )
+      id: widget.order.deliveryAddressId ?? 0,
+      address: widget.order.deliveryAddress ?? '',
+      leadId: widget.order.lead.id,
+      isActive: 0,
+      createdAt: '',
+      updatedAt: '',
+    )
         : null;
+
+    debugPrint("_selectedDeliveryAddress");
+    debugPrint(_selectedDeliveryAddress?.address);
 
     if (widget.order.branchId != null && widget.order.branchName != null) {
       _selectedBranch = Branch(
@@ -235,21 +240,25 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   }
 
   Future<void> _initializeBaseUrl() async {
-  try {
-    final staticBaseUrl = await _apiService.getStaticBaseUrl();
-    setState(() {
-      baseUrl = staticBaseUrl;
-    });
-  } catch (error) {
-    setState(() {
-      baseUrl = 'https://shamcrm.com/storage';
-    });
+    try {
+      final staticBaseUrl = await _apiService.getStaticBaseUrl();
+      setState(() {
+        baseUrl = staticBaseUrl;
+      });
+    } catch (error) {
+      setState(() {
+        baseUrl = 'https://shamcrm.com/storage';
+      });
+    }
   }
-}
   @override
   void dispose() {
     _phoneController.dispose();
     _commentController.dispose();
+    for (final controller in _quantityControllers.values) {
+      controller.dispose();
+    }
+    _quantityControllers.clear();
     super.dispose();
   }
 
@@ -295,33 +304,96 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
     if (result != null && result is List<Map<String, dynamic>> && mounted) {
       setState(() {
         _items.addAll(result.map((item) => {
-              'id': item['id'],
-              'name': item['name'],
-              'price': item['price'],
-              'quantity': item['quantity'] ?? 1,
-              'imagePath': item['imagePath'],
-            }));
+          'id': item['id'],
+          'name': item['name'],
+          'price': item['price'],
+          'quantity': item['quantity'] ?? 1,
+          'imagePath': item['imagePath'],
+        }));
       });
     }
+  }
+
+  TextEditingController _getQuantityController(int index) {
+    assert(index >= 0 && index < _items.length, 'Index вне диапазона списка товаров');
+    final item = _items[index];
+    final key = identityHashCode(item);
+    final currentText = '${item['quantity'] ?? 1}';
+    final existingController = _quantityControllers[key];
+    if (existingController != null) {
+      if (existingController.text != currentText) {
+        existingController.value = TextEditingValue(
+          text: currentText,
+          selection: TextSelection.collapsed(offset: currentText.length),
+        );
+      }
+      return existingController;
+    }
+    final controller = TextEditingController(text: currentText);
+    _quantityControllers[key] = controller;
+    return controller;
+  }
+
+  void _syncQuantityController(int index) {
+    if (index < 0 || index >= _items.length) return;
+    final key = identityHashCode(_items[index]);
+    final controller = _quantityControllers[key];
+    if (controller == null) return;
+
+    final text = '${_items[index]['quantity'] ?? 1}';
+    if (controller.text == text) return;
+
+    controller.value = TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
+    );
+  }
+
+  void _handleQuantityInput(int index, String value) {
+    if (value.isEmpty) {
+      return;
+    }
+
+    final parsedValue = int.tryParse(value);
+    if (parsedValue == null) {
+      _syncQuantityController(index);
+      return;
+    }
+
+    _updateQuantity(index, parsedValue);
+  }
+
+  void _handleQuantityEditingComplete(int index) {
+    _syncQuantityController(index);
+    FocusScope.of(context).unfocus();
   }
 
   void _updateQuantity(int index, int newQuantity) {
-    if (mounted) {
-      setState(() {
-        if (newQuantity > 0) _items[index]['quantity'] = newQuantity;
-      });
-    }
+    if (!mounted || index < 0 || index >= _items.length) return;
+
+    final normalizedQuantity = newQuantity < 1 ? 1 : newQuantity;
+
+    setState(() {
+      _items[index]['quantity'] = normalizedQuantity;
+    });
+
+    _syncQuantityController(index);
   }
 
   void _removeItem(int index) {
-    if (mounted) {
-      setState(() => _items.removeAt(index));
-    }
+    if (!mounted || index < 0 || index >= _items.length) return;
+
+    final key = identityHashCode(_items[index]);
+    final controller = _quantityControllers.remove(key);
+    controller?.dispose();
+
+    setState(() => _items.removeAt(index));
+    FocusScope.of(context).unfocus();
   }
 
   void _showAddAddressDialog(BuildContext context) {
     final TextEditingController addressController = TextEditingController();
-    
+
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -365,16 +437,16 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                 );
                 return;
               }
-              
+
               Navigator.of(dialogContext).pop();
-              
+
               // Вызываем bloc событие для добавления адреса
               context.read<OrderBloc>().add(
-                    AddMiniAppAddress(
-                      address: addressController.text.trim(),
-                      leadId: _selectedLead?.id ?? 0,
-                    ),
-                  );
+                AddMiniAppAddress(
+                  address: addressController.text.trim(),
+                  leadId: _selectedLead?.id ?? 0,
+                ),
+              );
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xff4759FF),
@@ -438,10 +510,10 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
               );
               // Обновляем список адресов доставки
               context.read<DeliveryAddressBloc>().add(
-                    FetchDeliveryAddresses(
-                      leadId: _selectedLead?.id ?? 0,
-                    ),
-                  );
+                FetchDeliveryAddresses(
+                  leadId: _selectedLead?.id ?? 0,
+                ),
+              );
             } else if (state is OrderCreateAddressError) {
               showCustomSnackBar(
                 context: context,
@@ -469,13 +541,16 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                             selectedLead: _selectedLead?.id.toString(),
                             onSelectLead: (LeadData lead) {
                               if (mounted) {
+
+                                if (_selectedLead?.id == lead.id) return;
                                 setState(() {
                                   _selectedLead = lead;
+                                  debugPrint("setting selected address null");
                                   _selectedDeliveryAddress = null;
                                 });
                                 context.read<DeliveryAddressBloc>().add(FetchDeliveryAddresses(
-                                      leadId: lead.id,
-                                    ));
+                                  leadId: lead.id,
+                                ));
                               }
                             },
                           ),
@@ -523,6 +598,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                             onSelectDeliveryMethod: (value) {
                               WidgetsBinding.instance.addPostFrameCallback((_) {
                                 if (mounted) {
+                                  if (_deliveryMethod == value) return;
                                   setState(() {
                                     _deliveryMethod = value;
                                     _selectedDeliveryAddress = null;
@@ -545,26 +621,26 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                             ),
                           if (_deliveryMethod == AppLocalizations.of(context)!.translate('delivery')) const SizedBox(height: 16),
                           if (_deliveryMethod == AppLocalizations.of(context)!.translate('delivery'))
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Spacer(),
-                              if (_deliveryMethod == AppLocalizations.of(context)!.translate('delivery'))
-                                GestureDetector(
-                                  onTap: () => _showAddAddressDialog(context),
-                                  child: Text(
-                                    AppLocalizations.of(context)!.translate('add_address'),
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                      fontFamily: 'Gilroy',
-                                      color: Color(0xff4759FF),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Spacer(),
+                                if (_deliveryMethod == AppLocalizations.of(context)!.translate('delivery'))
+                                  GestureDetector(
+                                    onTap: () => _showAddAddressDialog(context),
+                                    child: Text(
+                                      AppLocalizations.of(context)!.translate('add_address'),
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                        fontFamily: 'Gilroy',
+                                        color: Color(0xff4759FF),
+                                      ),
                                     ),
                                   ),
-                                ),
-                            ],
-                          ),
+                              ],
+                            ),
                           if (_deliveryMethod == AppLocalizations.of(context)!.translate('delivery')) const SizedBox(height: 8),
                           CustomTextField(
                             controller: _commentController,
@@ -733,23 +809,23 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
             height: 48,
             child: item['imagePath'] != null && item['imagePath'].isNotEmpty && baseUrl != null
                 ? ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: CachedNetworkImage(
-                      imageUrl: item['imagePath'].startsWith('http')
-                          ? item['imagePath']
-                          : '$baseUrl/${item['imagePath']}',
-                      width: 48,
-                      height: 48,
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) => const Center(
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xff4759FF)),
-                        ),
-                      ),
-                      errorWidget: (context, url, error) => _buildPlaceholderImage(),
-                    ),
-                  )
+              borderRadius: BorderRadius.circular(8),
+              child: CachedNetworkImage(
+                imageUrl: item['imagePath'].startsWith('http')
+                    ? item['imagePath']
+                    : '$baseUrl/${item['imagePath']}',
+                width: 48,
+                height: 48,
+                fit: BoxFit.cover,
+                placeholder: (context, url) => const Center(
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xff4759FF)),
+                  ),
+                ),
+                errorWidget: (context, url, error) => _buildPlaceholderImage(),
+              ),
+            )
                 : _buildPlaceholderImage(),
           ),
           const SizedBox(width: 12),
@@ -835,24 +911,57 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                     ),
                     child: Row(
                       children: [
-                        IconButton(
-                          icon: const Icon(Icons.remove, size: 20),
-                          color: const Color(0xff1E2E52),
-                          onPressed: () => _updateQuantity(index, (item['quantity'] ?? 1) - 1),
-                        ),
-                        Text(
-                          '${item['quantity'] ?? 1}',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xff1E2E52),
+                        GestureDetector(
+                          onTap: () => _updateQuantity(index, (item['quantity'] ?? 1) - 1),
+                          behavior: HitTestBehavior.opaque,
+                          child: const Padding(
+                            padding: EdgeInsets.all(8),
+                            child: Icon(
+                              Icons.remove,
+                              size: 20,
+                              color: Color(0xff1E2E52),
+                            ),
                           ),
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.add, size: 20),
-                          color: const Color(0xff1E2E52),
-                          onPressed: () => _updateQuantity(index, (item['quantity'] ?? 1) + 1),
+                        SizedBox(
+                          width: 36,
+                          child: TextField(
+                            controller: _getQuantityController(index),
+                            keyboardType: TextInputType.number,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xff1E2E52),
+                            ),
+                            decoration: const InputDecoration(
+                              isDense: true,
+                              contentPadding: EdgeInsets.symmetric(vertical: 8),
+                              border: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              disabledBorder: InputBorder.none,
+                            ),
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                            ],
+                            onChanged: (value) => _handleQuantityInput(index, value),
+                            onEditingComplete: () => _handleQuantityEditingComplete(index),
+                            onSubmitted: (value) => _handleQuantityInput(index, value),
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () => _updateQuantity(index, (item['quantity'] ?? 1) + 1),
+                          behavior: HitTestBehavior.opaque,
+                          child: const Padding(
+                            padding: EdgeInsets.all(8),
+                            child: Icon(
+                              Icons.add,
+                              size: 20,
+                              color: Color(0xff1E2E52),
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -932,27 +1041,27 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
 
                   final isPickup = _deliveryMethod == AppLocalizations.of(context)!.translate('self_delivery');
                   context.read<OrderBloc>().add(UpdateOrder(
-                        orderId: widget.order.id,
-                          phone: _fullPhoneNumber ?? widget.order.phone,
-                        leadId: _selectedLead?.id ?? 0,
-                        delivery: !isPickup,
-                        deliveryAddress: isPickup ? null : _selectedDeliveryAddress?.address,
-                        deliveryAddressId: isPickup ? null : _selectedDeliveryAddress?.id,
-                        goods: _items
-                            .map((item) => {
-                                  'variant_id': item['id'].toString(),
-                                  'quantity': item['quantity'] ?? 1,
-                                  'price': item['price'].toString(),
-                                })
-                            .toList(),
-                        organizationId: widget.order.organizationId ?? 1,
-                        branchId: _selectedBranch?.id,
-                        commentToCourier: _commentController.text.isNotEmpty
-                            ? _commentController.text
-                            : null,
-                        managerId: selectedManager != null ? int.parse(selectedManager!) : null,
-                        statusId: widget.order.orderStatus.id, // Передаем текущий statusId
-                      ));
+                    orderId: widget.order.id,
+                    phone: _fullPhoneNumber ?? widget.order.phone,
+                    leadId: _selectedLead?.id ?? 0,
+                    delivery: !isPickup,
+                    deliveryAddress: isPickup ? null : _selectedDeliveryAddress?.address,
+                    deliveryAddressId: isPickup ? null : _selectedDeliveryAddress?.id,
+                    goods: _items
+                        .map((item) => {
+                      'variant_id': item['id'].toString(),
+                      'quantity': item['quantity'] ?? 1,
+                      'price': item['price'].toString(),
+                    })
+                        .toList(),
+                    organizationId: widget.order.organizationId ?? 1,
+                    branchId: _selectedBranch?.id,
+                    commentToCourier: _commentController.text.isNotEmpty
+                        ? _commentController.text
+                        : null,
+                    managerId: selectedManager != null ? int.parse(selectedManager!) : null,
+                    statusId: widget.order.orderStatus.id, // Передаем текущий statusId
+                  ));
                 } else {
                   showCustomSnackBar(
                     context: context,

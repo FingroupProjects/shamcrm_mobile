@@ -10,6 +10,7 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -39,10 +40,11 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
   bool _showAllMode = false;
   Timer? _searchDebounce;
   int? currencyId;
-  
+
   // Для хранения выбранных товаров
   final Map<int, Variant> _selectedVariants = {};
   final Map<int, int> _selectedQuantities = {};
+  final Map<int, TextEditingController> _quantityControllers = {};
 
   @override
   void initState() {
@@ -243,15 +245,25 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
   }
 
   void _onVariantTap(Variant variant) {
+    final variantId = variant.id;
+    final wasSelected = _selectedVariants.containsKey(variantId);
+
     setState(() {
-      if (_selectedVariants.containsKey(variant.id)) {
-        _selectedVariants.remove(variant.id);
-        _selectedQuantities.remove(variant.id);
+      if (wasSelected) {
+        _selectedVariants.remove(variantId);
+        _selectedQuantities.remove(variantId);
       } else {
-        _selectedVariants[variant.id] = variant;
-        _selectedQuantities[variant.id] = 1;
+        _selectedVariants[variantId] = variant;
+        _selectedQuantities[variantId] = 1;
       }
     });
+
+    if (wasSelected) {
+      FocusScope.of(context).unfocus();
+      _disposeQuantityController(variantId);
+    } else {
+      _syncQuantityController(variantId);
+    }
   }
 
   bool _isVariantSelected(Variant variant) {
@@ -262,23 +274,94 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
     return _selectedQuantities[variant.id] ?? 1;
   }
 
-  void _incrementQuantity(Variant variant) {
-    setState(() {
-      if (_selectedVariants.containsKey(variant.id)) {
-        _selectedQuantities[variant.id] = (_selectedQuantities[variant.id] ?? 1) + 1;
+  TextEditingController _getQuantityController(Variant variant) {
+    final variantId = variant.id;
+    final currentText = '${_getVariantQuantity(variant)}';
+    final controller = _quantityControllers[variantId];
+
+    if (controller != null) {
+      if (controller.text != currentText) {
+        controller.value = TextEditingValue(
+          text: currentText,
+          selection: TextSelection.collapsed(offset: currentText.length),
+        );
       }
+      return controller;
+    }
+
+    final newController = TextEditingController(text: currentText);
+    _quantityControllers[variantId] = newController;
+    return newController;
+  }
+
+  void _syncQuantityController(int variantId) {
+    final controller = _quantityControllers[variantId];
+    if (controller == null) return;
+
+    final text = '${_selectedQuantities[variantId] ?? 1}';
+    if (controller.text == text) return;
+
+    controller.value = TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
+    );
+  }
+
+  void _updateVariantQuantity(Variant variant, int quantity) {
+    if (!_selectedVariants.containsKey(variant.id)) {
+      return;
+    }
+
+    final normalizedQuantity = quantity < 1 ? 1 : quantity;
+    final currentQuantity = _getVariantQuantity(variant);
+
+    if (currentQuantity == normalizedQuantity) {
+      _syncQuantityController(variant.id);
+      return;
+    }
+
+    setState(() {
+      _selectedQuantities[variant.id] = normalizedQuantity;
     });
+
+    _syncQuantityController(variant.id);
+  }
+
+  void _handleQuantityInput(Variant variant, String value) {
+    if (value.isEmpty) {
+      return;
+    }
+
+    final parsedValue = int.tryParse(value);
+    if (parsedValue == null) {
+      _syncQuantityController(variant.id);
+      return;
+    }
+
+    _updateVariantQuantity(variant, parsedValue);
+  }
+
+  void _disposeQuantityController(int variantId) {
+    final controller = _quantityControllers.remove(variantId);
+    controller?.dispose();
+  }
+
+  void _incrementQuantity(Variant variant) {
+    if (_selectedVariants.containsKey(variant.id)) {
+      final currentQuantity = _getVariantQuantity(variant);
+      _updateVariantQuantity(variant, currentQuantity + 1);
+    }
   }
 
   void _decrementQuantity(Variant variant) {
-    setState(() {
-      if (_selectedVariants.containsKey(variant.id)) {
-        final currentQty = _selectedQuantities[variant.id] ?? 1;
-        if (currentQty > 1) {
-          _selectedQuantities[variant.id] = currentQty - 1;
-        }
+    if (_selectedVariants.containsKey(variant.id)) {
+      final currentQty = _getVariantQuantity(variant);
+      if (currentQty > 1) {
+        _updateVariantQuantity(variant, currentQty - 1);
+      } else {
+        _syncQuantityController(variant.id);
       }
-    });
+    }
   }
 
   void _returnSelectedProducts() {
@@ -287,7 +370,7 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
       'id': variant.id,
       'name': _getDisplayName(variant),
       'price': variant.price ?? 0.0,
-      'quantity': _selectedQuantities[variant.id] ?? 1,
+      'quantity': _getVariantQuantity(variant),
       'imagePath': variant.good?.files.isNotEmpty == true
           ? variant.good!.files[0].path
           : null,
@@ -339,6 +422,10 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
     _searchController.dispose();
     _scrollController.dispose();
     _searchDebounce?.cancel();
+    for (final controller in _quantityControllers.values) {
+      controller.dispose();
+    }
+    _quantityControllers.clear();
     super.dispose();
   }
 
@@ -903,23 +990,24 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
     final imageUrl = variant.good?.mainImageUrl;
     final isSelected = _isVariantSelected(variant);
 
-    return GestureDetector(
-      onTap: () => _onVariantTap(variant),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? const Color(0xff4759FF) : const Color(0xFFE5E7EB),
-            width: isSelected ? 2 : 1,
-          ),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isSelected ? const Color(0xff4759FF) : const Color(0xFFE5E7EB),
+          width: isSelected ? 2 : 1,
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            children: [
-              Row(
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          children: [
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => _onVariantTap(variant),
+              child: Row(
                 children: [
                   _buildProductImage(variant, imageUrl),
                   const SizedBox(width: 12),
@@ -954,55 +1042,93 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
                   _buildSelectionIndicator(variant),
                 ],
               ),
-              if (isSelected) ...[
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF4F7FD),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        localizations.translate('stock_quantity_details'),
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xff99A4BA),
-                        ),
+            ),
+            if (isSelected) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF4F7FD),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      localizations.translate('stock_quantity_details'),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff99A4BA),
                       ),
-                      Row(
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.remove, size: 20),
-                            color: const Color(0xff1E2E52),
-                            onPressed: () => _decrementQuantity(variant),
+                    ),
+                    Row(
+                      children: [
+                        GestureDetector(
+                          onTap: () => _decrementQuantity(variant),
+                          behavior: HitTestBehavior.opaque,
+                          child: const Padding(
+                            padding: EdgeInsets.all(8),
+                            child: Icon(
+                              Icons.remove,
+                              size: 20,
+                              color: Color(0xff1E2E52),
+                            ),
                           ),
-                          Text(
-                            '${_getVariantQuantity(variant)}',
+                        ),
+                        SizedBox(
+                          width: 36,
+                          child: TextField(
+                            controller: _getQuantityController(variant),
+                            keyboardType: TextInputType.number,
+                            textAlign: TextAlign.center,
                             style: const TextStyle(
                               fontSize: 16,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w500,
                               color: Color(0xff1E2E52),
                             ),
+                            decoration: const InputDecoration(
+                              isDense: true,
+                              contentPadding: EdgeInsets.symmetric(vertical: 8),
+                              border: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              disabledBorder: InputBorder.none,
+                            ),
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                            ],
+                            onChanged: (value) => _handleQuantityInput(variant, value),
+                            onEditingComplete: () {
+                              if ((_quantityControllers[variant.id]?.text ?? '').isEmpty) {
+                                _syncQuantityController(variant.id);
+                              }
+                              FocusScope.of(context).unfocus();
+                            },
+                            onSubmitted: (value) => _handleQuantityInput(variant, value),
                           ),
-                          IconButton(
-                            icon: const Icon(Icons.add, size: 20),
-                            color: const Color(0xff1E2E52),
-                            onPressed: () => _incrementQuantity(variant),
+                        ),
+                        GestureDetector(
+                          onTap: () => _incrementQuantity(variant),
+                          behavior: HitTestBehavior.opaque,
+                          child: const Padding(
+                            padding: EdgeInsets.all(8),
+                            child: Icon(
+                              Icons.add,
+                              size: 20,
+                              color: Color(0xff1E2E52),
+                            ),
                           ),
-                        ],
-                      ),
-                    ],
-                  ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ],
-          ),
+          ],
         ),
       ),
     );

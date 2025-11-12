@@ -572,6 +572,8 @@
   "nothing_task_for_manager": "No tasks to display",
   "status_updated_successfully": "Status updated successfully",
   "events": "Events",
+  "history_dialog_event": "event",
+  "history_dialog_events": "events",
   "appbar_events": "Events",
   "title": "Topic:",
   "body": "Description:",

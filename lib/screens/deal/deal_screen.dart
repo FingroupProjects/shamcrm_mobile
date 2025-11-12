@@ -801,7 +801,9 @@ Future<void> _handleManagerSelected(Map managers) async {
                   if (!_isSearching && _selectedManagerId == null && _showCustomTabBar)
                     _buildCustomTabBar(),
                   Expanded(
-                    child: _isSearching || _selectedManagerId != null
+                    // TODO should be checked
+                    // child: _isSearching || _selectedManagerId != null
+                    child: _isSearching || !_showCustomTabBar
                         ? _buildManagerView()
                         : _buildTabBarView(),
                   ),

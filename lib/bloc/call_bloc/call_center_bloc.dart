@@ -91,6 +91,7 @@ class CallCenterBloc extends Bloc<CallCenterEvent, CallCenterState> {
         calls: calls,
         currentPage: currentPage,
         totalPages: totalPages,
+        currentFilter: event.callType,
       ));
     } catch (e) {
       if (kDebugMode) {
@@ -295,9 +296,9 @@ class CallCenterBloc extends Bloc<CallCenterEvent, CallCenterState> {
   }
 
   Future<void> _onSubmitCallRatingAndReport(
-    SubmitCallRatingAndReport event,
-    Emitter<CallCenterState> emit,
-  ) async {
+      SubmitCallRatingAndReport event,
+      Emitter<CallCenterState> emit,
+      ) async {
     if (kDebugMode) {
       //print("Handling SubmitCallRatingAndReport event: callId=${event.callId}, rating=${event.rating}, report=${event.report}");
     }
