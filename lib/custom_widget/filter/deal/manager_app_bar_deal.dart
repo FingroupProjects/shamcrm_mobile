@@ -3,10 +3,10 @@ import 'dart:convert';
 
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/custom_widget/filter/deal/deal_NamesMultiSelectWidget.dart';
-import 'package:crm_task_manager/custom_widget/filter/deal/deal_directory_dropdown_widget.dart';
 import 'package:crm_task_manager/custom_widget/filter/deal/deal_status_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/deal/lead_manager_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/multi_manager_list.dart';
+import 'package:crm_task_manager/custom_widget/filter/lead/multi_directory_dropdown_widget.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/models/deal_name_list.dart';
 import 'package:crm_task_manager/models/directory_link_model.dart';
@@ -83,8 +83,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
   DateTime? _toDate;
   bool? _hasTasks;
   int? _daysWithoutActivity;
-  DateTime? _createAt;
-  Map<int, MainField?> _selectedDirectoryFields = {};
+  Map<int, List<MainField>> _selectedDirectoryFields = {};
   List<DirectoryLink> _directoryLinks = [];
   List<DealNameData> _selectedDealNames = [];
   Map<String, List<String>> _selectedCustomFieldValues = {};
@@ -141,7 +140,13 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _selectedDirectoryFields = (jsonDecode(prefs.getString('deal_selected_directory_fields') ?? '{}') as Map)
-          .map((key, value) => MapEntry(int.parse(key), value != null ? MainField.fromJson(jsonDecode(value)) : null));
+          .map((key, value) {
+            final list = value as List?;
+            if (list == null) return MapEntry(int.parse(key), <MainField>[]);
+            return MapEntry(int.parse(key), 
+              list.map((item) => MainField.fromJson(item as Map<String, dynamic>)).toList()
+            );
+          });
       _selectedDealNames = (jsonDecode(prefs.getString('deal_selected_names') ?? '[]') as List)
           .map((name) => DealNameData(id: 0, title: name))
           .toList();
@@ -151,7 +156,8 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
   Future<void> _saveFilterState() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('deal_selected_directory_fields',
-        jsonEncode(_selectedDirectoryFields.map((key, value) => MapEntry(key.toString(), value?.toJson()))));
+        jsonEncode(_selectedDirectoryFields.map((key, value) => 
+            MapEntry(key.toString(), value.map((field) => field.toJson()).toList()))));
     await prefs.setString('deal_selected_names',
         jsonEncode(_selectedDealNames.map((dealName) => dealName.title).toList()));
   }
@@ -163,11 +169,13 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
         setState(() {
           _directoryLinks = response.data!;
           final initialDirectoryValues = widget.initialDirectoryValues ?? const [];
-          final updatedSelections = <int, MainField?>{};
+          final Map<int, List<MainField>> updatedSelections = {};
 
           for (var link in _directoryLinks) {
-            if (_selectedDirectoryFields.containsKey(link.id)) {
-              updatedSelections[link.id] = _selectedDirectoryFields[link.id];
+            final existingSelection = _selectedDirectoryFields[link.id] ?? const <MainField>[];
+
+            if (existingSelection.isNotEmpty) {
+              updatedSelections[link.id] = List<MainField>.from(existingSelection);
               continue;
             }
 
@@ -185,16 +193,12 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                       value['entry_value']?.toString() ??
                       value['value']?.toString() ??
                       '';
-                  if (entryValue.isEmpty) {
-                    return null;
-                  }
                   return MainField(id: entryId, value: entryValue);
                 })
                 .whereType<MainField>()
                 .toList();
 
-            updatedSelections[link.id] =
-                initialSelections.isNotEmpty ? initialSelections.first : null;
+            updatedSelections[link.id] = initialSelections;
           }
 
           _selectedDirectoryFields = updatedSelections;
@@ -359,15 +363,15 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
               color: Colors.white,
               child: Padding(
                 padding: const EdgeInsets.all(8),
-                child: DirectoryDropdownWidget(
+                child: MultiDirectoryDropdownWidget(
                   directoryId: link.directory.id,
                   directoryName: link.directory.name,
-                  onSelectField: (MainField? field) {
+                  onSelectField: (List<MainField> fields) {
                     setState(() {
-                      _selectedDirectoryFields[link.id] = field;
+                      _selectedDirectoryFields[link.id] = List<MainField>.from(fields);
                     });
                   },
-                  initialField: _selectedDirectoryFields[link.id],
+                  initialFields: _selectedDirectoryFields[link.id],
                 ),
               ),
             );
@@ -397,37 +401,6 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
       activeTrackColor: ChatSmsStyles.messageBubbleSenderColor,
       inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
     );
-  }
-
-  void _selectCreateAt() async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: _createAt ?? DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2101),
-      builder: (BuildContext context, Widget? child) {
-        return Theme(
-          data: ThemeData.light().copyWith(
-            scaffoldBackgroundColor: Colors.white,
-            dialogBackgroundColor: Colors.white,
-            colorScheme: ColorScheme.light(
-              primary: Colors.blue,
-              onPrimary: Colors.white,
-              onSurface: Colors.black,
-            ),
-            textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(foregroundColor: Colors.blue),
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (picked != null) {
-      setState(() {
-        _createAt = picked;
-      });
-    }
   }
 
   void _selectDateRange() async {
@@ -499,7 +472,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                 _selectedDealNames.clear();
                 _selectedCustomFieldValues.clear();
                 for (var link in _directoryLinks) {
-                  _selectedDirectoryFields[link.id] = null;
+                  _selectedDirectoryFields[link.id] = <MainField>[];
                 }
                 _initializeCustomFieldSelections(const {});
               });
@@ -527,6 +500,10 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
             onPressed: () async {
               await _saveFilterState();
               await DealCache.clearAllDeals();
+              final directoryIdByLinkId = {
+                for (var link in _directoryLinks) link.id: link.directory.id,
+              };
+
               Map<String, dynamic> filterData = {
                 'managers': _selectedManagers,
                 'leads': _selectedLeads,
@@ -536,14 +513,16 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                 'daysWithoutActivity': _daysWithoutActivity,
                 'hasTask': _hasTasks,
                 'directory_values': _selectedDirectoryFields.entries
-                    .where((entry) => entry.value != null)
-                    .map((entry) => {
-                          'directory_id': _directoryLinks
-                              .firstWhere((link) => link.id == entry.key)
-                              .directory
-                              .id,
-                          'entry_id': entry.value!.id,
-                        })
+                    .expand((entry) {
+                      final directoryId = directoryIdByLinkId[entry.key];
+                      if (directoryId == null || entry.value.isEmpty) {
+                        return const Iterable<Map<String, dynamic>>.empty();
+                      }
+                      return entry.value.map((field) => {
+                            'directory_id': directoryId,
+                            'entry_id': field.id,
+                          });
+                    })
                     .toList(),
                 'names': _selectedDealNames.map((dealName) => dealName.title).toList(), // Добавляем names
               };
@@ -563,7 +542,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                   _toDate != null ||
                   _daysWithoutActivity != null ||
                   _hasTasks != null ||
-                  _selectedDirectoryFields.values.any((field) => field != null) ||
+                  _selectedDirectoryFields.values.any((fields) => fields.isNotEmpty) ||
                   _selectedDealNames.isNotEmpty ||
                   customFieldFilters.isNotEmpty) {
                 widget.onManagersSelected?.call(filterData);
@@ -735,15 +714,15 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                               color: Colors.white,
                               child: Padding(
                                 padding: const EdgeInsets.all(8),
-                                child: DirectoryDropdownWidget(
+                                child: MultiDirectoryDropdownWidget(
                                   directoryId: link.directory.id,
                                   directoryName: link.directory.name,
-                                  onSelectField: (MainField? field) {
+                                  onSelectField: (List<MainField> fields) {
                                     setState(() {
-                                      _selectedDirectoryFields[link.id] = field;
+                                      _selectedDirectoryFields[link.id] = List<MainField>.from(fields);
                                     });
                                   },
-                                  initialField: _selectedDirectoryFields[link.id],
+                                  initialFields: _selectedDirectoryFields[link.id],
                                 ),
                               ),
                             ),
