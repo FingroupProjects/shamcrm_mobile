@@ -71,9 +71,10 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   int? _daysWithoutActivity;
   bool? _hasTasks = false;
   List<Map<String, dynamic>> _selectedDirectoryValues = [];
+  Map<String, List<String>>? _selectedDealCustomFieldFilters;
 
   List<ManagerData> _initialselectedManagers = [];
-    
+
   List<LeadData> _initialselectedLeads = [];
   int? _initialSelStatus;
   DateTime? _intialFromDate;
@@ -81,8 +82,8 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   bool? _initialHasTasks;
   int? _initialDaysWithoutActivity;
   List<Map<String, dynamic>> _initialDirectoryValues = [];
-List<DealNameData> _initialSelectedDealNames = [];
-List<DealNameData> _selectedDealNames = [];
+  List<DealNameData> _initialSelectedDealNames = [];
+  List<DealNameData> _selectedDealNames = [];
   final GlobalKey keySearchIcon = GlobalKey();
   final GlobalKey keyMenuIcon = GlobalKey();
 
@@ -125,56 +126,56 @@ List<DealNameData> _selectedDealNames = [];
           setState(() {
             _selectedFunnel = state.selectedFunnel ?? state.funnels.firstOrNull;
           });
-        DealCache.getDealStatuses().then((cachedStatuses) {
-  if (cachedStatuses.isNotEmpty && mounted) {
-    setState(() {
-      _tabTitles = cachedStatuses
-          .map((status) => {
-                'id': status['id'],
-                'title': status['title'],
-                'deals_count': status['deals_count'] ?? 0,
-              })
-          .toList();
-      ////print('DealScreen: Loaded cached statuses: $_tabTitles');
-      _initializeTabController();
-      final currentStatusId = _tabTitles.isNotEmpty ? _tabTitles[_currentTabIndex]['id'] : 0;
-      _dealBloc.add(FetchDeals(
-        currentStatusId,
-        salesFunnelId: _selectedFunnel?.id,
-      ));
-      // Запрашиваем актуальные статусы для обновления deals_count
-      _dealBloc.add(FetchDealStatuses(salesFunnelId: _selectedFunnel?.id));
-    });
-  }
-}
+          DealCache.getDealStatuses().then((cachedStatuses) {
+            if (cachedStatuses.isNotEmpty && mounted) {
+              setState(() {
+                _tabTitles = cachedStatuses
+                    .map((status) => {
+                  'id': status['id'],
+                  'title': status['title'],
+                  'deals_count': status['deals_count'] ?? 0,
+                })
+                    .toList();
+                ////print('DealScreen: Loaded cached statuses: $_tabTitles');
+                _initializeTabController();
+                final currentStatusId = _tabTitles.isNotEmpty ? _tabTitles[_currentTabIndex]['id'] : 0;
+                _dealBloc.add(FetchDeals(
+                  currentStatusId,
+                  salesFunnelId: _selectedFunnel?.id,
+                ));
+                // Запрашиваем актуальные статусы для обновления deals_count
+                _dealBloc.add(FetchDealStatuses(salesFunnelId: _selectedFunnel?.id));
+              });
+            }
+          }
 
 
-);
+          );
         }
       });
     });
   }
 // Замените существующий метод _onRefresh() в DealScreen на этот:
-Future<void> _onRefresh() async {
-  //print('DealScreen: Refresh triggered');
-  
-  // Очищаем кэш
-  await DealCache.clearAllDeals();
-  await DealCache.clearCache();
+  Future<void> _onRefresh() async {
+    //print('DealScreen: Refresh triggered');
 
-  // Сбрасываем состояние поиска
-  setState(() {
-    _isSearching = false;
-    _searchController.clear();
-    _lastSearchQuery = '';
-  });
+    // Очищаем кэш
+    await DealCache.clearAllDeals();
+    await DealCache.clearCache();
 
-  // Запрашиваем обновленные данные
-  _dealBloc.add(FetchDealStatuses(salesFunnelId: _selectedFunnel?.id));
-  
-  // Простая задержка для завершения операций
-  await Future.delayed(Duration(milliseconds: 500));
-}
+    // Сбрасываем состояние поиска
+    setState(() {
+      _isSearching = false;
+      _searchController.clear();
+      _lastSearchQuery = '';
+    });
+
+    // Запрашиваем обновленные данные
+    _dealBloc.add(FetchDealStatuses(salesFunnelId: _selectedFunnel?.id));
+
+    // Простая задержка для завершения операций
+    await Future.delayed(Duration(milliseconds: 500));
+  }
 
   void _initializeTabController() {
     _tabController = TabController(length: _tabTitles.length, vsync: this);
@@ -289,19 +290,19 @@ Future<void> _onRefresh() async {
                     ////print('DealScreen: _buildTitleWidget - Building PopupMenu with funnels: ${state.funnels}');
                     return state.funnels
                         .map((funnel) => PopupMenuItem<SalesFunnel>(
-                              value: funnel,
-                              child: Text(
-                                funnel.name,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontFamily: 'Gilroy',
-                                  fontWeight: FontWeight.w500,
-                                  color: Color(0xff1E2E52),
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ))
+                      value: funnel,
+                      child: Text(
+                        funnel.name,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xff1E2E52),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ))
                         .toList();
                   },
                 ),
@@ -312,54 +313,54 @@ Future<void> _onRefresh() async {
     );
   }
 
-Future<void> _loadFilterState() async {
-  final prefs = await SharedPreferences.getInstance();
-  setState(() {
-    _selectedManagers = (jsonDecode(prefs.getString('deal_selected_managers') ?? '[]') as List)
-        .map((m) => ManagerData.fromJson(m))
-        .toList();
-    _selectedLeads = (jsonDecode(prefs.getString('deal_selected_leads') ?? '[]') as List)
-        .map((l) => LeadData.fromJson(l))
-        .toList();
-    _selectedStatuses = prefs.getInt('deal_selected_statuses');
-    _fromDate = prefs.getString('deal_from_date') != null
-        ? DateTime.parse(prefs.getString('deal_from_date')!)
-        : null;
-    _toDate = prefs.getString('deal_to_date') != null
-        ? DateTime.parse(prefs.getString('deal_to_date')!)
-        : null;
-    _daysWithoutActivity = prefs.getInt('deal_days_without_activity');
-    _hasTasks = prefs.getBool('deal_has_tasks') ?? false;
-    _selectedDirectoryValues = (jsonDecode(prefs.getString('deal_selected_directory_values') ?? '[]') as List)
-        .map((d) => Map<String, dynamic>.from(d))
-        .toList();
-    _selectedDealNames = (jsonDecode(prefs.getString('deal_selected_names') ?? '[]') as List)
-        .map((name) => DealNameData(id: 0, title: name))
-        .toList();
-    _initialselectedManagers = List.from(_selectedManagers);
-    _initialselectedLeads = List.from(_selectedLeads);
-    _initialSelStatus = _selectedStatuses;
-    _intialFromDate = _fromDate;
-    _intialToDate = _toDate;
-    _initialHasTasks = _hasTasks;
-    _initialDaysWithoutActivity = _daysWithoutActivity;
-    _initialDirectoryValues = List.from(_selectedDirectoryValues);
-    _initialSelectedDealNames = List.from(_selectedDealNames);
-  });
-}
+  Future<void> _loadFilterState() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _selectedManagers = (jsonDecode(prefs.getString('deal_selected_managers') ?? '[]') as List)
+          .map((m) => ManagerData.fromJson(m))
+          .toList();
+      _selectedLeads = (jsonDecode(prefs.getString('deal_selected_leads') ?? '[]') as List)
+          .map((l) => LeadData.fromJson(l))
+          .toList();
+      _selectedStatuses = prefs.getInt('deal_selected_statuses');
+      _fromDate = prefs.getString('deal_from_date') != null
+          ? DateTime.parse(prefs.getString('deal_from_date')!)
+          : null;
+      _toDate = prefs.getString('deal_to_date') != null
+          ? DateTime.parse(prefs.getString('deal_to_date')!)
+          : null;
+      _daysWithoutActivity = prefs.getInt('deal_days_without_activity');
+      _hasTasks = prefs.getBool('deal_has_tasks') ?? false;
+      _selectedDirectoryValues = (jsonDecode(prefs.getString('deal_selected_directory_values') ?? '[]') as List)
+          .map((d) => Map<String, dynamic>.from(d))
+          .toList();
+      _selectedDealNames = (jsonDecode(prefs.getString('deal_selected_names') ?? '[]') as List)
+          .map((name) => DealNameData(id: 0, title: name))
+          .toList();
+      _initialselectedManagers = List.from(_selectedManagers);
+      _initialselectedLeads = List.from(_selectedLeads);
+      _initialSelStatus = _selectedStatuses;
+      _intialFromDate = _fromDate;
+      _intialToDate = _toDate;
+      _initialHasTasks = _hasTasks;
+      _initialDaysWithoutActivity = _daysWithoutActivity;
+      _initialDirectoryValues = List.from(_selectedDirectoryValues);
+      _initialSelectedDealNames = List.from(_selectedDealNames);
+    });
+  }
 
- Future<void> _saveFilterState() async {
-  final prefs = await SharedPreferences.getInstance();
-  await prefs.setString('deal_selected_managers', jsonEncode(_selectedManagers.map((m) => m.toJson()).toList()));
-  await prefs.setString('deal_selected_leads', jsonEncode(_selectedLeads.map((l) => l.toJson()).toList()));
-  await prefs.setInt('deal_selected_statuses', _selectedStatuses ?? 0);
-  await prefs.setString('deal_from_date', _fromDate?.toIso8601String() ?? '');
-  await prefs.setString('deal_to_date', _toDate?.toIso8601String() ?? '');
-  await prefs.setInt('deal_days_without_activity', _daysWithoutActivity ?? 0);
-  await prefs.setBool('deal_has_tasks', _hasTasks ?? false);
-  await prefs.setString('deal_selected_directory_values', jsonEncode(_selectedDirectoryValues));
-  await prefs.setString('deal_selected_names', jsonEncode(_selectedDealNames.map((dealName) => dealName.title).toList()));
-}
+  Future<void> _saveFilterState() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('deal_selected_managers', jsonEncode(_selectedManagers.map((m) => m.toJson()).toList()));
+    await prefs.setString('deal_selected_leads', jsonEncode(_selectedLeads.map((l) => l.toJson()).toList()));
+    await prefs.setInt('deal_selected_statuses', _selectedStatuses ?? 0);
+    await prefs.setString('deal_from_date', _fromDate?.toIso8601String() ?? '');
+    await prefs.setString('deal_to_date', _toDate?.toIso8601String() ?? '');
+    await prefs.setInt('deal_days_without_activity', _daysWithoutActivity ?? 0);
+    await prefs.setBool('deal_has_tasks', _hasTasks ?? false);
+    await prefs.setString('deal_selected_directory_values', jsonEncode(_selectedDirectoryValues));
+    await prefs.setString('deal_selected_names', jsonEncode(_selectedDealNames.map((dealName) => dealName.title).toList()));
+  }
 
   void _onScroll() {
     if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
@@ -517,79 +518,81 @@ Future<void> _loadFilterState() async {
     await _saveFilterState();
   }
 
-void _resetFilters() {
-  setState(() {
-    _showCustomTabBar = true;
-    _selectedManagers = [];
-    _selectedLeads = [];
-    _selectedStatuses = null;
-    _fromDate = null;
-    _toDate = null;
-    _hasTasks = false;
-    _daysWithoutActivity = null;
-    _selectedDirectoryValues = [];
-    _selectedDealNames = [];
-    _initialselectedManagers = [];
-    _initialselectedLeads = [];
-    _initialSelStatus = null;
-    _intialFromDate = null;
-    _intialToDate = null;
-    _lastSearchQuery = '';
-    _searchController.clear();
-    _initialHasTasks = false;
-    _initialDaysWithoutActivity = null;
-    _initialDirectoryValues = [];
-    _initialSelectedDealNames = [];
-  });
-  _dealBloc.add(FetchDealStatuses(salesFunnelId: _selectedFunnel?.id));
-}
+  void _resetFilters() {
+    setState(() {
+      _showCustomTabBar = true;
+      _selectedManagers = [];
+      _selectedLeads = [];
+      _selectedStatuses = null;
+      _fromDate = null;
+      _toDate = null;
+      _hasTasks = false;
+      _daysWithoutActivity = null;
+      _selectedDirectoryValues = [];
+      _selectedDealNames = [];
+      _initialselectedManagers = [];
+      _initialselectedLeads = [];
+      _initialSelStatus = null;
+      _intialFromDate = null;
+      _intialToDate = null;
+      _lastSearchQuery = '';
+      _searchController.clear();
+      _initialHasTasks = false;
+      _initialDaysWithoutActivity = null;
+      _initialDirectoryValues = [];
+      _initialSelectedDealNames = [];
+    });
+    _dealBloc.add(FetchDealStatuses(salesFunnelId: _selectedFunnel?.id));
+  }
 
-Future<void> _handleManagerSelected(Map managers) async {
-  setState(() {
-    _showCustomTabBar = false;
-    _selectedManagers = managers['managers'] ?? [];
-    _selectedLeads = managers['leads'] ?? [];
-    _selectedStatuses = managers['statuses'];
-    _fromDate = managers['fromDate'];
-    _toDate = managers['toDate'];
-    _hasTasks = managers['hasTask'];
-    _daysWithoutActivity = managers['daysWithoutActivity'];
-    _selectedDealNames = (managers['names'] as List?)?.map((name) => DealNameData(id: 0, title: name)).toList() ?? [];
-    _initialHasTasks = managers['hasTask'];
-    _initialselectedLeads = managers['leads'] ?? [];
-    _initialDaysWithoutActivity = managers['daysWithoutActivity'];
-    _initialselectedManagers = managers['managers'] ?? [];
-    _initialSelStatus = managers['statuses'];
-    _intialFromDate = managers['fromDate'];
-    _intialToDate = managers['toDate'];
-    _selectedDirectoryValues = (managers['directory_values'] as List?)
-            ?.map((item) => {
-                  'directory_id': item['directory_id'],
-                  'entry_id': item['entry_id'],
-                })
-            .toList() ??
-        [];
-    _initialDirectoryValues = List.from(_selectedDirectoryValues);
-    _initialSelectedDealNames = List.from(_selectedDealNames);
-  });
+  Future<void> _handleManagerSelected(Map managers) async {
+    setState(() {
+      _showCustomTabBar = false;
+      _selectedManagers = managers['managers'] ?? [];
+      _selectedLeads = managers['leads'] ?? [];
+      _selectedStatuses = managers['statuses'];
+      _fromDate = managers['fromDate'];
+      _toDate = managers['toDate'];
+      _hasTasks = managers['hasTask'];
+      _daysWithoutActivity = managers['daysWithoutActivity'];
+      _selectedDealNames = (managers['names'] as List?)?.map((name) => DealNameData(id: 0, title: name)).toList() ?? [];
+      _initialHasTasks = managers['hasTask'];
+      _initialselectedLeads = managers['leads'] ?? [];
+      _initialDaysWithoutActivity = managers['daysWithoutActivity'];
+      _initialselectedManagers = managers['managers'] ?? [];
+      _initialSelStatus = managers['statuses'];
+      _intialFromDate = managers['fromDate'];
+      _intialToDate = managers['toDate'];
+      _selectedDirectoryValues = (managers['directory_values'] as List?)
+          ?.map((item) => {
+        'directory_id': item['directory_id'],
+        'entry_id': item['entry_id'],
+      })
+          .toList() ??
+          [];
+      final Map<String, dynamic>? rawCustom = managers['custom_field_filters'] as Map<String, dynamic>?;
+      _selectedDealCustomFieldFilters = rawCustom?.map((k, v) => MapEntry(k, (v as List).map((e) => e.toString()).toList()));
+      _initialDirectoryValues = List.from(_selectedDirectoryValues);
+      _initialSelectedDealNames = List.from(_selectedDealNames);
+    });
 
-  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-  _dealBloc.add(FetchDeals(
-    currentStatusId,
-    managerIds: _selectedManagers.map((manager) => manager.id).toList(),
-    statusIds: _selectedStatuses,
-    fromDate: _fromDate,
-    toDate: _toDate,
-    hasTasks: _hasTasks,
-    leadIds: _selectedLeads.map((lead) => lead.id).toList(),
-    daysWithoutActivity: _daysWithoutActivity,
-    query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-    directoryValues: _selectedDirectoryValues,
-    names: _selectedDealNames.map((dealName) => dealName.title).toList(), // Передаем names
-    salesFunnelId: _selectedFunnel?.id,
-  ));
-  await _saveFilterState();
-}
+    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+    _dealBloc.add(FetchDeals(
+      currentStatusId,
+      managerIds: _selectedManagers.map((manager) => manager.id).toList(),
+      statusIds: _selectedStatuses,
+      fromDate: _fromDate,
+      toDate: _toDate,
+      hasTasks: _hasTasks,
+      leadIds: _selectedLeads.map((lead) => lead.id).toList(),
+      daysWithoutActivity: _daysWithoutActivity,
+      query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+      directoryValues: _selectedDirectoryValues,
+      names: _selectedDealNames.map((dealName) => dealName.title).toList(), // Передаем names
+      salesFunnelId: _selectedFunnel?.id,
+    ));
+    await _saveFilterState();
+  }
 
   Future _handleStatusSelected(int? selectedStatusId) async {
     setState(() {
@@ -682,14 +685,14 @@ Future<void> _handleManagerSelected(Map managers) async {
             title: '',
             titleWidget: isClickAvatarIcon
                 ? Text(
-                    localizations!.translate('appbar_settings'),
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xff1E2E52),
-                    ),
-                  )
+              localizations!.translate('appbar_settings'),
+              style: TextStyle(
+                fontSize: 20,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w600,
+                color: Color(0xff1E2E52),
+              ),
+            )
                 : _buildTitleWidget(context),
             onClickProfileAvatar: () {
               setState(() {
@@ -725,6 +728,7 @@ Future<void> _handleManagerSelected(Map managers) async {
             showFilterTaskIcon: false,
             showFilterIcon: false,
             showFilterIconDeal: true,
+            hasActiveDealFilters: !_showCustomTabBar,
             showEvent: true,
             showMyTaskIcon: true,
             showCallCenter: true,
@@ -743,7 +747,7 @@ Future<void> _handleManagerSelected(Map managers) async {
                       _selectedLeads.isEmpty &&
                       _hasTasks == false &&
                       _daysWithoutActivity == null&&
-            _selectedDealNames.isEmpty) {
+                      _selectedDealNames.isEmpty) {
                     ////print("DealScreen: IF SEARCH EMPTY AND NO FILTERS");
                     setState(() {
                       _showCustomTabBar = true;
@@ -786,19 +790,19 @@ Future<void> _handleManagerSelected(Map managers) async {
         body: isClickAvatarIcon
             ? ProfileScreen()
             : Column(
-                children: [
-                  const SizedBox(height: 15),
-                  if (!_isSearching && _selectedManagerId == null && _showCustomTabBar)
-                    _buildCustomTabBar(),
-                  Expanded(
-                    // TODO should be checked
-                    // child: _isSearching || _selectedManagerId != null
-                    child: _isSearching || !_showCustomTabBar
-                        ? _buildManagerView()
-                        : _buildTabBarView(),
-                  ),
-                ],
-              ),
+          children: [
+            const SizedBox(height: 15),
+            if (!_isSearching && _selectedManagerId == null && _showCustomTabBar)
+              _buildCustomTabBar(),
+            Expanded(
+              // TODO should be checked
+              // child: _isSearching || _selectedManagerId != null
+              child: _isSearching || !_showCustomTabBar
+                  ? _buildManagerView()
+                  : _buildTabBarView(),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -882,12 +886,9 @@ Future<void> _handleManagerSelected(Map managers) async {
   Widget _buildManagerView() {
     return BlocBuilder<DealBloc, DealState>(
       builder: (context, state) {
-        debugPrint("DealsScreen: Building manager view");
         if (state is DealDataLoaded) {
-          debugPrint("DealsScreen: Building manager view with deals: ${state.deals.length}");
           final List<Deal> deals = state.deals;
           if (deals.isEmpty) {
-            debugPrint("DealsScreen: Building manager view No deals found for manager");
             return Center(
               child: Text(
                 _selectedManagerIds?.isNotEmpty == true
@@ -923,7 +924,6 @@ Future<void> _handleManagerSelected(Map managers) async {
           );
         }
         if (state is DealLoading) {
-          debugPrint("DealsScreen: Building manager view Loading state");
           return const Center(
             child: PlayStoreImageLoading(
               size: 80.0,
@@ -1167,48 +1167,167 @@ Future<void> _handleManagerSelected(Map managers) async {
     }
   }
 
-Widget _buildTabBarView() {
-  //print('🏗️ DealScreen: Rendering _buildTabBarView, _tabTitles: ${_tabTitles.length}');
-  bool isFetchingStatuses = false; // Флаг для предотвращения дублирующихся запросов
+  Widget _buildTabBarView() {
+    //print('🏗️ DealScreen: Rendering _buildTabBarView, _tabTitles: ${_tabTitles.length}');
+    bool isFetchingStatuses = false; // Флаг для предотвращения дублирующихся запросов
 
-  return BlocListener<DealBloc, DealState>(
-    listener: (context, state) async {
-      //print('📡 DealScreen: BlocListener state: ${state.runtimeType}');
-      if (state is DealLoaded) {
-        //print('📋 DealLoaded: statuses count: ${state.dealStatuses.length}');
-        await DealCache.cacheDealStatuses(state.dealStatuses
-            .map((status) => {
-                  'id': status.id,
-                  'title': status.title,
-                  'deals_count': status.dealsCount,
-                })
-            .toList());
-        if (mounted) {
-          setState(() {
-            _tabTitles = state.dealStatuses
-                .where((status) => _canReadDealStatus)
-                .map((status) => {
-                      'id': status.id,
-                      'title': status.title,
-                      'deals_count': status.dealsCount,
-                    })
-                .toList();
-            //print('DealScreen: Updated _tabTitles with deals_count: $_tabTitles');
-            _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
-            if (_tabTitles.isNotEmpty) {
-              _tabController = TabController(length: _tabTitles.length, vsync: this);
-              _tabController.addListener(() {
-                if (!_tabController.indexIsChanging) {
-                  //print('DealScreen: TabController listener triggered, new index: ${_tabController.index}');
-                  setState(() {
-                    _currentTabIndex = _tabController.index;
-                  });
-                  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-                  if (_scrollController.hasClients) {
-                    _scrollToActiveTab();
+    return BlocListener<DealBloc, DealState>(
+      listener: (context, state) async {
+        //print('📡 DealScreen: BlocListener state: ${state.runtimeType}');
+        if (state is DealLoaded) {
+          //print('📋 DealLoaded: statuses count: ${state.dealStatuses.length}');
+          await DealCache.cacheDealStatuses(state.dealStatuses
+              .map((status) => {
+            'id': status.id,
+            'title': status.title,
+            'deals_count': status.dealsCount,
+          })
+              .toList());
+          if (mounted) {
+            setState(() {
+              _tabTitles = state.dealStatuses
+                  .where((status) => _canReadDealStatus)
+                  .map((status) => {
+                'id': status.id,
+                'title': status.title,
+                'deals_count': status.dealsCount,
+              })
+                  .toList();
+              //print('DealScreen: Updated _tabTitles with deals_count: $_tabTitles');
+              _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
+              if (_tabTitles.isNotEmpty) {
+                _tabController = TabController(length: _tabTitles.length, vsync: this);
+                _tabController.addListener(() {
+                  if (!_tabController.indexIsChanging) {
+                    //print('DealScreen: TabController listener triggered, new index: ${_tabController.index}');
+                    setState(() {
+                      _currentTabIndex = _tabController.index;
+                    });
+                    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+                    if (_scrollController.hasClients) {
+                      _scrollToActiveTab();
+                    }
+                    _dealBloc.add(FetchDeals(
+                      currentStatusId,
+                      salesFunnelId: _selectedFunnel?.id,
+                      query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+                      managerIds: _selectedManagers.isNotEmpty
+                          ? _selectedManagers.map((manager) => manager.id).toList()
+                          : null,
+                      leadIds: _selectedLeads.isNotEmpty
+                          ? _selectedLeads.map((lead) => lead.id).toList()
+                          : null,
+                      statusIds: _selectedStatuses,
+                      fromDate: _fromDate,
+                      toDate: _toDate,
+                      daysWithoutActivity: _daysWithoutActivity,
+                      hasTasks: _hasTasks,
+                      directoryValues: _selectedDirectoryValues,
+                    ));
+                    //print('DealScreen: FetchDeals dispatched for statusId: $currentStatusId');
                   }
+                });
+                int initialIndex = state.dealStatuses
+                    .indexWhere((status) => status.id == widget.initialStatusId);
+                if (initialIndex != -1) {
+                  _tabController.index = initialIndex;
+                  _currentTabIndex = initialIndex;
+                  //print('DealScreen: Set initial tab index to: $initialIndex');
+                } else {
+                  _tabController.index = _currentTabIndex;
+                }
+                if (_scrollController.hasClients) {
+                  _scrollToActiveTab();
+                }
+                if (navigateToEnd) {
+                  navigateToEnd = false;
+                  _tabController.animateTo(_tabTitles.length - 1);
+                  //print('DealScreen: Navigated to last tab');
+                }
+                if (navigateAfterDelete) {
+                  navigateAfterDelete = false;
+                  if (_deletedIndex != null) {
+                    if (_deletedIndex == 0 && _tabTitles.length > 1) {
+                      _tabController.animateTo(1);
+                      //print('DealScreen: Navigated to tab 1 after delete');
+                    } else if (_deletedIndex == _tabTitles.length) {
+                      _tabController.animateTo(_tabTitles.length - 1);
+                      //print('DealScreen: Navigated to last tab after delete');
+                    } else {
+                      _tabController.animateTo(_deletedIndex! - 1);
+                      //print('DealScreen: Navigated to tab ${_deletedIndex! - 1} after delete');
+                    }
+                  }
+                }
+              }
+            });
+          }
+        }  else if (state is DealError) {
+          //print('❌ DealError: ${state.message}');
+          if (state.message.contains(
+            AppLocalizations.of(context)!.translate('unauthorized_access'),
+          )) {
+            await _apiService.logout();
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => LoginScreen()),
+                  (Route<dynamic> route) => false,
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  AppLocalizations.of(context)!.translate(state.message),
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        } else if (state is DealWarning) {
+          //print('⚠️ DealWarning: ${state.message}');
+        }
+      },
+      child: _tabTitles.isEmpty
+          ? Center(
+        child: Text(
+          AppLocalizations.of(context)!.translate('no_statuses_available'),
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Gilroy',
+            color: Color(0xff99A4BA),
+          ),
+        ),
+      )
+          : RefreshIndicator(
+        color: Color(0xff1E2E52),
+        backgroundColor: Colors.white,
+        onRefresh: _onRefresh,
+        child: TabBarView(
+          controller: _tabController,
+          physics: const AlwaysScrollableScrollPhysics(),
+          // В методе _buildTabBarView() обновите создание DealColumn:
+          children: _tabTitles.map((status) {
+            //print('📑 DealScreen: Building TabBarView child for status: ${status['title']}');
+            return DealColumn(
+              isDealScreenTutorialCompleted: _isDealScreenTutorialCompleted,
+              statusId: status['id'],
+              title: status['title'],
+              salesFunnelId: _selectedFunnel?.id, // Передаем salesFunnelId
+              onStatusId: (newStatusId) {
+                //print('DealScreen: onStatusId called with id: $newStatusId');
+                final index = _tabTitles.indexWhere((s) => s['id'] == newStatusId);
+                if (index != -1) {
+                  _tabController.animateTo(index);
+                  //print('DealScreen: Animated to tab index: $index for statusId: $newStatusId');
                   _dealBloc.add(FetchDeals(
-                    currentStatusId,
+                    newStatusId,
                     salesFunnelId: _selectedFunnel?.id,
                     query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
                     managerIds: _selectedManagers.isNotEmpty
@@ -1224,134 +1343,15 @@ Widget _buildTabBarView() {
                     hasTasks: _hasTasks,
                     directoryValues: _selectedDirectoryValues,
                   ));
-                  //print('DealScreen: FetchDeals dispatched for statusId: $currentStatusId');
+                  //print('DealScreen: FetchDeals dispatched for statusId: $newStatusId');
                 }
-              });
-              int initialIndex = state.dealStatuses
-                  .indexWhere((status) => status.id == widget.initialStatusId);
-              if (initialIndex != -1) {
-                _tabController.index = initialIndex;
-                _currentTabIndex = initialIndex;
-                //print('DealScreen: Set initial tab index to: $initialIndex');
-              } else {
-                _tabController.index = _currentTabIndex;
-              }
-              if (_scrollController.hasClients) {
-                _scrollToActiveTab();
-              }
-              if (navigateToEnd) {
-                navigateToEnd = false;
-                _tabController.animateTo(_tabTitles.length - 1);
-                //print('DealScreen: Navigated to last tab');
-              }
-              if (navigateAfterDelete) {
-                navigateAfterDelete = false;
-                if (_deletedIndex != null) {
-                  if (_deletedIndex == 0 && _tabTitles.length > 1) {
-                    _tabController.animateTo(1);
-                    //print('DealScreen: Navigated to tab 1 after delete');
-                  } else if (_deletedIndex == _tabTitles.length) {
-                    _tabController.animateTo(_tabTitles.length - 1);
-                    //print('DealScreen: Navigated to last tab after delete');
-                  } else {
-                    _tabController.animateTo(_deletedIndex! - 1);
-                    //print('DealScreen: Navigated to tab ${_deletedIndex! - 1} after delete');
-                  }
-                }
-              }
-            }
-          });
-        }
-      }  else if (state is DealError) {
-        //print('❌ DealError: ${state.message}');
-        if (state.message.contains(
-          AppLocalizations.of(context)!.translate('unauthorized_access'),
-        )) {
-          await _apiService.logout();
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (context) => LoginScreen()),
-            (Route<dynamic> route) => false,
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                AppLocalizations.of(context)!.translate(state.message),
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      } else if (state is DealWarning) {
-        //print('⚠️ DealWarning: ${state.message}');
-      }
-    },
-    child: _tabTitles.isEmpty
-        ? Center(
-            child: Text(
-              AppLocalizations.of(context)!.translate('no_statuses_available'),
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                fontFamily: 'Gilroy',
-                color: Color(0xff99A4BA),
-              ),
-            ),
-          )
-        : RefreshIndicator(
-            color: Color(0xff1E2E52),
-            backgroundColor: Colors.white,
-            onRefresh: _onRefresh,
-            child: TabBarView(
-              controller: _tabController,
-              physics: const AlwaysScrollableScrollPhysics(),
-              // В методе _buildTabBarView() обновите создание DealColumn:
-children: _tabTitles.map((status) {
-  //print('📑 DealScreen: Building TabBarView child for status: ${status['title']}');
-  return DealColumn(
-    isDealScreenTutorialCompleted: _isDealScreenTutorialCompleted,
-    statusId: status['id'],
-    title: status['title'],
-    salesFunnelId: _selectedFunnel?.id, // Передаем salesFunnelId
-    onStatusId: (newStatusId) {
-      //print('DealScreen: onStatusId called with id: $newStatusId');
-      final index = _tabTitles.indexWhere((s) => s['id'] == newStatusId);
-      if (index != -1) {
-        _tabController.animateTo(index);
-        //print('DealScreen: Animated to tab index: $index for statusId: $newStatusId');
-        _dealBloc.add(FetchDeals(
-          newStatusId,
-          salesFunnelId: _selectedFunnel?.id,
-          query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-          managerIds: _selectedManagers.isNotEmpty
-              ? _selectedManagers.map((manager) => manager.id).toList()
-              : null,
-          leadIds: _selectedLeads.isNotEmpty
-              ? _selectedLeads.map((lead) => lead.id).toList()
-              : null,
-          statusIds: _selectedStatuses,
-          fromDate: _fromDate,
-          toDate: _toDate,
-          daysWithoutActivity: _daysWithoutActivity,
-          hasTasks: _hasTasks,
-          directoryValues: _selectedDirectoryValues,
-        ));
-        //print('DealScreen: FetchDeals dispatched for statusId: $newStatusId');
-      }
-    },
-  );
-}).toList(),
-            ),
-          ),
-  );
-}
+              },
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
   void _scrollToActiveTab() {
     final keyContext = _tabKeys[_currentTabIndex].currentContext;
     if (keyContext != null) {
