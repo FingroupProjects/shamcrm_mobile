@@ -12,6 +12,7 @@ import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/variant_selection_bottom_sheet.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/storage_widget.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/supplier_widget.dart';
+import 'package:crm_task_manager/page_2/warehouse/widgets/save_hint_banner.dart';
 import 'package:crm_task_manager/page_2/widgets/confirm_exit_dialog.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
@@ -632,19 +633,9 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
         ),
         // Подсказка для сохранения
         if (_items.isNotEmpty)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Text(
-              localizations.translate('save_hint') ?? "После добавления товаров перейдите в \"Основное\" для сохранения",
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w400,
-                color: Color(0xffbdc2cf),
-                height: 1.2,
-              ),
-            ),
+          SaveHintBanner(
+            message: localizations.translate('save_hint') ??
+                "После добавления товаров перейдите в \"Основное\" для сохранения",
           ),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

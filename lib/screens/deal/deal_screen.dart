@@ -733,6 +733,7 @@ Future<void> _handleManagerSelected(Map managers) async {
             showFilterTaskIcon: false,
             showFilterIcon: false,
             showFilterIconDeal: true,
+            hasActiveDealFilters: !_showCustomTabBar,
             showEvent: true,
             showMyTaskIcon: true,
             showCallCenter: true,
