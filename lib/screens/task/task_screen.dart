@@ -86,6 +86,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   bool _initialUrgent = false;
   List<String> _selectedAuthors = []; 
   List<String> _initialSelectedAuthors = []; 
+  List<String> _selectedProjects = [];
+  List<String> _initialSelectedProjects = [];
   String? _selectedDepartment;
   String? _initialSelectedDepartment;
   final GlobalKey keySearchIcon = GlobalKey();
@@ -182,6 +184,10 @@ void _onScroll() {
       final state = taskBloc.state as TaskDataLoaded;
       if (!taskBloc.allTasksFetched) {
         final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+        // Преобразуем project_ids в List<int>
+        List<int>? projectIdsList = _selectedProjects.isNotEmpty 
+            ? _selectedProjects.map((id) => int.parse(id)).toList()
+            : (_selectedProject != null ? [int.parse(_selectedProject!)] : null);
         taskBloc.add(FetchMoreTasks(
           currentStatusId,
           state.currentPage,
@@ -196,7 +202,7 @@ void _onScroll() {
           urgent: _isUrgent,
           deadlinefromDate: _deadlinefromDate,
           deadlinetoDate: _deadlinetoDate,
-          project: _selectedProject,
+          projectIds: projectIdsList,
           authors: _selectedAuthors,
           department: _selectedDepartment,
           directoryValues: _selectedDirectoryValues, // Передаем directoryValues
@@ -356,6 +362,11 @@ Future<void> _saveFilterState() async {
 
     await TaskCache.clearAllTasks();
 
+    // Преобразуем project_ids в List<int>
+    List<int>? projectIdsList = _selectedProjects.isNotEmpty 
+        ? _selectedProjects.map((id) => int.parse(id)).toList()
+        : (_selectedProject != null ? [int.parse(_selectedProject!)] : null);
+
     taskBloc.add(FetchTasks(
       currentStatusId,
       query: query,
@@ -369,7 +380,7 @@ Future<void> _saveFilterState() async {
       urgent: _isUrgent,
       deadlinefromDate: _deadlinefromDate,
       deadlinetoDate: _deadlinetoDate,
-      project: _selectedProject,
+      projectIds: projectIdsList,
       authors: _selectedAuthors,
       department: _selectedDepartment, 
       directoryValues: _selectedDirectoryValues, // Передаем directoryValues
@@ -391,7 +402,17 @@ Future<void> _saveFilterState() async {
       _hasDeal = filterData['hasDeal'] ?? false;
       _isUrgent = filterData['urgent'] ?? false;
       _selectedProject = filterData['project'];
-      _selectedAuthors = filterData['authors'] ?? []; 
+      _selectedAuthors = filterData['authors'] ?? [];
+      // Обработка project_ids
+      if (filterData['project_ids'] != null) {
+        if (filterData['project_ids'] is List) {
+          _selectedProjects = (filterData['project_ids'] as List).map((id) => id.toString()).toList();
+        } else {
+          _selectedProjects = [];
+        }
+      } else {
+        _selectedProjects = [];
+      }
       _selectedDirectoryValues = (filterData['directory_values'] as List?)?.map((item) => {
           'directory_id': item['directory_id'],
           'entry_id': item['entry_id'],
@@ -408,6 +429,7 @@ Future<void> _saveFilterState() async {
       _intialDeadlineFromDate = filterData['deadlinefromDate'];
       _intialDeadlineToDate = filterData['deadlinetoDate'];
       _initialSelectedAuthors = filterData['authors'] ?? [];
+      _initialSelectedProjects = List.from(_selectedProjects);
       _selectedDepartment = filterData['department'];
       _initialSelectedDepartment = filterData['department'];
       _initialDirectoryValues = List.from(_selectedDirectoryValues); // Обновляем initial
@@ -417,6 +439,11 @@ Future<void> _saveFilterState() async {
 
     await TaskCache.clearAllTasks();
 
+    // Преобразуем project_ids в List<int>
+    List<int>? projectIdsList = _selectedProjects.isNotEmpty 
+        ? _selectedProjects.map((id) => int.parse(id)).toList()
+        : (_selectedProject != null ? [int.parse(_selectedProject!)] : null);
+    
     taskBloc.add(FetchTasks(
       currentStatusId,
       userIds: _selectedUsers.map((user) => user.id).toList(),
@@ -430,7 +457,7 @@ Future<void> _saveFilterState() async {
       urgent: _isUrgent,
       deadlinefromDate: _deadlinefromDate,
       deadlinetoDate: _deadlinetoDate,
-      project: _selectedProject,
+      projectIds: projectIdsList,
       authors: _selectedAuthors,
       department: _selectedDepartment,
       directoryValues: _selectedDirectoryValues, // Передаем directoryValues
@@ -518,8 +545,9 @@ Future<void> _saveFilterState() async {
       _deadlinefromDate = null;
       _deadlinetoDate = null;
       _selectedProject = null;
-      _selectedAuthors = []; 
-_selectedDirectoryValues = []; // Очищаем directoryValues
+      _selectedAuthors = [];
+      _selectedProjects = [];
+      _selectedDirectoryValues = []; // Очищаем directoryValues
       _initialselectedUsers = [];
       _initialSelStatus = null;
       _intialFromDate = null;
@@ -530,7 +558,8 @@ _selectedDirectoryValues = []; // Очищаем directoryValues
       _initialUrgent = false;
       _intialDeadlineFromDate = null;
       _intialDeadlineToDate = null;
-      _initialSelectedAuthors = []; 
+      _initialSelectedAuthors = [];
+      _initialSelectedProjects = [];
       _selectedDepartment = null;
       _initialSelectedDepartment = null;
     });
@@ -584,6 +613,7 @@ _selectedDirectoryValues = []; // Очищаем directoryValues
             initialUsers: _initialselectedUsers,
             initialStatuses: _initialSelStatus,
             initialAuthors: _initialSelectedAuthors,
+            initialProjects: _initialSelectedProjects,
             initialDepartment: _initialSelectedDepartment,
             initialFromDate: _intialFromDate,
             initialToDate: _intialToDate,

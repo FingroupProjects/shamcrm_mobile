@@ -4,6 +4,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/department/department_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/custom_widget/custom_field_multi_select.dart';
+import 'package:crm_task_manager/custom_widget/filter/chat/task/ProjectMultiSelectWidget.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/multi_directory_dropdown_widget.dart';
 import 'package:crm_task_manager/custom_widget/filter/task/author_multi_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/task/multi_task_status_list.dart';
@@ -12,6 +13,7 @@ import 'package:crm_task_manager/models/author_data_response.dart';
 import 'package:crm_task_manager/models/directory_link_model.dart';
 import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
+import 'package:crm_task_manager/models/project_task_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -44,6 +46,7 @@ class UserFilterScreen extends StatefulWidget {
   final Map<String, List<String>>? initialCustomFieldSelections;
   final List<String>? customFieldTitles;
   final Map<String, List<String>>? customFieldValues;
+  final List? initialProjects;
 
   UserFilterScreen({
     Key? key,
@@ -69,6 +72,7 @@ class UserFilterScreen extends StatefulWidget {
     this.customFieldTitles,
     this.customFieldValues,
     this.initialCustomFieldSelections,
+    this.initialProjects,
   }) : super(key: key);
 
   @override
@@ -78,6 +82,7 @@ class UserFilterScreen extends StatefulWidget {
 class _UserFilterScreenState extends State<UserFilterScreen> {
   List _selectedUsers = [];
   List<String> _selectedAuthors = [];
+  List<String> _selectedProjects = [];
   int? _selectedStatuses;
   DateTime? _fromDate;
   DateTime? _toDate;
@@ -125,6 +130,18 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
     _fromDate = widget.initialFromDate;
     _toDate = widget.initialToDate;
     _selectedAuthors = widget.initialAuthors ?? [];
+    // Инициализация проектов
+    if (widget.initialProjects != null) {
+      if (widget.initialProjects is List<String>) {
+        _selectedProjects = widget.initialProjects as List<String>;
+      } else if (widget.initialProjects is List<int>) {
+        _selectedProjects = (widget.initialProjects as List<int>).map((id) => id.toString()).toList();
+      } else {
+        _selectedProjects = [];
+      }
+    } else {
+      _selectedProjects = [];
+    }
     _isOverdue = widget.initialIsOverdue ?? false;
     _hasFile = widget.initialHasFile ?? false;
     _hasDeal = widget.initialHasDeal ?? false;
@@ -329,7 +346,7 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
 
   Widget? _buildFieldWidgetByConfig(FieldConfiguration config) {
     switch (config.fieldName) {
-      case 'user_id':
+      case 'executor':
         return Card(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           color: Colors.white,
@@ -362,8 +379,8 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
             ),
           ),
         );
-        
-      case 'status_id':
+
+      case 'task_status_id':
         return Card(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           color: Colors.white,
@@ -379,7 +396,26 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
             ),
           ),
         );
-        
+
+      case 'project':
+        return Card(
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12)),
+          color: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: ProjectMultiSelectWidget(
+              selectedProjects: _selectedProjects,
+              onSelectProjects: (List<ProjectTask> selectedProjectsData) {
+                setState(() {
+                  _selectedProjects = selectedProjectsData
+                      .map((project) => project.id.toString())
+                      .toList();
+                });
+              },
+            ),
+          ),
+        );
       default:
         // Проверяем custom field
         if (config.isCustomField && _customFieldTitles.contains(config.fieldName)) {
@@ -479,6 +515,7 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                 widget.onResetFilters?.call();
                 _selectedUsers.clear();
                 _selectedAuthors.clear();
+                _selectedProjects.clear();
                 _selectedStatuses = null;
                 _fromDate = null;
                 _toDate = null;
@@ -535,6 +572,9 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                 'deadlinefromDate': _deadlinefromDate,
                 'deadlinetoDate': _deadlinetoDate,
                 'authors': _selectedAuthors,
+                'project_ids': _selectedProjects.isNotEmpty
+                    ? _selectedProjects.map((id) => int.parse(id)).toList()
+                    : null,
                 'department': _selectedDepartment,
                 'directory_values': _selectedDirectoryFields.entries
                     .expand((entry) {
@@ -569,6 +609,7 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                   _isUrgent ||
                   (_deadlinefromDate != null && _deadlinetoDate != null) ||
                   _selectedAuthors.isNotEmpty ||
+                  _selectedProjects.isNotEmpty ||
                   _selectedDepartment != null ||
                   _selectedDirectoryFields.values.any((fields) => fields.isNotEmpty) ||
                   customFieldFilters.isNotEmpty;

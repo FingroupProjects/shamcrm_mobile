@@ -18,7 +18,7 @@ class FetchTasks extends TaskEvent {
   final bool? urgent;
   final DateTime? deadlinefromDate;
   final DateTime? deadlinetoDate;
-  final String? project;
+  final List<int>? projectIds;
   final List<String>? authors;
   final String? department;
   final List<Map<String, dynamic>>? directoryValues; // Добавляем directoryValues
@@ -36,7 +36,7 @@ class FetchTasks extends TaskEvent {
     this.hasFile,
     this.hasDeal,
     this.urgent,
-    this.project,
+    this.projectIds,
     this.authors,
     this.department,
     this.directoryValues, // Добавляем в конструктор
@@ -62,7 +62,7 @@ class FetchMoreTasks extends TaskEvent {
   final bool? urgent;
   final DateTime? deadlinefromDate;
   final DateTime? deadlinetoDate;
-  final String? project;
+  final List<int>? projectIds;
   final List<String>? authors;
   final String? department;
   final List<Map<String, dynamic>>? directoryValues; // Добавляем directoryValues
@@ -81,7 +81,7 @@ class FetchMoreTasks extends TaskEvent {
     this.hasFile,
     this.hasDeal,
     this.urgent,
-    this.project,
+    this.projectIds,
     this.authors,
     this.department,
     this.directoryValues, // Добавляем в конструктор
