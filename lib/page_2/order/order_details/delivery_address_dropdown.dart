@@ -71,12 +71,20 @@ class _DeliveryAddressDropdownState extends State<DeliveryAddressDropdown> {
               ),
               const SizedBox(height: 4),
               Container(
-                padding: const EdgeInsets.all(16),
+                height: 50,
+                alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: const Color(0xffF4F7FD),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Center(child: CircularProgressIndicator()),
+                child: const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                  ),
+                ),
               ),
             ],
           );

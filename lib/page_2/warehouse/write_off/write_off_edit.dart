@@ -9,6 +9,7 @@ import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/storage_widget.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/variant_selection_bottom_sheet.dart';
 import 'package:crm_task_manager/page_2/warehouse/widgets/save_hint_banner.dart';
+import 'package:crm_task_manager/page_2/warehouse/widgets/validation_helper.dart';
 import 'package:crm_task_manager/page_2/widgets/confirm_exit_dialog.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -265,6 +266,20 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
     FocusScope.of(context).unfocus();
   }
 
+  // ✅ НОВОЕ: Функция для фокуса на первом товаре с ошибкой
+  void _focusFirstErrorItem() {
+    WarehouseValidationHelper.focusFirstErrorItem(
+      items: _items,
+      quantityErrors: _quantityErrors,
+      collapsedItems: _collapsedItems,
+      scrollController: _scrollController,
+      tabController: _tabController,
+      quantityFocusNodes: _quantityFocusNodes,
+      setState: setState,
+      mounted: mounted,
+    );
+  }
+
   void _updateDocument() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -310,10 +325,16 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
     });
 
     if (hasErrors) {
+      final needsTabSwitch = _tabController.index != 1;
+      if (needsTabSwitch) {
+        _tabController.animateTo(1);
+      }
       _showSnackBar(
         AppLocalizations.of(context)?.translate('fill_all_required_fields') ?? 'Заполните все обязательные поля',
         false,
       );
+      // Фокусируемся на первом товаре с ошибкой
+      _focusFirstErrorItem();
       return;
     }
 
