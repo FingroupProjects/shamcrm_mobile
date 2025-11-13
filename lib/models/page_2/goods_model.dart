@@ -120,7 +120,7 @@ class Unit {
       if (value.isEmpty) return null;
       try {
         double parsed = double.parse(value.replaceAll(',', '.'));
-        
+
         if (parsed == parsed.toInt()) {
           return parsed.toInt(); // Return as int (1, 2, 3, etc.)
         }
@@ -169,8 +169,8 @@ class Measurement {
       goodId: json['good_id'] as int? ?? 0,
       unitId: json['unit_id'] as int? ?? 0,
       amount: parsedAmount, // ИСПРАВЛЕНО: используем безопасно распарсенное значение
-      unit: json['unit'] != null 
-          ? Unit.fromJson(json['unit'] as Map<String, dynamic>) 
+      unit: json['unit'] != null
+          ? Unit.fromJson(json['unit'] as Map<String, dynamic>)
           : null,
     );
   }
@@ -322,6 +322,25 @@ class Goods {
             .toList();
       }
 
+      // Парсим файлы: проверяем несколько возможных мест
+      List<GoodsFile> files = [];
+      if (json['files'] != null && json['files'] is List) {
+        files = (json['files'] as List<dynamic>).map((f) {
+          return GoodsFile.fromJson(f as Map<String, dynamic>);
+        }).toList();
+      } else if (data['files'] != null && data['files'] is List) {
+        files = (data['files'] as List<dynamic>).map((f) {
+          return GoodsFile.fromJson(f as Map<String, dynamic>);
+        }).toList();
+      } else if (json.containsKey('good') && json['good'] is Map && (json['good'] as Map)['files'] != null) {
+        final goodData = json['good'] as Map<String, dynamic>;
+        if (goodData['files'] is List) {
+          files = (goodData['files'] as List<dynamic>).map((f) {
+            return GoodsFile.fromJson(f as Map<String, dynamic>);
+          }).toList();
+        }
+      }
+
       return Goods(
         id: json['id'] as int? ?? data['id'] as int? ?? 0,
         name: data['name'] as String? ?? '',
@@ -337,13 +356,10 @@ class Goods {
         discountPercent: discountPercent,
         isActive: isActive,
         isService: isService,
-        files: (json['files'] as List<dynamic>?)?.map((f) {
-              return GoodsFile.fromJson(f as Map<String, dynamic>);
-            }).toList() ??
-            [],
+        files: files,
         attributes: (json['attribute_values'] as List<dynamic>?)?.map((attr) {
-              return GoodsAttribute.fromJson(attr as Map<String, dynamic>);
-            }).toList() ??
+          return GoodsAttribute.fromJson(attr as Map<String, dynamic>);
+        }).toList() ??
             [],
         variants: (json['variants'] as List<dynamic>?)?.map((v) {
           return GoodsVariant.fromJson(v as Map<String, dynamic>);
@@ -369,16 +385,16 @@ class Goods {
       rethrow;
     }
   }
-   String? get mainImageUrl {
+  String? get mainImageUrl {
     if (files.isEmpty) return null;
-    
+
     // Ищем главное изображение
     try {
       final mainFile = files.firstWhere(
-        (file) => file.isMain,
+            (file) => file.isMain,
         orElse: () => files.first,
       );
-      
+
       // Формируем полный URL
       return 'https://shamcrm.com/storage/${mainFile.path}';
     } catch (e) {
@@ -443,7 +459,7 @@ class GoodsAttribute {
       name: attributeName,
       value: json['value'] as String? ?? '',
       isIndividual:
-          json['category_attribute']?['is_individual'] as bool? ?? false,
+      json['category_attribute']?['is_individual'] as bool? ?? false,
       images: (json['images'] as List<dynamic>?)?.cast<String>(),
     );
   }
@@ -471,8 +487,8 @@ class GoodsVariant {
   factory GoodsVariant.fromJson(Map<String, dynamic> json) {
     final attributeValues =
         (json['attributes'] as List<dynamic>?)?.map((v) {
-              return AttributeValue.fromJson(v as Map<String, dynamic>);
-            }).toList() ??
+          return AttributeValue.fromJson(v as Map<String, dynamic>);
+        }).toList() ??
             [];
 
     return GoodsVariant(
@@ -484,14 +500,14 @@ class GoodsVariant {
       //     json['price'] != null ? VariantPrice.fromJson(json['price']) : null,
       price: json['price'] != null
           ? (json['price'] is String
-              ? json['price'] as String
-              : (json['price'] is num
-                  ? (json['price'] as num).toString()
-                  : '0'))
+          ? json['price'] as String
+          : (json['price'] is num
+          ? (json['price'] as num).toString()
+          : '0'))
           : '0',
       files: (json['files'] as List<dynamic>?)?.map((f) {
-            return GoodsFile.fromJson(f as Map<String, dynamic>);
-          }).toList() ??
+        return GoodsFile.fromJson(f as Map<String, dynamic>);
+      }).toList() ??
           [],
     );
   }
@@ -523,7 +539,7 @@ class AttributeValue {
       files: (json['files'] as List<dynamic>?)?.cast<String>(),
       categoryAttribute: json['category_attribute'] != null
           ? CategoryAttribute.fromJson(
-              json['category_attribute'] as Map<String, dynamic>)
+          json['category_attribute'] as Map<String, dynamic>)
           : null,
     );
   }

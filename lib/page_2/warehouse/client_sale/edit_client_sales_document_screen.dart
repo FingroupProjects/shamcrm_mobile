@@ -11,6 +11,7 @@ import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/storage_widget.dart';
 import 'package:crm_task_manager/page_2/warehouse/widgets/save_hint_banner.dart';
+import 'package:crm_task_manager/page_2/warehouse/widgets/validation_helper.dart';
 import 'package:crm_task_manager/page_2/widgets/confirm_exit_dialog.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -384,6 +385,22 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
     FocusScope.of(context).unfocus();
   }
 
+  // ✅ НОВОЕ: Функция для фокуса на первом товаре с ошибкой
+  void _focusFirstErrorItem() {
+    WarehouseValidationHelper.focusFirstErrorItem(
+      items: _items,
+      quantityErrors: _quantityErrors,
+      priceErrors: _priceErrors,
+      collapsedItems: _collapsedItems,
+      scrollController: _scrollController,
+      tabController: _tabController,
+      quantityFocusNodes: _quantityFocusNodes,
+      priceFocusNodes: _priceFocusNodes,
+      setState: setState,
+      mounted: mounted,
+    );
+  }
+
   // Функция для парсинга цены: возвращает int если целое, double если дробное
   num _parsePriceAsNumber(dynamic price) {
     final double parsedPrice = price is String ? (double.tryParse(price) ?? 0.0) : (price as num).toDouble();
@@ -439,11 +456,17 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
     });
 
     if (hasErrors) {
+      final needsTabSwitch = _tabController.index != 1;
+      if (needsTabSwitch) {
+        _tabController.animateTo(1);
+      }
       _showSnackBar(
         AppLocalizations.of(context)?.translate('fill_all_required_fields') ??
             'Заполните все обязательные поля',
         false,
       );
+      // Фокусируемся на первом товаре с ошибкой
+      _focusFirstErrorItem();
       return;
     }
 
