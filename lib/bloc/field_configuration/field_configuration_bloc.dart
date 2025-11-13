@@ -7,7 +7,7 @@ import 'package:crm_task_manager/bloc/field_configuration/field_configuration_st
 class FieldConfigurationBloc extends Bloc<FieldConfigurationEvent, FieldConfigurationState> {
   final ApiService apiService;
 
-  FieldConfigurationBloc(this.apiService) : super(FieldConfigurationInitial()) {
+  FieldConfigurationBloc(this.apiService) : super(const FieldConfigurationInitial()) {
     on<FetchFieldConfiguration>(_onFetchFieldConfiguration);
   }
 
@@ -19,7 +19,7 @@ class FieldConfigurationBloc extends Bloc<FieldConfigurationEvent, FieldConfigur
       //print('FieldConfigurationBloc: Starting to fetch configuration for table: ${event.tableName}');
     }
     
-    emit(FieldConfigurationLoading());
+    emit(const FieldConfigurationLoading());
     
     try {
       // // СНАЧАЛА ПЫТАЕМСЯ ЗАГРУЗИТЬ ИЗ КЭША

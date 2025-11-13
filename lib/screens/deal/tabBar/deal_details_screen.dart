@@ -437,7 +437,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
         return AppLocalizations.of(context)!.translate('author_details');
       case 'created_at':
         return AppLocalizations.of(context)!.translate('creation_date_details');
-      case 'status':
+      case 'deal_status_id':
         return AppLocalizations.of(context)!.translate('status_history');
       case 'files':
         return AppLocalizations.of(context)!.translate('files_details');
@@ -506,7 +506,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       case 'created_at':
         return formatDate(deal.createdAt);
 
-      case 'status':
+      case 'deal_status_id':
       // Show status history if available, otherwise current status
         if (deal.dealStatuses.isNotEmpty) {
           return deal.dealStatuses.map((s) => s.title).join(', ');
