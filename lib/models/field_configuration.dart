@@ -1,4 +1,6 @@
-class FieldConfiguration {
+import 'package:equatable/equatable.dart';
+
+class FieldConfiguration extends Equatable {
   final int id;
   final String tableName;
   final String fieldName;
@@ -30,6 +32,24 @@ class FieldConfiguration {
     required this.isDirectory,
     required this.showOnTable,
   });
+
+  @override
+  List<Object?> get props => [
+        id,
+        tableName,
+        fieldName,
+        position,
+        required,
+        isActive,
+        isCustomField,
+        createdAt,
+        updatedAt,
+        customFieldId,
+        directoryId,
+        type,
+        isDirectory,
+        showOnTable,
+      ];
 
   factory FieldConfiguration.fromJson(Map<String, dynamic> json) {
     return FieldConfiguration(

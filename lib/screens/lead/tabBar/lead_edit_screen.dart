@@ -913,6 +913,12 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
               final displayName = _getFieldDisplayName(config);
               final typeLabel = _getFieldTypeLabel(config);
 
+              if (config.fieldName == 'lead_status_id') {
+                return SizedBox(
+                  key: ValueKey('field_${config.id}'),
+                );
+              }
+
               return Container(
                 key: ValueKey('field_${config.id}'),
                 margin: const EdgeInsets.only(bottom: 12),

@@ -20,7 +20,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
   bool? _currentHasFile;
   bool? _currentHasDeal;
   bool? _currentUrgent;
-  String? _currentProject;
+  List<int>? _currentProjectIds;
   List<String>? _currentAuthors;
   DateTime? _currentDeadlineFromDate;
   DateTime? _currentDeadlineToDate;
@@ -107,7 +107,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     _currentHasFile = event.hasFile;
     _currentHasDeal = event.hasDeal;
     _currentUrgent = event.urgent;
-    _currentProject = event.project;
+    _currentProjectIds = event.projectIds;
     _currentAuthors = event.authors;
     _currentDeadlineFromDate = event.deadlinefromDate;
     _currentDeadlineToDate = event.deadlinetoDate;
@@ -143,7 +143,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         hasFile: event.hasFile,
         hasDeal: event.hasDeal,
         urgent: event.urgent,
-        project: event.project,
+        projectIds: event.projectIds,
         authors: event.authors,
         deadlinefromDate: event.deadlinefromDate,
         deadlinetoDate: event.deadlinetoDate,
@@ -192,7 +192,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         hasFile: event.hasFile ?? _currentHasFile,
         hasDeal: event.hasDeal ?? _currentHasDeal,
         urgent: event.urgent ?? _currentUrgent,
-        project: event.project ?? _currentProject,
+        projectIds: event.projectIds ?? _currentProjectIds,
         authors: event.authors ?? _currentAuthors,
         deadlinefromDate: event.deadlinefromDate ?? _currentDeadlineFromDate,
         deadlinetoDate: event.deadlinetoDate ?? _currentDeadlineToDate,

@@ -652,7 +652,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         return AppLocalizations.of(context)!.translate('sales_funnel_details');
       case 'created_at':
         return AppLocalizations.of(context)!.translate('created_at_details');
-      case 'status':
+      case 'lead_status_id':
         return AppLocalizations.of(context)!.translate('status_details');
       case 'files':
         return AppLocalizations.of(context)!.translate('files_details');
@@ -762,7 +762,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       case 'created_at':
         return formatDate(lead.createdAt);
 
-      case 'status':
+      case 'lead_status_id':
         return lead.leadStatus?.title ?? '';
 
       case 'files':

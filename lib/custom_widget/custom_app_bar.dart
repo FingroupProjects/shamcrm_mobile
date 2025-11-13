@@ -151,6 +151,7 @@ final List<String>? initialDealNames; // Новый параметр
   final String? initialDepartment;
   final List<Map<String, dynamic>>?
       initialDirectoryValuesTask; // Добавляем начальные значения справочников
+  final List? initialProjects; // Начальные проекты для фильтра
 
   final Function(Map<String, dynamic>)? onChatLeadFiltersApplied; // Для лидов
   final Function(Map<String, dynamic>)? onChatTaskFiltersApplied; // Для задач
@@ -287,6 +288,7 @@ final List<String>? initialDealNames; // Новый параметр
     this.initialDeadlineToDate,
     this.initialAuthors,
     this.initialDepartment,
+    this.initialProjects,
     this.onLeadsDealSelected,
     this.initialDirectoryValuesDeal, // Добавляем в конструктор
 
@@ -1779,6 +1781,7 @@ class _CustomAppBarState extends State<CustomAppBar>
           initialDeadlineToDate: widget.initialDeadlineToDate,
           initialDirectoryValues:
               _safeConvertToMapList(widget.initialDirectoryValuesTask),
+          initialProjects: widget.initialProjects,
         ),
       ),
     );
