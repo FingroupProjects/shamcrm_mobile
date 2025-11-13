@@ -322,6 +322,25 @@ class Goods {
             .toList();
       }
 
+      // Парсим файлы: проверяем несколько возможных мест
+      List<GoodsFile> files = [];
+      if (json['files'] != null && json['files'] is List) {
+        files = (json['files'] as List<dynamic>).map((f) {
+          return GoodsFile.fromJson(f as Map<String, dynamic>);
+        }).toList();
+      } else if (data['files'] != null && data['files'] is List) {
+        files = (data['files'] as List<dynamic>).map((f) {
+          return GoodsFile.fromJson(f as Map<String, dynamic>);
+        }).toList();
+      } else if (json.containsKey('good') && json['good'] is Map && (json['good'] as Map)['files'] != null) {
+        final goodData = json['good'] as Map<String, dynamic>;
+        if (goodData['files'] is List) {
+          files = (goodData['files'] as List<dynamic>).map((f) {
+            return GoodsFile.fromJson(f as Map<String, dynamic>);
+          }).toList();
+        }
+      }
+
       return Goods(
         id: json['id'] as int? ?? data['id'] as int? ?? 0,
         name: data['name'] as String? ?? '',
@@ -337,10 +356,7 @@ class Goods {
         discountPercent: discountPercent,
         isActive: isActive,
         isService: isService,
-        files: (json['files'] as List<dynamic>?)?.map((f) {
-              return GoodsFile.fromJson(f as Map<String, dynamic>);
-            }).toList() ??
-            [],
+        files: files,
         attributes: (json['attribute_values'] as List<dynamic>?)?.map((attr) {
               return GoodsAttribute.fromJson(attr as Map<String, dynamic>);
             }).toList() ??

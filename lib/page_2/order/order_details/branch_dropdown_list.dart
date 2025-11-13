@@ -48,7 +48,36 @@ class _BranchRadioGroupWidgetState extends State<BranchRadioGroupWidget> {
         BlocBuilder<BranchBloc, BranchState>(
           builder: (context, state) {
             if (state is BranchLoading) {
-              return const Center(child: CircularProgressIndicator());
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    AppLocalizations.of(context)!.translate('branches'),
+                    style: statusTextStyle.copyWith(fontWeight: FontWeight.w400),
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    height: 50,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF4F7FD),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        width: 1,
+                        color: const Color(0xFFF4F7FD),
+                      ),
+                    ),
+                    child: const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                      ),
+                    ),
+                  ),
+                ],
+              );
             }
             if (state is BranchError) {
               WidgetsBinding.instance.addPostFrameCallback((_) {

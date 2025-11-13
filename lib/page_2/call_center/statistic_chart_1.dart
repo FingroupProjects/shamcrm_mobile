@@ -9,7 +9,8 @@ class StatisticChart1 extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const int currentMonthIndex = 6; // Июль 2025, 0-based индекс
+    // Получаем текущий месяц динамически (0-based индекс: январь = 0, февраль = 1, ..., декабрь = 11)
+    final int currentMonthIndex = DateTime.now().month - 1;
 
     // Подготовка данных до текущего месяца
     List<FlSpot> getSpots(double Function(CallStatMonth) valueExtractor) {
@@ -20,6 +21,34 @@ class StatisticChart1 extends StatelessWidget {
       }
       return spots;
     }
+
+    // Вычисляем максимальное значение из всех метрик для динамического maxY
+    double calculateMaxY() {
+      double maxValue = 0;
+      for (int i = 0; i <= currentMonthIndex && i < statistics.result.length; i++) {
+        final data = statistics.result[i];
+        maxValue = maxValue > data.total ? maxValue : data.total.toDouble();
+        maxValue = maxValue > data.averageAnswerTime * 10 ? maxValue : data.averageAnswerTime * 10;
+        maxValue = maxValue > data.notCalledBackCount ? maxValue : data.notCalledBackCount.toDouble();
+        maxValue = maxValue > data.missed ? maxValue : data.missed.toDouble();
+        maxValue = maxValue > data.outgoing ? maxValue : data.outgoing.toDouble();
+        maxValue = maxValue > data.incoming ? maxValue : data.incoming.toDouble();
+      }
+      // Округляем до ближайшего большего числа, кратного 100
+      if (maxValue == 0) return 100; // Минимальное значение для пустых данных
+      // Округляем до ближайшего большего числа, кратного 100 (без запаса)
+      return ((maxValue / 100).ceil()) * 100.0;
+    }
+
+    final double maxY = calculateMaxY();
+    // Динамический интервал для сетки (кратный 100 для удобных значений)
+    double calculateHorizontalInterval(double maxYValue) {
+      if (maxYValue <= 500) return 100;
+      if (maxYValue <= 1000) return 200;
+      if (maxYValue <= 2000) return 500;
+      return 1000;
+    }
+    final double horizontalInterval = calculateHorizontalInterval(maxY);
 
     return Container(
       padding: const EdgeInsets.all(16.0),
@@ -56,7 +85,7 @@ class StatisticChart1 extends StatelessWidget {
                 gridData: FlGridData(
                   show: true,
                   drawVerticalLine: true,
-                  horizontalInterval: 50,
+                  horizontalInterval: horizontalInterval,
                   verticalInterval: 1,
                   getDrawingHorizontalLine: (value) => FlLine(
                     color: Colors.grey.shade200,
@@ -126,7 +155,7 @@ class StatisticChart1 extends StatelessWidget {
                           fontSize: 12,
                         ),
                       ),
-                      interval: 50,
+                      interval: horizontalInterval,
                       reservedSize: 28,
                     ),
                   ),
@@ -139,7 +168,7 @@ class StatisticChart1 extends StatelessWidget {
                 minX: 0,
                 maxX: 11,
                 minY: 0,
-                maxY: 250, // Увеличено для вмещения всех данных
+                maxY: maxY, // Динамически вычисляется на основе максимального значения данных
                 lineBarsData: [
                   // Общее количество звонков
                   
