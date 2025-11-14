@@ -1462,62 +1462,76 @@ Future<String> getStaticBaseUrl() async {
     }
   }
 
-  Future<List<LeadStatus>> getLeadStatuses() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final organizationId = await getSelectedOrganization();
-    //print('ApiService: getLeadStatuses - organizationId: $organizationId');
+ Future<List<LeadStatus>> getLeadStatuses() async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  final organizationId = await getSelectedOrganization();
+  final salesFunnelId = await getSelectedSalesFunnel(); // ← УБЕДИСЬ, что этот метод возвращает валидный ID
 
-    try {
-      // Используем _appendQueryParams для формирования пути
-      final path = await _appendQueryParams('/lead/statuses');
-      //print('ApiService: getLeadStatuses - Generated path: $path');
+  // ЛОГИРУЕМ для отладки
+  debugPrint('getLeadStatuses - organizationId: $organizationId, salesFunnelId: $salesFunnelId');
 
-      final response = await _getRequest(path);
-      //print('ApiService: getLeadStatuses - Response status: ${response.statusCode}');
-      //print('ApiService: getLeadStatuses - Response body: ${response.body}');
+  try {
+    // Формируем путь с гарантией передачи sales_funnel_id
+    String path = '/lead/statuses';
+    final bool hasParams = path.contains('?');
+    final String separator = hasParams ? '&' : '?';
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        //print('ApiService: getLeadStatuses - Parsed data: $data');
-        if (data['result'] != null) {
-          final statuses = (data['result'] as List)
-              .map((status) => LeadStatus.fromJson(status))
-              .toList();
-          //print('ApiService: getLeadStatuses - Retrieved statuses: ${statuses.map((s) => {'id': s.id, 'title': s.title})}');
+    // Явно добавляем organization_id
+    if (organizationId != null && organizationId.isNotEmpty && organizationId != 'null') {
+      path += '${separator}organization_id=$organizationId';
+    }
 
-          // Кэширование
-          await prefs.setString('cachedLeadStatuses_$organizationId',
-              json.encode(data['result']));
-          //print('ApiService: getLeadStatuses - Cached new statuses: ${data['result']}');
+    // ЯВНО ДОБАВЛЯЕМ sales_funnel_id, даже если он 0 или null — сервер должен это обрабатывать
+    final String funnelId = (salesFunnelId ?? '').toString();
+    if (funnelId.isNotEmpty && funnelId != 'null') {
+      path += '${hasParams || organizationId != null ? '&' : '?'}sales_funnel_id=$funnelId';
+    } else {
+      // Если funnelId пустой — всё равно попробуем передать 0 или пустое значение?
+      // Лучше НЕ передавать, если сервер не ожидает
+      debugPrint('getLeadStatuses - sales_funnel_id is null or empty, skipping');
+    }
 
-          return statuses;
-        } else {
-          //print('ApiService: getLeadStatuses - Result is null in response');
-          throw Exception('Результат отсутствует в ответе');
-        }
-      } else {
-        //print('ApiService: getLeadStatuses - Error status: ${response.statusCode}');
-        throw Exception('Ошибка при получении данных: ${response.statusCode}');
-      }
-    } catch (e) {
-      //print('ApiService: getLeadStatuses - Error');
-      // Загрузка из кэша
-      final cachedStatuses =
-          prefs.getString('cachedLeadStatuses_$organizationId');
-      if (cachedStatuses != null) {
-        final decodedData = json.decode(cachedStatuses);
-        final cachedList = (decodedData as List)
+    debugPrint('getLeadStatuses - Final path: $path');
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['result'] != null) {
+        final statuses = (data['result'] as List)
             .map((status) => LeadStatus.fromJson(status))
             .toList();
-        //print('ApiService: getLeadStatuses - Returning cached statuses: ${cachedList.map((s) => {'id': s.id, 'title': s.title})}');
-        return cachedList;
+
+        // Кэшируем с ключом, зависящим от organizationId И salesFunnelId
+        final cacheKey = 'cachedLeadStatuses_${organizationId}_funnel_${salesFunnelId ?? "null"}';
+        await prefs.setString(cacheKey, json.encode(data['result']));
+        debugPrint('getLeadStatuses - Cached with key: $cacheKey');
+
+        return statuses;
       } else {
-        //print('ApiService: getLeadStatuses - No cached statuses available');
-        throw Exception(
-            'Ошибка загрузки статусов лидов и отсутствуют кэшированные данные!');
+        throw Exception('Результат отсутствует в ответе');
       }
+    } else {
+      throw Exception('Ошибка при получении данных: ${response.statusCode}');
+    }
+  } catch (e) {
+    debugPrint('getLeadStatuses - Error: $e');
+
+    // Попробуем загрузить из кэша (по новому ключу)
+    final cacheKey = 'cachedLeadStatuses_${organizationId}_funnel_${salesFunnelId ?? "null"}';
+    final cachedStatuses = prefs.getString(cacheKey);
+    if (cachedStatuses != null) {
+      final decodedData = json.decode(cachedStatuses);
+      final cachedList = (decodedData as List)
+          .map((status) => LeadStatus.fromJson(status))
+          .toList();
+      debugPrint('getLeadStatuses - Returning cached statuses for funnel: $salesFunnelId');
+      return cachedList;
+    } else {
+      throw Exception('Ошибка загрузки статусов лидов и отсутствуют кэшированные данные!');
     }
   }
+}
 
   Future<bool> checkIfStatusHasLeads(int leadStatusId) async {
     try {
