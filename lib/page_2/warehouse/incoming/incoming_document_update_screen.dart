@@ -12,6 +12,8 @@ import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/variant_selection_bottom_sheet.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/storage_widget.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/supplier_widget.dart';
+import 'package:crm_task_manager/page_2/warehouse/widgets/save_hint_banner.dart';
+import 'package:crm_task_manager/page_2/warehouse/widgets/validation_helper.dart';
 import 'package:crm_task_manager/page_2/widgets/confirm_exit_dialog.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
@@ -356,6 +358,22 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
     FocusScope.of(context).unfocus();
   }
 
+  // ✅ НОВОЕ: Функция для фокуса на первом товаре с ошибкой
+  void _focusFirstErrorItem() {
+    WarehouseValidationHelper.focusFirstErrorItem(
+      items: _items,
+      quantityErrors: _quantityErrors,
+      priceErrors: _priceErrors,
+      collapsedItems: _collapsedItems,
+      scrollController: _scrollController,
+      tabController: _tabController,
+      quantityFocusNodes: _quantityFocusNodes,
+      priceFocusNodes: _priceFocusNodes,
+      setState: setState,
+      mounted: mounted,
+    );
+  }
+
   // Функция для парсинга цены: возвращает int если целое, double если дробное
   num _parsePriceAsNumber(dynamic price) {
     final double parsedPrice = price is String ? (double.tryParse(price) ?? 0.0) : (price as num).toDouble();
@@ -424,11 +442,17 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
     });
 
     if (hasErrors) {
+      final needsTabSwitch = _tabController.index != 1;
+      if (needsTabSwitch) {
+        _tabController.animateTo(1);
+      }
       _showSnackBar(
         AppLocalizations.of(context)!.translate('fill_all_required_fields') ??
             'Заполните все обязательные поля',
         false,
       );
+      // Фокусируемся на первом товаре с ошибкой
+      _focusFirstErrorItem();
       return;
     }
 
@@ -632,19 +656,9 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
         ),
         // Подсказка для сохранения
         if (_items.isNotEmpty)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Text(
-              localizations.translate('save_hint') ?? "После добавления товаров перейдите в \"Основное\" для сохранения",
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w400,
-                color: Color(0xffbdc2cf),
-                height: 1.2,
-              ),
-            ),
+          SaveHintBanner(
+            message: localizations.translate('save_hint') ??
+                "После добавления товаров перейдите в \"Основное\" для сохранения",
           ),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
