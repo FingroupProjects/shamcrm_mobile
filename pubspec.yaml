@@ -1,7 +1,8 @@
 name: crm_task_manager
 description: "A new Flutter project."
 
-version: 2.1.74+97
+version: 2.1.73+99
+
 
 environment:
   sdk: ^3.5.3

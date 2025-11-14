@@ -1,6 +1,7 @@
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/firebase_api.dart';
+import 'package:crm_task_manager/api/service/internet_monitor_service.dart';
 import 'package:crm_task_manager/api/service/secure_storage_service.dart';
 import 'package:crm_task_manager/api/service/widget_service.dart';
 import 'package:crm_task_manager/bloc/My-Task_Status_Name/statusName_bloc.dart';
@@ -128,6 +129,7 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:crm_task_manager/screens/profile/languages/local_manager_lang.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:crm_task_manager/update_dialog.dart';
+import 'package:crm_task_manager/widgets/internet_aware_wrapper.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -151,6 +153,7 @@ void main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
     WidgetService.initialize();
+        await InternetMonitorService().initialize();
 
     await _initializeFirebase();
 
@@ -499,11 +502,10 @@ class _MyAppState extends State<MyApp> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    // ✅ УБРАН ЭКРАН ЗАГРУЗКИ - сразу показываем основное приложение!
-    
-    return MultiProvider(
-      providers: [
+Widget build(BuildContext context) {
+  return MultiProvider(
+    providers: [
+
         Provider<ApiService>.value(value: widget.apiService),
         Provider<AuthService>.value(value: widget.authService),
         BlocProvider(create: (context) => DomainBloc(widget.apiService)),
@@ -629,80 +631,84 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => SalesDashboardCreditorsBloc()),
         BlocProvider(create: (context) => SalesDashboardDebtorsBloc()),
         BlocProvider(create: (context) => FieldConfigurationBloc(widget.apiService)),
+     ],
+    child: MaterialApp(  // ✅ MaterialApp БЕЗ обертки
+      locale: _locale ?? const Locale('ru'),
+      color: Colors.white,
+      debugShowCheckedModeBanner: false,
+      title: 'shamCRM',
+      navigatorKey: navigatorKey,
+      scaffoldMessengerKey: scaffoldMessengerKey,
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        scaffoldBackgroundColor: Colors.white,
+      ),
+      localizationsDelegates: [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
       ],
-      child: MaterialApp(
-        locale: _locale ?? const Locale('ru'),
-        color: Colors.white,
-        debugShowCheckedModeBanner: false,
-        title: 'shamCRM',
-        navigatorKey: navigatorKey,
-        scaffoldMessengerKey: scaffoldMessengerKey,
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
-          scaffoldBackgroundColor: Colors.white,
-        ),
-        localizationsDelegates: [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: [
-          const Locale('ru', ''),
-          const Locale('en', ''),
-          const Locale('uz', ''),
-        ],
-        localeResolutionCallback: (locale, supportedLocales) {
-          for (var supportedLocale in supportedLocales) {
-            if (supportedLocale.languageCode == locale?.languageCode) {
-              return supportedLocale;
-            }
+      supportedLocales: [
+        const Locale('ru', ''),
+        const Locale('en', ''),
+        const Locale('uz', ''),
+      ],
+      localeResolutionCallback: (locale, supportedLocales) {
+        for (var supportedLocale in supportedLocales) {
+          if (supportedLocale.languageCode == locale?.languageCode) {
+            return supportedLocale;
           }
-          return supportedLocales.first;
-        },
-        home: Builder(
-          builder: (context) {
-            if (!widget.sessionValid) {
-              WidgetsBinding.instance.addPostFrameCallback((_) async {
-                if (mounted) {
-                  await checkForNewVersion(context);
-                }
-              });
-              return AuthScreen();
-            }
+        }
+        return supportedLocales.first;
+      },
+      // ✅ InternetAwareWrapper ЗДЕСЬ, в builder MaterialApp
+      builder: (context, child) {
+        return InternetAwareWrapper(
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
+      home: Builder(
+        builder: (context) {
+          if (!widget.sessionValid) {
+            WidgetsBinding.instance.addPostFrameCallback((_) async {
+              if (mounted) {
+                await checkForNewVersion(context);
+              }
+            });
+            return AuthScreen();
+          }
 
-            if (widget.token == null) {
-              WidgetsBinding.instance.addPostFrameCallback((_) async {
-                if (mounted) {
-                  await checkForNewVersion(context);
-                }
-              });
-              return AuthScreen();
-            } else if (widget.pin == null) {
-              WidgetsBinding.instance.addPostFrameCallback((_) async {
-                if (mounted) {
-                  await checkForNewVersion(context);
-                }
-              });
-              return PinSetupScreen();
-            } else {
-              // ✅ СРАЗУ показываем PinScreen (у него своя загрузка)
-              return PinScreen(
-                initialMessage: widget.initialMessage,
-              );
-            }
-          },
-        ),
-        routes: {
-          '/local_auth': (context) => AuthScreen(),
-          '/login': (context) => LoginScreen(),
-          '/home': (context) => HomeScreen(),
-          '/chats': (context) => ChatsScreen(),
-          '/pin_setup': (context) => PinSetupScreen(),
-          '/pin_screen': (context) => PinScreen(),
-          '/profile': (context) => ProfileScreen(),
+          if (widget.token == null) {
+            WidgetsBinding.instance.addPostFrameCallback((_) async {
+              if (mounted) {
+                await checkForNewVersion(context);
+              }
+            });
+            return AuthScreen();
+          } else if (widget.pin == null) {
+            WidgetsBinding.instance.addPostFrameCallback((_) async {
+              if (mounted) {
+                await checkForNewVersion(context);
+              }
+            });
+            return PinSetupScreen();
+          } else {
+            return PinScreen(
+              initialMessage: widget.initialMessage,
+            );
+          }
         },
       ),
-    );
-  }
-}
+      routes: {
+        '/local_auth': (context) => AuthScreen(),
+        '/login': (context) => LoginScreen(),
+        '/home': (context) => HomeScreen(),
+        '/chats': (context) => ChatsScreen(),
+        '/pin_setup': (context) => PinSetupScreen(),
+        '/pin_screen': (context) => PinScreen(),
+        '/profile': (context) => ProfileScreen(),
+      },
+    ),
+  );
+}}
