@@ -25,6 +25,7 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
   List<ProjectTask> projectsList = [];
   ProjectTask? selectedProjectData;
   bool _hasAutoSelected = false;
+  bool _isLoadingMore = false;
 
   final TextStyle projectTextStyle = const TextStyle(
     fontSize: 16,
@@ -37,6 +38,69 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
   void initState() {
     super.initState();
     context.read<GetTaskProjectBloc>().add(GetTaskProjectEv());
+  }
+
+  void _loadAllRemainingPages(GetTaskProjectSuccess initialState) async {
+    // Загружаем все оставшиеся страницы последовательно, пока не достигнем конца
+    if (initialState.hasReachedMax || _isLoadingMore) {
+      return;
+    }
+
+    if (!mounted) return;
+
+    setState(() {
+      _isLoadingMore = true;
+    });
+
+    int nextPage = initialState.currentPage + 1;
+    int totalPages = initialState.totalPages;
+
+    // Загружаем все страницы последовательно
+    while (nextPage <= totalPages && mounted) {
+      try {
+        // Ждем немного между запросами, чтобы не перегружать сервер
+        await Future.delayed(const Duration(milliseconds: 100));
+        
+        context.read<GetTaskProjectBloc>().add(
+          GetTaskProjectMoreEv(page: nextPage),
+        );
+
+        // Ждем обновления состояния (максимум 5 секунд на запрос)
+        GetTaskProjectSuccess? updatedState;
+        try {
+          updatedState = await context.read<GetTaskProjectBloc>().stream
+            .where((newState) => newState is GetTaskProjectSuccess)
+            .map((newState) => newState as GetTaskProjectSuccess)
+            .first
+            .timeout(const Duration(seconds: 5));
+        } catch (e) {
+          // При таймауте или ошибке прекращаем загрузку
+          break;
+        }
+
+        if (!mounted) {
+          break;
+        }
+
+        // Проверяем, достигли ли мы конца
+        if (updatedState.hasReachedMax) {
+          break;
+        }
+
+        // Обновляем счетчики для следующей итерации
+        nextPage = updatedState.currentPage + 1;
+        totalPages = updatedState.totalPages;
+      } catch (e) {
+        // При ошибке прекращаем загрузку
+        break;
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        _isLoadingMore = false;
+      });
+    }
   }
 
   void _handleProjectSelection(List<ProjectTask> projects) {
@@ -118,7 +182,17 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
                   color: field.hasError ? Colors.red : Colors.white,
                 ),
               ),
-              child: BlocBuilder<GetTaskProjectBloc, GetTaskProjectState>(
+              child: BlocConsumer<GetTaskProjectBloc, GetTaskProjectState>(
+                listener: (context, state) {
+                  if (state is GetTaskProjectSuccess) {
+                    // Загружаем все оставшиеся страницы сразу после первой загрузки
+                    if (state.currentPage == 1 && !state.hasReachedMax && !_isLoadingMore) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        _loadAllRemainingPages(state);
+                      });
+                    }
+                  }
+                },
                 builder: (context, state) {
                   if (state is GetTaskProjectSuccess) {
                     projectsList = state.dataProject.result ?? [];
@@ -153,15 +227,14 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
                           vertical: 8,
                         ),
                         child: Text(
-                          item.name!,
+                          item.name,
                           style: projectTextStyle,
                         ),
                       );
                     },
                     headerBuilder: (context, selectedItem, enabled) {
                       return Text(
-                        selectedItem?.name ??
-                            AppLocalizations.of(context)!.translate('select_project'),
+                        selectedItem.name,
                         style: projectTextStyle,
                       );
                     },
