@@ -766,6 +766,7 @@ void initState() {
             focusNode: focusNode,
             showMenuIcon: _showCustomTabBar,
             showFilterIconOnSelectDeal: !_showCustomTabBar,
+            hasActiveDealFilters: !_showCustomTabBar,
             showFilterTaskIcon: false,
             showFilterIcon: false,
             showFilterIconDeal: true,

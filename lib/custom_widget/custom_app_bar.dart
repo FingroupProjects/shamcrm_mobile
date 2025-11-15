@@ -159,6 +159,7 @@ class CustomAppBar extends StatefulWidget {
   final bool hasActiveEventFilters; // Есть ли активные фильтры для Event
   final bool hasActiveDealFilters; // Есть ли активные фильтры для сделок
   final bool hasActiveTaskFilters; // Есть ли активные фильтры для задач
+  final bool hasActiveLeadFilters; // Есть ли активные фильтры для лидов
   final Map<String, dynamic>? initialChatFilters; // Начальные фильтры
   final int? currentSalesFunnelId; // ID текущей воронки
   final bool showDashboardIcon; // Новый параметр
@@ -223,6 +224,7 @@ class CustomAppBar extends StatefulWidget {
     this.hasActiveEventFilters = false,
     this.hasActiveDealFilters = false,
     this.hasActiveTaskFilters = false,
+    this.hasActiveLeadFilters = false,
     this.initialChatFilters,
     this.initialManagersDeal,
     this.initialLeadsDeal,
@@ -341,7 +343,8 @@ class _CustomAppBarState extends State<CustomAppBar>
     _areFiltersActive = widget.hasActiveChatFilters ||
         widget.hasActiveEventFilters ||
         widget.hasActiveDealFilters ||
-        widget.hasActiveTaskFilters;
+        widget.hasActiveTaskFilters ||
+        widget.hasActiveLeadFilters;
     _iconColor = _areFiltersActive ? Colors.blue : Colors.black;
     if (_cachedUserImage.isNotEmpty) {
       _userImage = _cachedUserImage;
@@ -464,11 +467,13 @@ class _CustomAppBarState extends State<CustomAppBar>
     if (widget.hasActiveChatFilters != oldWidget.hasActiveChatFilters ||
         widget.hasActiveEventFilters != oldWidget.hasActiveEventFilters ||
         widget.hasActiveDealFilters != oldWidget.hasActiveDealFilters ||
-        widget.hasActiveTaskFilters != oldWidget.hasActiveTaskFilters) {
+        widget.hasActiveTaskFilters != oldWidget.hasActiveTaskFilters ||
+        widget.hasActiveLeadFilters != oldWidget.hasActiveLeadFilters) {
       _setFiltersActive(widget.hasActiveChatFilters ||
           widget.hasActiveEventFilters ||
           widget.hasActiveDealFilters ||
-          widget.hasActiveTaskFilters);
+          widget.hasActiveTaskFilters ||
+          widget.hasActiveLeadFilters);
     }
   }
 
