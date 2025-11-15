@@ -42,10 +42,12 @@ String leadsDataResponseToJson(ProjectTaskDataResponse data) => json.encode(data
 class ProjectTaskDataResponse {
   List<ProjectTask>? result;
   dynamic errors;
+  ProjectTaskPagination? pagination;
 
   ProjectTaskDataResponse({
     this.result,
     this.errors,
+    this.pagination,
   });
 
   factory ProjectTaskDataResponse.fromJson(Map<String, dynamic> json) {
@@ -56,12 +58,48 @@ class ProjectTaskDataResponse {
             )
           : [],
       errors: json["errors"],
+      pagination: json["result"] != null && json["result"]["pagination"] != null
+          ? ProjectTaskPagination.fromJson(json["result"]["pagination"])
+          : null,
     );
   }
 
   Map<String, dynamic> toJson() => {
     "result": result == null ? [] : List<dynamic>.from(result!.map((x) => x.toJson())),
     "errors": errors,
+    "pagination": pagination?.toJson(),
+  };
+}
+
+class ProjectTaskPagination {
+  final int? total;
+  final int? count;
+  final int? perPage;
+  final int? currentPage;
+  final int? totalPages;
+
+  ProjectTaskPagination({
+    this.total,
+    this.count,
+    this.perPage,
+    this.currentPage,
+    this.totalPages,
+  });
+
+  factory ProjectTaskPagination.fromJson(Map<String, dynamic> json) => ProjectTaskPagination(
+    total: json["total"],
+    count: json["count"],
+    perPage: json["per_page"],
+    currentPage: json["current_page"],
+    totalPages: json["total_pages"],
+  );
+
+  Map<String, dynamic> toJson() => {
+    "total": total,
+    "count": count,
+    "per_page": perPage,
+    "current_page": currentPage,
+    "total_pages": totalPages,
   };
 }
 
