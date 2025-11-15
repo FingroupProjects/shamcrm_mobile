@@ -88,7 +88,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   bool _hasMarkedMessagesAsRead = false;
   bool _isRecordingInProgress = false; // Флаг для отслеживания состояния записи
   String? referralBody; // Новое поле для хранения referral_body всего чата
-  
+
 
   void _onSearchChanged(String query) {
     setState(() {
@@ -110,234 +110,234 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     }
   }
 
-@override
-void initState() {
-  super.initState();
-  _checkPermissions();
-  
-  // Сбрасываем состояния
-  context.read<ListenSenderFileCubit>().updateValue(false);
-  context.read<ListenSenderVoiceCubit>().updateValue(false);
-  context.read<ListenSenderTextCubit>().updateValue(false);
-  
-  WidgetsBinding.instance.addPostFrameCallback((_) async {
-    await _initializeServices();
-  });
-}
+  @override
+  void initState() {
+    super.initState();
+    _checkPermissions();
+
+    // Сбрасываем состояния
+    context.read<ListenSenderFileCubit>().updateValue(false);
+    context.read<ListenSenderVoiceCubit>().updateValue(false);
+    context.read<ListenSenderTextCubit>().updateValue(false);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _initializeServices();
+    });
+  }
 
 
 // Также добавьте метод для повторной попытки
-Future<void> _retryInitialization() async {
-  try {
-    await _initializeBaseUrl();
-    context.read<MessagingCubit>().getMessages(widget.chatId);
-  } catch (e) {
-    debugPrint('Retry failed: $e');
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Повторная попытка не удалась: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-}
-
-Future<void> _initializeBaseUrl() async {
-  debugPrint('Initializing baseUrl...');
-  
-  final prefs = await SharedPreferences.getInstance();
-  
-  // Получаем домены из той же логики, что используется в сокете
-  final enteredDomainMap = await ApiService().getEnteredDomain();
-  String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
-  String? enteredDomain = enteredDomainMap['enteredDomain'];
-
-  // Проверяем домен для email-верификации
-  String? verifiedDomain = await ApiService().getVerifiedDomain();
-  debugPrint('BaseUrl init - enteredMainDomain=$enteredMainDomain, enteredDomain=$enteredDomain, verifiedDomain=$verifiedDomain');
-
-  // Если домены отсутствуют, используем verifiedDomain
-  if (enteredMainDomain == null || enteredDomain == null) {
-    if (verifiedDomain != null && verifiedDomain.isNotEmpty) {
-      enteredMainDomain = verifiedDomain.split('-back.').last;
-      enteredDomain = verifiedDomain.split('-back.').first;
-      debugPrint('BaseUrl init - Using verifiedDomain: $verifiedDomain, parsed mainDomain=$enteredMainDomain, domain=$enteredDomain');
-      
-      // Принудительно сохраняем в SharedPreferences
-      await prefs.setString('enteredMainDomain', enteredMainDomain);
-      await prefs.setString('enteredDomain', enteredDomain);
-    } else {
-      throw Exception('Cannot determine domain for API calls');
-    }
-  }
-
-  // Формируем baseUrl по той же логике, что и сокет
-  baseUrl = 'https://$enteredDomain-back.$enteredMainDomain';
-  debugPrint('BaseUrl initialized: $baseUrl');
-  
-  // ВАЖНО: Сохраняем для использования во ВСЕХ экземплярах ApiService
-  await prefs.setString('cached_base_url', '$baseUrl/api');
-  debugPrint('Cached baseUrl for all ApiService instances: $baseUrl/api');
-}
-
-Future<void> _initializeServices() async {
-  try {
-    debugPrint('ChatSmsScreen: Starting initialization...');
-    
-    // Шаг 1: Проверяем и инициализируем домены
-    await _ensureDomainConfiguration();
-    
-    // Шаг 2: Инициализируем ApiService
-    await apiService.initialize();
-    
-    // Шаг 3: Получаем базовый URL
-    baseUrl = await apiService.getDynamicBaseUrl();
-    debugPrint('ChatSmsScreen: BaseURL initialized: $baseUrl');
-    
-    // Шаг 4: Инициализируем сокет
-    await _initializeSocket();
-    
-    // Шаг 5: Загружаем сообщения
-    context.read<MessagingCubit>().getMessagesWithFallback(widget.chatId);
-    _scrollToBottom();
-    
-    // Шаг 6: Загружаем интеграцию для лидов
-    if (widget.endPointInTab == 'lead') {
-      await _fetchIntegration();
-    }
-    
-    debugPrint('ChatSmsScreen: Initialization completed successfully');
-  } catch (e, stackTrace) {
-    debugPrint('ChatSmsScreen: Initialization error: $e');
-    debugPrint('StackTrace: $stackTrace');
-    
-    // Показываем ошибку пользователю, но пытаемся загрузить хотя бы сообщения
-    if (mounted) {
-      _showInitializationError(e.toString());
-      
-      // Попытка загрузить сообщения даже при ошибке инициализации
-      try {
-        context.read<MessagingCubit>().getMessagesWithFallback(widget.chatId);
-      } catch (e2) {
-        debugPrint('ChatSmsScreen: Failed to load messages after init error: $e2');
+  Future<void> _retryInitialization() async {
+    try {
+      await _initializeBaseUrl();
+      context.read<MessagingCubit>().getMessages(widget.chatId);
+    } catch (e) {
+      debugPrint('Retry failed: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Повторная попытка не удалась: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     }
   }
-}
 
-Future<void> _ensureDomainConfiguration() async {
-  final prefs = await SharedPreferences.getInstance();
-  
-  // Проверяем текущие домены
-  final enteredDomainMap = await ApiService().getEnteredDomain();
-  String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
-  String? enteredDomain = enteredDomainMap['enteredDomain'];
-  
-  // Проверяем email верификацию
-  String? verifiedDomain = await ApiService().getVerifiedDomain();
-  
-  debugPrint('Domain check: enteredMainDomain=$enteredMainDomain, enteredDomain=$enteredDomain, verifiedDomain=$verifiedDomain');
-  
-  // Если домены не настроены, используем verifiedDomain или QR данные
-  if ((enteredMainDomain == null || enteredDomain == null) && verifiedDomain != null) {
-    // Парсим verifiedDomain
-    if (verifiedDomain.contains('-back.')) {
-      final parts = verifiedDomain.split('-back.');
-      enteredDomain = parts[0];
-      enteredMainDomain = parts[1];
-    } else {
-      // Fallback для других форматов
-      enteredDomain = 'default';
-      enteredMainDomain = verifiedDomain;
+  Future<void> _initializeBaseUrl() async {
+    debugPrint('Initializing baseUrl...');
+
+    final prefs = await SharedPreferences.getInstance();
+
+    // Получаем домены из той же логики, что используется в сокете
+    final enteredDomainMap = await ApiService().getEnteredDomain();
+    String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+    String? enteredDomain = enteredDomainMap['enteredDomain'];
+
+    // Проверяем домен для email-верификации
+    String? verifiedDomain = await ApiService().getVerifiedDomain();
+    debugPrint('BaseUrl init - enteredMainDomain=$enteredMainDomain, enteredDomain=$enteredDomain, verifiedDomain=$verifiedDomain');
+
+    // Если домены отсутствуют, используем verifiedDomain
+    if (enteredMainDomain == null || enteredDomain == null) {
+      if (verifiedDomain != null && verifiedDomain.isNotEmpty) {
+        enteredMainDomain = verifiedDomain.split('-back.').last;
+        enteredDomain = verifiedDomain.split('-back.').first;
+        debugPrint('BaseUrl init - Using verifiedDomain: $verifiedDomain, parsed mainDomain=$enteredMainDomain, domain=$enteredDomain');
+
+        // Принудительно сохраняем в SharedPreferences
+        await prefs.setString('enteredMainDomain', enteredMainDomain);
+        await prefs.setString('enteredDomain', enteredDomain);
+      } else {
+        throw Exception('Cannot determine domain for API calls');
+      }
     }
-    
-    // Сохраняем распарсенные домены
-    await prefs.setString('enteredMainDomain', enteredMainDomain);
-    await prefs.setString('enteredDomain', enteredDomain);
-    
-    debugPrint('Domain configured from verifiedDomain: $enteredDomain-back.$enteredMainDomain');
-  } else if (enteredMainDomain == null || enteredDomain == null) {
-    // Проверяем QR данные
-    final qrData = await ApiService().getQrData();
-    if (qrData['domain'] != null && qrData['mainDomain'] != null) {
-      await prefs.setString('enteredDomain', qrData['domain']!);
-      await prefs.setString('enteredMainDomain', qrData['mainDomain']!);
-      debugPrint('Domain configured from QR data: ${qrData['domain']}-back.${qrData['mainDomain']}');
-    } else {
-      throw Exception('Не удалось определить домен для подключения');
+
+    // Формируем baseUrl по той же логике, что и сокет
+    baseUrl = 'https://$enteredDomain-back.$enteredMainDomain';
+    debugPrint('BaseUrl initialized: $baseUrl');
+
+    // ВАЖНО: Сохраняем для использования во ВСЕХ экземплярах ApiService
+    await prefs.setString('cached_base_url', '$baseUrl/api');
+    debugPrint('Cached baseUrl for all ApiService instances: $baseUrl/api');
+  }
+
+  Future<void> _initializeServices() async {
+    try {
+      debugPrint('ChatSmsScreen: Starting initialization...');
+
+      // Шаг 1: Проверяем и инициализируем домены
+      await _ensureDomainConfiguration();
+
+      // Шаг 2: Инициализируем ApiService
+      await apiService.initialize();
+
+      // Шаг 3: Получаем базовый URL
+      baseUrl = await apiService.getDynamicBaseUrl();
+      debugPrint('ChatSmsScreen: BaseURL initialized: $baseUrl');
+
+      // Шаг 4: Инициализируем сокет
+      await _initializeSocket();
+
+      // Шаг 5: Загружаем сообщения
+      context.read<MessagingCubit>().getMessagesWithFallback(widget.chatId);
+      _scrollToBottom();
+
+      // Шаг 6: Загружаем интеграцию для лидов
+      if (widget.endPointInTab == 'lead') {
+        await _fetchIntegration();
+      }
+
+      debugPrint('ChatSmsScreen: Initialization completed successfully');
+    } catch (e, stackTrace) {
+      debugPrint('ChatSmsScreen: Initialization error: $e');
+      debugPrint('StackTrace: $stackTrace');
+
+      // Показываем ошибку пользователю, но пытаемся загрузить хотя бы сообщения
+      if (mounted) {
+        _showInitializationError(e.toString());
+
+        // Попытка загрузить сообщения даже при ошибке инициализации
+        try {
+          context.read<MessagingCubit>().getMessagesWithFallback(widget.chatId);
+        } catch (e2) {
+          debugPrint('ChatSmsScreen: Failed to load messages after init error: $e2');
+        }
+      }
     }
   }
-}
 
-Future<void> _initializeSocket() async {
-  try {
-    // Используем тот же setUpServices, но с дополнительными проверками
-    setUpServices();
-    debugPrint('ChatSmsScreen: Socket initialization completed');
-  } catch (e) {
-    debugPrint('ChatSmsScreen: Socket initialization error: $e');
-    // Сокет не критичен для работы чата, продолжаем без него
+  Future<void> _ensureDomainConfiguration() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // Проверяем текущие домены
+    final enteredDomainMap = await ApiService().getEnteredDomain();
+    String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+    String? enteredDomain = enteredDomainMap['enteredDomain'];
+
+    // Проверяем email верификацию
+    String? verifiedDomain = await ApiService().getVerifiedDomain();
+
+    debugPrint('Domain check: enteredMainDomain=$enteredMainDomain, enteredDomain=$enteredDomain, verifiedDomain=$verifiedDomain');
+
+    // Если домены не настроены, используем verifiedDomain или QR данные
+    if ((enteredMainDomain == null || enteredDomain == null) && verifiedDomain != null) {
+      // Парсим verifiedDomain
+      if (verifiedDomain.contains('-back.')) {
+        final parts = verifiedDomain.split('-back.');
+        enteredDomain = parts[0];
+        enteredMainDomain = parts[1];
+      } else {
+        // Fallback для других форматов
+        enteredDomain = 'default';
+        enteredMainDomain = verifiedDomain;
+      }
+
+      // Сохраняем распарсенные домены
+      await prefs.setString('enteredMainDomain', enteredMainDomain);
+      await prefs.setString('enteredDomain', enteredDomain);
+
+      debugPrint('Domain configured from verifiedDomain: $enteredDomain-back.$enteredMainDomain');
+    } else if (enteredMainDomain == null || enteredDomain == null) {
+      // Проверяем QR данные
+      final qrData = await ApiService().getQrData();
+      if (qrData['domain'] != null && qrData['mainDomain'] != null) {
+        await prefs.setString('enteredDomain', qrData['domain']!);
+        await prefs.setString('enteredMainDomain', qrData['mainDomain']!);
+        debugPrint('Domain configured from QR data: ${qrData['domain']}-back.${qrData['mainDomain']}');
+      } else {
+        throw Exception('Не удалось определить домен для подключения');
+      }
+    }
   }
-}
 
-void _showInitializationError(String error) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(
-        'Частичная ошибка подключения: ${_getReadableError(error)}',
-        style: const TextStyle(
-          fontFamily: 'Gilroy',
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-          color: Colors.white,
+  Future<void> _initializeSocket() async {
+    try {
+      // Используем тот же setUpServices, но с дополнительными проверками
+      setUpServices();
+      debugPrint('ChatSmsScreen: Socket initialization completed');
+    } catch (e) {
+      debugPrint('ChatSmsScreen: Socket initialization error: $e');
+      // Сокет не критичен для работы чата, продолжаем без него
+    }
+  }
+
+  void _showInitializationError(String error) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Частичная ошибка подключения: ${_getReadableError(error)}',
+          style: const TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: Colors.orange,
+        duration: const Duration(seconds: 5),
+        action: SnackBarAction(
+          label: 'Повторить',
+          textColor: Colors.white,
+          onPressed: () {
+            _initializeServices();
+          },
         ),
       ),
-      backgroundColor: Colors.orange,
-      duration: const Duration(seconds: 5),
-      action: SnackBarAction(
-        label: 'Повторить',
-        textColor: Colors.white,
-        onPressed: () {
-          _initializeServices();
-        },
-      ),
-    ),
-  );
-}
+    );
+  }
 
-String _getReadableError(String error) {
-  if (error.contains('type \'Null\' is not a subtype of type \'String\'')) {
-    return 'ошибка данных сервера';
+  String _getReadableError(String error) {
+    if (error.contains('type \'Null\' is not a subtype of type \'String\'')) {
+      return 'ошибка данных сервера';
+    }
+    if (error.contains('No host specified in URI null')) {
+      return 'проблема настроек подключения';
+    }
+    if (error.contains('Не удалось определить домен')) {
+      return 'не настроен домен';
+    }
+    return 'неизвестная ошибка';
   }
-  if (error.contains('No host specified in URI null')) {
-    return 'проблема настроек подключения';
-  }
-  if (error.contains('Не удалось определить домен')) {
-    return 'не настроен домен';
-  }
-  return 'неизвестная ошибка';
-}
 
-Future<void> _forceInitializeDomain() async {
-  final prefs = await SharedPreferences.getInstance();
-  
-  // Получаем verifiedDomain
-  String? verifiedDomain = await ApiService().getVerifiedDomain();
-  
-  if (verifiedDomain != null && verifiedDomain.isNotEmpty) {
-    // Парсим домен
-    String enteredMainDomain = verifiedDomain.split('-back.').last;
-    String enteredDomain = verifiedDomain.split('-back.').first;
-    
-    // Принудительно сохраняем в SharedPreferences
-    await prefs.setString('enteredMainDomain', enteredMainDomain);
-    await prefs.setString('enteredDomain', enteredDomain);
-    
-    debugPrint('Force initialized domain: $enteredDomain-back.$enteredMainDomain');
+  Future<void> _forceInitializeDomain() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // Получаем verifiedDomain
+    String? verifiedDomain = await ApiService().getVerifiedDomain();
+
+    if (verifiedDomain != null && verifiedDomain.isNotEmpty) {
+      // Парсим домен
+      String enteredMainDomain = verifiedDomain.split('-back.').last;
+      String enteredDomain = verifiedDomain.split('-back.').first;
+
+      // Принудительно сохраняем в SharedPreferences
+      await prefs.setString('enteredMainDomain', enteredMainDomain);
+      await prefs.setString('enteredDomain', enteredDomain);
+
+      debugPrint('Force initialized domain: $enteredDomain-back.$enteredMainDomain');
+    }
   }
-}
   Future<void> _markMessagesAsRead() async {
     // Проверяем, не был ли метод уже вызван
     if (_hasMarkedMessagesAsRead) {
@@ -414,86 +414,86 @@ Future<void> _forceInitializeDomain() async {
 
 
 // Исправленный метод для получения интеграции в ChatSmsScreen
-Future<void> _fetchIntegration() async {
-  final prefs = await SharedPreferences.getInstance();
-  
-  try {
-    debugPrint('ChatSmsScreen: Fetching integration data for chatId: ${widget.chatId}');
-    
-    final chatData = await widget.apiService.getChatById(widget.chatId);
-    debugPrint('ChatSmsScreen: Chat data received');
-    
-    // Сохраняем referralBody из chatData
-    setState(() {
-      referralBody = chatData.referralBody;
-      prefs.setString('referral_body_${widget.chatId}', referralBody ?? '');
-    });
-    
-    IntegrationForLead? integration;
+  Future<void> _fetchIntegration() async {
+    final prefs = await SharedPreferences.getInstance();
+
     try {
-      integration = await widget.apiService.getIntegrationForLead(widget.chatId);
-      debugPrint('ChatSmsScreen: Integration data received: ${integration.username}');
-    } catch (integrationError) {
-      debugPrint('ChatSmsScreen: Integration request failed: $integrationError');
-      integration = null;
-    }
-    
-    setState(() {
-      if (integration != null) {
-        integrationUsername = integration.username ?? 
-            AppLocalizations.of(context)!.translate('unknown_channel');
-        channelName = _determineChannelType(integration) ?? chatData.channelName;
-      } else {
-        integrationUsername = chatData.name.isNotEmpty 
-            ? chatData.name 
-            : AppLocalizations.of(context)!.translate('unknown_channel');
-        channelName = chatData.channelName;
+      debugPrint('ChatSmsScreen: Fetching integration data for chatId: ${widget.chatId}');
+
+      final chatData = await widget.apiService.getChatById(widget.chatId);
+      debugPrint('ChatSmsScreen: Chat data received');
+
+      // Сохраняем referralBody из chatData
+      setState(() {
+        referralBody = chatData.referralBody;
+        prefs.setString('referral_body_${widget.chatId}', referralBody ?? '');
+      });
+
+      IntegrationForLead? integration;
+      try {
+        integration = await widget.apiService.getIntegrationForLead(widget.chatId);
+        debugPrint('ChatSmsScreen: Integration data received: ${integration.username}');
+      } catch (integrationError) {
+        debugPrint('ChatSmsScreen: Integration request failed: $integrationError');
+        integration = null;
       }
-      
-      prefs.setString('integration_username_${widget.chatId}', integrationUsername!);
-      prefs.setString('channel_name_${widget.chatId}', channelName!);
-    });
-    
-    debugPrint('ChatSmsScreen: Integration configured - username: $integrationUsername, channel: $channelName');
-    
-  } catch (e) {
-    debugPrint('ChatSmsScreen: Error fetching integration data: $e');
-    
-    setState(() {
-      integrationUsername = prefs.getString('integration_username_${widget.chatId}') ?? 
-          AppLocalizations.of(context)!.translate('unknown_channel');
-      channelName = prefs.getString('channel_name_${widget.chatId}') ?? 'unknown';
-      referralBody = prefs.getString('referral_body_${widget.chatId}');
-    });
-    
-    debugPrint('ChatSmsScreen: Using cached integration data');
+
+      setState(() {
+        if (integration != null) {
+          integrationUsername = integration.username ??
+              AppLocalizations.of(context)!.translate('unknown_channel');
+          channelName = _determineChannelType(integration) ?? chatData.channelName;
+        } else {
+          integrationUsername = chatData.name.isNotEmpty
+              ? chatData.name
+              : AppLocalizations.of(context)!.translate('unknown_channel');
+          channelName = chatData.channelName;
+        }
+
+        prefs.setString('integration_username_${widget.chatId}', integrationUsername!);
+        prefs.setString('channel_name_${widget.chatId}', channelName!);
+      });
+
+      debugPrint('ChatSmsScreen: Integration configured - username: $integrationUsername, channel: $channelName');
+
+    } catch (e) {
+      debugPrint('ChatSmsScreen: Error fetching integration data: $e');
+
+      setState(() {
+        integrationUsername = prefs.getString('integration_username_${widget.chatId}') ??
+            AppLocalizations.of(context)!.translate('unknown_channel');
+        channelName = prefs.getString('channel_name_${widget.chatId}') ?? 'unknown';
+        referralBody = prefs.getString('referral_body_${widget.chatId}');
+      });
+
+      debugPrint('ChatSmsScreen: Using cached integration data');
+    }
   }
-}
 
 // Вспомогательный метод для определения типа канала из интеграции
-String? _determineChannelType(IntegrationForLead integration) {
-  // Здесь можно определить тип канала на основе данных интеграции
-  // Примеры типов: telegram, whatsapp, instagram, facebook, website
-  
-  if (integration.username != null) {
-    final username = integration.username!.toLowerCase();
-    
-    if (username.contains('telegram') || username.contains('tg')) {
-      return 'telegram';
-    } else if (username.contains('whatsapp') || username.contains('wa')) {
-      return 'whatsapp';
-    } else if (username.contains('instagram') || username.contains('ig')) {
-      return 'instagram';
-    } else if (username.contains('facebook') || username.contains('fb')) {
-      return 'facebook';
-    } else if (username.contains('web') || username.contains('site')) {
-      return 'website';
+  String? _determineChannelType(IntegrationForLead integration) {
+    // Здесь можно определить тип канала на основе данных интеграции
+    // Примеры типов: telegram, whatsapp, instagram, facebook, website
+
+    if (integration.username != null) {
+      final username = integration.username!.toLowerCase();
+
+      if (username.contains('telegram') || username.contains('tg')) {
+        return 'telegram';
+      } else if (username.contains('whatsapp') || username.contains('wa')) {
+        return 'whatsapp';
+      } else if (username.contains('instagram') || username.contains('ig')) {
+        return 'instagram';
+      } else if (username.contains('facebook') || username.contains('fb')) {
+        return 'facebook';
+      } else if (username.contains('web') || username.contains('site')) {
+        return 'website';
+      }
     }
+
+    // По умолчанию возвращаем общий тип
+    return 'messenger';
   }
-  
-  // По умолчанию возвращаем общий тип
-  return 'messenger';
-}
 
   Future<void> _playSound() async {
     try {
@@ -508,219 +508,219 @@ String? _determineChannelType(IntegrationForLead integration) {
     baseUrl = await apiService.getDynamicBaseUrl();
   }
 
-Future<void> _showDatePicker(BuildContext context, List<Message> messages) async {
-  final DateTime currentDate = DateTime.now(); // 16:25, 27 июня 2025
-  DateTime? selectedDate;
+  Future<void> _showDatePicker(BuildContext context, List<Message> messages) async {
+    final DateTime currentDate = DateTime.now(); // 16:25, 27 июня 2025
+    DateTime? selectedDate;
 
-  // Преобразуем сообщения в карту дат
-  final Map<DateTime, List> events = {};
-  ////print('Начало обработки сообщений. Количество сообщений: ${messages.length}');
-  for (var message in messages) {
-    ////print('Обработка сообщения: $message');
-    try {
-      final date = DateTime.parse(message.createMessateTime).toLocal();
-      ////print('Парсинг даты: ${message.createMessateTime} -> $date');
-      final eventDate = DateTime(date.year, date.month, date.day); // Нормализуем до начала дня
-      ////print('Сформирована дата для события: $eventDate');
-      if (events[eventDate] == null) {
-        ////print('Добавление нового события для даты: $eventDate');
-        events[eventDate] = [true]; // Добавляем индикатор события
-      } else {
-        ////print('Событие для даты $eventDate уже существует');
+    // Преобразуем сообщения в карту дат
+    final Map<DateTime, List> events = {};
+    ////print('Начало обработки сообщений. Количество сообщений: ${messages.length}');
+    for (var message in messages) {
+      ////print('Обработка сообщения: $message');
+      try {
+        final date = DateTime.parse(message.createMessateTime).toLocal();
+        ////print('Парсинг даты: ${message.createMessateTime} -> $date');
+        final eventDate = DateTime(date.year, date.month, date.day); // Нормализуем до начала дня
+        ////print('Сформирована дата для события: $eventDate');
+        if (events[eventDate] == null) {
+          ////print('Добавление нового события для даты: $eventDate');
+          events[eventDate] = [true]; // Добавляем индикатор события
+        } else {
+          ////print('Событие для даты $eventDate уже существует');
+        }
+      } catch (e) {
+        ////print('Ошибка парсинга даты ${message.createMessateTime}: $e');
       }
-    } catch (e) {
-      ////print('Ошибка парсинга даты ${message.createMessateTime}: $e');
     }
-  }
-  ////print('Карта событий после обработки: $events');
+    ////print('Карта событий после обработки: $events');
 
-  await showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.7,
-            maxWidth: MediaQuery.of(context).size.width * 0.9,
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                height: 450, // Увеличиваем высоту для корректного отображения дней недели
-                width: double.maxFinite,
-                color: Colors.white,
-                child: TableCalendar(
-                  firstDay: DateTime(2020),
-                  lastDay: DateTime(2101),
-                  focusedDay: currentDate,
-                  calendarFormat: CalendarFormat.month,
-                  startingDayOfWeek: StartingDayOfWeek.monday,
-                  locale: 'ru_RU',
-                  calendarStyle: CalendarStyle(
-                    todayDecoration: BoxDecoration(
-                      border: Border.all(
-                        color: Colors.blue,
-                        width: 2,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.7,
+              maxWidth: MediaQuery.of(context).size.width * 0.9,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  height: 450, // Увеличиваем высоту для корректного отображения дней недели
+                  width: double.maxFinite,
+                  color: Colors.white,
+                  child: TableCalendar(
+                    firstDay: DateTime(2020),
+                    lastDay: DateTime(2101),
+                    focusedDay: currentDate,
+                    calendarFormat: CalendarFormat.month,
+                    startingDayOfWeek: StartingDayOfWeek.monday,
+                    locale: 'ru_RU',
+                    calendarStyle: CalendarStyle(
+                      todayDecoration: BoxDecoration(
+                        border: Border.all(
+                          color: Colors.blue,
+                          width: 2,
+                        ),
+                        shape: BoxShape.circle,
                       ),
-                      shape: BoxShape.circle,
+                      todayTextStyle: const TextStyle(color: Colors.blue),
+                      outsideDaysVisible: true,
+                      outsideTextStyle: TextStyle(color: Colors.black.withOpacity(0.3)),
                     ),
-                    todayTextStyle: const TextStyle(color: Colors.blue),
-                    outsideDaysVisible: true,
-                    outsideTextStyle: TextStyle(color: Colors.black.withOpacity(0.3)),
-                  ),
-                  // Добавляем стиль для дней недели чтобы они не обрезались
-                  daysOfWeekStyle: const DaysOfWeekStyle(
-                    weekdayStyle: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
+                    // Добавляем стиль для дней недели чтобы они не обрезались
+                    daysOfWeekStyle: const DaysOfWeekStyle(
+                      weekdayStyle: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      weekendStyle: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.red,
+                      ),
                     ),
-                    weekendStyle: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.red,
+                    headerStyle: HeaderStyle(
+                      formatButtonVisible: false,
+                      titleCentered: true,
+                      leftChevronVisible: true,
+                      rightChevronVisible: true,
+                      titleTextStyle: const TextStyle(fontSize: 18, fontFamily: 'Gilroy'),
+                      // Добавляем форматирование заголовка для заглавной буквы
+                      titleTextFormatter: (date, locale) {
+                        final monthNames = {
+                          1: 'Январь',
+                          2: 'Февраль',
+                          3: 'Март',
+                          4: 'Апрель',
+                          5: 'Май',
+                          6: 'Июнь',
+                          7: 'Июль',
+                          8: 'Август',
+                          9: 'Сентябрь',
+                          10: 'Октябрь',
+                          11: 'Ноябрь',
+                          12: 'Декабрь'
+                        };
+
+                        final monthName = monthNames[date.month] ?? '';
+                        return '$monthName ${date.year} г.';
+                      },
                     ),
-                  ),
-                  headerStyle: HeaderStyle(
-                    formatButtonVisible: false,
-                    titleCentered: true,
-                    leftChevronVisible: true,
-                    rightChevronVisible: true,
-                    titleTextStyle: const TextStyle(fontSize: 18, fontFamily: 'Gilroy'),
-                    // Добавляем форматирование заголовка для заглавной буквы
-                    titleTextFormatter: (date, locale) {
-                      final monthNames = {
-                        1: 'Январь',
-                        2: 'Февраль', 
-                        3: 'Март',
-                        4: 'Апрель',
-                        5: 'Май',
-                        6: 'Июнь',
-                        7: 'Июль',
-                        8: 'Август',
-                        9: 'Сентябрь',
-                        10: 'Октябрь',
-                        11: 'Ноябрь',
-                        12: 'Декабрь'
-                      };
-                      
-                      final monthName = monthNames[date.month] ?? '';
-                      return '$monthName ${date.year} г.';
-                    },
-                  ),
-                  calendarBuilders: CalendarBuilders(
-                    markerBuilder: (context, date, events) {
-                      ////print('Проверка даты $date, события: $events');
-                      if (events.isNotEmpty) {
-                        ////print('Отображение точки для даты $date');
-                        return Positioned(
-                          right: 18,
-                          bottom: 0,
-                          child: Container(
-                            width: 8,
-                            height: 8,
-                            decoration: const BoxDecoration(
-                              color: Colors.blue,
-                              shape: BoxShape.circle,
+                    calendarBuilders: CalendarBuilders(
+                      markerBuilder: (context, date, events) {
+                        ////print('Проверка даты $date, события: $events');
+                        if (events.isNotEmpty) {
+                          ////print('Отображение точки для даты $date');
+                          return Positioned(
+                            right: 18,
+                            bottom: 0,
+                            child: Container(
+                              width: 8,
+                              height: 8,
+                              decoration: const BoxDecoration(
+                                color: Colors.blue,
+                                shape: BoxShape.circle,
+                              ),
                             ),
+                          );
+                        }
+                        ////print('Нет событий для даты $date');
+                        return null;
+                      },
+                    ),
+                    eventLoader: (day) {
+                      final normalizedDay = DateTime(day.year, day.month, day.day); // Нормализуем день
+                      ////print('Загрузка событий для дня $normalizedDay: ${events[normalizedDay] ?? []}');
+                      return events[normalizedDay] ?? [];
+                    },
+                    onDaySelected: (selectedDay, focusedDay) {
+                      final index = _findMessageIndexByDate(messages, selectedDay);
+                      ////print('Выбрана дата $selectedDay, индекс сообщения: $index');
+                      if (index != -1) {
+                        Navigator.pop(context);
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          _scrollToMessageIndex(selectedDay);
+                        });
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Нет сообщений за ${formatDate(selectedDay)}',
+                              style: const TextStyle(
+                                fontFamily: 'Gilroy',
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            backgroundColor: Colors.red,
+                            duration: const Duration(seconds: 2),
                           ),
                         );
                       }
-                      ////print('Нет событий для даты $date');
-                      return null;
                     },
                   ),
-                  eventLoader: (day) {
-                    final normalizedDay = DateTime(day.year, day.month, day.day); // Нормализуем день
-                    ////print('Загрузка событий для дня $normalizedDay: ${events[normalizedDay] ?? []}');
-                    return events[normalizedDay] ?? [];
-                  },
-                  onDaySelected: (selectedDay, focusedDay) {
-                    final index = _findMessageIndexByDate(messages, selectedDay);
-                    ////print('Выбрана дата $selectedDay, индекс сообщения: $index');
-                    if (index != -1) {
-                      Navigator.pop(context);
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        _scrollToMessageIndex(selectedDay);
-                      });
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Нет сообщений за ${formatDate(selectedDay)}',
-                            style: const TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          backgroundColor: Colors.red,
-                          duration: const Duration(seconds: 2),
-                        ),
-                      );
-                    }
-                  },
                 ),
-              ),
-            ],
-          ),
-        ),
-      );
-    },
-  );
-}
-
-
-int _findMessageIndexByDate(List<Message> messages, DateTime targetDate) {
-  for (int i = messages.length - 1; i >= 0; i--) {
-    final messageDate = DateTime.parse(messages[i].createMessateTime);
-    if (isSameDay(messageDate, targetDate)) {
-      return i; // Возвращаем индекс последнего сообщения за дату
-    }
-  }
-  return -1; // Если сообщений нет
-}
-
-void _scrollToMessageIndex(DateTime selectedDate) {
-  final state = context.read<MessagingCubit>().state;
-  if (state is MessagesLoadedState || state is PinnedMessagesState) {
-    final messages = state is MessagesLoadedState
-        ? state.messages
-        : (state as PinnedMessagesState).messages;
-
-    final messageIndex = _findMessageIndexByDate(messages, selectedDate);
-
-    if (messageIndex != -1) {
-      debugPrint('Scrolling to index: $messageIndex for date: ${formatDate(selectedDate)}');
-      _scrollControllerMessage.scrollTo(
-        index: messageIndex,
-        alignment: 0.0, // Позиционируем сообщение вверху экрана
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Нет сообщений за ${formatDate(selectedDate)}',
-            style: const TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
+              ],
             ),
           ),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 3),
-        ),
-      );
+        );
+      },
+    );
+  }
+
+
+  int _findMessageIndexByDate(List<Message> messages, DateTime targetDate) {
+    for (int i = messages.length - 1; i >= 0; i--) {
+      final messageDate = DateTime.parse(messages[i].createMessateTime).toLocal();
+      if (isSameDay(messageDate, targetDate)) {
+        return i; // Возвращаем индекс последнего сообщения за дату
+      }
+    }
+    return -1; // Если сообщений нет
+  }
+
+  void _scrollToMessageIndex(DateTime selectedDate) {
+    final state = context.read<MessagingCubit>().state;
+    if (state is MessagesLoadedState || state is PinnedMessagesState) {
+      final messages = state is MessagesLoadedState
+          ? state.messages
+          : (state as PinnedMessagesState).messages;
+
+      final messageIndex = _findMessageIndexByDate(messages, selectedDate);
+
+      if (messageIndex != -1) {
+        debugPrint('Scrolling to index: $messageIndex for date: ${formatDate(selectedDate)}');
+        _scrollControllerMessage.scrollTo(
+          index: messageIndex,
+          alignment: 0.0, // Позиционируем сообщение вверху экрана
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Нет сообщений за ${formatDate(selectedDate)}',
+              style: const TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
-}
 
   bool isSameDay(DateTime date1, DateTime date2) {
     return date1.year == date2.year &&
@@ -732,95 +732,95 @@ void _scrollToMessageIndex(DateTime selectedDate) {
     return "${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year}";
   }
 
- Widget _buildAvatar(String avatar) {
-  // //print('Avatar path: $avatar'); // Отладочный вывод
-  bool isSupportAvatar = avatar == 'assets/icons/Profile/support_chat.png';
-  bool isTaskSection = widget.endPointInTab == 'task'; // Проверка на task
+  Widget _buildAvatar(String avatar) {
+    // //print('Avatar path: $avatar'); // Отладочный вывод
+    bool isSupportAvatar = avatar == 'assets/icons/Profile/support_chat.png';
+    bool isTaskSection = widget.endPointInTab == 'task'; // Проверка на task
 
-  // Для endPointInTab == 'task' используем AvatarTask.png, если avatar не SVG
-  if (isTaskSection && !avatar.contains('<svg')) {
-    return CircleAvatar(
-      backgroundImage: AssetImage('assets/images/AvatarTask.png'),
-      radius: ChatSmsStyles.avatarRadius,
-      backgroundColor: Colors.white,
-      onBackgroundImageError: (exception, stackTrace) {
-        // //print('Error loading asset image: assets/images/AvatarTask.png, $exception');
-      },
-    );
-  }
-
-  // Обработка SVG-аватарок
-  if (avatar.contains('<svg')) {
-    final imageUrl = extractImageUrlFromSvg(avatar);
-    if (imageUrl != null) {
-      return Container(
-        width: ChatSmsStyles.avatarRadius * 2,
-        height: ChatSmsStyles.avatarRadius * 2,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          image: DecorationImage(
-            image: NetworkImage(imageUrl),
-            fit: BoxFit.cover,
-          ),
-        ),
+    // Для endPointInTab == 'task' используем AvatarTask.png, если avatar не SVG
+    if (isTaskSection && !avatar.contains('<svg')) {
+      return CircleAvatar(
+        backgroundImage: AssetImage('assets/images/AvatarTask.png'),
+        radius: ChatSmsStyles.avatarRadius,
+        backgroundColor: Colors.white,
+        onBackgroundImageError: (exception, stackTrace) {
+          // //print('Error loading asset image: assets/images/AvatarTask.png, $exception');
+        },
       );
-    } else {
-      final text = extractTextFromSvg(avatar);
-      final backgroundColor = extractBackgroundColorFromSvg(avatar);
-      if (text != null && backgroundColor != null) {
+    }
+
+    // Обработка SVG-аватарок
+    if (avatar.contains('<svg')) {
+      final imageUrl = extractImageUrlFromSvg(avatar);
+      if (imageUrl != null) {
         return Container(
           width: ChatSmsStyles.avatarRadius * 2,
           height: ChatSmsStyles.avatarRadius * 2,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: backgroundColor,
-            border: Border.all(
-              color: Colors.white,
-              width: 1,
-            ),
-          ),
-          child: Center(
-            child: Text(
-              text,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.w500,
-              ),
-              textAlign: TextAlign.center,
+            image: DecorationImage(
+              image: NetworkImage(imageUrl),
+              fit: BoxFit.cover,
             ),
           ),
         );
       } else {
-        return SvgPicture.string(
-          avatar,
-          width: ChatSmsStyles.avatarRadius * 2,
-          height: ChatSmsStyles.avatarRadius * 2,
-          placeholderBuilder: (context) => CircularProgressIndicator(),
-        );
+        final text = extractTextFromSvg(avatar);
+        final backgroundColor = extractBackgroundColorFromSvg(avatar);
+        if (text != null && backgroundColor != null) {
+          return Container(
+            width: ChatSmsStyles.avatarRadius * 2,
+            height: ChatSmsStyles.avatarRadius * 2,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: backgroundColor,
+              border: Border.all(
+                color: Colors.white,
+                width: 1,
+              ),
+            ),
+            child: Center(
+              child: Text(
+                text,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          );
+        } else {
+          return SvgPicture.string(
+            avatar,
+            width: ChatSmsStyles.avatarRadius * 2,
+            height: ChatSmsStyles.avatarRadius * 2,
+            placeholderBuilder: (context) => CircularProgressIndicator(),
+          );
+        }
       }
     }
-  }
 
-  // Обработка остальных случаев (локальные изображения)
-  try {
-    return CircleAvatar(
-      backgroundImage: AssetImage(avatar),
-      radius: ChatSmsStyles.avatarRadius,
-      backgroundColor: isSupportAvatar ? Colors.black : Colors.white,
-      onBackgroundImageError: (exception, stackTrace) {
-        // //print('Error loading asset image: $avatar, $exception');
-      },
-    );
-  } catch (e) {
-    // //print('Fallback avatar due to error: $e');
-    return CircleAvatar(
-      backgroundImage: AssetImage(isTaskSection ? 'assets/images/AvatarTask.png' : 'assets/images/AvatarChat.png'),
-      radius: ChatSmsStyles.avatarRadius,
-      backgroundColor: isSupportAvatar ? Colors.black : Colors.white,
-    );
+    // Обработка остальных случаев (локальные изображения)
+    try {
+      return CircleAvatar(
+        backgroundImage: AssetImage(avatar),
+        radius: ChatSmsStyles.avatarRadius,
+        backgroundColor: isSupportAvatar ? Colors.black : Colors.white,
+        onBackgroundImageError: (exception, stackTrace) {
+          // //print('Error loading asset image: $avatar, $exception');
+        },
+      );
+    } catch (e) {
+      // //print('Fallback avatar due to error: $e');
+      return CircleAvatar(
+        backgroundImage: AssetImage(isTaskSection ? 'assets/images/AvatarTask.png' : 'assets/images/AvatarChat.png'),
+        radius: ChatSmsStyles.avatarRadius,
+        backgroundColor: isSupportAvatar ? Colors.black : Colors.white,
+      );
+    }
   }
-}
 
   String? extractImageUrlFromSvg(String svg) {
     if (svg.contains('href="')) {
@@ -902,7 +902,7 @@ void _scrollToMessageIndex(DateTime selectedDate) {
                   icon: _isSearching
                       ? const Icon(Icons.close)
                       : Image.asset('assets/icons/AppBar/search.png',
-                          width: 24, height: 24),
+                      width: 24, height: 24),
                   onPressed: () {
                     setState(() {
                       _isSearching = !_isSearching;
@@ -919,119 +919,119 @@ void _scrollToMessageIndex(DateTime selectedDate) {
               offset: const Offset(-12, 0),
               child: _isSearching
                   ? TextField(
-                      autofocus: true,
-                      decoration: InputDecoration(
-                        hintText: AppLocalizations.of(context)!.translate('search_appbar'),
-                        border: InputBorder.none,
-                        hintStyle: const TextStyle(color: Colors.black, fontFamily: 'Gilroy'),
-                      ),
-                      onChanged: _onSearchChanged,
-                    )
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: AppLocalizations.of(context)!.translate('search_appbar'),
+                  border: InputBorder.none,
+                  hintStyle: const TextStyle(color: Colors.black, fontFamily: 'Gilroy'),
+                ),
+                onChanged: _onSearchChanged,
+              )
                   : GestureDetector(
-                      onTap: isSupportChat
-                          ? null
-                          : () async {
-                              if (_isRequestInProgress) return;
-                              setState(() {
-                                _isRequestInProgress = true;
-                              });
-                              try {
-                                if (widget.endPointInTab == 'lead') {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => UserProfileScreen(chatId: widget.chatId),
-                                    ),
-                                  );
-                                } else if (widget.endPointInTab == 'task') {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => TaskByIdScreen(chatId: widget.chatId),
-                                    ),
-                                  );
-                                } else if (widget.endPointInTab == 'corporate') {
-                                  final getChatById = await widget.apiService.getChatById(widget.chatId);
-                                  if (getChatById.chatUsers.length == 2 && getChatById.group == null) {
-                                    String userIdCheck = '';
-                                    SharedPreferences prefs = await SharedPreferences.getInstance();
-                                    userIdCheck = prefs.getString('userID') ?? '';
-                                    final participant = getChatById.chatUsers
-                                        .firstWhere((user) => user.participant.id.toString() != userIdCheck)
-                                        .participant;
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => ParticipantProfileScreen(
-                                          userId: participant.id.toString(),
-                                          image: participant.image,
-                                          name: participant.name,
-                                          email: participant.email,
-                                          phone: participant.phone,
-                                          login: participant.login,
-                                          lastSeen: participant.lastSeen.toString(),
-                                          buttonChat: false,
-                                        ),
-                                      ),
-                                    );
-                                  } else {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => CorporateProfileScreen(
-                                          chatId: widget.chatId,
-                                          chatItem: widget.chatItem,
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        'ОШИБКА!',
-                                        style: const TextStyle(
-                                          fontFamily: 'Gilroy',
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w500,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                      backgroundColor: Colors.red,
-                                      duration: const Duration(seconds: 3),
-                                    ),
-                                  );
-                                }
-                              } finally {
-                                setState(() {
-                                  _isRequestInProgress = false;
-                                });
-                              }
-                            },
-                      child: Row(
-                        children: [
-                          _buildAvatar(widget.chatItem.avatar),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                               isSupportChat
-      ? AppLocalizations.of(context)!.translate('support_chat_name')
-      : widget.chatItem.name.isEmpty
-          ? AppLocalizations.of(context)!.translate('no_name')
-          : widget.chatItem.name,
-                              style: const TextStyle(
-                                fontSize: 18,
-                                color: ChatSmsStyles.appBarTitleColor,
-                                fontWeight: FontWeight.w600,
-                                fontFamily: 'Gilroy',
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
+                onTap: isSupportChat
+                    ? null
+                    : () async {
+                  if (_isRequestInProgress) return;
+                  setState(() {
+                    _isRequestInProgress = true;
+                  });
+                  try {
+                    if (widget.endPointInTab == 'lead') {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => UserProfileScreen(chatId: widget.chatId),
+                        ),
+                      );
+                    } else if (widget.endPointInTab == 'task') {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => TaskByIdScreen(chatId: widget.chatId),
+                        ),
+                      );
+                    } else if (widget.endPointInTab == 'corporate') {
+                      final getChatById = await widget.apiService.getChatById(widget.chatId);
+                      if (getChatById.chatUsers.length == 2 && getChatById.group == null) {
+                        String userIdCheck = '';
+                        SharedPreferences prefs = await SharedPreferences.getInstance();
+                        userIdCheck = prefs.getString('userID') ?? '';
+                        final participant = getChatById.chatUsers
+                            .firstWhere((user) => user.participant.id.toString() != userIdCheck)
+                            .participant;
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ParticipantProfileScreen(
+                              userId: participant.id.toString(),
+                              image: participant.image,
+                              name: participant.name,
+                              email: participant.email,
+                              phone: participant.phone,
+                              login: participant.login,
+                              lastSeen: participant.lastSeen.toString(),
+                              buttonChat: false,
                             ),
                           ),
-                        ],
+                        );
+                      } else {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => CorporateProfileScreen(
+                              chatId: widget.chatId,
+                              chatItem: widget.chatItem,
+                            ),
+                          ),
+                        );
+                      }
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'ОШИБКА!',
+                            style: const TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white,
+                            ),
+                          ),
+                          backgroundColor: Colors.red,
+                          duration: const Duration(seconds: 3),
+                        ),
+                      );
+                    }
+                  } finally {
+                    setState(() {
+                      _isRequestInProgress = false;
+                    });
+                  }
+                },
+                child: Row(
+                  children: [
+                    _buildAvatar(widget.chatItem.avatar),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        isSupportChat
+                            ? AppLocalizations.of(context)!.translate('support_chat_name')
+                            : widget.chatItem.name.isEmpty
+                            ? AppLocalizations.of(context)!.translate('no_name')
+                            : widget.chatItem.name,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          color: ChatSmsStyles.appBarTitleColor,
+                          fontWeight: FontWeight.w600,
+                          fontFamily: 'Gilroy',
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
                     ),
+                  ],
+                ),
+              ),
             ),
           ),
           backgroundColor: const Color(0xffF4F7FD),
@@ -1064,7 +1064,7 @@ void _scrollToMessageIndex(DateTime selectedDate) {
       ),
     );
   }
-     
+
 
 
   void _scrollToMessageReply(int messageId) {
@@ -1100,572 +1100,573 @@ void _scrollToMessageIndex(DateTime selectedDate) {
 
 
 // Модифицируйте messageListUi для добавления кнопки повтора
-Widget messageListUi() {
-  return BlocBuilder<MessagingCubit, MessagingState>(
-    builder: (context, state) {
-      debugPrint('messageListUi: Building with state: $state');
-      
-      // НОВОЕ: Обработка частичной ошибки
-      if (state is MessagesPartialErrorState) {
-        return Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.warning_amber_rounded, size: 64, color: Colors.orange),
-              SizedBox(height: 16),
-              Text(
-                "Частичная ошибка подключения",
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'Gilroy',
-                  color: Colors.orange,
-                ),
-              ),
-              SizedBox(height: 8),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32),
-                child: Text(
-                  state.error,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontFamily: 'Gilroy',
-                    color: Colors.grey[600],
-                  ),
-                ),
-              ),
-              SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  ElevatedButton(
-                    onPressed: () {
-                      context.read<MessagingCubit>().getMessagesWithFallback(widget.chatId);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange,
-                      foregroundColor: Colors.white,
-                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    ),
-                    child: Text(
-                      "Повторить",
-                      style: TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 12),
-                  TextButton(
-                    onPressed: () {
-                      // Показываем пустой чат
-                      context.read<MessagingCubit>().showEmptyChat();
-                    },
-                    child: Text(
-                      "Пустой чат",
-                      style: TextStyle(
-                        fontFamily: 'Gilroy',
-                        color: Colors.grey[600],
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      }
-      
-      if (state is MessagesErrorState) {
-        // Специальная обработка ошибки с null URL
-        if (state.error.contains('No host specified in URI null')) {
+  Widget messageListUi() {
+    return BlocBuilder<MessagingCubit, MessagingState>(
+      builder: (context, state) {
+        debugPrint('messageListUi: Building with state: $state');
+
+        // НОВОЕ: Обработка частичной ошибки
+        if (state is MessagesPartialErrorState) {
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.error_outline, size: 64, color: Colors.red),
+                Icon(Icons.warning_amber_rounded, size: 64, color: Colors.orange),
                 SizedBox(height: 16),
                 Text(
-                  "Ошибка подключения к серверу",
+                  "Частичная ошибка подключения",
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                     fontFamily: 'Gilroy',
-                    color: Colors.red,
+                    color: Colors.orange,
+                  ),
+                ),
+                SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  child: Text(
+                    state.error,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontFamily: 'Gilroy',
+                      color: Colors.grey[600],
+                    ),
                   ),
                 ),
                 SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: () {
-                    context.read<MessagingCubit>().getMessagesWithFallback(widget.chatId);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: Text("Повторить попытку"),
-                ),
-                SizedBox(height: 12),
-                TextButton(
-                  onPressed: () {
-                    context.read<MessagingCubit>().showEmptyChat();
-                  },
-                  child: Text("Открыть пустой чат"),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () {
+                        context.read<MessagingCubit>().getMessagesWithFallback(widget.chatId);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange,
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      ),
+                      child: Text(
+                        "Повторить",
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    TextButton(
+                      onPressed: () {
+                        // Показываем пустой чат
+                        context.read<MessagingCubit>().showEmptyChat();
+                      },
+                      child: Text(
+                        "Пустой чат",
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          color: Colors.grey[600],
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           );
         }
-        return Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text("Ошибка загрузки сообщений"),
-              SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () {
-                  context.read<MessagingCubit>().getMessagesWithFallback(widget.chatId);
-                },
-                child: Text("Повторить"),
-              ),
-            ],
-          ),
-        );
-      }
-      
-      if (state is MessagesLoadingState) {
-        return Center(child: CircularProgressIndicator.adaptive());
-      }
-      if (state is MessagesLoadedState ||
-          state is ReplyingToMessageState ||
-          state is PinnedMessagesState ||
-          state is EditingMessageState) {
-        final messages = state is MessagesLoadedState
-            ? state.messages
-            : state is ReplyingToMessageState
-                ? state.messages
-                : state is PinnedMessagesState
-                    ? state.messages
-                    : (state as EditingMessageState).messages;
-        debugPrint('messageListUi: Rendering ${messages.length} messages');
-        final pinnedMessages = state is PinnedMessagesState
-            ? state.pinnedMessages
-            : state is ReplyingToMessageState
-                ? state.pinnedMessages
-                : state is EditingMessageState
-                    ? state.pinnedMessages
-                    : [];
 
-        if (messages.isEmpty) {
+        if (state is MessagesErrorState) {
+          // Специальная обработка ошибки с null URL
+          if (state.error.contains('No host specified in URI null')) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  SizedBox(height: 16),
+                  Text(
+                    "Ошибка подключения к серверу",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: 'Gilroy',
+                      color: Colors.red,
+                    ),
+                  ),
+                  SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: () {
+                      context.read<MessagingCubit>().getMessagesWithFallback(widget.chatId);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: Text("Повторить попытку"),
+                  ),
+                  SizedBox(height: 12),
+                  TextButton(
+                    onPressed: () {
+                      context.read<MessagingCubit>().showEmptyChat();
+                    },
+                    child: Text("Открыть пустой чат"),
+                  ),
+                ],
+              ),
+            );
+          }
           return Center(
-            child: Text(
-              AppLocalizations.of(context)!.translate('not_sms'),
-              style: TextStyle(color: AppColors.textPrimary700),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text("Ошибка загрузки сообщений"),
+                SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    context.read<MessagingCubit>().getMessagesWithFallback(widget.chatId);
+                  },
+                  child: Text("Повторить"),
+                ),
+              ],
             ),
           );
         }
 
-        debugPrint('Rendering messageListUi: integrationUsername=$integrationUsername, channelName=$channelName'); // Лог для отладки
+        if (state is MessagesLoadingState) {
+          return Center(child: CircularProgressIndicator.adaptive());
+        }
+        if (state is MessagesLoadedState ||
+            state is ReplyingToMessageState ||
+            state is PinnedMessagesState ||
+            state is EditingMessageState) {
+          final messages = state is MessagesLoadedState
+              ? state.messages
+              : state is ReplyingToMessageState
+              ? state.messages
+              : state is PinnedMessagesState
+              ? state.messages
+              : (state as EditingMessageState).messages;
+          debugPrint('messageListUi: Rendering ${messages.length} messages');
+          final pinnedMessages = state is PinnedMessagesState
+              ? state.pinnedMessages
+              : state is ReplyingToMessageState
+              ? state.pinnedMessages
+              : state is EditingMessageState
+              ? state.pinnedMessages
+              : [];
 
-        return Stack(
-          children: [
-            GestureDetector(
-              onTap: () {
-                FocusScope.of(context).unfocus();
-              },
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: ScrollablePositionedList.builder(
-                  itemScrollController: _scrollControllerMessage,
-                  itemCount: messages.length,
-                  reverse: true,
-                  itemBuilder: (context, index) {
-                    final message = messages[index];
-                    final messageDate =
-                        DateTime.parse(message.createMessateTime);
+          if (messages.isEmpty) {
+            return Center(
+              child: Text(
+                AppLocalizations.of(context)!.translate('not_sms'),
+                style: TextStyle(color: AppColors.textPrimary700),
+              ),
+            );
+          }
 
-                    bool shouldShowDate = false;
-                    if (index == messages.length - 1) {
-                      shouldShowDate = true;
-                    } else {
-                      final previousMessage = messages[index + 1];
-                      final previousMessageDate =
-                          DateTime.parse(previousMessage.createMessateTime);
-                      shouldShowDate =
-                          !isSameDay(messageDate, previousMessageDate);
-                    }
+          debugPrint('Rendering messageListUi: integrationUsername=$integrationUsername, channelName=$channelName'); // Лог для отладки
 
-                    bool isFirstMessage = index == messages.length - 1;
+          return Stack(
+            children: [
+              GestureDetector(
+                onTap: () {
+                  FocusScope.of(context).unfocus();
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: ScrollablePositionedList.builder(
+                    itemScrollController: _scrollControllerMessage,
+                    itemCount: messages.length,
+                    reverse: true,
+                    itemBuilder: (context, index) {
+                      final message = messages[index];
+                      final messageDate =
+                      DateTime.parse(message.createMessateTime).toLocal();
 
-                    List<Widget> widgets = [];
+                      bool shouldShowDate = false;
+                      if (index == messages.length - 1) {
+                        shouldShowDate = true;
+                      } else {
+                        final previousMessage = messages[index + 1];
+                        final previousMessageDate =
+                        DateTime.parse(previousMessage.createMessateTime)
+                            .toLocal();
+                        shouldShowDate =
+                        !isSameDay(messageDate, previousMessageDate);
+                      }
 
-                    if (shouldShowDate) {
-                      widgets.add(
-                        Padding(
-                          padding: const EdgeInsets.only(top: 16, bottom: 8),
-                          child: GestureDetector(
-                            onTap: () => _showDatePicker(context, messages),
-                            child: Center(
-                              child: Text(
-                                formatDate(messageDate),
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontFamily: "Gilroy",
-                                  fontWeight: FontWeight.w400,
-                                  color: Colors.black,
+                      bool isFirstMessage = index == messages.length - 1;
+
+                      List<Widget> widgets = [];
+
+                      if (shouldShowDate) {
+                        widgets.add(
+                          Padding(
+                            padding: const EdgeInsets.only(top: 16, bottom: 8),
+                            child: GestureDetector(
+                              onTap: () => _showDatePicker(context, messages),
+                              child: Center(
+                                child: Text(
+                                  formatDate(messageDate),
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontFamily: "Gilroy",
+                                    fontWeight: FontWeight.w400,
+                                    color: Colors.black,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
+                        );
+                      }
+                      widgets.add(
+                        MessageItemWidget(
+                          message: message,
+                          chatId: widget.chatId,
+                          endPointInTab: widget.endPointInTab,
+                          apiServiceDownload: widget.apiServiceDownload,
+                          baseUrl: baseUrl,
+                          onReplyTap: _scrollToMessageReply,
+                          highlightedMessageId: _highlightedMessageId,
+                          onMenuStateChanged: (isOpen) {
+                            setState(() {
+                              _isMenuOpen = isOpen;
+                            });
+                          },
+                          focusNode: _focusNode,
+                          isRead: message.isRead,
+                          isFirstMessage: isFirstMessage,
+                          referralBody: referralBody, // Передаем
                         ),
                       );
-                    }
-                    widgets.add(
-                      MessageItemWidget(
-                        message: message,
-                        chatId: widget.chatId,
-                        endPointInTab: widget.endPointInTab,
-                        apiServiceDownload: widget.apiServiceDownload,
-                        baseUrl: baseUrl,
-                        onReplyTap: _scrollToMessageReply,
-                        highlightedMessageId: _highlightedMessageId,
-                        onMenuStateChanged: (isOpen) {
-                          setState(() {
-                            _isMenuOpen = isOpen;
-                          });
-                        },
-                        focusNode: _focusNode,
-                        isRead: message.isRead,
-                        isFirstMessage: isFirstMessage,
-                        referralBody: referralBody, // Передаем
-                      ),
-                    );
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: widgets,
-                    );
-                  },
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: widgets,
+                      );
+                    },
+                  ),
                 ),
               ),
-            ),
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: Column(
-                children: [
-                  if (widget.endPointInTab == 'lead' && integrationUsername != null)
-                    Material(
-                      color: Colors.transparent,
-                      child: PinnedLeadMessageWidget(
-                        message: '@$integrationUsername',
-                        channelType: channelName,
-                        onTap: null,
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: Column(
+                  children: [
+                    if (widget.endPointInTab == 'lead' && integrationUsername != null)
+                      Material(
+                        color: Colors.transparent,
+                        child: PinnedLeadMessageWidget(
+                          message: '@$integrationUsername',
+                          channelType: channelName,
+                          onTap: null,
+                        ),
                       ),
-                    ),
-                  if (pinnedMessages.isNotEmpty)
-                    Material(
-                      color: Colors.transparent,
-                      child: PinnedMessageWidget(
-                        message: pinnedMessages.last.text,
-                        onUnpin: () {
-                          context
-                              .read<MessagingCubit>()
-                              .unpinMessage(pinnedMessages.last);
-                        },
-                        onTap: () {
-                          _scrollToMessageReply(pinnedMessages.last.id);
-                          if (pinnedMessages.isNotEmpty) {
-                            final updatedPinnedMessages =
-                                List<Message>.from(pinnedMessages);
-                            final firstPinnedMessage =
-                                updatedPinnedMessages.removeAt(0);
-                            updatedPinnedMessages.add(firstPinnedMessage);
+                    if (pinnedMessages.isNotEmpty)
+                      Material(
+                        color: Colors.transparent,
+                        child: PinnedMessageWidget(
+                          message: pinnedMessages.last.text,
+                          onUnpin: () {
                             context
                                 .read<MessagingCubit>()
-                                .updatePinnedMessages(updatedPinnedMessages);
-                          }
-                        },
+                                .unpinMessage(pinnedMessages.last);
+                          },
+                          onTap: () {
+                            _scrollToMessageReply(pinnedMessages.last.id);
+                            if (pinnedMessages.isNotEmpty) {
+                              final updatedPinnedMessages =
+                              List<Message>.from(pinnedMessages);
+                              final firstPinnedMessage =
+                              updatedPinnedMessages.removeAt(0);
+                              updatedPinnedMessages.add(firstPinnedMessage);
+                              context
+                                  .read<MessagingCubit>()
+                                  .updatePinnedMessages(updatedPinnedMessages);
+                            }
+                          },
+                        ),
                       ),
-                    ),
-                ],
-              ),
-            ),
-            if (_isMenuOpen)
-              Positioned.fill(
-                child: Container(
-                  color: Colors.black.withOpacity(0.3),
+                  ],
                 ),
               ),
-          ],
-        );
-      }
-      return Container();
-    },
-  );
-}
-Widget inputWidget() {
-  return SafeArea(
-    bottom: true,
-    top: false,
-    child: InputField(
-      onSend: _onSendInButton,
-      onAttachFile: _onPickFilePressed,
-      focusNode: _focusNode,
-      isLeadChat: widget.endPointInTab == 'lead',
-      onRecordVoice: () {
-        debugPrint('Record voice triggered');
+              if (_isMenuOpen)
+                Positioned.fill(
+                  child: Container(
+                    color: Colors.black.withOpacity(0.3),
+                  ),
+                ),
+            ],
+          );
+        }
+        return Container();
       },
-      messageController: _messageController,
-      sendRequestFunction: (File soundFile, String time) async {
-        Duration calculateDuration(String time) {
-          List<String> parts = time.split(':');
-          int minutes = int.parse(parts[0]);
-          int seconds = int.parse(parts[1]);
-          return Duration(minutes: minutes, seconds: seconds);
-        }
+    );
+  }
+  Widget inputWidget() {
+    return SafeArea(
+      bottom: true,
+      top: false,
+      child: InputField(
+        onSend: _onSendInButton,
+        onAttachFile: _onPickFilePressed,
+        focusNode: _focusNode,
+        isLeadChat: widget.endPointInTab == 'lead',
+        onRecordVoice: () {
+          debugPrint('Record voice triggered');
+        },
+        messageController: _messageController,
+        sendRequestFunction: (File soundFile, String time) async {
+          Duration calculateDuration(String time) {
+            List<String> parts = time.split(':');
+            int minutes = int.parse(parts[0]);
+            int seconds = int.parse(parts[1]);
+            return Duration(minutes: minutes, seconds: seconds);
+          }
 
-        final tempMessage = Message(
-          id: -DateTime.now().millisecondsSinceEpoch,
-          text: "Голосовое сообщение",
-          type: 'voice',
-          createMessateTime: DateTime.now().add(Duration(hours: -0)).toString(),
-          isMyMessage: true,
-          senderName: "Вы",
-          filePath: soundFile.path,
-          duration: calculateDuration(time),
-        );
+          final tempMessage = Message(
+            id: -DateTime.now().millisecondsSinceEpoch,
+            text: "Голосовое сообщение",
+            type: 'voice',
+            createMessateTime: DateTime.now().add(Duration(hours: -0)).toString(),
+            isMyMessage: true,
+            senderName: "Вы",
+            filePath: soundFile.path,
+            duration: calculateDuration(time),
+          );
 
-        context.read<MessagingCubit>().addLocalMessage(tempMessage);
+          context.read<MessagingCubit>().addLocalMessage(tempMessage);
 
-        await _playSound();
+          await _playSound();
 
-        String inputPath = soundFile.path;
-        String outputPath = await getOutputPath('converted_file.ogg');
+          String inputPath = soundFile.path;
+          String outputPath = await getOutputPath('converted_file.ogg');
 
-        File? convertedFile = await convertAudioFile(inputPath, outputPath);
+          File? convertedFile = await convertAudioFile(inputPath, outputPath);
 
-        if (convertedFile != null) {
-          String uploadUrl = '$baseUrl/chat/sendVoice/${widget.chatId}';
-          await uploadFile(convertedFile, uploadUrl);
-        } else {
-          debugPrint('Conversion failed');
-        }
-        try {
-          await widget.apiService.sendChatAudioFile(widget.chatId, soundFile);
-        } catch (e) {
+          if (convertedFile != null) {
+            String uploadUrl = '$baseUrl/chat/sendVoice/${widget.chatId}';
+            await uploadFile(convertedFile, uploadUrl);
+          } else {
+            debugPrint('Conversion failed');
+          }
+          try {
+            await widget.apiService.sendChatAudioFile(widget.chatId, soundFile);
+          } catch (e) {
+            context.read<ListenSenderVoiceCubit>().updateValue(false);
+          }
           context.read<ListenSenderVoiceCubit>().updateValue(false);
-        }
-        context.read<ListenSenderVoiceCubit>().updateValue(false);
-      },
-    ),
-  );
-}
+        },
+      ),
+    );
+  }
 
   Future<String> getOutputPath(String fileName) async {
     final directory = await getTemporaryDirectory();
     return '${directory.path}/$fileName';
   }
 
-void setUpServices() async {
-  // Проверяем, что baseUrl инициализирован
-  if (baseUrl.isEmpty || baseUrl == 'null') {
-    debugPrint('BaseURL not initialized, fetching...');
-    baseUrl = await apiService.getDynamicBaseUrl();
-    
+  void setUpServices() async {
+    // Проверяем, что baseUrl инициализирован
     if (baseUrl.isEmpty || baseUrl == 'null') {
-      debugPrint('Failed to get baseURL, aborting socket setup');
+      debugPrint('BaseURL not initialized, fetching...');
+      baseUrl = await apiService.getDynamicBaseUrl();
+
+      if (baseUrl.isEmpty || baseUrl == 'null') {
+        debugPrint('Failed to get baseURL, aborting socket setup');
+        return;
+      }
+    }
+
+    debugPrint('Setting up socket for chatId: ${widget.chatId} with baseURL: $baseUrl');
+
+    debugPrint('Setting up socket for chatId: ${widget.chatId}');
+    final prefs = await SharedPreferences.getInstance();
+    String? token = prefs.getString('token');
+    if (token == null || token.isEmpty) {
+      debugPrint('Error: Token is null or empty');
       return;
     }
-  }
-  
-  debugPrint('Setting up socket for chatId: ${widget.chatId} with baseURL: $baseUrl');
-  
-  debugPrint('Setting up socket for chatId: ${widget.chatId}');
-  final prefs = await SharedPreferences.getInstance();
-  String? token = prefs.getString('token');
-  if (token == null || token.isEmpty) {
-    debugPrint('Error: Token is null or empty');
-    return;
-  }
 
-  // Проверяем домены для старой логики
-  final enteredDomainMap = await ApiService().getEnteredDomain();
-  String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
-  String? enteredDomain = enteredDomainMap['enteredDomain'];
+    // Проверяем домены для старой логики
+    final enteredDomainMap = await ApiService().getEnteredDomain();
+    String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+    String? enteredDomain = enteredDomainMap['enteredDomain'];
 
-  // Проверяем домен для email-верификации
-  String? verifiedDomain = await ApiService().getVerifiedDomain();
-  debugPrint('Domain parameters: enteredMainDomain=$enteredMainDomain, enteredDomain=$enteredDomain, verifiedDomain=$verifiedDomain');
+    // Проверяем домен для email-верификации
+    String? verifiedDomain = await ApiService().getVerifiedDomain();
+    debugPrint('Domain parameters: enteredMainDomain=$enteredMainDomain, enteredDomain=$enteredDomain, verifiedDomain=$verifiedDomain');
 
-  // Если домены отсутствуют, используем verifiedDomain или резервные значения
-  if (enteredMainDomain == null || enteredDomain == null) {
-    if (verifiedDomain != null && verifiedDomain.isNotEmpty) {
-      // Для email-верификации используем verifiedDomain
-      enteredMainDomain = verifiedDomain.split('-back.').last;
-      enteredDomain = verifiedDomain.split('-back.').first;
-      debugPrint('Using verifiedDomain: $verifiedDomain, parsed mainDomain=$enteredMainDomain, domain=$enteredDomain');
-    } else {
-      // Резервные значения для отладки
-      enteredMainDomain = 'shamcrm.com'; // Замени на реальный домен
-      enteredDomain = 'info1fingrouptj'; // Замени на реальный поддомен
-      debugPrint('Using fallback domains: enteredMainDomain=$enteredMainDomain, enteredDomain=$enteredDomain');
-      // Сохраняем резервные значения в SharedPreferences
-      await prefs.setString('enteredMainDomain', enteredMainDomain);
-      await prefs.setString('enteredDomain', enteredDomain);
+    // Если домены отсутствуют, используем verifiedDomain или резервные значения
+    if (enteredMainDomain == null || enteredDomain == null) {
+      if (verifiedDomain != null && verifiedDomain.isNotEmpty) {
+        // Для email-верификации используем verifiedDomain
+        enteredMainDomain = verifiedDomain.split('-back.').last;
+        enteredDomain = verifiedDomain.split('-back.').first;
+        debugPrint('Using verifiedDomain: $verifiedDomain, parsed mainDomain=$enteredMainDomain, domain=$enteredDomain');
+      } else {
+        // Резервные значения для отладки
+        enteredMainDomain = 'shamcrm.com'; // Замени на реальный домен
+        enteredDomain = 'info1fingrouptj'; // Замени на реальный поддомен
+        debugPrint('Using fallback domains: enteredMainDomain=$enteredMainDomain, enteredDomain=$enteredDomain');
+        // Сохраняем резервные значения в SharedPreferences
+        await prefs.setString('enteredMainDomain', enteredMainDomain);
+        await prefs.setString('enteredDomain', enteredDomain);
+      }
     }
-  }
 
-  final customOptions = PusherChannelsOptions.custom(
-    uriResolver: (metadata) => Uri.parse('wss://soketi.$enteredMainDomain/app/app-key'),
-    metadata: PusherChannelsOptionsMetadata.byDefault(),
-  );
+    final customOptions = PusherChannelsOptions.custom(
+      uriResolver: (metadata) => Uri.parse('wss://soketi.$enteredMainDomain/app/app-key'),
+      metadata: PusherChannelsOptionsMetadata.byDefault(),
+    );
 
-  socketClient = PusherChannelsClient.websocket(
-    options: customOptions,
-    connectionErrorHandler: (exception, trace, refresh) {
-      debugPrint('Socket connection error: $exception, StackTrace: $trace');
-      Future.delayed(Duration(seconds: 5), () async {
-        try {
-          await socketClient.connect();
-          debugPrint('Socket reconnect attempted');
-        } catch (e, stackTrace) {
-          debugPrint('Error reconnecting to socket: $e, StackTrace: $stackTrace');
+    socketClient = PusherChannelsClient.websocket(
+      options: customOptions,
+      connectionErrorHandler: (exception, trace, refresh) {
+        debugPrint('Socket connection error: $exception, StackTrace: $trace');
+        Future.delayed(Duration(seconds: 5), () async {
+          try {
+            await socketClient.connect();
+            debugPrint('Socket reconnect attempted');
+          } catch (e, stackTrace) {
+            debugPrint('Error reconnecting to socket: $e, StackTrace: $stackTrace');
+          }
+        });
+        refresh();
+      },
+      minimumReconnectDelayDuration: const Duration(seconds: 1),
+    );
+
+    final myPresenceChannel = socketClient.presenceChannel(
+      'presence-chat.${widget.chatId}',
+      authorizationDelegate: EndpointAuthorizableChannelTokenAuthorizationDelegate.forPresenceChannel(
+        authorizationEndpoint: Uri.parse('https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'X-Tenant': '$enteredDomain-back',
+        },
+        onAuthFailed: (exception, trace) {
+          debugPrint('Auth failed for presence-chat.${widget.chatId}: $exception, StackTrace: $trace');
+        },
+      ),
+    );
+
+    socketClient.onConnectionEstablished.listen((_) {
+      debugPrint('Socket connected successfully for chatId: ${widget.chatId}');
+      myPresenceChannel.subscribeIfNotUnsubscribed();
+      debugPrint('Subscribed to channel: presence-chat.${widget.chatId}');
+    });
+
+    myPresenceChannel.bind('pusher:subscription_succeeded').listen((event) {
+      debugPrint('Successfully subscribed to presence-chat.${widget.chatId}: ${event.data}');
+    });
+
+    myPresenceChannel.bind('pusher:subscription_error').listen((event) {
+      debugPrint('Subscription error for presence-chat.${widget.chatId}: ${event.data}');
+    });
+
+    chatSubscribtion = myPresenceChannel.bind('chat.message').listen((event) async {
+      debugPrint('Received chat.message event: ${event.data}');
+      try {
+        if (event.data == null || event.data.isEmpty) {
+          debugPrint('Error: chat.message event data is null or empty');
+          return;
         }
-      });
-      refresh();
-    },
-    minimumReconnectDelayDuration: const Duration(seconds: 1),
-  );
 
-  final myPresenceChannel = socketClient.presenceChannel(
-    'presence-chat.${widget.chatId}',
-    authorizationDelegate: EndpointAuthorizableChannelTokenAuthorizationDelegate.forPresenceChannel(
-      authorizationEndpoint: Uri.parse('https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'X-Tenant': '$enteredDomain-back',
-      },
-      onAuthFailed: (exception, trace) {
-        debugPrint('Auth failed for presence-chat.${widget.chatId}: $exception, StackTrace: $trace');
-      },
-    ),
-  );
+        debugPrint('Raw event data type: ${event.data.runtimeType}');
+        debugPrint('Raw event data: ${event.data}');
 
-  socketClient.onConnectionEstablished.listen((_) {
-    debugPrint('Socket connected successfully for chatId: ${widget.chatId}');
-    myPresenceChannel.subscribeIfNotUnsubscribed();
-    debugPrint('Subscribed to channel: presence-chat.${widget.chatId}');
-  });
+        MessageSocketData mm = messageSocketDataFromJson(event.data);
+        debugPrint('Parsed MessageSocketData: $mm');
 
-  myPresenceChannel.bind('pusher:subscription_succeeded').listen((event) {
-    debugPrint('Successfully subscribed to presence-chat.${widget.chatId}: ${event.data}');
-  });
+        if (mm.message == null) {
+          debugPrint('Error: MessageSocketData.message is null');
+          return;
+        }
 
-  myPresenceChannel.bind('pusher:subscription_error').listen((event) {
-    debugPrint('Subscription error for presence-chat.${widget.chatId}: ${event.data}');
-  });
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        String UUID = prefs.getString('userID') ?? '';
+        debugPrint('User UUID: $UUID');
 
-chatSubscribtion = myPresenceChannel.bind('chat.message').listen((event) async {
-  debugPrint('Received chat.message event: ${event.data}');
-  try {
-    if (event.data == null || event.data.isEmpty) {
-      debugPrint('Error: chat.message event data is null or empty');
-      return;
-    }
+        Message msg;
+        if (mm.message?.type == 'voice' ||
+            mm.message?.type == 'file' ||
+            mm.message?.type == 'image' ||
+            mm.message?.type == 'document') {
+          ForwardedMessage? forwardedMessage;
+          if (mm.message?.forwardedMessage != null) {
+            forwardedMessage = ForwardedMessage.fromJson(mm.message!.forwardedMessage!);
+          }
 
-    debugPrint('Raw event data type: ${event.data.runtimeType}');
-    debugPrint('Raw event data: ${event.data}');
+          msg = Message(
+            id: mm.message?.id ?? 0,
+            filePath: mm.message?.filePath.toString() ?? '',
+            text: mm.message?.text ?? mm.message?.type ?? '',
+            type: mm.message?.type ?? '',
+            isMyMessage: (UUID == mm.message?.sender?.id.toString() &&
+                mm.message?.sender?.type == 'user'),
+            createMessateTime: mm.message?.createdAt?.toString() ?? '',
+            duration: Duration(
+                seconds: (mm.message?.voiceDuration != null)
+                    ? double.parse(mm.message!.voiceDuration.toString()).round()
+                    : 20),
+            senderName: mm.message?.sender?.name ?? 'Unknown sender',
+            forwardedMessage: forwardedMessage,
+          );
+        } else {
+          ForwardedMessage? forwardedMessage;
+          if (mm.message?.forwardedMessage != null) {
+            forwardedMessage = ForwardedMessage.fromJson(mm.message!.forwardedMessage!);
+          }
+          msg = Message(
+            id: mm.message?.id ?? 0,
+            text: mm.message?.text ?? mm.message?.type ?? '',
+            type: mm.message?.type ?? '',
+            createMessateTime: mm.message?.createdAt?.toString() ?? '',
+            isMyMessage: (UUID == mm.message?.sender?.id.toString() &&
+                mm.message?.sender?.type == 'user'),
+            senderName: mm.message?.sender?.name ?? 'Unknown sender',
+            forwardedMessage: forwardedMessage,
+          );
+        }
 
-    MessageSocketData mm = messageSocketDataFromJson(event.data);
-    debugPrint('Parsed MessageSocketData: $mm');
+        debugPrint('Constructed Message: $msg');
+        context.read<MessagingCubit>().updateMessageFromSocket(msg);
+        debugPrint('Message dispatched to MessagingCubit: $msg');
 
-    if (mm.message == null) {
-      debugPrint('Error: MessageSocketData.message is null');
-      return;
-    }
+        if (!msg.isMyMessage) {
+          await _audioPlayer.setAsset('assets/audio/get.mp3');
+          await _audioPlayer.play();
+          debugPrint('Played notification sound for incoming message');
+        }
 
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String UUID = prefs.getString('userID') ?? '';
-    debugPrint('User UUID: $UUID');
+        _scrollToBottom();
+        debugPrint('Scrolled to bottom after receiving message');
 
-    Message msg;
-    if (mm.message?.type == 'voice' ||
-        mm.message?.type == 'file' ||
-        mm.message?.type == 'image' ||
-        mm.message?.type == 'document') {
-      ForwardedMessage? forwardedMessage;
-      if (mm.message?.forwardedMessage != null) {
-        forwardedMessage = ForwardedMessage.fromJson(mm.message!.forwardedMessage!);
+        // Опциональная фоновая синхронизация с API без изменения состояния
+        try {
+          await context.read<MessagingCubit>().syncMessagesInBackground(widget.chatId);
+          debugPrint('Synced messages with API in background');
+        } catch (e, stackTrace) {
+          debugPrint('Error syncing messages with API: $e, StackTrace: $stackTrace');
+        }
+      } catch (e, stackTrace) {
+        debugPrint('Error processing chat.message event: $e, StackTrace: $stackTrace');
       }
+    });
 
-      msg = Message(
-        id: mm.message?.id ?? 0,
-        filePath: mm.message?.filePath.toString() ?? '',
-        text: mm.message?.text ?? mm.message?.type ?? '',
-        type: mm.message?.type ?? '',
-        isMyMessage: (UUID == mm.message?.sender?.id.toString() &&
-            mm.message?.sender?.type == 'user'),
-        createMessateTime: mm.message?.createdAt?.toString() ?? '',
-        duration: Duration(
-            seconds: (mm.message?.voiceDuration != null)
-                ? double.parse(mm.message!.voiceDuration.toString()).round()
-                : 20),
-        senderName: mm.message?.sender?.name ?? 'Unknown sender',
-        forwardedMessage: forwardedMessage,
-      );
-    } else {
-      ForwardedMessage? forwardedMessage;
-      if (mm.message?.forwardedMessage != null) {
-        forwardedMessage = ForwardedMessage.fromJson(mm.message!.forwardedMessage!);
-      }
-      msg = Message(
-        id: mm.message?.id ?? 0,
-        text: mm.message?.text ?? mm.message?.type ?? '',
-        type: mm.message?.type ?? '',
-        createMessateTime: mm.message?.createdAt?.toString() ?? '',
-        isMyMessage: (UUID == mm.message?.sender?.id.toString() &&
-            mm.message?.sender?.type == 'user'),
-        senderName: mm.message?.sender?.name ?? 'Unknown sender',
-        forwardedMessage: forwardedMessage,
-      );
-    }
-
-    debugPrint('Constructed Message: $msg');
-    context.read<MessagingCubit>().updateMessageFromSocket(msg);
-    debugPrint('Message dispatched to MessagingCubit: $msg');
-
-    if (!msg.isMyMessage) {
-      await _audioPlayer.setAsset('assets/audio/get.mp3');
-      await _audioPlayer.play();
-      debugPrint('Played notification sound for incoming message');
-    }
-
-    _scrollToBottom();
-    debugPrint('Scrolled to bottom after receiving message');
-
-    // Опциональная фоновая синхронизация с API без изменения состояния
     try {
-      await context.read<MessagingCubit>().syncMessagesInBackground(widget.chatId);
-      debugPrint('Synced messages with API in background');
+      await socketClient.connect();
+      debugPrint('Socket connection initiated');
     } catch (e, stackTrace) {
-      debugPrint('Error syncing messages with API: $e, StackTrace: $stackTrace');
+      debugPrint('Error connecting to socket: $e, StackTrace: $stackTrace');
     }
-  } catch (e, stackTrace) {
-    debugPrint('Error processing chat.message event: $e, StackTrace: $stackTrace');
   }
-});
-
-  try {
-    await socketClient.connect();
-    debugPrint('Socket connection initiated');
-  } catch (e, stackTrace) {
-    debugPrint('Error connecting to socket: $e, StackTrace: $stackTrace');
-  }
-}
 
   void _scrollToBottom() {
     if (_scrollController.hasClients) {
@@ -1717,13 +1718,13 @@ chatSubscribtion = myPresenceChannel.bind('chat.message').listen((event) async {
 
     if (source == 'gallery') {
       final XFile? image =
-          await ImagePicker().pickImage(source: ImageSource.gallery);
+      await ImagePicker().pickImage(source: ImageSource.gallery);
       if (image != null) {
         _handlePickedFile(image.path, image.name);
       }
     } else if (source == 'file') {
       FilePickerResult? result =
-          await FilePicker.platform.pickFiles(allowMultiple: false);
+      await FilePicker.platform.pickFiles(allowMultiple: false);
       if (result != null && result.files.single.path != null) {
         _handlePickedFile(result.files.single.path!, result.files.single.name);
       }
@@ -1758,7 +1759,7 @@ chatSubscribtion = myPresenceChannel.bind('chat.message').listen((event) async {
               ),
               ListTile(
                 leading:
-                    Icon(Icons.insert_drive_file, color: Color(0xFF1E1E1E)),
+                Icon(Icons.insert_drive_file, color: Color(0xFF1E1E1E)),
                 title: Text(
                   'Выбрать файл',
                   style: TextStyle(
@@ -1813,30 +1814,30 @@ chatSubscribtion = myPresenceChannel.bind('chat.message').listen((event) async {
     }
   }
 
-@override
-void dispose() {
-  apiService.closeChatSocket(widget.chatId);
+  @override
+  void dispose() {
+    apiService.closeChatSocket(widget.chatId);
 
-  if (_webSocket != null && _webSocket!.readyState != WebSocket.closed) {
-    _webSocket?.close();
+    if (_webSocket != null && _webSocket!.readyState != WebSocket.closed) {
+      _webSocket?.close();
+    }
+    if (chatSubscribtion != null) {
+      chatSubscribtion?.cancel();
+      chatSubscribtion = null;
+    }
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    _messageController.dispose();
+    socketClient.dispose();
+    _focusNode.dispose();
+
+    // ✅ НОВОЕ: Сбрасываем unreadCount конкретного чата БЕЗ полной перезагрузки
+    if (mounted) {
+      context.read<ChatsBloc>().add(ResetUnreadCount(widget.chatId));
+    }
+
+    super.dispose();
   }
-  if (chatSubscribtion != null) {
-    chatSubscribtion?.cancel();
-    chatSubscribtion = null;
-  }
-  _scrollController.removeListener(_onScroll);
-  _scrollController.dispose();
-  _messageController.dispose();
-  socketClient.dispose();
-  _focusNode.dispose();
-  
-  // ✅ НОВОЕ: Сбрасываем unreadCount конкретного чата БЕЗ полной перезагрузки
-  if (mounted) {
-    context.read<ChatsBloc>().add(ResetUnreadCount(widget.chatId));
-  }
-  
-  super.dispose();
-}
 }
 
 extension on Key? {
@@ -1902,14 +1903,14 @@ class MessageItemWidget extends StatelessWidget {
   }
 
   Widget _buildMessageContent(BuildContext context) {
-   String? replyMessageText;
-  if (isFirstMessage && referralBody != null && referralBody!.isNotEmpty) {
-    replyMessageText = referralBody; // Выводим как есть из чата
-  } else if (message.forwardedMessage != null) {
-    replyMessageText = message.forwardedMessage!.type == 'voice'
-        ? "Голосовое сообщение"
-        : message.forwardedMessage!.text;
-  }
+    String? replyMessageText;
+    if (isFirstMessage && referralBody != null && referralBody!.isNotEmpty) {
+      replyMessageText = referralBody; // Выводим как есть из чата
+    } else if (message.forwardedMessage != null) {
+      replyMessageText = message.forwardedMessage!.type == 'voice'
+          ? "Голосовое сообщение"
+          : message.forwardedMessage!.text;
+    }
 
     switch (message.type) {
       case 'text':
@@ -1988,10 +1989,10 @@ class MessageItemWidget extends StatelessWidget {
   void _showMessageContextMenu(
       BuildContext context, Message message, FocusNode focusNode) {
     final RenderBox overlay =
-        Overlay.of(context).context.findRenderObject() as RenderBox;
+    Overlay.of(context).context.findRenderObject() as RenderBox;
     final RenderBox messageBox = context.findRenderObject() as RenderBox;
     final Offset position =
-        messageBox.localToGlobal(Offset.zero, ancestor: overlay);
+    messageBox.localToGlobal(Offset.zero, ancestor: overlay);
 
     onMenuStateChanged?.call(true);
 
@@ -2092,9 +2093,9 @@ class MessageItemWidget extends StatelessWidget {
                 final selectedUser = getChatById.chatUsers
                     .firstWhere(
                       (chatUser) =>
-                          chatUser.participant.id.toString() ==
-                          user.id.toString(),
-                    )
+                  chatUser.participant.id.toString() ==
+                      user.id.toString(),
+                )
                     ?.participant;
 
                 if (selectedUser != null) {
@@ -2187,7 +2188,7 @@ class MessageItemWidget extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                   child: Padding(
                     padding:
-                        const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+                    const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
                     child: Row(
                       children: [
                         const Icon(Icons.done_all,
