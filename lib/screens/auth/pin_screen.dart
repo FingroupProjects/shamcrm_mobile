@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:connectivity_plus/connectivity_plus.dart';
+// import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/firebase_api.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
@@ -87,15 +87,15 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
       _checkForNewVersionSilently();
 
       // ШАГ 2: Критическая проверка интернета
-      final hasInternet = await _checkInternetConnectionOnce();
-      if (!hasInternet) {
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-          });
-        }
-        return;
-      }
+      // final hasInternet = await _checkInternetConnectionOnce();
+      // if (!hasInternet) {
+      //   if (mounted) {
+      //     setState(() {
+      //       _isLoading = false;
+      //     });
+      //   }
+      //   return;
+      // }
 
       // ШАГ 3: Инициализация FirebaseApi
       await _initializeFirebaseApi();
@@ -130,47 +130,6 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
   // ПРОВЕРКА ИНТЕРНЕТА
   // ==========================================================================
 
-  Future<bool> _checkInternetConnectionOnce() async {
-    int maxAttempts = 3;
-
-    for (int attempt = 1; attempt <= maxAttempts; attempt++) {
-      var connectivityResult = await Connectivity().checkConnectivity();
-      
-      if (connectivityResult == ConnectivityResult.none) {
-        final shouldRetry = await _showNoInternetDialog(context);
-        if (!shouldRetry) {
-          return false;
-        }
-        continue;
-      }
-
-      try {
-        final result = await InternetAddress.lookup('google.com')
-            .timeout(Duration(seconds: 5));
-        
-        if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
-          return true;
-        }
-      } catch (e) {
-        //print('PinScreen: Ошибка проверки интернета (попытка $attempt): $e');
-      }
-
-      if (attempt < maxAttempts) {
-        final shouldRetry = await _showNoInternetDialog(context);
-        if (!shouldRetry) {
-          return false;
-        }
-      }
-    }
-
-    if (mounted) {
-      _showErrorDialog(
-        'Нет подключения',
-        'Не удалось установить соединение с интернетом. Пожалуйста, проверьте настройки сети и повторите попытку.',
-      );
-    }
-    return false;
-  }
 
   // ==========================================================================
   // ЗАГРУЗКА БАЗОВОЙ ИНФОРМАЦИИ

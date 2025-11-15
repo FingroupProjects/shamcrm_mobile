@@ -355,26 +355,27 @@ class _DinoJumpGameState extends State<_DinoJumpGame>
     with TickerProviderStateMixin {
   late AnimationController _gameController;
   late AnimationController _rotateController;
-  
+    final double _groundLevel = 0;
+
   double _dinoY = 0;
   double _dinoVelocity = 0;
   bool _isJumping = false;
   
-  final double _gravity = 0.4;
-  final double _jumpStrength = 12.0;
-  final double _groundLevel = 0;
+  final double _gravity = 0.8;              // Быстрее падение
+final double _jumpStrength = 15.0;        // Выше прыжок
+double _obstacleSpacing = 2.5;            // Ближе препятствия
+final double _initialSpeed = 0.02;        // ОЧЕНЬ медленный старт
+final double _maxSpeed = 1.5;            // Максимальная скорость
   
   List<Obstacle> _obstacles = [];
   int _score = 0;
   bool _gameStarted = false;
   bool _gameOver = false;
   
-  double _obstacleSpacing = 5.5;  // ← Больше пространства!
 
   // === СКОРОСТЬ ПО СЧЁТУ ===
   late double _currentSpeed;
-  final double _initialSpeed = 0.4;  // Медленно в начале
-  final double _maxSpeed = 2.8;      // Максимум
+
 
   @override
   void initState() {
@@ -453,31 +454,32 @@ class _DinoJumpGameState extends State<_DinoJumpGame>
       }
 
      // === СКОРОСТЬ + РАССТОЯНИЕ ПО СЧЁТУ ===
+// === СКОРОСТЬ + РАССТОЯНИЕ ПО СЧЁТУ ===
 double targetSpeed;
-_obstacleSpacing = 5.5;  // Базовое
+_obstacleSpacing = 2.5;  // Базовое
 
-if (_score < 10) {
-  targetSpeed = 0.4;
-  _obstacleSpacing = 6.0;  // МАКСИМУМ пространства
+if (_score < 5) {
+  targetSpeed = 0.9;      // Очень медленно
+  _obstacleSpacing = 3.0;
+} else if (_score < 10) {
+  targetSpeed = 1;
+  _obstacleSpacing = 2.8;
 } else if (_score < 20) {
-  targetSpeed = 0.8;
-  _obstacleSpacing = 5.5;
+  targetSpeed = 1;
+  _obstacleSpacing = 2.6;
 } else if (_score < 30) {
-  targetSpeed = 1.3;
-  _obstacleSpacing = 5.0;
+  targetSpeed = 1;
+  _obstacleSpacing = 2.4;
 } else if (_score < 50) {
-  targetSpeed = 1.8;
-  _obstacleSpacing = 4.5;
-} else if (_score < 70) {
-  targetSpeed = 2.2;
-  _obstacleSpacing = 4.0;
+  targetSpeed = 1.2;
+  _obstacleSpacing = 2.2;
 } else {
   targetSpeed = _maxSpeed;
-  _obstacleSpacing = 3.8;  // Минимум
+  _obstacleSpacing = 2.0;
 }
 
-// Плавная скорость
-_currentSpeed += (targetSpeed - _currentSpeed) * 0.05;
+// Плавное изменение скорости
+_currentSpeed += (targetSpeed - _currentSpeed) * 0.02;
 
       // Плавное приближение (lerp)
       _currentSpeed += (targetSpeed - _currentSpeed) * 0.05;

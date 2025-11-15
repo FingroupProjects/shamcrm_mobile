@@ -17,18 +17,18 @@ class InternetMonitorService {
   Timer? _checkTimer;
   StreamSubscription? _connectivitySubscription;
 
-  // Список надежных серверов для проверки
   final List<InternetAddress> _checkHosts = [
-    InternetAddress('8.8.8.8', type: InternetAddressType.IPv4), // Google DNS
-    InternetAddress('1.1.1.1', type: InternetAddressType.IPv4), // Cloudflare DNS
+    InternetAddress('8.8.8.8', type: InternetAddressType.IPv4),
+    InternetAddress('1.1.1.1', type: InternetAddressType.IPv4),
   ];
 
   /// Инициализация мониторинга
   Future<void> initialize() async {
     debugPrint('🌐 InternetMonitor: Инициализация...');
     
-    // Первая проверка
-    await _checkInternetConnection();
+    // ✅ МГНОВЕННАЯ первая проверка
+    _isConnected = await _checkInternetConnectionSync();
+    _internetStatusController.add(_isConnected);
 
     // Подписка на изменения connectivity
     _connectivitySubscription = Connectivity().onConnectivityChanged.listen(
@@ -38,13 +38,41 @@ class InternetMonitorService {
       },
     );
 
-    // Периодическая проверка каждые 10 секунд
+    // Периодическая проверка каждые 5 секунд
     _checkTimer = Timer.periodic(
-      const Duration(seconds: 10),
+      const Duration(seconds: 5),
       (_) => _checkInternetConnection(),
     );
 
     debugPrint('🌐 InternetMonitor: Инициализирован успешно');
+  }
+
+  /// Синхронная быстрая проверка (БЕЗ задержки)
+  Future<bool> _checkInternetConnectionSync() async {
+    try {
+      final connectivityResults = await Connectivity().checkConnectivity();
+      
+      if (connectivityResults.contains(ConnectivityResult.none)) {
+        return false;
+      }
+      
+      // Быстрая проверка одного хоста
+      try {
+        final result = await InternetAddress.lookup('8.8.8.8')
+            .timeout(const Duration(seconds: 2));
+        
+        if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
+          return true;
+        }
+      } catch (e) {
+        return false;
+      }
+      
+      return false;
+    } catch (e) {
+      debugPrint('🌐 InternetMonitor: Ошибка быстрой проверки: $e');
+      return false;
+    }
   }
 
   /// Реальная проверка доступности интернета
@@ -52,14 +80,11 @@ class InternetMonitorService {
     bool hasConnection = false;
 
     try {
-      // Проверяем connectivity
       final connectivityResults = await Connectivity().checkConnectivity();
       
-      // Если нет connectivity вообще - сразу false
       if (connectivityResults.contains(ConnectivityResult.none)) {
         hasConnection = false;
       } else {
-        // Есть connectivity - проверяем реальный интернет
         hasConnection = await _pingHosts();
       }
     } catch (e) {
@@ -67,7 +92,6 @@ class InternetMonitorService {
       hasConnection = false;
     }
 
-    // Обновляем статус только если изменился
     if (_isConnected != hasConnection) {
       _isConnected = hasConnection;
       _internetStatusController.add(_isConnected);
@@ -76,7 +100,7 @@ class InternetMonitorService {
     }
   }
 
-  /// Проверка доступности хостов (ping)
+  /// Проверка доступности хостов
   Future<bool> _pingHosts() async {
     for (final host in _checkHosts) {
       try {
@@ -84,10 +108,9 @@ class InternetMonitorService {
             .timeout(const Duration(seconds: 5));
         
         if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
-          // Дополнительная проверка через socket
           final socket = await Socket.connect(
             host.address,
-            53, // DNS port
+            53,
             timeout: const Duration(seconds: 5),
           );
           socket.destroy();

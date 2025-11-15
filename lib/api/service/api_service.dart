@@ -125,6 +125,7 @@ import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/models/user_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_dropdown_bottom_dialog.dart';
+import 'package:crm_task_manager/screens/lead/lead_cache.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_dropdown_bottom_dialog.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_dropdown_bottom_dialog.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -1462,73 +1463,156 @@ Future<String> getStaticBaseUrl() async {
     }
   }
 
- Future<List<LeadStatus>> getLeadStatuses() async {
+Future<List<LeadStatus>> getLeadStatuses() async {
   final SharedPreferences prefs = await SharedPreferences.getInstance();
   final organizationId = await getSelectedOrganization();
-  final salesFunnelId = await getSelectedSalesFunnel(); // ← УБЕДИСЬ, что этот метод возвращает валидный ID
+  final salesFunnelId = await getSelectedSalesFunnel();
 
-  // ЛОГИРУЕМ для отладки
-  debugPrint('getLeadStatuses - organizationId: $organizationId, salesFunnelId: $salesFunnelId');
+  // ⚠️ КРИТИЧНО: Проверяем наличие обязательного параметра
+  if (organizationId == null || organizationId.isEmpty || organizationId == 'null') {
+    throw Exception('Organization ID is required but missing');
+  }
+
+  if (kDebugMode) {
+    debugPrint('🔍 getLeadStatuses - START');
+    debugPrint('🔍 getLeadStatuses - organizationId: $organizationId');
+    debugPrint('🔍 getLeadStatuses - salesFunnelId: ${salesFunnelId ?? "NULL"}');
+  }
+
+  // Формируем ключ кэша с учётом воронки
+  final cacheKey = 'cachedLeadStatuses_${organizationId}_funnel_${salesFunnelId ?? "null"}';
+  
+  if (kDebugMode) {
+    debugPrint('🔍 getLeadStatuses - cacheKey: $cacheKey');
+  }
 
   try {
-    // Формируем путь с гарантией передачи sales_funnel_id
-    String path = '/lead/statuses';
-    final bool hasParams = path.contains('?');
-    final String separator = hasParams ? '&' : '?';
-
-    // Явно добавляем organization_id
-    if (organizationId != null && organizationId.isNotEmpty && organizationId != 'null') {
-      path += '${separator}organization_id=$organizationId';
-    }
-
-    // ЯВНО ДОБАВЛЯЕМ sales_funnel_id, даже если он 0 или null — сервер должен это обрабатывать
-    final String funnelId = (salesFunnelId ?? '').toString();
-    if (funnelId.isNotEmpty && funnelId != 'null') {
-      path += '${hasParams || organizationId != null ? '&' : '?'}sales_funnel_id=$funnelId';
+    // КРИТИЧНО: Формируем путь ЯВНО с гарантией параметров
+    String path = '/lead/statuses?organization_id=$organizationId';
+    
+    // КРИТИЧНО: ВСЕГДА добавляем sales_funnel_id (даже если null)
+    if (salesFunnelId != null && salesFunnelId.isNotEmpty && salesFunnelId != 'null') {
+      path += '&sales_funnel_id=$salesFunnelId';
+      if (kDebugMode) {
+        debugPrint('✅ getLeadStatuses - Added sales_funnel_id: $salesFunnelId');
+      }
     } else {
-      // Если funnelId пустой — всё равно попробуем передать 0 или пустое значение?
-      // Лучше НЕ передавать, если сервер не ожидает
-      debugPrint('getLeadStatuses - sales_funnel_id is null or empty, skipping');
+      if (kDebugMode) {
+        debugPrint('⚠️ getLeadStatuses - No funnel selected, will load ALL statuses from backend');
+      }
+      // ОПЦИОНАЛЬНО: Если бэкенд требует явного значения:
+      // path += '&sales_funnel_id=0';
     }
 
-    debugPrint('getLeadStatuses - Final path: $path');
+    if (kDebugMode) {
+      debugPrint('📤 getLeadStatuses - Final path: $path');
+    }
 
     final response = await _getRequest(path);
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      if (data['result'] != null) {
-        final statuses = (data['result'] as List)
+      
+      if (kDebugMode) {
+        debugPrint('✅ getLeadStatuses - Response received');
+        debugPrint('🔍 getLeadStatuses - Response type: ${data.runtimeType}');
+      }
+
+      List<dynamic>? statusList;
+
+      // Определяем структуру ответа
+      if (data is List) {
+        statusList = data;
+        if (kDebugMode) {
+          debugPrint('✅ getLeadStatuses - Data is direct List');
+        }
+      } else if (data is Map) {
+        if (data['result'] != null) {
+          statusList = data['result'] as List;
+          if (kDebugMode) {
+            debugPrint('✅ getLeadStatuses - Data found in "result" field');
+          }
+        } else if (data['data'] != null) {
+          statusList = data['data'] as List;
+          if (kDebugMode) {
+            debugPrint('✅ getLeadStatuses - Data found in "data" field');
+          }
+        } else if (data['statuses'] != null) {
+          statusList = data['statuses'] as List;
+          if (kDebugMode) {
+            debugPrint('✅ getLeadStatuses - Data found in "statuses" field');
+          }
+        }
+      }
+
+      // Обрабатываем найденные данные
+      if (statusList != null && statusList.isNotEmpty) {
+        // Проверяем старый кэш
+        final cachedStatuses = prefs.getString(cacheKey);
+        if (cachedStatuses != null && kDebugMode) {
+          debugPrint('⚠️ getLeadStatuses - Old cache data found, will be replaced');
+        }
+
+        // Обновляем кэш новыми данными
+        await prefs.setString(cacheKey, json.encode(statusList));
+
+        if (kDebugMode) {
+          debugPrint('✅ getLeadStatuses - Cached ${statusList.length} statuses with key: $cacheKey');
+        }
+
+        // Парсим статусы
+        final statuses = statusList
             .map((status) => LeadStatus.fromJson(status))
             .toList();
 
-        // Кэшируем с ключом, зависящим от organizationId И salesFunnelId
-        final cacheKey = 'cachedLeadStatuses_${organizationId}_funnel_${salesFunnelId ?? "null"}';
-        await prefs.setString(cacheKey, json.encode(data['result']));
-        debugPrint('getLeadStatuses - Cached with key: $cacheKey');
+        // КРИТИЧНО: Обновляем постоянные счетчики
+        await LeadCache.updatePersistentCountsFromStatuses(statuses);
+        
+        if (kDebugMode) {
+          debugPrint('✅ getLeadStatuses - Updated persistent counts from API');
+          for (var status in statuses) {
+            debugPrint('   Status ID: ${status.id}, Count: ${status.leadsCount}');
+          }
+        }
 
         return statuses;
       } else {
-        throw Exception('Результат отсутствует в ответе');
+        if (kDebugMode) {
+          debugPrint('❌ getLeadStatuses - No valid data in response');
+          debugPrint('   Available keys: ${data is Map ? data.keys.toList() : "N/A"}');
+        }
+        throw Exception('Результат отсутствует в ответе или пустой');
       }
     } else {
-      throw Exception('Ошибка при получении данных: ${response.statusCode}');
+      if (kDebugMode) {
+        debugPrint('❌ getLeadStatuses - Failed with status code: ${response.statusCode}');
+      }
+      throw Exception('Ошибка ${response.statusCode}!');
     }
   } catch (e) {
-    debugPrint('getLeadStatuses - Error: $e');
+    if (kDebugMode) {
+      debugPrint('⚠️ getLeadStatuses - Error occurred: $e');
+      debugPrint('⚠️ getLeadStatuses - Trying to load from cache');
+    }
 
-    // Попробуем загрузить из кэша (по новому ключу)
-    final cacheKey = 'cachedLeadStatuses_${organizationId}_funnel_${salesFunnelId ?? "null"}';
+    // Пытаемся загрузить из кэша
     final cachedStatuses = prefs.getString(cacheKey);
     if (cachedStatuses != null) {
       final decodedData = json.decode(cachedStatuses);
       final cachedList = (decodedData as List)
           .map((status) => LeadStatus.fromJson(status))
           .toList();
-      debugPrint('getLeadStatuses - Returning cached statuses for funnel: $salesFunnelId');
+
+      if (kDebugMode) {
+        debugPrint('✅ getLeadStatuses - Loaded ${cachedList.length} statuses from cache');
+      }
       return cachedList;
     } else {
-      throw Exception('Ошибка загрузки статусов лидов и отсутствуют кэшированные данные!');
+      if (kDebugMode) {
+        debugPrint('❌ getLeadStatuses - No cache data available');
+      }
+      throw Exception(
+          'Ошибка загрузки статусов лидов и отсутствуют кэшированные данные!');
     }
   }
 }
@@ -2935,101 +3019,128 @@ Future<List<Deal>> getDeals(
 }
 
 // Метод для получения статусов Сделок
-  Future<List<DealStatus>> getDealStatuses({bool includeAll = false}) async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final organizationId = await getSelectedOrganization();
+ Future<List<DealStatus>> getDealStatuses({bool includeAll = false}) async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  final organizationId = await getSelectedOrganization();
+  final salesFunnelId = await getSelectedDealSalesFunnel(); // ← КРИТИЧНО!
 
-    // Определяем базовый путь и ключ кэша в зависимости от типа запроса
-    final basePath = includeAll ? '/deal/statuses/all' : '/deal/statuses';
-    final cacheKey = includeAll
-        ? 'cachedDealStatuses_all_$organizationId'
-        : 'cachedDealStatuses_$organizationId';
+  // Проверка organizationId
+  if (organizationId == null || organizationId.isEmpty || organizationId == 'null') {
+    throw Exception('Organization ID is required but missing');
+  }
 
-    try {
-      // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-      final path = await _appendQueryParams(basePath);
+  if (kDebugMode) {
+    debugPrint('🔍 getDealStatuses - START: includeAll=$includeAll');
+    debugPrint('🔍 getDealStatuses - organizationId: $organizationId');
+    debugPrint('🔍 getDealStatuses - salesFunnelId: ${salesFunnelId ?? "NULL"}');
+  }
+
+  final basePath = includeAll ? '/deal/statuses/all' : '/deal/statuses';
+  final cacheKey = includeAll
+      ? 'cachedDealStatuses_all_${organizationId}_funnel_${salesFunnelId ?? "null"}'
+      : 'cachedDealStatuses_${organizationId}_funnel_${salesFunnelId ?? "null"}';
+
+  try {
+    // КРИТИЧНО: Формируем путь ЯВНО
+    String path = '$basePath?organization_id=$organizationId';
+    
+    // ВСЕГДА добавляем sales_funnel_id
+    if (salesFunnelId != null && salesFunnelId.isNotEmpty && salesFunnelId != 'null') {
+      path += '&sales_funnel_id=$salesFunnelId';
       if (kDebugMode) {
-        debugPrint('ApiService: getDealStatuses(includeAll: $includeAll) - Generated path: $path');
+        debugPrint('✅ getDealStatuses - Added sales_funnel_id: $salesFunnelId');
       }
-
-      final response = await _getRequest(path);
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-
-        // 🔍 ДЕБАГ: Выводим полный ответ для анализа
-        if (kDebugMode) {
-          debugPrint('ApiService: getDealStatuses - Full response body: ${response.body}');
-          debugPrint('ApiService: getDealStatuses - Response type: ${data.runtimeType}');
-        }
-
-        // 📦 Определяем, откуда брать данные
-        List<dynamic>? statusList;
-
-        if (data is List) {
-          // Если ответ — это сразу массив
-          statusList = data;
-          debugPrint('ApiService: getDealStatuses - Data is direct List');
-        } else if (data is Map) {
-          // Если ответ — объект, ищем данные в разных полях
-          if (data['result'] != null) {
-            statusList = data['result'] as List;
-            debugPrint('ApiService: getDealStatuses - Data found in "result" field');
-          } else if (data['data'] != null) {
-            statusList = data['data'] as List;
-            debugPrint('ApiService: getDealStatuses - Data found in "data" field');
-          } else if (data['statuses'] != null) {
-            statusList = data['statuses'] as List;
-            debugPrint('ApiService: getDealStatuses - Data found in "statuses" field');
-          }
-        }
-
-        // ✅ Обрабатываем найденные данные
-        if (statusList != null && statusList.isNotEmpty) {
-          // Принт старых кэшированных данных (если они есть)
-          final cachedStatuses = prefs.getString(cacheKey);
-          if (cachedStatuses != null && kDebugMode) {
-            debugPrint('ApiService: getDealStatuses - Старые данные из кэша найдены');
-          }
-
-          // Обновляем кэш новыми данными
-          await prefs.setString(cacheKey, json.encode(statusList));
-
-          if (kDebugMode) {
-            debugPrint('ApiService: getDealStatuses(includeAll: $includeAll) - Статусы обновлены в кэше (${statusList.length} шт.)');
-          }
-
-          debugPrint("ApiService: getDealStatuses - Deal statuses loaded successfully from API.");
-          return statusList
-              .map((status) => DealStatus.fromJson(status))
-              .toList();
-        } else {
-          debugPrint("ApiService: getDealStatuses - No valid data found in response. Available keys: ${data is Map ? data.keys.toList() : 'N/A'}");
-          throw Exception('Результат отсутствует в ответе или пустой');
-        }
-      } else {
-        debugPrint("ApiService: getDealStatuses - Failed to load deal statuses from API. Status code: ${response.statusCode}");
-        throw Exception('Ошибка ${response.statusCode}!');
-      }
-    } catch (e) {
-      debugPrint('ApiService: getDealStatuses - Ошибка загрузки статусов сделок. Используем кэшированные данные.');
-
-      // Если запрос не удался, пытаемся загрузить данные из кэша
-      final cachedStatuses = prefs.getString(cacheKey);
-      if (cachedStatuses != null) {
-        final decodedData = json.decode(cachedStatuses);
-        final cachedList = (decodedData as List)
-            .map((status) => DealStatus.fromJson(status))
-            .toList();
-
-        debugPrint('ApiService: getDealStatuses - Загружено ${cachedList.length} статусов из кэша');
-        return cachedList;
-      } else {
-        throw Exception(
-            'Ошибка загрузки статусов сделок и отсутствуют кэшированные данные!');
+    } else {
+      if (kDebugMode) {
+        debugPrint('⚠️ getDealStatuses - No funnel selected, loading ALL deal statuses');
       }
     }
+
+    if (kDebugMode) {
+      debugPrint('📤 getDealStatuses - Final path: $path');
+    }
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+
+      // 🔍 ДЕБАГ: Выводим полный ответ для анализа
+      if (kDebugMode) {
+        debugPrint('ApiService: getDealStatuses - Full response body: ${response.body}');
+        debugPrint('ApiService: getDealStatuses - Response type: ${data.runtimeType}');
+      }
+
+      // 📦 Определяем, откуда брать данные
+      List<dynamic>? statusList;
+
+      if (data is List) {
+        // Если ответ — это сразу массив
+        statusList = data;
+        debugPrint('ApiService: getDealStatuses - Data is direct List');
+      } else if (data is Map) {
+        // Если ответ — объект, ищем данные в разных полях
+        if (data['result'] != null) {
+          statusList = data['result'] as List;
+          debugPrint('ApiService: getDealStatuses - Data found in "result" field');
+        } else if (data['data'] != null) {
+          statusList = data['data'] as List;
+          debugPrint('ApiService: getDealStatuses - Data found in "data" field');
+        } else if (data['statuses'] != null) {
+          statusList = data['statuses'] as List;
+          debugPrint('ApiService: getDealStatuses - Data found in "statuses" field');
+        }
+      }
+
+      // ✅ Обрабатываем найденные данные
+      if (statusList != null && statusList.isNotEmpty) {
+        // Принт старых кэшированных данных (если они есть)
+        final cachedStatuses = prefs.getString(cacheKey);
+        if (cachedStatuses != null && kDebugMode) {
+          debugPrint('ApiService: getDealStatuses - Старые данные из кэша найдены');
+        }
+
+        // Обновляем кэш новыми данными
+        await prefs.setString(cacheKey, json.encode(statusList));
+
+        if (kDebugMode) {
+          debugPrint('ApiService: getDealStatuses(includeAll: $includeAll) - Статусы обновлены в кэше (${statusList.length} шт.)');
+          debugPrint('✅ getDealStatuses - SUCCESS: Loaded ${statusList.length} statuses for funnel $salesFunnelId');
+        }
+
+        debugPrint("ApiService: getDealStatuses - Deal statuses loaded successfully from API.");
+        return statusList
+            .map((status) => DealStatus.fromJson(status))
+            .toList();
+      } else {
+        debugPrint("❌ getDealStatuses - No valid data found in response. Available keys: ${data is Map ? data.keys.toList() : 'N/A'}");
+        throw Exception('Результат отсутствует в ответе или пустой');
+      }
+    } else {
+      debugPrint("❌ getDealStatuses - Failed to load deal statuses from API. Status code: ${response.statusCode}");
+      throw Exception('Ошибка ${response.statusCode}!');
+    }
+  } catch (e) {
+    debugPrint('⚠️ getDealStatuses - Ошибка загрузки статусов сделок: $e');
+    debugPrint('⚠️ getDealStatuses - Используем кэшированные данные.');
+
+    // Если запрос не удался, пытаемся загрузить данные из кэша
+    final cachedStatuses = prefs.getString(cacheKey);
+    if (cachedStatuses != null) {
+      final decodedData = json.decode(cachedStatuses);
+      final cachedList = (decodedData as List)
+          .map((status) => DealStatus.fromJson(status))
+          .toList();
+
+      debugPrint('✅ getDealStatuses - Загружено ${cachedList.length} статусов из кэша для воронки $salesFunnelId');
+      return cachedList;
+    } else {
+      debugPrint('❌ getDealStatuses - Нет кэшированных данных для воронки $salesFunnelId');
+      throw Exception(
+          'Ошибка загрузки статусов сделок и отсутствуют кэшированные данные!');
+    }
   }
+}
 
   Future<bool> checkIfStatusHasDeals(int dealStatusId) async {
     try {
@@ -6750,21 +6861,39 @@ Future<void> _removeOrganizationId() async {
   }
 
 // Существующий метод для получения выбранной воронки
-  Future<String?> getSelectedSalesFunnel() async {
-    //print('ApiService: Getting selected sales funnel from SharedPreferences');
-    final prefs = await SharedPreferences.getInstance();
-    final funnelId = prefs.getString('selected_sales_funnel');
-    //print('ApiService: Retrieved selected funnel ID: $funnelId');
-    return funnelId;
+ Future<String?> getSelectedSalesFunnel() async {
+  print('🔍 ApiService: Getting selected sales funnel from SharedPreferences');
+  final prefs = await SharedPreferences.getInstance();
+  final funnelId = prefs.getString('selected_sales_funnel');
+  
+  if (funnelId == null || funnelId.isEmpty || funnelId == 'null') {
+    print('⚠️ ApiService: No valid funnel ID found in SharedPreferences');
+    return null;
   }
-
+  
+  print('✅ ApiService: Retrieved selected funnel ID: $funnelId');
+  return funnelId;
+}
 // Существующий метод для сохранения выбранной воронки
-  Future<void> saveSelectedSalesFunnel(String funnelId) async {
-    //print('ApiService: Saving selected sales funnel ID: $funnelId');
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('selected_sales_funnel', funnelId);
-    //print('ApiService: Selected sales funnel ID saved');
+ Future<void> saveSelectedSalesFunnel(String funnelId) async {
+  print('🔧 ApiService: Saving selected sales funnel ID: $funnelId');
+  
+  if (funnelId.isEmpty || funnelId == 'null') {
+    print('⚠️ ApiService: Attempting to save invalid funnelId: $funnelId');
+    return;
   }
+  
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString('selected_sales_funnel', funnelId);
+  
+  // Проверяем, что сохранилось
+  final saved = prefs.getString('selected_sales_funnel');
+  if (saved == funnelId) {
+    print('✅ ApiService: Selected sales funnel ID saved successfully: $funnelId');
+  } else {
+    print('❌ ApiService: Failed to save funnel ID. Expected: $funnelId, Got: $saved');
+  }
+}
 
   Future<void> saveSelectedDealSalesFunnel(String funnelId) async {
     final prefs = await SharedPreferences.getInstance();
@@ -6914,27 +7043,33 @@ Future<String> _appendQueryParams(String path) async {
     final organizationId = await getSelectedOrganization();
     final salesFunnelId = await getSelectedSalesFunnel();
 
-    // Проверяем, есть ли уже параметры в path
     bool hasParams = path.contains('?');
     String separator = hasParams ? '&' : '?';
     String result = path;
 
+    // КРИТИЧНО: ВСЕГДА добавляем organization_id
     if (organizationId != null && organizationId.isNotEmpty && organizationId != 'null') {
       result += '${separator}organization_id=$organizationId';
       separator = '&';
     }
 
+    // КРИТИЧНО: ВСЕГДА добавляем sales_funnel_id (даже если null)
+    // Backend должен уметь обрабатывать отсутствие воронки
     if (salesFunnelId != null && salesFunnelId.isNotEmpty && salesFunnelId != 'null') {
       result += '${separator}sales_funnel_id=$salesFunnelId';
+    } else {
+      // НОВОЕ: Явно передаём пустое значение или 0
+      debugPrint('⚠️ _appendQueryParams: sales_funnel_id is missing, using default');
+      // Опционально: result += '${separator}sales_funnel_id=0';
     }
 
+    debugPrint('✅ _appendQueryParams: $path → $result');
     return result;
   } catch (e) {
-    debugPrint('_appendQueryParams error: $e');
-    // Возвращаем исходный path если не удалось добавить параметры
+    debugPrint('❌ _appendQueryParams error: $e');
     return path;
   }
-}
+} 
   //_________________________________ END_____API_SCREEN__PROFILE____________________________________________//
 
   //_________________________________ START_____API_SCREEN__NOTIFICATIONS____________________________________________//

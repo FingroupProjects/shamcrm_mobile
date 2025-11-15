@@ -1,5 +1,5 @@
-import 'package:crm_task_manager/api/service/internet_monitor_service.dart';
 import 'package:flutter/material.dart';
+import '../api/service/internet_monitor_service.dart';
 import 'internet_overlay_widget.dart';
 
 class InternetAwareWrapper extends StatefulWidget {
@@ -14,26 +14,65 @@ class InternetAwareWrapper extends StatefulWidget {
   State<InternetAwareWrapper> createState() => _InternetAwareWrapperState();
 }
 
-class _InternetAwareWrapperState extends State<InternetAwareWrapper> {
+class _InternetAwareWrapperState extends State<InternetAwareWrapper> 
+    with WidgetsBindingObserver {
   final _internetMonitor = InternetMonitorService();
   bool _isConnected = true;
+  bool _isFirstCheck = true; // ✅ Флаг первой проверки после resume
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _initializeMonitoring();
   }
 
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    
+    if (state == AppLifecycleState.resumed) {
+      debugPrint('🌐 InternetAwareWrapper: Приложение resumed');
+      _isFirstCheck = true; // ✅ Устанавливаем флаг
+      _checkImmediately(); // ✅ МГНОВЕННАЯ проверка
+    }
+  }
+
+  // ✅ МГНОВЕННАЯ проверка (синхронная)
+  void _checkImmediately() {
+    // Запускаем асинхронную проверку БЕЗ ожидания
+    _internetMonitor.checkNow().then((_) {
+      if (mounted) {
+        final newStatus = _internetMonitor.isConnected;
+        if (_isConnected != newStatus) {
+          setState(() {
+            _isConnected = newStatus;
+          });
+          debugPrint('🌐 InternetAwareWrapper: БЫСТРОЕ обновление -> $_isConnected');
+        }
+        _isFirstCheck = false;
+      }
+    });
+  }
+
   Future<void> _initializeMonitoring() async {
-    // Получаем начальный статус
+    // ✅ Получаем начальный статус
     _isConnected = _internetMonitor.isConnected;
 
-    // Слушаем изменения
+    // ✅ Слушаем изменения
     _internetMonitor.internetStatus.listen((isConnected) {
-      if (mounted && _isConnected != isConnected) {
+      // ❌ НЕ обновляем UI сразу после resume (ждем _checkImmediately)
+      if (mounted && !_isFirstCheck && _isConnected != isConnected) {
         setState(() {
           _isConnected = isConnected;
         });
+        debugPrint('🌐 InternetAwareWrapper: Статус изменился -> $_isConnected');
       }
     });
   }
@@ -42,12 +81,11 @@ class _InternetAwareWrapperState extends State<InternetAwareWrapper> {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // Основное приложение
         widget.child,
         
-        // Overlay при отсутствии интернета
-        if (!_isConnected)
-          Positioned.fill(
+        // ✅ Показываем overlay только если точно нет интернета
+        if (!_isConnected && !_isFirstCheck)
+          const Positioned.fill(
             child: InternetOverlayWidget(),
           ),
       ],
