@@ -147,6 +147,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    _initializeSalesFunnel();
     //print('LeadScreen: initState started');
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     context.read<GetAllRegionBloc>().add(GetAllRegionEv());
@@ -218,6 +219,24 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
 
     _checkPermissions();
   }
+  Future<void> _initializeSalesFunnel() async {
+  try {
+    final savedFunnelId = await _apiService.getSelectedSalesFunnel();
+    
+    if (savedFunnelId == null || savedFunnelId.isEmpty) {
+      debugPrint('⚠️ No saved funnel, will use first available');
+      // Воронка установится автоматически из SalesFunnelBloc.stream
+      return;
+    }
+    
+    // Загружаем воронки
+    context.read<SalesFunnelBloc>().add(FetchSalesFunnels());
+    
+    debugPrint('✅ Initialized with funnelId: $savedFunnelId');
+  } catch (e) {
+    debugPrint('❌ _initializeSalesFunnel error: $e');
+  }
+}
 
   Future<void> _loadFeatureState() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
