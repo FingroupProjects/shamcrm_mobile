@@ -4543,12 +4543,14 @@ Future<List<Deal>> getDeals(
     return dataProject;
   }
 
-// Метод для получения Проекта
-  Future<ProjectTaskDataResponse> getTaskProject() async {
+  // Метод для получения Проекта
+  Future<ProjectTaskDataResponse> getTaskProject({int page = 1, int perPage = 20}) async {
+    // Формируем базовый путь с параметрами пагинации
+    String path = '/task/get/projects?page=$page&per_page=$perPage';
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/task/get/projects');
+    path = await _appendQueryParams(path);
     if (kDebugMode) {
-      //print('ApiService: getTaskProject - Generated path: $path');
+      print('ApiService: getTaskProject - Generated path: $path');
     }
 
     final response = await _getRequest(path);
