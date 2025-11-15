@@ -11,6 +11,20 @@ class StatisticChart1 extends StatelessWidget {
   Widget build(BuildContext context) {
     // Получаем текущий месяц динамически (0-based индекс: январь = 0, февраль = 1, ..., декабрь = 11)
     final int currentMonthIndex = DateTime.now().month - 1;
+    const monthNames = [
+      'Янв',
+      'Фев',
+      'Мар',
+      'Апр',
+      'Май',
+      'Июн',
+      'Июл',
+      'Авг',
+      'Сен',
+      'Окт',
+      'Ноя',
+      'Дек'
+    ];
 
     // Подготовка данных до текущего месяца
     List<FlSpot> getSpots(double Function(CallStatMonth) valueExtractor) {
@@ -254,25 +268,13 @@ class StatisticChart1 extends StatelessWidget {
                   enabled: true,
                   touchTooltipData: LineTouchTooltipData(
                     tooltipRoundedRadius: 8,
+                    fitInsideHorizontally: true,
+                    fitInsideVertically: true,
                     tooltipPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     tooltipMargin: 10,
                     getTooltipItems: (List<LineBarSpot> touchedSpots) {
                       return touchedSpots.map((LineBarSpot touchedSpot) {
                         final int xValue = touchedSpot.x.toInt();
-                        const monthNames = [
-                          'Янв',
-                          'Фев',
-                          'Мар',
-                          'Апр',
-                          'Май',
-                          'Июн',
-                          'Июл',
-                          'Авг',
-                          'Сен',
-                          'Окт',
-                          'Ноя',
-                          'Дек'
-                        ];
                         String month = xValue < monthNames.length ? monthNames[xValue] : '';
 
                         String metricName;
