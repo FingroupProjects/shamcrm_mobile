@@ -30,8 +30,8 @@ class IlliquidGoodsResponse extends Equatable {
 }
 
 class IlliquidGoodsResult extends Equatable {
-  final int? liquidGoods;
-  final int? liquidChange;
+  final num? liquidGoods;
+  final num? liquidChange;
   final String? liquidChangeFormatted;
 
   const IlliquidGoodsResult({
@@ -42,8 +42,8 @@ class IlliquidGoodsResult extends Equatable {
 
   factory IlliquidGoodsResult.fromJson(Map<String, dynamic> json) {
     return IlliquidGoodsResult(
-      liquidGoods: json['liquidGoods'] as int?,
-      liquidChange: json['liquidChange'] as int?,
+      liquidGoods: json['liquidGoods'] as num?,
+      liquidChange: json['liquidChange'] as num?,
       liquidChangeFormatted: json['liquidChangeFormatted'] as String?,
     );
   }
