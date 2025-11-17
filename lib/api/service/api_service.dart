@@ -2931,15 +2931,32 @@ Future<List<Deal>> getDeals(
   int? daysWithoutActivity,
   bool? hasTasks,
   List<Map<String, dynamic>>? directoryValues,
-  List<String>? names, // Новое поле
-  int? salesFunnelId,
+  List<String>? names,
+  int? salesFunnelId, // ← КРИТИЧНО: Явный параметр
 }) async {
+  // ✅ КРИТИЧНО: Формируем базовый путь БЕЗ _appendQueryParams
   String path = '/deal?page=$page&per_page=$perPage';
-  path = await _appendQueryParams(path);
-  if (salesFunnelId != null) {
-    path += '&sales_funnel_id=$salesFunnelId';
+  
+  // ✅ ПЕРВЫМ делом добавляем organization_id
+  final organizationId = await getSelectedOrganization();
+  if (organizationId != null && organizationId.isNotEmpty && organizationId != 'null') {
+    path += '&organization_id=$organizationId';
   }
 
+  // ✅ ВТОРЫМ добавляем sales_funnel_id (если есть)
+  if (salesFunnelId != null) {
+    path += '&sales_funnel_id=$salesFunnelId';
+    debugPrint('ApiService: getDeals - Added salesFunnelId: $salesFunnelId');
+  } else {
+    // Fallback: пробуем получить из SharedPreferences
+    final savedFunnelId = await getSelectedDealSalesFunnel();
+    if (savedFunnelId != null && savedFunnelId.isNotEmpty && savedFunnelId != 'null') {
+      path += '&sales_funnel_id=$savedFunnelId';
+      debugPrint('ApiService: getDeals - Added savedFunnelId: $savedFunnelId');
+    }
+  }
+
+  // Проверяем наличие фильтров
   bool hasFilters = (search != null && search.isNotEmpty) ||
       (managers != null && managers.isNotEmpty) ||
       (leads != null && leads.isNotEmpty) ||
@@ -2949,14 +2966,16 @@ Future<List<Deal>> getDeals(
       (hasTasks == true) ||
       (statuses != null) ||
       (directoryValues != null && directoryValues.isNotEmpty) ||
-      (names != null && names.isNotEmpty); // Учитываем names
+      (names != null && names.isNotEmpty);
 
+  // ✅ Добавляем dealStatusId только если нет фильтров
   if (dealStatusId != null && !hasFilters) {
-    path += '&deal_statuses=$dealStatusId'; // changed FROM deal_status_id to deal_statuses
+    path += '&deal_statuses=$dealStatusId';
   }
 
+  // Добавляем остальные параметры
   if (search != null && search.isNotEmpty) {
-    path += '&search=$search';
+    path += '&search=${Uri.encodeComponent(search)}';
   }
 
   if (managers != null && managers.isNotEmpty) {
@@ -2964,20 +2983,25 @@ Future<List<Deal>> getDeals(
       path += '&managers[$i]=${managers[i]}';
     }
   }
+
   if (leads != null && leads.isNotEmpty) {
     for (int i = 0; i < leads.length; i++) {
       path += '&clients[$i]=${leads[i]}';
     }
   }
+
   if (daysWithoutActivity != null) {
     path += '&lastUpdate=$daysWithoutActivity';
   }
+
   if (hasTasks == true) {
     path += '&withTasks=1';
   }
+
   if (statuses != null) {
-    path += '&deal_statuses=$statuses'; // changed FROM deal_status_id to deal_statuses
+    path += '&deal_statuses=$statuses';
   }
+
   if (fromDate != null && toDate != null) {
     final formattedFromDate =
         "${fromDate.day.toString().padLeft(2, '0')}.${fromDate.month.toString().padLeft(2, '0')}.${fromDate.year}";
@@ -2985,44 +3009,61 @@ Future<List<Deal>> getDeals(
         "${toDate.day.toString().padLeft(2, '0')}.${toDate.month.toString().padLeft(2, '0')}.${toDate.year}";
     path += '&created_from=$formattedFromDate&created_to=$formattedToDate';
   }
+
   if (directoryValues != null && directoryValues.isNotEmpty) {
     for (int i = 0; i < directoryValues.length; i++) {
       path += '&directory_values[$i][directory_id]=${directoryValues[i]['directory_id']}';
       path += '&directory_values[$i][entry_id]=${directoryValues[i]['entry_id']}';
     }
   }
+
   if (names != null && names.isNotEmpty) {
     for (int i = 0; i < names.length; i++) {
-      path += '&names[$i]=${Uri.encodeComponent(names[i])}'; // Кодируем названия
+      path += '&names[$i]=${Uri.encodeComponent(names[i])}';
     }
   }
 
-  debugPrint("ApiService: getDeals - Generated path: $path");
+  debugPrint("ApiService: getDeals - Final path: $path");
+  
   final response = await _getRequest(path);
   debugPrint("ApiService: getDeals - Response status: ${response.statusCode}");
-  debugPrint("ApiService: getDeals - Response body: ${response.body}");
 
   if (response.statusCode == 200) {
     final data = json.decode(response.body);
-    if (data['result']['data'] != null) {
-      return (data['result']['data'] as List)
+    
+    if (data['result'] != null && data['result']['data'] != null) {
+      final deals = (data['result']['data'] as List)
           .map((json) => Deal.fromJson(json, dealStatusId ?? -1))
           .toList();
+      
+      debugPrint("ApiService: getDeals - Loaded ${deals.length} deals");
+      return deals;
     } else {
-      debugPrint("Future<List<Deal>> getDeals( ... Нет данных о сделках в ответе");
-      throw Exception('Нет данных о сделках в ответе');
+      debugPrint("ApiService: getDeals - No data in response");
+      return []; // Возвращаем пустой массив вместо ошибки
     }
   } else {
-    debugPrint("Future<List<Deal>> getDeals( ... Ошибка загрузки сделок");
+    debugPrint("ApiService: getDeals - Error ${response.statusCode}");
     throw Exception('Ошибка загрузки сделок!');
   }
 }
-
 // Метод для получения статусов Сделок
- Future<List<DealStatus>> getDealStatuses({bool includeAll = false}) async {
+// ✅ ИСПРАВЛЕННЫЙ метод getDealStatuses
+// Теперь ВСЕГДА использует явно переданный salesFunnelId
+Future<List<DealStatus>> getDealStatuses({
+  bool includeAll = false,
+  int? salesFunnelId, // ← КРИТИЧНО: Добавили явный параметр
+}) async {
   final SharedPreferences prefs = await SharedPreferences.getInstance();
   final organizationId = await getSelectedOrganization();
-  final salesFunnelId = await getSelectedDealSalesFunnel(); // ← КРИТИЧНО!
+
+  // ✅ ПРИОРИТЕТ: Сначала используем переданный параметр
+  String? funnelId = salesFunnelId?.toString();
+  
+  // ✅ FALLBACK: Если не передан - читаем из SharedPreferences
+  if (funnelId == null || funnelId.isEmpty || funnelId == 'null') {
+    funnelId = await getSelectedDealSalesFunnel();
+  }
 
   // Проверка organizationId
   if (organizationId == null || organizationId.isEmpty || organizationId == 'null') {
@@ -3032,23 +3073,25 @@ Future<List<Deal>> getDeals(
   if (kDebugMode) {
     debugPrint('🔍 getDealStatuses - START: includeAll=$includeAll');
     debugPrint('🔍 getDealStatuses - organizationId: $organizationId');
-    debugPrint('🔍 getDealStatuses - salesFunnelId: ${salesFunnelId ?? "NULL"}');
+    debugPrint('🔍 getDealStatuses - salesFunnelId (параметр): $salesFunnelId');
+    debugPrint('🔍 getDealStatuses - funnelId (итоговый): $funnelId');
   }
 
   final basePath = includeAll ? '/deal/statuses/all' : '/deal/statuses';
   final cacheKey = includeAll
-      ? 'cachedDealStatuses_all_${organizationId}_funnel_${salesFunnelId ?? "null"}'
-      : 'cachedDealStatuses_${organizationId}_funnel_${salesFunnelId ?? "null"}';
+      ? 'cachedDealStatuses_all_${organizationId}_funnel_${funnelId ?? "null"}'
+      : 'cachedDealStatuses_${organizationId}_funnel_${funnelId ?? "null"}';
 
   try {
-    // КРИТИЧНО: Формируем путь ЯВНО
+    // ✅ КРИТИЧНО: Формируем путь БЕЗ использования _appendQueryParams
+    // Потому что _appendQueryParams может перезаписать наш salesFunnelId
     String path = '$basePath?organization_id=$organizationId';
     
-    // ВСЕГДА добавляем sales_funnel_id
-    if (salesFunnelId != null && salesFunnelId.isNotEmpty && salesFunnelId != 'null') {
-      path += '&sales_funnel_id=$salesFunnelId';
+    // ВСЕГДА добавляем sales_funnel_id если он есть
+    if (funnelId != null && funnelId.isNotEmpty && funnelId != 'null') {
+      path += '&sales_funnel_id=$funnelId';
       if (kDebugMode) {
-        debugPrint('✅ getDealStatuses - Added sales_funnel_id: $salesFunnelId');
+        debugPrint('✅ getDealStatuses - Added sales_funnel_id: $funnelId');
       }
     } else {
       if (kDebugMode) {
@@ -3065,66 +3108,55 @@ Future<List<Deal>> getDeals(
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
 
-      // 🔍 ДЕБАГ: Выводим полный ответ для анализа
       if (kDebugMode) {
-        debugPrint('ApiService: getDealStatuses - Full response body: ${response.body}');
-        debugPrint('ApiService: getDealStatuses - Response type: ${data.runtimeType}');
+        debugPrint('ApiService: getDealStatuses - Response: ${response.body}');
       }
 
-      // 📦 Определяем, откуда брать данные
       List<dynamic>? statusList;
 
+      // Определяем структуру ответа
       if (data is List) {
-        // Если ответ — это сразу массив
         statusList = data;
-        debugPrint('ApiService: getDealStatuses - Data is direct List');
       } else if (data is Map) {
-        // Если ответ — объект, ищем данные в разных полях
         if (data['result'] != null) {
-          statusList = data['result'] as List;
-          debugPrint('ApiService: getDealStatuses - Data found in "result" field');
+          statusList = data['result'] is List 
+              ? data['result'] 
+              : (data['result']['data'] as List?);
         } else if (data['data'] != null) {
           statusList = data['data'] as List;
-          debugPrint('ApiService: getDealStatuses - Data found in "data" field');
         } else if (data['statuses'] != null) {
           statusList = data['statuses'] as List;
-          debugPrint('ApiService: getDealStatuses - Data found in "statuses" field');
         }
       }
 
-      // ✅ Обрабатываем найденные данные
-      if (statusList != null && statusList.isNotEmpty) {
-        // Принт старых кэшированных данных (если они есть)
-        final cachedStatuses = prefs.getString(cacheKey);
-        if (cachedStatuses != null && kDebugMode) {
-          debugPrint('ApiService: getDealStatuses - Старые данные из кэша найдены');
+      // ✅ КРИТИЧНО: Обрабатываем ПУСТОЙ массив как валидный результат
+      if (statusList != null) {
+        if (statusList.isEmpty) {
+          debugPrint('⚠️ getDealStatuses - API вернул пустой массив статусов');
+          // Очищаем кэш для этой воронки
+          await prefs.remove(cacheKey);
+          return []; // Возвращаем пустой список (это не ошибка!)
         }
 
-        // Обновляем кэш новыми данными
+        // Обновляем кэш
         await prefs.setString(cacheKey, json.encode(statusList));
-
+        
         if (kDebugMode) {
-          debugPrint('ApiService: getDealStatuses(includeAll: $includeAll) - Статусы обновлены в кэше (${statusList.length} шт.)');
-          debugPrint('✅ getDealStatuses - SUCCESS: Loaded ${statusList.length} statuses for funnel $salesFunnelId');
+          debugPrint('✅ getDealStatuses - Loaded ${statusList.length} statuses');
         }
 
-        debugPrint("ApiService: getDealStatuses - Deal statuses loaded successfully from API.");
-        return statusList
-            .map((status) => DealStatus.fromJson(status))
-            .toList();
+        return statusList.map((status) => DealStatus.fromJson(status)).toList();
       } else {
-        debugPrint("❌ getDealStatuses - No valid data found in response. Available keys: ${data is Map ? data.keys.toList() : 'N/A'}");
-        throw Exception('Результат отсутствует в ответе или пустой');
+        debugPrint("❌ getDealStatuses - No valid data in response");
+        throw Exception('Результат отсутствует в ответе');
       }
     } else {
-      debugPrint("❌ getDealStatuses - Failed to load deal statuses from API. Status code: ${response.statusCode}");
-      throw Exception('Ошибка ${response.statusCode}!');
+      throw Exception('Ошибка ${response.statusCode}');
     }
   } catch (e) {
-    debugPrint('⚠️ getDealStatuses - Ошибка загрузки статусов сделок: $e');
-    debugPrint('⚠️ getDealStatuses - Используем кэшированные данные.');
+    debugPrint('⚠️ getDealStatuses - Ошибка: $e');
+    debugPrint('⚠️ getDealStatuses - Используем кэш');
 
-    // Если запрос не удался, пытаемся загрузить данные из кэша
     final cachedStatuses = prefs.getString(cacheKey);
     if (cachedStatuses != null) {
       final decodedData = json.decode(cachedStatuses);
@@ -3132,12 +3164,11 @@ Future<List<Deal>> getDeals(
           .map((status) => DealStatus.fromJson(status))
           .toList();
 
-      debugPrint('✅ getDealStatuses - Загружено ${cachedList.length} статусов из кэша для воронки $salesFunnelId');
+      debugPrint('✅ getDealStatuses - Загружено ${cachedList.length} статусов из кэша');
       return cachedList;
     } else {
-      debugPrint('❌ getDealStatuses - Нет кэшированных данных для воронки $salesFunnelId');
-      throw Exception(
-          'Ошибка загрузки статусов сделок и отсутствуют кэшированные данные!');
+      debugPrint('❌ getDealStatuses - Нет кэшированных данных');
+      throw Exception('Ошибка загрузки статусов сделок и отсутствуют кэшированные данные!');
     }
   }
 }
@@ -7042,36 +7073,42 @@ Future<void> _removeOrganizationId() async {
 // Централизованный метод для добавления query-параметров
 Future<String> _appendQueryParams(String path) async {
   try {
+    // Парсим существующий URI
+    final uri = Uri.parse(path);
+    final existingParams = Map<String, String>.from(uri.queryParameters);
+    
+    // Получаем ID из SharedPreferences
     final organizationId = await getSelectedOrganization();
     final salesFunnelId = await getSelectedSalesFunnel();
 
-    bool hasParams = path.contains('?');
-    String separator = hasParams ? '&' : '?';
-    String result = path;
-
-    // КРИТИЧНО: ВСЕГДА добавляем organization_id
-    if (organizationId != null && organizationId.isNotEmpty && organizationId != 'null') {
-      result += '${separator}organization_id=$organizationId';
-      separator = '&';
+    // ✅ Добавляем organization_id ТОЛЬКО если его нет
+    if (organizationId != null && 
+        organizationId.isNotEmpty && 
+        organizationId != 'null' &&
+        !existingParams.containsKey('organization_id')) {
+      existingParams['organization_id'] = organizationId;
     }
 
-    // КРИТИЧНО: ВСЕГДА добавляем sales_funnel_id (даже если null)
-    // Backend должен уметь обрабатывать отсутствие воронки
-    if (salesFunnelId != null && salesFunnelId.isNotEmpty && salesFunnelId != 'null') {
-      result += '${separator}sales_funnel_id=$salesFunnelId';
-    } else {
-      // НОВОЕ: Явно передаём пустое значение или 0
-      debugPrint('⚠️ _appendQueryParams: sales_funnel_id is missing, using default');
-      // Опционально: result += '${separator}sales_funnel_id=0';
+    // ✅ Добавляем sales_funnel_id ТОЛЬКО если его нет
+    if (salesFunnelId != null && 
+        salesFunnelId.isNotEmpty && 
+        salesFunnelId != 'null' &&
+        !existingParams.containsKey('sales_funnel_id')) {
+      existingParams['sales_funnel_id'] = salesFunnelId;
     }
 
+    // Собираем новый URI
+    final newUri = uri.replace(queryParameters: existingParams);
+    final result = newUri.toString();
+    
     debugPrint('✅ _appendQueryParams: $path → $result');
     return result;
+    
   } catch (e) {
     debugPrint('❌ _appendQueryParams error: $e');
     return path;
   }
-} 
+}
   //_________________________________ END_____API_SCREEN__PROFILE____________________________________________//
 
   //_________________________________ START_____API_SCREEN__NOTIFICATIONS____________________________________________//
