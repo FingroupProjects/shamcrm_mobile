@@ -14,6 +14,7 @@ import 'package:crm_task_manager/custom_widget/file_picker_dialog.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
+import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/deal_name_list.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/lead_with_manager.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/manager_for_lead.dart';
@@ -21,11 +22,13 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_details/add_custom_dir
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_create_custom.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/main_field_dropdown_widget.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
@@ -58,7 +61,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
   List<String> selectedFiles = [];
   List<String> fileNames = [];
   List<String> fileSizes = [];
-
+  bool _hasDealUsers = false;
+  List<UserData> _selectedUsers = [];
   @override
   void initState() {
     super.initState();
@@ -67,6 +71,21 @@ class _DealAddScreenState extends State<DealAddScreen> {
     context.read<GetAllLeadBloc>().add(GetAllLeadEv());
     //print('DealAddScreen: Dispatched GetAllManagerEv and GetAllLeadEv');
     _fetchAndAddCustomFields();
+        _loadHasDealUsersSetting(); // ✅ НОВОЕ
+
+  }
+  // ✅ НОВОЕ: Загрузка настройки has_deal_users
+  Future<void> _loadHasDealUsersSetting() async {
+    final prefs = await SharedPreferences.getInstance();
+    final value = prefs.getBool('has_deal_users') ?? false;
+    
+    if (mounted) {
+      setState(() {
+        _hasDealUsers = value;
+      });
+    }
+    
+    print('DealAddScreen: has_deal_users = $value');
   }
 
  Future<void> _pickFile() async {
@@ -517,6 +536,20 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
                             },
                             hasError: isManagerInvalid,
                           ),
+                          // ✅ НОВОЕ: Поле выбора пользователей (только если has_deal_users == 1)
+if (_hasDealUsers) ...[
+  const SizedBox(height: 8),
+  UserMultiSelectWidget(
+    selectedUsers: null,
+    onSelectUsers: (List<UserData> users) {
+      setState(() {
+        _selectedUsers = users;
+      });
+      print('DealAddScreen: Выбрано пользователей: ${users.length}');
+    },
+  ),
+],
+
                           const SizedBox(height: 8),
                           CustomTextFieldDate(
                             controller: startDateController,
@@ -835,6 +868,8 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
     }
 
     final localizations = AppLocalizations.of(context)!;
+      final userIds = _selectedUsers.map((user) => user.id).toList();
+
 
     context.read<DealBloc>().add(CreateDeal(
       name: name,
@@ -849,6 +884,8 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
       customFields: customFieldMap,
       directoryValues: directoryValues,
       filePaths: selectedFiles,
+          userIds: userIds.isNotEmpty ? userIds : null, // ✅ НОВОЕ
+
       localizations: localizations,
     ));
     //print('DealAddScreen: Dispatched CreateDeal event');

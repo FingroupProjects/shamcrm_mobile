@@ -1876,5 +1876,7 @@
   "income_document": "Income",
   "outcome_document": "Outcome",
   "change_status": "Change Status",
-  "save_hint": "After adding items, go to 'Main' to save"
+  "save_hint": "After adding items, go to 'Main' to save",
+    "users_who_can_view_deals": "Users who can view deals with this status",
+  "users_who_can_change_status": "Users who can change deal to this status"
 }

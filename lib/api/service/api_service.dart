@@ -3188,7 +3188,7 @@ Future<List<DealStatus>> getDealStatuses({
   }
 
 // Метод для создания Статуса Сделки
-  Future<Map<String, dynamic>> createDealStatus(
+Future<Map<String, dynamic>> createDealStatus(
   String title,
   String color,
   int? day,
@@ -3196,12 +3196,14 @@ Future<List<DealStatus>> getDealStatuses({
   bool showOnMainPage,
   bool isSuccess,
   bool isFailure,
-  List<int>? userIds, // ✅ НОВОЕ
+  List<int>? userIds,
+  List<int>? changeStatusUserIds, // ✅ НОВОЕ
 ) async {
   final path = await _appendQueryParams('/deal/statuses');
   
   if (kDebugMode) {
     print('ApiService: createDealStatus - userIds: $userIds');
+    print('ApiService: createDealStatus - changeStatusUserIds: $changeStatusUserIds'); // ✅ НОВОЕ
   }
   
   final organizationId = await getSelectedOrganization();
@@ -3217,8 +3219,9 @@ Future<List<DealStatus>> getDealStatuses({
     'is_failure': isFailure ? 1 : 0,
     'organization_id': organizationId?.toString() ?? '',
     if (salesFunnelId != null) 'sales_funnel_id': salesFunnelId.toString(),
-    // ✅ ИСПРАВЛЕНО: Простой массив чисел
     if (userIds != null && userIds.isNotEmpty) 'users': userIds,
+    if (changeStatusUserIds != null && changeStatusUserIds.isNotEmpty) 
+      'change_status_users': changeStatusUserIds, // ✅ НОВОЕ
   };
   
   if (kDebugMode) {
@@ -3404,112 +3407,119 @@ Future<List<DealStatus>> getDealStatuses({
   }
 
 // Метод для создания Сделки
-  Future<Map<String, dynamic>> createDeal({
-    required String name,
-    required int dealStatusId,
-    required int? managerId,
-    required DateTime? startDate,
-    required DateTime? endDate,
-    required String sum,
-    String? description,
-    int? dealtypeId,
-    int? leadId,
-    List<Map<String, dynamic>>? customFields,
-    List<Map<String, int>>? directoryValues,
-    List<String>? filePaths,
-  }) async {
-    try {
-      // Формируем путь с query-параметрами
-      final updatedPath = await _appendQueryParams('/deal');
-      if (kDebugMode) {
-        //print('ApiService: createDeal - Generated path: $updatedPath');
-      }
-      var request =
-          http.MultipartRequest('POST', Uri.parse('$baseUrl$updatedPath'));
+ Future<Map<String, dynamic>> createDeal({
+  required String name,
+  required int dealStatusId,
+  required int? managerId,
+  required DateTime? startDate,
+  required DateTime? endDate,
+  required String sum,
+  String? description,
+  int? dealtypeId,
+  int? leadId,
+  List<Map<String, dynamic>>? customFields,
+  List<Map<String, int>>? directoryValues,
+  List<String>? filePaths,
+  List<int>? userIds, // ✅ НОВОЕ
+}) async {
+  try {
+    final updatedPath = await _appendQueryParams('/deal');
+    if (kDebugMode) {
+      print('ApiService: createDeal - Generated path: $updatedPath');
+      print('ApiService: createDeal - userIds: $userIds'); // ✅ НОВОЕ
+    }
+    
+    var request = http.MultipartRequest('POST', Uri.parse('$baseUrl$updatedPath'));
 
-      request.fields['name'] = name;
-      request.fields['deal_status_id'] = dealStatusId.toString();
-      request.fields['deal_status_ids[0]'] = dealStatusId.toString();
-      request.fields['position'] = '1';
-      if (managerId != null) {
-        request.fields['manager_id'] = managerId.toString();
-      }
-      if (startDate != null) {
-        request.fields['start_date'] =
-            DateFormat('yyyy-MM-dd').format(startDate);
-      }
-      if (endDate != null) {
-        request.fields['end_date'] = DateFormat('yyyy-MM-dd').format(endDate);
-      }
-      request.fields['sum'] = sum;
-      if (description != null) {
-        request.fields['description'] = description;
-      }
-      if (dealtypeId != null) {
-        request.fields['deal_type_id'] = dealtypeId.toString();
-      }
-      if (leadId != null) {
-        request.fields['lead_id'] = leadId.toString();
-      }
+    request.fields['name'] = name;
+    request.fields['deal_status_id'] = dealStatusId.toString();
+    request.fields['deal_status_ids[0]'] = dealStatusId.toString();
+    request.fields['position'] = '1';
+    
+    if (managerId != null) {
+      request.fields['manager_id'] = managerId.toString();
+    }
+    if (startDate != null) {
+      request.fields['start_date'] = DateFormat('yyyy-MM-dd').format(startDate);
+    }
+    if (endDate != null) {
+      request.fields['end_date'] = DateFormat('yyyy-MM-dd').format(endDate);
+    }
+    
+    request.fields['sum'] = sum;
+    
+    if (description != null) {
+      request.fields['description'] = description;
+    }
+    if (dealtypeId != null) {
+      request.fields['deal_type_id'] = dealtypeId.toString();
+    }
+    if (leadId != null) {
+      request.fields['lead_id'] = leadId.toString();
+    }
 
-      if (customFields != null && customFields.isNotEmpty) {
-        for (int i = 0; i < customFields.length; i++) {
-          var field = customFields[i];
-          request.fields['deal_custom_fields[$i][key]'] = field['key'] ?? '';
-          request.fields['deal_custom_fields[$i][value]'] =
-              field['value'] ?? '';
-          request.fields['deal_custom_fields[$i][type]'] =
-              field['type'] ?? 'string';
-        }
+    // ✅ НОВОЕ: Добавляем user_ids
+    if (userIds != null && userIds.isNotEmpty) {
+      for (int i = 0; i < userIds.length; i++) {
+        request.fields['users[$i]'] = userIds[i].toString();
       }
+      print('ApiService: createDeal - Added user_ids: $userIds');
+    }
 
-      if (directoryValues != null && directoryValues.isNotEmpty) {
-        for (int i = 0; i < directoryValues.length; i++) {
-          var directoryValue = directoryValues[i];
-          request.fields['directory_values[$i][entry_id]'] =
-              directoryValue['entry_id'].toString();
-          request.fields['directory_values[$i][directory_id]'] =
-              directoryValue['directory_id'].toString();
-        }
+    if (customFields != null && customFields.isNotEmpty) {
+      for (int i = 0; i < customFields.length; i++) {
+        var field = customFields[i];
+        request.fields['deal_custom_fields[$i][key]'] = field['key'] ?? '';
+        request.fields['deal_custom_fields[$i][value]'] = field['value'] ?? '';
+        request.fields['deal_custom_fields[$i][type]'] = field['type'] ?? 'string';
       }
+    }
 
-      if (filePaths != null && filePaths.isNotEmpty) {
-        for (var filePath in filePaths) {
-          final file = await http.MultipartFile.fromPath('files[]', filePath);
-          request.files.add(file);
-        }
+    if (directoryValues != null && directoryValues.isNotEmpty) {
+      for (int i = 0; i < directoryValues.length; i++) {
+        var directoryValue = directoryValues[i];
+        request.fields['directory_values[$i][entry_id]'] = directoryValue['entry_id'].toString();
+        request.fields['directory_values[$i][directory_id]'] = directoryValue['directory_id'].toString();
       }
+    }
 
-      final response = await _multipartPostRequest('/deal', request);
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return {
-          'success': true,
-          'message': 'deal_created_successfully',
-        };
-      } else if (response.statusCode == 422) {
-        if (response.body.contains('name')) {
-          return {'success': false, 'message': 'invalid_name_length'};
-        }
-        if (response.body.contains('directory_values')) {
-          return {'success': false, 'message': 'error_directory_values'};
-        }
-        if (response.body.contains('type')) {
-          return {'success': false, 'message': 'invalid_field_type'};
-        }
-        if (response.body.contains('deal_custom_fields')) {
-          return {'success': false, 'message': 'invalid_deal_custom_fields'};
-        }
-        return {'success': false, 'message': 'unknown_error'};
-      } else if (response.statusCode == 500) {
-        return {'success': false, 'message': 'error_server_text'};
-      } else {
-        return {'success': false, 'message': 'error_deal_create_successfully'};
+    if (filePaths != null && filePaths.isNotEmpty) {
+      for (var filePath in filePaths) {
+        final file = await http.MultipartFile.fromPath('files[]', filePath);
+        request.files.add(file);
       }
-    } catch (e) {
+    }
+
+    final response = await _multipartPostRequest('/deal', request);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {
+        'success': true,
+        'message': 'deal_created_successfully',
+      };
+    } else if (response.statusCode == 422) {
+      if (response.body.contains('name')) {
+        return {'success': false, 'message': 'invalid_name_length'};
+      }
+      if (response.body.contains('directory_values')) {
+        return {'success': false, 'message': 'error_directory_values'};
+      }
+      if (response.body.contains('type')) {
+        return {'success': false, 'message': 'invalid_field_type'};
+      }
+      if (response.body.contains('deal_custom_fields')) {
+        return {'success': false, 'message': 'invalid_deal_custom_fields'};
+      }
+      return {'success': false, 'message': 'unknown_error'};
+    } else if (response.statusCode == 500) {
+      return {'success': false, 'message': 'error_server_text'};
+    } else {
       return {'success': false, 'message': 'error_deal_create_successfully'};
     }
+  } catch (e) {
+    return {'success': false, 'message': 'error_deal_create_successfully'};
   }
+}
 
   Future<Map<String, dynamic>> updateDeal({
     required int dealId,
@@ -3676,7 +3686,7 @@ Future<List<DealStatus>> getDealStatuses({
   }
 
 // Метод для изменения статуса Сделки в ApiService
- Future<Map<String, dynamic>> updateDealStatusEdit(
+Future<Map<String, dynamic>> updateDealStatusEdit(
   int dealStatusId,
   String title,
   int day,
@@ -3684,12 +3694,14 @@ Future<List<DealStatus>> getDealStatuses({
   bool isFailure,
   String notificationMessage,
   bool showOnMainPage,
-  List<int>? userIds, // ✅ НОВОЕ
+  List<int>? userIds, // пользователи, которые могут ВИДЕТЬ сделки
+  List<int>? changeStatusUserIds, // ✅ НОВОЕ: пользователи, которые могут ИЗМЕНЯТЬ статус
 ) async {
   final path = await _appendQueryParams('/deal/statuses/$dealStatusId');
   
   if (kDebugMode) {
     print('ApiService: updateDealStatusEdit - userIds: $userIds');
+    print('ApiService: updateDealStatusEdit - changeStatusUserIds: $changeStatusUserIds'); // ✅ НОВОЕ
   }
   
   final organizationId = await getSelectedOrganization();
@@ -3705,8 +3717,10 @@ Future<List<DealStatus>> getDealStatuses({
     "show_on_main_page": showOnMainPage ? 1 : 0,
     "organization_id": organizationId?.toString() ?? '',
     if (salesFunnelId != null) "sales_funnel_id": salesFunnelId.toString(),
-    // ✅ НОВОЕ: Добавляем массив пользователей
+    // ✅ Добавляем оба массива пользователей
     if (userIds != null && userIds.isNotEmpty) "users": userIds,
+    if (changeStatusUserIds != null && changeStatusUserIds.isNotEmpty) 
+      "change_status_users": changeStatusUserIds, // ✅ НОВОЕ
   };
   
   if (kDebugMode) {

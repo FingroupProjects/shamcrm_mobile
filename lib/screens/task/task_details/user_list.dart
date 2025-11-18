@@ -8,11 +8,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class UserMultiSelectWidget extends StatefulWidget {
   final List<String>? selectedUsers;
   final Function(List<UserData>) onSelectUsers;
+  final String? customLabelText; // ✅ НОВОЕ: для кастомного заголовка
 
   UserMultiSelectWidget({
     super.key,
     required this.onSelectUsers,
     this.selectedUsers,
+    this.customLabelText, // ✅ НОВОЕ
   });
 
   @override
@@ -71,13 +73,14 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              AppLocalizations.of(context)!.translate('assignees_list'),
-              style: userTextStyle.copyWith(
-                fontWeight: FontWeight.w400,
-                fontSize: 14,
-              ),
-            ),
+           Text(
+  widget.customLabelText ?? // ✅ НОВОЕ: используем кастомный текст если есть
+      AppLocalizations.of(context)!.translate('assignees_list'), // дефолтный текст
+  style: userTextStyle.copyWith(
+    fontWeight: FontWeight.w400,
+    fontSize: 16,
+  ),
+),
             const SizedBox(height: 8),
             Container(
               decoration: BoxDecoration(
