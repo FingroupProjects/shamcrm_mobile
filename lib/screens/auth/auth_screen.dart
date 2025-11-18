@@ -129,7 +129,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   SizedBox(height: screenHeight * 0.15),
-                  Image.asset('assets/icons/shamCRM.jpg', height: 80),
+                  Image.asset('assets/images/new_icon_shamCRM.jpg', height: 80),
                   const SizedBox(height: 30),
                   Visibility(
                     visible: !_showManualInput,

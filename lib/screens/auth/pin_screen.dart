@@ -39,6 +39,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
   final LocalAuthentication _auth = LocalAuthentication();
   bool _canCheckBiometrics = false;
   List<BiometricType> _availableBiometrics = [];
+  bool _isBiometricEnabled = false;
   String _userName = '';
   String _userNameProfile = '';
   String _userImage = '';
@@ -106,7 +107,10 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
       // ШАГ 5: Проверка PIN
       await _checkSavedPin();
       
-      // ШАГ 6: Биометрия
+      // ШАГ 6: Загрузка настройки биометрии
+      await _loadBiometricSetting();
+      
+      // ШАГ 7: Биометрия (только если включена)
       await _initBiometrics();
 
       // ✅ Только ЗДЕСЬ убираем загрузку
@@ -238,8 +242,26 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
     }
   }
 
+  Future<void> _loadBiometricSetting() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (mounted) {
+        setState(() {
+          _isBiometricEnabled = prefs.getBool('biometric_auth_enabled') ?? false;
+        });
+      }
+    } catch (e) {
+      //print('PinScreen: Ошибка загрузки настройки биометрии: $e');
+    }
+  }
+
   Future<void> _initBiometrics() async {
     try {
+      // Check if biometric auth is enabled in settings
+      if (!_isBiometricEnabled) {
+        return; // Biometric auth is disabled, don't show/trigger it
+      }
+
       final localizations = AppLocalizations.of(context);
       if (localizations == null) return;
 
@@ -679,7 +701,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
                         style: TextStyle(fontSize: 24, color: Colors.black),
                       ),
                     ),
-                    if (!_isIosVersionAbove15)
+                    if (!_isIosVersionAbove15 && _isBiometricEnabled)
                       TextButton(
                         onPressed: _pin.isEmpty ? _authenticate : _onDelete,
                         child: Icon(
@@ -687,6 +709,14 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
                               ? Icons.fingerprint
                               : Icons.backspace_outlined,
                           color: const Color.fromARGB(255, 33, 41, 188),
+                        ),
+                      )
+                    else if (!_isIosVersionAbove15 && !_isBiometricEnabled && _pin.isNotEmpty)
+                      TextButton(
+                        onPressed: _onDelete,
+                        child: const Icon(
+                          Icons.backspace_outlined,
+                          color: Color.fromARGB(255, 33, 41, 188),
                         ),
                       ),
                   ],

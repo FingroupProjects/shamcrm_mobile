@@ -38,6 +38,7 @@ import 'package:crm_task_manager/screens/deal/deal_cache.dart';
 import 'package:crm_task_manager/screens/lead/lead_cache.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/biometric.dart';
+import 'package:crm_task_manager/screens/profile/profile_widget/biometric_toggle.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/edit_profile_button.dart';
 import 'package:crm_task_manager/screens/profile/languages/languages.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/phone_call_widget.dart';
@@ -56,6 +57,7 @@ import 'package:crm_task_manager/screens/profile/profile_widget/profile_logout.d
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'dart:io' show Platform; // Добавляем импорт для проверки платформы
 
 class ProfileScreen extends StatefulWidget {
@@ -73,6 +75,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Map<String, dynamic>? tutorialProgress;
   bool _hasSettingsIndexPermission = false;
   bool _isPermissionsChecked = false;
+  String _appVersion = '2.0.0'; // Default fallback version
 
   // ЗАКОММЕНТИРОВАНЫ ВСЕ КЛЮЧИ ДЛЯ ОТКЛЮЧЕНИЯ ТУТОРИАЛА
   // final GlobalKey keyOrganizationWidget = GlobalKey();
@@ -94,6 +97,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadSelectedOrganization();
     _checkPermission();
     _loadOrganizations();
+    _loadAppVersion();
 
     // ЗАКОММЕНТИРОВАН ВЫЗОВ ТУТОРИАЛА
     // WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -136,6 +140,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
     } else {
       context.read<OrganizationBloc>().add(FetchOrganizations());
+    }
+  }
+
+  Future<void> _loadAppVersion() async {
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      if (mounted) {
+        setState(() {
+          _appVersion = packageInfo.version;
+        });
+      }
+    } catch (e) {
+      // Keep default version if error occurs
     }
   }
 
@@ -407,6 +424,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               LogoutButtonWidget(),
                               if (_hasPermissionToAddLeadAndSwitch)
                                 ToggleFeatureButton(),
+                              BiometricToggleWidget(),  
                               if (_hasPermissionForOneC)
                                 UpdateWidget1C(organization: selectedOrg),
                             ],
@@ -472,7 +490,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: GestureDetector(
                   onTap: _openAppStoreLink,
                   child: Text(
-                    '${AppLocalizations.of(context)!.translate('version_mobile')}: 2.0.0',
+                    '${AppLocalizations.of(context)!.translate('version_mobile')}: $_appVersion',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontFamily: 'Gilroy',
