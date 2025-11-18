@@ -16183,31 +16183,31 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
 // В секции API__SCREEN__LEAD
 
 // Метод для получения конфигурации полей (уже есть)
-Future<FieldConfigurationResponse> getFieldPositions({
-  required String tableName,
-}) async {
-  try {
-    final path = await _appendQueryParams('/field-position?table=$tableName');
-    
-    if (kDebugMode) {
-      print('ApiService: getFieldPositions - Generated path: $path');
-    }
-
-    final response = await _getRequest(path);
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      return FieldConfigurationResponse.fromJson(data);
-    } else {
-      throw Exception('Ошибка загрузки конфигурации полей: ${response.statusCode}');
-    }
-  } catch (e) {
-    if (kDebugMode) {
-      print('ApiService: getFieldPositions - Error: $e');
-    }
-    throw Exception('Ошибка загрузки конфигурации полей!');
-  }
-}
+// Future<FieldConfigurationResponse> getFieldPositions({
+//   required String tableName,
+// }) async {
+//   try {
+//     final path = await _appendQueryParams('/field-position?table=$tableName');
+//
+//     if (kDebugMode) {
+//       print('ApiService: getFieldPositions - Generated path: $path');
+//     }
+//
+//     final response = await _getRequest(path);
+//
+//     if (response.statusCode == 200) {
+//       final data = json.decode(response.body);
+//       return FieldConfigurationResponse.fromJson(data);
+//     } else {
+//       throw Exception('Ошибка загрузки конфигурации полей: ${response.statusCode}');
+//     }
+//   } catch (e) {
+//     if (kDebugMode) {
+//       print('ApiService: getFieldPositions - Error: $e');
+//     }
+//     throw Exception('Ошибка загрузки конфигурации полей!');
+//   }
+// }
 
 // Новый метод для сохранения конфигурации в кэш
 Future<void> cacheFieldConfiguration({
@@ -16277,8 +16277,8 @@ Future<void> loadAndCacheAllFieldConfigurations() async {
     
     for (final tableName in tables) {
       try {
-        final config = await getFieldPositions(tableName: tableName);
-        await cacheFieldConfiguration(tableName: tableName, configuration: config);
+        // final config = await getFieldPositions(tableName: tableName);
+        // await cacheFieldConfiguration(tableName: tableName, configuration: config);
         
         if (kDebugMode) {
           print('ApiService: Successfully cached configuration for $tableName');
