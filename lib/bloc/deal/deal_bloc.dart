@@ -246,67 +246,69 @@ Future<void> _fetchDealStatuses(
     }
   }
 
-  Future<void> _createDealStatus(CreateDealStatus event, Emitter<DealState> emit) async {
-    emit(DealLoading());
+ Future<void> _createDealStatus(CreateDealStatus event, Emitter<DealState> emit) async {
+  emit(DealLoading());
 
-    if (!await _checkInternetConnection()) {
-      emit(DealError(event.localizations.translate('no_internet_connection')));
-      return;
-    }
-
-    try {
-      final result = await apiService.createDealStatus(
-        event.title,
-        event.color,
-        event.day,
-        event.notificationMessage,
-        event.showOnMainPage,
-        event.isSuccess,
-        event.isFailure,
-        event.userIds,
-      );
-
-      if (result['success']) {
-        emit(DealSuccess(result['message']));
-        add(FetchDealStatuses());
-      } else {
-        emit(DealError(result['message']));
-      }
-    } catch (e) {
-      emit(DealError(event.localizations.translate('error_delete_status_deal')));
-    }
+  if (!await _checkInternetConnection()) {
+    emit(DealError(event.localizations.translate('no_internet_connection')));
+    return;
   }
 
-  Future<void> _createDeal(CreateDeal event, Emitter<DealState> emit) async {
-    emit(DealLoading());
-    if (!await _checkInternetConnection()) {
-      emit(DealError(event.localizations.translate('no_internet_connection')));
-      return;
+  try {
+    final result = await apiService.createDealStatus(
+      event.title,
+      event.color,
+      event.day,
+      event.notificationMessage,
+      event.showOnMainPage,
+      event.isSuccess,
+      event.isFailure,
+      event.userIds,
+      event.changeStatusUserIds, // ✅ НОВОЕ
+    );
+
+    if (result['success']) {
+      emit(DealSuccess(result['message']));
+      add(FetchDealStatuses());
+    } else {
+      emit(DealError(result['message']));
     }
-    try {
-      final result = await apiService.createDeal(
-        name: event.name,
-        dealStatusId: event.dealStatusId,
-        managerId: event.managerId,
-        startDate: event.startDate,
-        endDate: event.endDate,
-        sum: event.sum,
-        description: event.description,
-        dealtypeId: event.dealtypeId,
-        leadId: event.leadId,
-        customFields: event.customFields,
-        directoryValues: event.directoryValues,
-        filePaths: event.filePaths,
-      );
-      if (result['success']) {
-        emit(DealSuccess(event.localizations.translate('deal_created_successfully')));
-      } else {
-        emit(DealError(event.localizations.translate(result['message'])));
-      }
-    } catch (e) {
-      emit(DealError(event.localizations.translate('error_deal_create_successfully')));
-    }
+  } catch (e) {
+    emit(DealError(event.localizations.translate('error_delete_status_deal')));
   }
+}
+
+ Future<void> _createDeal(CreateDeal event, Emitter<DealState> emit) async {
+  emit(DealLoading());
+  if (!await _checkInternetConnection()) {
+    emit(DealError(event.localizations.translate('no_internet_connection')));
+    return;
+  }
+  try {
+    final result = await apiService.createDeal(
+      name: event.name,
+      dealStatusId: event.dealStatusId,
+      managerId: event.managerId,
+      startDate: event.startDate,
+      endDate: event.endDate,
+      sum: event.sum,
+      description: event.description,
+      dealtypeId: event.dealtypeId,
+      leadId: event.leadId,
+      customFields: event.customFields,
+      directoryValues: event.directoryValues,
+      filePaths: event.filePaths,
+      userIds: event.userIds, // ✅ НОВОЕ
+    );
+    if (result['success']) {
+      emit(DealSuccess(event.localizations.translate('deal_created_successfully')));
+    } else {
+      emit(DealError(event.localizations.translate(result['message'])));
+    }
+  } catch (e) {
+    emit(DealError(event.localizations.translate('error_deal_create_successfully')));
+  }
+}
 
   Future<void> _updateDeal(UpdateDeal event, Emitter<DealState> emit) async {
     emit(DealLoading());
@@ -394,30 +396,31 @@ Future<void> _fetchDealStatuses(
     }
   }
 
-  Future<void> _updateDealStatusEdit(
-      UpdateDealStatusEdit event, Emitter<DealState> emit) async {
-    emit(DealLoading());
+Future<void> _updateDealStatusEdit(
+    UpdateDealStatusEdit event, Emitter<DealState> emit) async {
+  emit(DealLoading());
 
-    try {
-      final response = await apiService.updateDealStatusEdit(
-        event.dealStatusId,
-        event.title,
-        event.day,
-        event.isSuccess,
-        event.isFailure,
-        event.notificationMessage,
-        event.showOnMainPage,
-        event.userIds,
-      );
+  try {
+    final response = await apiService.updateDealStatusEdit(
+      event.dealStatusId,
+      event.title,
+      event.day,
+      event.isSuccess,
+      event.isFailure,
+      event.notificationMessage,
+      event.showOnMainPage,
+      event.userIds,
+      event.changeStatusUserIds, // ✅ НОВОЕ
+    );
 
-      if (response['result'] == 'Success') {
-        emit(DealStatusUpdatedEdit(
-            event.localizations.translate('status_updated_successfully')));
-      } else {
-        emit(DealError(event.localizations.translate('error_update_status')));
-      }
-    } catch (e) {
+    if (response['result'] == 'Success') {
+      emit(DealStatusUpdatedEdit(
+          event.localizations.translate('status_updated_successfully')));
+    } else {
       emit(DealError(event.localizations.translate('error_update_status')));
     }
+  } catch (e) {
+    emit(DealError(event.localizations.translate('error_update_status')));
   }
+}
 }

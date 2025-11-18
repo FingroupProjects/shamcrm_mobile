@@ -34,11 +34,19 @@ class _EditDealStatusScreenState extends State<EditDealStatusScreen> {
   bool _dataLoaded = false;
   bool _isExpanded = false;
   bool _isExpandedMessage = false;
-  
+
   // ✅ НОВОЕ
   bool _isMultiSelectEnabled = false;
   List<UserData> _selectedUsers = [];
+  List<UserData> _selectedChangeStatusUsers =
+      []; // ✅ НОВОЕ: пользователи, которые могут ИЗМЕНЯТЬ
+
   List<String>? _initialUserIds; // Для хранения начальных ID пользователей
+  List<String>?
+      _initialChangeStatusUserIds; // ✅ НОВОЕ: для хранения ID (изменение статуса)
+
+  bool _isExpandedViewUsers = false; // ✅ НОВОЕ: expandable для первого поля
+  bool _isExpandedChangeUsers = false; // ✅ НОВОЕ: expandable для второго поля
 
   @override
   void initState() {
@@ -55,13 +63,13 @@ class _EditDealStatusScreenState extends State<EditDealStatusScreen> {
   Future<void> _loadMultiSelectSetting() async {
     final prefs = await SharedPreferences.getInstance();
     final value = prefs.getBool('managing_deal_status_visibility') ?? false;
-    
+
     if (mounted) {
       setState(() {
         _isMultiSelectEnabled = value;
       });
     }
-    
+
     print('EditDealStatusScreen: managing_deal_status_visibility = $value');
   }
 
@@ -81,11 +89,16 @@ class _EditDealStatusScreenState extends State<EditDealStatusScreen> {
   void _saveChanges() {
     final localizations = AppLocalizations.of(context);
     if (localizations != null) {
-      // ✅ НОВОЕ: Получаем список ID пользователей
+      // ✅ НОВОЕ: Получаем оба списка ID пользователей
       final userIds = _selectedUsers.map((user) => user.id).toList();
-      
-      print('EditDealStatusScreen: Сохранение с пользователями: $userIds');
-      
+      final changeStatusUserIds =
+          _selectedChangeStatusUsers.map((user) => user.id).toList();
+
+      print(
+          'EditDealStatusScreen: Сохранение пользователей (просмотр): $userIds');
+      print(
+          'EditDealStatusScreen: Сохранение пользователей (изменение): $changeStatusUserIds');
+
       _dealBloc.add(
         UpdateDealStatusEdit(
           widget.dealStatusId,
@@ -98,7 +111,10 @@ class _EditDealStatusScreenState extends State<EditDealStatusScreen> {
           _notificationMessageController.text,
           _showOnMainPage,
           localizations,
-          userIds.isNotEmpty ? userIds : null, // ✅ НОВОЕ
+          userIds.isNotEmpty ? userIds : null,
+          changeStatusUserIds.isNotEmpty
+              ? changeStatusUserIds
+              : null, // ✅ НОВОЕ
         ),
       );
     }
@@ -161,83 +177,90 @@ class _EditDealStatusScreenState extends State<EditDealStatusScreen> {
     );
   }
 
-@override
-Widget build(BuildContext context) {
-  return BlocConsumer<DealBloc, DealState>(
-    bloc: _dealBloc,
-    listener: (context, state) {
-      if (state is DealStatusLoaded && !_dataLoaded) {
-        setState(() {
-          _titleController.text = state.dealStatus.title;
-          _daysController.text = state.dealStatus.day?.toString() ?? '';
-          _isSuccess = state.dealStatus.isSuccess;
-          _isFailure = state.dealStatus.isFailure;
-          _notificationMessageController.text = state.dealStatus.notificationMessage ?? '';
-          _showOnMainPage = state.dealStatus.showOnMainPage;
-          
-          // ✅ НОВОЕ: Загружаем ID пользователей из статуса
-          _initialUserIds = state.dealStatus.users?.map((user) => user.userId.toString()).toList();
-          
-          print('EditDealStatusScreen: Загружены пользователи: $_initialUserIds');
-          print('EditDealStatusScreen: Полная информация о пользователях:');
-          state.dealStatus.users?.forEach((user) {
-            print('  - ID: ${user.userId}, Имя: ${user.user!.name} ${user.user!.lastname}');
+  @override
+  Widget build(BuildContext context) {
+    return BlocConsumer<DealBloc, DealState>(
+      bloc: _dealBloc,
+      listener: (context, state) {
+        if (state is DealStatusLoaded && !_dataLoaded) {
+          setState(() {
+            _titleController.text = state.dealStatus.title;
+            _daysController.text = state.dealStatus.day?.toString() ?? '';
+            _isSuccess = state.dealStatus.isSuccess;
+            _isFailure = state.dealStatus.isFailure;
+            _notificationMessageController.text =
+                state.dealStatus.notificationMessage ?? '';
+            _showOnMainPage = state.dealStatus.showOnMainPage;
+
+            // ✅ ОБНОВЛЕНО: Загружаем пользователей для ПРОСМОТРА
+            _initialUserIds = state.dealStatus.users
+                ?.map((user) => user.userId.toString())
+                .toList();
+
+            // ✅ НОВОЕ: Загружаем пользователей для ИЗМЕНЕНИЯ СТАТУСА
+            _initialChangeStatusUserIds = state.dealStatus.changeStatusUsers
+                ?.map((user) => user.userId.toString())
+                .toList();
+
+            print(
+                'EditDealStatusScreen: Загружены пользователи (просмотр): $_initialUserIds');
+            print(
+                'EditDealStatusScreen: Загружены пользователи (изменение): $_initialChangeStatusUserIds');
+
+            _dataLoaded = true;
           });
-          
-          _dataLoaded = true;
-        });
-      } else if (state is DealStatusUpdatedEdit) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              "Статус успешно обновлен!",
-              style: TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.white,
+        } else if (state is DealStatusUpdatedEdit) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                "Статус успешно обновлен!",
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
               ),
-            ),
-            behavior: SnackBarBehavior.floating,
-            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            backgroundColor: Colors.green,
-            elevation: 3,
-            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            duration: Duration(seconds: 3),
-          ),
-        );
-        final dealBloc = BlocProvider.of<DealBloc>(context, listen: false);
-        dealBloc.add(FetchDealStatuses());
-        dealBloc.add(FetchDeals(widget.dealStatusId));
-        Navigator.of(context).pop();
-      } else if (state is DealError) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              "Ошибка обновления статуса!",
-              style: TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.white,
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
+              backgroundColor: Colors.green,
+              elevation: 3,
+              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: Duration(seconds: 3),
             ),
-            behavior: SnackBarBehavior.floating,
-            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+          );
+          final dealBloc = BlocProvider.of<DealBloc>(context, listen: false);
+          dealBloc.add(FetchDealStatuses());
+          dealBloc.add(FetchDeals(widget.dealStatusId));
+          Navigator.of(context).pop();
+        } else if (state is DealError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                "Ошибка обновления статуса!",
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              backgroundColor: Colors.red,
+              elevation: 3,
+              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: Duration(seconds: 3),
             ),
-            backgroundColor: Colors.red,
-            elevation: 3,
-            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            duration: Duration(seconds: 3),
-          ),
-        );
-      }
-    },
+          );
+        }
+      },
       builder: (context, state) {
         return Dialog(
           shape: RoundedRectangleBorder(
@@ -271,7 +294,8 @@ Widget build(BuildContext context) {
                         ),
                       ),
                       IconButton(
-                        icon: Icon(Icons.close, size: 24, color: Colors.grey[600]),
+                        icon: Icon(Icons.close,
+                            size: 24, color: Colors.grey[600]),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                         onPressed: () => Navigator.of(context).pop(),
@@ -282,7 +306,9 @@ Widget build(BuildContext context) {
                   // Основной контент
                   Expanded(
                     child: state is DealLoading
-                        ? const Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)))
+                        ? const Center(
+                            child: CircularProgressIndicator(
+                                color: Color(0xff1E2E52)))
                         : SingleChildScrollView(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -293,21 +319,92 @@ Widget build(BuildContext context) {
                                   isRequired: true,
                                 ),
                                 const SizedBox(height: 20),
-                                
-                                // ✅ НОВОЕ: Поле выбора пользователей
+
+                                // ✅ ОБНОВЛЕНО: Два поля для выбора пользователей
                                 if (_isMultiSelectEnabled) ...[
+                                  // 1️⃣ ПЕРВОЕ ПОЛЕ: Пользователи, которые могут ВИДЕТЬ сделки
+                                  GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        _isExpandedViewUsers =
+                                            !_isExpandedViewUsers;
+                                      });
+                                    },
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          AppLocalizations.of(context)!
+                                              .translate(
+                                                  'users_who_can_view_deals'),
+                                          style: _textStyle(),
+                                          overflow: _isExpandedViewUsers
+                                              ? TextOverflow.visible
+                                              : TextOverflow.ellipsis,
+                                          maxLines:
+                                              _isExpandedViewUsers ? null : 1,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  // const SizedBox(height: 8),
                                   UserMultiSelectWidget(
                                     selectedUsers: _initialUserIds,
+                                    customLabelText:
+                                        '', // ✅ Пустая строка, чтобы скрыть дефолтный заголовок
                                     onSelectUsers: (List<UserData> users) {
                                       setState(() {
                                         _selectedUsers = users;
                                       });
-                                      print('EditDealStatusScreen: Выбрано пользователей: ${users.length}');
+                                      print(
+                                          'EditDealStatusScreen: Выбрано пользователей (просмотр): ${users.length}');
+                                    },
+                                  ),
+                                  const SizedBox(height: 20),
+
+                                  // 2️⃣ ВТОРОЕ ПОЛЕ: Пользователи, которые могут ИЗМЕНЯТЬ статус
+                                  GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        _isExpandedChangeUsers =
+                                            !_isExpandedChangeUsers;
+                                      });
+                                    },
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          AppLocalizations.of(context)!
+                                              .translate(
+                                                  'users_who_can_change_status'),
+                                          style: _textStyle(),
+                                          overflow: _isExpandedChangeUsers
+                                              ? TextOverflow.visible
+                                              : TextOverflow.ellipsis,
+                                          maxLines:
+                                              _isExpandedChangeUsers ? null : 1,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  // const SizedBox(height: 8),
+                                  UserMultiSelectWidget(
+                                    selectedUsers:
+                                        _initialChangeStatusUserIds, // ✅ НОВОЕ: начальные данные
+                                    customLabelText: '', // ✅ Пустая строка
+                                    onSelectUsers: (List<UserData> users) {
+                                      setState(() {
+                                        _selectedChangeStatusUsers = users;
+                                      });
+                                      print(
+                                          'EditDealStatusScreen: Выбрано пользователей (изменение): ${users.length}');
                                     },
                                   ),
                                   const SizedBox(height: 20),
                                 ],
-                                
+
                                 GestureDetector(
                                   onTap: () {
                                     setState(() {
@@ -315,27 +412,32 @@ Widget build(BuildContext context) {
                                     });
                                   },
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         'Укажите сколько дней может находиться сделка в этом статусе',
                                         style: _textStyle(),
-                                        overflow: _isExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
+                                        overflow: _isExpanded
+                                            ? TextOverflow.visible
+                                            : TextOverflow.ellipsis,
                                         maxLines: _isExpanded ? null : 1,
                                       ),
                                     ],
                                   ),
                                 ),
-                                const SizedBox(height: 0),
+                                // const SizedBox(height: 0),
                                 _buildTextFieldWithLabel(
                                   label: '',
                                   controller: _daysController,
                                   isRequired: false,
                                   keyboardType: TextInputType.number,
-                                  formatters: [FilteringTextInputFormatter.digitsOnly],
+                                  formatters: [
+                                    FilteringTextInputFormatter.digitsOnly
+                                  ],
                                   hintText: 'Введите количество дней',
                                 ),
-                                
+
                                 const SizedBox(height: 16),
                                 GestureDetector(
                                   onTap: () {
@@ -344,18 +446,21 @@ Widget build(BuildContext context) {
                                     });
                                   },
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         'Введите текст который получит клиент при переходе его заказа в этот статус',
                                         style: _textStyle(),
-                                        overflow: _isExpandedMessage ? TextOverflow.visible : TextOverflow.ellipsis,
+                                        overflow: _isExpandedMessage
+                                            ? TextOverflow.visible
+                                            : TextOverflow.ellipsis,
                                         maxLines: _isExpandedMessage ? null : 1,
                                       ),
                                     ],
                                   ),
                                 ),
-                                const SizedBox(height: 0),
+                                // const SizedBox(height: 0),
                                 _buildTextFieldWithLabel(
                                   label: '',
                                   controller: _notificationMessageController,
@@ -364,19 +469,25 @@ Widget build(BuildContext context) {
                                 ),
                                 const SizedBox(height: 12),
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceEvenly,
                                   children: [
                                     ElevatedButton(
                                       onPressed: () {
-                                        if (_notificationMessageController.text.isNotEmpty) {
+                                        if (_notificationMessageController
+                                            .text.isNotEmpty) {
                                           setState(() {
-                                            _notificationMessageController.text += ' %deal_number%';
+                                            _notificationMessageController
+                                                .text += ' %deal_number%';
                                           });
                                         }
                                       },
                                       style: ElevatedButton.styleFrom(
-                                        backgroundColor: const Color(0xff1E2E52),
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                        backgroundColor:
+                                            const Color(0xff1E2E52),
+                                        shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(8)),
                                       ),
                                       child: const Text(
                                         'Номер сделки',
@@ -385,15 +496,20 @@ Widget build(BuildContext context) {
                                     ),
                                     ElevatedButton(
                                       onPressed: () {
-                                        if (_notificationMessageController.text.isNotEmpty) {
+                                        if (_notificationMessageController
+                                            .text.isNotEmpty) {
                                           setState(() {
-                                            _notificationMessageController.text += ' %sum%';
+                                            _notificationMessageController
+                                                .text += ' %sum%';
                                           });
                                         }
                                       },
                                       style: ElevatedButton.styleFrom(
-                                        backgroundColor: const Color(0xff1E2E52),
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                        backgroundColor:
+                                            const Color(0xff1E2E52),
+                                        shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(8)),
                                       ),
                                       child: const Text(
                                         'Сумма',
@@ -414,7 +530,8 @@ Widget build(BuildContext context) {
                                           if (v != null) {
                                             setState(() {
                                               _isSuccess = v;
-                                              if (_isSuccess) _isFailure = false;
+                                              if (_isSuccess)
+                                                _isFailure = false;
                                             });
                                           }
                                         },
@@ -429,7 +546,8 @@ Widget build(BuildContext context) {
                                           if (v != null) {
                                             setState(() {
                                               _isFailure = v;
-                                              if (_isFailure) _isSuccess = false;
+                                              if (_isFailure)
+                                                _isSuccess = false;
                                             });
                                           }
                                         },

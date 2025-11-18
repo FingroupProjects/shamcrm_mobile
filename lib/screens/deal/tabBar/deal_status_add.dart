@@ -31,6 +31,9 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
   bool _isFailure = false;
   bool _isMultiSelectEnabled = false; // ✅ НОВОЕ: флаг мультивыбора
   List<UserData> _selectedUsers = []; // ✅ НОВОЕ: выбранные пользователи
+    List<UserData> _selectedChangeStatusUsers = []; // ✅ НОВОЕ: пользователи, которые могут ИЗМЕНЯТЬ статус
+ bool _isExpandedViewUsers = false; // ✅ НОВОЕ: для expandable текста первого поля
+  bool _isExpandedChangeUsers = false; // ✅ НОВОЕ: для expandable текста второго поля
 
   @override
   void initState() {
@@ -226,18 +229,72 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                         const SizedBox(height: 20),
                         
                         // ✅ НОВОЕ: Поле выбора пользователей (только если включен мультивыбор)
-                        if (_isMultiSelectEnabled) ...[
-                          UserMultiSelectWidget(
-                            selectedUsers: null,
-                            onSelectUsers: (List<UserData> users) {
-                              setState(() {
-                                _selectedUsers = users;
-                              });
-                              print('CreateStatusDialog: Выбрано пользователей: ${users.length}');
-                            },
-                          ),
-                          const SizedBox(height: 20),
-                        ],
+                        // ✅ НОВОЕ: Поле выбора пользователей (только если включен мультивыбор)
+if (_isMultiSelectEnabled) ...[
+  // 1️⃣ ПЕРВОЕ ПОЛЕ: Пользователи, которые могут ВИДЕТЬ сделки
+  GestureDetector(
+    onTap: () {
+      setState(() {
+        _isExpandedViewUsers = !_isExpandedViewUsers;
+      });
+    },
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          localizations.translate('users_who_can_view_deals'),
+          style: _textStyle(),
+          overflow: _isExpandedViewUsers ? TextOverflow.visible : TextOverflow.ellipsis,
+          maxLines: _isExpandedViewUsers ? null : 1,
+        ),
+      ],
+    ),
+  ),
+  // const SizedBox(height: 8),
+  UserMultiSelectWidget(
+    selectedUsers: null,
+    customLabelText: '', // ✅ Пустая строка, чтобы скрыть дефолтный заголовок
+    onSelectUsers: (List<UserData> users) {
+      setState(() {
+        _selectedUsers = users;
+      });
+      print('CreateStatusDialog: Выбрано пользователей (просмотр): ${users.length}');
+    },
+  ),
+  const SizedBox(height: 20),
+  
+  // 2️⃣ ВТОРОЕ ПОЛЕ: Пользователи, которые могут ИЗМЕНЯТЬ статус
+  GestureDetector(
+    onTap: () {
+      setState(() {
+        _isExpandedChangeUsers = !_isExpandedChangeUsers;
+      });
+    },
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          localizations.translate('users_who_can_change_status'),
+          style: _textStyle(),
+          overflow: _isExpandedChangeUsers ? TextOverflow.visible : TextOverflow.ellipsis,
+          maxLines: _isExpandedChangeUsers ? null : 1,
+        ),
+      ],
+    ),
+  ),
+  // const SizedBox(height: 8),
+  UserMultiSelectWidget(
+    selectedUsers: null,
+    customLabelText: '', // ✅ Пустая строка, чтобы скрыть дефолтный заголовок
+    onSelectUsers: (List<UserData> users) {
+      setState(() {
+        _selectedChangeStatusUsers = users;
+      });
+      print('CreateStatusDialog: Выбрано пользователей (изменение): ${users.length}');
+    },
+  ),
+  const SizedBox(height: 20),
+],
                         
                         GestureDetector(
                           onTap: () {
@@ -257,7 +314,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 0),
+                        // const SizedBox(height: 0),
                         _buildTextFieldWithLabel(
                           label: '',
                           controller: _dayController,
@@ -281,7 +338,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                           ),
                         const SizedBox(height: 20),
                        
-                        const SizedBox(height: 12),
+                        // const SizedBox(height: 12),
                         GestureDetector(
                           onTap: () {
                             setState(() {
@@ -300,7 +357,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 0),
+                        // const SizedBox(height: 0),
                         _buildTextFieldWithLabel(
                           label: '',
                           controller: _notificationMessageController,
@@ -431,8 +488,11 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
 
                               // ✅ НОВОЕ: Получаем список ID пользователей
                               final userIds = _selectedUsers.map((user) => user.id).toList();
+                                  final changeStatusUserIds = _selectedChangeStatusUsers.map((user) => user.id).toList();
+
                               
                               print('CreateStatusDialog: Отправка статуса с пользователями: $userIds');
+    print('CreateStatusDialog: Пользователи (изменение): $changeStatusUserIds');
 
                               context.read<DealBloc>().add(
                                     CreateDealStatus(
@@ -444,6 +504,8 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                                       isSuccess: _isSuccess,
                                       isFailure: _isFailure,
                                       userIds: userIds.isNotEmpty ? userIds : null, // ✅ НОВОЕ
+                                              changeStatusUserIds: changeStatusUserIds.isNotEmpty ? changeStatusUserIds : null, // ✅ НОВОЕ
+
                                       localizations: localizations,
                                     ),
                                   );

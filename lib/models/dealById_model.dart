@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
+import 'package:crm_task_manager/models/user_data_response.dart';
 
 class DealById {
   final int id;
@@ -19,6 +20,8 @@ class DealById {
   final List<DealFiles>? files;
   final int? dealNumber;
   final List<DealStatusById>? dealStatuses; // ✅ НОВОЕ: массив статусов
+    final List<DealUser>? users; // ✅ НОВОЕ: список пользователей сделки
+
 
   DealById({
     required this.id,
@@ -38,9 +41,19 @@ class DealById {
     this.files,
     this.dealNumber,
     this.dealStatuses, // ✅ НОВОЕ
+        this.users, // ✅ НОВОЕ
+
   });
 
   factory DealById.fromJson(Map<String, dynamic> json, int dealStatusId) {
+      // ✅ НОВОЕ: Парсинг users
+    List<DealUser>? usersList;
+    if (json['users'] != null && json['users'] is List) {
+      usersList = (json['users'] as List)
+          .where((item) => item != null)
+          .map((userJson) => DealUser.fromJson(userJson as Map<String, dynamic>))
+          .toList();
+    }
     return DealById(
       id: json['id'] ?? 0,
       name: json['name'] ?? 'Без имени',
@@ -62,10 +75,52 @@ class DealById {
       dealStatuses: (json['deal_statuses'] as List<dynamic>?)
           ?.map((status) => DealStatusById.fromJson(status))
           .toList(),
+            users: usersList, // ✅ НОВОЕ
+
     );
   }
 }
+class DealUser {
+  final int id;
+  final int? dealId;
+  final int? userId;
+  final String? createdAt;
+  final String? updatedAt;
+  final UserData? user; // Полная информация о пользователе
 
+  DealUser({
+    required this.id,
+    this.dealId,
+    this.userId,
+    this.createdAt,
+    this.updatedAt,
+    this.user,
+  });
+
+  factory DealUser.fromJson(Map<String, dynamic> json) {
+    return DealUser(
+      id: json['id'] as int? ?? 0,
+      dealId: json['deal_id'] as int? ?? 0,
+      userId: json['user_id'] as int? ?? 0,
+      createdAt: json['created_at'] as String? ?? '',
+      updatedAt: json['updated_at'] as String? ?? '',
+      user: json['user'] != null
+          ? UserData.fromJson(json['user'] as Map<String, dynamic>)
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'deal_id': dealId,
+      'user_id': userId,
+      'created_at': createdAt,
+      'updated_at': updatedAt,
+      'user': user?.toJson(),
+    };
+  }
+}
 
 
 class DealFiles {
