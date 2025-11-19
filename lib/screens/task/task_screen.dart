@@ -258,7 +258,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     final canDelete = await _apiService.hasPermission('taskStatus.delete');
     final hasPermission = await _apiService.hasPermission('task.create');
     final progress = await _apiService.getTutorialProgress();
-
+    if (!mounted) return;
     setState(() {
       _canReadTaskStatus = canRead;
       _canCreateTaskStatus = canCreate;
