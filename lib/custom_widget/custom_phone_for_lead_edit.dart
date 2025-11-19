@@ -70,6 +70,7 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
           widget.controller.text.substring(selectedCountry!.dialCode.length);
     }
 
+    // ✅ ИСПРАВЛЕНО: отправляем ТОЛЬКО если есть номер
     if (widget.controller.text.isNotEmpty) {
       _validatePhoneNumber(widget.controller.text);
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -147,8 +148,16 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
                 widget.controller.text = phoneNumber;
                 _validatePhoneNumber(phoneNumber);
               });
+              
+              // ✅ ИСПРАВЛЕНО: отправляем код региона ТОЛЬКО если есть цифры
               if (widget.onInputChanged != null) {
-                widget.onInputChanged!(matchedCountry!.dialCode + phoneNumber);
+                String formattedNumber;
+                if (phoneNumber.isEmpty) {
+                  formattedNumber = '';
+                } else {
+                  formattedNumber = matchedCountry!.dialCode + phoneNumber;
+                }
+                widget.onInputChanged!(formattedNumber);
               }
             });
 
@@ -166,8 +175,16 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
           }
           WidgetsBinding.instance.addPostFrameCallback((_) {
             _validatePhoneNumber(phoneNumber);
+            
+            // ✅ ИСПРАВЛЕНО: отправляем код региона ТОЛЬКО если есть цифры
             if (widget.onInputChanged != null) {
-              widget.onInputChanged!(selectedCountry!.dialCode + phoneNumber);
+              String formattedNumber;
+              if (phoneNumber.isEmpty) {
+                formattedNumber = '';
+              } else {
+                formattedNumber = selectedCountry!.dialCode + phoneNumber;
+              }
+              widget.onInputChanged!(formattedNumber);
             }
           });
           return TextEditingValue(
@@ -182,8 +199,16 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
         }
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _validatePhoneNumber(phoneNumber);
+          
+          // ✅ ИСПРАВЛЕНО: отправляем код региона ТОЛЬКО если есть цифры
           if (widget.onInputChanged != null) {
-            widget.onInputChanged!(selectedCountry!.dialCode + phoneNumber);
+            String formattedNumber;
+            if (phoneNumber.isEmpty) {
+              formattedNumber = '';
+            } else {
+              formattedNumber = selectedCountry!.dialCode + phoneNumber;
+            }
+            widget.onInputChanged!(formattedNumber);
           }
         });
         return TextEditingValue(
@@ -323,9 +348,11 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
                     _errorText = null;
                     _hasReachedMaxLength = false;
                   });
+                  
+                  // ✅ ИСПРАВЛЕНО: отправляем пустую строку при смене региона
                   if (newValue != null && widget.onInputChanged != null) {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
-                      widget.onInputChanged!(newValue.dialCode);
+                      widget.onInputChanged!('');
                     });
                   }
                 },
@@ -349,8 +376,18 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
             }
 
             _validatePhoneNumber(phoneNumber);
+            
+            // ✅ ИСПРАВЛЕНО: отправляем код региона ТОЛЬКО если есть цифры
             if (widget.onInputChanged != null) {
-              widget.onInputChanged!(selectedCountry!.dialCode + phoneNumber);
+              String formattedNumber;
+              if (phoneNumber.isEmpty) {
+                formattedNumber = ''; // Пустая строка, если нет номера
+              } else {
+                formattedNumber = selectedCountry!.dialCode + phoneNumber;
+              }
+              
+              print('CustomPhoneNumberInput: phoneNumber = "$phoneNumber", formattedNumber = "$formattedNumber"');
+              widget.onInputChanged!(formattedNumber);
             }
           },
           validator: widget.validator,

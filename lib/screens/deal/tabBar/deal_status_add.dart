@@ -41,10 +41,14 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
     _loadMultiSelectSetting(); // ✅ НОВОЕ: загружаем настройку
   }
 
-  // ✅ НОВОЕ: Загрузка настройки
+  // ✅ ОБНОВЛЁННАЯ ЛОГИКА
   Future<void> _loadMultiSelectSetting() async {
     final prefs = await SharedPreferences.getInstance();
-    final value = prefs.getBool('managing_deal_status_visibility') ?? false;
+    final managingVisibility = prefs.getBool('managing_deal_status_visibility') ?? false;
+    final changeMultiple = prefs.getBool('change_deal_to_multiple_statuses') ?? false;
+    
+    // Если хотя бы один флаг true, включаем мультивыбор
+    final value = managingVisibility || changeMultiple;
     
     if (mounted) {
       setState(() {
@@ -52,8 +56,11 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
       });
     }
     
-    print('CreateStatusDialog: managing_deal_status_visibility = $value');
+    print('CreateStatusDialog: managing_deal_status_visibility = $managingVisibility');
+    print('CreateStatusDialog: change_deal_to_multiple_statuses = $changeMultiple');
+    print('CreateStatusDialog: _isMultiSelectEnabled = $value');
   }
+
 
   Widget _buildTextFieldWithLabel({
     required String label,

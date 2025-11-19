@@ -3522,112 +3522,120 @@ Future<Map<String, dynamic>> createDealStatus(
 }
 
   Future<Map<String, dynamic>> updateDeal({
-    required int dealId,
-    required String name,
-    required int dealStatusId,
-    required int? managerId,
-    required DateTime? startDate,
-    required DateTime? endDate,
-    required String sum,
-    String? description,
-    int? dealtypeId,
-    required int? leadId,
-    List<Map<String, dynamic>>? customFields,
-    List<Map<String, int>>? directoryValues,
-    List<String>? filePaths,
-      List<int>? dealStatusIds, // ✅ НОВОЕ
+  required int dealId,
+  required String name,
+  required int dealStatusId,
+  required int? managerId,
+  required DateTime? startDate,
+  required DateTime? endDate,
+  required String sum,
+  String? description,
+  int? dealtypeId,
+  required int? leadId,
+  List<Map<String, dynamic>>? customFields,
+  List<Map<String, int>>? directoryValues,
+  List<String>? filePaths,
+  List<int>? dealStatusIds,
+  List<DealFiles>? existingFiles,
+  List<int>? userIds, // ✅ НОВОЕ
+}) async {
+  final updatedPath = await _appendQueryParams('/deal/$dealId');
+  if (kDebugMode) {
+    print('ApiService: updateDeal - Generated path: $updatedPath');
+    print('ApiService: updateDeal - userIds: $userIds'); // ✅ НОВОЕ
+  }
+  
+  var request = http.MultipartRequest('POST', Uri.parse('$baseUrl$updatedPath'));
 
-    List<DealFiles>? existingFiles,
-  }) async {
-    // Формируем путь с query-параметрами
-    final updatedPath = await _appendQueryParams('/deal/$dealId');
-    if (kDebugMode) {
-      //print('ApiService: updateDeal - Generated path: $updatedPath');
-    }
-    var request =
-        http.MultipartRequest('POST', Uri.parse('$baseUrl$updatedPath'));
+  request.fields['name'] = name;
+  request.fields['deal_status_id'] = dealStatusId.toString();
+  if (managerId != null) request.fields['manager_id'] = managerId.toString();
+  if (startDate != null)
+    request.fields['start_date'] = DateFormat('yyyy-MM-dd').format(startDate);
+  if (endDate != null)
+    request.fields['end_date'] = DateFormat('yyyy-MM-dd').format(endDate);
+  if (sum.isNotEmpty) request.fields['sum'] = sum;
+  if (description != null) request.fields['description'] = description;
+  if (dealtypeId != null)
+    request.fields['deal_type_id'] = dealtypeId.toString();
+  if (leadId != null) request.fields['lead_id'] = leadId.toString();
 
-    request.fields['name'] = name;
-    request.fields['deal_status_id'] = dealStatusId.toString();
-    if (managerId != null) request.fields['manager_id'] = managerId.toString();
-    if (startDate != null)
-      request.fields['start_date'] = DateFormat('yyyy-MM-dd').format(startDate);
-    if (endDate != null)
-      request.fields['end_date'] = DateFormat('yyyy-MM-dd').format(endDate);
-    if (sum.isNotEmpty) request.fields['sum'] = sum;
-    if (description != null) request.fields['description'] = description;
-    if (dealtypeId != null)
-      request.fields['deal_type_id'] = dealtypeId.toString();
-    if (leadId != null) request.fields['lead_id'] = leadId.toString();
- // ✅ НОВОЕ: Отправляем массив статусов
+  // Отправляем массив статусов
   if (dealStatusIds != null && dealStatusIds.isNotEmpty) {
     for (int i = 0; i < dealStatusIds.length; i++) {
       request.fields['deal_status_ids[$i]'] = dealStatusIds[i].toString();
     }
     print('ApiService: Отправка deal_status_ids: $dealStatusIds');
   }
-  
-    final customFieldsList = customFields ?? [];
-    if (customFieldsList.isNotEmpty) {
-      for (int i = 0; i < customFieldsList.length; i++) {
-        var field = customFieldsList[i];
-        request.fields['deal_custom_fields[$i][key]'] =
-            field['key']!.toString();
-        request.fields['deal_custom_fields[$i][value]'] =
-            field['value']!.toString();
-        request.fields['deal_custom_fields[$i][type]'] =
-            field['type']?.toString() ?? 'string';
-      }
+
+  // ✅ НОВОЕ: Добавляем user_ids
+  if (userIds != null && userIds.isNotEmpty) {
+    for (int i = 0; i < userIds.length; i++) {
+      request.fields['users[$i]'] = userIds[i].toString();
     }
+    print('ApiService: updateDeal - Added user_ids: $userIds');
+  }
 
-    final directoryValuesList = directoryValues ?? [];
-    if (directoryValuesList.isNotEmpty) {
-      for (int i = 0; i < directoryValuesList.length; i++) {
-        var value = directoryValuesList[i];
-        request.fields['directory_values[$i][directory_id]'] =
-            value['directory_id'].toString();
-        request.fields['directory_values[$i][entry_id]'] =
-            value['entry_id'].toString();
-      }
-    }
-
-    if (existingFiles != null && existingFiles.isNotEmpty) {
-      final existingFileIds = existingFiles.map((file) => file.id).toList();
-      request.fields['existing_files'] = jsonEncode(existingFileIds);
-    }
-
-    if (filePaths != null && filePaths.isNotEmpty) {
-      for (var filePath in filePaths) {
-        final file = await http.MultipartFile.fromPath('files[]', filePath);
-        request.files.add(file);
-      }
-    }
-
-    final response = await _multipartPostRequest('/deal/$dealId', request);
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'message': 'deal_updated_successfully'};
-    } else if (response.statusCode == 422) {
-      if (response.body.contains('"name"')) {
-        return {'success': false, 'message': 'invalid_name_length'};
-      }
-      if (response.body.contains('sum')) {
-        return {'success': false, 'message': 'invalid_sum_format'};
-      }
-      if (response.body.contains('type')) {
-        return {'success': false, 'message': 'invalid_field_type'};
-      }
-      if (response.body.contains('deal_custom_fields')) {
-        return {'success': false, 'message': 'invalid_custom_fields'};
-      }
-      return {'success': false, 'message': 'unknown_error'};
-    } else if (response.statusCode == 500) {
-      return {'success': false, 'message': 'error_server_text'};
-    } else {
-      return {'success': false, 'message': 'error_deal_update'};
+  final customFieldsList = customFields ?? [];
+  if (customFieldsList.isNotEmpty) {
+    for (int i = 0; i < customFieldsList.length; i++) {
+      var field = customFieldsList[i];
+      request.fields['deal_custom_fields[$i][key]'] =
+          field['key']!.toString();
+      request.fields['deal_custom_fields[$i][value]'] =
+          field['value']!.toString();
+      request.fields['deal_custom_fields[$i][type]'] =
+          field['type']?.toString() ?? 'string';
     }
   }
 
+  final directoryValuesList = directoryValues ?? [];
+  if (directoryValuesList.isNotEmpty) {
+    for (int i = 0; i < directoryValuesList.length; i++) {
+      var value = directoryValuesList[i];
+      request.fields['directory_values[$i][directory_id]'] =
+          value['directory_id'].toString();
+      request.fields['directory_values[$i][entry_id]'] =
+          value['entry_id'].toString();
+    }
+  }
+
+  if (existingFiles != null && existingFiles.isNotEmpty) {
+    final existingFileIds = existingFiles.map((file) => file.id).toList();
+    request.fields['existing_files'] = jsonEncode(existingFileIds);
+  }
+
+  if (filePaths != null && filePaths.isNotEmpty) {
+    for (var filePath in filePaths) {
+      final file = await http.MultipartFile.fromPath('files[]', filePath);
+      request.files.add(file);
+    }
+  }
+
+  final response = await _multipartPostRequest('/deal/$dealId', request);
+
+  if (response.statusCode == 200 || response.statusCode == 201) {
+    return {'success': true, 'message': 'deal_updated_successfully'};
+  } else if (response.statusCode == 422) {
+    if (response.body.contains('"name"')) {
+      return {'success': false, 'message': 'invalid_name_length'};
+    }
+    if (response.body.contains('sum')) {
+      return {'success': false, 'message': 'invalid_sum_format'};
+    }
+    if (response.body.contains('type')) {
+      return {'success': false, 'message': 'invalid_field_type'};
+    }
+    if (response.body.contains('deal_custom_fields')) {
+      return {'success': false, 'message': 'invalid_custom_fields'};
+    }
+    return {'success': false, 'message': 'unknown_error'};
+  } else if (response.statusCode == 500) {
+    return {'success': false, 'message': 'error_server_text'};
+  } else {
+    return {'success': false, 'message': 'error_deal_update'};
+  }
+}
 // Метод для Удаления Статуса Сделки
   Future<Map<String, dynamic>> deleteDealStatuses(int dealStatusId) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
