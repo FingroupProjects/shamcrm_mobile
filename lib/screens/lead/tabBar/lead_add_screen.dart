@@ -109,41 +109,58 @@ Future<void> _pickFile() async {
   }
 }
 
-  void _fetchAndAddCustomFields() async {
-    try {
-      //print('Загрузка кастомных полей и справочников для лида');
-      // Получаем кастомные поля
-      final customFieldsData = await ApiService().getCustomFieldslead();
-      if (customFieldsData['result'] != null) {
-        setState(() {
-          customFields.addAll(customFieldsData['result'].map<CustomField>((value) {
-            return CustomField(
-              fieldName: value,
-              uniqueId: Uuid().v4(),
-              controller: TextEditingController(),
-            );
-          }).toList());
-        });
-      }
-
-      // Получаем связанные справочники для лида
-      final directoryLinkData = await ApiService().getLeadDirectoryLinks();
-      if (directoryLinkData.data != null) {
-        setState(() {
-          customFields.addAll(directoryLinkData.data!.map<CustomField>((link) {
-            return CustomField(
-              fieldName: link.directory.name,
-              isDirectoryField: true,
-              directoryId: link.directory.id,
-              uniqueId: Uuid().v4(), controller: TextEditingController(),
-            );
-          }).toList());
-        });
-      }
-    } catch (e) {
-      //print('Ошибка при получении данных: $e');
+void _fetchAndAddCustomFields() async {
+  try {
+    print('Загрузка кастомных полей и справочников для лида');
+    
+    // Получаем кастомные поля
+    final customFieldsData = await ApiService().getCustomFieldslead();
+    
+    // ✅ ИСПРАВЛЕНО: Правильная обработка структуры данных
+    if (customFieldsData['result'] != null && customFieldsData['result'] is List) {
+      setState(() {
+        customFields.addAll((customFieldsData['result'] as List).map<CustomField>((fieldData) {
+          // fieldData - это объект с ключами 'key' и 'type'
+          String fieldName = fieldData['key'] ?? '';
+          String fieldType = fieldData['type'] ?? 'string';
+          
+          print('Добавлено кастомное поле: $fieldName (тип: $fieldType)');
+          
+          return CustomField(
+            fieldName: fieldName,
+            type: fieldType, // ✅ Сохраняем тип поля
+            uniqueId: Uuid().v4(),
+            controller: TextEditingController(),
+          );
+        }).toList());
+      });
+      
+      print('Всего загружено кастомных полей: ${customFields.length}');
     }
+
+    // Получаем связанные справочники для лида
+    final directoryLinkData = await ApiService().getLeadDirectoryLinks();
+    if (directoryLinkData.data != null) {
+      setState(() {
+        customFields.addAll(directoryLinkData.data!.map<CustomField>((link) {
+          print('Добавлен справочник: ${link.directory.name} (ID: ${link.directory.id})');
+          
+          return CustomField(
+            fieldName: link.directory.name,
+            isDirectoryField: true,
+            directoryId: link.directory.id,
+            uniqueId: Uuid().v4(),
+            controller: TextEditingController(),
+          );
+        }).toList());
+      });
+      
+      print('Всего полей (кастомные + справочники): ${customFields.length}');
+    }
+  } catch (e) {
+    print('❌ Ошибка при получении данных: $e');
   }
+}
 
 void _addCustomField(String fieldName, {bool isDirectory = false, int? directoryId, String? type}) {
   //print('Добавление поля: $fieldName, isDirectory: $isDirectory, directoryId: $directoryId, type: $type');
