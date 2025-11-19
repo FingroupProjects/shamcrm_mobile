@@ -270,8 +270,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
           },
         );
 
-      case 'file':
-        return _buildFileSelection();
+      // case 'file':
+      //   return _buildFileSelection();
 
       default:
         return SizedBox.shrink();
@@ -945,8 +945,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
         return loc.translate('projects');
       case 'deadline':
         return loc.translate('deadline');
-      case 'file':
-        return loc.translate('file');
+      // case 'file':
+      //   return loc.translate('file');
       default:
         return config.fieldName;
     }
@@ -1297,6 +1297,11 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                                 ],
                               );
                             }),
+
+                            // Всегда показываем выбор файлов внизу
+                            const SizedBox(height: 16),
+                            _buildFileSelection(),
+                            const SizedBox(height: 80), // Отступ внизу для кнопок
                           ],
                         ),
                       ),
