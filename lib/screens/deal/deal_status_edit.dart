@@ -60,17 +60,23 @@ class _EditDealStatusScreenState extends State<EditDealStatusScreen> {
   }
 
   // ✅ НОВОЕ: Загрузка настройки
-  Future<void> _loadMultiSelectSetting() async {
+ Future<void> _loadMultiSelectSetting() async {
     final prefs = await SharedPreferences.getInstance();
-    final value = prefs.getBool('managing_deal_status_visibility') ?? false;
-
+    final managingVisibility = prefs.getBool('managing_deal_status_visibility') ?? false;
+    final changeMultiple = prefs.getBool('change_deal_to_multiple_statuses') ?? false;
+    
+    // Если хотя бы один флаг true, включаем мультивыбор
+    final value = managingVisibility || changeMultiple;
+    
     if (mounted) {
       setState(() {
         _isMultiSelectEnabled = value;
       });
     }
-
-    print('EditDealStatusScreen: managing_deal_status_visibility = $value');
+    
+    print('EditDealStatusScreen: managing_deal_status_visibility = $managingVisibility');
+    print('EditDealStatusScreen: change_deal_to_multiple_statuses = $changeMultiple');
+    print('EditDealStatusScreen: _isMultiSelectEnabled = $value');
   }
 
   void _loadDealStatus() {

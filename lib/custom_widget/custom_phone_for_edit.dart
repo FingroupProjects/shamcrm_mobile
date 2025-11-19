@@ -83,9 +83,9 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (widget.controller.text.isNotEmpty) {
           _validatePhoneNumber(widget.controller.text);
-          if (widget.onInputChanged != null) {
-            widget.onInputChanged!(selectedCountry!.dialCode + widget.controller.text);
-          }
+           if (widget.onInputChanged != null) {
+          widget.onInputChanged!(selectedCountry!.dialCode + widget.controller.text);
+        }
         }
       });
     }
@@ -157,10 +157,17 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
                 widget.controller.text = phoneNumber;
                 _validatePhoneNumber(phoneNumber);
               });
-              if (widget.onInputChanged != null) {
-                widget.onInputChanged!(matchedCountry!.dialCode + phoneNumber);
+              // ✅ ИСПРАВЛЕНО: отправляем код региона ТОЛЬКО если есть цифры
+            if (widget.onInputChanged != null) {
+              String formattedNumber;
+              if (phoneNumber.isEmpty) {
+                formattedNumber = '';
+              } else {
+                formattedNumber = matchedCountry!.dialCode + phoneNumber;
               }
-            });
+              widget.onInputChanged!(formattedNumber);
+            }
+          });
 
             return TextEditingValue(
               text: phoneNumber,
@@ -177,9 +184,15 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             _validatePhoneNumber(phoneNumber);
             if (widget.onInputChanged != null) {
-              widget.onInputChanged!(selectedCountry!.dialCode + phoneNumber);
+            String formattedNumber;
+            if (phoneNumber.isEmpty) {
+              formattedNumber = '';
+            } else {
+              formattedNumber = selectedCountry!.dialCode + phoneNumber;
             }
-          });
+            widget.onInputChanged!(formattedNumber);
+          }
+        });
           return TextEditingValue(
             text: phoneNumber,
             selection: TextSelection.collapsed(offset: phoneNumber.length),
@@ -191,11 +204,16 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
           phoneNumber = phoneNumber.substring(0, maxLength);
         }
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          _validatePhoneNumber(phoneNumber);
           if (widget.onInputChanged != null) {
-            widget.onInputChanged!(selectedCountry!.dialCode + phoneNumber);
+          String formattedNumber;
+          if (phoneNumber.isEmpty) {
+            formattedNumber = '';
+          } else {
+            formattedNumber = selectedCountry!.dialCode + phoneNumber;
           }
-        });
+          widget.onInputChanged!(formattedNumber);
+        }
+      });
         return TextEditingValue(
           text: phoneNumber,
           selection: TextSelection.collapsed(offset: phoneNumber.length),
@@ -333,10 +351,10 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
                     _errorText = null;
                     _hasReachedMaxLength = false;
                   });
-                  if (newValue != null && widget.onInputChanged != null) {
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      widget.onInputChanged!(newValue.dialCode);
-                    });
+                   if (newValue != null && widget.onInputChanged != null) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    widget.onInputChanged!('');
+                  });
                   }
                 },
               ),
@@ -360,11 +378,21 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
 
             WidgetsBinding.instance.addPostFrameCallback((_) {
               _validatePhoneNumber(phoneNumber);
-              if (widget.onInputChanged != null) {
-                widget.onInputChanged!(selectedCountry!.dialCode + phoneNumber);
+            
+            // ✅ ИСПРАВЛЕНО: отправляем код региона ТОЛЬКО если есть цифры
+            if (widget.onInputChanged != null) {
+              String formattedNumber;
+              if (phoneNumber.isEmpty) {
+                formattedNumber = ''; // Пустая строка, если нет номера
+              } else {
+                formattedNumber = selectedCountry!.dialCode + phoneNumber;
               }
-            });
-          },
+              
+              print('CustomPhoneNumberInput: phoneNumber = "$phoneNumber", formattedNumber = "$formattedNumber"');
+              widget.onInputChanged!(formattedNumber);
+            }
+          });
+        },
           validator: widget.validator,
         ),
       ],

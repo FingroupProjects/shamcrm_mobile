@@ -313,9 +313,10 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
                           widget.controller.text = '';
                           _errorText = null;
                           _hasReachedMaxLength = false;
-                          if (newValue != null && widget.onInputChanged != null) {
-                            widget.onInputChanged!('');
-                          }
+                                               if (newValue != null && widget.onInputChanged != null) {
+                          widget.onInputChanged!('');
+                        }
+
                         });
                       },
               ),
@@ -340,7 +341,13 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
                   }
 
                   _validatePhoneNumber(phoneNumber);
-                  final formattedNumber = (selectedCountry?.dialCode ?? '') + phoneNumber;
+                   // ✅ ИСПРАВЛЕНО: отправляем код региона ТОЛЬКО если есть цифры
+                String formattedNumber;
+                if (phoneNumber.isEmpty) {
+                  formattedNumber = ''; // Пустая строка, если нет номера
+                } else {
+                  formattedNumber = (selectedCountry?.dialCode ?? '') + phoneNumber;
+                }
 
                   if (widget.onInputChanged != null) {
                     widget.onInputChanged!(formattedNumber);

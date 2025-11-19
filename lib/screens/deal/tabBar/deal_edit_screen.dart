@@ -18,6 +18,7 @@ import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
+import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_status_list_edit.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/add_custom_directory_dialog.dart';
@@ -25,14 +26,17 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_create_cu
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/main_field_dropdown_widget.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/deal_name_list.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
-import 'package:crm_task_manager/models/directory_model.dart' as directory_model;
+import 'package:crm_task_manager/models/directory_model.dart'
+    as directory_model;
 
 class DealEditScreen extends StatefulWidget {
   final int dealId;
@@ -50,6 +54,8 @@ class DealEditScreen extends StatefulWidget {
   final List<DirectoryValue>? directoryValues;
   final List<DealFiles>? files;
   final List<DealStatusById>? dealStatuses; // ✅ НОВОЕ: массив статусов
+    final List<DealUser>? users; // ✅ НОВОЕ: список пользователей
+
 
   DealEditScreen({
     required this.dealId,
@@ -67,6 +73,8 @@ class DealEditScreen extends StatefulWidget {
     this.directoryValues,
     this.files,
     this.dealStatuses, // ✅ ДОБАВЬТЕ ЭТУ СТРОКУ В КОНСТРУКТОР!
+        this.users, // ✅ НОВОЕ
+
   });
 
   @override
@@ -82,7 +90,6 @@ class _DealEditScreenState extends State<DealEditScreen> {
   final TextEditingController sumController = TextEditingController();
   final ApiService _apiService = ApiService();
 
-
   int? _selectedStatuses;
   String? selectedManager;
   String? selectedLead;
@@ -93,8 +100,10 @@ class _DealEditScreenState extends State<DealEditScreen> {
   List<String> fileSizes = [];
   List<DealFiles> existingFiles = [];
   List<String> newFiles = [];
-    List<int> _selectedStatusIds = []; // ✅ НОВОЕ: список выбранных ID
-
+  List<int> _selectedStatusIds = []; // ✅ НОВОЕ: список выбранных ID
+  bool _hasDealUsers = false;
+  List<UserData> _selectedUsers = [];
+  List<String>? _initialUserIds; // Для хранения начальных ID пользователей
 
   @override
   void initState() {
@@ -102,6 +111,8 @@ class _DealEditScreenState extends State<DealEditScreen> {
     _initializeControllers();
     _loadInitialData();
     _fetchAndAddDirectoryFields();
+        _loadHasDealUsersSetting(); // ✅ НОВОЕ
+
     if (widget.files != null) {
       existingFiles = widget.files!;
       setState(() {
@@ -111,6 +122,19 @@ class _DealEditScreenState extends State<DealEditScreen> {
         selectedFiles.addAll(existingFiles.map((file) => file.path));
       });
     }
+  }
+// ✅ НОВОЕ: Загрузка настройки has_deal_users
+  Future<void> _loadHasDealUsersSetting() async {
+    final prefs = await SharedPreferences.getInstance();
+    final value = prefs.getBool('has_deal_users') ?? false;
+    
+    if (mounted) {
+      setState(() {
+        _hasDealUsers = value;
+      });
+    }
+    
+    print('DealEditScreen: has_deal_users = $value');
   }
 
   void _initializeControllers() {
@@ -131,11 +155,21 @@ class _DealEditScreenState extends State<DealEditScreen> {
         type: customField.type ?? 'string', // Инициализация с типом
       ));
     }
-  // ✅ НОВОЕ: Инициализируем список ID
-  if (widget.dealStatuses != null && widget.dealStatuses!.isNotEmpty) {
-    _selectedStatusIds = widget.dealStatuses!.map((s) => s.id).toList();
-  } else {
-    _selectedStatusIds = [widget.statusId];
+    // ✅ НОВОЕ: Инициализируем список ID
+    if (widget.dealStatuses != null && widget.dealStatuses!.isNotEmpty) {
+      _selectedStatusIds = widget.dealStatuses!.map((s) => s.id).toList();
+    } else {
+      _selectedStatusIds = [widget.statusId];
+
+    }
+      // ✅ НОВОЕ: Инициализируем список ID пользователей
+  if (widget.users != null && widget.users!.isNotEmpty) {
+    _initialUserIds = widget.users!
+        .where((u) => u.user != null)
+        .map((u) => u.userId.toString())
+        .toList();
+    
+    print('DealEditScreen: Загружены пользователи: $_initialUserIds');
   }
     if (widget.directoryValues != null && widget.directoryValues!.isNotEmpty) {
       final seen = <String>{};
@@ -165,7 +199,8 @@ class _DealEditScreenState extends State<DealEditScreen> {
         setState(() {
           for (var link in directoryLinkData.data!) {
             bool directoryExists = customFields.any((field) =>
-                field.isDirectoryField && field.directoryId == link.directory.id);
+                field.isDirectoryField &&
+                field.directoryId == link.directory.id);
             if (!directoryExists) {
               customFields.add(CustomField(
                 fieldName: link.directory.name,
@@ -179,8 +214,8 @@ class _DealEditScreenState extends State<DealEditScreen> {
         });
       }
     } catch (e) {
-      _showErrorSnackBar(
-          AppLocalizations.of(context)!.translate('error_fetching_directories'));
+      _showErrorSnackBar(AppLocalizations.of(context)!
+          .translate('error_fetching_directories'));
     }
   }
 
@@ -295,206 +330,224 @@ class _DealEditScreenState extends State<DealEditScreen> {
     );
   }
 
-Future<void> _pickFile() async {
-  // ✅ ИСПРАВЛЕНИЕ: Вычисляем размер только для НОВЫХ файлов
-  double totalSize = 0.0;
-  
-  // Считаем размер только новых файлов (которые есть локально)
-  for (var filePath in newFiles) {
-    try {
-      final file = File(filePath);
-      if (await file.exists()) {
-        totalSize += file.lengthSync() / (1024 * 1024);
+  Future<void> _pickFile() async {
+    // ✅ ИСПРАВЛЕНИЕ: Вычисляем размер только для НОВЫХ файлов
+    double totalSize = 0.0;
+
+    // Считаем размер только новых файлов (которые есть локально)
+    for (var filePath in newFiles) {
+      try {
+        final file = File(filePath);
+        if (await file.exists()) {
+          totalSize += file.lengthSync() / (1024 * 1024);
+        }
+      } catch (e) {
+        print('Error calculating file size: $e');
       }
-    } catch (e) {
-      print('Error calculating file size: $e');
+    }
+
+    // Показываем диалог выбора типа файла
+    final List<PickedFileInfo>? pickedFiles = await FilePickerDialog.show(
+      context: context,
+      allowMultiple: true,
+      maxSizeMB: 50.0,
+      currentTotalSizeMB: totalSize,
+      fileLabel: AppLocalizations.of(context)!.translate('file'),
+      galleryLabel: AppLocalizations.of(context)!.translate('gallery'),
+      cameraLabel: AppLocalizations.of(context)!.translate('camera'),
+      cancelLabel: AppLocalizations.of(context)!.translate('cancel'),
+      fileSizeTooLargeMessage:
+          AppLocalizations.of(context)!.translate('file_size_too_large'),
+      errorPickingFileMessage:
+          AppLocalizations.of(context)!.translate('error_picking_file'),
+    );
+
+    // Если файлы выбраны, добавляем их
+    if (pickedFiles != null && pickedFiles.isNotEmpty) {
+      setState(() {
+        for (var file in pickedFiles) {
+          selectedFiles.add(file.path);
+          fileNames.add(file.name);
+          fileSizes.add(file.sizeKB);
+          newFiles.add(file.path);
+        }
+      });
     }
   }
 
-  // Показываем диалог выбора типа файла
-  final List<PickedFileInfo>? pickedFiles = await FilePickerDialog.show(
-    context: context,
-    allowMultiple: true,
-    maxSizeMB: 50.0,
-    currentTotalSizeMB: totalSize,
-    fileLabel: AppLocalizations.of(context)!.translate('file'),
-    galleryLabel: AppLocalizations.of(context)!.translate('gallery'),
-    cameraLabel: AppLocalizations.of(context)!.translate('camera'),
-    cancelLabel: AppLocalizations.of(context)!.translate('cancel'),
-    fileSizeTooLargeMessage: AppLocalizations.of(context)!.translate('file_size_too_large'),
-    errorPickingFileMessage: AppLocalizations.of(context)!.translate('error_picking_file'),
-  );
-
-  // Если файлы выбраны, добавляем их
-  if (pickedFiles != null && pickedFiles.isNotEmpty) {
-    setState(() {
-      for (var file in pickedFiles) {
-        selectedFiles.add(file.path);
-        fileNames.add(file.name);
-        fileSizes.add(file.sizeKB);
-        newFiles.add(file.path);
-      }
-    });
-  }
-}
-
-Widget _buildFileSelection() {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        AppLocalizations.of(context)!.translate('file'),
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-          fontFamily: 'Gilroy',
-          color: Color(0xff1E2E52),
-        ),
-      ),
-      SizedBox(height: 16),
-      Container(
-        height: 120,
-        child: ListView.builder(
-          scrollDirection: Axis.horizontal,
-          itemCount: fileNames.isEmpty ? 1 : fileNames.length + 1,
-          itemBuilder: (context, index) {
-            // Кнопка добавления файла
-            if (fileNames.isEmpty || index == fileNames.length) {
-              return Padding(
-                padding: EdgeInsets.only(right: 16),
-                child: GestureDetector(
-                  onTap: _pickFile,
-                  child: Container(
-                    width: 100,
-                    child: Column(
-                      children: [
-                        Image.asset('assets/icons/files/add.png', width: 60, height: 60),
-                        SizedBox(height: 8),
-                        Text(
-                          AppLocalizations.of(context)!.translate('add_file'),
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontFamily: 'Gilroy',
-                            color: Color(0xff1E2E52),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            }
-            
-            // Отображение выбранных файлов
-            final fileName = fileNames[index];
-            final filePath = selectedFiles[index];
-            final fileExtension = fileName.split('.').last.toLowerCase();
-            
-       return Padding(
-  padding: EdgeInsets.only(right: 24), // ✅ Увеличили с 16 до 24
-  child: Stack(
-    clipBehavior: Clip.none,
-    children: [
-      Container(
-        width: 100,
-        child: Column(
-          children: [
-            _buildFileIcon(fileName, fileExtension),
-            SizedBox(height: 8),
-            Text(
-              fileName,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12,
-                fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
-              ),
-            ),
-          ],
-        ),
-      ),
-      // Кнопка удаления файла
-      Positioned(
-        right: -2,  // Оставляем как было
-        top: -6,    // Оставляем как было
-        child: GestureDetector(
-          onTap: () {
-            setState(() {
-              final removedPath = selectedFiles[index];
-              
-              bool isExistingFile = existingFiles.any((f) => f.path == removedPath);
-              
-              if (isExistingFile) {
-                existingFiles.removeWhere((f) => f.path == removedPath);
-              } else {
-                newFiles.remove(removedPath);
-              }
-              
-              selectedFiles.removeAt(index);
-              fileNames.removeAt(index);
-              fileSizes.removeAt(index);
-            });
-          },
-          child: Container(
-            padding: EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 4,
-                  offset: Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Icon(Icons.close, size: 16, color: Color(0xff1E2E52)),
+  Widget _buildFileSelection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          AppLocalizations.of(context)!.translate('file'),
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Gilroy',
+            color: Color(0xff1E2E52),
           ),
         ),
-      ),
-    ],
-  ),
-);
-          },
+        SizedBox(height: 16),
+        Container(
+          height: 120,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: fileNames.isEmpty ? 1 : fileNames.length + 1,
+            itemBuilder: (context, index) {
+              // Кнопка добавления файла
+              if (fileNames.isEmpty || index == fileNames.length) {
+                return Padding(
+                  padding: EdgeInsets.only(right: 16),
+                  child: GestureDetector(
+                    onTap: _pickFile,
+                    child: Container(
+                      width: 100,
+                      child: Column(
+                        children: [
+                          Image.asset('assets/icons/files/add.png',
+                              width: 60, height: 60),
+                          SizedBox(height: 8),
+                          Text(
+                            AppLocalizations.of(context)!.translate('add_file'),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontFamily: 'Gilroy',
+                              color: Color(0xff1E2E52),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }
+
+              // Отображение выбранных файлов
+              final fileName = fileNames[index];
+              final filePath = selectedFiles[index];
+              final fileExtension = fileName.split('.').last.toLowerCase();
+
+              return Padding(
+                padding: EdgeInsets.only(right: 24), // ✅ Увеличили с 16 до 24
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      width: 100,
+                      child: Column(
+                        children: [
+                          _buildFileIcon(fileName, fileExtension),
+                          SizedBox(height: 8),
+                          Text(
+                            fileName,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontFamily: 'Gilroy',
+                              color: Color(0xff1E2E52),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Кнопка удаления файла
+                    Positioned(
+                      right: -2, // Оставляем как было
+                      top: -6, // Оставляем как было
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            final removedPath = selectedFiles[index];
+
+                            bool isExistingFile =
+                                existingFiles.any((f) => f.path == removedPath);
+
+                            if (isExistingFile) {
+                              existingFiles
+                                  .removeWhere((f) => f.path == removedPath);
+                            } else {
+                              newFiles.remove(removedPath);
+                            }
+
+                            selectedFiles.removeAt(index);
+                            fileNames.removeAt(index);
+                            fileSizes.removeAt(index);
+                          });
+                        },
+                        child: Container(
+                          padding: EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 4,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Icon(Icons.close,
+                              size: 16, color: Color(0xff1E2E52)),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
         ),
-      ),
-    ],
-  );
-}
-Widget _buildFileIcon(String fileName, String fileExtension) {
-  // Проверяем, является ли файл изображением
-  final imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'heic', 'heif'];
-  
-  if (imageExtensions.contains(fileExtension)) {
-    // Для изображений показываем превью
-    final filePath = selectedFiles[fileNames.indexOf(fileName)];
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: Image.file(
-        File(filePath),
-        width: 60,
-        height: 60,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return Image.asset('assets/icons/files/file.png', width: 60, height: 60);
-        },
-      ),
-    );
-  } else {
-    // Для остальных файлов показываем иконку по типу
-    return Image.asset(
-      'assets/icons/files/$fileExtension.png',
-      width: 60,
-      height: 60,
-      errorBuilder: (context, error, stackTrace) {
-        return Image.asset('assets/icons/files/file.png', width: 60, height: 60);
-      },
+      ],
     );
   }
-}
+
+  Widget _buildFileIcon(String fileName, String fileExtension) {
+    // Проверяем, является ли файл изображением
+    final imageExtensions = [
+      'jpg',
+      'jpeg',
+      'png',
+      'gif',
+      'bmp',
+      'webp',
+      'heic',
+      'heif'
+    ];
+
+    if (imageExtensions.contains(fileExtension)) {
+      // Для изображений показываем превью
+      final filePath = selectedFiles[fileNames.indexOf(fileName)];
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.file(
+          File(filePath),
+          width: 60,
+          height: 60,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return Image.asset('assets/icons/files/file.png',
+                width: 60, height: 60);
+          },
+        ),
+      );
+    } else {
+      // Для остальных файлов показываем иконку по типу
+      return Image.asset(
+        'assets/icons/files/$fileExtension.png',
+        width: 60,
+        height: 60,
+        errorBuilder: (context, error, stackTrace) {
+          return Image.asset('assets/icons/files/file.png',
+              width: 60, height: 60);
+        },
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -588,37 +641,41 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
                               });
                             },
                           ),
-                        const SizedBox(height: 8),
- DealStatusEditWidget(
-  
-    selectedStatus: _selectedStatuses?.toString(),
-    dealStatuses: widget.dealStatuses,
-    onSelectStatus: (DealStatus selectedStatusData) {
-      if (_selectedStatuses != selectedStatusData.id) {
-        setState(() {
-          _selectedStatuses = selectedStatusData.id;
-        });
-      }
-    },
-    onSelectMultipleStatuses: (List<int> selectedIds) {
-      if (_selectedStatusIds.length != selectedIds.length ||
-          !_selectedStatusIds.toSet().containsAll(selectedIds) ||
-          !selectedIds.toSet().containsAll(_selectedStatusIds)) {
-        setState(() {
-          _selectedStatusIds = selectedIds;
-        });
-      }
-    },
-  ),
-  // const SizedBox(height: 8),
-  //                           LeadRadioGroupWidget(
-  //                             selectedLead: selectedLead,
-  //                             onSelectLead: (LeadData selectedRegionData) {
-  //                               setState(() {
-  //                                 selectedLead = selectedRegionData.id.toString();
-  //                               });
-  //                             },
-  //                           ),
+                          const SizedBox(height: 8),
+                          DealStatusEditWidget(
+                            selectedStatus: _selectedStatuses?.toString(),
+                            dealStatuses: widget.dealStatuses,
+                            onSelectStatus: (DealStatus selectedStatusData) {
+                              if (_selectedStatuses != selectedStatusData.id) {
+                                setState(() {
+                                  _selectedStatuses = selectedStatusData.id;
+                                });
+                              }
+                            },
+                            onSelectMultipleStatuses: (List<int> selectedIds) {
+                              if (_selectedStatusIds.length !=
+                                      selectedIds.length ||
+                                  !_selectedStatusIds
+                                      .toSet()
+                                      .containsAll(selectedIds) ||
+                                  !selectedIds
+                                      .toSet()
+                                      .containsAll(_selectedStatusIds)) {
+                                setState(() {
+                                  _selectedStatusIds = selectedIds;
+                                });
+                              }
+                            },
+                          ),
+                          // const SizedBox(height: 8),
+                          //                           LeadRadioGroupWidget(
+                          //                             selectedLead: selectedLead,
+                          //                             onSelectLead: (LeadData selectedRegionData) {
+                          //                               setState(() {
+                          //                                 selectedLead = selectedRegionData.id.toString();
+                          //                               });
+                          //                             },
+                          //                           ),
                           const SizedBox(height: 8),
                           ManagerRadioGroupWidget(
                             selectedManager: selectedManager,
@@ -629,6 +686,18 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
                               });
                             },
                           ),
+                          if (_hasDealUsers) ...[
+  const SizedBox(height: 8),
+  UserMultiSelectWidget(
+    selectedUsers: _initialUserIds,
+    onSelectUsers: (List<UserData> users) {
+      setState(() {
+        _selectedUsers = users;
+      });
+      print('DealEditScreen: Выбрано пользователей: ${users.length}');
+    },
+  ),
+],
                           const SizedBox(height: 8),
                           CustomTextFieldDate(
                             controller: startDateController,
@@ -639,8 +708,8 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
                           const SizedBox(height: 8),
                           CustomTextFieldDate(
                             controller: endDateController,
-                            label:
-                                AppLocalizations.of(context)!.translate('end_date'),
+                            label: AppLocalizations.of(context)!
+                                .translate('end_date'),
                             hasError: isEndDateInvalid,
                             withTime: false,
                           ),
@@ -746,8 +815,8 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
                     children: [
                       Expanded(
                         child: CustomButton(
-                          buttonText: AppLocalizations.of(context)!
-                              .translate('cancel'),
+                          buttonText:
+                              AppLocalizations.of(context)!.translate('cancel'),
                           buttonColor: const Color(0xffF4F7FD),
                           textColor: Colors.black,
                           onPressed: () => Navigator.pop(context, null),
@@ -778,43 +847,50 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
 
                                     if (startDateController.text.isNotEmpty) {
                                       try {
-                                        parsedStartDate = DateFormat('dd/MM/yyyy')
-                                            .parseStrict(
-                                                startDateController.text);
+                                        parsedStartDate =
+                                            DateFormat('dd/MM/yyyy')
+                                                .parseStrict(
+                                                    startDateController.text);
                                       } catch (e) {
-                                        _showErrorSnackBar(
-                                            AppLocalizations.of(context)!
-                                                .translate('error_parsing_date'));
+                                        _showErrorSnackBar(AppLocalizations.of(
+                                                context)!
+                                            .translate('error_parsing_date'));
                                         return;
                                       }
                                     }
                                     if (endDateController.text.isNotEmpty) {
                                       try {
                                         parsedEndDate = DateFormat('dd/MM/yyyy')
-                                            .parseStrict(endDateController.text);
+                                            .parseStrict(
+                                                endDateController.text);
                                       } catch (e) {
-                                        _showErrorSnackBar(
-                                            AppLocalizations.of(context)!
-                                                .translate('error_parsing_date'));
+                                        _showErrorSnackBar(AppLocalizations.of(
+                                                context)!
+                                            .translate('error_parsing_date'));
                                         return;
                                       }
                                     }
 
                                     if (parsedStartDate != null &&
                                         parsedEndDate != null &&
-                                        parsedStartDate.isAfter(parsedEndDate)) {
+                                        parsedStartDate
+                                            .isAfter(parsedEndDate)) {
                                       setState(() {
                                         isEndDateInvalid = true;
                                       });
                                       _showErrorSnackBar(
-                                          AppLocalizations.of(context)!.translate(
-                                              'start_date_after_end_date'));
+                                          AppLocalizations.of(context)!
+                                              .translate(
+                                                  'start_date_after_end_date'));
                                       return;
                                     }
 
                                     List<Map<String, dynamic>> customFieldList =
                                         [];
                                     List<Map<String, int>> directoryValues = [];
+                                            final userIds = _selectedUsers.map((user) => user.id).toList();
+
+    print('DealEditScreen: Сохранение с пользователями: $userIds');
 
                                     for (var field in customFields) {
                                       String fieldName = field.fieldName.trim();
@@ -836,33 +912,38 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
                                       }
 
                                       // Валидация и форматирование для date и datetime
-      if ((fieldType == 'date' || fieldType == 'datetime') &&
-          fieldValue.isNotEmpty) {
-        try {
-          if (fieldType == 'date') {
-            DateFormat('dd/MM/yyyy').parse(fieldValue);
-          } else {
-            DateFormat('dd/MM/yyyy HH:mm').parse(fieldValue);
-          }
-        } catch (e) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                AppLocalizations.of(context)!
-                    .translate('enter_valid_${fieldType}'),
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-              backgroundColor: Colors.red,
-            ),
-          );
-          return;
-        }
-      }
+                                      if ((fieldType == 'date' ||
+                                              fieldType == 'datetime') &&
+                                          fieldValue.isNotEmpty) {
+                                        try {
+                                          if (fieldType == 'date') {
+                                            DateFormat('dd/MM/yyyy')
+                                                .parse(fieldValue);
+                                          } else {
+                                            DateFormat('dd/MM/yyyy HH:mm')
+                                                .parse(fieldValue);
+                                          }
+                                        } catch (e) {
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                AppLocalizations.of(context)!
+                                                    .translate(
+                                                        'enter_valid_${fieldType}'),
+                                                style: TextStyle(
+                                                  fontFamily: 'Gilroy',
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w500,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                              backgroundColor: Colors.red,
+                                            ),
+                                          );
+                                          return;
+                                        }
+                                      }
 
                                       if (field.isDirectoryField &&
                                           field.directoryId != null &&
@@ -909,7 +990,10 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
                                           localizations: localizations,
                                           filePaths: newFiles,
                                           existingFiles: existingFiles,
-                                          dealStatusIds: _selectedStatusIds, // ✅ ПЕРЕДАЁМ МАССИВ
+                                          dealStatusIds:
+                                              _selectedStatusIds, // ✅ ПЕРЕДАЁМ МАССИВ
+                                                    userIds: userIds.isNotEmpty ? userIds : null, // ✅ НОВОЕ
+
                                         ));
                                   } else {
                                     _showErrorSnackBar(

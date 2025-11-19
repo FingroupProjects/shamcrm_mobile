@@ -127,6 +127,8 @@ class UpdateDeal extends DealEvent {
   final List<String>? filePaths;
   final List<DealFiles> existingFiles;
   final List<int>? dealStatusIds; // ✅ НОВОЕ: массив ID статусов
+    final List<int>? userIds; // ✅ НОВОЕ
+
   UpdateDeal({
     required this.dealId,
     required this.name,
@@ -144,6 +146,8 @@ class UpdateDeal extends DealEvent {
     this.filePaths,
     required this.existingFiles,
     this.dealStatusIds, // ✅ НОВОЕ
+        this.userIds, // ✅ НОВОЕ
+
   });
 }
 

@@ -47,21 +47,28 @@ Future<void> showDealStatusBottomSheet(
     return;
   }
 
-  // Read multi-select flag from preferences
+  // ✅ НОВАЯ ЛОГИКА: Проверяем оба флага
   final prefs = await SharedPreferences.getInstance();
-  final bool isMultiSelectEnabled = prefs.getBool('managing_deal_status_visibility') ?? false;
-final String? organizationId = prefs.getString('organization_id') ?? '1';
-final String? salesFunnelId = prefs.getString('sales_funnel_id') ?? '1';
+  final bool managingVisibility = prefs.getBool('managing_deal_status_visibility') ?? false;
+  final bool changeMultiple = prefs.getBool('change_deal_to_multiple_statuses') ?? false;
+  
+  // Если хотя бы один флаг true, включаем мультивыбор
+  final bool isMultiSelectEnabled = managingVisibility || changeMultiple;
+  
+  final String? organizationId = prefs.getString('organization_id') ?? '1';
+  final String? salesFunnelId = prefs.getString('sales_funnel_id') ?? '1';
 
-print('DropdownBottomSheet: organizationId = $organizationId');
-print('DropdownBottomSheet: salesFunnelId = $salesFunnelId');
+  print('DropdownBottomSheet: organizationId = $organizationId');
+  print('DropdownBottomSheet: salesFunnelId = $salesFunnelId');
+  print('DropdownBottomSheet: managing_deal_status_visibility = $managingVisibility');
+  print('DropdownBottomSheet: change_deal_to_multiple_statuses = $changeMultiple');
+  print('DropdownBottomSheet: isMultiSelectEnabled = $isMultiSelectEnabled');
+  print('DropdownBottomSheet: Режим работы = ${isMultiSelectEnabled ? "МУЛЬТИВЫБОР" : "ОДИНОЧНЫЙ"}');
+  
   String selectedValue = defaultValue;
   List<int> selectedStatusIds = [];
   bool isLoading = false;
   bool isInitializing = true;
-
-  print('DropdownBottomSheet: managing_deal_status_visibility = $isMultiSelectEnabled');
-  print('DropdownBottomSheet: Режим работы = ${isMultiSelectEnabled ? "МУЛЬТИВЫБОР" : "ОДИНОЧНЫЙ"}');
 
   // Initialize selected statuses from API
   try {
@@ -167,11 +174,11 @@ print('DropdownBottomSheet: salesFunnelId = $salesFunnelId');
                       });
 
                       apiService.updateDealStatus(
-  deal.id, 
-  deal.statusId,  // from_status_id (текущий статус)
-  selectedStatusIds,
-  isMultiSelect: isMultiSelectEnabled,  // ← добавили флаг
-).then((_) {
+                        deal.id, 
+                        deal.statusId,  // from_status_id (текущий статус)
+                        selectedStatusIds,
+                        isMultiSelect: isMultiSelectEnabled,  // ← передаём флаг
+                      ).then((_) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(

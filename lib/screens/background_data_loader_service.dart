@@ -217,13 +217,22 @@ class BackgroundDataLoaderService {
         _toBool(response['result']['managing_deal_status_visibility'])
       );
 
-      // ✅ НОВОЕ: Сохраняем has_deal_users
       await prefs.setBool(
         'has_deal_users',
         _toBool(response['result']['has_deal_users'])
       );
 
-      print('BackgroundLoader: Settings сохранены, default_dial_code = $defaultDialCode, has_deal_users = ${_toBool(response['result']['has_deal_users'])}');
+      // ✅ НОВОЕ: Сохраняем change_deal_to_multiple_statuses
+      await prefs.setBool(
+        'change_deal_to_multiple_statuses',
+        _toBool(response['result']['change_deal_to_multiple_statuses'])
+      );
+
+      print('BackgroundLoader: Settings сохранены');
+      print('  - default_dial_code = $defaultDialCode');
+      print('  - managing_deal_status_visibility = ${_toBool(response['result']['managing_deal_status_visibility'])}');
+      print('  - change_deal_to_multiple_statuses = ${_toBool(response['result']['change_deal_to_multiple_statuses'])}');
+      print('  - has_deal_users = ${_toBool(response['result']['has_deal_users'])}');
     }
   } catch (e) {
     print('BackgroundLoader: Ошибка загрузки Settings: $e');
@@ -234,7 +243,8 @@ class BackgroundDataLoaderService {
       await prefs.setBool('integration_with_1C', false);
       await prefs.setBool('good_measurement', false);
       await prefs.setBool('managing_deal_status_visibility', false);
-      await prefs.setBool('has_deal_users', false); // ✅ НОВОЕ
+      await prefs.setBool('has_deal_users', false);
+      await prefs.setBool('change_deal_to_multiple_statuses', false); // ✅ НОВОЕ
       await prefs.setString('default_dial_code', '+992');
     } catch (prefsError) {
       print('BackgroundLoader: Ошибка установки значений по умолчанию: $prefsError');
