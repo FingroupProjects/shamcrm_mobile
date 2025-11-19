@@ -1022,7 +1022,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
             ),
           ],
         ),
-        floatingActionButton: _tabTitles.isNotEmpty && _hasPermissionToAddLead
+        floatingActionButton: _tabTitles.isNotEmpty && _hasPermissionToAddLead && !isClickAvatarIcon
             ? FloatingActionButton(
           key: keyFloatingActionButton,
           onPressed: () {
