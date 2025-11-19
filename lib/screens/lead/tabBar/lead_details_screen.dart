@@ -630,7 +630,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         return AppLocalizations.of(context)!.translate('region_details');
       case 'source_id':
         return AppLocalizations.of(context)!.translate('source_details');
-      case 'whatsapp':
+      case 'wa_phone':
         return 'WhatsApp:';
       case 'instagram':
         return 'Instagram:';
