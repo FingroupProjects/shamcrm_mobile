@@ -1248,47 +1248,66 @@ Future<String> getStaticBaseUrl() async {
   }
 
 //_________________________________ END___API__LOGIN____________________________________________//
+Future<ForgotPinResponse> forgotPin(LoginModel loginModel) async {
+  try {
+    final organizationId = await getSelectedOrganization();
+    final url = '/forgotPin${organizationId != null ? '?organization_id=$organizationId' : ''}';
 
-  Future<String> forgotPin(LoginModel loginModel) async {
-    try {
-      // Эндпоинт /forgotPin входит в _excludedEndpoints, поэтому не используем _appendQueryParams
-      final organizationId = await getSelectedOrganization();
+    final response = await _postRequest(
+      url,
+      {
+        'login': loginModel.login,
+        'password': loginModel.password,
+      },
+    );
 
-      // Формирование URL с учетом ID организации
-      final url =
-          '/forgotPin${organizationId != null ? '?organization_id=$organizationId' : ''}';
+    // ✅ Успешный ответ
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> decodedJson = json.decode(response.body);
 
-      // Запрос к API
-      final response = await _postRequest(
-        url,
-        {
-          'login': loginModel.login,
-          'password': loginModel.password,
-        },
-      );
-
-      // Обработка успешного ответа
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> decodedJson = json.decode(response.body);
-
-        if (decodedJson['result'] != null) {
-          return decodedJson['result'].toString();
-        } else {
-          throw Exception('Не удалось получить временный PIN.');
-        }
-      }
-      // Обработка ошибок сервера
-      else if (response.statusCode == 400) {
-        throw Exception('Некорректные данные запроса.');
+      if (decodedJson['result'] != null) {
+        return ForgotPinResponse.fromJson(decodedJson['result']);
       } else {
-        ////print('Ошибка API forgotPin!');
-        throw Exception('Ошибка сервера!');
+        throw Exception('Не удалось получить временный PIN.');
       }
-    } catch (e) {
-      ////print('Ошибка в forgotPin!');
-      throw Exception('Ошибка в запросе!');
+    } 
+    // 🔴 Ошибка валидации (422)
+    else if (response.statusCode == 422) {
+      final Map<String, dynamic> decodedJson = json.decode(response.body);
+      
+      // Приоритет 1: message
+      if (decodedJson['message'] != null && decodedJson['message'].toString().isNotEmpty) {
+        throw Exception(decodedJson['message']);
+      } 
+      // Приоритет 2: errors.login[0]
+      else if (decodedJson['errors'] != null) {
+        if (decodedJson['errors']['login'] != null) {
+          final loginErrors = decodedJson['errors']['login'] as List;
+          if (loginErrors.isNotEmpty) {
+            throw Exception(loginErrors[0]);
+          }
+        }
+        // Общая ошибка из errors
+        throw Exception('Проверьте введённые данные');
+      } 
+      // Fallback
+      else {
+        throw Exception('Неверный логин или пользователь не найден');
+      }
     }
+    // 🔴 Некорректный запрос (400)
+    else if (response.statusCode == 400) {
+      throw Exception('Некорректные данные запроса');
+    } 
+    // 🔴 Другие ошибки
+    else {
+      throw Exception('Ошибка сервера (${response.statusCode})');
+    }
+  } catch (e) {
+    // Пробрасываем исключение для обработки в BLoC
+    rethrow;
   }
+}
 
 //_________________________________ START_____API__SCREEN__LEAD____________________________________________//
 
