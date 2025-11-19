@@ -151,7 +151,6 @@ class DealStatusUser {
     };
   }
 }
-
 class DealStatus {
   final int id;
   final String title;
@@ -164,7 +163,8 @@ class DealStatus {
   final bool isFailure;
   final String? notificationMessage;
   final bool showOnMainPage;
-  final List<DealStatusUser>? users; // ✅ НОВОЕ: список пользователей
+  final List<DealStatusUser>? users; // пользователи, которые могут ВИДЕТЬ сделки
+  final List<DealStatusUser>? changeStatusUsers; // ✅ НОВОЕ: пользователи, которые могут ИЗМЕНЯТЬ статус
 
   DealStatus({
     required this.id,
@@ -178,15 +178,25 @@ class DealStatus {
     required this.isFailure,
     this.notificationMessage,
     required this.showOnMainPage,
-    this.users, // ✅ НОВОЕ
+    this.users,
+    this.changeStatusUsers, // ✅ НОВОЕ
   });
 
   factory DealStatus.fromJson(Map<String, dynamic> json) {
-    // Parse users list
+    // Parse users list (просмотр сделок)
     List<DealStatusUser>? usersList;
     if (json['users'] != null && json['users'] is List) {
       usersList = (json['users'] as List)
-          .where((item) => item != null) // Filter out null items
+          .where((item) => item != null)
+          .map((userJson) => DealStatusUser.fromJson(userJson as Map<String, dynamic>))
+          .toList();
+    }
+
+    // ✅ НОВОЕ: Parse change_status_users list (изменение статуса)
+    List<DealStatusUser>? changeStatusUsersList;
+    if (json['change_status_users'] != null && json['change_status_users'] is List) {
+      changeStatusUsersList = (json['change_status_users'] as List)
+          .where((item) => item != null)
           .map((userJson) => DealStatusUser.fromJson(userJson as Map<String, dynamic>))
           .toList();
     }
@@ -195,15 +205,16 @@ class DealStatus {
       id: json['id'] as int? ?? 0,
       title: json['title'] as String? ?? 'Без имени',
       color: json['color'] as String? ?? '#000',
-      createdAt: json['created_at'] as String?, // Can be null
-      updatedAt: json['updated_at'] as String?, // Can be null
-      day: json['day'] as int?, // Can be null
+      createdAt: json['created_at'] as String?,
+      updatedAt: json['updated_at'] as String?,
+      day: json['day'] as int?,
       dealsCount: json['deals_count'] as int? ?? 0,
       isSuccess: json['is_success'] == 1 || json['is_success'] == true,
       isFailure: json['is_failure'] == 1 || json['is_failure'] == true,
-      notificationMessage: json['notification_message'] as String?, // Can be null
+      notificationMessage: json['notification_message'] as String?,
       showOnMainPage: json['show_on_main_page'] == 1 || json['show_on_main_page'] == true,
       users: usersList,
+      changeStatusUsers: changeStatusUsersList, // ✅ НОВОЕ
     );
   }
 
@@ -221,6 +232,7 @@ class DealStatus {
       'notification_message': notificationMessage,
       'show_on_main_page': showOnMainPage,
       'users': users?.map((user) => user.toJson()).toList(),
+      'change_status_users': changeStatusUsers?.map((user) => user.toJson()).toList(), // ✅ НОВОЕ
     };
   }
 
@@ -230,7 +242,7 @@ class DealStatus {
     return identical(this, other) ||
         other is DealStatus &&
             runtimeType == other.runtimeType &&
-            id == other.id;  // Ignores title and other fields
+            id == other.id;
   }
 
   // HashCode based ONLY on ID (must match == logic)
@@ -240,6 +252,6 @@ class DealStatus {
   // override toString for better debugging
   @override
   String toString() {
-    return 'DealStatus{id: $id, title: $title, color: $color, dealsCount: $dealsCount, isSuccess: $isSuccess, isFailure: $isFailure, users: $users}';
+    return 'DealStatus{id: $id, title: $title, color: $color, dealsCount: $dealsCount, isSuccess: $isSuccess, isFailure: $isFailure, users: $users, changeStatusUsers: $changeStatusUsers}'; // ✅ ОБНОВЛЕНО
   }
 }

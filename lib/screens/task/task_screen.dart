@@ -85,7 +85,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   bool _initialHasDeal = false;
   bool _initialUrgent = false;
   List<String> _selectedAuthors = []; 
-  List<String> _initialSelectedAuthors = []; 
+  List<String> _initialSelectedAuthors = [];
   List<String> _selectedProjects = [];
   List<String> _initialSelectedProjects = [];
   String? _selectedDepartment;
@@ -131,7 +131,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     _checkPermissions();
   }
 
-Future<void> _loadFilterState() async {
+  Future<void> _loadFilterState() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _selectedUsers = (jsonDecode(prefs.getString('task_selected_users') ?? '[]') as List)
@@ -174,7 +174,7 @@ Future<void> _loadFilterState() async {
       _initialSelectedAuthors = List.from(_selectedAuthors);
       _initialSelectedDepartment = _selectedDepartment;
       _initialDirectoryValues = List.from(_selectedDirectoryValues);
-      
+
     });
   }
 void _onScroll() {
@@ -185,7 +185,7 @@ void _onScroll() {
       if (!taskBloc.allTasksFetched) {
         final currentStatusId = _tabTitles[_currentTabIndex]['id'];
         // Преобразуем project_ids в List<int>
-        List<int>? projectIdsList = _selectedProjects.isNotEmpty 
+        List<int>? projectIdsList = _selectedProjects.isNotEmpty
             ? _selectedProjects.map((id) => int.parse(id)).toList()
             : (_selectedProject != null ? [int.parse(_selectedProject!)] : null);
         taskBloc.add(FetchMoreTasks(
@@ -264,7 +264,7 @@ Future<void> _saveFilterState() async {
     final canDelete = await _apiService.hasPermission('taskStatus.delete');
     final hasPermission = await _apiService.hasPermission('task.create');
     final progress = await _apiService.getTutorialProgress();
-
+    if (!mounted) return;
     setState(() {
       _canReadTaskStatus = canRead;
       _canCreateTaskStatus = canCreate;
@@ -363,7 +363,7 @@ Future<void> _saveFilterState() async {
     await TaskCache.clearAllTasks();
 
     // Преобразуем project_ids в List<int>
-    List<int>? projectIdsList = _selectedProjects.isNotEmpty 
+    List<int>? projectIdsList = _selectedProjects.isNotEmpty
         ? _selectedProjects.map((id) => int.parse(id)).toList()
         : (_selectedProject != null ? [int.parse(_selectedProject!)] : null);
 
@@ -382,9 +382,9 @@ Future<void> _saveFilterState() async {
       deadlinetoDate: _deadlinetoDate,
       projectIds: projectIdsList,
       authors: _selectedAuthors,
-      department: _selectedDepartment, 
+      department: _selectedDepartment,
       directoryValues: _selectedDirectoryValues, // Передаем directoryValues
-      
+
     ));
   }
 
@@ -402,6 +402,7 @@ Future<void> _saveFilterState() async {
       _hasDeal = filterData['hasDeal'] ?? false;
       _isUrgent = filterData['urgent'] ?? false;
       _selectedProject = filterData['project'];
+      _selectedAuthors = filterData['authors'] ?? [];
       _selectedAuthors = filterData['authors'] ?? [];
       // Обработка project_ids
       if (filterData['project_ids'] != null) {
@@ -440,10 +441,10 @@ Future<void> _saveFilterState() async {
     await TaskCache.clearAllTasks();
 
     // Преобразуем project_ids в List<int>
-    List<int>? projectIdsList = _selectedProjects.isNotEmpty 
+    List<int>? projectIdsList = _selectedProjects.isNotEmpty
         ? _selectedProjects.map((id) => int.parse(id)).toList()
         : (_selectedProject != null ? [int.parse(_selectedProject!)] : null);
-    
+
     taskBloc.add(FetchTasks(
       currentStatusId,
       userIds: _selectedUsers.map((user) => user.id).toList(),
@@ -703,19 +704,19 @@ Future<void> _saveFilterState() async {
       body: isClickAvatarIcon
           ? ProfileScreen()
           : Column(
-              children: [
-                const SizedBox(height: 15),
-                if (!_isSearching &&
-                    _selectedUserId == null &&
-                    _showCustomTabBar)
-                  _buildCustomTabBar(),
-                Expanded(
-                  child: _selectedUserId != null
-                      ? _buildUserView()
-                      : _buildTabBarView(),
-                ),
-              ],
-            ),
+        children: [
+          const SizedBox(height: 15),
+          if (!_isSearching &&
+              _selectedUserId == null &&
+              _showCustomTabBar)
+            _buildCustomTabBar(),
+          Expanded(
+            child: _selectedUserId != null
+                ? _buildUserView()
+                : _buildTabBarView(),
+          ),
+        ],
+      ),
     );
   }
 
@@ -925,10 +926,10 @@ Future<void> _saveFilterState() async {
         if (state is TaskLoaded) {
           final statusId = _tabTitles[index]['id'];
           final taskStatus = state.taskStatuses.firstWhere(
-            (status) => status.id == statusId,
+                (status) => status.id == statusId,
             // orElse: () => null,
           );
-          taskCount = taskStatus?.tasksCount ?? "0"; 
+          taskCount = taskStatus?.tasksCount ?? "0";
         }
         return GestureDetector(
           key: _tabKeys[index],
@@ -958,7 +959,7 @@ Future<void> _saveFilterState() async {
                   offset: const Offset(12, 0),
                   child: Container(
                     padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
@@ -973,7 +974,7 @@ Future<void> _saveFilterState() async {
                       taskCount.toString(),
                       style: TextStyle(
                         color:
-                            isActive ? Colors.black : const Color(0xff99A4BA),
+                        isActive ? Colors.black : const Color(0xff99A4BA),
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),
@@ -1014,9 +1015,9 @@ Future<void> _saveFilterState() async {
         context.read<TaskBloc>().add(FetchTasks(_currentTabIndex));
       });
 
-          if (_tabTitles.isEmpty) {
-        await TaskCache.clearAllTasks(); 
-        await TaskCache.clearCache(); 
+      if (_tabTitles.isEmpty) {
+        await TaskCache.clearAllTasks();
+        await TaskCache.clearCache();
       }
 
       final taskBloc = BlocProvider.of<TaskBloc>(context);
@@ -1030,13 +1031,13 @@ Future<void> _saveFilterState() async {
         if (state is TaskLoaded) {
           await TaskCache.cacheTaskStatuses(state.taskStatuses
               .map((status) =>
-                  {'id': status.id, 'title': status.taskStatus?.name ?? ""})
+          {'id': status.id, 'title': status.taskStatus?.name ?? ""})
               .toList());
           setState(() {
             _tabTitles = state.taskStatuses
                 .where((status) => _canReadTaskStatus)
                 .map((status) =>
-                    {'id': status.id, 'title': status.taskStatus!.name ?? ""})
+            {'id': status.id, 'title': status.taskStatus!.name ?? ""})
                 .toList();
             _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
 
@@ -1097,7 +1098,7 @@ Future<void> _saveFilterState() async {
             Navigator.pushAndRemoveUntil(
               context,
               MaterialPageRoute(builder: (context) => LoginScreen()),
-              (Route<dynamic> route) => false,
+                  (Route<dynamic> route) => false,
             );
           } else if (state.message.contains(
             AppLocalizations.of(context)!.translate('no_internet_connection'),
@@ -1185,7 +1186,7 @@ Future<void> _saveFilterState() async {
     if (keyContext != null) {
       final box = keyContext.findRenderObject() as RenderBox;
       final position =
-          box.localToGlobal(Offset.zero, ancestor: context.findRenderObject());
+      box.localToGlobal(Offset.zero, ancestor: context.findRenderObject());
       final tabWidth = box.size.width;
 
       if (position.dx < 0 ||

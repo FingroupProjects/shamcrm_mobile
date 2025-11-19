@@ -60,7 +60,7 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
       try {
         // Ждем немного между запросами, чтобы не перегружать сервер
         await Future.delayed(const Duration(milliseconds: 100));
-        
+
         context.read<GetTaskProjectBloc>().add(
           GetTaskProjectMoreEv(page: nextPage),
         );
@@ -69,10 +69,10 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
         GetTaskProjectSuccess? updatedState;
         try {
           updatedState = await context.read<GetTaskProjectBloc>().stream
-            .where((newState) => newState is GetTaskProjectSuccess)
-            .map((newState) => newState as GetTaskProjectSuccess)
-            .first
-            .timeout(const Duration(seconds: 5));
+              .where((newState) => newState is GetTaskProjectSuccess)
+              .map((newState) => newState as GetTaskProjectSuccess)
+              .first
+              .timeout(const Duration(seconds: 5));
         } catch (e) {
           // При таймауте или ошибке прекращаем загрузку
           break;
@@ -119,7 +119,7 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
     } else if (widget.selectedProject != null && projects.isNotEmpty) {
       try {
         final foundProject = projects.firstWhere(
-          (projectTask) => projectTask.id.toString() == widget.selectedProject,
+              (projectTask) => projectTask.id.toString() == widget.selectedProject,
         );
         if (selectedProjectData != foundProject) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -143,7 +143,7 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
   // Метод для проверки, содержится ли selectedProjectData в текущем списке
   ProjectTask? _getValidInitialItem(List<ProjectTask> projects) {
     if (selectedProjectData == null) return null;
-    
+
     // Проверяем, содержится ли selectedProjectData в текущем списке проектов
     try {
       return projects.firstWhere((project) => project.id == selectedProjectData!.id);
@@ -196,7 +196,7 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
                 builder: (context, state) {
                   if (state is GetTaskProjectSuccess) {
                     projectsList = state.dataProject.result ?? [];
-                    
+
                     // Обрабатываем выбор проекта после завершения build
                     _handleProjectSelection(projectsList);
                   }

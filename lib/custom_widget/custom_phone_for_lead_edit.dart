@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:crm_task_manager/custom_widget/country_data_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class CustomPhoneNumberInput extends StatefulWidget {
   final TextEditingController controller;
@@ -26,65 +27,88 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
   Country? selectedCountry;
   String? _errorText;
   bool _hasReachedMaxLength = false;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    // Инициализация начальной страны
+    _initializeCountry();
+  }
+
+  Future<void> _initializeCountry() async {
+    final prefs = await SharedPreferences.getInstance();
+    String? savedDialCode = prefs.getString('default_dial_code');
+    
+    print('CustomPhoneNumberInput: Сохранённый default_dial_code = $savedDialCode');
+    print('CustomPhoneNumberInput: selectedDialCode из параметров = ${widget.selectedDialCode}');
+
+    String? dialCodeToUse;
+    
     if (widget.selectedDialCode != null && widget.selectedDialCode!.isNotEmpty) {
-      selectedCountry = countries.firstWhere(
-        (country) => widget.selectedDialCode!.startsWith(country.dialCode),
-        orElse: () => countries.firstWhere((country) => country.name == "TJ"),
-      );
-      // Устанавливаем номер телефона без кода региона
-      if (widget.controller.text.startsWith(selectedCountry!.dialCode)) {
-        widget.controller.text =
-            widget.controller.text.substring(selectedCountry!.dialCode.length);
-      }
+      dialCodeToUse = widget.selectedDialCode;
+    } else if (savedDialCode != null && savedDialCode.isNotEmpty) {
+      dialCodeToUse = savedDialCode;
     } else {
-      selectedCountry = countries.firstWhere((country) => country.name == "TJ");
+      dialCodeToUse = '+992';
     }
 
-    // Валидируем начальный текст
+    print('CustomPhoneNumberInput: Используем dialCode = $dialCodeToUse');
+
+    selectedCountry = countries.firstWhere(
+      (country) => country.dialCode == dialCodeToUse,
+      orElse: () {
+        print('CustomPhoneNumberInput: Страна с кодом $dialCodeToUse не найдена, используем TJ (+992)');
+        return countries.firstWhere(
+          (country) => country.name == "TJ",
+          orElse: () => countries.first,
+        );
+      },
+    );
+
+    if (widget.controller.text.startsWith(selectedCountry!.dialCode)) {
+      widget.controller.text =
+          widget.controller.text.substring(selectedCountry!.dialCode.length);
+    }
+
     if (widget.controller.text.isNotEmpty) {
       _validatePhoneNumber(widget.controller.text);
-      // Переносим вызов onInputChanged
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (widget.onInputChanged != null) {
           widget.onInputChanged!(selectedCountry!.dialCode + widget.controller.text);
         }
       });
     }
+
+    setState(() {
+      _isLoading = false;
+    });
   }
 
   void _validatePhoneNumber(String value) {
-  final maxLength = phoneNumberLengths[selectedCountry?.dialCode] ?? 0;
-  setState(() {
-    if (value.isEmpty) {
-      _errorText = AppLocalizations.of(context)!.translate('field_required');
-      _hasReachedMaxLength = false;
-    } else if (!RegExp(r'^\d+$').hasMatch(value)) {
-      _errorText = AppLocalizations.of(context)!.translate('invalid_phone_format');
-      _hasReachedMaxLength = false;
-    } else if (value.length == maxLength) {
-      _errorText = null;
-      _hasReachedMaxLength = true;
-    } else {
-      _errorText = AppLocalizations.of(context)!.translate('error_phone_number');
-      _hasReachedMaxLength = false;
-    }
-  });
-}
+    final maxLength = phoneNumberLengths[selectedCountry?.dialCode] ?? 0;
+    setState(() {
+      if (value.isEmpty) {
+        _errorText = AppLocalizations.of(context)!.translate('field_required');
+        _hasReachedMaxLength = false;
+      } else if (!RegExp(r'^\d+$').hasMatch(value)) {
+        _errorText = AppLocalizations.of(context)!.translate('invalid_phone_format');
+        _hasReachedMaxLength = false;
+      } else if (value.length == maxLength) {
+        _errorText = null;
+        _hasReachedMaxLength = true;
+      } else {
+        _errorText = AppLocalizations.of(context)!.translate('error_phone_number');
+        _hasReachedMaxLength = false;
+      }
+    });
+  }
 
   TextInputFormatter _phoneNumberPasteFormatter() {
     return TextInputFormatter.withFunction((oldValue, newValue) {
       int maxLength = phoneNumberLengths[selectedCountry?.dialCode] ?? 0;
       String newText = newValue.text;
-
-      // Очищаем текст広текст от нечисловых символов
       newText = newText.replaceAll(RegExp(r'[^\d]'), '');
 
-      // Проверяем, является ли ввод вставкой
       bool isPaste = (newValue.text.length - oldValue.text.length).abs() > 1;
 
       if (isPaste) {
@@ -93,7 +117,6 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
         bool hasPlus = newText.startsWith('+');
         String checkText = hasPlus ? newText : '+' + newText;
 
-        // Проверяем, начинается ли текст с кода страны
         for (var code in countryCodes) {
           if (checkText.startsWith(code) &&
               (matchedDialCode == null || code.length > matchedDialCode.length)) {
@@ -108,19 +131,16 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
         if (matchedDialCode != null &&
             matchedCountry != null &&
             matchedCountry.name.isNotEmpty) {
-          // Извлекаем номер без кода страны
           String phoneNumber = hasPlus
               ? newText.substring(matchedDialCode.length)
               : newText.substring(matchedDialCode.length - 1);
 
-          // Проверяем, что номер состоит только из цифр
           if (RegExp(r'^\d*$').hasMatch(phoneNumber)) {
             int newMaxLength = phoneNumberLengths[matchedDialCode] ?? 0;
             if (phoneNumber.length > newMaxLength) {
               phoneNumber = phoneNumber.substring(0, newMaxLength);
             }
 
-            // Обновляем состояние
             WidgetsBinding.instance.addPostFrameCallback((_) {
               setState(() {
                 selectedCountry = matchedCountry;
@@ -137,10 +157,9 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
               selection: TextSelection.collapsed(offset: phoneNumber.length),
             );
           } else {
-            return oldValue; // Отклоняем вставку, если номер содержит не цифры
+            return oldValue;
           }
         } else {
-          // Если код страны не найден, обрабатываем как обычный номер
           String phoneNumber = newText;
           if (phoneNumber.length > maxLength) {
             phoneNumber = phoneNumber.substring(0, maxLength);
@@ -157,7 +176,6 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
           );
         }
       } else {
-        // Ручной ввод или удаление
         String phoneNumber = newValue.text;
         if (phoneNumber.length > maxLength) {
           phoneNumber = phoneNumber.substring(0, maxLength);
@@ -178,6 +196,34 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            widget.label,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              fontFamily: 'Gilroy',
+              color: Color(0xff1E2E52),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            height: 56,
+            decoration: BoxDecoration(
+              color: const Color(0xffF4F7FD),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Center(
+              child: CircularProgressIndicator(),
+            ),
+          ),
+        ],
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -289,7 +335,7 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
           keyboardType: TextInputType.phone,
           inputFormatters: [
             FilteringTextInputFormatter.digitsOnly,
-               _phoneNumberPasteFormatter(),
+            _phoneNumberPasteFormatter(),
           ],
           onChanged: (value) {
             final maxLength = phoneNumberLengths[selectedCountry?.dialCode] ?? 0;
@@ -303,14 +349,13 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
             }
 
             _validatePhoneNumber(phoneNumber);
-            // Передаём полный номер телефона
             if (widget.onInputChanged != null) {
               widget.onInputChanged!(selectedCountry!.dialCode + phoneNumber);
             }
           },
           validator: widget.validator,
         ),
-      ]);
-
+      ],
+    );
   }
 }

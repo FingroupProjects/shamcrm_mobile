@@ -116,7 +116,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   Map<String, dynamic>? tutorialProgress;
   SalesFunnel? _selectedFunnel;
   List<int>? _selectedManagerIds;
-    bool _isFilterLoading = false; // НОВЫЙ флаг для отслеживания загрузки после фильтрации
+  bool _isFilterLoading = false; // НОВЫЙ флаг для отслеживания загрузки после фильтрации
   bool _shouldShowLoader = false; // НОВЫЙ флаг для принудительного показа лоадера
 
 
@@ -147,6 +147,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    _initializeSalesFunnel();
     //print('LeadScreen: initState started');
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     context.read<GetAllRegionBloc>().add(GetAllRegionEv());
@@ -218,6 +219,24 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
 
     _checkPermissions();
   }
+  Future<void> _initializeSalesFunnel() async {
+  try {
+    final savedFunnelId = await _apiService.getSelectedSalesFunnel();
+
+    if (savedFunnelId == null || savedFunnelId.isEmpty) {
+      debugPrint('⚠️ No saved funnel, will use first available');
+      // Воронка установится автоматически из SalesFunnelBloc.stream
+      return;
+    }
+
+    // Загружаем воронки
+    context.read<SalesFunnelBloc>().add(FetchSalesFunnels());
+
+    debugPrint('✅ Initialized with funnelId: $savedFunnelId');
+  } catch (e) {
+    debugPrint('❌ _initializeSalesFunnel error: $e');
+  }
+}
 
   Future<void> _loadFeatureState() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -232,124 +251,124 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   }
 // Заменить метод _onRefresh в LeadScreen на этот:
 
-Future<void> _onRefresh(int currentStatusId) async {
-  //print('LeadScreen: _onRefresh - RADICAL FULL REFRESH - clearing everything');
-  
-  try {
-    // РАДИКАЛЬНАЯ очистка - удаляем ВСЕ данные связанные с лидами
-    await LeadCache.clearAllData();
-    await LeadCache.clearPersistentCounts(); // Очищаем и постоянные счетчики
-    //print('LeadScreen: _onRefresh - Cleared ALL cache data including persistent counts');
-    
-    // Полный сброс состояния приложения
-    if (mounted) {
-      setState(() {
-        // Сбрасываем ВЕСЬ UI в исходное состояние
-        _isSearching = false;
-        _lastSearchQuery = '';
-        _searchController.clear();
-        _showCustomTabBar = true;
-        _isSwitchingFunnel = false;
-        
-        // Полный сброс всех фильтров
-        _selectedManagers.clear();
-        _selectedRegions.clear();
-        _selectedSources.clear();
-        _selectedStatuses = null;
-        _fromDate = null;
-        _toDate = null;
-        _hasSuccessDeals = false;
-        _hasInProgressDeals = false;
-        _hasFailureDeals = false;
-        _hasNotices = false;
-        _hasContact = false;
-        _hasChat = false;
-        _hasNoReplies = false;
-        _hasUnreadMessages = false;
-        _hasDeal = false;
-        _hasOrders = false;
-        _daysWithoutActivity = null;
-        _directoryValues.clear();
-        
-        // Сбрасываем и initial значения
-        _initialSelectedManagers.clear();
-        _initialSelectedRegions.clear();
-        _initialSelectedSources.clear();
-        _initialSelStatus = null;
-        _initialFromDate = null;
-        _initialToDate = null;
-        _initialHasSuccessDeals = null;
-        _initialHasInProgressDeals = null;
-        _initialHasFailureDeals = null;
-        _initialHasNotices = null;
-        _initialHasContact = null;
-        _initialHasChat = null;
-        _initialHasNoReplies = null;
-        _initialHasUnreadMessages = null;
-        _initialHasDeal = null;
-        _initialHasOrders = null;
-        _initialDaysWithoutActivity = null;
-        _initialDirectoryValues.clear();
-        
-        // Очищаем табы - начинаем с чистого листа
-        _tabTitles.clear();
-        _tabKeys.clear();
-        _currentTabIndex = 0;
-        
-        // Создаем пустой контроллер табов
-        if (_tabController.length > 0) {
-          _tabController.dispose();
-        }
-        _tabController = TabController(length: 0, vsync: this);
-        
-        //print('LeadScreen: _onRefresh - Reset all UI state to initial');
-      });
-    }
-    
-    // Очищаем состояние LeadBloc полностью
-    final leadBloc = BlocProvider.of<LeadBloc>(context);
-    await leadBloc.clearAllCountsAndCache();
-    //print('LeadScreen: _onRefresh - Cleared LeadBloc state');
-    
-    // ПРИНУДИТЕЛЬНАЯ загрузка ВСЕХ данных с сервера
-    // Никаких кэшей, никаких сохраненных данных - все с нуля
-    leadBloc.add(FetchLeadStatuses(forceRefresh: true));
-    //print('LeadScreen: _onRefresh - Initiated FORCED reload of all data from server');
-    
-    //print('LeadScreen: _onRefresh - RADICAL refresh completed successfully');
-    
-  } catch (e) {
-    //print('LeadScreen: _onRefresh error: $e');
-    
-    // При ошибке показываем пользователю и пытаемся восстановить хотя бы базовое состояние
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Ошибка при обновлении данных: ${e.toString()}',
-            style: TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Colors.white,
+  Future<void> _onRefresh(int currentStatusId) async {
+    //print('LeadScreen: _onRefresh - RADICAL FULL REFRESH - clearing everything');
+
+    try {
+      // РАДИКАЛЬНАЯ очистка - удаляем ВСЕ данные связанные с лидами
+      await LeadCache.clearAllData();
+      await LeadCache.clearPersistentCounts(); // Очищаем и постоянные счетчики
+      //print('LeadScreen: _onRefresh - Cleared ALL cache data including persistent counts');
+
+      // Полный сброс состояния приложения
+      if (mounted) {
+        setState(() {
+          // Сбрасываем ВЕСЬ UI в исходное состояние
+          _isSearching = false;
+          _lastSearchQuery = '';
+          _searchController.clear();
+          _showCustomTabBar = true;
+          _isSwitchingFunnel = false;
+
+          // Полный сброс всех фильтров
+          _selectedManagers.clear();
+          _selectedRegions.clear();
+          _selectedSources.clear();
+          _selectedStatuses = null;
+          _fromDate = null;
+          _toDate = null;
+          _hasSuccessDeals = false;
+          _hasInProgressDeals = false;
+          _hasFailureDeals = false;
+          _hasNotices = false;
+          _hasContact = false;
+          _hasChat = false;
+          _hasNoReplies = false;
+          _hasUnreadMessages = false;
+          _hasDeal = false;
+          _hasOrders = false;
+          _daysWithoutActivity = null;
+          _directoryValues.clear();
+
+          // Сбрасываем и initial значения
+          _initialSelectedManagers.clear();
+          _initialSelectedRegions.clear();
+          _initialSelectedSources.clear();
+          _initialSelStatus = null;
+          _initialFromDate = null;
+          _initialToDate = null;
+          _initialHasSuccessDeals = null;
+          _initialHasInProgressDeals = null;
+          _initialHasFailureDeals = null;
+          _initialHasNotices = null;
+          _initialHasContact = null;
+          _initialHasChat = null;
+          _initialHasNoReplies = null;
+          _initialHasUnreadMessages = null;
+          _initialHasDeal = null;
+          _initialHasOrders = null;
+          _initialDaysWithoutActivity = null;
+          _initialDirectoryValues.clear();
+
+          // Очищаем табы - начинаем с чистого листа
+          _tabTitles.clear();
+          _tabKeys.clear();
+          _currentTabIndex = 0;
+
+          // Создаем пустой контроллер табов
+          if (_tabController.length > 0) {
+            _tabController.dispose();
+          }
+          _tabController = TabController(length: 0, vsync: this);
+
+          //print('LeadScreen: _onRefresh - Reset all UI state to initial');
+        });
+      }
+
+      // Очищаем состояние LeadBloc полностью
+      final leadBloc = BlocProvider.of<LeadBloc>(context);
+      await leadBloc.clearAllCountsAndCache();
+      //print('LeadScreen: _onRefresh - Cleared LeadBloc state');
+
+      // ПРИНУДИТЕЛЬНАЯ загрузка ВСЕХ данных с сервера
+      // Никаких кэшей, никаких сохраненных данных - все с нуля
+      leadBloc.add(FetchLeadStatuses(forceRefresh: true));
+      //print('LeadScreen: _onRefresh - Initiated FORCED reload of all data from server');
+
+      //print('LeadScreen: _onRefresh - RADICAL refresh completed successfully');
+
+    } catch (e) {
+      //print('LeadScreen: _onRefresh error: $e');
+
+      // При ошибке показываем пользователю и пытаемся восстановить хотя бы базовое состояние
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Ошибка при обновлении данных: ${e.toString()}',
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
+              ),
+            ),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 4),
+            action: SnackBarAction(
+              label: 'Повторить',
+              textColor: Colors.white,
+              onPressed: () => _onRefresh(currentStatusId),
             ),
           ),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 4),
-          action: SnackBarAction(
-            label: 'Повторить',
-            textColor: Colors.white,
-            onPressed: () => _onRefresh(currentStatusId),
-          ),
-        ),
-      );
-      
-      // Пытаемся восстановить минимальное рабочее состояние
-      final leadBloc = BlocProvider.of<LeadBloc>(context);
-      leadBloc.add(FetchLeadStatuses(forceRefresh: false));
+        );
+
+        // Пытаемся восстановить минимальное рабочее состояние
+        final leadBloc = BlocProvider.of<LeadBloc>(context);
+        leadBloc.add(FetchLeadStatuses(forceRefresh: false));
+      }
     }
   }
-}
 
   Future<void> _checkPermissions() async {
     final canRead = await _apiService.hasPermission('leadStatus.read');
@@ -491,14 +510,14 @@ Future<void> _onRefresh(int currentStatusId) async {
   // }
 
   Future<void> _searchLeads(String query, int currentStatusId) async {
-     if (mounted) {
-    setState(() {
-      _isFilterLoading = true; // ← НОВОЕ
-            _shouldShowLoader = true; // ← НОВОЕ: принудительно показываем лоадер
+    if (mounted) {
+      setState(() {
+        _isFilterLoading = true; // ← НОВОЕ
+        _shouldShowLoader = true; // ← НОВОЕ: принудительно показываем лоадер
 
-    });
-  }
-  
+      });
+    }
+
     final leadBloc = BlocProvider.of<LeadBloc>(context);
     await LeadCache.clearLeadsForStatus(currentStatusId);
     //print('LeadScreen: Searching leads with query: $query');
@@ -580,7 +599,7 @@ Future<void> _onRefresh(int currentStatusId) async {
 
  Future<void> _handleManagerSelected(Map managers) async {
   //print('LeadScreen: _handleManagerSelected - START');
-  
+
   // КРИТИЧНО: Сначала показываем лоадер и скрываем старые данные
   final customFieldFiltersRaw =
       managers['custom_field_filters'] as Map<String, dynamic>?;
@@ -677,10 +696,10 @@ Future<void> _onRefresh(int currentStatusId) async {
 }
 
   void _onSearch(String query) {
-  _lastSearchQuery = query;
-  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-  _searchLeads(query, currentStatusId);
-}
+    _lastSearchQuery = query;
+    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+    _searchLeads(query, currentStatusId);
+  }
   FocusNode focusNode = FocusNode();
   TextEditingController textEditingController = TextEditingController();
   ValueChanged<String>? onChangedSearchInput;
@@ -795,19 +814,19 @@ Future<void> _onRefresh(int currentStatusId) async {
                     //print('LeadScreen: _buildTitleWidget - Building PopupMenu with funnels: ${state.funnels}');
                     return state.funnels
                         .map((funnel) => PopupMenuItem<SalesFunnel>(
-                              value: funnel,
-                              child: Text(
-                                funnel.name,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontFamily: 'Gilroy',
-                                  fontWeight: FontWeight.w500,
-                                  color: Color(0xff1E2E52),
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ))
+                      value: funnel,
+                      child: Text(
+                        funnel.name,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xff1E2E52),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ))
                         .toList();
                   },
                 ),
@@ -836,14 +855,14 @@ Future<void> _onRefresh(int currentStatusId) async {
             title: '',
             titleWidget: isClickAvatarIcon
                 ? Text(
-                    localizations!.translate('appbar_settings'),
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xff1E2E52),
-                    ),
-                  )
+              localizations!.translate('appbar_settings'),
+              style: TextStyle(
+                fontSize: 20,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w600,
+                color: Color(0xff1E2E52),
+              ),
+            )
                 : _buildTitleWidget(context),
             onClickProfileAvatar: () {
               //print('LeadScreen: Profile avatar clicked, isClickAvatarIcon: $isClickAvatarIcon');
@@ -890,6 +909,7 @@ Future<void> _onRefresh(int currentStatusId) async {
             focusNode: focusNode,
             showMenuIcon: _showCustomTabBar,
             showFilterIconOnSelectLead: !_showCustomTabBar,
+           // hasActiveLeadFilters: !_showCustomTabBar,
             showFilterTaskIcon: false,
             showMyTaskIcon: true,
             showCallCenter: true,
@@ -991,332 +1011,332 @@ Future<void> _onRefresh(int currentStatusId) async {
         body: isClickAvatarIcon
             ? ProfileScreen()
             : Column(
-                children: [
-                  const SizedBox(height: 15),
-                  if (!_isSearching && _selectedManagerIds == null && _showCustomTabBar)
-                    _buildCustomTabBar(),
-                  Expanded(
-                    child: _isSearching || _selectedManagerIds != null
-                        ? _buildManagerView()
-                        : _buildTabBarView(),
-                  ),
-                ],
-              ),
+          children: [
+            const SizedBox(height: 15),
+            if (!_isSearching && _selectedManagerIds == null && _showCustomTabBar)
+              _buildCustomTabBar(),
+            Expanded(
+              child: _isSearching || _selectedManagerIds != null
+                  ? _buildManagerView()
+                  : _buildTabBarView(),
+            ),
+          ],
+        ),
         floatingActionButton: _tabTitles.isNotEmpty && _hasPermissionToAddLead
             ? FloatingActionButton(
-                key: keyFloatingActionButton,
-                onPressed: () {
-                  //print('LeadScreen: FloatingActionButton pressed');
-                  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-                  if (_isSwitch) {
-                    showModalBottomSheet(
-                      backgroundColor: Colors.white,
-                      context: context,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                      ),
-                      builder: (BuildContext context) {
-                        return Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
+          key: keyFloatingActionButton,
+          onPressed: () {
+            //print('LeadScreen: FloatingActionButton pressed');
+            final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+            if (_isSwitch) {
+              showModalBottomSheet(
+                backgroundColor: Colors.white,
+                context: context,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                builder: (BuildContext context) {
+                  return Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          AppLocalizations.of(context)!.translate('add_for_current_status'),
+                          style: TextStyle(
+                            color: Color(0xff1E2E52),
+                            fontSize: 20,
+                            fontFamily: "Gilroy",
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        Divider(color: Color(0xff1E2E52)),
+                        ListTile(
+                          title: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                AppLocalizations.of(context)!.translate('add_for_current_status'),
+                                AppLocalizations.of(context)!.translate('new_lead_in_switch'),
                                 style: TextStyle(
                                   color: Color(0xff1E2E52),
-                                  fontSize: 20,
+                                  fontSize: 16,
                                   fontFamily: "Gilroy",
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
-                              SizedBox(height: 8),
-                              Divider(color: Color(0xff1E2E52)),
-                              ListTile(
-                                title: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      AppLocalizations.of(context)!.translate('new_lead_in_switch'),
-                                      style: TextStyle(
-                                        color: Color(0xff1E2E52),
-                                        fontSize: 16,
-                                        fontFamily: "Gilroy",
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                    Icon(
-                                      Icons.add,
-                                      color: Color(0xff1E2E52),
-                                      size: 25,
-                                    ),
-                                  ],
-                                ),
-                                onTap: () {
-                                  Navigator.pop(context);
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => LeadAddScreen(statusId: currentStatusId),
-                                    ),
-                                  ).then((_) => context.read<LeadBloc>().add(FetchLeads(currentStatusId)));
-                                },
+                              Icon(
+                                Icons.add,
+                                color: Color(0xff1E2E52),
+                                size: 25,
                               ),
-                              ListTile(
-                                title: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      AppLocalizations.of(context)!.translate('import_contact'),
-                                      style: TextStyle(
-                                        color: Color(0xff1E2E52),
-                                        fontSize: 16,
-                                        fontFamily: "Gilroy",
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                    Icon(
-                                      Icons.contacts,
-                                      color: Color(0xff1E2E52),
-                                      size: 25,
-                                    ),
-                                  ],
-                                ),
-                                onTap: () {
-                                  Navigator.pop(context);
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => ContactsScreen(statusId: currentStatusId),
-                                    ),
-                                  ).then((_) => context.read<LeadBloc>().add(FetchLeads(currentStatusId)));
-                                },
-                              ),
-                              SizedBox(height: 10),
                             ],
                           ),
-                        );
-                      },
-                    );
-                  } else {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => LeadAddScreen(statusId: currentStatusId),
-                      ),
-                    ).then((_) => context.read<LeadBloc>().add(FetchLeads(currentStatusId)));
-                  }
+                          onTap: () {
+                            Navigator.pop(context);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => LeadAddScreen(statusId: currentStatusId),
+                              ),
+                            ).then((_) => context.read<LeadBloc>().add(FetchLeads(currentStatusId)));
+                          },
+                        ),
+                        ListTile(
+                          title: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                AppLocalizations.of(context)!.translate('import_contact'),
+                                style: TextStyle(
+                                  color: Color(0xff1E2E52),
+                                  fontSize: 16,
+                                  fontFamily: "Gilroy",
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              Icon(
+                                Icons.contacts,
+                                color: Color(0xff1E2E52),
+                                size: 25,
+                              ),
+                            ],
+                          ),
+                          onTap: () {
+                            Navigator.pop(context);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ContactsScreen(statusId: currentStatusId),
+                              ),
+                            ).then((_) => context.read<LeadBloc>().add(FetchLeads(currentStatusId)));
+                          },
+                        ),
+                        SizedBox(height: 10),
+                      ],
+                    ),
+                  );
                 },
-                backgroundColor: Color(0xff1E2E52),
-                child: Image.asset(
-                  'assets/icons/tabBar/add.png',
-                  width: 24,
-                  height: 24,
+              );
+            } else {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => LeadAddScreen(statusId: currentStatusId),
                 ),
-              )
+              ).then((_) => context.read<LeadBloc>().add(FetchLeads(currentStatusId)));
+            }
+          },
+          backgroundColor: Color(0xff1E2E52),
+          child: Image.asset(
+            'assets/icons/tabBar/add.png',
+            width: 24,
+            height: 24,
+          ),
+        )
             : null,
       ),
     );
   }
 
- Widget searchWidget(List<Lead> leads) {
-  final currentStatusId = _tabTitles.isNotEmpty 
-      ? _tabTitles[_currentTabIndex]['id'] 
-      : 0;
+  Widget searchWidget(List<Lead> leads) {
+    final currentStatusId = _tabTitles.isNotEmpty
+        ? _tabTitles[_currentTabIndex]['id']
+        : 0;
 
-  // Показываем лоадер если флаги активны
-  if (_isFilterLoading || _shouldShowLoader) {
-    return const Center(
-      child: PlayStoreImageLoading(
-        size: 80.0,
-        duration: Duration(milliseconds: 1000),
-      ),
-    );
-  }
+    // Показываем лоадер если флаги активны
+    if (_isFilterLoading || _shouldShowLoader) {
+      return const Center(
+        child: PlayStoreImageLoading(
+          size: 80.0,
+          duration: Duration(milliseconds: 1000),
+        ),
+      );
+    }
 
-  if (_isSearching && leads.isEmpty) {
-    return Center(
-      child: Text(
-        AppLocalizations.of(context)!.translate('nothing_found'),
-        style: const TextStyle(
-          fontSize: 18,
-          fontFamily: 'Gilroy',
-          fontWeight: FontWeight.w500,
-          color: Color(0xff99A4BA),
-        ),
-      ),
-    );
-  } else if (_isManager && leads.isEmpty) {
-    return Center(
-      child: Text(
-        AppLocalizations.of(context)!
-            .translate('no_leads_for_selected_manager'),
-        style: const TextStyle(
-          fontSize: 18,
-          fontFamily: 'Gilroy',
-          fontWeight: FontWeight.w500,
-          color: Color(0xff99A4BA),
-        ),
-      ),
-    );
-  } else if (leads.isEmpty) {
-    return Center(
-      child: Text(
-        AppLocalizations.of(context)!
-            .translate('nothing_lead_for_manager'),
-        style: const TextStyle(
-          fontSize: 18,
-          fontFamily: 'Gilroy',
-          fontWeight: FontWeight.w500,
-          color: Color(0xff99A4BA),
-        ),
-      ),
-    );
-  }
-
-  return RefreshIndicator(
-    onRefresh: () => _onRefresh(currentStatusId),
-    color: const Color(0xff1E2E52),
-    backgroundColor: Colors.white,
-    child: ListView.builder(
-      itemCount: leads.length,
-      itemBuilder: (context, index) {
-        final lead = leads[index];
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: LeadCard(
-            lead: lead,
-            title: lead.leadStatus?.title ?? "",
-            statusId: lead.statusId,
-            onStatusUpdated: () {},
-            onStatusId: (StatusLeadId) {
-              final index = _tabTitles.indexWhere(
-                  (status) => status['id'] == StatusLeadId);
-              if (index != -1) {
-                _tabController.animateTo(index);
-              }
-            },
+    if (_isSearching && leads.isEmpty) {
+      return Center(
+        child: Text(
+          AppLocalizations.of(context)!.translate('nothing_found'),
+          style: const TextStyle(
+            fontSize: 18,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            color: Color(0xff99A4BA),
           ),
-        );
-      },
-    ),
-  );
-}
+        ),
+      );
+    } else if (_isManager && leads.isEmpty) {
+      return Center(
+        child: Text(
+          AppLocalizations.of(context)!
+              .translate('no_leads_for_selected_manager'),
+          style: const TextStyle(
+            fontSize: 18,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            color: Color(0xff99A4BA),
+          ),
+        ),
+      );
+    } else if (leads.isEmpty) {
+      return Center(
+        child: Text(
+          AppLocalizations.of(context)!
+              .translate('nothing_lead_for_manager'),
+          style: const TextStyle(
+            fontSize: 18,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            color: Color(0xff99A4BA),
+          ),
+        ),
+      );
+    }
 
- Widget _buildManagerView() {
-  return BlocListener<LeadBloc, LeadState>(
-    listener: (context, state) {
-      // Сбрасываем флаги когда данные загружены или произошла ошибка
-      if ((state is LeadDataLoaded || state is LeadError) && 
-          mounted && 
-          (_isFilterLoading || _shouldShowLoader)) {
-        setState(() {
-          _isFilterLoading = false;
-          _shouldShowLoader = false;
-          //print('LeadScreen: _buildManagerView - Loader flags reset');
-        });
-      }
-    },
-    child: BlocBuilder<LeadBloc, LeadState>(
-      builder: (context, state) {
-        final currentStatusId = _tabTitles.isNotEmpty 
-            ? _tabTitles[_tabController.index]['id'] 
-            : 0;
-
-        // Показываем лоадер только если флаги активны ИЛИ состояние - LeadLoading
-        if (_shouldShowLoader || _isFilterLoading || state is LeadLoading) {
-          //print('LeadScreen: _buildManagerView - Showing loader');
-          return const Center(
-            child: PlayStoreImageLoading(
-              size: 80.0,
-              duration: Duration(milliseconds: 1000),
+    return RefreshIndicator(
+      onRefresh: () => _onRefresh(currentStatusId),
+      color: const Color(0xff1E2E52),
+      backgroundColor: Colors.white,
+      child: ListView.builder(
+        itemCount: leads.length,
+        itemBuilder: (context, index) {
+          final lead = leads[index];
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: LeadCard(
+              lead: lead,
+              title: lead.leadStatus?.title ?? "",
+              statusId: lead.statusId,
+              onStatusUpdated: () {},
+              onStatusId: (StatusLeadId) {
+                final index = _tabTitles.indexWhere(
+                        (status) => status['id'] == StatusLeadId);
+                if (index != -1) {
+                  _tabController.animateTo(index);
+                }
+              },
             ),
           );
+        },
+      ),
+    );
+  }
+
+  Widget _buildManagerView() {
+    return BlocListener<LeadBloc, LeadState>(
+      listener: (context, state) {
+        // Сбрасываем флаги когда данные загружены или произошла ошибка
+        if ((state is LeadDataLoaded || state is LeadError) &&
+            mounted &&
+            (_isFilterLoading || _shouldShowLoader)) {
+          setState(() {
+            _isFilterLoading = false;
+            _shouldShowLoader = false;
+            //print('LeadScreen: _buildManagerView - Loader flags reset');
+          });
         }
+      },
+      child: BlocBuilder<LeadBloc, LeadState>(
+        builder: (context, state) {
+          final currentStatusId = _tabTitles.isNotEmpty
+              ? _tabTitles[_tabController.index]['id']
+              : 0;
 
-        if (state is LeadDataLoaded) {
-          final List<Lead> leads = state.leads;
-          final statusId = _tabTitles[_tabController.index]['id'];
-          final filteredLeads = leads
-              .where((lead) => lead.statusId == statusId)
-              .toList();
+          // Показываем лоадер только если флаги активны ИЛИ состояние - LeadLoading
+          if (_shouldShowLoader || _isFilterLoading || state is LeadLoading) {
+            //print('LeadScreen: _buildManagerView - Showing loader');
+            return const Center(
+              child: PlayStoreImageLoading(
+                size: 80.0,
+                duration: Duration(milliseconds: 1000),
+              ),
+            );
+          }
 
-          if (filteredLeads.isEmpty) {
+          if (state is LeadDataLoaded) {
+            final List<Lead> leads = state.leads;
+            final statusId = _tabTitles[_tabController.index]['id'];
+            final filteredLeads = leads
+                .where((lead) => lead.statusId == statusId)
+                .toList();
+
+            if (filteredLeads.isEmpty) {
+              return RefreshIndicator(
+                onRefresh: () => _onRefresh(currentStatusId),
+                color: const Color(0xff1E2E52),
+                backgroundColor: Colors.white,
+                child: Center(
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: Text(
+                      _selectedManagers.isNotEmpty
+                          ? AppLocalizations.of(context)!
+                          .translate('selected_manager_has_any_lead')
+                          : AppLocalizations.of(context)!
+                          .translate('nothing_found'),
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff99A4BA),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }
+
             return RefreshIndicator(
               onRefresh: () => _onRefresh(currentStatusId),
               color: const Color(0xff1E2E52),
               backgroundColor: Colors.white,
-              child: Center(
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  child: Text(
-                    _selectedManagers.isNotEmpty
-                        ? AppLocalizations.of(context)!
-                            .translate('selected_manager_has_any_lead')
-                        : AppLocalizations.of(context)!
-                            .translate('nothing_found'),
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xff99A4BA),
+              child: ListView.builder(
+                itemCount: filteredLeads.length,
+                itemBuilder: (context, index) {
+                  final lead = filteredLeads[index];
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 8),
+                    child: LeadCard(
+                      lead: lead,
+                      title: lead.leadStatus?.title ?? "",
+                      statusId: lead.statusId,
+                      onStatusUpdated: () {},
+                      onStatusId: (StatusLeadId) {
+                        final index = _tabTitles.indexWhere(
+                                (status) => status['id'] == StatusLeadId);
+                        if (index != -1) {
+                          _tabController.animateTo(index);
+                        }
+                      },
                     ),
-                  ),
+                  );
+                },
+              ),
+            );
+          }
+
+          // Если состояние LeadError - показываем ошибку
+          if (state is LeadError) {
+            return Center(
+              child: Text(
+                state.message,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: Colors.red,
                 ),
               ),
             );
           }
 
-          return RefreshIndicator(
-            onRefresh: () => _onRefresh(currentStatusId),
-            color: const Color(0xff1E2E52),
-            backgroundColor: Colors.white,
-            child: ListView.builder(
-              itemCount: filteredLeads.length,
-              itemBuilder: (context, index) {
-                final lead = filteredLeads[index];
-                return Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 8),
-                  child: LeadCard(
-                    lead: lead,
-                    title: lead.leadStatus?.title ?? "",
-                    statusId: lead.statusId,
-                    onStatusUpdated: () {},
-                    onStatusId: (StatusLeadId) {
-                      final index = _tabTitles.indexWhere(
-                          (status) => status['id'] == StatusLeadId);
-                      if (index != -1) {
-                        _tabController.animateTo(index);
-                      }
-                    },
-                  ),
-                );
-              },
-            ),
-          );
-        }
-
-        // Если состояние LeadError - показываем ошибку
-        if (state is LeadError) {
-          return Center(
-            child: Text(
-              state.message,
-              style: const TextStyle(
-                fontSize: 18,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w500,
-                color: Colors.red,
-              ),
-            ),
-          );
-        }
-
-        return const SizedBox();
-      },
-    ),
-  );
-}
+          return const SizedBox();
+        },
+      ),
+    );
+  }
 
   Widget _buildCustomTabBar() {
     return SingleChildScrollView(
@@ -1420,105 +1440,105 @@ Future<void> _onRefresh(int currentStatusId) async {
   }
 
 // Обновленный метод _buildTabButton в LeadScreen
-Widget _buildTabButton(int index) {
-  bool isActive = _tabController.index == index;
+  Widget _buildTabButton(int index) {
+    bool isActive = _tabController.index == index;
 
-  return FutureBuilder<int>(
-    future: LeadCache.getPersistentLeadCount(_tabTitles[index]['id']),
-    builder: (context, snapshot) {
-      // Сначала пробуем получить count из постоянного кэша
-      int leadCount = snapshot.data ?? 0;
-      
-      // Если в постоянном кэше нет данных, пробуем другие источники
-      if (leadCount == 0) {
-        return BlocBuilder<LeadBloc, LeadState>(
-          builder: (context, state) {
-            // Используем данные из состояния только если нет постоянного счетчика
-            if (state is LeadLoaded) {
-              final statusId = _tabTitles[index]['id'];
-              final leadStatus = state.leadStatuses.firstWhere(
-                (status) => status.id == statusId,
-                orElse: () => LeadStatus(
-                  id: 0,
-                  title: '',
-                  leadsCount: 0,
-                  isSuccess: false,
-                  position: 1,
-                  isFailure: false,
-                ),
-              );
-              leadCount = leadStatus.leadsCount;
-              
-              // Сразу сохраняем в постоянный кэш
-              LeadCache.setPersistentLeadCount(statusId, leadCount);
-            } else if (state is LeadDataLoaded && state.leadCounts.containsKey(_tabTitles[index]['id'])) {
-              leadCount = state.leadCounts[_tabTitles[index]['id']] ?? 0;
-              
-              // Сразу сохраняем в постоянный кэш
-              LeadCache.setPersistentLeadCount(_tabTitles[index]['id'], leadCount);
-            }
+    return FutureBuilder<int>(
+      future: LeadCache.getPersistentLeadCount(_tabTitles[index]['id']),
+      builder: (context, snapshot) {
+        // Сначала пробуем получить count из постоянного кэша
+        int leadCount = snapshot.data ?? 0;
 
-            return _buildTabButtonUI(index, isActive, leadCount);
-          },
-        );
-      }
-      
-      // Если есть постоянный счетчик, используем его напрямую
-      return _buildTabButtonUI(index, isActive, leadCount);
-    },
-  );
-}
+        // Если в постоянном кэше нет данных, пробуем другие источники
+        if (leadCount == 0) {
+          return BlocBuilder<LeadBloc, LeadState>(
+            builder: (context, state) {
+              // Используем данные из состояния только если нет постоянного счетчика
+              if (state is LeadLoaded) {
+                final statusId = _tabTitles[index]['id'];
+                final leadStatus = state.leadStatuses.firstWhere(
+                      (status) => status.id == statusId,
+                  orElse: () => LeadStatus(
+                    id: 0,
+                    title: '',
+                    leadsCount: 0,
+                    isSuccess: false,
+                    position: 1,
+                    isFailure: false,
+                  ),
+                );
+                leadCount = leadStatus.leadsCount;
+
+                // Сразу сохраняем в постоянный кэш
+                LeadCache.setPersistentLeadCount(statusId, leadCount);
+              } else if (state is LeadDataLoaded && state.leadCounts.containsKey(_tabTitles[index]['id'])) {
+                leadCount = state.leadCounts[_tabTitles[index]['id']] ?? 0;
+
+                // Сразу сохраняем в постоянный кэш
+                LeadCache.setPersistentLeadCount(_tabTitles[index]['id'], leadCount);
+              }
+
+              return _buildTabButtonUI(index, isActive, leadCount);
+            },
+          );
+        }
+
+        // Если есть постоянный счетчик, используем его напрямую
+        return _buildTabButtonUI(index, isActive, leadCount);
+      },
+    );
+  }
 
 // Вспомогательный метод для построения UI кнопки табы
-Widget _buildTabButtonUI(int index, bool isActive, int leadCount) {
-  return GestureDetector(
-    key: _tabKeys[index],
-    onTap: () {
-      _tabController.animateTo(index);
-      //print('LeadScreen: Tab button tapped, index: $index');
-    },
-    onLongPress: () {
-      _showStatusOptions(context, index);
-    },
-    child: Container(
-      decoration: TaskStyles.tabButtonDecoration(isActive),
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            _tabTitles[index]['title'],
-            style: TaskStyles.tabTextStyle.copyWith(
-              color: isActive ? TaskStyles.activeColor : TaskStyles.inactiveColor,
-            ),
-          ),
-          Transform.translate(
-            offset: const Offset(12, 0),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: isActive ? const Color(0xff1E2E52) : const Color(0xff99A4BA),
-                  width: 1,
-                ),
-              ),
-              child: Text(
-                leadCount.toString(),
-                style: TextStyle(
-                  color: isActive ? Colors.black : const Color(0xff99A4BA),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
+  Widget _buildTabButtonUI(int index, bool isActive, int leadCount) {
+    return GestureDetector(
+      key: _tabKeys[index],
+      onTap: () {
+        _tabController.animateTo(index);
+        //print('LeadScreen: Tab button tapped, index: $index');
+      },
+      onLongPress: () {
+        _showStatusOptions(context, index);
+      },
+      child: Container(
+        decoration: TaskStyles.tabButtonDecoration(isActive),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              _tabTitles[index]['title'],
+              style: TaskStyles.tabTextStyle.copyWith(
+                color: isActive ? TaskStyles.activeColor : TaskStyles.inactiveColor,
               ),
             ),
-          ),
-        ],
+            Transform.translate(
+              offset: const Offset(12, 0),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isActive ? const Color(0xff1E2E52) : const Color(0xff99A4BA),
+                    width: 1,
+                  ),
+                ),
+                child: Text(
+                  leadCount.toString(),
+                  style: TextStyle(
+                    color: isActive ? Colors.black : const Color(0xff99A4BA),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   void _deleteLeadStatus(int index) {
     _showDeleteDialog(index);
@@ -1570,317 +1590,317 @@ Widget _buildTabButtonUI(int index, bool isActive, int leadCount) {
     );
   }
 
-Widget _buildTabBarView() {
-  //print('LeadScreen: _buildTabBarView called, _tabTitles length: ${_tabTitles.length}');
-  return BlocListener<LeadBloc, LeadState>(
-    listener: (context, state) async {
-      //print('LeadScreen: BlocListener received state: ${state.runtimeType}');
-       // Сбрасываем флаг загрузки когда получены данные
-      if (state is LeadDataLoaded || state is LeadError) {
-        if (mounted && _isFilterLoading) {
-          setState(() {
-            _isFilterLoading = false; // ← НОВОЕ: сбрасываем флаг после загрузки
-                        _shouldShowLoader = false; // ← НОВОЕ: разрешаем показывать данные
-                                  _isSwitchingFunnel = false; // На всякий случай
+  Widget _buildTabBarView() {
+    //print('LeadScreen: _buildTabBarView called, _tabTitles length: ${_tabTitles.length}');
+    return BlocListener<LeadBloc, LeadState>(
+      listener: (context, state) async {
+        //print('LeadScreen: BlocListener received state: ${state.runtimeType}');
+        // Сбрасываем флаг загрузки когда получены данные
+        if (state is LeadDataLoaded || state is LeadError) {
+          if (mounted && _isFilterLoading) {
+            setState(() {
+              _isFilterLoading = false; // ← НОВОЕ: сбрасываем флаг после загрузки
+              _shouldShowLoader = false; // ← НОВОЕ: разрешаем показывать данные
+              _isSwitchingFunnel = false; // На всякий случай
 
 
-          });
+            });
+          }
         }
-      }
-      if (state is LeadLoaded) {
-        //print('LeadScreen: LeadLoaded state, caching lead statuses: ${state.leadStatuses}');
-        await LeadCache.cacheLeadStatuses(state.leadStatuses);
-        
-        if (mounted) {
-          setState(() {
-            // Обновляем табы с новыми данными
-            _tabTitles = state.leadStatuses
-                .where((status) => _canReadLeadStatus)
-                .map((status) => {
-                      'id': status.id,
-                      'title': status.title,
-                      'leads_count': status.leadsCount,
-                    })
-                .toList();
-            _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
-            _isSwitchingFunnel = false;
+        if (state is LeadLoaded) {
+          //print('LeadScreen: LeadLoaded state, caching lead statuses: ${state.leadStatuses}');
+          await LeadCache.cacheLeadStatuses(state.leadStatuses);
 
-            if (_tabTitles.isNotEmpty) {
-              //print('LeadScreen: Initializing TabController with length: ${_tabTitles.length}');
-              
-              // Проверяем, нужно ли создавать новый контроллер
-              bool needNewController = _tabController.length != _tabTitles.length;
-              
-              if (needNewController) {
-                // Сохраняем текущий индекс перед созданием нового контроллера
-                int savedTabIndex = _currentTabIndex;
-                
-                // Dispose старого контроллера если он существует
+          if (mounted) {
+            setState(() {
+              // Обновляем табы с новыми данными
+              _tabTitles = state.leadStatuses
+                  .where((status) => _canReadLeadStatus)
+                  .map((status) => {
+                'id': status.id,
+                'title': status.title,
+                'leads_count': status.leadsCount,
+              })
+                  .toList();
+              _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
+              _isSwitchingFunnel = false;
+
+              if (_tabTitles.isNotEmpty) {
+                //print('LeadScreen: Initializing TabController with length: ${_tabTitles.length}');
+
+                // Проверяем, нужно ли создавать новый контроллер
+                bool needNewController = _tabController.length != _tabTitles.length;
+
+                if (needNewController) {
+                  // Сохраняем текущий индекс перед созданием нового контроллера
+                  int savedTabIndex = _currentTabIndex;
+
+                  // Dispose старого контроллера если он существует
+                  if (_tabController.length > 0) {
+                    _tabController.dispose();
+                  }
+
+                  // Создаем новый контроллер
+                  _tabController = TabController(length: _tabTitles.length, vsync: this);
+                  //print('LeadScreen: Created new TabController with length: ${_tabTitles.length}');
+                }
+
+                // Настраиваем слушатель (всегда обновляем)
+                _tabController.addListener(() {
+                  if (!_tabController.indexIsChanging) {
+                    //print('LeadScreen: TabController listener triggered, new index: ${_tabController.index}');
+                    setState(() {
+                      _currentTabIndex = _tabController.index;
+                    });
+                    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+                    if (tabScrollController.hasClients) {
+                      _scrollToActiveTab();
+                    }
+
+                    // Загружаем лиды для выбранного статуса
+                    context.read<LeadBloc>().add(FetchLeads(
+                      currentStatusId,
+                      salesFunnelId: _selectedFunnel?.id,
+                      ignoreCache: false,
+                      query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+                      managerIds: _selectedManagers.isNotEmpty
+                          ? _selectedManagers.map((manager) => manager.id).toList()
+                          : null,
+                      regionsIds: _selectedRegions.isNotEmpty
+                          ? _selectedRegions.map((region) => region.id).toList()
+                          : null,
+                      sourcesIds: _selectedSources.isNotEmpty
+                          ? _selectedSources.map((source) => source.id).toList()
+                          : null,
+                      statusIds: _selectedStatuses,
+                      fromDate: _fromDate,
+                      toDate: _toDate,
+                      hasSuccessDeals: _hasSuccessDeals,
+                      hasInProgressDeals: _hasInProgressDeals,
+                      hasFailureDeals: _hasFailureDeals,
+                      hasNotices: _hasNotices,
+                      hasContact: _hasContact,
+                      hasChat: _hasChat,
+                      hasNoReplies: _hasNoReplies,
+                      hasUnreadMessages: _hasUnreadMessages,
+                      hasDeal: _hasDeal,
+                      hasOrders: _hasOrders,
+                      daysWithoutActivity: _daysWithoutActivity,
+                      directoryValues: _directoryValues,
+                    ));
+                    //print('LeadScreen: FetchLeads dispatched for statusId: $currentStatusId');
+                  }
+                });
+
+                // Установка правильного индекса
+                if (needNewController) {
+                  // При создании нового контроллера восстанавливаем индекс или ставим 0
+                  if (_currentTabIndex < _tabTitles.length && _currentTabIndex >= 0) {
+                    _tabController.index = _currentTabIndex;
+                    //print('LeadScreen: Restored tab index to: $_currentTabIndex');
+                  } else {
+                    _tabController.index = 0;
+                    _currentTabIndex = 0;
+                    //print('LeadScreen: Reset tab index to: 0');
+                  }
+                } else {
+                  // При обновлении существующего контроллера проверяем initialStatusId
+                  int initialIndex = state.leadStatuses
+                      .indexWhere((status) => status.id == widget.initialStatusId);
+                  if (initialIndex != -1 && initialIndex != _currentTabIndex) {
+                    _tabController.index = initialIndex;
+                    _currentTabIndex = initialIndex;
+                    //print('LeadScreen: Set initial tab index to: $initialIndex');
+                  } else if (_tabTitles.isNotEmpty) {
+                    int safeIndex = _currentTabIndex < _tabTitles.length ? _currentTabIndex : 0;
+                    _tabController.index = safeIndex;
+                    _currentTabIndex = safeIndex;
+                    //print('LeadScreen: Set safe tab index to: $safeIndex');
+                  }
+                }
+
+                // Прокручиваем к активному табу
+                if (tabScrollController.hasClients) {
+                  _scrollToActiveTab();
+                }
+
+                // Обрабатываем специальные навигации
+                if (navigateToEnd) {
+                  navigateToEnd = false;
+                  Future.delayed(Duration(milliseconds: 100), () {
+                    if (mounted && _tabTitles.isNotEmpty) {
+                      _tabController.animateTo(_tabTitles.length - 1);
+                      //print('LeadScreen: Navigated to last tab');
+                    }
+                  });
+                }
+
+                if (navigateAfterDelete && _tabTitles.isNotEmpty) {
+                  navigateAfterDelete = false;
+                  if (_deletedIndex != null) {
+                    int newIndex = _deletedIndex! >= _tabTitles.length ? _tabTitles.length - 1 : _deletedIndex!;
+                    newIndex = newIndex < 0 ? 0 : newIndex;
+                    Future.delayed(Duration(milliseconds: 100), () {
+                      if (mounted) {
+                        _tabController.animateTo(newIndex);
+                        _currentTabIndex = newIndex;
+                        //print('LeadScreen: Navigated to tab $newIndex after delete');
+                      }
+                    });
+                  }
+                }
+
+                // При радикальном обновлении (после refresh) автоматически загружаем лиды для активного статуса
+                Future.delayed(Duration(milliseconds: 150), () {
+                  if (mounted && _tabTitles.isNotEmpty) {
+                    final activeStatusId = _tabTitles[_currentTabIndex]['id'];
+                    //print('LeadScreen: Auto-loading leads for active status after refresh: $activeStatusId');
+                    context.read<LeadBloc>().add(FetchLeads(
+                      activeStatusId,
+                      salesFunnelId: _selectedFunnel?.id,
+                      ignoreCache: true, // При обновлении после refresh принудительно загружаем с сервера
+                    ));
+                  }
+                });
+
+              } else {
+                // Если табы пустые, создаем пустой контроллер
                 if (_tabController.length > 0) {
                   _tabController.dispose();
                 }
-                
-                // Создаем новый контроллер
-                _tabController = TabController(length: _tabTitles.length, vsync: this);
-                //print('LeadScreen: Created new TabController with length: ${_tabTitles.length}');
+                _tabController = TabController(length: 0, vsync: this);
+                _currentTabIndex = 0;
+                //print('LeadScreen: TabController reset to length 0 (no statuses available)');
               }
-              
-              // Настраиваем слушатель (всегда обновляем)
-              _tabController.addListener(() {
-                if (!_tabController.indexIsChanging) {
-                  //print('LeadScreen: TabController listener triggered, new index: ${_tabController.index}');
-                  setState(() {
-                    _currentTabIndex = _tabController.index;
-                  });
-                  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-                  if (tabScrollController.hasClients) {
-                    _scrollToActiveTab();
-                  }
-                  
-                  // Загружаем лиды для выбранного статуса
-                  context.read<LeadBloc>().add(FetchLeads(
-                    currentStatusId,
-                    salesFunnelId: _selectedFunnel?.id,
-                    ignoreCache: false,
-                    query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-                    managerIds: _selectedManagers.isNotEmpty
-                        ? _selectedManagers.map((manager) => manager.id).toList()
-                        : null,
-                    regionsIds: _selectedRegions.isNotEmpty
-                        ? _selectedRegions.map((region) => region.id).toList()
-                        : null,
-                    sourcesIds: _selectedSources.isNotEmpty
-                        ? _selectedSources.map((source) => source.id).toList()
-                        : null,
-                    statusIds: _selectedStatuses,
-                    fromDate: _fromDate,
-                    toDate: _toDate,
-                    hasSuccessDeals: _hasSuccessDeals,
-                    hasInProgressDeals: _hasInProgressDeals,
-                    hasFailureDeals: _hasFailureDeals,
-                    hasNotices: _hasNotices,
-                    hasContact: _hasContact,
-                    hasChat: _hasChat,
-                    hasNoReplies: _hasNoReplies,
-                    hasUnreadMessages: _hasUnreadMessages,
-                    hasDeal: _hasDeal,
-                    hasOrders: _hasOrders,
-                    daysWithoutActivity: _daysWithoutActivity,
-                    directoryValues: _directoryValues,
-                  ));
-                  //print('LeadScreen: FetchLeads dispatched for statusId: $currentStatusId');
-                }
-              });
+            });
+          }
+        } else if (state is LeadError) {
+          //print('LeadScreen: LeadError state received: ${state.message}');
 
-              // Установка правильного индекса
-              if (needNewController) {
-                // При создании нового контроллера восстанавливаем индекс или ставим 0
-                if (_currentTabIndex < _tabTitles.length && _currentTabIndex >= 0) {
-                  _tabController.index = _currentTabIndex;
-                  //print('LeadScreen: Restored tab index to: $_currentTabIndex');
-                } else {
-                  _tabController.index = 0;
-                  _currentTabIndex = 0;
-                  //print('LeadScreen: Reset tab index to: 0');
-                }
-              } else {
-                // При обновлении существующего контроллера проверяем initialStatusId
-                int initialIndex = state.leadStatuses
-                    .indexWhere((status) => status.id == widget.initialStatusId);
-                if (initialIndex != -1 && initialIndex != _currentTabIndex) {
-                  _tabController.index = initialIndex;
-                  _currentTabIndex = initialIndex;
-                  //print('LeadScreen: Set initial tab index to: $initialIndex');
-                } else if (_tabTitles.isNotEmpty) {
-                  int safeIndex = _currentTabIndex < _tabTitles.length ? _currentTabIndex : 0;
-                  _tabController.index = safeIndex;
-                  _currentTabIndex = safeIndex;
-                  //print('LeadScreen: Set safe tab index to: $safeIndex');
-                }
-              }
-
-              // Прокручиваем к активному табу
-              if (tabScrollController.hasClients) {
-                _scrollToActiveTab();
-              }
-
-              // Обрабатываем специальные навигации
-              if (navigateToEnd) {
-                navigateToEnd = false;
-                Future.delayed(Duration(milliseconds: 100), () {
-                  if (mounted && _tabTitles.isNotEmpty) {
-                    _tabController.animateTo(_tabTitles.length - 1);
-                    //print('LeadScreen: Navigated to last tab');
-                  }
-                });
-              }
-
-              if (navigateAfterDelete && _tabTitles.isNotEmpty) {
-                navigateAfterDelete = false;
-                if (_deletedIndex != null) {
-                  int newIndex = _deletedIndex! >= _tabTitles.length ? _tabTitles.length - 1 : _deletedIndex!;
-                  newIndex = newIndex < 0 ? 0 : newIndex;
-                  Future.delayed(Duration(milliseconds: 100), () {
-                    if (mounted) {
-                      _tabController.animateTo(newIndex);
-                      _currentTabIndex = newIndex;
-                      //print('LeadScreen: Navigated to tab $newIndex after delete');
-                    }
-                  });
-                }
-              }
-              
-              // При радикальном обновлении (после refresh) автоматически загружаем лиды для активного статуса
-              Future.delayed(Duration(milliseconds: 150), () {
-                if (mounted && _tabTitles.isNotEmpty) {
-                  final activeStatusId = _tabTitles[_currentTabIndex]['id'];
-                  //print('LeadScreen: Auto-loading leads for active status after refresh: $activeStatusId');
-                  context.read<LeadBloc>().add(FetchLeads(
-                    activeStatusId,
-                    salesFunnelId: _selectedFunnel?.id,
-                    ignoreCache: true, // При обновлении после refresh принудительно загружаем с сервера
-                  ));
-                }
-              });
-              
-            } else {
-              // Если табы пустые, создаем пустой контроллер
-              if (_tabController.length > 0) {
-                _tabController.dispose();
-              }
-              _tabController = TabController(length: 0, vsync: this);
-              _currentTabIndex = 0;
-              //print('LeadScreen: TabController reset to length 0 (no statuses available)');
-            }
-          });
-        }
-      } else if (state is LeadError) {
-        //print('LeadScreen: LeadError state received: ${state.message}');
-        
-        if (state.message.contains(
-          AppLocalizations.of(context)!.translate('unauthorized_access'),
-        )) {
-          await _apiService.logout();
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (context) => LoginScreen()),
-            (Route<dynamic> route) => false,
-          );
-        } else {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  state.message,
-                  style: TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
+          if (state.message.contains(
+            AppLocalizations.of(context)!.translate('unauthorized_access'),
+          )) {
+            await _apiService.logout();
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => LoginScreen()),
+                  (Route<dynamic> route) => false,
+            );
+          } else {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    state.message,
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                  backgroundColor: Colors.red,
+                  duration: Duration(seconds: 3),
+                  action: SnackBarAction(
+                    label: 'Повторить',
+                    textColor: Colors.white,
+                    onPressed: () {
+                      // При ошибке пробуем еще раз с принудительным обновлением
+                      context.read<LeadBloc>().add(FetchLeadStatuses(forceRefresh: true));
+                    },
                   ),
                 ),
-                backgroundColor: Colors.red,
-                duration: Duration(seconds: 3),
-                action: SnackBarAction(
-                  label: 'Повторить',
-                  textColor: Colors.white,
-                  onPressed: () {
-                    // При ошибке пробуем еще раз с принудительным обновлением
-                    context.read<LeadBloc>().add(FetchLeadStatuses(forceRefresh: true));
-                  },
-                ),
-              ),
-            );
+              );
+            }
           }
         }
-      }
-    },
-    child: _tabTitles.isEmpty
-        ? const Center(
-            child: PlayStoreImageLoading(
-              size: 80.0,
-              duration: Duration(milliseconds: 1000),
-            ),
-          )
-        : TabBarView(
-            controller: _tabController,
-            physics: const AlwaysScrollableScrollPhysics(),
-            children: _tabTitles.map((status) {
-              //print('LeadScreen: Building TabBarView child for status: ${status['title']}');
-              return RefreshIndicator(
-                onRefresh: () => _onRefresh(status['id']),
-                color: const Color(0xff1E2E52),
-                backgroundColor: Colors.white,
-                child: LeadColumn(
-                  isLeadScreenTutorialCompleted: _isLeadScreenTutorialCompleted,
-                  statusId: status['id'],
-                  title: status['title'],
-                  onStatusId: (newStatusId) {
-                    //print('LeadScreen: onStatusId called with id: $newStatusId');
-                    final index = _tabTitles.indexWhere((s) => s['id'] == newStatusId);
-                    if (index != -1) {
-                      _tabController.animateTo(index);
-                      //print('LeadScreen: Animated to tab index: $index for statusId: $newStatusId');
-                      
-                      // Проверяем, есть ли уже данные для этого статуса
-                      final currentLeadBloc = context.read<LeadBloc>();
-                      if (currentLeadBloc.state is LeadDataLoaded) {
-                        final currentState = currentLeadBloc.state as LeadDataLoaded;
-                        final hasLeadsForStatus = currentState.leads.any((lead) => lead.statusId == newStatusId);
-                        
-                        // Загружаем только если нет данных для этого статуса
-                        if (!hasLeadsForStatus) {
-                          currentLeadBloc.add(FetchLeads(
-                            newStatusId,
-                            salesFunnelId: _selectedFunnel?.id,
-                            ignoreCache: false,
-                            query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-                            managerIds: _selectedManagers.isNotEmpty
-                                ? _selectedManagers.map((manager) => manager.id).toList()
-                                : null,
-                            regionsIds: _selectedRegions.isNotEmpty
-                                ? _selectedRegions.map((region) => region.id).toList()
-                                : null,
-                            sourcesIds: _selectedSources.isNotEmpty
-                                ? _selectedSources.map((source) => source.id).toList()
-                                : null,
-                            statusIds: _selectedStatuses,
-                            fromDate: _fromDate,
-                            toDate: _toDate,
-                            hasSuccessDeals: _hasSuccessDeals,
-                            hasInProgressDeals: _hasInProgressDeals,
-                            hasFailureDeals: _hasFailureDeals,
-                            hasNotices: _hasNotices,
-                            hasContact: _hasContact,
-                            hasChat: _hasChat,
-                            hasNoReplies: _hasNoReplies,
-                            hasUnreadMessages: _hasUnreadMessages,
-                            hasDeal: _hasDeal,
-                            hasOrders: _hasOrders,
-                            daysWithoutActivity: _daysWithoutActivity,
-                            directoryValues: _directoryValues,
-                          ));
-                          //print('LeadScreen: FetchLeads dispatched for statusId: $newStatusId (no cached data found)');
-                        } else {
-                          //print('LeadScreen: Using cached data for statusId: $newStatusId');
-                        }
-                      } else {
-                        // Если нет состояния LeadDataLoaded, загружаем данные
-                        currentLeadBloc.add(FetchLeads(
-                          newStatusId,
-                          salesFunnelId: _selectedFunnel?.id,
-                          ignoreCache: false,
-                        ));
-                        //print('LeadScreen: FetchLeads dispatched for statusId: $newStatusId (no LeadDataLoaded state)');
-                      }
+      },
+      child: _tabTitles.isEmpty
+          ? const Center(
+        child: PlayStoreImageLoading(
+          size: 80.0,
+          duration: Duration(milliseconds: 1000),
+        ),
+      )
+          : TabBarView(
+        controller: _tabController,
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: _tabTitles.map((status) {
+          //print('LeadScreen: Building TabBarView child for status: ${status['title']}');
+          return RefreshIndicator(
+            onRefresh: () => _onRefresh(status['id']),
+            color: const Color(0xff1E2E52),
+            backgroundColor: Colors.white,
+            child: LeadColumn(
+              isLeadScreenTutorialCompleted: _isLeadScreenTutorialCompleted,
+              statusId: status['id'],
+              title: status['title'],
+              onStatusId: (newStatusId) {
+                //print('LeadScreen: onStatusId called with id: $newStatusId');
+                final index = _tabTitles.indexWhere((s) => s['id'] == newStatusId);
+                if (index != -1) {
+                  _tabController.animateTo(index);
+                  //print('LeadScreen: Animated to tab index: $index for statusId: $newStatusId');
+
+                  // Проверяем, есть ли уже данные для этого статуса
+                  final currentLeadBloc = context.read<LeadBloc>();
+                  if (currentLeadBloc.state is LeadDataLoaded) {
+                    final currentState = currentLeadBloc.state as LeadDataLoaded;
+                    final hasLeadsForStatus = currentState.leads.any((lead) => lead.statusId == newStatusId);
+
+                    // Загружаем только если нет данных для этого статуса
+                    if (!hasLeadsForStatus) {
+                      currentLeadBloc.add(FetchLeads(
+                        newStatusId,
+                        salesFunnelId: _selectedFunnel?.id,
+                        ignoreCache: false,
+                        query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+                        managerIds: _selectedManagers.isNotEmpty
+                            ? _selectedManagers.map((manager) => manager.id).toList()
+                            : null,
+                        regionsIds: _selectedRegions.isNotEmpty
+                            ? _selectedRegions.map((region) => region.id).toList()
+                            : null,
+                        sourcesIds: _selectedSources.isNotEmpty
+                            ? _selectedSources.map((source) => source.id).toList()
+                            : null,
+                        statusIds: _selectedStatuses,
+                        fromDate: _fromDate,
+                        toDate: _toDate,
+                        hasSuccessDeals: _hasSuccessDeals,
+                        hasInProgressDeals: _hasInProgressDeals,
+                        hasFailureDeals: _hasFailureDeals,
+                        hasNotices: _hasNotices,
+                        hasContact: _hasContact,
+                        hasChat: _hasChat,
+                        hasNoReplies: _hasNoReplies,
+                        hasUnreadMessages: _hasUnreadMessages,
+                        hasDeal: _hasDeal,
+                        hasOrders: _hasOrders,
+                        daysWithoutActivity: _daysWithoutActivity,
+                        directoryValues: _directoryValues,
+                      ));
+                      //print('LeadScreen: FetchLeads dispatched for statusId: $newStatusId (no cached data found)');
+                    } else {
+                      //print('LeadScreen: Using cached data for statusId: $newStatusId');
                     }
-                  },
-                ),
-              );
-            }).toList(),
-          ),
-  );
-}
+                  } else {
+                    // Если нет состояния LeadDataLoaded, загружаем данные
+                    currentLeadBloc.add(FetchLeads(
+                      newStatusId,
+                      salesFunnelId: _selectedFunnel?.id,
+                      ignoreCache: false,
+                    ));
+                    //print('LeadScreen: FetchLeads dispatched for statusId: $newStatusId (no LeadDataLoaded state)');
+                  }
+                }
+              },
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
   void _scrollToActiveTab() {
     final keyContext = _tabKeys[_currentTabIndex].currentContext;
     if (keyContext != null && tabScrollController.hasClients) {

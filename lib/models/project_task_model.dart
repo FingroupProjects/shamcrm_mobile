@@ -4,7 +4,7 @@ import 'dart:convert';
 
 class ProjectTask {
   final int id;
-  final String name;  
+  final String name;
   final String? startDate;
   final String? endDate;
 
@@ -16,10 +16,10 @@ class ProjectTask {
   });
 
   factory ProjectTask.fromJson(Map<String, dynamic> json) => ProjectTask(
-    id: json["id"],
-    name: json['name'] is String ? json['name'] : 'Без имени',
-    startDate: json['start_date'],
-    endDate: json['end_date']
+      id: json["id"],
+      name: json['name'] is String ? json['name'] : 'Без имени',
+      startDate: json['start_date'],
+      endDate: json['end_date']
   );
 
   Map<String, dynamic> toJson() => {
@@ -54,8 +54,8 @@ class ProjectTaskDataResponse {
     return ProjectTaskDataResponse(
       result: json["result"] != null && json["result"]["data"] != null
           ? List<ProjectTask>.from(
-              (json["result"]["data"] as List).map((x) => ProjectTask.fromJson(x))
-            )
+          (json["result"]["data"] as List).map((x) => ProjectTask.fromJson(x))
+      )
           : [],
       errors: json["errors"],
       pagination: json["result"] != null && json["result"]["pagination"] != null

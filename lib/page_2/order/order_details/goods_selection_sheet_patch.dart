@@ -173,7 +173,7 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
         symbol = 'TJS';
         break;
       default:
-        symbol = '₽';
+        symbol = '\$';
         if (kDebugMode) {
           //print('ProductSelectionSheetAdd: Используется валюта по умолчанию (UZS) для currency_id: $currencyId');
         }

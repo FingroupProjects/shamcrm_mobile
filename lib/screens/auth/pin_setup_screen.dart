@@ -118,7 +118,8 @@ Future<void> _fetchMiniAppSettings() async {
  }
   }
 
- Future<void> _fetchSettings() async {
+ // В PinSetupScreen
+Future<void> _fetchSettings() async {
   try {
     final prefs = await SharedPreferences.getInstance();
     final organizationId = await _apiService.getSelectedOrganization();
@@ -126,7 +127,18 @@ Future<void> _fetchMiniAppSettings() async {
     final response = await _apiService.getSettings(organizationId);
 
     if (response['result'] != null) {
-       await prefs.setBool(
+      // Сохраняем localization
+      String? localization = response['result']['localization'];
+      
+      // Логика: если localization == null, используем "+992"
+      String defaultDialCode = (localization != null && localization.isNotEmpty) 
+          ? localization 
+          : '+992';
+      
+      await prefs.setString('default_dial_code', defaultDialCode);
+      
+      // Остальные настройки
+      await prefs.setBool(
         'department_enabled', 
         _toBool(response['result']['department'])
       );
@@ -140,22 +152,24 @@ Future<void> _fetchMiniAppSettings() async {
         'good_measurement', 
         _toBool(response['result']['good_measurement'])
       );
- await prefs.setBool(
+      
+      await prefs.setBool(
         'managing_deal_status_visibility', 
         _toBool(response['result']['managing_deal_status_visibility'])
-      );      
+      );
+      
       if (kDebugMode) {
-        //print('PinScreen: Настройки сохранены: good_measurement = ${response['result']['good_measurement']}');
+        print('PinScreen: Настройки сохранены: localization = $localization, default_dial_code = $defaultDialCode');
       }
     }
   } catch (e) {
-    //print('Error fetching settings: $e');
+    print('Error fetching settings: $e');
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('integration_with_1C', false);
-    // Добавляем значение по умолчанию для good_measurement
-    await prefs.setBool('good_measurement', false); // по умолчанию включено
-        await prefs.setBool('managing_deal_status_visibility', false);
-
+    await prefs.setBool('good_measurement', false);
+    await prefs.setBool('managing_deal_status_visibility', false);
+    // При ошибке используем +992 по умолчанию
+    await prefs.setString('default_dial_code', '+992');
   }
 }
 

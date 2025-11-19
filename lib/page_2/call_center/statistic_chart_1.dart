@@ -11,6 +11,20 @@ class StatisticChart1 extends StatelessWidget {
   Widget build(BuildContext context) {
     // Получаем текущий месяц динамически (0-based индекс: январь = 0, февраль = 1, ..., декабрь = 11)
     final int currentMonthIndex = DateTime.now().month - 1;
+    const monthNames = [
+      'Янв',
+      'Фев',
+      'Мар',
+      'Апр',
+      'Май',
+      'Июн',
+      'Июл',
+      'Авг',
+      'Сен',
+      'Окт',
+      'Ноя',
+      'Дек'
+    ];
 
     // Подготовка данных до текущего месяца
     List<FlSpot> getSpots(double Function(CallStatMonth) valueExtractor) {
@@ -100,49 +114,35 @@ class StatisticChart1 extends StatelessWidget {
                   show: true,
                   topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
                   rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                 bottomTitles: AxisTitles(
-  sideTitles: SideTitles(
-    showTitles: true,
-    reservedSize: 40, // Увеличено для повернутого текста
-    getTitlesWidget: (value, meta) {
-      const monthNames = [
-        'Янв',
-        'Фев',
-        'Мар',
-        'Апр',
-        'Май',
-        'Июн',
-        'Июл',
-        'Авг',
-        'Сен',
-        'Окт',
-        'Ноя',
-        'Дек'
-      ];
-      final index = value.toInt();
-      if (index < 0 || index >= monthNames.length) {
-        return const SizedBox.shrink();
-      }
-      return Padding(
-        padding: const EdgeInsets.only(top: 16), // Смещение текста вниз
-        child: Transform.rotate(
-          angle: -1.55, // Поворот текста (~90 градусов)
-          child: Text(
-            monthNames[index],
-            textAlign: TextAlign.left,
-            style: const TextStyle(
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w500,
-              fontSize: 12,
-              color: Colors.black, // Явно задаем цвет для согласованности
-            ),
-          ),
-        ),
-      );
-    },
-    interval: 1,
-  ),
-),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 40, // Увеличено для повернутого текста
+                      getTitlesWidget: (value, meta) {
+                        final index = value.toInt();
+                        if (index < 0 || index >= monthNames.length) {
+                          return const SizedBox.shrink();
+                        }
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 16), // Смещение текста вниз
+                          child: Transform.rotate(
+                            angle: -1.55, // Поворот текста (~90 градусов)
+                            child: Text(
+                              monthNames[index],
+                              textAlign: TextAlign.left,
+                              style: const TextStyle(
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w500,
+                                fontSize: 12,
+                                color: Colors.black, // Явно задаем цвет для согласованности
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                      interval: 1,
+                    ),
+                  ),
 
                   leftTitles: AxisTitles(
                     sideTitles: SideTitles(
@@ -164,14 +164,14 @@ class StatisticChart1 extends StatelessWidget {
                   show: true,
                   border: Border.all(color: Colors.grey.shade200, width: 0.5),
                 ),
-                
+
                 minX: 0,
                 maxX: 11,
                 minY: 0,
                 maxY: maxY, // Динамически вычисляется на основе максимального значения данных
                 lineBarsData: [
                   // Общее количество звонков
-                  
+
                   LineChartBarData(
                     spots: getSpots((data) => data.total.toDouble()),
                     isCurved: true,
@@ -254,25 +254,13 @@ class StatisticChart1 extends StatelessWidget {
                   enabled: true,
                   touchTooltipData: LineTouchTooltipData(
                     tooltipRoundedRadius: 8,
+                    fitInsideHorizontally: true,
+                    fitInsideVertically: true,
                     tooltipPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     tooltipMargin: 10,
                     getTooltipItems: (List<LineBarSpot> touchedSpots) {
                       return touchedSpots.map((LineBarSpot touchedSpot) {
                         final int xValue = touchedSpot.x.toInt();
-                        const monthNames = [
-                          'Янв',
-                          'Фев',
-                          'Мар',
-                          'Апр',
-                          'Май',
-                          'Июн',
-                          'Июл',
-                          'Авг',
-                          'Сен',
-                          'Окт',
-                          'Ноя',
-                          'Дек'
-                        ];
                         String month = xValue < monthNames.length ? monthNames[xValue] : '';
 
                         String metricName;
@@ -345,36 +333,36 @@ class StatisticChart1 extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-         Wrap(
-  spacing: 16,
-  runSpacing: 8,
-  children: [
-    Container(
-      width: double.infinity, // Forces each item to take full width
-      child: _buildLegendItem('Общее количество звонков', const Color(0xFF038FFB)),
-    ),
-    Container(
-      width: double.infinity,
-      child: _buildLegendItem('Среднее время ответа', const Color(0xFF01E396)),
-    ),
-    Container(
-      width: double.infinity,
-      child: _buildLegendItem('Звонки без перезвона', const Color(0xFFFEB01A)),
-    ),
-    Container(
-      width: double.infinity,
-      child: _buildLegendItem('Пропущенные звонки', const Color(0xFFFF4560)),
-    ),
-    Container(
-      width: double.infinity,
-      child: _buildLegendItem('Исходящие звонки', const Color(0xFF775DD0)),
-    ),
-    Container(
-      width: double.infinity,
-      child: _buildLegendItem('Входящие звонки', const Color(0xFF038FFB).withOpacity(0.7)),
-    ),
-  ],
-),
+          Wrap(
+            spacing: 16,
+            runSpacing: 8,
+            children: [
+              Container(
+                width: double.infinity, // Forces each item to take full width
+                child: _buildLegendItem('Общее количество звонков', const Color(0xFF038FFB)),
+              ),
+              Container(
+                width: double.infinity,
+                child: _buildLegendItem('Среднее время ответа', const Color(0xFF01E396)),
+              ),
+              Container(
+                width: double.infinity,
+                child: _buildLegendItem('Звонки без перезвона', const Color(0xFFFEB01A)),
+              ),
+              Container(
+                width: double.infinity,
+                child: _buildLegendItem('Пропущенные звонки', const Color(0xFFFF4560)),
+              ),
+              Container(
+                width: double.infinity,
+                child: _buildLegendItem('Исходящие звонки', const Color(0xFF775DD0)),
+              ),
+              Container(
+                width: double.infinity,
+                child: _buildLegendItem('Входящие звонки', const Color(0xFF038FFB).withOpacity(0.7)),
+              ),
+            ],
+          ),
         ],
       ),
     );

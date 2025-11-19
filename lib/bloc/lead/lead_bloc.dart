@@ -3,6 +3,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/screens/lead/lead_cache.dart';
 import 'package:flutter/cupertino.dart' show debugPrint;
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'lead_event.dart';
 import 'lead_state.dart';
@@ -62,14 +63,25 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
 
 Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
   if (isFetching) {
+    debugPrint('⚠️ LeadBloc: _fetchLeads - Already fetching, skipping');
     return;
   }
+
   isFetching = true;
+
+  if (kDebugMode) {
+    debugPrint('🔍 LeadBloc: _fetchLeads - START');
+    debugPrint('🔍 LeadBloc: statusId=${event.statusId}');
+    debugPrint('🔍 LeadBloc: salesFunnelId=${event.salesFunnelId}');
+    debugPrint('🔍 LeadBloc: ignoreCache=${event.ignoreCache}');
+  }
+
   try {
     if (state is! LeadDataLoaded) {
       emit(LeadLoading());
     }
 
+    // Сохраняем параметры текущего запроса
     _currentQuery = event.query;
     _currentManagerIds = event.managerIds;
     _currentRegionIds = event.regionsIds;
@@ -98,18 +110,41 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
       int count = allPersistentCounts[statusIdStr] ?? 0;
       _leadCounts[statusId] = count;
     }
-    ////print('LeadBloc: Restored all persistent counts: $_leadCounts');
+
+    if (kDebugMode) {
+      debugPrint('✅ LeadBloc: Restored persistent counts: $_leadCounts');
+    }
 
     List<Lead> leads = [];
+
+    // Попытка загрузить из кэша
     if (!event.ignoreCache) {
       leads = await LeadCache.getLeadsForStatus(event.statusId);
       if (leads.isNotEmpty) {
-        ////print('LeadBloc: _fetchLeads - Emitting cached leads: ${leads.length}, preserved counts: $_leadCounts');
+        if (kDebugMode) {
+          debugPrint('✅ LeadBloc: _fetchLeads - Emitting ${leads.length} cached leads for status ${event.statusId}');
+          debugPrint('✅ LeadBloc: Preserved counts: $_leadCounts');
+        }
         emit(LeadDataLoaded(leads, currentPage: 1, leadCounts: Map.from(_leadCounts)));
+      }
+    } else {
+      if (kDebugMode) {
+        debugPrint('⚠️ LeadBloc: _fetchLeads - Ignoring cache (ignoreCache=true)');
       }
     }
 
+    // КРИТИЧНО: Получаем АКТУАЛЬНУЮ воронку перед запросом к API
+    final currentFunnelId = event.salesFunnelId ?? await apiService.getSelectedSalesFunnel();
+
+    if (kDebugMode) {
+      debugPrint('🔍 LeadBloc: Current salesFunnelId for API request: $currentFunnelId');
+    }
+
     if (await _checkInternetConnection()) {
+      if (kDebugMode) {
+        debugPrint('📡 LeadBloc: Internet available, fetching from API');
+      }
+
       leads = await apiService.getLeads(
         event.statusId,
         page: 1,
@@ -134,13 +169,24 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
         daysWithoutActivity: event.daysWithoutActivity,
         directoryValues: event.directoryValues,
         customFieldFilters: event.customFieldFilters,
-        salesFunnelId: event.salesFunnelId,
+        // salesFunnelId: currentFunnelId != null && currentFunnelId.isNotEmpty
+        //     ? int.tryParse(currentFunnelId)
+        //     : null, // ← КРИТИЧНО: Передаём валидный funnelId
       );
+
+      if (kDebugMode) {
+        debugPrint('✅ LeadBloc: Fetched ${leads.length} leads from API for status ${event.statusId}');
+      }
 
       // КЛЮЧЕВОЙ МОМЕНТ: Берём реальный счётчик из _leadCounts
       // (который был установлен при загрузке статусов из API)
       final int? realTotalCount = _leadCounts[event.statusId];
       
+      if (kDebugMode) {
+        debugPrint('🔍 LeadBloc: Real total count for status ${event.statusId}: $realTotalCount');
+        debugPrint('🔍 LeadBloc: Fetched leads count: ${leads.length}');
+      }
+
       // Кэшируем лиды с РЕАЛЬНЫМ общим счётчиком, а не с leads.length
       await LeadCache.cacheLeadsForStatus(
         event.statusId,
@@ -149,20 +195,36 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
         actualTotalCount: realTotalCount, // ← Передаём РЕАЛЬНЫЙ счётчик из API статусов
       );
       
-      ////print('LeadBloc: _fetchLeads - Fetched ${leads.length} leads from API for status ${event.statusId}, using REAL total count: $realTotalCount from _leadCounts');
+      if (kDebugMode) {
+        debugPrint('✅ LeadBloc: Cached ${leads.length} leads for status ${event.statusId}');
+        debugPrint('✅ LeadBloc: Used REAL total count: $realTotalCount from _leadCounts');
+      }
+    } else {
+      if (kDebugMode) {
+        debugPrint('❌ LeadBloc: No internet connection');
+      }
     }
 
     allLeadsFetched = leads.isEmpty;
+
+    if (kDebugMode) {
+      debugPrint('✅ LeadBloc: _fetchLeads - Emitting LeadDataLoaded with ${leads.length} leads');
+      debugPrint('✅ LeadBloc: Final leadCounts: $_leadCounts');
+    }
+
     emit(LeadDataLoaded(leads, currentPage: 1, leadCounts: Map.from(_leadCounts)));
   } catch (e) {
-    ////print('LeadBloc: _fetchLeads - Error: $e');
+    if (kDebugMode) {
+      debugPrint('❌ LeadBloc: _fetchLeads - Error: $e');
+    }
     emit(LeadError('Не удалось загрузить данные!'));
   } finally {
     isFetching = false;
+    if (kDebugMode) {
+      debugPrint('🏁 LeadBloc: _fetchLeads - FINISHED');
+    }
   }
 }
-
-
 
 
 // Заменить метод _fetchLeadStatuses в LeadBloc на этот:

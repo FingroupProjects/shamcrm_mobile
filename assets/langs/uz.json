@@ -15,6 +15,11 @@
   "profile_editor": "Profil",
   "error_text": "Xato",
   "change_pin_code": "PIN-kodni o'zgartiring",
+  "biometric_auth": "Biometrik autentifikatsiya",
+  "biometric_unlock": "Biometrik blokdan chiqish",
+  "biometric_unlock_on": "Biometrik blokdan chiqish yoqilgan",
+  "biometric_unlock_off": "Biometrik blokdan chiqish o'chirilgan",
+  "biometric_not_available": "Biometrik autentifikatsiya mavjud emas",
   "COMMENT_TITLE_SCREEN_Organizations": "----------------------------Тексты для экрана Organizations----------------------------",
   "loading": "Yuklanmoqda...",
   "organizations": "Tashkilot",
@@ -478,6 +483,7 @@
   "create": "Yaratish",
   "select_at_least_one_user": "Kamida bitta foydalanuvchini tanlang",
   "please_select_user": "Iltimos, foydalanuvchini tanlang",
+  "please_select_manager": "Iltimos, menejerni tanlang",
   "delete_sms": "Xabar o'chirilsinmi?",
   "confirm_delete_sms": "Haqiqatan ham ushbu xabarni o'chirmoqchimisiz?",
   "add_user": "A'zo qo'shish",
@@ -1869,5 +1875,7 @@
   "income_document": "Kirim",
   "outcome_document": "Chiqim",
   "change_status": "Holatni o'zgartirish",
-  "save_hint": "Mahsulotlarni qo'shgandan keyin saqlash uchun 'Asosiy'ga o'ting"
+  "save_hint": "Mahsulotlarni qo'shgandan keyin saqlash uchun 'Asosiy'ga o'ting",
+  "users_who_can_view_deals": "Ushbu status bilan bitimlarni ko'rishi mumkin bo'lgan foydalanuvchilar",
+  "users_who_can_change_status": "Bitimni ushbu statusga o'zgartirishi mumkin bo'lgan foydalanuvchilar"
 }

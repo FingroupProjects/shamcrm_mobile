@@ -19,6 +19,7 @@ import 'package:crm_task_manager/models/file_helper.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
+import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/deal_name_list.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/lead_with_manager.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/manager_for_lead.dart';
@@ -26,12 +27,14 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_details/add_custom_dir
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_create_custom.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/main_field_dropdown_widget.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'dart:io';
 import '../../lead/tabBar/lead_details/custom_field_model.dart';
@@ -63,6 +66,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
   bool isManagerInvalid = false;
   bool isManagerManuallySelected = false;
   List<FileHelper> files = [];
+  bool _hasDealUsers = false;
+  List<UserData> _selectedUsers = [];
 
   // Режим настроек
   bool isSettingsMode = false;
@@ -83,6 +88,20 @@ class _DealAddScreenState extends State<DealAddScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadFieldConfiguration();
     });
+    _loadHasDealUsersSetting();
+  }
+
+  Future<void> _loadHasDealUsersSetting() async {
+    final prefs = await SharedPreferences.getInstance();
+    final value = prefs.getBool('has_deal_users') ?? false;
+
+    if (mounted) {
+      setState(() {
+        _hasDealUsers = value;
+      });
+    }
+
+    print('DealAddScreen: has_deal_users = $value');
   }
 
   Future<void> _loadFieldConfiguration() async {
@@ -280,27 +299,39 @@ class _DealAddScreenState extends State<DealAddScreen> {
   }
 
   Widget _buildLeadField() {
-    return LeadWithManager(
+    return  LeadWithManager(
       selectedLead: selectedLead,
       onSelectLead: (LeadData selectedLeadData) {
+        //print('DealAddScreen: Lead selected: ${selectedLeadData.id}, managerId: ${selectedLeadData.managerId}');
         if (selectedLead == selectedLeadData.id.toString()) {
+          //print('DealAddScreen: Lead ${selectedLeadData.id} already selected, skipping');
           return;
         }
         setState(() {
           selectedLead = selectedLeadData.id.toString();
+          //print('DealAddScreen: isManagerManuallySelected: $isManagerManuallySelected');
           if (!isManagerManuallySelected && selectedLeadData.managerId != null) {
+            //print('DealAddScreen: Attempting to auto-select manager');
             final managerBlocState = context.read<GetAllManagerBloc>().state;
+            //print('DealAddScreen: ManagerBloc state: $managerBlocState');
             if (managerBlocState is GetAllManagerSuccess) {
               final managers = managerBlocState.dataManager.result ?? [];
+              //print('DealAddScreen: Available managers: ${managers.map((m) => m.id)}');
               try {
                 final matchingManager = managers.firstWhere(
-                  (manager) => manager.id == selectedLeadData.managerId,
+                      (manager) => manager.id == selectedLeadData.managerId,
                 );
                 selectedManager = matchingManager.id.toString();
-              } catch (_) {
+                //print('DealAddScreen: Auto-selected manager: ${matchingManager.id} (${matchingManager.name})');
+              } catch (e) {
+                //print('DealAddScreen: Manager not found for ID ${selectedLeadData.managerId}, skipping auto-select');
                 selectedManager = null;
               }
+            } else {
+              //print('DealAddScreen: ManagerBloc not in success state, skipping auto-select');
             }
+          } else {
+            //print('DealAddScreen: Manager already manually selected or no managerId, skipping auto-select');
           }
         });
       },
@@ -1439,6 +1470,21 @@ class _DealAddScreenState extends State<DealAddScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+
+                            // TODO get from custom fields
+                            if (_hasDealUsers) ...[
+                              const SizedBox(height: 8),
+                              UserMultiSelectWidget(
+                                selectedUsers: null,
+                                onSelectUsers: (List<UserData> users) {
+                                  setState(() {
+                                    _selectedUsers = users;
+                                  });
+                                  print('DealAddScreen: Выбрано пользователей: ${users.length}');
+                                },
+                              ),
+                            ],
+
                             ...(() {
                               final configured = _buildConfiguredFieldWidgets();
                               if (configured.isNotEmpty) {
@@ -1678,6 +1724,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
     }
 
     final localizations = AppLocalizations.of(context)!;
+      final userIds = _selectedUsers.map((user) => user.id).toList();
+
 
     context.read<DealBloc>().add(CreateDeal(
       name: name,
@@ -1693,6 +1741,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
       directoryValues: directoryValues,
       files: files,
       localizations: localizations,
+      userIds: userIds.isNotEmpty ? userIds : null, // ✅ НОВОЕ
     ));
     //print('DealAddScreen: Dispatched CreateDeal event');
   }

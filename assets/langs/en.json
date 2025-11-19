@@ -15,6 +15,11 @@
   "exit_account": "Exit Account",
   "error_text": "Error",
   "change_pin_code": "Change PIN-CODE",
+  "biometric_auth": "Biometric Authentication",
+  "biometric_unlock": "Biometric Unlock",
+  "biometric_unlock_on": "Biometric unlock is enabled",
+  "biometric_unlock_off": "Biometric unlock is disabled",
+  "biometric_not_available": "Biometric authentication is not available",
   "COMMENT_TITLE_SCREEN_Organizations": "----------------------------Тексты для экрана Organizations----------------------------",
   "loading": "Loading...",
   "organizations": "Organization",
@@ -492,6 +497,7 @@
   "selected_users": "Selected Users: ",
   "user": "User",
   "select_user": "Select User",
+  "please_select_manager": "Please select a manager",
   "chat_deleted_successfully": "Chat deleted successfully",
   "you_dont_delete_this_group": "You cannot delete this group!",
   "error_delete_chat": "Error deleting chat!",
@@ -1870,5 +1876,7 @@
   "income_document": "Income",
   "outcome_document": "Outcome",
   "change_status": "Change Status",
-  "save_hint": "After adding items, go to 'Main' to save"
+  "save_hint": "After adding items, go to 'Main' to save",
+    "users_who_can_view_deals": "Users who can view deals with this status",
+  "users_who_can_change_status": "Users who can change deal to this status"
 }

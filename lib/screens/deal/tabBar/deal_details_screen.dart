@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:ui' as ui;
+import 'dart:io';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
@@ -851,10 +852,103 @@ Widget build(BuildContext context) {
     );
   }
 
+void _showUsersDialog(String users) {
+  List<String> userList =
+      users.split(',').map((user) => user.trim()).toList();
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return Dialog(
+        backgroundColor: Colors.white,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: EdgeInsets.all(16),
+              child: Text(
+                AppLocalizations.of(context)!.translate('assignee_list'),
+                style: TextStyle(
+                  color: Color(0xff1E2E52),
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            SizedBox(
+              height: 400,
+              child: ListView.builder(
+                itemExtent: 40,
+                itemCount: userList.length,
+                itemBuilder: (context, index) {
+                  return ListTile(
+                    contentPadding: EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 2),
+                    title: Text(
+                      '${index + 1}. ${userList[index]}',
+                      style: TextStyle(
+                        color: Color(0xff1E2E52),
+                        fontSize: 16,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: CustomButton(
+                buttonText: AppLocalizations.of(context)!.translate('close'),
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                buttonColor: Color(0xff1E2E52),
+                textColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
 
+// TODO at update details 'assignee' key used and shown data but on custom fields how to do it?
   Widget _buildDetailItem(String label, String value) {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
+              // ✅ НОВОЕ: Обработка пользователей
+      if (label == AppLocalizations.of(context)!.translate('assignee') ||
+          label == AppLocalizations.of(context)!.translate('assignees')) {
+        return GestureDetector(
+          onTap: () => _showUsersDialog(value),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildLabel(label),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  value.split(',').length > 3
+                      ? '${value.split(',').take(3).join(', ')} и еще ${value.split(',').length - 3}...'
+                      : value,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xff1E2E52),
+                    decoration: TextDecoration.underline,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+
+
         if (label == AppLocalizations.of(context)!.translate('files_details')) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,

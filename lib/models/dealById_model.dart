@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
+import 'package:crm_task_manager/models/user_data_response.dart';
 
 /// Main Deal model representing a deal by ID
 class DealById {
@@ -20,6 +21,7 @@ class DealById {
   final List<CustomFieldValue> customFieldValues; // ✅ НОВОЕ: для customFieldValues из API
   final List<DirectoryValue> directoryValues;
   final List<DealFiles> files;
+  final List<DealUser>? users; // ✅ НОВОЕ: список пользователей сделки
 
   const DealById({
     required this.id,
@@ -39,9 +41,18 @@ class DealById {
     this.customFieldValues = const [], // ✅ НОВОЕ
     this.directoryValues = const [],
     this.files = const [],
+    this.users, // ✅ НОВОЕ
   });
 
   factory DealById.fromJson(Map<String, dynamic> json, int dealStatusId) {
+    // ✅ НОВОЕ: Парсинг users
+    List<DealUser>? usersList;
+    if (json['users'] != null && json['users'] is List) {
+      usersList = (json['users'] as List)
+          .where((item) => item != null)
+          .map((userJson) => DealUser.fromJson(userJson as Map<String, dynamic>))
+          .toList();
+    }
     return DealById(
       id: json['id'] as int? ?? 0,
       name: json['name'] as String? ?? 'Без имени',
@@ -84,6 +95,7 @@ class DealById {
         json['files'],
             (item) => DealFiles.fromJson(item as Map<String, dynamic>),
       ),
+      users: usersList,
     );
   }
 
@@ -154,6 +166,49 @@ class DealById {
     );
   }
 }
+
+class DealUser {
+  final int id;
+  final int? dealId;
+  final int? userId;
+  final String? createdAt;
+  final String? updatedAt;
+  final UserData? user; // Полная информация о пользователе
+
+  DealUser({
+    required this.id,
+    this.dealId,
+    this.userId,
+    this.createdAt,
+    this.updatedAt,
+    this.user,
+  });
+
+  factory DealUser.fromJson(Map<String, dynamic> json) {
+    return DealUser(
+      id: json['id'] as int? ?? 0,
+      dealId: json['deal_id'] as int? ?? 0,
+      userId: json['user_id'] as int? ?? 0,
+      createdAt: json['created_at'] as String? ?? '',
+      updatedAt: json['updated_at'] as String? ?? '',
+      user: json['user'] != null
+          ? UserData.fromJson(json['user'] as Map<String, dynamic>)
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'deal_id': dealId,
+      'user_id': userId,
+      'created_at': createdAt,
+      'updated_at': updatedAt,
+      'user': user?.toJson(),
+    };
+  }
+}
+
 
 /// ✅ НОВЫЙ КЛАСС: Represents custom field values from API response
 class CustomFieldValue {

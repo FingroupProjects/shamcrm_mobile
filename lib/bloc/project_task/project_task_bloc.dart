@@ -48,14 +48,14 @@ class GetTaskProjectBloc extends Bloc<GetTaskProjectEvent, GetTaskProjectState> 
     try {
       var res = await ApiService().getTaskProject(page: event.page, perPage: event.perPage);
       final newProjects = res.result ?? [];
-      
+
       if (newProjects.isEmpty) {
         return;
       }
 
       final newCurrentPage = res.pagination?.currentPage ?? event.page;
       final newTotalPages = res.pagination?.totalPages ?? 1;
-      
+
       emit(currentState.merge(newProjects, newCurrentPage, newTotalPages));
     } catch (e) {
       // При ошибке загрузки следующей страницы не меняем состояние

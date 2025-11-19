@@ -39,7 +39,7 @@ abstract class DealEvent {}
       this.salesFunnelId,
       this.names,
       this.customFieldFilters,
-      
+
     });
   }
 
@@ -63,7 +63,8 @@ class CreateDealStatus extends DealEvent {
   final bool isSuccess;
   final bool isFailure;
   final AppLocalizations localizations;
-  final List<int>? userIds; // ✅ НОВОЕ
+  final List<int>? userIds;
+  final List<int>? changeStatusUserIds; // ✅ НОВОЕ
 
   CreateDealStatus({
     required this.title,
@@ -74,10 +75,10 @@ class CreateDealStatus extends DealEvent {
     required this.isSuccess,
     required this.isFailure,
     required this.localizations,
-    this.userIds, // ✅ НОВОЕ
+    this.userIds,
+    this.changeStatusUserIds, // ✅ НОВОЕ
   });
 }
-
 
 class CreateDeal extends DealEvent {
   final String name;
@@ -89,9 +90,10 @@ class CreateDeal extends DealEvent {
   final String? description;
   final int? dealtypeId;
   final int? leadId;
-    final List<Map<String, dynamic>>? customFields; // Изменяем тип
+  final List<Map<String, dynamic>>? customFields;
   final List<Map<String, int>>? directoryValues;
   final List<FileHelper>? files; // Новое поле для файлов
+  final List<int>? userIds; // ✅ НОВОЕ
   final AppLocalizations localizations;
 
   CreateDeal({
@@ -106,6 +108,7 @@ class CreateDeal extends DealEvent {
     this.leadId,
     this.customFields,
     this.directoryValues,
+    this.userIds, // ✅ НОВОЕ
     this.files, // Добавляем в конструктор
     required this.localizations,
   });
@@ -167,7 +170,6 @@ class DeleteDealStatuses extends DealEvent {
     );
 }
 // Event для изменения статуса лида
-// Event для изменения статуса лида
 class UpdateDealStatusEdit extends DealEvent {
   final int dealStatusId;
   final String title;
@@ -177,8 +179,8 @@ class UpdateDealStatusEdit extends DealEvent {
   final String notificationMessage;
   final bool showOnMainPage;
   final AppLocalizations localizations;
-    final List<int>? userIds; // ✅ НОВОЕ
-
+  final List<int>? userIds;
+  final List<int>? changeStatusUserIds; // ✅ НОВОЕ
 
   UpdateDealStatusEdit(
     this.dealStatusId,
@@ -190,5 +192,6 @@ class UpdateDealStatusEdit extends DealEvent {
     this.showOnMainPage,
     this.localizations,
     this.userIds,
+    this.changeStatusUserIds, // ✅ НОВОЕ
   );
 }

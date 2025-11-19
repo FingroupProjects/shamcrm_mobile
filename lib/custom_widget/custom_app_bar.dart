@@ -58,7 +58,7 @@ class CustomAppBar extends StatefulWidget {
   final bool showFilterIconCallCenter; // Новый параметр для фильтра CallCenter
 
   final bool
-      showFilterIconOnSelectCallCenter; // Добавлено: параметр для фильтра колл-центра
+  showFilterIconOnSelectCallCenter; // Добавлено: параметр для фильтра колл-центра
 
   final bool showFilterIconChat;
   final bool showFilterIconTaskChat;
@@ -111,9 +111,9 @@ class CustomAppBar extends StatefulWidget {
   final bool? initialManagerLeadHasOrders;
   final int? initialManagerLeadDaysWithoutActivity;
   final List<Map<String, dynamic>>?
-      initialDirectoryValuesLead; // Новый параметр для лидов
+  initialDirectoryValuesLead; // Новый параметр для лидов
   final Map<String, List<String>>?
-      initialLeadCustomFields; // Пользовательские поля для фильтра лидов
+  initialLeadCustomFields; // Пользовательские поля для фильтра лидов
 
   final List? initialManagersDeal;
   final List? initialLeadsDeal;
@@ -123,7 +123,7 @@ class CustomAppBar extends StatefulWidget {
   final bool? initialManagerDealHasTasks;
   final int? initialManagerDealDaysWithoutActivity;
   final List<Map<String, dynamic>>?
-      initialDirectoryValuesDeal; // Добавляем начальные значения справочников
+  initialDirectoryValuesDeal; // Добавляем начальные значения справочников
 
   final List? initialManagersEvent;
   final int? initialManagerEventStatuses;
@@ -136,7 +136,7 @@ class CustomAppBar extends StatefulWidget {
   final VoidCallback? onLeadResetFilters;
   final VoidCallback? onDealResetFilters;
   final VoidCallback? onEventResetFilters;
-final List<String>? initialDealNames; // Новый параметр
+  final List<String>? initialDealNames; // Новый параметр
   final bool showMyTaskIcon;
   final bool showMenuIcon;
   final bool showSeparateFilter;
@@ -160,6 +160,7 @@ final List<String>? initialDealNames; // Новый параметр
   final bool hasActiveEventFilters; // Есть ли активные фильтры для Event
   final bool hasActiveDealFilters; // Есть ли активные фильтры для сделок
   final bool hasActiveTaskFilters; // Есть ли активные фильтры для задач
+  final bool hasActiveLeadFilters; // Есть ли активные фильтры для лидов
   final Map<String, dynamic>? initialChatFilters; // Начальные фильтры
   final int? currentSalesFunnelId; // ID текущей воронки
   final bool showDashboardIcon; // Новый параметр
@@ -210,7 +211,7 @@ final List<String>? initialDealNames; // Новый параметр
     this.initialLeadCustomFields,
     this.initialDirectoryValuesTask, // Добавляем в конструктор
     this.showFilterIconOnSelectCallCenter =
-        false, // Добавлено: по умолчанию false
+    false, // Добавлено: по умолчанию false
 
     this.showDashboardIcon = false,
     this.onDashboardPressed,
@@ -224,6 +225,7 @@ final List<String>? initialDealNames; // Новый параметр
     this.hasActiveEventFilters = false,
     this.hasActiveDealFilters = false,
     this.hasActiveTaskFilters = false,
+    this.hasActiveLeadFilters = false,
     this.initialChatFilters,
     this.initialManagersDeal,
     this.initialLeadsDeal,
@@ -369,7 +371,7 @@ class _CustomAppBarState extends State<CustomAppBar>
     _checkOverdueTasks();
     _checkOverdueTimer = Timer.periodic(
       const Duration(minutes: 5),
-      (_) => _checkOverdueTasks(),
+          (_) => _checkOverdueTasks(),
     );
 
     // Модифицируем таймер
@@ -466,11 +468,13 @@ class _CustomAppBarState extends State<CustomAppBar>
     if (widget.hasActiveChatFilters != oldWidget.hasActiveChatFilters ||
         widget.hasActiveEventFilters != oldWidget.hasActiveEventFilters ||
         widget.hasActiveDealFilters != oldWidget.hasActiveDealFilters ||
-        widget.hasActiveTaskFilters != oldWidget.hasActiveTaskFilters) {
+        widget.hasActiveTaskFilters != oldWidget.hasActiveTaskFilters ||
+        widget.hasActiveLeadFilters != oldWidget.hasActiveLeadFilters) {
       _setFiltersActive(widget.hasActiveChatFilters ||
           widget.hasActiveEventFilters ||
           widget.hasActiveDealFilters ||
-          widget.hasActiveTaskFilters);
+          widget.hasActiveTaskFilters ||
+          widget.hasActiveLeadFilters);
     }
   }
 
@@ -541,8 +545,8 @@ class _CustomAppBarState extends State<CustomAppBar>
     final myPresenceChannel = socketClient.presenceChannel(
       'presence-user.$userId',
       authorizationDelegate:
-          EndpointAuthorizableChannelTokenAuthorizationDelegate
-              .forPresenceChannel(
+      EndpointAuthorizableChannelTokenAuthorizationDelegate
+          .forPresenceChannel(
         authorizationEndpoint: Uri.parse(
             'https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth'),
         headers: {
@@ -559,19 +563,19 @@ class _CustomAppBarState extends State<CustomAppBar>
       myPresenceChannel.subscribeIfNotUnsubscribed();
       notificationSubscription =
           myPresenceChannel.bind('notification.created').listen((event) {
-        debugPrint('Получено уведомление через сокет: ${event.data}');
-        try {
-          final data = jsonDecode(event.data);
-          debugPrint('Данные уведомления: $data');
-          setState(() {
-            _hasNewNotification = true;
+            debugPrint('Получено уведомление через сокет: ${event.data}');
+            try {
+              final data = jsonDecode(event.data);
+              debugPrint('Данные уведомления: $data');
+              setState(() {
+                _hasNewNotification = true;
+              });
+              prefs.setBool('hasNewNotification', true);
+              _playSound();
+            } catch (e) {
+              debugPrint('Ошибка парсинга данных уведомления: $e');
+            }
           });
-          prefs.setBool('hasNewNotification', true);
-          _playSound();
-        } catch (e) {
-          debugPrint('Ошибка парсинга данных уведомления: $e');
-        }
-      });
     });
 
     try {
@@ -589,9 +593,9 @@ class _CustomAppBarState extends State<CustomAppBar>
     // final canReadCalendar = await _apiService.hasPermission('notice.read');
     final canReadCalendar = await _apiService.hasPermission('calendar');
     final canReadCallCenter =
-        await _apiService.hasPermission('call-center'); // Исправлено
+    await _apiService.hasPermission('call-center'); // Исправлено
     final canReadGps =
-        await _apiService.hasPermission('call-center'); // Проверка прав для GPS
+    await _apiService.hasPermission('call-center'); // Проверка прав для GPS
     setState(() {
       _canReadNotice = canReadNotice;
       _canReadCalendar = canReadCalendar;
@@ -608,7 +612,7 @@ class _CustomAppBarState extends State<CustomAppBar>
           AppLocalizations.of(context)!.translate('not_found');
 
       UserByIdProfile userProfile =
-          await ApiService().getUserById(int.parse(UUID));
+      await ApiService().getUserById(int.parse(UUID));
 
       if (userProfile.image != null && userProfile.image != _lastLoadedImage) {
         setState(() {
@@ -951,7 +955,7 @@ class _CustomAppBarState extends State<CustomAppBar>
               offset: const Offset(10, 0),
               child: Tooltip(
                 message:
-                    AppLocalizations.of(context)!.translate('notification'),
+                AppLocalizations.of(context)!.translate('notification'),
                 preferBelow: false,
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -1042,7 +1046,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                     height: 24,
                     // ОБНОВЛЯЕМ: Цвет иконки зависит от активности фильтров
                     color:
-                        widget.hasActiveChatFilters ? Colors.blue : _iconColor,
+                    widget.hasActiveChatFilters ? Colors.blue : _iconColor,
                   ),
                   onPressed: () {
                     setState(() {
@@ -1055,7 +1059,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                     // ОТКРЫВАЕМ ChatLeadFilterScreen с передачей данных
                     Navigator.push(
                       context,
-                      MaterialPageRoute( 
+                      MaterialPageRoute(
                         // В секции showFilterIconChat:
                         builder: (context) => ChatLeadFilterScreen(
                           // Безопасное преобразование типов
@@ -1535,163 +1539,163 @@ class _CustomAppBarState extends State<CustomAppBar>
                       }
                     },
                     itemBuilder: (BuildContext context) =>
-                        <PopupMenuEntry<String>>[
-                          if (widget.showFilterIcon)
-                            PopupMenuItem<String>(
-                              value: 'filter_lead',
-                              child: Row(
-                                children: [
-                                  _isFiltering
-                                      ? Icon(Icons.close, color: _iconColor)
-                                      : Image.asset(
-                                          'assets/icons/AppBar/filter.png',
-                                          width: 24,
-                                          height: 24,
-                                          color: _iconColor,
-                                        ),
-                                  SizedBox(width: 8),
-                                  Text(AppLocalizations.of(context)!
-                                      .translate('filtr')),
-                                ],
+                    <PopupMenuEntry<String>>[
+                      if (widget.showFilterIcon)
+                        PopupMenuItem<String>(
+                          value: 'filter_lead',
+                          child: Row(
+                            children: [
+                              _isFiltering
+                                  ? Icon(Icons.close, color: _iconColor)
+                                  : Image.asset(
+                                'assets/icons/AppBar/filter.png',
+                                width: 24,
+                                height: 24,
+                                color: _iconColor,
                               ),
-                            ),
-                          if (widget.showFilterIconDeal)
-                            PopupMenuItem<String>(
-                              value: 'filter_deal',
-                              child: Row(
-                                children: [
-                                  _isFiltering
-                                      ? Icon(Icons.close, color: _iconColor)
-                                      : Image.asset(
-                                          'assets/icons/AppBar/filter.png',
-                                          width: 24,
-                                          height: 24,
-                                          color: _iconColor,
-                                        ),
-                                  SizedBox(width: 8),
-                                  Text(AppLocalizations.of(context)!
-                                      .translate('filter')),
-                                ],
+                              SizedBox(width: 8),
+                              Text(AppLocalizations.of(context)!
+                                  .translate('filtr')),
+                            ],
+                          ),
+                        ),
+                      if (widget.showFilterIconDeal)
+                        PopupMenuItem<String>(
+                          value: 'filter_deal',
+                          child: Row(
+                            children: [
+                              _isFiltering
+                                  ? Icon(Icons.close, color: _iconColor)
+                                  : Image.asset(
+                                'assets/icons/AppBar/filter.png',
+                                width: 24,
+                                height: 24,
+                                color: _iconColor,
                               ),
-                            ),
-                          if (widget.showEvent && _canReadNotice)
-                            PopupMenuItem<String>(
-                              value: 'events',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.event),
-                                  SizedBox(width: 8),
-                                  Text(AppLocalizations.of(context)!
-                                      .translate('events')),
-                                ],
+                              SizedBox(width: 8),
+                              Text(AppLocalizations.of(context)!
+                                  .translate('filter')),
+                            ],
+                          ),
+                        ),
+                      if (widget.showEvent && _canReadNotice)
+                        PopupMenuItem<String>(
+                          value: 'events',
+                          child: Row(
+                            children: [
+                              Icon(Icons.event),
+                              SizedBox(width: 8),
+                              Text(AppLocalizations.of(context)!
+                                  .translate('events')),
+                            ],
+                          ),
+                        ),
+                      if (widget.showFilterTaskIcon)
+                        PopupMenuItem<String>(
+                          value: 'filter_task',
+                          child: Row(
+                            children: [
+                              _isTaskFiltering
+                                  ? Icon(Icons.close, color: _iconColor)
+                                  : Image.asset(
+                                'assets/icons/AppBar/filter.png',
+                                width: 24,
+                                height: 24,
+                                color: _iconColor,
                               ),
-                            ),
-                          if (widget.showFilterTaskIcon)
-                            PopupMenuItem<String>(
-                              value: 'filter_task',
-                              child: Row(
+                              SizedBox(width: 8),
+                              Text(AppLocalizations.of(context)!
+                                  .translate('filtr')),
+                            ],
+                          ),
+                        ),
+                      if (widget.showMyTaskIcon)
+                        PopupMenuItem<String>(
+                          value: 'my_tasks',
+                          child: Row(
+                            children: [
+                              Stack(
                                 children: [
-                                  _isTaskFiltering
-                                      ? Icon(Icons.close, color: _iconColor)
-                                      : Image.asset(
-                                          'assets/icons/AppBar/filter.png',
-                                          width: 24,
-                                          height: 24,
-                                          color: _iconColor,
-                                        ),
-                                  SizedBox(width: 8),
-                                  Text(AppLocalizations.of(context)!
-                                      .translate('filtr')),
-                                ],
-                              ),
-                            ),
-                          if (widget.showMyTaskIcon)
-                            PopupMenuItem<String>(
-                              value: 'my_tasks',
-                              child: Row(
-                                children: [
-                                  Stack(
-                                    children: [
-                                      Image.asset(
-                                        'assets/icons/AppBar/my-task.png',
-                                        width: 24,
-                                        height: 24,
-                                      ),
-                                      if (_hasOverdueTasks)
-                                        Positioned(
-                                          right: 0,
-                                          child: FadeTransition(
-                                            opacity: _blinkAnimation,
-                                            child: Container(
-                                              width: 10,
-                                              height: 10,
-                                              decoration: BoxDecoration(
-                                                color: Colors.red,
-                                                shape: BoxShape.circle,
-                                              ),
-                                            ),
+                                  Image.asset(
+                                    'assets/icons/AppBar/my-task.png',
+                                    width: 24,
+                                    height: 24,
+                                  ),
+                                  if (_hasOverdueTasks)
+                                    Positioned(
+                                      right: 0,
+                                      child: FadeTransition(
+                                        opacity: _blinkAnimation,
+                                        child: Container(
+                                          width: 10,
+                                          height: 10,
+                                          decoration: BoxDecoration(
+                                            color: Colors.red,
+                                            shape: BoxShape.circle,
                                           ),
                                         ),
-                                    ],
-                                  ),
-                                  SizedBox(width: 8),
-                                  Text(AppLocalizations.of(context)!
-                                      .translate('appbar_my_tasks')),
+                                      ),
+                                    ),
                                 ],
                               ),
-                            ),
-                          if (widget.showCalendar && _canReadCalendar)
-                            PopupMenuItem<String>(
-                              value: 'calendar',
-                              child: Row(
-                                children: [
-                                  Image.asset(
-                                    'assets/icons/AppBar/calendar.png',
-                                    width: 24,
-                                    height: 24,
-                                  ),
-                                  SizedBox(width: 8),
-                                  Text(AppLocalizations.of(context)!
-                                      .translate('calendar')),
-                                ],
+                              SizedBox(width: 8),
+                              Text(AppLocalizations.of(context)!
+                                  .translate('appbar_my_tasks')),
+                            ],
+                          ),
+                        ),
+                      if (widget.showCalendar && _canReadCalendar)
+                        PopupMenuItem<String>(
+                          value: 'calendar',
+                          child: Row(
+                            children: [
+                              Image.asset(
+                                'assets/icons/AppBar/calendar.png',
+                                width: 24,
+                                height: 24,
                               ),
-                            ),
-                          // В методе build внутри PopupMenuButton, замените пункт 'call_center' на:
-                          if (widget.showCallCenter && _canReadCallCenter)
-                            PopupMenuItem<String>(
-                              value: 'call_center',
-                              child: Row(
-                                children: [
-                                  Image.asset(
-                                    'assets/icons/AppBar/call_center.png',
-                                    width: 24,
-                                    height: 24,
-                                    color:
-                                        _iconColor, // Добавляем изменение цвета иконки
-                                  ),
-                                  SizedBox(width: 8),
-                                  Text(AppLocalizations.of(context)!
-                                      .translate('call_center')),
-                                ],
+                              SizedBox(width: 8),
+                              Text(AppLocalizations.of(context)!
+                                  .translate('calendar')),
+                            ],
+                          ),
+                        ),
+                      // В методе build внутри PopupMenuButton, замените пункт 'call_center' на:
+                      if (widget.showCallCenter && _canReadCallCenter)
+                        PopupMenuItem<String>(
+                          value: 'call_center',
+                          child: Row(
+                            children: [
+                              Image.asset(
+                                'assets/icons/AppBar/call_center.png',
+                                width: 24,
+                                height: 24,
+                                color:
+                                _iconColor, // Добавляем изменение цвета иконки
                               ),
-                            ),
-                          // if (widget.showGps && _canReadGps) // Новый пункт для GPS
-                          //             PopupMenuItem<String>(
-                          //               value: 'gps',
-                          //               child: Row(
-                          //                 children: [
-                          //                   Image.asset(
-                          //                     'assets/icons/AppBar/call_center.png', // Предполагаемый путь к иконке
-                          //                     width: 24,
-                          //                     height: 24,
-                          //                     color: _iconColor,
-                          //                   ),
-                          //                   SizedBox(width: 8),
-                          //                   Text(AppLocalizations.of(context)!.translate('gps')),
-                          //                 ],
-                          //               ),
-                          //             ),
-                        ]))
+                              SizedBox(width: 8),
+                              Text(AppLocalizations.of(context)!
+                                  .translate('call_center')),
+                            ],
+                          ),
+                        ),
+                      // if (widget.showGps && _canReadGps) // Новый пункт для GPS
+                      //             PopupMenuItem<String>(
+                      //               value: 'gps',
+                      //               child: Row(
+                      //                 children: [
+                      //                   Image.asset(
+                      //                     'assets/icons/AppBar/call_center.png', // Предполагаемый путь к иконке
+                      //                     width: 24,
+                      //                     height: 24,
+                      //                     color: _iconColor,
+                      //                   ),
+                      //                   SizedBox(width: 8),
+                      //                   Text(AppLocalizations.of(context)!.translate('gps')),
+                      //                 ],
+                      //               ),
+                      //             ),
+                    ]))
         ]));
   }
 

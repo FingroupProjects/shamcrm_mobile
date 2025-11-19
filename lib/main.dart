@@ -1,6 +1,7 @@
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/firebase_api.dart';
+import 'package:crm_task_manager/api/service/internet_monitor_service.dart';
 import 'package:crm_task_manager/api/service/secure_storage_service.dart';
 import 'package:crm_task_manager/api/service/widget_service.dart';
 import 'package:crm_task_manager/bloc/My-Task_Status_Name/statusName_bloc.dart';
@@ -119,7 +120,6 @@ import 'package:crm_task_manager/bloc/task_status_add/task_bloc.dart';
 import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
 import 'package:crm_task_manager/bloc/user/create_cleant/create_client_bloc.dart';
 import 'package:crm_task_manager/bloc/user/user_bloc.dart';
-import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/firebase_options.dart';
 import 'package:crm_task_manager/screens/auth/pin_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_screen.dart';
@@ -129,6 +129,7 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:crm_task_manager/screens/profile/languages/local_manager_lang.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:crm_task_manager/update_dialog.dart';
+import 'package:crm_task_manager/widgets/internet_aware_wrapper.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -151,20 +152,16 @@ final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
 void main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
-    //print("====================== MAIN START ======================");
-        WidgetService.initialize();
+    WidgetService.initialize();
+        // await InternetMonitorService().initialize();
 
-    // ШАГ 1: Безопасная инициализация Firebase
     await _initializeFirebase();
 
-    // ШАГ 2: Инициализация сервисов
     final apiService = ApiService();
     final authService = AuthService();
 
-    // ШАГ 3: Глобальная проверка валидности данных
     final sessionValidation = await _validateApplicationSession(apiService);
 
-    // ШАГ 4: Получение токена и PIN только если сессия валидна
     String? token;
     String? pin;
     bool isDomainChecked = false;
@@ -178,30 +175,21 @@ void main() async {
         await apiService.initialize();
       }
     } else {
-      //print('main: Invalid session detected, clearing all data');
       await _clearAllApplicationData(apiService, authService);
     }
     
-    // ШАГ 5: App Tracking Transparency
     await AppTrackingTransparency.requestTrackingAuthorization();
-
-    // ШАГ 6: Firebase Messaging инициализация
     await _initializeFirebaseMessaging(apiService);
 
-    // ШАГ 7: Получение initial message (только если Firebase готов)
     RemoteMessage? initialMessage;
     try {
       if (Firebase.apps.isNotEmpty) {
         initialMessage = await FirebaseMessaging.instance.getInitialMessage();
-        if (initialMessage != null) {
-          //print('main: Initial message получено: ${initialMessage.messageId}');
-        }
       }
     } catch (e) {
       //print('main: Ошибка получения initial message: $e');
     }
 
-    // ШАГ 8: UI настройки
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -210,13 +198,11 @@ void main() async {
       ),
     );
 
-    // ШАГ 9: Языковые настройки
     final String? savedLanguageCode = await LanguageManager.getLanguage();
     final Locale savedLocale = savedLanguageCode != null
         ? Locale(savedLanguageCode)
         : const Locale('ru');
 
-    // ШАГ 10: Запуск приложения
     runApp(MyApp(
       apiService: apiService,
       authService: authService,
@@ -228,194 +214,106 @@ void main() async {
       sessionValid: sessionValidation.isValid,
     ));
   } catch (e, stackTrace) {
-    //print('Критическая ошибка при запуске приложения: $e');
-    //print('StackTrace: $stackTrace');
-
-    // Показываем экран ошибки вместо краша
     runApp(ErrorApp(error: e.toString()));
   }
 }
 
-// =============================================================================
-// БЕЗОПАСНАЯ ИНИЦИАЛИЗАЦИЯ FIREBASE
-// =============================================================================
-
 Future<void> _initializeFirebase() async {
   try {
-    //print('Firebase: Проверка состояния инициализации');
-    
-    // Проверка 1: Проверяем список приложений
     if (Firebase.apps.isEmpty) {
-      //print('Firebase: Начинаем первичную инициализацию');
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
-      //print('Firebase: Первичная инициализация завершена успешно');
-      
-      // Даём время полностью инициализироваться
       await Future.delayed(const Duration(milliseconds: 500));
-      
     } else {
-      //print('Firebase: Приложение уже существует (apps.length = ${Firebase.apps.length})');
-      
-      // Проверка 2: Убеждаемся что default app доступен
       try {
-        final app = Firebase.app();
-        //print('Firebase: Default app доступен и готов (name: ${app.name})');
+        Firebase.app();
       } catch (e) {
-        //print('Firebase: Default app существует но недоступен: $e');
-        // Даём время на инициализацию
         await Future.delayed(const Duration(milliseconds: 500));
       }
     }
     
-    // Финальная проверка готовности
     try {
-      final app = Firebase.app();
-      //print('Firebase: Финальная проверка пройдена (name: ${app.name})');
+      Firebase.app();
     } catch (e) {
-      //print('Firebase: Предупреждение - default app может быть не готов: $e');
+      //print('Firebase: Предупреждение: $e');
     }
-    
   } catch (e) {
     final errorString = e.toString();
     
-    // Обрабатываем специфичные ошибки
     if (errorString.contains('already exists') || 
         errorString.contains('duplicate app')) {
-      //print('Firebase: Приложение уже было инициализировано (это нормально)');
-      
-      // Даём время на полную инициализацию
       await Future.delayed(const Duration(milliseconds: 500));
-      
-      // Проверяем доступность
       try {
         Firebase.app();
-        //print('Firebase: После ошибки "already exists" - app доступен');
       } catch (checkError) {
-        //print('Firebase: После ошибки "already exists" - app НЕ доступен: $checkError');
+        //print('Firebase: app НЕ доступен: $checkError');
       }
-      
-    } else {
-      // Это реальная критическая ошибка
-      //print('Firebase: КРИТИЧЕСКАЯ ОШИБКА инициализации: $e');
-      // НЕ пробрасываем ошибку - даём приложению запуститься без Firebase
     }
   }
 }
 
-// =============================================================================
-// БЕЗОПАСНАЯ ИНИЦИАЛИЗАЦИЯ FIREBASE MESSAGING
-// =============================================================================
-
 Future<void> _initializeFirebaseMessaging(ApiService apiService) async {
   try {
-    //print('Firebase Messaging: Начало инициализации');
-    
-    // Проверка 1: Firebase инициализирован?
-    if (Firebase.apps.isEmpty) {
-      //print('Firebase Messaging: Firebase не инициализирован, пропуск');
-      return;
-    }
+    if (Firebase.apps.isEmpty) return;
 
-    // Проверка 2: Default app доступен?
     try {
-      final app = Firebase.app();
-      //print('Firebase Messaging: Default app доступен (${app.name})');
+      Firebase.app();
     } catch (e) {
-      //print('Firebase Messaging: Default app недоступен: $e');
       return;
     }
 
-    // Проверка 3: Дополнительное время на готовность
     await Future.delayed(const Duration(milliseconds: 500));
 
-    // Запрос разрешений
-    //print('Firebase Messaging: Запрос разрешений');
     final settings = await FirebaseMessaging.instance.requestPermission(
       alert: true,
       badge: true,
       sound: true,
     );
-    //print('Firebase Messaging: Разрешения получены (status: ${settings.authorizationStatus})');
 
-    // Получение FCM токена
     await getFCMTokens(apiService);
 
-    // Инициализация FirebaseApi
     try {
       FirebaseApi firebaseApi = FirebaseApi();
       await firebaseApi.initNotifications();
-      //print('Firebase Messaging: FirebaseApi инициализирован успешно');
     } catch (e) {
-      //print('Firebase Messaging: Ошибка инициализации FirebaseApi: $e');
+      //print('Firebase Messaging: Ошибка: $e');
     }
-
-    //print('Firebase Messaging: Инициализация завершена успешно');
     
   } catch (e) {
     final errorString = e.toString();
     
-    if (errorString.contains('already exists') || 
-        errorString.contains('duplicate')) {
-      //print('Firebase Messaging: Сервис уже инициализирован (нормально)');
-    } else {
-      //print('Firebase Messaging: Ошибка инициализации: $e');
+    if (!errorString.contains('already exists') && 
+        !errorString.contains('duplicate')) {
+      //print('Firebase Messaging: Ошибка: $e');
     }
-    // НЕ пробрасываем ошибку - приложение должно работать
   }
 }
 
-// =============================================================================
-// ПОЛУЧЕНИЕ FCM ТОКЕНА
-// =============================================================================
-
-// В main.dart - ИЗМЕНЯЕМ функцию getFCMTokens
 Future<void> getFCMTokens(ApiService apiService) async {
   try {
-    //print('FCM Token: Начало получения');
-    
-    // Проверка Firebase
-    if (Firebase.apps.isEmpty) {
-      //print('FCM Token: Firebase не инициализирован');
-      return;
-    }
+    if (Firebase.apps.isEmpty) return;
 
-    // Проверка доступности
     try {
       Firebase.app();
     } catch (e) {
-      //print('FCM Token: Default app недоступен: $e');
       return;
     }
 
-    // Получение токена
     final String? fcmToken = await FirebaseMessaging.instance.getToken();
     
     if (fcmToken != null && fcmToken.isNotEmpty) {
-      //print('FCM Token: Успешно получен (${fcmToken.substring(0, 20)}...)');
-      //print('FCM Token: Полный токен: $fcmToken');
-      
-      // ✅ ОТПРАВЛЯЕМ ТОКЕН НА СЕРВЕР
       try {
         await apiService.sendDeviceToken(fcmToken);
-        //print('FCM Token: Успешно отправлен на сервер');
       } catch (e) {
-        //print('FCM Token: Ошибка отправки на сервер: $e');
+        //print('FCM Token: Ошибка отправки: $e');
       }
-      
-    } else {
-      //print('FCM Token: Токен не получен (null или пустой)');
     }
     
   } catch (e) {
-    //print('FCM Token: Ошибка получения: $e');
+    //print('FCM Token: Ошибка: $e');
   }
 }
-
-// =============================================================================
-// ВАЛИДАЦИЯ СЕССИИ
-// =============================================================================
 
 class SessionValidationResult {
   final bool isValid;
@@ -427,11 +325,8 @@ class SessionValidationResult {
 Future<SessionValidationResult> _validateApplicationSession(
     ApiService apiService) async {
   try {
-    //print('main: Validating application session');
-
     final token = await apiService.getToken();
     if (token == null || token.isEmpty) {
-      //print('main: No token found');
       return SessionValidationResult(isValid: false, errorMessage: 'No token');
     }
 
@@ -453,7 +348,6 @@ Future<SessionValidationResult> _validateApplicationSession(
             enteredDomain.isEmpty ||
             enteredMainDomain == null ||
             enteredMainDomain.isEmpty) {
-          //print('main: No valid domain configuration found');
           return SessionValidationResult(
               isValid: false, errorMessage: 'No domain');
         }
@@ -465,39 +359,25 @@ Future<SessionValidationResult> _validateApplicationSession(
       //print('main: No organization selected');
     }
 
-    //print('main: Session validation successful');
     return SessionValidationResult(isValid: true);
   } catch (e) {
-    //print('main: Error validating session: $e');
     return SessionValidationResult(isValid: false, errorMessage: e.toString());
   }
 }
 
-// =============================================================================
-// ОЧИСТКА ДАННЫХ
-// =============================================================================
-
 Future<void> _clearAllApplicationData(
     ApiService apiService, AuthService authService) async {
   try {
-    //print('main: Clearing all application data');
-
     await apiService.logout();
     await apiService.reset();
     await authService.clearPin();
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
-
-    //print('main: All application data cleared');
   } catch (e) {
-    //print('main: Error clearing application data: $e');
+    //print('main: Error clearing data: $e');
   }
 }
-
-// =============================================================================
-// ЭКРАН ОШИБКИ
-// =============================================================================
 
 class ErrorApp extends StatelessWidget {
   final String error;
@@ -515,11 +395,7 @@ class ErrorApp extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.error_outline,
-                  size: 80,
-                  color: Colors.red,
-                ),
+                Icon(Icons.error_outline, size: 80, color: Colors.red),
                 SizedBox(height: 20),
                 Text(
                   'Ошибка запуска приложения',
@@ -554,7 +430,7 @@ class ErrorApp extends StatelessWidget {
 }
 
 // =============================================================================
-// MARK: MYAPP
+// MYAPP - УБРАНА ЛИШНЯЯ ИНИЦИАЛИЗАЦИЯ
 // =============================================================================
 
 class MyApp extends StatefulWidget {
@@ -589,84 +465,35 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   Locale? _locale;
-  RemoteMessage? _initialMessage;
-  bool _isInitialized = false;
 
   @override
   void initState() {
     super.initState();
     _locale = widget.initialLocale;
-    _initialMessage = widget.initialMessage;
-    _initializeApp();
-  }
-
-  Future<void> _initializeApp() async {
-    try {
-      //print('MyApp: Инициализация приложения');
-      
-      // Если initial message уже был передан из main, используем его
-      if (_initialMessage != null) {
-        //print('MyApp: Initial message уже получено из main');
-      } else {
-        // Пытаемся получить initial message если Firebase готов
-        if (Firebase.apps.isNotEmpty) {
-          try {
-            Firebase.app(); // Проверка доступности
-            
-            // Небольшая задержка для готовности
-            await Future.delayed(const Duration(milliseconds: 300));
-            
-            FirebaseApi firebaseApi = FirebaseApi();
-            _initialMessage = firebaseApi.getInitialMessage();
-            
-            if (_initialMessage != null) {
-              //print('MyApp: Initial message получено в MyApp');
-            } else {
-              //print('MyApp: Initial message отсутствует');
-            }
-          } catch (e) {
-            //print('MyApp: Ошибка получения initial message: $e');
-          }
-        } else {
-          //print('MyApp: Firebase не инициализирован, пропуск initial message');
-        }
-      }
-
-      setState(() {
-        _isInitialized = true;
-      });
-      
-      //print('MyApp: Инициализация завершена успешно');
-      
-    } catch (e) {
-      //print('MyApp: Ошибка инициализации: $e');
-      setState(() {
-        _isInitialized = true;
-      });
-    }
+    // ✅ УБРАНА ИНИЦИАЛИЗАЦИЯ - не нужна!
   }
 
   Future<void> checkForNewVersion(BuildContext context) async {
-  try {
-    final newVersionPlus = NewVersionPlus();
-    final status = await newVersionPlus.getVersionStatus();
-    debugPrint("APP_VERSION: Current: ${status?.localVersion}, Store: ${status?.storeVersion}, CanUpdate: ${status?.canUpdate}");
-    
-    if (!mounted || !context.mounted || status == null || status.canUpdate == false) return;
+    try {
+      final newVersionPlus = NewVersionPlus();
+      final status = await newVersionPlus.getVersionStatus();
+      debugPrint("APP_VERSION: Current: ${status?.localVersion}, Store: ${status?.storeVersion}, CanUpdate: ${status?.canUpdate}");
+      
+      if (!mounted || !context.mounted || status == null || status.canUpdate == false) return;
 
-    final localizations = AppLocalizations.of(context);
+      final localizations = AppLocalizations.of(context);
 
-    await UpdateDialog.show(
-      context: context,
-      status: status,
-      title: localizations?.translate('app_update_available_title') ?? 'Обновление',
-      message: localizations?.translate('app_update_available_message') ?? 'Доступна новая версия приложения',
-      updateButton: localizations?.translate('app_update_button') ?? 'Обновить',
-    );
-  } catch (e) {
-    print('MyApp: Error checking version: $e');
+      await UpdateDialog.show(
+        context: context,
+        status: status,
+        title: localizations?.translate('app_update_available_title') ?? 'Обновление',
+        message: localizations?.translate('app_update_available_message') ?? 'Доступна новая версия приложения',
+        updateButton: localizations?.translate('app_update_button') ?? 'Обновить',
+      );
+    } catch (e) {
+      print('MyApp: Error checking version: $e');
+    }
   }
-}
 
   void setLocale(Locale newLocale) {
     setState(() {
@@ -675,30 +502,10 @@ class _MyAppState extends State<MyApp> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    if (!_isInitialized) {
-      return MaterialApp(
-        home: Scaffold(
-          backgroundColor: Colors.white,
-          body: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                PlayStoreImageLoading(
-                  size: 80.0,
-                  duration: Duration(milliseconds: 1000),
-                ),
-                // SizedBox(height: 20),
-                // Text('Инициализация...'),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
+Widget build(BuildContext context) {
+  return MultiProvider(
+    providers: [
 
-    return MultiProvider(
-      providers: [
         Provider<ApiService>.value(value: widget.apiService),
         Provider<AuthService>.value(value: widget.authService),
         BlocProvider(create: (context) => DomainBloc(widget.apiService)),
@@ -805,7 +612,6 @@ class _MyAppState extends State<MyApp> {
         BlocProvider<ClientSaleBloc>(  create: (context) => ClientSaleBloc(widget.apiService), ),
         BlocProvider<ClientSaleDocumentHistoryBloc>(  create: (context) => ClientSaleDocumentHistoryBloc(widget.apiService),),
         BlocProvider<IncomingDocumentHistoryBloc>(  create: (context) => IncomingDocumentHistoryBloc(context.read<ApiService>()),),
-        // TODO fix bloc providers warehouse folder
         BlocProvider(create: (context) => ClientReturnBloc(widget.apiService)),
         BlocProvider(create: (context) => SupplierBloc(widget.apiService)),
         BlocProvider(create: (context) => MeasureUnitsBloc(widget.apiService)),
@@ -826,78 +632,83 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => SalesDashboardDebtorsBloc()),
         BlocProvider(create: (context) => FieldConfigurationBloc(widget.apiService)),
      ],
-      child: MaterialApp(
-        locale: _locale ?? const Locale('ru'),
-        color: Colors.white,
-        debugShowCheckedModeBanner: false,
-        title: 'shamCRM',
-        navigatorKey: navigatorKey,
-        scaffoldMessengerKey: scaffoldMessengerKey,
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
-          scaffoldBackgroundColor: Colors.white,
-        ),
-        localizationsDelegates: [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: [
-          const Locale('ru', ''),
-          const Locale('en', ''),
-          const Locale('uz', ''),
-        ],
-        localeResolutionCallback: (locale, supportedLocales) {
-          for (var supportedLocale in supportedLocales) {
-            if (supportedLocale.languageCode == locale?.languageCode) {
-              return supportedLocale;
-            }
+    child: MaterialApp(  // ✅ MaterialApp БЕЗ обертки
+      locale: _locale ?? const Locale('ru'),
+      color: Colors.white,
+      debugShowCheckedModeBanner: false,
+      title: 'shamCRM',
+      navigatorKey: navigatorKey,
+      scaffoldMessengerKey: scaffoldMessengerKey,
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        scaffoldBackgroundColor: Colors.white,
+      ),
+      localizationsDelegates: [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: [
+        const Locale('ru', ''),
+        const Locale('en', ''),
+        const Locale('uz', ''),
+      ],
+      localeResolutionCallback: (locale, supportedLocales) {
+        for (var supportedLocale in supportedLocales) {
+          if (supportedLocale.languageCode == locale?.languageCode) {
+            return supportedLocale;
           }
-          return supportedLocales.first;
-        },
-        home: Builder(
-          builder: (context) {
-            if (!widget.sessionValid) {
-              WidgetsBinding.instance.addPostFrameCallback((_) async {
-                if (mounted) {
-                  await checkForNewVersion(context);
-                }
-              });
-              return AuthScreen();
-            }
+        }
+        return supportedLocales.first;
+      },
+      // ✅ InternetAwareWrapper ЗДЕСЬ, в builder MaterialApp
+      // builder: (context, child) {
+      //   return InternetAwareWrapper(
+      //     child: child ?? const SizedBox.shrink(),
+      //   );
+      // },
+      home: Builder(
+        builder: (context) {
+          if (!widget.sessionValid) {
+            WidgetsBinding.instance.addPostFrameCallback((_) async {
+              if (mounted) {
+                await checkForNewVersion(context);
+              }
+            });
+            return AuthScreen();
+          }
 
-            if (widget.token == null) {
-              WidgetsBinding.instance.addPostFrameCallback((_) async {
-                if (mounted) {
-                  await checkForNewVersion(context);
-                }
-              });
-              return AuthScreen();
-            } else if (widget.pin == null) {
-              WidgetsBinding.instance.addPostFrameCallback((_) async {
-                if (mounted) {
-                  await checkForNewVersion(context);
-                }
-              });
-              return PinSetupScreen();
-            } else {
-              return PinScreen(
-                initialMessage: _initialMessage,
-              );
-            }
-          },
-        ),
-        routes: {
-          '/local_auth': (context) => AuthScreen(),
-          '/login': (context) => LoginScreen(),
-          '/home': (context) => HomeScreen(),
-          '/chats': (context) => ChatsScreen(),
-          '/pin_setup': (context) => PinSetupScreen(),
-          '/pin_screen': (context) => PinScreen(),
-          '/profile': (context) => ProfileScreen(),
+          if (widget.token == null) {
+            WidgetsBinding.instance.addPostFrameCallback((_) async {
+              if (mounted) {
+                await checkForNewVersion(context);
+              }
+            });
+            return AuthScreen();
+          } else if (widget.pin == null) {
+            WidgetsBinding.instance.addPostFrameCallback((_) async {
+              if (mounted) {
+                await checkForNewVersion(context);
+              }
+            });
+            return PinSetupScreen();
+          } else {
+            return PinScreen(
+              initialMessage: widget.initialMessage,
+            );
+          }
         },
       ),
-    );
-  }
-}
+      routes: {
+        '/local_auth': (context) => AuthScreen(),
+        '/login': (context) => LoginScreen(),
+        '/home': (context) => HomeScreen(),
+        '/chats': (context) => ChatsScreen(),
+        '/pin_setup': (context) => PinSetupScreen(),
+        '/pin_screen': (context) => PinScreen(),
+        '/profile': (context) => ProfileScreen(),
+      },
+    ),
+  );
+}}
