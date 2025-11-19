@@ -1258,14 +1258,14 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                             ...customFields.where((field) {
                               // Исключаем поля, которые уже есть в серверной конфигурации
                               return !fieldConfigurations.any((config) =>
-                                  (config.isCustomField && config.fieldName == field.fieldName) ||
+                              (config.isCustomField && config.fieldName == field.fieldName) ||
                                   (config.isDirectory && config.directoryId == field.directoryId));
                             }).map((field) {
                               return Column(
                                 children: [
                                   field.isDirectoryField && field.directoryId != null
                                       ? MainFieldDropdownWidget(
-                                          directoryId: field.directoryId!,
+                                      directoryId: field.directoryId!,
                                       directoryName: field.fieldName,
                                       selectedField: null,
                                       onSelectField: (MainField selectedField) {
@@ -1286,17 +1286,22 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                                             entryId: entryId,
                                           );
                                         });
-                                          })
+                                      })
                                       : CustomFieldWidget(
-                                          fieldName: field.fieldName,
-                                          valueController: field.controller,
-                                          type: field.type,
-                                          isDirectory: false,
-                                        ),
+                                    fieldName: field.fieldName,
+                                    valueController: field.controller,
+                                    type: field.type,
+                                    isDirectory: false,
+                                  ),
                                   const SizedBox(height: 15),
                                 ],
                               );
                             }),
+
+                            // Всегда показываем выбор файлов внизу
+                            const SizedBox(height: 16),
+                            _buildFileSelection(),
+                            const SizedBox(height: 80), // Отступ внизу для кнопок
                           ],
                         ),
                       ),
