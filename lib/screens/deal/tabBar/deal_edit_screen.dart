@@ -741,64 +741,175 @@ class _DealEditScreenState extends State<DealEditScreen> {
                     ),
                   ],
                 ),
-                child: Row(
+                child: Column(
                   children: [
-                    Icon(
-                      Icons.drag_handle,
-                      color: Color(0xff99A4BA),
-                      size: 24,
-                    ),
-                    SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            displayName,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xff1E2E52),
-                            ),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            typeLabel,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w400,
-                              color: Color(0xff99A4BA),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (config.required)
-                      Container(
-                        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Color(0xffFFE5E5),
-                          borderRadius: BorderRadius.circular(4),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.drag_handle,
+                          color: Color(0xff99A4BA),
+                          size: 24,
                         ),
-                        child: Text(
-                          AppLocalizations.of(context)!.translate('required'),
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xffFF4757),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                displayName,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontFamily: 'Gilroy',
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xff1E2E52),
+                                ),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                typeLabel,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontFamily: 'Gilroy',
+                                  fontWeight: FontWeight.w400,
+                                  color: Color(0xff99A4BA),
+                                ),
+                              ),
+                              if (!config.required) ...[
+                                SizedBox(height: 8),
+                                InkWell(
+                                  onTap: () {
+                                    setState(() {
+                                      final updatedConfig = FieldConfiguration(
+                                        id: config.id,
+                                        tableName: config.tableName,
+                                        fieldName: config.fieldName,
+                                        position: config.position,
+                                        required: config.required,
+                                        isActive: !config.isActive,
+                                        isCustomField: config.isCustomField,
+                                        createdAt: config.createdAt,
+                                        updatedAt: config.updatedAt,
+                                        customFieldId: config.customFieldId,
+                                        directoryId: config.directoryId,
+                                        type: config.type,
+                                        isDirectory: config.isDirectory,
+                                        showOnTable: config.showOnTable,
+                                      );
+
+                                      final idx = fieldConfigurations.indexWhere((f) => f.id == config.id);
+                                      if (idx != -1) {
+                                        fieldConfigurations[idx] = updatedConfig;
+                                      }
+                                    });
+                                  },
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        width: 20,
+                                        height: 20,
+                                        decoration: BoxDecoration(
+                                          color: config.isActive ? Color(0xff4759FF) : Colors.white,
+                                          border: Border.all(
+                                            color: config.isActive ? Color(0xff4759FF) : Color(0xffE5E9F2),
+                                            width: 2,
+                                          ),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: config.isActive
+                                            ? Icon(
+                                          Icons.check,
+                                          size: 14,
+                                          color: Colors.white,
+                                        )
+                                            : null,
+                                      ),
+                                      SizedBox(width: 8),
+                                      Flexible(
+                                        child: Text(
+                                          AppLocalizations.of(context)!.translate('show_field'),
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontFamily: 'Gilroy',
+                                            fontWeight: FontWeight.w500,
+                                            color: Color(0xff1E2E52),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                              SizedBox(height: 8),
+                              InkWell(
+                                onTap: () {
+                                  setState(() {
+                                    final updatedConfig = FieldConfiguration(
+                                      id: config.id,
+                                      tableName: config.tableName,
+                                      fieldName: config.fieldName,
+                                      position: config.position,
+                                      required: config.required,
+                                      isActive: config.isActive,
+                                      isCustomField: config.isCustomField,
+                                      createdAt: config.createdAt,
+                                      updatedAt: config.updatedAt,
+                                      customFieldId: config.customFieldId,
+                                      directoryId: config.directoryId,
+                                      type: config.type,
+                                      isDirectory: config.isDirectory,
+                                      showOnTable: !config.showOnTable,
+                                    );
+
+                                    final idx = fieldConfigurations.indexWhere((f) => f.id == config.id);
+                                    if (idx != -1) {
+                                      fieldConfigurations[idx] = updatedConfig;
+                                    }
+                                  });
+                                },
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      width: 20,
+                                      height: 20,
+                                      decoration: BoxDecoration(
+                                        color: config.showOnTable ? Color(0xff4759FF) : Colors.white,
+                                        border: Border.all(
+                                          color: config.showOnTable ? Color(0xff4759FF) : Color(0xffE5E9F2),
+                                          width: 2,
+                                        ),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: config.showOnTable
+                                          ? Icon(
+                                        Icons.check,
+                                        size: 14,
+                                        color: Colors.white,
+                                      )
+                                          : null,
+                                    ),
+                                    SizedBox(width: 8),
+                                    Flexible(
+                                      child: Text(
+                                        AppLocalizations.of(context)!.translate('show_on_table'),
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontFamily: 'Gilroy',
+                                          fontWeight: FontWeight.w500,
+                                          color: Color(0xff1E2E52),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ),
-                    // Закомментировано - красная кнопка удаления пока не нужна
-                    // Понадобится позже для удаления кастомных полей
-                    // SizedBox(width: 8),
-                    // IconButton(
-                    //   icon: Icon(Icons.remove_circle, color: Colors.red),
-                    //   onPressed: () {},
-                    // ),
+                      ],
+                    ),
                   ],
                 ),
               );
@@ -918,7 +1029,11 @@ class _DealEditScreenState extends State<DealEditScreen> {
         orElse: () => current,
       );
 
-      if (current.position != original.position) return true;
+      if (current.position != original.position ||
+          current.isActive != original.isActive ||
+          current.showOnTable != original.showOnTable) {
+        return true;
+      }
     }
 
     return false;
