@@ -104,6 +104,7 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
   final ApiService _apiService = ApiService();
   List<String> _customFieldTitles = [];
   Map<String, List<String>> _customFieldValues = {};
+  Map<String, bool> _customFieldLoadingStates = {};
   
   // Field configuration
   List<FieldConfiguration> _fieldConfigurations = [];
@@ -272,14 +273,25 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
   }
 
   Future<void> _loadSingleCustomField(String title) async {
+    if (!mounted) return;
+    setState(() {
+      _customFieldLoadingStates[title] = true;
+    });
+    
     try {
       final values = await _apiService.getLeadCustomFieldValues(title);
       if (!mounted) return;
       setState(() {
         _customFieldValues[title] = values;
+        _customFieldLoadingStates[title] = false;
       });
     } catch (e) {
       // игнорируем отдельные ошибки загрузки полей
+      if (mounted) {
+        setState(() {
+          _customFieldLoadingStates[title] = false;
+        });
+      }
     }
   }
 
@@ -358,6 +370,8 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
       default:
         // Проверяем custom field
         if (config.isCustomField && _customFieldTitles.contains(config.fieldName)) {
+          final isLoading = _customFieldLoadingStates[config.fieldName] == true;
+          
           return Card(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             color: Colors.white,
@@ -367,6 +381,7 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
                 title: config.fieldName,
                 items: List<String>.from(_customFieldValues[config.fieldName] ?? const []),
                 initialSelectedValues: _selectedCustomFieldValues[config.fieldName],
+                isLoading: isLoading,
                 onChanged: (values) {
                   setState(() {
                     _selectedCustomFieldValues[config.fieldName] = List<String>.from(values);

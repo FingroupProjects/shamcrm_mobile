@@ -135,7 +135,16 @@ class _MultiDirectoryDropdownWidgetState extends State<MultiDirectoryDropdownWid
           child: _isLoading
               ? const Padding(
             padding: EdgeInsets.symmetric(vertical: 16),
-            child: Center(child: CircularProgressIndicator()),
+            child: Center(
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                ),
+              ),
+            ),
           )
               : hasError
               ? Padding(

@@ -73,6 +73,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
   // Custom fields (deal) loaded inside the filter screen
   List<String> _customFieldTitles = [];
   Map<String, List<String>> _customFieldValues = {};
+  Map<String, bool> _customFieldLoadingStates = {};
   List<FieldConfiguration> _fieldConfigurations = [];
   bool _isConfigurationLoaded = false;
 
@@ -229,6 +230,11 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
   }
 
   Future<void> _loadSingleDealCustomField(String title) async {
+    if (!mounted) return;
+    setState(() {
+      _customFieldLoadingStates[title] = true;
+    });
+    
     try {
       final values = await _apiService.getDealCustomFieldValues(title);
       if (!mounted) return;
@@ -236,9 +242,15 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
         _customFieldValues[title] = values;
         _selectedCustomFieldValues[title] =
             _selectedCustomFieldValues[title] ?? <String>[];
+        _customFieldLoadingStates[title] = false;
       });
     } catch (_) {
       // ignore per-field loading errors
+      if (mounted) {
+        setState(() {
+          _customFieldLoadingStates[title] = false;
+        });
+      }
     }
   }
 
@@ -333,6 +345,8 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
         );
       default:
         if (config.isCustomField && _customFieldTitles.contains(config.fieldName)) {
+          final isLoading = _customFieldLoadingStates[config.fieldName] == true;
+          
           return Card(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             color: Colors.white,
@@ -342,6 +356,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                 title: config.fieldName,
                 items: List<String>.from(_customFieldValues[config.fieldName] ?? const []),
                 initialSelectedValues: _selectedCustomFieldValues[config.fieldName],
+                isLoading: isLoading,
                 onChanged: (values) {
                   setState(() {
                     _selectedCustomFieldValues[config.fieldName] = List<String>.from(values);
@@ -698,6 +713,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                                   title: title,
                                   items: List<String>.from(_customFieldValues[title] ?? const []),
                                   initialSelectedValues: _selectedCustomFieldValues[title],
+                                  isLoading: _customFieldLoadingStates[title] == true,
                                   onChanged: (values) {
                                     setState(() {
                                       _selectedCustomFieldValues[title] = List<String>.from(values);

@@ -13,6 +13,7 @@ class CustomFieldMultiSelect extends StatefulWidget {
   final String? validationMessage;
   final bool isRequired;
   final double? overlayHeight;
+  final bool isLoading;
 
   const CustomFieldMultiSelect({
     super.key,
@@ -25,6 +26,7 @@ class CustomFieldMultiSelect extends StatefulWidget {
     this.validationMessage,
     this.isRequired = false,
     this.overlayHeight,
+    this.isLoading = false,
   });
 
   @override
@@ -103,6 +105,7 @@ class _CustomFieldMultiSelectState extends State<CustomFieldMultiSelect> {
                 initialItems: _selectedValues,
                 searchHintText: widget.searchHintText ?? AppLocalizations.of(context)!.translate('search'),
                 overlayHeight: widget.overlayHeight ?? 400,
+                enabled: !widget.isLoading,
                 decoration: CustomDropdownDecoration(
                   closedFillColor: const Color(0xffF4F7FD),
                   expandedFillColor: Colors.white,
@@ -121,7 +124,7 @@ class _CustomFieldMultiSelectState extends State<CustomFieldMultiSelect> {
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           child: GestureDetector(
-                            onTap: widget.items.isEmpty
+                            onTap: widget.items.isEmpty || widget.isLoading
                                 ? null
                                 : () {
                               final newAll = !allSelected;
@@ -167,6 +170,19 @@ class _CustomFieldMultiSelectState extends State<CustomFieldMultiSelect> {
                   return _buildListItem(item, isSelected, onItemSelect);
                 },
                 headerListBuilder: (context, hint, enabled) {
+                  if (widget.isLoading) {
+                    return const Center(
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                        ),
+                      ),
+                    );
+                  }
+                  
                   if (_selectedValues.isEmpty) {
                     return Text(
                       placeholder,
@@ -181,10 +197,25 @@ class _CustomFieldMultiSelectState extends State<CustomFieldMultiSelect> {
                     overflow: TextOverflow.ellipsis,
                   );
                 },
-                hintBuilder: (context, hint, enabled) => Text(
-                  placeholder,
-                  style: itemStyle.copyWith(fontSize: 14),
-                ),
+                hintBuilder: (context, hint, enabled) {
+                  if (widget.isLoading) {
+                    return const Center(
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                        ),
+                      ),
+                    );
+                  }
+                  
+                  return Text(
+                    placeholder,
+                    style: itemStyle.copyWith(fontSize: 14),
+                  );
+                },
                 onListChanged: (values) {
                   setState(() {
                     _selectedValues = List<String>.from(values);
