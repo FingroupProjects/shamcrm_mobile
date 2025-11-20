@@ -24,18 +24,21 @@ class NotificationDataLoaded extends NotificationState {
 
 class NotificationError extends NotificationState {
   final String message;
+  final int? statusCode;
 
-  NotificationError(this.message);
+  NotificationError(this.message, {this.statusCode});
 }
 
 class NotificationSuccess extends NotificationState {
   final String message;
+  final int? statusCode;
 
-  NotificationSuccess(this.message);
+  NotificationSuccess(this.message, {this.statusCode});
 }
 
 class NotificationDeleted extends NotificationState {
   final String message;
+  final int? statusCode;
 
-  NotificationDeleted(this.message);
+  NotificationDeleted(this.message, {this.statusCode});
 }
