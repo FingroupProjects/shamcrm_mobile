@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:flutter/cupertino.dart';
 
 class FieldConfiguration extends Equatable {
   final int id;
@@ -52,6 +53,9 @@ class FieldConfiguration extends Equatable {
       ];
 
   factory FieldConfiguration.fromJson(Map<String, dynamic> json) {
+
+    debugPrint('Parsing FieldConfiguration from JSON required field: ${json['required']}');
+
     return FieldConfiguration(
       id: json['id'],
       tableName: json['table_name'],

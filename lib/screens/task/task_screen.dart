@@ -1037,7 +1037,7 @@ Future<void> _saveFilterState() async {
             _tabTitles = state.taskStatuses
                 .where((status) => _canReadTaskStatus)
                 .map((status) =>
-            {'id': status.id, 'title': status.taskStatus!.name ?? ""})
+            {'id': status.id, 'title': status.taskStatus?.name ?? ""})
                 .toList();
             _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
 
