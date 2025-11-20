@@ -529,11 +529,11 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
     switch (fc.fieldName) {
       case 'name':          return AppLocalizations.of(context)!.translate('task_name');
-      case 'task_status_id':      return AppLocalizations.of(context)!.translate('priority_level_colon');
+      case 'task_status_id':return AppLocalizations.of(context)!.translate('priority_level_colon');
       case 'description':   return AppLocalizations.of(context)!.translate('description_details');
-      case 'executor':          return AppLocalizations.of(context)!.translate('assignee');
+      case 'executor':      return AppLocalizations.of(context)!.translate('assignee');
       case 'project':       return AppLocalizations.of(context)!.translate('project_details');
-      case 'deadline':       return AppLocalizations.of(context)!.translate('dead_line');
+      case 'deadline':      return AppLocalizations.of(context)!.translate('dead_line');
       case 'taskStatus':    return AppLocalizations.of(context)!.translate('status_details');
       case 'author':        return AppLocalizations.of(context)!.translate('author_details');
       case 'createdAt':     return AppLocalizations.of(context)!.translate('creation_date_details');
@@ -546,7 +546,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   String _getFieldValue(FieldConfiguration fc, TaskById task) {
     if (fc.isCustomField && fc.customFieldId != null) {
       for (final field in task.customFields) {
-        if (field.id == fc.customFieldId) {
+        if (field.name == fc.fieldName) {
           if (field.value.isNotEmpty) {
             return field.value;
           }

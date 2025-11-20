@@ -71,6 +71,7 @@ class _DealStatusRadioGroupWidgetState extends State<DealStatusRadioGroupWidget>
                   ),
                 );
               });
+              return const SizedBox.shrink();
             }
 
             if (state is DealLoaded) {
@@ -139,7 +140,7 @@ class _DealStatusRadioGroupWidgetState extends State<DealStatusRadioGroupWidget>
                       },
                       headerBuilder: (context, selectedItem, enabled) {
                         return Text(
-                          selectedItem?.title ?? AppLocalizations.of(context)!.translate('select_status'),
+                          selectedItem.title,
                           style: statusTextStyle,
                         );
                       },
@@ -163,7 +164,7 @@ class _DealStatusRadioGroupWidgetState extends State<DealStatusRadioGroupWidget>
                 ],
               );
             }
-            return const SizedBox();
+            return const SizedBox.shrink();
           },
         ),
       ],

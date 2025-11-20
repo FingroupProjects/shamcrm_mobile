@@ -248,7 +248,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
       if (!mounted) return;
 
       final activeFields = response.result
-          .where((field) => field.isActive)
+          // .where((field) => field.isActive)
           .toList()
         ..sort((a, b) => a.position.compareTo(b.position));
 

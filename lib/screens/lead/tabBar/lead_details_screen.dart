@@ -664,7 +664,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   String _getFieldValue(FieldConfiguration fc, LeadById lead) {
     if (fc.isCustomField && fc.customFieldId != null) {
       for (final field in lead.leadCustomFieldValues) {
-        if (field.customFieldId == fc.customFieldId) {
+        if (field.value == fc.fieldName) {
           if (field.value.isNotEmpty) {
             return field.value;
           }

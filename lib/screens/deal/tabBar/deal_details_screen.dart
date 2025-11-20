@@ -450,7 +450,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
   String _getFieldValue(FieldConfiguration fc, DealById deal) {
     if (fc.isCustomField && fc.customFieldId != null) {
       for (final field in deal.customFieldValues) {
-        if (field.customFieldId == fc.customFieldId) {
+        if (field.value == fc.fieldName) {
           debugPrint("Matching custom field found: ${field.customField?.name} with value: ${field.value}");
           if (field.value.isNotEmpty) {
             return field.value;

@@ -194,7 +194,7 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
       
       // Фильтруем только активные поля и сортируем по position
       final activeFields = response.result
-          .where((field) => field.isActive)
+          // .where((field) => field.isActive)
           .toList()
         ..sort((a, b) => a.position.compareTo(b.position));
       
