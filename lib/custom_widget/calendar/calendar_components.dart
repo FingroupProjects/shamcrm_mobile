@@ -351,20 +351,19 @@ class DayViewEventList extends StatelessWidget {
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            SizedBox(
-                              width: 60,
-                              child: event.type == 'notice'
-                                  ? Text(
-                                      DateFormat('HH:mm').format(event.date.add(const Duration(hours: 5))),
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontFamily: 'Gilroy',
-                                        fontWeight: FontWeight.w500,
-                                        color: Color(0xff1E2E52),
-                                      ),
-                                    )
-                                  : const SizedBox.shrink(), 
-                            ),
+                            if (event.type == 'notice')
+                              SizedBox(
+                                width: 60,
+                                child: Text(
+                                  DateFormat('HH:mm').format(event.date.add(const Duration(hours: 5))),
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontFamily: 'Gilroy',
+                                    fontWeight: FontWeight.w500,
+                                    color: Color(0xff1E2E52),
+                                  ),
+                                ),
+                              ),
                             Expanded(
                               child: Card(
                                 color: const Color(0xffF4F7FD),
