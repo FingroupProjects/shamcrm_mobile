@@ -37,8 +37,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       if (_scrollController.position.pixels ==
           _scrollController.position.maxScrollExtent) {
         if (!notificationBloc.allNotificationsFetched) {
-          notificationBloc.add(FetchMoreNotifications(notificationBloc.state
-                  is NotificationDataLoaded
+          notificationBloc.add(FetchMoreNotifications(notificationBloc.state is NotificationDataLoaded
               ? (notificationBloc.state as NotificationDataLoaded).currentPage
               : 1));
         }
@@ -52,7 +51,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   void _clearAllNotifications() async {
-    await ApiService().DeleteAllNotifications();
+    // await ApiService().DeleteAllNotifications();
     notificationBloc.add(DeleteAllNotification());
     setState(() {
       if (notificationBloc.state is NotificationDataLoaded) {
@@ -62,30 +61,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       }
     });
     SharedPreferences.getInstance().then((prefs) {
-    prefs.setBool('hasNewNotification', false); // Сбрасываем флаг
-  });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          AppLocalizations.of(context)!.translate('all_notifications_deleted_successfully'),
-          style: TextStyle(
-            fontFamily: 'Gilroy',
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: Colors.white,
-          ),
-        ),
-        behavior: SnackBarBehavior.floating,
-        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        backgroundColor: Colors.green,
-        elevation: 3,
-        padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        duration: Duration(seconds: 3),
-      ),
-    );
+      prefs.setBool('hasNewNotification', false); // Сбрасываем флаг
+    });
+    // Snackbar теперь обрабатывается в BlocListener
   }
 
   @override
@@ -98,7 +76,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         elevation: 0,
         centerTitle: true,
         title:  Text(
-           AppLocalizations.of(context)!.translate('notifications'),
+          AppLocalizations.of(context)!.translate('notifications'),
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w600,
@@ -129,177 +107,286 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           ),
         ],
       ),
-      body: BlocBuilder<NotificationBloc, NotificationState>(
-  builder: (context, state) {
-    //print("🔄 [UI] Состояние BLoC: ${state.runtimeType}");
-    if (state is NotificationLoading) {
-      //print("🔄 [UI] Загрузка...");
-      return const Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));
-    } else if (state is NotificationError) {
-      //print("❌ [UI] Ошибка: ${state.message}");
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              state.message,
-              style: TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.white,
-              ),
-            ),
-            behavior: SnackBarBehavior.floating,
-            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            backgroundColor: Colors.red,
-            elevation: 3,
-            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            duration: Duration(seconds: 3),
-          ),
-        );
-      });
-      return Center(child: Text(state.message));
-    } else if (state is NotificationDataLoaded) {
-      //print("✅ [UI] Данные загружены, уведомлений: ${state.notifications.length}");
-      final notifications = state.notifications;
-      return RefreshIndicator(
-        color: Color(0xff1E2E52),
-        backgroundColor: Colors.white,
-        onRefresh: _onRefresh,
-        child: notifications.isEmpty
-            ? ListView(
-                physics: AlwaysScrollableScrollPhysics(),
-                children: [
-                  SizedBox(height: MediaQuery.of(context).size.height * 0.4),
-                  Center(child: Text(AppLocalizations.of(context)!.translate('no_notifications_yet'))),
-                ],
-              )
-            : ListView.builder(
-                controller: _scrollController,
-                physics: AlwaysScrollableScrollPhysics(),
-                itemCount: notifications.length + (notificationBloc.allNotificationsFetched ? 0 : 1),
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                itemBuilder: (context, index) {
-                  if (index == notifications.length) {
-                    //print("🔄 [UI] Показ индикатора загрузки для пагинации");
-                    return const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 16),
-                      child: Center(child: CircularProgressIndicator(color: Color(0xff1E2E52))),
-                    );
-                  }
+      body: BlocListener<NotificationBloc, NotificationState>(
+        listener: (context, state) {
+          // Успешные коды: 200, 201, 204, 429
+          final successCodes = [200, 201, 204, 429];
 
-                  final notification = notifications[index];
-                  //print("🔔 [UI] Рендеринг уведомления ID: ${notification.id}, сообщение: ${notification.message}");
-                  return Dismissible(
-                    key: Key(notification.id.toString()),
-                    direction: DismissDirection.endToStart,
-                    background: Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      alignment: Alignment.centerRight,
-                      child: const Icon(Icons.delete, color: Colors.white, size: 24),
+          if (state is NotificationSuccess) {
+            if (state.statusCode != null && successCodes.contains(state.statusCode)) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    state.message,
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
                     ),
-                    onDismissed: (direction) {
-                      //print("🗑️ [UI] Удаление уведомления ID: ${notification.id}");
-                      setState(() {
-                        notifications.removeAt(index);
-                      });
-                      notificationBloc.add(DeleteNotification(notification.id));
-                    },
-                    child: Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: const Icon(Icons.notifications, color: Color(0xff1E2E52), size: 24),
-                        title: Text(
-                          notification.type == 'message'
-                              ? AppLocalizations.of(context)!.translate('new_message')
-                              : notification.type == 'dealDeadLineNotification'
-                                  ? AppLocalizations.of(context)!.translate('deal_reminder')
-                                  : notification.type == 'notice'
-                                      ? AppLocalizations.of(context)!.translate('note_reminder')
-                                      : notification.type == 'task'
-                                          ? AppLocalizations.of(context)!.translate('task_new')
-                                          : notification.type == 'taskFinished'
-                                              ? AppLocalizations.of(context)!.translate('task_closed')
-                                              : notification.type == 'taskOutDated'
-                                                  ? AppLocalizations.of(context)!.translate('task_deadline_reminder')
-                                                  : notification.type == 'lead'
-                                                      ? AppLocalizations.of(context)!.translate('task_deadline_reminder')
-                                                      : notification.type == 'myTaskOutDated'
-                                                          ? AppLocalizations.of(context)!.translate('Напоминание о просрочке мои задачи')
-                                                          : notification.type == 'updateLeadStatus'
-                                                              ? AppLocalizations.of(context)!.translate('Статус лида изменен!')
-                                                              : notification.type,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xff1E2E52),
-                          ),
-                        ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              notification.message,
-                              maxLines: 2,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w400,
-                                color: Color(0xff5A6B87),
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                              softWrap: true,
-                            ),
-                            const SizedBox(height: 4),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                Text(
-                                  DateFormat('dd.MM.yyyy HH:mm').format(notification.createdAt.add(Duration(hours: 5))),
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    fontFamily: 'Gilroy',
-                                    color: Color(0xff1E2E52),
-                                  ),
-                                ),
-                              ],
+                  ),
+                  behavior: SnackBarBehavior.floating,
+                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  backgroundColor: Colors.green,
+                  elevation: 3,
+                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  duration: Duration(seconds: 3),
+                ),
+              );
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    state.message,
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                  behavior: SnackBarBehavior.floating,
+                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  backgroundColor: Colors.red,
+                  elevation: 3,
+                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  duration: Duration(seconds: 3),
+                ),
+              );
+            }
+          } else if (state is NotificationDeleted) {
+            if (state.statusCode != null && successCodes.contains(state.statusCode)) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    AppLocalizations.of(context)!.translate('all_notifications_deleted_successfully'),
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                  behavior: SnackBarBehavior.floating,
+                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  backgroundColor: Colors.green,
+                  elevation: 3,
+                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  duration: Duration(seconds: 3),
+                ),
+              );
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    state.message,
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                  behavior: SnackBarBehavior.floating,
+                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  backgroundColor: Colors.red,
+                  elevation: 3,
+                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  duration: Duration(seconds: 3),
+                ),
+              );
+            }
+          } else if (state is NotificationError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  state.message,
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+                behavior: SnackBarBehavior.floating,
+                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                backgroundColor: Colors.red,
+                elevation: 3,
+                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                duration: Duration(seconds: 3),
+              ),
+            );
+          }
+        },
+        child: BlocBuilder<NotificationBloc, NotificationState>(
+          builder: (context, state) {
+            //print("🔄 [UI] Состояние BLoC: ${state.runtimeType}");
+            if (state is NotificationLoading) {
+              //print("🔄 [UI] Загрузка...");
+              return const Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+            } else if (state is NotificationError) {
+              //print("❌ [UI] Ошибка: ${state.message}");
+              return Center(child: Text(state.message));
+            } else if (state is NotificationDeleted) {
+              // После удаления всех уведомлений показываем пустой список
+              return RefreshIndicator(
+                color: Color(0xff1E2E52),
+                backgroundColor: Colors.white,
+                onRefresh: _onRefresh,
+                child: ListView(
+                  physics: AlwaysScrollableScrollPhysics(),
+                  children: [
+                    SizedBox(height: MediaQuery.of(context).size.height * 0.4),
+                    Center(child: Text(AppLocalizations.of(context)!.translate('no_notifications_yet'))),
+                  ],
+                ),
+              );
+            } else if (state is NotificationDataLoaded) {
+              //print("✅ [UI] Данные загружены, уведомлений: ${state.notifications.length}");
+              final notifications = state.notifications;
+              return RefreshIndicator(
+                color: Color(0xff1E2E52),
+                backgroundColor: Colors.white,
+                onRefresh: _onRefresh,
+                child: notifications.isEmpty
+                    ? ListView(
+                        physics: AlwaysScrollableScrollPhysics(),
+                        children: [
+                          SizedBox(height: MediaQuery.of(context).size.height * 0.4),
+                          Center(child: Text(AppLocalizations.of(context)!.translate('no_notifications_yet'))),
+                        ],
+                      )
+                    : ListView.builder(
+                        controller: _scrollController,
+                        physics: AlwaysScrollableScrollPhysics(),
+                        itemCount: notifications.length + (notificationBloc.allNotificationsFetched ? 0 : 1),
+                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                        itemBuilder: (context, index) {
+                          if (index == notifications.length) {
+                            //print("🔄 [UI] Показ индикатора загрузки для пагинации");
+                            return const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 16),
+                              child: Center(child: CircularProgressIndicator(color: Color(0xff1E2E52))),
+                            );
+                          }
+
+                          final notification = notifications[index];
+                    //print("🔔 [UI] Рендеринг уведомления ID: ${notification.id}, сообщение: ${notification.message}");
+                    return Dismissible(
+                      key: Key(notification.id.toString()),
+                      direction: DismissDirection.endToStart,
+                      background: Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
                             ),
                           ],
                         ),
-                        onTap: () {
-                          //print("🔔 [UI] Нажатие на уведомление ID: ${notification.id}, тип: ${notification.type}");
-                          navigateToScreen(notification.type, notification.id, notification.modelId);
-                        },
+                        alignment: Alignment.centerRight,
+                        child: const Icon(Icons.delete, color: Colors.white, size: 24),
                       ),
-                    ),
-                  );
-                },
-              ),
-      );
-    }
-    //print("⚠️ [UI] Неизвестное состояние, возвращаем пустой контейнер");
-    return Container();
-  },
-),
+                      onDismissed: (direction) {
+                        //print("🗑️ [UI] Удаление уведомления ID: ${notification.id}");
+                        setState(() {
+                          notifications.removeAt(index);
+                        });
+                        notificationBloc.add(DeleteNotification(notification.id));
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Icon(Icons.notifications, color: Color(0xff1E2E52), size: 24),
+                          title: Text(
+                            notification.type == 'message'
+                                ? AppLocalizations.of(context)!.translate('new_message')
+                                : notification.type == 'dealDeadLineNotification'
+                                ? AppLocalizations.of(context)!.translate('deal_reminder')
+                                : notification.type == 'notice'
+                                ? AppLocalizations.of(context)!.translate('note_reminder')
+                                : notification.type == 'task'
+                                ? AppLocalizations.of(context)!.translate('task_new')
+                                : notification.type == 'taskFinished'
+                                ? AppLocalizations.of(context)!.translate('task_closed')
+                                : notification.type == 'taskOutDated'
+                                ? AppLocalizations.of(context)!.translate('task_deadline_reminder')
+                                : notification.type == 'lead'
+                                ? AppLocalizations.of(context)!.translate('task_deadline_reminder')
+                                : notification.type == 'myTaskOutDated'
+                                ? AppLocalizations.of(context)!.translate('Напоминание о просрочке мои задачи')
+                                : notification.type == 'updateLeadStatus'
+                                ? AppLocalizations.of(context)!.translate('Статус лида изменен!')
+                                : notification.type,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xff1E2E52),
+                            ),
+                          ),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                notification.message,
+                                maxLines: 2,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w400,
+                                  color: Color(0xff5A6B87),
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                                softWrap: true,
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    DateFormat('dd.MM.yyyy HH:mm').format(notification.createdAt.add(Duration(hours: 5))),
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      fontFamily: 'Gilroy',
+                                      color: Color(0xff1E2E52),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          onTap: () {
+                            //print("🔔 [UI] Нажатие на уведомление ID: ${notification.id}, тип: ${notification.type}");
+                            navigateToScreen(notification.type, notification.id, notification.modelId);
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              );
+            }
+            //print("⚠️ [UI] Неизвестное состояние, возвращаем пустой контейнер");
+            return Container();
+          },
+        ),
+      ),
     );
   }
 
