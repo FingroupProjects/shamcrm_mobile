@@ -7201,7 +7201,8 @@ Future<String> _appendQueryParams(String path) async {
 
     final response = await _postRequest(path, {});
 
-    if (response.statusCode != 200) {
+    // NEW: fix 429 too many attempts bug
+    if (response.statusCode != 200 || response.statusCode != 201 || response.statusCode != 204 || response.statusCode != 429) {
       throw Exception('Ошибка удаления уведомлений!');
     }
   }
