@@ -73,6 +73,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
   bool isSettingsMode = false;
   bool isSavingFieldOrder = false;
   List<FieldConfiguration>? originalFieldConfigurations; // Для отслеживания изменений
+  final GlobalKey _addFieldButtonKey = GlobalKey();
 
   // Конфигурация полей с сервера
   List<FieldConfiguration> fieldConfigurations = [];
@@ -540,40 +541,58 @@ class _DealAddScreenState extends State<DealAddScreen> {
   }
 
   void _showAddFieldMenu() {
+    final RenderBox? renderBox = _addFieldButtonKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox == null) return;
+    
+    final Offset offset = renderBox.localToGlobal(Offset.zero);
+    final Size size = renderBox.size;
+    
+    // Список элементов меню
+    final menuItems = [
+      PopupMenuItem(
+        value: 'manual',
+        child: Text(
+          AppLocalizations.of(context)!.translate('manual_input'),
+          style: TextStyle(
+            fontSize: 16,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            color: Color(0xff1E2E52),
+          ),
+        ),
+      ),
+      PopupMenuItem(
+        value: 'directory',
+        child: Text(
+          AppLocalizations.of(context)!.translate('directory'),
+          style: TextStyle(
+            fontSize: 16,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            color: Color(0xff1E2E52),
+          ),
+        ),
+      ),
+    ];
+    
+    // Если элементов 5 или больше, показываем над кнопкой, иначе под кнопкой
+    final showAbove = menuItems.length >= 5;
+    final double verticalOffset = showAbove ? -8 : size.height + 8;
+    
     showMenu(
       context: context,
-      position: RelativeRect.fromLTRB(300, 650, 200, 300),
+      position: RelativeRect.fromLTRB(
+        offset.dx,
+        showAbove ? offset.dy + verticalOffset : offset.dy + verticalOffset,
+        MediaQuery.of(context).size.width - offset.dx - size.width,
+        showAbove ? MediaQuery.of(context).size.height - offset.dy + verticalOffset : MediaQuery.of(context).size.height - offset.dy - size.height - 8,
+      ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
       elevation: 4,
       color: Colors.white,
-      items: [
-        PopupMenuItem(
-          value: 'manual',
-          child: Text(
-            AppLocalizations.of(context)!.translate('manual_input'),
-            style: TextStyle(
-              fontSize: 16,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w500,
-              color: Color(0xff1E2E52),
-            ),
-          ),
-        ),
-        PopupMenuItem(
-          value: 'directory',
-          child: Text(
-            AppLocalizations.of(context)!.translate('directory'),
-            style: TextStyle(
-              fontSize: 16,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w500,
-              color: Color(0xff1E2E52),
-            ),
-          ),
-        ),
-      ],
+      items: menuItems,
     ).then((value) {
       if (value == 'manual') {
         showDialog(
@@ -761,7 +780,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
               // Последний элемент - кнопка "Добавить поле"
               if (index == sortedFields.length) {
                 return Container(
-                  key: ValueKey('add_field_button'),
+                  key: _addFieldButtonKey,
                   margin: const EdgeInsets.only(bottom: 12),
                   child: CustomButton(
                     buttonText: AppLocalizations.of(context)!.translate('add_field'),
