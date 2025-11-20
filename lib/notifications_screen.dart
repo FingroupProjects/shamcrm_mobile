@@ -233,6 +233,20 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     } else if (state is NotificationError) {
       //print("❌ [UI] Ошибка: ${state.message}");
       return Center(child: Text(state.message));
+    } else if (state is NotificationDeleted) {
+      // После удаления всех уведомлений показываем пустой список
+      return RefreshIndicator(
+        color: Color(0xff1E2E52),
+        backgroundColor: Colors.white,
+        onRefresh: _onRefresh,
+        child: ListView(
+          physics: AlwaysScrollableScrollPhysics(),
+          children: [
+            SizedBox(height: MediaQuery.of(context).size.height * 0.4),
+            Center(child: Text(AppLocalizations.of(context)!.translate('no_notifications_yet'))),
+          ],
+        ),
+      );
     } else if (state is NotificationDataLoaded) {
       //print("✅ [UI] Данные загружены, уведомлений: ${state.notifications.length}");
       final notifications = state.notifications;

@@ -105,6 +105,9 @@ Future<void> _deleteAllNotification(DeleteAllNotification event, Emitter<Notific
       // Успешные коды: 200, 201, 204, 429
       final successCodes = [200, 201, 204, 429];
       if (successCodes.contains(statusCode)) {
+        // Эмитим пустой список уведомлений, чтобы UI показал "no notifications yet"
+        emit(NotificationDataLoaded([], currentPage: 1));
+        // Затем эмитим состояние удаления для показа snackbar в BlocListener
         emit(NotificationDeleted('Все уведомления успешно удалены', statusCode: statusCode));
       } else {
         emit(NotificationError('Ошибка удаления всех уведомлений', statusCode: statusCode));
