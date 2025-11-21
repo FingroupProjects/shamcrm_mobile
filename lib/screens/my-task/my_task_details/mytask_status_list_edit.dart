@@ -99,7 +99,7 @@ class _MyTaskStatusEditWidgetState extends State<MyTaskStatusEditWidget> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '${AppLocalizations.of(context)!.translate('task_statuses')} *',
+                    AppLocalizations.of(context)!.translate('task_statuses'),
                     style: statusTextStyle.copyWith(fontWeight: FontWeight.w400),
                   ),
                   const SizedBox(height: 4),
