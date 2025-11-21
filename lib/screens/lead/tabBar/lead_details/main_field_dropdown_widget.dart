@@ -87,6 +87,7 @@ class _MainFieldDropdownWidgetState extends State<MainFieldDropdownWidget> {
         }
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         errorMessage = e.toString();
         isLoading = false;

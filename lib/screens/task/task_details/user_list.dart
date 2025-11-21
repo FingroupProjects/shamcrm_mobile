@@ -4,6 +4,7 @@ import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter/foundation.dart';
 
 class UserMultiSelectWidget extends StatefulWidget {
   final List<String>? selectedUsers;
@@ -47,16 +48,55 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
     context.read<GetAllClientBloc>().add(GetAllClientEv());
   }
 
+  // Синхронизация selectedUsersData с widget.selectedUsers
+  void _syncSelectedUsers() {
+    if (widget.selectedUsers == null || usersList.isEmpty) {
+      return;
+    }
+
+    final newSelectedUsersData = usersList
+        .where((user) => widget.selectedUsers!.contains(user.id.toString()))
+        .toList();
+
+    // Проверяем, изменились ли выбранные пользователи
+    if (!listEquals(
+      selectedUsersData.map((u) => u.id).toList()..sort(),
+      newSelectedUsersData.map((u) => u.id).toList()..sort(),
+    )) {
+      setState(() {
+        selectedUsersData = newSelectedUsersData;
+      });
+    }
+  }
+
+  @override
+  void didUpdateWidget(UserMultiSelectWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Синхронизируем только если selectedUsers изменился
+    if (!listEquals(oldWidget.selectedUsers, widget.selectedUsers) &&
+        usersList.isNotEmpty) {
+      _syncSelectedUsers();
+    }
+  }
+
   // Метод для выбора/снятия выбора всех пользователей
   void _toggleSelectAll() {
-    setState(() {
-      if (selectedUsersData.length == usersList.length) {
-        selectedUsersData = [];
-      } else {
-        selectedUsersData = List.from(usersList);
-      }
-      widget.onSelectUsers(selectedUsersData);
-    });
+    if (usersList.isEmpty) return;
+    
+    final newSelectedUsersData = selectedUsersData.length == usersList.length
+        ? <UserData>[]
+        : List<UserData>.from(usersList);
+    
+    // Проверяем, изменились ли выбранные пользователи
+    final currentIds = selectedUsersData.map((u) => u.id).toList()..sort();
+    final newIds = newSelectedUsersData.map((u) => u.id).toList()..sort();
+    
+    if (!listEquals(currentIds, newIds)) {
+      setState(() {
+        selectedUsersData = newSelectedUsersData;
+      });
+      widget.onSelectUsers(newSelectedUsersData);
+    }
   }
 
   @override
@@ -91,22 +131,47 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                   color: field.hasError ? Colors.red : Colors.white,
                 ),
               ),
-              child: BlocBuilder<GetAllClientBloc, GetAllClientState>(
-                builder: (context, state) {
+              child: BlocConsumer<GetAllClientBloc, GetAllClientState>(
+                listener: (context, state) {
+                  // Обрабатываем изменения состояния в listener, а не в builder
                   if (state is GetAllClientSuccess) {
-                    usersList = state.dataUser.result ?? [];
-                    // Добавляем "Выбрать всех" в начало списка для отображения
-                    displayUsersList = [selectAllItem, ...usersList];
-                    if (widget.selectedUsers != null && usersList.isNotEmpty) {
-                      selectedUsersData = usersList
-                          .where((user) => widget.selectedUsers!
-                              .contains(user.id.toString()))
-                          .toList();
+                    final newUsersList = state.dataUser.result ?? [];
+                    
+                    // Обновляем состояние только если список пользователей изменился
+                    if (!listEquals(
+                      usersList.map((u) => u.id).toList()..sort(),
+                      newUsersList.map((u) => u.id).toList()..sort(),
+                    )) {
+                      // Синхронизируем выбранных пользователей перед setState
+                      List<UserData> newSelectedUsersData = selectedUsersData;
+                      if (widget.selectedUsers != null && newUsersList.isNotEmpty) {
+                        newSelectedUsersData = newUsersList
+                            .where((user) => widget.selectedUsers!.contains(user.id.toString()))
+                            .toList();
+                      } else if (widget.selectedUsers == null) {
+                        newSelectedUsersData = [];
+                      }
+                      
+                      setState(() {
+                        usersList = newUsersList;
+                        displayUsersList = [selectAllItem, ...usersList];
+                        selectedUsersData = newSelectedUsersData;
+                      });
                     }
                   }
+                },
+                builder: (context, state) {
+                  // В builder только читаем данные, не изменяем состояние
+                  final currentUsersList = state is GetAllClientSuccess
+                      ? (state.dataUser.result ?? [])
+                      : usersList;
+                  
+                  final currentDisplayList = currentUsersList.isNotEmpty
+                      ? [selectAllItem, ...currentUsersList]
+                      : displayUsersList;
 
                   return CustomDropdown<UserData>.multiSelectSearch(
-                    items: displayUsersList,
+                    items: currentDisplayList,
                     initialItems: selectedUsersData,
                     searchHintText:
                         AppLocalizations.of(context)!.translate('search'),
@@ -129,7 +194,8 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                       // Проверяем, является ли элемент "Выбрать всех"
                       final isSelectAll = item.id == -1;
                       final allSelected =
-                          selectedUsersData.length == usersList.length;
+                          selectedUsersData.length == currentUsersList.length &&
+                          currentUsersList.isNotEmpty;
 
                       return ListTile(
                         onTap: () {
@@ -176,7 +242,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                                 isSelectAll
                                     ? AppLocalizations.of(context)!
                                         .translate('select_all')
-                                    : '${item.name} ${item.lastname ?? ''}',
+                                    : '${item.name} ${item.lastname}',
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w500,
@@ -194,7 +260,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                           ? AppLocalizations.of(context)!
                               .translate('select_assignees_list')
                           : selectedUsersData
-                              .map((e) => '${e.name} ${e.lastname ?? ''}')
+                              .map((e) => '${e.name} ${e.lastname}')
                               .join(', ');
 
                       return Text(
@@ -216,11 +282,18 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                       // Фильтруем фиктивный элемент "Выбрать всех" из выбранных
                       final filteredValues =
                           values.where((user) => user.id != -1).toList();
-                      widget.onSelectUsers(filteredValues);
-                      setState(() {
-                        selectedUsersData = filteredValues;
-                      });
-                      field.didChange(filteredValues);
+                      
+                      // Проверяем, изменились ли выбранные пользователи
+                      final currentIds = selectedUsersData.map((u) => u.id).toList()..sort();
+                      final newIds = filteredValues.map((u) => u.id).toList()..sort();
+                      
+                      if (!listEquals(currentIds, newIds)) {
+                        setState(() {
+                          selectedUsersData = filteredValues;
+                        });
+                        widget.onSelectUsers(filteredValues);
+                        field.didChange(filteredValues);
+                      }
                     },
                   );
                 },
