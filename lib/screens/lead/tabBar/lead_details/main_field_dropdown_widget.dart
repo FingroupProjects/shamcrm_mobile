@@ -116,7 +116,9 @@ class _MainFieldDropdownWidgetState extends State<MainFieldDropdownWidget> {
                     widget.directoryName,
                     style: fieldTextStyle.copyWith(
                       fontWeight: FontWeight.w400,
-                      fontSize: 14,
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      color: Color(0xff1E2E52),
                     ),
                   ),
                   const SizedBox(height: 8),
