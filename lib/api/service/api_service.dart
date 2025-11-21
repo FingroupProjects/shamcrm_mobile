@@ -7116,7 +7116,8 @@ Future<String> _appendQueryParams(String path) async {
   try {
     // Парсим существующий URI
     final uri = Uri.parse(path);
-    final existingParams = Map<String, String>.from(uri.queryParameters);
+    // Используем queryParametersAll для сохранения всех значений (включая повторяющиеся ключи)
+    final existingParamsAll = Map<String, List<String>>.from(uri.queryParametersAll);
     
     // Получаем ID из SharedPreferences
     final organizationId = await getSelectedOrganization();
@@ -7126,21 +7127,28 @@ Future<String> _appendQueryParams(String path) async {
     if (organizationId != null && 
         organizationId.isNotEmpty && 
         organizationId != 'null' &&
-        !existingParams.containsKey('organization_id')) {
-      existingParams['organization_id'] = organizationId;
+        !existingParamsAll.containsKey('organization_id')) {
+      existingParamsAll['organization_id'] = [organizationId];
     }
 
     // ✅ Добавляем sales_funnel_id ТОЛЬКО если его нет
     if (salesFunnelId != null && 
         salesFunnelId.isNotEmpty && 
         salesFunnelId != 'null' &&
-        !existingParams.containsKey('sales_funnel_id')) {
-      existingParams['sales_funnel_id'] = salesFunnelId;
+        !existingParamsAll.containsKey('sales_funnel_id')) {
+      existingParamsAll['sales_funnel_id'] = [salesFunnelId];
     }
 
-    // Собираем новый URI
-    final newUri = uri.replace(queryParameters: existingParams);
-    final result = newUri.toString();
+    // Собираем query string вручную для сохранения всех значений
+    final queryParts = <String>[];
+    existingParamsAll.forEach((key, values) {
+      for (final value in values) {
+        queryParts.add('${Uri.encodeComponent(key)}=${Uri.encodeComponent(value)}');
+      }
+    });
+    
+    final queryString = queryParts.isNotEmpty ? '?${queryParts.join('&')}' : '';
+    final result = '${uri.path}$queryString';
     
     debugPrint('✅ _appendQueryParams: $path → $result');
     return result;
@@ -7190,7 +7198,7 @@ Future<String> _appendQueryParams(String path) async {
   }
 
 // Метод для прочтения всех Уведомлений
-  Future<void> DeleteAllNotifications() async {
+  Future<int> DeleteAllNotifications() async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     String path = await _appendQueryParams('/notification/readAll');
     if (kDebugMode) {
@@ -7201,13 +7209,17 @@ Future<String> _appendQueryParams(String path) async {
 
     final response = await _postRequest(path, {});
 
-    if (response.statusCode != 200) {
+    // Успешные коды: 200, 201, 204, 429
+    final successCodes = [200, 201, 204, 429];
+    if (successCodes.contains(response.statusCode)) {
+      return response.statusCode;
+    } else {
       throw Exception('Ошибка удаления уведомлений!');
     }
   }
 
 // Метод для удаления Уведомлений
-  Future<void> DeleteNotifications({int? notificationId}) async {
+  Future<int> DeleteNotifications({int? notificationId}) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     String path =
         await _appendQueryParams('/notification/read/$notificationId');
@@ -7224,14 +7236,12 @@ Future<String> _appendQueryParams(String path) async {
 
     final response = await _postRequest(path, body);
 
-    if (response.statusCode != 200) {
-      throw Exception('Ошибка удаления уведомлений!');
-    }
-    final data = json.decode(response.body);
-    if (data['result'] == 'Success') {
-      return;
+    // Успешные коды: 200, 201, 204, 429
+    final successCodes = [200, 201, 204, 429];
+    if (successCodes.contains(response.statusCode)) {
+      return response.statusCode;
     } else {
-      throw Exception('Ошибка удаления уведомления');
+      throw Exception('Ошибка удаления уведомлений!');
     }
   }
 
@@ -10104,7 +10114,14 @@ Future<String> _appendQueryParams(String path) async {
     }
 
     if (types != null && types.isNotEmpty) {
-      url += types.map((type) => '&type[]=$type').join();
+      if (kDebugMode) {
+        print('📅 Calendar types to send: $types (count: ${types.length})');
+      }
+      url += types.map((type) => '&type[]=${Uri.encodeComponent(type)}').join();
+    }
+
+    if (kDebugMode) {
+      print('📅 Calendar URL after types: $url');
     }
 
     if (userIds != null && userIds.isNotEmpty) {
@@ -10116,7 +10133,7 @@ Future<String> _appendQueryParams(String path) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams(url);
     if (kDebugMode) {
-      //print('ApiService: getCalendarEventsByMonth - Generated path: $path');
+      print('📅 Calendar API URL: $path');
     }
 
     final response = await _getRequest(path);

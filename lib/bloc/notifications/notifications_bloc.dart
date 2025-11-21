@@ -95,13 +95,23 @@ Future<void> _deleteAllNotification(DeleteAllNotification event, Emitter<Notific
   if (await _checkInternetConnection()) {
     ////print("🌐 [NETWORK] Интернет подключен. Отправляем запрос на удаление всех уведомлений...");
     try {
-      await apiService.DeleteAllNotifications();
-      ////print("✅ [SERVER] Все уведомления успешно удалены.");
+      final statusCode = await apiService.DeleteAllNotifications();
+      ////print("✅ [SERVER] Все уведомления успешно удалены. Status code: $statusCode");
 
       // Очистка кэша
       await NotificationCacheHandler.clearCache();
       ////print("💾 [CACHE] Кэш уведомлений очищен.");
-      emit(NotificationDeleted('Все уведомления успешно удалены'));
+      
+      // Успешные коды: 200, 201, 204, 429
+      final successCodes = [200, 201, 204, 429];
+      if (successCodes.contains(statusCode)) {
+        // Эмитим пустой список уведомлений, чтобы UI показал "no notifications yet"
+        emit(NotificationDataLoaded([], currentPage: 1));
+        // Затем эмитим состояние удаления для показа snackbar в BlocListener
+        emit(NotificationDeleted('Все уведомления успешно удалены', statusCode: statusCode));
+      } else {
+        emit(NotificationError('Ошибка удаления всех уведомлений', statusCode: statusCode));
+      }
     } catch (e) {
       ////print("❌ [ERROR] Ошибка при удалении всех уведомлений!");
       emit(NotificationError('Ошибка удаления всех уведомлений'));
@@ -117,21 +127,27 @@ Future<void> _deleteNotification(DeleteNotification event, Emitter<NotificationS
   if (await _checkInternetConnection()) {
     ////print("🌐 [NETWORK] Интернет подключен. Отправляем запрос на удаление уведомления...");
     try {
-      await apiService.DeleteNotifications(notificationId: event.notificationId);
-      ////print("✅ [SERVER] Уведомление с ID: ${event.notificationId} успешно удалено.");
+      final statusCode = await apiService.DeleteNotifications(notificationId: event.notificationId);
+      ////print("✅ [SERVER] Уведомление с ID: ${event.notificationId} успешно удалено. Status code: $statusCode");
 
-      if (state is NotificationDataLoaded) {
-        final currentState = state as NotificationDataLoaded;
+      // Успешные коды: 200, 201, 204, 429
+      final successCodes = [200, 201, 204, 429];
+      if (successCodes.contains(statusCode)) {
+        if (state is NotificationDataLoaded) {
+          final currentState = state as NotificationDataLoaded;
 
-        final updatedNotifications = currentState.notifications
-            .where((notification) => notification.id != event.notificationId)
-            .toList();
+          final updatedNotifications = currentState.notifications
+              .where((notification) => notification.id != event.notificationId)
+              .toList();
 
-        // Обновляем кэш
-        await NotificationCacheHandler.saveNotifications(updatedNotifications);
-        ////print("💾 [CACHE] Кэш обновлен после удаления уведомления.");
+          // Обновляем кэш
+          await NotificationCacheHandler.saveNotifications(updatedNotifications);
+          ////print("💾 [CACHE] Кэш обновлен после удаления уведомления.");
 
-        emit(NotificationDataLoaded(updatedNotifications, currentPage: currentState.currentPage));
+          emit(NotificationDataLoaded(updatedNotifications, currentPage: currentState.currentPage));
+        }
+      } else {
+        emit(NotificationError('Ошибка удаления уведомления!', statusCode: statusCode));
       }
     } catch (e) {
       ////print("❌ [ERROR] Ошибка при удалении уведомления: $e");
