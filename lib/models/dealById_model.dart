@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
+import 'package:crm_task_manager/models/user_data_response.dart';
 
 class DealById {
   final int id;
@@ -15,6 +16,11 @@ class DealById {
   final AuthorDeal? author;
   final List<DealCustomFieldsById> dealCustomFields;
   final DealStatusById? dealStatus;
+  final List<DirectoryValue>? directoryValues;
+  final List<DealFiles>? files;
+  final int? dealNumber;
+  final List<DealStatusById>? dealStatuses; // ✅ НОВОЕ: массив статусов
+    final List<DealUser>? users; // ✅ НОВОЕ: список пользователей сделки
 
 
   DealById({
@@ -31,10 +37,23 @@ class DealById {
     this.author,
     required this.dealCustomFields,
     this.dealStatus,
+    this.directoryValues,
+    this.files,
+    this.dealNumber,
+    this.dealStatuses, // ✅ НОВОЕ
+        this.users, // ✅ НОВОЕ
 
   });
 
   factory DealById.fromJson(Map<String, dynamic> json, int dealStatusId) {
+      // ✅ НОВОЕ: Парсинг users
+    List<DealUser>? usersList;
+    if (json['users'] != null && json['users'] is List) {
+      usersList = (json['users'] as List)
+          .where((item) => item != null)
+          .map((userJson) => DealUser.fromJson(userJson as Map<String, dynamic>))
+          .toList();
+    }
     return DealById(
       id: json['id'] ?? 0,
       name: json['name'] ?? 'Без имени',
@@ -44,18 +63,82 @@ class DealById {
       description: json['description'] ?? '',
       sum: json['sum'] ?? '',
       statusId: dealStatusId,
-      manager:
-          json['manager'] != null ? ManagerData.fromJson(json['manager']) : null,
+      manager: json['manager'] != null ? ManagerData.fromJson(json['manager']) : null,
       lead: json['lead'] != null ? Lead.fromJson(json['lead'], json['lead']['status_id'] ?? 0) : null,
-      author: json['author'] != null && json['author'] is Map<String, dynamic>
-          ? AuthorDeal.fromJson(json['author'])
+      author: json['author'] != null && json['author'] is Map<String, dynamic> ? AuthorDeal.fromJson(json['author']) : null,
+      dealCustomFields: (json['deal_custom_fields'] as List<dynamic>?)?.map((field) => DealCustomFieldsById.fromJson(field)).toList() ?? [],
+      dealStatus: json['deal_status'] != null ? DealStatusById.fromJson(json['deal_status']) : null,
+      directoryValues: (json['directory_values'] as List<dynamic>?)?.map((dirValue) => DirectoryValue.fromJson(dirValue)).toList(),
+      files: (json['files'] as List<dynamic>?)?.map((item) => DealFiles.fromJson(item)).toList() ?? [],
+      dealNumber: json['deal_number'] is int ? json['deal_number'] : null,
+      // ✅ НОВОЕ: парсим массив статусов
+      dealStatuses: (json['deal_statuses'] as List<dynamic>?)
+          ?.map((status) => DealStatusById.fromJson(status))
+          .toList(),
+            users: usersList, // ✅ НОВОЕ
+
+    );
+  }
+}
+class DealUser {
+  final int id;
+  final int? dealId;
+  final int? userId;
+  final String? createdAt;
+  final String? updatedAt;
+  final UserData? user; // Полная информация о пользователе
+
+  DealUser({
+    required this.id,
+    this.dealId,
+    this.userId,
+    this.createdAt,
+    this.updatedAt,
+    this.user,
+  });
+
+  factory DealUser.fromJson(Map<String, dynamic> json) {
+    return DealUser(
+      id: json['id'] as int? ?? 0,
+      dealId: json['deal_id'] as int? ?? 0,
+      userId: json['user_id'] as int? ?? 0,
+      createdAt: json['created_at'] as String? ?? '',
+      updatedAt: json['updated_at'] as String? ?? '',
+      user: json['user'] != null
+          ? UserData.fromJson(json['user'] as Map<String, dynamic>)
           : null,
-      dealCustomFields: (json['deal_custom_fields'] as List<dynamic>?)
-              ?.map((field) => DealCustomFieldsById.fromJson(field))
-              .toList() ??  [],
-      dealStatus: json['deal_status'] != null
-        ? DealStatusById.fromJson(json['deal_status'])
-        : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'deal_id': dealId,
+      'user_id': userId,
+      'created_at': createdAt,
+      'updated_at': updatedAt,
+      'user': user?.toJson(),
+    };
+  }
+}
+
+
+class DealFiles {
+  final int id;
+  final String name;
+  final String path;
+
+  DealFiles({
+    required this.id,
+    required this.name,
+    required this.path,
+  });
+
+  factory DealFiles.fromJson(Map<String, dynamic> json) {
+    return DealFiles(
+      id: json['id'] is int ? json['id'] : 0,
+      name: json['name'] is String ? json['name'] : '',
+      path: json['path'] is String ? json['path'] : '',
     );
   }
 }
@@ -73,26 +156,6 @@ class AuthorDeal {
     return AuthorDeal(
       id: json['id'] ?? 0,
       name: json['name'] ?? 'Не указан',
-    );
-  }
-}
-
-class DealCustomFieldsById {
-  final int id;
-  final String key;
-  final String value;
-
-  DealCustomFieldsById({
-    required this.id,
-    required this.key,
-    required this.value,
-  });
-
-  factory DealCustomFieldsById.fromJson(Map<String, dynamic> json) {
-    return DealCustomFieldsById(
-      id: json['id'] ?? 0,
-      key: json['key'] ?? '',
-      value: json['value'] ?? '',
     );
   }
 }
@@ -119,6 +182,104 @@ class DealStatusById {
       color: json['color'] is String ? json['color'] : '#000',
       createdAt: json['created_at'] is String ? json['created_at'] : null,
       updatedAt: json['updated_at'] is String ? json['updated_at'] : null,
+    );
+  }
+  
+  // ✅ НОВОЕ: добавляем методы для сравнения
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is DealStatusById &&
+          runtimeType == other.runtimeType &&
+          id == other.id;
+
+  @override
+  int get hashCode => id.hashCode;
+}
+
+class DealCustomFieldsById {
+  final int id;
+  final String key;
+  final String value;
+  final String? type; // Добавлено поле type
+
+  DealCustomFieldsById({
+    required this.id,
+    required this.key,
+    required this.value,
+    this.type,
+  });
+
+  factory DealCustomFieldsById.fromJson(Map<String, dynamic> json) {
+    return DealCustomFieldsById(
+      id: json['id'] ?? 0,
+      key: json['key'] ?? '',
+      value: json['value'] ?? '',
+      type: json['type'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'key': key,
+      'value': value,
+      'type': type,
+    };
+  }
+}
+
+
+class DirectoryValue {
+  final int id;
+  final Entry entry;
+
+  DirectoryValue({
+    required this.id,
+    required this.entry,
+  });
+
+  factory DirectoryValue.fromJson(Map<String, dynamic> json) {
+    return DirectoryValue(
+      id: json['id'] ?? 0,
+      entry: Entry.fromJson(json['entry']),
+    );
+  }
+}
+
+class Entry {
+  final int id;
+  final DirectoryByDeal directory;
+  final Map<String, dynamic> values;
+
+  Entry({
+    required this.id,
+    required this.directory,
+    required this.values,
+  });
+
+  factory Entry.fromJson(Map<String, dynamic> json) {
+    return Entry(
+      id: json['id'] ?? 0,
+      directory: DirectoryByDeal.fromJson(json['directory']),
+      values: json['values'] ?? {},
+    );
+  }
+}
+
+class DirectoryByDeal {
+  final int id;
+  final String name;
+
+  DirectoryByDeal({
+    required this.id,
+    required this.name,
+  });
+
+  factory DirectoryByDeal.fromJson(Map<String, dynamic> json) {
+    return DirectoryByDeal(
+      id: json['id'] ?? 0,
+      name: json['name'] ?? '',
     );
   }
 }

@@ -4,13 +4,9 @@ class DealStatsResponseManager {
   DealStatsResponseManager({
     required this.data,
   }) {
-    print('DealStatsResponseManager: Создан новый объект');
-    print('DealStatsResponseManager: количество месяцев = ${data.length}');
   }
 
   factory DealStatsResponseManager.fromJson(Map<String, dynamic> json) {
-    print('DealStatsResponseManager: Начало парсинга JSON');
-    print('DealStatsResponseManager: Входящий JSON = $json');
     
     if (json['result'] == null || json['result']['data'] == null) {
       throw Exception('Отсутствует ключ "result" или "data" в JSON');
@@ -23,7 +19,6 @@ class DealStatsResponseManager {
       data: monthlyData,
     );
     
-    print('DealStatsResponseManager: Успешно создан объект из JSON');
     return response;
   }
 }

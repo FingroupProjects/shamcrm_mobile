@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/bloc/main_field/main_field_bloc.dart';
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_state.dart';
 import 'package:crm_task_manager/bloc/source_lead/source_lead_bloc.dart';
@@ -8,19 +9,28 @@ import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/custom_widget/custom_phone_number_input.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
+import 'package:crm_task_manager/custom_widget/file_picker_dialog.dart';
+import 'package:crm_task_manager/models/main_field_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
-import 'package:crm_task_manager/screens/deal/tabBar/deal_add_create_field.dart';
+
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details/custom_field_model.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_create_custom.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/region_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/source_lead_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details/add_custom_directory_dialog.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details/main_field_dropdown_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/region_list/region_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:uuid/uuid.dart';
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 
 class LeadAddScreen extends StatefulWidget {
   final int statusId;
@@ -52,91 +62,412 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
   String selectedDialCodeWhatsapp = '';
   List<CustomField> customFields = [];
   bool isEndDateInvalid = false;
+  // Переменные для файлов
+  List<String> selectedFiles = [];
+  List<String> fileNames = [];
+  List<String> fileSizes = [];
+  bool _showAdditionalFields = false; // Флаг для дополнительных полей
 
   @override
   void initState() {
     super.initState();
-
     context.read<SourceLeadBloc>().add(FetchSourceLead());
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     context.read<GetAllRegionBloc>().add(GetAllRegionEv());
     _fetchAndAddCustomFields();
   }
+Future<void> _pickFile() async {
+  // Вычисляем текущий общий размер файлов
+  double totalSize = selectedFiles.fold<double>(
+    0.0,
+    (sum, file) => sum + File(file).lengthSync() / (1024 * 1024),
+  );
 
-  void _fetchAndAddCustomFields() async {
-    try {
-      final data = await ApiService().getCustomFieldslead();
-      if (data['result'] != null) {
-        data['result'].forEach((value) {
-          setState(() {
-            customFields.add(CustomField(fieldName: value));
-          });
-        });
+  // Показываем диалог выбора типа файла
+  final List<PickedFileInfo>? pickedFiles = await FilePickerDialog.show(
+    context: context,
+    allowMultiple: true,
+    maxSizeMB: 50.0,
+    currentTotalSizeMB: totalSize,
+    fileLabel: AppLocalizations.of(context)!.translate('file'),
+    galleryLabel: AppLocalizations.of(context)!.translate('gallery'),
+    cameraLabel: AppLocalizations.of(context)!.translate('camera'),
+    cancelLabel: AppLocalizations.of(context)!.translate('cancel'),
+    fileSizeTooLargeMessage: AppLocalizations.of(context)!.translate('file_size_too_large'),
+    errorPickingFileMessage: AppLocalizations.of(context)!.translate('error_picking_file'),
+  );
+
+  // Если файлы выбраны, добавляем их
+  if (pickedFiles != null && pickedFiles.isNotEmpty) {
+    setState(() {
+      for (var file in pickedFiles) {
+        selectedFiles.add(file.path);
+        fileNames.add(file.name);
+        fileSizes.add(file.sizeKB);
       }
-    } catch (e) {
-      print('Ошибка!');
+    });
+  }
+}
+
+void _fetchAndAddCustomFields() async {
+  try {
+    print('Загрузка кастомных полей и справочников для лида');
+    
+    // Получаем кастомные поля
+    final customFieldsData = await ApiService().getCustomFieldslead();
+    
+    // ✅ ИСПРАВЛЕНО: Правильная обработка структуры данных
+    if (customFieldsData['result'] != null && customFieldsData['result'] is List) {
+      setState(() {
+        customFields.addAll((customFieldsData['result'] as List).map<CustomField>((fieldData) {
+          // fieldData - это объект с ключами 'key' и 'type'
+          String fieldName = fieldData['key'] ?? '';
+          String fieldType = fieldData['type'] ?? 'string';
+          
+          print('Добавлено кастомное поле: $fieldName (тип: $fieldType)');
+          
+          return CustomField(
+            fieldName: fieldName,
+            type: fieldType, // ✅ Сохраняем тип поля
+            uniqueId: Uuid().v4(),
+            controller: TextEditingController(),
+          );
+        }).toList());
+      });
+      
+      print('Всего загружено кастомных полей: ${customFields.length}');
+    }
+
+    // Получаем связанные справочники для лида
+    final directoryLinkData = await ApiService().getLeadDirectoryLinks();
+    if (directoryLinkData.data != null) {
+      setState(() {
+        customFields.addAll(directoryLinkData.data!.map<CustomField>((link) {
+          print('Добавлен справочник: ${link.directory.name} (ID: ${link.directory.id})');
+          
+          return CustomField(
+            fieldName: link.directory.name,
+            isDirectoryField: true,
+            directoryId: link.directory.id,
+            uniqueId: Uuid().v4(),
+            controller: TextEditingController(),
+          );
+        }).toList());
+      });
+      
+      print('Всего полей (кастомные + справочники): ${customFields.length}');
+    }
+  } catch (e) {
+    print('❌ Ошибка при получении данных: $e');
+  }
+}
+
+void _addCustomField(String fieldName, {bool isDirectory = false, int? directoryId, String? type}) {
+  //print('Добавление поля: $fieldName, isDirectory: $isDirectory, directoryId: $directoryId, type: $type');
+  if (isDirectory && directoryId != null) {
+    bool directoryExists = customFields.any((field) => field.isDirectoryField && field.directoryId == directoryId);
+    if (directoryExists) {
+      //print('Справочник с directoryId: $directoryId уже добавлен, пропускаем');
+      return;
     }
   }
+  setState(() {
+    customFields.add(CustomField(
+      fieldName: fieldName,
+      uniqueId: Uuid().v4(),
+      isDirectoryField: isDirectory,
+      directoryId: directoryId,
+      type: type, // Сохраняем тип
+      controller: TextEditingController(),
+    ));
+  });
+}
 
-  void _addCustomField(String fieldName) {
-    setState(() {
-      customFields.add(CustomField(fieldName: fieldName));
+  void _showAddFieldMenu() {
+    //print('Открытие меню добавления поля');
+    showMenu(
+      context: context,
+      position: RelativeRect.fromLTRB(300, 650, 200, 300),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      elevation: 4,
+      color: Colors.white,
+      items: [
+        PopupMenuItem(
+          value: 'manual',
+          child: Text(
+            AppLocalizations.of(context)!.translate('manual_input'),
+            style: TextStyle(
+              fontSize: 16,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w500,
+              color: Color(0xff1E2E52),
+            ),
+          ),
+        ),
+        PopupMenuItem(
+          value: 'directory',
+          child: Text(
+            AppLocalizations.of(context)!.translate('directory'),
+            style: TextStyle(
+              fontSize: 16,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w500,
+              color: Color(0xff1E2E52),
+            ),
+          ),
+        ),
+      ],
+    ).then((value) {
+      //print('Выбрано значение в меню: $value');
+      if (value == 'manual') {
+        showDialog(
+  context: context,
+  builder: (BuildContext context) {
+    return AddCustomFieldDialog(
+      onAddField: (fieldName, {String? type}) { // Добавляем type как именованный параметр
+        _addCustomField(fieldName, type: type);
+      },
+    );
+  },
+);
+      } else if (value == 'directory') {
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AddCustomDirectoryDialog(
+              onAddDirectory: (directory) {
+                //print('Выбран справочник: ${directory.name}, id: ${directory.id}');
+                _addCustomField(directory.name, isDirectory: true, directoryId: directory.id);
+                ApiService().linkDirectory(
+                  directoryId: directory.id,
+                  modelType: 'lead',
+                  organizationId: ApiService().getSelectedOrganization().toString(),
+                ).then((_) {
+                  //print('Справочник успешно связан с моделью lead');
+                }).catchError((e) {
+                  //print('Ошибка при связывании справочника: $e');
+                });
+              },
+            );
+          },
+        );
+      }
     });
   }
 
-  void _showAddFieldDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AddCustomFieldDialog(
-          onAddField: (fieldName) {
-            _addCustomField(fieldName);
+  @override
+
+Widget _buildFileSelection() {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        AppLocalizations.of(context)!.translate('file'),
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+          fontFamily: 'Gilroy',
+          color: Color(0xff1E2E52),
+        ),
+      ),
+      SizedBox(height: 16),
+      Container(
+        height: 120,
+        child: ListView.builder(
+          scrollDirection: Axis.horizontal,
+          itemCount: fileNames.isEmpty ? 1 : fileNames.length + 1,
+          itemBuilder: (context, index) {
+            // Кнопка добавления файла
+            if (fileNames.isEmpty || index == fileNames.length) {
+              return Padding(
+                padding: EdgeInsets.only(right: 16),
+                child: GestureDetector(
+                  onTap: _pickFile,
+                  child: Container(
+                    width: 100,
+                    child: Column(
+                      children: [
+                        Image.asset('assets/icons/files/add.png', width: 60, height: 60),
+                        SizedBox(height: 8),
+                        Text(
+                          AppLocalizations.of(context)!.translate('add_file'),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontFamily: 'Gilroy',
+                            color: Color(0xff1E2E52),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }
+            
+            // Отображение выбранных файлов
+            final fileName = fileNames[index];
+            final fileExtension = fileName.split('.').last.toLowerCase();
+            
+            return Padding(
+              padding: EdgeInsets.only(right: 16),
+              child: Stack(
+                children: [
+                  Container(
+                    width: 100,
+                    child: Column(
+                      children: [
+                        // НОВОЕ: Используем метод _buildFileIcon для показа превью или иконки
+                        _buildFileIcon(fileName, fileExtension),
+                        SizedBox(height: 8),
+                        Text(
+                          fileName,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontFamily: 'Gilroy',
+                            color: Color(0xff1E2E52),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Кнопка удаления файла
+                  Positioned(
+                    right: -2,
+                    top: -6,
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          selectedFiles.removeAt(index);
+                          fileNames.removeAt(index);
+                          fileSizes.removeAt(index);
+                        });
+                      },
+                      child: Container(
+                        padding: EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 4,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Icon(Icons.close, size: 16, color: Color(0xff1E2E52)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
           },
+        ),
+      ),
+    ],
+  );
+}
+
+Widget _buildFileIcon(String fileName, String fileExtension) {
+  // Список расширений изображений
+  final imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'heic', 'heif'];
+  
+  // Если файл - изображение, показываем превью
+  if (imageExtensions.contains(fileExtension)) {
+    final filePath = selectedFiles[fileNames.indexOf(fileName)];
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: Image.file(
+        File(filePath),
+        width: 60,
+        height: 60,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          // Если не удалось загрузить превью, показываем иконку
+          return Image.asset(
+            'assets/icons/files/file.png',
+            width: 60,
+            height: 60,
+          );
+        },
+      ),
+    );
+  } else {
+    // Для остальных типов файлов показываем иконку по расширению
+    return Image.asset(
+      'assets/icons/files/$fileExtension.png',
+      width: 60,
+      height: 60,
+      errorBuilder: (context, error, stackTrace) {
+        // Если нет иконки для этого типа, показываем общую иконку файла
+        return Image.asset(
+          'assets/icons/files/file.png',
+          width: 60,
+          height: 60,
         );
       },
     );
   }
+}
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        forceMaterialTransparency: true,
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: Image.asset(
-            'assets/icons/arrow-left.png',
-            width: 24,
-            height: 24,
+
+ @override
+Widget build(BuildContext context) {
+  return Scaffold(
+    backgroundColor: Colors.white,
+    appBar: AppBar(
+      title: Transform.translate(
+        offset: const Offset(-10, 0),
+        child: Text(
+          AppLocalizations.of(context)!.translate('new_lead'),
+          style: const TextStyle(
+            fontSize: 20,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w600,
+            color: Color(0xff1E2E52),
           ),
-          onPressed: () {
-            Navigator.pop(context, widget.statusId);
-            context.read<LeadBloc>().add(FetchLeadStatuses());
-          },
-        ),
-        title: Row(
-          children: [
-            Text(
-              AppLocalizations.of(context)!.translate('new_lead'), 
-              style: TextStyle(
-                fontSize: 18,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w600,
-                color: Color(0xff1E2E52),
-              ),
-            ),
-          ],
         ),
       ),
-      body: BlocListener<LeadBloc, LeadState>(
+      centerTitle: false,
+      leading: Padding(
+        padding: const EdgeInsets.only(left: 0),
+        child: Transform.translate(
+          offset: const Offset(0, -2),
+          child: IconButton(
+            icon: Image.asset(
+              'assets/icons/arrow-left.png',
+              width: 24,
+              height: 24,
+            ),
+            onPressed: () {
+              Navigator.pop(context, widget.statusId);
+              context.read<LeadBloc>().add(FetchLeadStatuses());
+            },
+          ),
+        ),
+      ),
+      leadingWidth: 40,
+      backgroundColor: const Color.fromARGB(255, 255, 255, 255),
+    ),
+    body: MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (context) => MainFieldBloc()),
+      ],
+      child: BlocListener<LeadBloc, LeadState>(
         listener: (context, state) {
           if (state is LeadError) {
+            if (!mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
+                  AppLocalizations.of(context)!.translate(state.message),
                   style: const TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -152,10 +483,11 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
               ),
             );
           } else if (state is LeadSuccess) {
+            if (!mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
+                  AppLocalizations.of(context)!.translate(state.message),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -183,144 +515,206 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
           child: Column(
             children: [
               Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      CustomTextField(
-                        controller: titleController,
-                        hintText: AppLocalizations.of(context)!.translate('enter_name_list'), 
-                        label: AppLocalizations.of(context)!.translate('name_list'), 
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return AppLocalizations.of(context)!.translate('field_required');
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      CustomPhoneNumberInput(
-                        controller: phoneController,
-                        onInputChanged: (String number) {
-                          setState(() {
-                            selectedDialCode = number;
-                          });
-                        },
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return AppLocalizations.of(context)!.translate('field_required');
-                          }
-                          return null;
-                        },
-                        label: AppLocalizations.of(context)!.translate('phone'), 
-                      ),
-                      const SizedBox(height: 8),
-                      RegionRadioGroupWidget(
-                        selectedRegion: selectedRegion,
-                        onSelectRegion: (RegionData selectedRegionData) {
-                          setState(() {
-                            selectedRegion = selectedRegionData.id.toString();
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      ManagerRadioGroupWidget(
-                        selectedManager: selectedManager,
-                        onSelectManager: (ManagerData selectedManagerData) {
-                          setState(() {
-                            selectedManager = selectedManagerData.id.toString();
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      SourceLeadWidget(
-                        selectedSourceLead: selectedSourceLead,
-                        onChanged: (String? newValue) {
-                          setState(() {
-                            selectedSourceLead = newValue;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      CustomTextField(
-                        controller: instaLoginController,
-                        hintText: AppLocalizations.of(context)!.translate('enter_instagram_username'),
-                        label: AppLocalizations.of(context)!.translate('instagram'),
-                      ),
-                      const SizedBox(height: 8),
-                      CustomTextField(
-                        controller: facebookLoginController,
-                        hintText: AppLocalizations.of(context)!.translate('enter_facebook_username'),
-                        label: AppLocalizations.of(context)!.translate('Facebook'),
-                      ),
-                      const SizedBox(height: 8),
-                      CustomTextField(
-                        controller: tgNickController,
-                        hintText: AppLocalizations.of(context)!.translate('enter_telegram_username'),
-                        label: AppLocalizations.of(context)!.translate('telegram'),
-                      ),
-                      const SizedBox(height: 8),
-                      CustomPhoneNumberInput(
-                        controller: whatsappController,
-                        onInputChanged: (String number) {
-                          setState(() {
-                            selectedDialCodeWhatsapp = number;
-                          });
-                        },
-                        label: 'Whatsapp',
-                      ),
-                      const SizedBox(height: 8),
-                      CustomTextField(
-                        controller: emailController,
-                        hintText: AppLocalizations.of(context)!.translate('enter_email'),
-                        label: AppLocalizations.of(context)!.translate('email'),
-                        keyboardType: TextInputType.emailAddress,
-                      ),
-                      const SizedBox(height: 8),
-                      CustomTextFieldDate(
-                        controller: birthdayController,
-                        label: AppLocalizations.of(context)!.translate('birth_date'),
-                        withTime: false,
-                      ),
-                      const SizedBox(height: 8),
-                      CustomTextField(
-                        controller: descriptionController,
-                        hintText: AppLocalizations.of(context)!.translate('enter_description'),
-                        label: AppLocalizations.of(context)!.translate('description_list'),
-                        maxLines: 5,
-                      ),
-                      const SizedBox(height: 8),
-                      ListView.builder(
-                        shrinkWrap: true,
-                        physics: NeverScrollableScrollPhysics(),
-                        itemCount: customFields.length,
-                        itemBuilder: (context, index) {
-                          return CustomFieldWidget(
-                            fieldName: customFields[index].fieldName,
-                            valueController: customFields[index].controller,
-                            onRemove: () {
+                child: GestureDetector(
+                  onTap: () {
+                    FocusScope.of(context).unfocus();
+                  },
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Поле: Имя
+                        CustomTextField(
+                          controller: titleController,
+                          hintText: AppLocalizations.of(context)!.translate('enter_name_list'),
+                          label: AppLocalizations.of(context)!.translate('name_list'),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return AppLocalizations.of(context)!.translate('field_required');
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 15),
+                        // Поле: Телефон
+CustomPhoneNumberInput(
+  controller: phoneController,
+  onInputChanged: (String number) {
+    setState(() {
+      selectedDialCode = number;
+    });
+  },
+  // validator удалён - телефон теперь необязательное поле
+  label: AppLocalizations.of(context)!.translate('phone'),
+),
+                        const SizedBox(height: 15),
+                        // Поле: Менеджер
+                        ManagerRadioGroupWidget(
+                          selectedManager: selectedManager,
+                          onSelectManager: (ManagerData selectedManagerData) {
+                            setState(() {
+                              selectedManager = selectedManagerData.id.toString();
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 15),
+                        // Поле: Регион
+                        RegionRadioGroupWidget(
+                          selectedRegion: selectedRegion,
+                          onSelectRegion: (RegionData selectedRegionData) {
+                            setState(() {
+                              selectedRegion = selectedRegionData.id.toString();
+                            });
+                          },
+                        ),
+                        
+                        const SizedBox(height: 15),
+                        // Поле: Источник
+                        SourceLeadWidget(
+                          selectedSourceLead: selectedSourceLead,
+                          onChanged: (String? newValue) {
+                            setState(() {
+                              selectedSourceLead = newValue;
+                            });
+                          },
+                        ),
+                         const SizedBox(height: 15),
+                          CustomPhoneNumberInput(
+                            controller: whatsappController,
+                            onInputChanged: (String number) {
                               setState(() {
-                                customFields.removeAt(index);
+                                selectedDialCodeWhatsapp = number;
                               });
                             },
-                          );
-                        },
-                      ),
-                      CustomButton(
-                        buttonText: AppLocalizations.of(context)!.translate('add_field'),
-                        buttonColor: Color(0xff1E2E52),
-                        textColor: Colors.white,
-                        onPressed: _showAddFieldDialog,
-                      ),
-                      const SizedBox(height: 20),
-                    ],
+                            label: 'Whatsapp',
+                          ),
+                        
+                        const SizedBox(height: 15),
+                        // Кнопка "Дополнительно"
+                        if (!_showAdditionalFields)
+                          CustomButton(
+                            buttonText: AppLocalizations.of(context)!.translate('additionally'),
+                            buttonColor: Color(0xff1E2E52),
+                            textColor: Colors.white,
+                            onPressed: () {
+                              setState(() {
+                                _showAdditionalFields = true;
+                              });
+                            },
+                          )
+                        else ...[
+                          // Дополнительные поля
+                          CustomTextField(
+                            controller: instaLoginController,
+                            hintText: AppLocalizations.of(context)!.translate('enter_instagram_username'),
+                            label: AppLocalizations.of(context)!.translate('instagram'),
+                          ),
+                          const SizedBox(height: 15),
+                          CustomTextField(
+                            controller: facebookLoginController,
+                            hintText: AppLocalizations.of(context)!.translate('enter_facebook_username'),
+                            label: AppLocalizations.of(context)!.translate('Facebook'),
+                          ),
+                          const SizedBox(height: 15),
+                          CustomTextField(
+                            controller: tgNickController,
+                            hintText: AppLocalizations.of(context)!.translate('enter_telegram_username'),
+                            label: AppLocalizations.of(context)!.translate('telegram'),
+                          ),
+                         
+                          const SizedBox(height: 15),
+                          CustomTextField(
+                            controller: emailController,
+                            hintText: AppLocalizations.of(context)!.translate('enter_email'),
+                            label: AppLocalizations.of(context)!.translate('email'),
+                            keyboardType: TextInputType.emailAddress,
+                          ),
+                          const SizedBox(height: 15),
+                          CustomTextFieldDate(
+                            controller: birthdayController,
+                            label: AppLocalizations.of(context)!.translate('birth_date'),
+                            withTime: false,
+                          ),
+                          const SizedBox(height: 15),
+                        // Поле: Доп. информация клиента
+                        CustomTextField(
+                          controller: descriptionController,
+                          hintText: AppLocalizations.of(context)!.translate('description_details_lead_edit'),
+                          label: AppLocalizations.of(context)!.translate('description_details_lead_add'),
+                          maxLines: 5,
+                          keyboardType: TextInputType.multiline,
+                        ),
+                          const SizedBox(height: 15),
+                          // Прикрепление файлов
+                          _buildFileSelection(),
+                          const SizedBox(height: 15),
+                          // Кастомные поля и справочники
+                         // В методе build, в ListView.builder для customFields
+ListView.builder(
+  shrinkWrap: true,
+  physics: NeverScrollableScrollPhysics(),
+  itemCount: customFields.length,
+  itemBuilder: (context, index) {
+    final field = customFields[index];
+    return Container(
+      key: ValueKey(field.uniqueId),
+      child: field.isDirectoryField && field.directoryId != null
+          ? MainFieldDropdownWidget(
+              directoryId: field.directoryId!,
+              directoryName: field.fieldName,
+              selectedField: null,
+              onSelectField: (MainField selectedField) {
+                setState(() {
+                  customFields[index] = field.copyWith(
+                    entryId: selectedField.id,
+                    controller: TextEditingController(text: selectedField.value),
+                  );
+                });
+              },
+              controller: field.controller,
+              onSelectEntryId: (int entryId) {
+                setState(() {
+                  customFields[index] = field.copyWith(
+                    entryId: entryId,
+                  );
+                });
+              },
+              onRemove: () {
+                setState(() {
+                  customFields.removeAt(index);
+                });
+              },
+            )
+          : CustomFieldWidget(
+              fieldName: field.fieldName,
+              valueController: field.controller,
+              onRemove: () {
+                setState(() {
+                  customFields.removeAt(index);
+                });
+              },
+              type: field.type, // Передаём тип поля
+            ),
+    );
+  },
+),
+                          const SizedBox(height: 15),
+                          CustomButton(
+                            buttonText: AppLocalizations.of(context)!.translate('add_field'),
+                            buttonColor: Color(0xff1E2E52),
+                            textColor: Colors.white,
+                            onPressed: _showAddFieldMenu,
+                          ),
+                        ],
+                        const SizedBox(height: 20),
+                      ],
+                    ),
                   ),
                 ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 child: Row(
                   children: [
                     Expanded(
@@ -357,13 +751,14 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                     ),
                   ],
                 ),
-              )
+              ),
             ],
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   void _submitForm() {
     if (_formKey.currentState!.validate()) {
@@ -394,7 +789,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
     }
   }
 
-  void _createLead() {
+ void _createLead() {
+  if (_formKey.currentState!.validate()) {
     final String name = titleController.text;
     final String phone = selectedDialCode;
     final String? instaLogin =
@@ -422,52 +818,133 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content:
-                Text(AppLocalizations.of(context)!.translate('enter_valid_birth_date')),
+            content: Text(
+              AppLocalizations.of(context)!.translate('enter_valid_birth_date'),
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
+              ),
+            ),
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            backgroundColor: Colors.red,
+            elevation: 3,
+            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            duration: Duration(seconds: 3),
           ),
         );
         return;
       }
     }
 
-    List<Map<String, String>> customFieldMap = [];
+    List<Map<String, dynamic>> customFieldMap = [];
+    List<Map<String, int>> directoryValues = [];
+
     for (var field in customFields) {
       String fieldName = field.fieldName.trim();
       String fieldValue = field.controller.text.trim();
-      if (fieldName.isNotEmpty && fieldValue.isNotEmpty) {
-        customFieldMap.add({fieldName: fieldValue});
+      String? fieldType = field.type;
+
+      // Валидация для number
+      if (fieldType == 'number' && fieldValue.isNotEmpty) {
+        if (!RegExp(r'^\d+$').hasMatch(fieldValue)) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(context)!
+                    .translate('enter_valid_number'),
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+      }
+
+      // Валидация для date и datetime
+      if ((fieldType == 'date' || fieldType == 'datetime') &&
+          fieldValue.isNotEmpty) {
+        try {
+          if (fieldType == 'date') {
+            DateFormat('dd/MM/yyyy').parse(fieldValue);
+          } else {
+            DateFormat('dd/MM/yyyy HH:mm').parse(fieldValue);
+          }
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(context)!
+                    .translate('enter_valid_${fieldType}'),
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+      }
+
+      if (field.isDirectoryField &&
+          field.directoryId != null &&
+          field.entryId != null) {
+        directoryValues.add({
+          'directory_id': field.directoryId!,
+          'entry_id': field.entryId!,
+        });
+      } else if (fieldName.isNotEmpty && fieldValue.isNotEmpty) {
+        customFieldMap.add({
+          'key': fieldName,
+          'value': fieldValue,
+          'type': fieldType ?? 'string',
+        });
       }
     }
 
-  final localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context)!;
+
+    bool isSystemManager = selectedManager == "-1";
 
     context.read<LeadBloc>().add(CreateLead(
-          name: name,
-          leadStatusId: widget.statusId,
-          phone: phone,
-          regionId: selectedRegion != null ? int.parse(selectedRegion!) : null,
-          managerId:
-              selectedManager != null ? int.parse(selectedManager!) : null,
-          sourceId: selectedSourceLead != null
-              ? int.parse(selectedSourceLead!)
-              : null,
-          instaLogin: instaLogin,
-          facebookLogin: facebookLogin,
-          tgNick: tgNick,
-          waPhone: whatsapp,
-          birthday: birthday,
-          email: email,
-          description: description,
-          customFields: customFieldMap,
-          localizations: localizations,  
-
-        ));
+      name: name,
+      leadStatusId: widget.statusId,
+      phone: phone,
+      regionId: selectedRegion != null ? int.parse(selectedRegion!) : null,
+      managerId: !isSystemManager && selectedManager != null
+          ? int.parse(selectedManager!)
+          : null,
+      sourceId: selectedSourceLead != null
+          ? int.parse(selectedSourceLead!)
+          : null,
+      instaLogin: instaLogin,
+      facebookLogin: facebookLogin,
+      tgNick: tgNick,
+      waPhone: whatsapp,
+      birthday: birthday,
+      email: email,
+      description: description,
+      customFields: customFieldMap,
+      directoryValues: directoryValues,
+      localizations: localizations,
+      filePaths: selectedFiles,
+      isSystemManager: isSystemManager,
+    ));
   }
 }
-
-class CustomField {
-  final String fieldName;
-  final TextEditingController controller = TextEditingController();
-
-  CustomField({required this.fieldName});
 }

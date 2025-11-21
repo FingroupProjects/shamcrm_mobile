@@ -12,29 +12,27 @@ class ForgotPinBloc extends Bloc<ForgotPinEvent, ForgotPinState> {
     on<RequestForgotPin>(_onRequestForgotPin);
   }
 
-  Future<void> _onRequestForgotPin(
-    RequestForgotPin event,
-    Emitter<ForgotPinState> emit,
-  ) async {
-    emit(ForgotPinLoading());
-    try {
-      // Логируем входящие данные для дебага
-      print('Запрос на получение временного PIN для логина: ${event.login}');
+Future<void> _onRequestForgotPin(
+  RequestForgotPin event,
+  Emitter<ForgotPinState> emit,
+) async {
+  emit(ForgotPinLoading());
+  try {
+    final loginModel = LoginModel(
+      login: event.login,
+      password: event.password,
+    );
 
-      final loginModel = LoginModel(
-        login: event.login,
-        password: event.password,
-      );
+    // 👇 Теперь получаем ForgotPinResponse
+    final response = await apiService.forgotPin(loginModel);
 
-      // Запрос к API
-      final pin = await apiService.forgotPin(loginModel);
-
-      // Успешное завершение
-      emit(ForgotPinSuccess(int.parse(pin)));
-    } catch (error) {
-      // Логируем ошибку и передаем её в состояние ошибки
-      print('Ошибка при запросе временного PIN!rror');
-      emit(ForgotPinFailure(error.toString()));
-    }
+    // 👇 Передаём и код, и email
+    emit(ForgotPinSuccess(
+      pin: response.code,
+      email: response.email,
+    ));
+  } catch (error) {
+    emit(ForgotPinFailure(error.toString()));
   }
+}
 }

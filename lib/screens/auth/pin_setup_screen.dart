@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_event.dart';
@@ -13,6 +15,7 @@ import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/screens/home_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -34,6 +37,8 @@ class _PinSetupScreenState extends State<PinSetupScreen>
   late Animation<double> _shakeAnimation;
   int? userRoleId;
   bool isPermissionsLoaded = false;
+  Map<String, dynamic>? tutorialProgress;
+  final ApiService _apiService = ApiService();
 
   @override
   void initState() {
@@ -41,6 +46,9 @@ class _PinSetupScreenState extends State<PinSetupScreen>
 
     context.read<PermissionsBloc>().add(FetchPermissionsEvent());
     _loadUserRoleId();
+    _fetchTutorialProgress();
+    _fetchSettings();
+    _fetchMiniAppSettings(); // Добавляем вызов
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
@@ -49,6 +57,121 @@ class _PinSetupScreenState extends State<PinSetupScreen>
         .chain(CurveTween(curve: Curves.elasticIn))
         .animate(_animationController);
   }
+  bool _toBool(dynamic value) {
+    if (value == null) return false;
+    
+    if (value is bool) return value;
+    
+    if (value is int) return value != 0;
+    
+    if (value is String) {
+      final lower = value.toLowerCase();
+      return lower == 'true' || lower == '1';
+    }
+    
+    return false;
+  }
+Future<void> _fetchMiniAppSettings() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final organizationId = await _apiService.getSelectedOrganization();
+    //print('Fetching MiniAppSettings for organizationId: $organizationId');
+    
+    final settingsList = await _apiService.getMiniAppSettings(organizationId);
+    
+    if (settingsList.isNotEmpty) {
+      final settings = settingsList.first;
+      //print('Saving currency_id: ${settings.currencyId}');
+      await prefs.setInt('currency_id', settings.currencyId);
+    } else {
+      //print('No settings found for organizationId: $organizationId');
+    }
+  } catch (e) {
+    //print('Error fetching mini-app settings: $e');
+    final prefs = await SharedPreferences.getInstance();
+    final savedCurrencyId = prefs.getInt('currency_id');
+    //print('Using cached currency_id: $savedCurrencyId');
+  }
+}
+
+  Future<void> _fetchTutorialProgress() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      bool isNewUser = prefs.getString('user_pin') == null;
+
+      if (isNewUser) {
+        final progress = await _apiService.getTutorialProgress();
+        setState(() {
+          tutorialProgress = progress['result'];
+        });
+        await prefs.setString(
+            'tutorial_progress', json.encode(progress['result']));
+      } else {
+        final savedProgress = prefs.getString('tutorial_progress');
+        if (savedProgress != null) {
+          setState(() {
+            tutorialProgress = json.decode(savedProgress);
+          });
+        }
+      }
+    } catch (e) {
+ }
+  }
+
+ // В PinSetupScreen
+Future<void> _fetchSettings() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final organizationId = await _apiService.getSelectedOrganization();
+
+    final response = await _apiService.getSettings(organizationId);
+
+    if (response['result'] != null) {
+      // Сохраняем localization
+      String? localization = response['result']['localization'];
+      
+      // Логика: если localization == null, используем "+992"
+      String defaultDialCode = (localization != null && localization.isNotEmpty) 
+          ? localization 
+          : '+992';
+      
+      await prefs.setString('default_dial_code', defaultDialCode);
+      
+      // Остальные настройки
+      await prefs.setBool(
+        'department_enabled', 
+        _toBool(response['result']['department'])
+      );
+      
+      await prefs.setBool(
+        'integration_with_1C', 
+        _toBool(response['result']['integration_with_1C'])
+      );
+      
+      await prefs.setBool(
+        'good_measurement', 
+        _toBool(response['result']['good_measurement'])
+      );
+      
+      await prefs.setBool(
+        'managing_deal_status_visibility', 
+        _toBool(response['result']['managing_deal_status_visibility'])
+      );
+      
+      if (kDebugMode) {
+        print('PinScreen: Настройки сохранены: localization = $localization, default_dial_code = $defaultDialCode');
+      }
+    }
+  } catch (e) {
+    print('Error fetching settings: $e');
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('integration_with_1C', false);
+    await prefs.setBool('good_measurement', false);
+    await prefs.setBool('managing_deal_status_visibility', false);
+    // При ошибке используем +992 по умолчанию
+    await prefs.setString('default_dial_code', '+992');
+  }
+}
 
   @override
   void dispose() {
@@ -85,8 +208,8 @@ class _PinSetupScreenState extends State<PinSetupScreen>
     setState(() {
       _pin = '';
       _confirmPin = '';
-      _pinsDoNotMatch = false; // Сбросим ошибку, если была
-      _isConfirming = false; // Сбросим процесс подтверждения
+      _pinsDoNotMatch = false;
+      _isConfirming = false;
     });
   }
 
@@ -102,7 +225,9 @@ class _PinSetupScreenState extends State<PinSetupScreen>
 
   Future<void> _loadUserRoleId() async {
     try {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
+      SharedPreferences prefs = await SharedPreferences
+
+.getInstance();
       String userId = prefs.getString('userID') ?? '';
       if (userId.isEmpty) {
         setState(() {
@@ -111,7 +236,6 @@ class _PinSetupScreenState extends State<PinSetupScreen>
         return;
       }
 
-      // Получение ИД РОЛЯ через API
       UserByIdProfile userProfile =
           await ApiService().getUserById(int.parse(userId));
       setState(() {
@@ -121,8 +245,6 @@ class _PinSetupScreenState extends State<PinSetupScreen>
       await prefs.setInt('userRoleId', userRoleId!);
       await prefs.setString('userRoleName', userProfile.role![0].name);
 
-      // Выводим данные в консоль
-      // context.read<PermissionsBloc>().add(FetchPermissionsEvent());
       BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
       BlocProvider.of<DealBloc>(context).add(FetchDealStatuses());
       BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());
@@ -132,7 +254,7 @@ class _PinSetupScreenState extends State<PinSetupScreen>
         isPermissionsLoaded = true;
       });
     } catch (e) {
-      print('Error loading user role!');
+      ////print('Error loading user role: $e');
       setState(() {
         userRoleId = 0;
       });
@@ -201,13 +323,12 @@ class _PinSetupScreenState extends State<PinSetupScreen>
                 animation: _shakeAnimation,
                 builder: (context, child) {
                   return Transform.translate(
-                    offset: Offset(_pinsDoNotMatch ? _shakeAnimation.value : 0,
-                        0), // Эффект "шатания".
+                    offset:
+                        Offset(_pinsDoNotMatch ? _shakeAnimation.value : 0, 0),
                     child: Column(
                       children: [
                         _buildPinRow(_pin),
-                        if (_isConfirming)
-                          const SizedBox(height: 16), // Отступ между рядами.
+                        if (_isConfirming) const SizedBox(height: 16),
                         if (_isConfirming) _buildPinRow(_confirmPin),
                       ],
                     ),
@@ -240,13 +361,13 @@ class _PinSetupScreenState extends State<PinSetupScreen>
                       style: TextStyle(fontSize: 24, color: Colors.black),
                     ),
                   ),
-                  const SizedBox(), // Пустое место для сетки.
+                  const SizedBox(),
                 ],
               ),
               const SizedBox(height: 24),
               ElevatedButton(
-                onPressed: _onClear, // Очистить оба пин-кода
-                child:  Text(
+                onPressed: _onClear,
+                child: Text(
                   AppLocalizations.of(context)!.translate('clear'),
                   style: TextStyle(color: Colors.white),
                 ),
