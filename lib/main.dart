@@ -148,7 +148,6 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
     GlobalKey<ScaffoldMessengerState>();
-
 void main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
@@ -271,13 +270,35 @@ Future<void> _initializeFirebaseMessaging(ApiService apiService) async {
       sound: true,
     );
 
+    // ✅ КРИТИЧНО: Обработка initial message
+    FirebaseMessaging.instance.getInitialMessage().then((RemoteMessage? message) {
+      if (message != null) {
+        debugPrint('_initializeFirebaseMessaging: Got initial message: ${message.data}');
+        // Сохраняем сообщение для обработки после инициализации
+        _handleInitialMessage(message);
+      }
+    });
+
+    // ✅ Обработка сообщений когда приложение в foreground
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      debugPrint('_initializeFirebaseMessaging: onMessage: ${message.data}');
+      debugPrint('Push-уведомление получено в foreground: {id: ${message.data['id']}, type: ${message.data['type']}}');
+    });
+
+    // ✅ КРИТИЧНО: Обработка нажатия на уведомление когда приложение в background
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      debugPrint('_initializeFirebaseMessaging: onMessageOpenedApp: ${message.data}');
+      debugPrint('Push-уведомление открыто из background: {id: ${message.data['id']}, type: ${message.data['type']}}');
+      FirebaseApi().handleMessage(message);
+    });
+
     await getFCMTokens(apiService);
 
     try {
       FirebaseApi firebaseApi = FirebaseApi();
       await firebaseApi.initNotifications();
     } catch (e) {
-      //print('Firebase Messaging: Ошибка: $e');
+      debugPrint('Firebase Messaging: Ошибка: $e');
     }
     
   } catch (e) {
@@ -285,8 +306,22 @@ Future<void> _initializeFirebaseMessaging(ApiService apiService) async {
     
     if (!errorString.contains('already exists') && 
         !errorString.contains('duplicate')) {
-      //print('Firebase Messaging: Ошибка: $e');
+      debugPrint('Firebase Messaging: Ошибка: $e');
     }
+  }
+}
+
+// ✅ НОВЫЙ МЕТОД: Обработка initial message
+Future<void> _handleInitialMessage(RemoteMessage message) async {
+  debugPrint('_handleInitialMessage: ${message.data}');
+  
+  // Ждем инициализации приложения
+  await Future.delayed(Duration(seconds: 2));
+  
+  try {
+    await FirebaseApi().handleMessage(message);
+  } catch (e) {
+    debugPrint('_handleInitialMessage: Error: $e');
   }
 }
 
