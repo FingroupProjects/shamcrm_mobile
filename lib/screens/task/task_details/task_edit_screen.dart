@@ -1,4 +1,3 @@
-
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/field_configuration/field_configuration_bloc.dart';
@@ -598,7 +597,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
         widgets.add(fieldWidget);
       }
     }
-    return _withVerticalSpacing(widgets, spacing: 15);
+    return _withVerticalSpacing(widgets, spacing: 8);
   }
 
   List<Widget> _buildDefaultTaskWidgets() {
@@ -1836,49 +1835,60 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                   return _buildDefaultTaskWidgets();
                                 })(),
 
-                                // ТОЛЬКО пользовательские поля (те, которые добавлены через кнопку "Добавить поле")
-                                ...customFields.where((field) {
-                                  // Исключаем поля, которые уже есть в серверной конфигурации
+                                // Отступ между сконфигурированными и пользовательскими полями
+                                if (customFields.where((field) {
                                   return !fieldConfigurations.any((config) =>
                                   (config.isCustomField && config.fieldName == field.fieldName) ||
                                       (config.isDirectory && config.directoryId == field.directoryId));
-                                }).map((field) {
-                                  return Column(
-                                    children: [
-                                      field.isDirectoryField && field.directoryId != null
-                                          ? MainFieldDropdownWidget(
-                                          directoryId: field.directoryId!,
-                                          directoryName: field.fieldName,
-                                          selectedField: null,
-                                          onSelectField: (MainField selectedField) {
-                                            setState(() {
-                                              final idx = customFields.indexOf(field);
-                                              customFields[idx] = field.copyWith(
-                                                entryId: selectedField.id,
-                                                controller: TextEditingController(
-                                                    text: selectedField.value),
-                                              );
-                                            });
-                                          },
-                                          controller: field.controller,
-                                          onSelectEntryId: (int entryId) {
-                                            setState(() {
-                                              final idx = customFields.indexOf(field);
-                                              customFields[idx] = field.copyWith(
-                                                entryId: entryId,
-                                              );
-                                            });
-                                          })
-                                          : CustomFieldWidget(
-                                        fieldName: field.fieldName,
-                                        valueController: field.controller,
-                                        type: field.type,
-                                        isDirectory: false,
-                                      ),
-                                      const SizedBox(height: 15),
-                                    ],
-                                  );
-                                }),
+                                }).isNotEmpty)
+                                  const SizedBox(height: 16),
+
+                                // ТОЛЬКО пользовательские поля (те, которые добавлены через кнопку "Добавить поле")
+                                ...(() {
+                                  final customFieldsList = customFields.where((field) {
+                                    // Исключаем поля, которые уже есть в серверной конфигурации
+                                    return !fieldConfigurations.any((config) =>
+                                    (config.isCustomField && config.fieldName == field.fieldName) ||
+                                        (config.isDirectory && config.directoryId == field.directoryId));
+                                  }).toList();
+
+                                  if (customFieldsList.isEmpty) return <Widget>[];
+
+                                  final customFieldWidgets = customFieldsList.map((field) {
+                                    return field.isDirectoryField && field.directoryId != null
+                                        ? MainFieldDropdownWidget(
+                                        directoryId: field.directoryId!,
+                                        directoryName: field.fieldName,
+                                        selectedField: null,
+                                        onSelectField: (MainField selectedField) {
+                                          setState(() {
+                                            final idx = customFields.indexOf(field);
+                                            customFields[idx] = field.copyWith(
+                                              entryId: selectedField.id,
+                                              controller: TextEditingController(
+                                                  text: selectedField.value),
+                                            );
+                                          });
+                                        },
+                                        controller: field.controller,
+                                        onSelectEntryId: (int entryId) {
+                                          setState(() {
+                                            final idx = customFields.indexOf(field);
+                                            customFields[idx] = field.copyWith(
+                                              entryId: entryId,
+                                            );
+                                          });
+                                        })
+                                        : CustomFieldWidget(
+                                      fieldName: field.fieldName,
+                                      valueController: field.controller,
+                                      type: field.type,
+                                      isDirectory: false,
+                                    );
+                                  }).toList();
+
+                                  return _withVerticalSpacing(customFieldWidgets, spacing: 8);
+                                })(),
 
                                 // Всегда показываем выбор файлов внизу
                                 const SizedBox(height: 16),

@@ -173,6 +173,7 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
                 fontSize: 16,
               ),
             ),
+            const SizedBox(height: 8),
             Container(
               decoration: BoxDecoration(
                 color: const Color(0xFFF4F7FD),

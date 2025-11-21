@@ -216,7 +216,6 @@ class _MainFieldDropdownWidgetState extends State<MainFieldDropdownWidget> {
                         ),
                       ),
                     ),
-                  const SizedBox(height: 8),
                 ],
               );
             },
