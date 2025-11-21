@@ -1543,13 +1543,19 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                             // Динамическое построение полей на основе конфигурации с сервера
                             // Сортируем по position перед отображением
                             ...(() {
-                              final sorted = [...fieldConfigurations];
-                              sorted.sort((a, b) => a.position.compareTo(b.position));
-                              return sorted.map((config) {
+                              final sorted = [...fieldConfigurations]
+                                ..sort((a, b) => a.position.compareTo(b.position));
+                              
+                              // Фильтруем только активные поля и пропускаем поля, которые должны быть скрыты
+                              final activeFields = sorted.where((config) {
+                                return config.isActive && config.fieldName != 'lead_status_id';
+                              }).toList();
+
+                              return activeFields.map((config) {
                                 return Column(
                                   children: [
                                     _buildFieldWidget(config),
-                                    const SizedBox(height: 15),
+                                    const SizedBox(height: 16),
                                   ],
                                 );
                               }).toList();
@@ -1596,14 +1602,14 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                                     type: field.type,
                                     isDirectory: false,
                                   ),
-                                  const SizedBox(height: 15),
+                                  const SizedBox(height: 16),
                                 ],
                               );
                             }).toList(),
 
                             // Файлы (всегда показываем)
                             _buildFileSelection(),
-                            const SizedBox(height: 15),
+                            const SizedBox(height: 16),
                           ],
                         ),
                       ),

@@ -1546,12 +1546,19 @@ class _DealEditScreenState extends State<DealEditScreen> {
                             children: [
                               // Динамические поля по конфигурации
                               ...(() {
-                                final sorted = [...fieldConfigurations]..sort((a, b) => a.position.compareTo(b.position));
-                                return sorted.map((config) {
+                                final sorted = [...fieldConfigurations]
+                                  ..sort((a, b) => a.position.compareTo(b.position));
+                                
+                                // Фильтруем только активные поля и пропускаем поля, которые должны быть скрыты
+                                final activeFields = sorted.where((config) {
+                                  return config.isActive && config.fieldName != 'deal_status_id';
+                                }).toList();
+
+                                return activeFields.map((config) {
                                   return Column(
                                     children: [
                                       _buildFieldWidget(config),
-                                      const SizedBox(height: 8),
+                                      const SizedBox(height: 16),
                                     ],
                                   );
                                 }).toList();
@@ -1565,47 +1572,42 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                 );
                               }).map((field) {
                                 final index = customFields.indexOf(field);
-                                return Container(
-                                  key: ValueKey(field.uniqueId),
-                                  child: field.isDirectoryField && field.directoryId != null
-                                      ? MainFieldDropdownWidget(
-                                          directoryId: field.directoryId!,
-                                          directoryName: field.fieldName,
-                                          selectedField: field.entryId != null
-                                              ? MainField(id: field.entryId!, value: field.controller.text)
-                                              : null,
-                                          onSelectField: (MainField selectedField) {
-                                            setState(() {
-                                              customFields[index] = field.copyWith(
-                                                entryId: selectedField.id,
-                                                controller: TextEditingController(text: selectedField.value),
-                                              );
-                                            });
-                                          },
-                                          controller: field.controller,
-                                          onSelectEntryId: (int entryId) {
-                                            setState(() {
-                                              customFields[index] = field.copyWith(entryId: entryId);
-                                            });
-                                          },
-                                          // onRemove: () {
-                                          //   setState(() { customFields.removeAt(index); });
-                                          // },
-                                          initialEntryId: field.entryId,
-                                        )
-                                      : CustomFieldWidget(
-                                          fieldName: field.fieldName,
-                                          valueController: field.controller,
-                                          // onRemove: () {
-                                          //   setState(() { customFields.removeAt(index); });
-                                          // },
-                                          type: field.type,
-                                        ),
+                                return Column(
+                                  children: [
+                                    field.isDirectoryField && field.directoryId != null
+                                        ? MainFieldDropdownWidget(
+                                            directoryId: field.directoryId!,
+                                            directoryName: field.fieldName,
+                                            selectedField: field.entryId != null
+                                                ? MainField(id: field.entryId!, value: field.controller.text)
+                                                : null,
+                                            onSelectField: (MainField selectedField) {
+                                              setState(() {
+                                                customFields[index] = field.copyWith(
+                                                  entryId: selectedField.id,
+                                                  controller: TextEditingController(text: selectedField.value),
+                                                );
+                                              });
+                                            },
+                                            controller: field.controller,
+                                            onSelectEntryId: (int entryId) {
+                                              setState(() {
+                                                customFields[index] = field.copyWith(entryId: entryId);
+                                              });
+                                            },
+                                            initialEntryId: field.entryId,
+                                          )
+                                        : CustomFieldWidget(
+                                            fieldName: field.fieldName,
+                                            valueController: field.controller,
+                                            type: field.type,
+                                          ),
+                                    const SizedBox(height: 16),
+                                  ],
                                 );
                               }).toList(),
 
                               // Всегда показываем выбор файлов
-                              const SizedBox(height: 16),
                               _buildFileSelection(),
                               const SizedBox(height: 16),
                             ],

@@ -407,14 +407,19 @@ class _DealAddScreenState extends State<DealAddScreen> {
   List<Widget> _buildConfiguredFieldWidgets() {
     final sorted = [...fieldConfigurations]..sort((a, b) => a.position.compareTo(b.position));
 
+    // Фильтруем только активные поля и пропускаем поля, которые должны быть скрыты
+    final activeFields = sorted.where((config) {
+      return config.isActive && config.fieldName != 'deal_status_id';
+    }).toList();
+
     final widgets = <Widget>[];
-    for (final config in sorted) {
+    for (final config in activeFields) {
       final fieldWidget = _buildFieldWidget(config);
       if (fieldWidget != null) {
         widgets.add(fieldWidget);
       }
     }
-    return _withVerticalSpacing(widgets, spacing: 15);
+    return _withVerticalSpacing(widgets, spacing: 16);
   }
 
   List<Widget> _buildDefaultDealWidgets() {
@@ -1668,14 +1673,14 @@ class _DealAddScreenState extends State<DealAddScreen> {
                                     type: field.type,
                                     isDirectory: false,
                                   ),
-                                  const SizedBox(height: 15),
+                                  const SizedBox(height: 16),
                                 ],
                               );
                             }).toList(),
 
                             // Файлы (всегда показываем)
                             _buildFileSelection(),
-                            const SizedBox(height: 15),
+                            const SizedBox(height: 16),
                           ],
                         ),
                       ),
