@@ -600,7 +600,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
       case 'description':
         return loc.translate('description_list');
       case 'deal_status_id':
-        return loc.translate('status');
+        return loc.translate('deal_status');
       // case 'file':
       //   return loc.translate('file');
       default:
@@ -715,12 +715,6 @@ class _DealEditScreenState extends State<DealEditScreen> {
               final config = sortedFields[index];
               final displayName = _getFieldDisplayName(config);
               final typeLabel = _getFieldTypeLabel(config);
-
-              if (config.fieldName == 'deal_status_id') {
-                return SizedBox(
-                  key: ValueKey('field_${config.id}'),
-                );
-              }
 
               return Container(
                 key: ValueKey('field_${config.id}'),
@@ -1551,7 +1545,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                 
                                 // Фильтруем только активные поля и пропускаем поля, которые должны быть скрыты
                                 final activeFields = sorted.where((config) {
-                                  return config.isActive && config.fieldName != 'deal_status_id';
+                                  return config.isActive;
                                 }).toList();
 
                                 return activeFields.map((config) {
