@@ -92,6 +92,16 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
 
   Future<void> _deleteAllNotification(DeleteAllNotification event, Emitter<NotificationState> emit) async {
     ////print("🗑️ [DELETE ALL] Удаление всех уведомлений...");
+    
+    // Проверяем, есть ли уведомления для удаления
+    if (state is NotificationDataLoaded) {
+      final currentState = state as NotificationDataLoaded;
+      if (currentState.notifications.isEmpty) {
+        // Если список пустой, не отправляем запрос
+        return;
+      }
+    }
+    
     if (await _checkInternetConnection()) {
       ////print("🌐 [NETWORK] Интернет подключен. Отправляем запрос на удаление всех уведомлений...");
       try {
