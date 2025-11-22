@@ -20,6 +20,7 @@ import 'package:crm_task_manager/screens/task/task_details/project_list_task.dar
 import 'package:crm_task_manager/models/main_field_model.dart';
 import 'package:crm_task_manager/bloc/user/user_bloc.dart';
 import 'package:crm_task_manager/bloc/user/user_event.dart';
+import 'package:crm_task_manager/screens/task/task_details/task_status_list_edit.dart';
 import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -267,6 +268,16 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
               return AppLocalizations.of(context)!.translate('field_required');
             }
             return null;
+          },
+        );
+
+      case 'task_status_id':
+        return TaskStatusEditWidget(
+          selectedStatus: selectedStatus?.toString(),
+          onSelectStatus: (TaskStatus selectedStatusData) {
+            setState(() {
+              selectedStatus = selectedStatusData.id.toString();
+            });
           },
         );
 
@@ -783,12 +794,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
               final displayName = _getFieldDisplayName(config);
               final typeLabel = _getFieldTypeLabel(config);
 
-              if (config.fieldName == 'task_status_id') {
-                return SizedBox(
-                  key: ValueKey('field_${config.id}'),
-                );
-              }
-
               return Container(
                 key: ValueKey('field_${config.id}'),
                 margin: const EdgeInsets.only(bottom: 12),
@@ -1121,6 +1126,9 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
         return loc.translate('deadline');
       case 'file':
         return loc.translate('file');
+      case 'task_status_id':
+      return loc.translate('task_status');
+
       default:
         return config.fieldName;
     }

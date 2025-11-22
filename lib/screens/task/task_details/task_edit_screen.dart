@@ -505,7 +505,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
           },
         );
 
-      case 'status':
+      case 'task_status_id':
         return TaskStatusEditWidget(
           selectedStatus: _selectedStatuses?.toString(),
           onSelectStatus: (TaskStatus selectedStatusData) {
@@ -1050,11 +1050,6 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
               final displayName = _getFieldDisplayName(config);
               final typeLabel = _getFieldTypeLabel(config);
 
-              if (config.fieldName == 'task_status_id') {
-                return SizedBox(
-                  key: ValueKey('field_${config.id}'),
-                );
-              }
 
               return Container(
                 key: ValueKey('field_${config.id}'),
@@ -1397,6 +1392,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
         return loc.translate('projects');
       case 'deadline':
         return loc.translate('deadline');
+      case 'task_status_id':
+        return loc.translate('task_status');
     // case 'file':
     //   return loc.translate('file');
       default:
