@@ -1,9 +1,11 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/models/dealById_model.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class DealStatusEditWidget extends StatefulWidget {
@@ -90,9 +92,14 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
     try {
       //print('📡 Загрузка статусов: includeAll = $isMultiSelectEnabled');
 
+      // ✅ Получаем salesFunnelId из DealBloc
+      final dealBloc = context.read<DealBloc>();
+      final salesFunnelId = dealBloc.currentSalesFunnelId;
+      
       // Используем правильный эндпоинт в зависимости от настройки
       final statuses = await ApiService().getDealStatuses(
-          includeAll: isMultiSelectEnabled
+        includeAll: isMultiSelectEnabled,
+        salesFunnelId: salesFunnelId,
       );
 
       //print('✅ Загружено ${statuses.length} статусов');

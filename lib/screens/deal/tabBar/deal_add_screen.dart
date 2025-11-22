@@ -23,6 +23,8 @@ import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/deal_name_list.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/lead_with_manager.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/manager_for_lead.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/deal_status_list_edit.dart';
+import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/add_custom_directory_dialog.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_create_custom.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/main_field_dropdown_widget.dart';
@@ -60,6 +62,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
   final TextEditingController descriptionController = TextEditingController();
   String? selectedManager;
   String? selectedLead;
+  int? _selectedStatusId; // ✅ НОВОЕ: для хранения выбранного статуса
+  List<int> _selectedStatusIds = []; // ✅ НОВОЕ: список выбранных ID (для мультивыбора)
   List<CustomField> customFields = [];
   bool isEndDateInvalid = false;
   bool isTitleInvalid = false;
@@ -83,6 +87,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
   void initState() {
     super.initState();
     //print('DealAddScreen: initState started');
+    _selectedStatusId = widget.statusId; // ✅ НОВОЕ: инициализируем выбранный статус
+    _selectedStatusIds = [widget.statusId]; // ✅ НОВОЕ: инициализируем список статусов
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     context.read<GetAllLeadBloc>().add(GetAllLeadEv());
     //print('DealAddScreen: Dispatched GetAllManagerEv and GetAllLeadEv');
@@ -227,6 +233,30 @@ class _DealAddScreenState extends State<DealAddScreen> {
         return _buildSumField();
       case 'description':
         return _buildDescriptionField();
+      case 'deal_status_id':
+        return DealStatusEditWidget(
+          selectedStatus: _selectedStatusId?.toString(),
+          onSelectStatus: (DealStatus selectedStatusData) {
+            if (_selectedStatusId != selectedStatusData.id) {
+              setState(() {
+                _selectedStatusId = selectedStatusData.id;
+                _selectedStatusIds = [selectedStatusData.id];
+              });
+            }
+          },
+          onSelectMultipleStatuses: (List<int> selectedIds) {
+            if (_selectedStatusIds.length != selectedIds.length ||
+                !_selectedStatusIds.toSet().containsAll(selectedIds) ||
+                !selectedIds.toSet().containsAll(_selectedStatusIds)) {
+              setState(() {
+                _selectedStatusIds = selectedIds;
+                if (selectedIds.isNotEmpty) {
+                  _selectedStatusId = selectedIds.first;
+                }
+              });
+            }
+          },
+        );
       // case 'file':
       //   // Поле выбора файлов: отображаем согласно позиции в конфигурации
       //   return _buildFileSelection();
@@ -407,9 +437,9 @@ class _DealAddScreenState extends State<DealAddScreen> {
   List<Widget> _buildConfiguredFieldWidgets() {
     final sorted = [...fieldConfigurations]..sort((a, b) => a.position.compareTo(b.position));
 
-    // Фильтруем только активные поля и пропускаем поля, которые должны быть скрыты
+    // Фильтруем только активные поля
     final activeFields = sorted.where((config) {
-      return config.isActive && config.fieldName != 'deal_status_id';
+      return config.isActive;
     }).toList();
 
     final widgets = <Widget>[];
@@ -1868,7 +1898,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
 
     context.read<DealBloc>().add(CreateDeal(
       name: name,
-      dealStatusId: widget.statusId,
+      dealStatusId: _selectedStatusId ?? widget.statusId, // ✅ НОВОЕ: используем выбранный статус
       managerId: int.parse(selectedManager!),
       leadId: int.parse(selectedLead!),
       dealtypeId: 1,

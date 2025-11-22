@@ -23,6 +23,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
   List<Map<String, dynamic>>? _currentDirectoryValues;
   List<String>? _currentNames;
   Map<String, List<String>>? _currentCustomFieldFilters;
+  int? currentSalesFunnelId;
 
   DealBloc(this.apiService) : super(DealInitial()) {
     on<FetchDealStatuses>(_fetchDealStatuses);
@@ -152,6 +153,7 @@ Future<void> _fetchDealStatuses(
   try {
     // ✅ КРИТИЧНО: Передаём salesFunnelId явно в метод getDealStatuses
     debugPrint("DealBloc: Calling getDealStatuses with salesFunnelId: ${event.salesFunnelId}");
+    currentSalesFunnelId = event.salesFunnelId;
 
     final response = await apiService.getDealStatuses(
       salesFunnelId: event.salesFunnelId, // ← Передаём явно!
