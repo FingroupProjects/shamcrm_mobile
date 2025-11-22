@@ -254,16 +254,15 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
               final fileExtension = fileName.split('.').last.toLowerCase();
 
               return Padding(
-                padding: EdgeInsets.only(right: 24),
+                padding: EdgeInsets.only(right: 16),
                 child: Stack(
-                  clipBehavior: Clip.none,
                   children: [
                     Container(
                       width: 100,
                       child: Column(
                         children: [
-                          // ✅ ИСПРАВЛЕНИЕ: Передаём index
-                          _buildFileIcon(fileName, fileExtension, index),
+                          // ✅ КРИТИЧЕСКИ ВАЖНО: Передаем INDEX, а не fileName!
+                          _buildFileIcon(index, fileExtension),
                           SizedBox(height: 8),
                           Text(
                             fileName,
@@ -285,7 +284,10 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                       child: GestureDetector(
                         onTap: () {
                           setState(() {
-                            // ✅ ИСПРАВЛЕНИЕ: Дополнительная проверка
+                            // Для task_edit и других *_edit файлов:
+                            // ДОБАВЬТЕ проверку на existingFiles!
+                            // (см. отдельный блок ниже)
+
                             if (index >= 0 && index < selectedFiles.length) {
                               final removedPath = selectedFiles[index];
 
@@ -296,11 +298,11 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                               } else {
                                 newFiles.remove(removedPath);
                               }
-
-                              selectedFiles.removeAt(index);
-                              fileNames.removeAt(index);
-                              fileSizes.removeAt(index);
                             }
+
+                            selectedFiles.removeAt(index);
+                            fileNames.removeAt(index);
+                            fileSizes.removeAt(index);
                           });
                         },
                         child: Container(
@@ -451,12 +453,12 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
             });
           },
           priorityText: AppLocalizations.of(context)!.translate('urgent'),
-          validator: (value) {
+          validator: config.required ? (value) {
             if (value == null || value.isEmpty) {
               return AppLocalizations.of(context)!.translate('field_required');
             }
             return null;
-          },
+          } : null,
         );
 
       case 'description':
@@ -497,12 +499,12 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
           controller: endDateController,
           label: AppLocalizations.of(context)!.translate('deadline'),
           hasError: isEndDateInvalid,
-          validator: (value) {
+          validator: config.required ? (value) {
             if (value == null || value.isEmpty) {
               return AppLocalizations.of(context)!.translate('field_required');
             }
             return null;
-          },
+          } : null,
         );
 
       case 'task_status_id':
@@ -588,7 +590,10 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   }
 
   List<Widget> _buildConfiguredFieldWidgets() {
-    final sorted = [...fieldConfigurations]..sort((a, b) => a.position.compareTo(b.position));
+    final sorted = fieldConfigurations
+        .where((e) => e.isActive)
+        .toList()
+      ..sort((a, b) => a.position.compareTo(b.position));
 
     final widgets = <Widget>[];
     for (final config in sorted) {
@@ -953,7 +958,6 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   }
 
   Widget _buildSettingsMode() {
-    // Сортируем поля по position перед отображением
     final sortedFields = [...fieldConfigurations]..sort((a, b) => a.position.compareTo(b.position));
 
     return Column(
@@ -962,15 +966,13 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
           child: ReorderableListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: sortedFields.length + 1,
-            // +1 для кнопки "Добавить поле"
             proxyDecorator: (child, index, animation) {
-              // Добавляем тень и увеличение при перетаскивании
               return AnimatedBuilder(
                 animation: animation,
                 builder: (BuildContext context, Widget? child) {
                   final double animValue = Curves.easeInOut.transform(animation.value);
-                  final double scale = 1.0 + (animValue * 0.05); // Увеличение на 5%
-                  final double elevation = animValue * 12.0; // Тень до 12
+                  final double scale = 1.0 + (animValue * 0.05);
+                  final double elevation = animValue * 12.0;
 
                   return Transform.scale(
                     scale: scale,
@@ -987,7 +989,6 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
               );
             },
             onReorder: (oldIndex, newIndex) {
-              // Игнорируем перемещение кнопки "Добавить поле" (последний элемент)
               if (oldIndex == sortedFields.length || newIndex == sortedFields.length + 1) {
                 return;
               }
@@ -997,7 +998,6 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                   newIndex -= 1;
                 }
 
-                // Не позволяем переместить на место кнопки
                 if (newIndex >= sortedFields.length) {
                   newIndex = sortedFields.length - 1;
                 }
@@ -1005,7 +1005,6 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                 final item = sortedFields.removeAt(oldIndex);
                 sortedFields.insert(newIndex, item);
 
-                // Обновляем fieldConfigurations и position для всех полей
                 final updatedFields = <FieldConfiguration>[];
                 for (int i = 0; i < sortedFields.length; i++) {
                   final config = sortedFields[i];
@@ -1027,12 +1026,10 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                   ));
                 }
 
-                // Обновляем fieldConfigurations
                 fieldConfigurations = updatedFields;
               });
             },
             itemBuilder: (context, index) {
-              // Последний элемент - кнопка "Добавить поле"
               if (index == sortedFields.length) {
                 return Container(
                   key: _addFieldButtonKey,
@@ -1049,7 +1046,6 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
               final config = sortedFields[index];
               final displayName = _getFieldDisplayName(config);
               final typeLabel = _getFieldTypeLabel(config);
-
 
               return Container(
                 key: ValueKey('field_${config.id}'),
@@ -1070,31 +1066,31 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                     ),
                   ],
                 ),
-                child: Column(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.drag_handle,
-                          color: Color(0xff99A4BA),
-                          size: 24,
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                    Icon(
+                      Icons.drag_handle,
+                      color: Color(0xff99A4BA),
+                      size: 24,
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            displayName,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xff1E2E52),
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Row(
                             children: [
-                              Text(
-                                displayName,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontFamily: 'Gilroy',
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xff1E2E52),
-                                ),
-                              ),
-                              SizedBox(height: 4),
                               Text(
                                 typeLabel,
                                 style: TextStyle(
@@ -1104,157 +1100,101 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                   color: Color(0xff99A4BA),
                                 ),
                               ),
-                              if (!config.required) ...[
-                                SizedBox(height: 8),
-                                InkWell(
-                                  onTap: () {
-                                    setState(() {
-                                      final updatedConfig = FieldConfiguration(
-                                        id: config.id,
-                                        tableName: config.tableName,
-                                        fieldName: config.fieldName,
-                                        position: config.position,
-                                        required: config.required,
-                                        isActive: !config.isActive,
-                                        isCustomField: config.isCustomField,
-                                        createdAt: config.createdAt,
-                                        updatedAt: config.updatedAt,
-                                        customFieldId: config.customFieldId,
-                                        directoryId: config.directoryId,
-                                        type: config.type,
-                                        isDirectory: config.isDirectory,
-                                        showOnTable: config.showOnTable,
-                                      );
-
-                                      final idx = fieldConfigurations.indexWhere((f) => f.id == config.id);
-                                      if (idx != -1) {
-                                        fieldConfigurations[idx] = updatedConfig;
-                                      }
-                                    });
-                                  },
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Container(
-                                        width: 20,
-                                        height: 20,
-                                        decoration: BoxDecoration(
-                                          color: config.isActive ? Color(0xff4759FF) : Colors.white,
-                                          border: Border.all(
-                                            color: config.isActive ? Color(0xff4759FF) : Color(0xffE5E9F2),
-                                            width: 2,
-                                          ),
-                                          borderRadius: BorderRadius.circular(4),
-                                        ),
-                                        child: config.isActive
-                                            ? Icon(
-                                          Icons.check,
-                                          size: 14,
-                                          color: Colors.white,
-                                        )
-                                            : null,
-                                      ),
-                                      SizedBox(width: 8),
-                                      Flexible(
-                                        child: Text(
-                                          AppLocalizations.of(context)!.translate('show_field'),
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            fontFamily: 'Gilroy',
-                                            fontWeight: FontWeight.w500,
-                                            color: Color(0xff1E2E52),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
+                              if (config.required) ...[
+                                Spacer(),
+                                Container(
+                                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Color(0xffFFE5E5),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    AppLocalizations.of(context)!.translate('required'),
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontFamily: 'Gilroy',
+                                      fontWeight: FontWeight.w500,
+                                      color: Color(0xffFF4757),
+                                    ),
                                   ),
                                 ),
-                              ],
-                              SizedBox(height: 8),
-                              InkWell(
-                                onTap: () {
-                                  setState(() {
-                                    final updatedConfig = FieldConfiguration(
-                                      id: config.id,
-                                      tableName: config.tableName,
-                                      fieldName: config.fieldName,
-                                      position: config.position,
-                                      required: config.required,
-                                      isActive: config.isActive,
-                                      isCustomField: config.isCustomField,
-                                      createdAt: config.createdAt,
-                                      updatedAt: config.updatedAt,
-                                      customFieldId: config.customFieldId,
-                                      directoryId: config.directoryId,
-                                      type: config.type,
-                                      isDirectory: config.isDirectory,
-                                      showOnTable: !config.showOnTable,
-                                    );
+                              ]
+                            ],
+                          ),
+                          if (!config.required) ...[
+                            SizedBox(height: 12),
+                            GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () {
+                                setState(() {
+                                  final updatedConfig = FieldConfiguration(
+                                    id: config.id,
+                                    tableName: config.tableName,
+                                    fieldName: config.fieldName,
+                                    position: config.position,
+                                    required: config.required,
+                                    isActive: !config.isActive,
+                                    isCustomField: config.isCustomField,
+                                    createdAt: config.createdAt,
+                                    updatedAt: config.updatedAt,
+                                    customFieldId: config.customFieldId,
+                                    directoryId: config.directoryId,
+                                    type: config.type,
+                                    isDirectory: config.isDirectory,
+                                    showOnTable: config.showOnTable,
+                                  );
 
-                                    final idx = fieldConfigurations.indexWhere((f) => f.id == config.id);
-                                    if (idx != -1) {
-                                      fieldConfigurations[idx] = updatedConfig;
-                                    }
-                                  });
-                                },
+                                  final idx = fieldConfigurations.indexWhere((f) => f.id == config.id);
+                                  if (idx != -1) {
+                                    fieldConfigurations[idx] = updatedConfig;
+                                  }
+                                });
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 4),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Container(
-                                      width: 20,
-                                      height: 20,
+                                    AnimatedContainer(
+                                      duration: Duration(milliseconds: 200),
+                                      curve: Curves.easeInOut,
+                                      width: 24,
+                                      height: 24,
                                       decoration: BoxDecoration(
-                                        color: config.showOnTable ? Color(0xff4759FF) : Colors.white,
+                                        color: config.isActive ? Color(0xff4759FF) : Colors.white,
                                         border: Border.all(
-                                          color: config.showOnTable ? Color(0xff4759FF) : Color(0xffE5E9F2),
+                                          color: config.isActive ? Color(0xff4759FF) : Color(0xffCCD5E0),
                                           width: 2,
                                         ),
-                                        borderRadius: BorderRadius.circular(4),
+                                        borderRadius: BorderRadius.circular(6),
                                       ),
-                                      child: config.showOnTable
-                                          ? Icon(
-                                        Icons.check,
-                                        size: 14,
-                                        color: Colors.white,
-                                      )
-                                          : null,
-                                    ),
-                                    SizedBox(width: 8),
-                                    Flexible(
-                                      child: Text(
-                                        AppLocalizations.of(context)!.translate('show_on_table'),
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontFamily: 'Gilroy',
-                                          fontWeight: FontWeight.w500,
-                                          color: Color(0xff1E2E52),
+                                      child: AnimatedOpacity(
+                                        duration: Duration(milliseconds: 200),
+                                        opacity: config.isActive ? 1.0 : 0.0,
+                                        child: Icon(
+                                          Icons.check_rounded,
+                                          size: 16,
+                                          color: Colors.white,
                                         ),
+                                      ),
+                                    ),
+                                    SizedBox(width: 12),
+                                    Text(
+                                      AppLocalizations.of(context)!.translate('show_field'),
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontFamily: 'Gilroy',
+                                        fontWeight: FontWeight.w500,
+                                        color: config.isActive ? Color(0xff1E2E52) : Color(0xff6B7A99),
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                        if (config.required)
-                          Container(
-                            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Color(0xffFFE5E5),
-                              borderRadius: BorderRadius.circular(4),
                             ),
-                            child: Text(
-                              AppLocalizations.of(context)!.translate('required'),
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontFamily: 'Gilroy',
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xffFF4757),
-                              ),
-                            ),
-                          ),
-                      ],
+                          ],
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -1317,12 +1257,11 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
               });
 
               try {
-                // Сохраняем позиции полей на бэкенд
                 await _saveFieldOrderToBackend();
 
                 if (mounted) {
                   setState(() {
-                    originalFieldConfigurations = null; // Очищаем снимок после сохранения
+                    originalFieldConfigurations = null;
                     isSettingsMode = false;
                   });
 
@@ -1401,19 +1340,21 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
     }
   }
 
-  Widget _buildFileIcon(String fileName, String fileExtension, int index) {
+  /// Строит иконку файла или превью изображения
+  Widget _buildFileIcon(int index, String fileExtension) {
+    // ✅ ВАЖНО: Проверка валидности индекса!
+    if (index < 0 || index >= selectedFiles.length) {
+      return Image.asset(
+        'assets/icons/files/file.png',
+        width: 60,
+        height: 60,
+      );
+    }
+
     final imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'heic', 'heif'];
 
     if (imageExtensions.contains(fileExtension)) {
-      // ✅ ИСПРАВЛЕНИЕ: Проверяем, что index не выходит за границы
-      if (index < 0 || index >= selectedFiles.length) {
-        return Image.asset(
-          'assets/icons/files/file.png',
-          width: 60,
-          height: 60,
-        );
-      }
-
+      // ✅ ИСПРАВЛЕНИЕ: Используем index напрямую, БЕЗ indexOf()!
       final filePath = selectedFiles[index];
       final file = File(filePath);
 
@@ -1451,7 +1392,6 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
         );
       }
     } else {
-      // Для остальных типов файлов
       return Image.asset(
         'assets/icons/files/$fileExtension.png',
         width: 60,
@@ -1468,19 +1408,11 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   }
 
   Future<void> _pickFile() async {
-    // ✅ ИСПРАВЛЕНИЕ: Считаем размер только новых файлов
-    double totalSize = 0.0;
-
-    for (var filePath in newFiles) {
-      try {
-        final file = File(filePath);
-        if (await file.exists()) {
-          totalSize += file.lengthSync() / (1024 * 1024);
-        }
-      } catch (e) {
-        //print('Error calculating file size: $e');
-      }
-    }
+    // Вычисляем текущий общий размер файлов
+    double totalSize = selectedFiles.fold<double>(
+      0.0,
+      (sum, file) => sum + File(file).lengthSync() / (1024 * 1024),
+    );
 
     final List<PickedFileInfo>? pickedFiles = await FilePickerDialog.show(
       context: context,

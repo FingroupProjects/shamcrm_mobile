@@ -217,12 +217,14 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
             });
           },
           priorityText: AppLocalizations.of(context)!.translate('urgent'),
-          validator: (value) {
-            if (value == null || value.isEmpty) {
+          validator: config.required
+              ? (value) {
+                  if (value == null || value.isEmpty) {
               return AppLocalizations.of(context)!.translate('field_required');
             }
             return null;
-          },
+                }
+              : null,
         );
 
       case 'description':
@@ -263,12 +265,14 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
           controller: endDateController,
           label: AppLocalizations.of(context)!.translate('deadline'),
           hasError: isEndDateInvalid,
-          validator: (value) {
-            if (value == null || value.isEmpty) {
+          validator: config.required
+              ? (value) {
+                  if (value == null || value.isEmpty) {
               return AppLocalizations.of(context)!.translate('field_required');
             }
             return null;
-          },
+                }
+              : null,
         );
 
       case 'task_status_id':
@@ -280,9 +284,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
             });
           },
         );
-
-      case 'file':
-        return _buildFileSelection();
 
       default:
         return SizedBox.shrink();
@@ -355,7 +356,10 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   }
 
   List<Widget> _buildConfiguredFieldWidgets() {
-    final sorted = [...fieldConfigurations]..sort((a, b) => a.position.compareTo(b.position));
+    final sorted = fieldConfigurations.where((e) => e.isActive).toList()..sort((a, b) => a.position.compareTo(b.position));
+
+    debugPrint("sorted fieldConfigurations: ${sorted.map((e) => e.fieldName).toList()}");
+    debugPrint("not sorted fieldConfigurations: ${fieldConfigurations.map((e) => e.fieldName).toList()}");
 
     final widgets = <Widget>[];
     for (final config in sorted) {
@@ -365,65 +369,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
       }
     }
     return _withVerticalSpacing(widgets, spacing: 8);
-  }
-
-  List<Widget> _buildDefaultTaskWidgets() {
-    return _withVerticalSpacing([
-      CustomTextFieldWithPriority(
-        controller: nameController,
-        hintText: AppLocalizations.of(context)!.translate('enter_title'),
-        label: AppLocalizations.of(context)!.translate('event_name'),
-        showPriority: true,
-        isPrioritySelected: selectedPriority == 3,
-        onPriorityChanged: (bool? value) {
-          setState(() {
-            selectedPriority = value == true ? 3 : 1;
-          });
-        },
-        priorityText: AppLocalizations.of(context)!.translate('urgent'),
-        validator: (value) {
-          if (value == null || value.isEmpty) {
-            return AppLocalizations.of(context)!.translate('field_required');
-          }
-          return null;
-        },
-      ),
-      CustomTextField(
-        controller: descriptionController,
-        hintText: AppLocalizations.of(context)!.translate('enter_description'),
-        label: AppLocalizations.of(context)!.translate('description_list'),
-        maxLines: 5,
-        keyboardType: TextInputType.multiline,
-      ),
-      if (_hasTaskCreatePermission || !_hasTaskCreateForMySelfPermission)
-        UserMultiSelectWidget(
-          selectedUsers: selectedUsers,
-          onSelectUsers: (List<UserData> selectedUsersData) {
-            setState(() {
-              selectedUsers = selectedUsersData.map((user) => user.id.toString()).toList();
-            });
-          },
-        ),
-      ProjectTaskGroupWidget(
-        selectedProject: selectedProject,
-        onSelectProject: (ProjectTask selectedProjectData) {
-          setState(() {
-            selectedProject = selectedProjectData.id.toString();
-          });
-        },
-      ),
-      CustomTextFieldDate(
-        controller: endDateController,
-        label: AppLocalizations.of(context)!.translate('deadline'),
-        hasError: isEndDateInvalid,
-        validator: (value) {
-          if (value == null || value.isEmpty) {
-            return AppLocalizations.of(context)!.translate('field_required');
-          }
-          return null;
-        },
-      ),
-    ], spacing: 8);
   }
 
   void _showErrorSnackBar(String message) {
@@ -697,7 +642,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   }
 
   Widget _buildSettingsMode() {
-    // Сортируем поля по position перед отображением
     final sortedFields = [...fieldConfigurations]..sort((a, b) => a.position.compareTo(b.position));
 
     return Column(
@@ -706,15 +650,13 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
           child: ReorderableListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: sortedFields.length + 1,
-            // +1 для кнопки "Добавить поле"
             proxyDecorator: (child, index, animation) {
-              // Добавляем тень и увеличение при перетаскивании
               return AnimatedBuilder(
                 animation: animation,
                 builder: (BuildContext context, Widget? child) {
                   final double animValue = Curves.easeInOut.transform(animation.value);
-                  final double scale = 1.0 + (animValue * 0.05); // Увеличение на 5%
-                  final double elevation = animValue * 12.0; // Тень до 12
+                  final double scale = 1.0 + (animValue * 0.05);
+                  final double elevation = animValue * 12.0;
 
                   return Transform.scale(
                     scale: scale,
@@ -731,7 +673,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
               );
             },
             onReorder: (oldIndex, newIndex) {
-              // Игнорируем перемещение кнопки "Добавить поле" (последний элемент)
               if (oldIndex == sortedFields.length || newIndex == sortedFields.length + 1) {
                 return;
               }
@@ -741,7 +682,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                   newIndex -= 1;
                 }
 
-                // Не позволяем переместить на место кнопки
                 if (newIndex >= sortedFields.length) {
                   newIndex = sortedFields.length - 1;
                 }
@@ -749,7 +689,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                 final item = sortedFields.removeAt(oldIndex);
                 sortedFields.insert(newIndex, item);
 
-                // Обновляем fieldConfigurations и position для всех полей
                 final updatedFields = <FieldConfiguration>[];
                 for (int i = 0; i < sortedFields.length; i++) {
                   final config = sortedFields[i];
@@ -771,12 +710,10 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                   ));
                 }
 
-                // Обновляем fieldConfigurations
                 fieldConfigurations = updatedFields;
               });
             },
             itemBuilder: (context, index) {
-              // Последний элемент - кнопка "Добавить поле"
               if (index == sortedFields.length) {
                 return Container(
                   key: _addFieldButtonKey,
@@ -813,31 +750,31 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                     ),
                   ],
                 ),
-                child: Column(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.drag_handle,
-                          color: Color(0xff99A4BA),
-                          size: 24,
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                    Icon(
+                      Icons.drag_handle,
+                      color: Color(0xff99A4BA),
+                      size: 24,
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            displayName,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xff1E2E52),
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Row(
                             children: [
-                              Text(
-                                displayName,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontFamily: 'Gilroy',
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xff1E2E52),
-                                ),
-                              ),
-                              SizedBox(height: 4),
                               Text(
                                 typeLabel,
                                 style: TextStyle(
@@ -847,157 +784,101 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                                   color: Color(0xff99A4BA),
                                 ),
                               ),
-                              if (!config.required) ...[
-                                SizedBox(height: 8),
-                                InkWell(
-                                  onTap: () {
-                                    setState(() {
-                                      final updatedConfig = FieldConfiguration(
-                                        id: config.id,
-                                        tableName: config.tableName,
-                                        fieldName: config.fieldName,
-                                        position: config.position,
-                                        required: config.required,
-                                        isActive: !config.isActive,
-                                        isCustomField: config.isCustomField,
-                                        createdAt: config.createdAt,
-                                        updatedAt: config.updatedAt,
-                                        customFieldId: config.customFieldId,
-                                        directoryId: config.directoryId,
-                                        type: config.type,
-                                        isDirectory: config.isDirectory,
-                                        showOnTable: config.showOnTable,
-                                      );
-
-                                      final idx = fieldConfigurations.indexWhere((f) => f.id == config.id);
-                                      if (idx != -1) {
-                                        fieldConfigurations[idx] = updatedConfig;
-                                      }
-                                    });
-                                  },
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Container(
-                                        width: 20,
-                                        height: 20,
-                                        decoration: BoxDecoration(
-                                          color: config.isActive ? Color(0xff4759FF) : Colors.white,
-                                          border: Border.all(
-                                            color: config.isActive ? Color(0xff4759FF) : Color(0xffE5E9F2),
-                                            width: 2,
-                                          ),
-                                          borderRadius: BorderRadius.circular(4),
-                                        ),
-                                        child: config.isActive
-                                            ? Icon(
-                                          Icons.check,
-                                          size: 14,
-                                          color: Colors.white,
-                                        )
-                                            : null,
-                                      ),
-                                      SizedBox(width: 8),
-                                      Flexible(
-                                        child: Text(
-                                          AppLocalizations.of(context)!.translate('show_field'),
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            fontFamily: 'Gilroy',
-                                            fontWeight: FontWeight.w500,
-                                            color: Color(0xff1E2E52),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
+                              if (config.required) ...[
+                                Spacer(),
+                                Container(
+                                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Color(0xffFFE5E5),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    AppLocalizations.of(context)!.translate('required'),
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontFamily: 'Gilroy',
+                                      fontWeight: FontWeight.w500,
+                                      color: Color(0xffFF4757),
+                                    ),
                                   ),
                                 ),
-                              ],
-                              SizedBox(height: 8),
-                              InkWell(
-                                onTap: () {
-                                  setState(() {
-                                    final updatedConfig = FieldConfiguration(
-                                      id: config.id,
-                                      tableName: config.tableName,
-                                      fieldName: config.fieldName,
-                                      position: config.position,
-                                      required: config.required,
-                                      isActive: config.isActive,
-                                      isCustomField: config.isCustomField,
-                                      createdAt: config.createdAt,
-                                      updatedAt: config.updatedAt,
-                                      customFieldId: config.customFieldId,
-                                      directoryId: config.directoryId,
-                                      type: config.type,
-                                      isDirectory: config.isDirectory,
-                                      showOnTable: !config.showOnTable,
-                                    );
+                              ]
+                            ],
+                          ),
+                          if (!config.required) ...[
+                            SizedBox(height: 12),
+                            GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () {
+                                setState(() {
+                                  final updatedConfig = FieldConfiguration(
+                                    id: config.id,
+                                    tableName: config.tableName,
+                                    fieldName: config.fieldName,
+                                    position: config.position,
+                                    required: config.required,
+                                    isActive: !config.isActive,
+                                    isCustomField: config.isCustomField,
+                                    createdAt: config.createdAt,
+                                    updatedAt: config.updatedAt,
+                                    customFieldId: config.customFieldId,
+                                    directoryId: config.directoryId,
+                                    type: config.type,
+                                    isDirectory: config.isDirectory,
+                                    showOnTable: config.showOnTable,
+                                  );
 
-                                    final idx = fieldConfigurations.indexWhere((f) => f.id == config.id);
-                                    if (idx != -1) {
-                                      fieldConfigurations[idx] = updatedConfig;
-                                    }
-                                  });
-                                },
+                                  final idx = fieldConfigurations.indexWhere((f) => f.id == config.id);
+                                  if (idx != -1) {
+                                    fieldConfigurations[idx] = updatedConfig;
+                                  }
+                                });
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 4),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Container(
-                                      width: 20,
-                                      height: 20,
+                                    AnimatedContainer(
+                                      duration: Duration(milliseconds: 200),
+                                      curve: Curves.easeInOut,
+                                      width: 24,
+                                      height: 24,
                                       decoration: BoxDecoration(
-                                        color: config.showOnTable ? Color(0xff4759FF) : Colors.white,
+                                        color: config.isActive ? Color(0xff4759FF) : Colors.white,
                                         border: Border.all(
-                                          color: config.showOnTable ? Color(0xff4759FF) : Color(0xffE5E9F2),
+                                          color: config.isActive ? Color(0xff4759FF) : Color(0xffCCD5E0),
                                           width: 2,
                                         ),
-                                        borderRadius: BorderRadius.circular(4),
+                                        borderRadius: BorderRadius.circular(6),
                                       ),
-                                      child: config.showOnTable
-                                          ? Icon(
-                                        Icons.check,
-                                        size: 14,
-                                        color: Colors.white,
-                                      )
-                                          : null,
-                                    ),
-                                    SizedBox(width: 8),
-                                    Flexible(
-                                      child: Text(
-                                        AppLocalizations.of(context)!.translate('show_on_table'),
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontFamily: 'Gilroy',
-                                          fontWeight: FontWeight.w500,
-                                          color: Color(0xff1E2E52),
+                                      child: AnimatedOpacity(
+                                        duration: Duration(milliseconds: 200),
+                                        opacity: config.isActive ? 1.0 : 0.0,
+                                        child: Icon(
+                                          Icons.check_rounded,
+                                          size: 16,
+                                          color: Colors.white,
                                         ),
+                                      ),
+                                    ),
+                                    SizedBox(width: 12),
+                                    Text(
+                                      AppLocalizations.of(context)!.translate('show_field'),
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontFamily: 'Gilroy',
+                                        fontWeight: FontWeight.w500,
+                                        color: config.isActive ? Color(0xff1E2E52) : Color(0xff6B7A99),
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                        if (config.required)
-                          Container(
-                            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Color(0xffFFE5E5),
-                              borderRadius: BorderRadius.circular(4),
                             ),
-                            child: Text(
-                              AppLocalizations.of(context)!.translate('required'),
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontFamily: 'Gilroy',
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xffFF4757),
-                              ),
-                            ),
-                          ),
-                      ],
+                          ],
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -1045,7 +926,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w600,
                           ),
-                  ),
+                        ),
                 ],
               ),
                   ),
@@ -1060,12 +941,11 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                     });
 
                     try {
-                // Сохраняем позиции полей на бэкенд
                 await _saveFieldOrderToBackend();
 
                       if (mounted) {
                         setState(() {
-                          originalFieldConfigurations = null; // Очищаем снимок после сохранения
+                          originalFieldConfigurations = null;
                           isSettingsMode = false;
                         });
 
@@ -1119,13 +999,11 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
       case 'description':
         return loc.translate('description_list');
       case 'executor':
-        return loc.translate('lead');
+        return loc.translate('assignees_list');
       case 'project':
         return loc.translate('projects');
       case 'deadline':
         return loc.translate('deadline');
-      case 'file':
-        return loc.translate('file');
       case 'task_status_id':
       return loc.translate('task_status');
 
@@ -1428,13 +1306,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            ...(() {
-                              final configured = _buildConfiguredFieldWidgets();
-                              if (configured.isNotEmpty) {
-                                return configured;
-                              }
-                              return _buildDefaultTaskWidgets();
-                            })(),
+                            ..._buildConfiguredFieldWidgets(),
 
                             // Отступ между сконфигурированными и пользовательскими полями
                             if (customFields.where((field) {
@@ -1673,6 +1545,179 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
 
     List<Map<String, dynamic>> customFieldMap = [];
     List<Map<String, int>> directoryValues = [];
+
+    // Проверяем обязательные поля на основе конфигурации
+    for (var config in fieldConfigurations) {
+      if (!config.isActive || !config.required) continue;
+
+      // Проверяем системные поля
+      if (!config.isCustomField && !config.isDirectory) {
+        switch (config.fieldName) {
+          case 'name':
+            if (nameController.text.trim().isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '${AppLocalizations.of(context)!.translate('event_name')} - ${AppLocalizations.of(context)!.translate('field_required')}',
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                  backgroundColor: Colors.red,
+                ),
+              );
+              return;
+            }
+            break;
+          case 'deadline':
+            if (endDateController.text.trim().isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '${AppLocalizations.of(context)!.translate('deadline')} - ${AppLocalizations.of(context)!.translate('field_required')}',
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                  backgroundColor: Colors.red,
+                ),
+              );
+              return;
+            }
+            break;
+          case 'executor':
+            if (selectedUsers == null || selectedUsers!.isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '${AppLocalizations.of(context)!.translate('lead')} - ${AppLocalizations.of(context)!.translate('field_required')}',
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                  backgroundColor: Colors.red,
+                ),
+              );
+              return;
+            }
+            break;
+          case 'project':
+            if (selectedProject == null || selectedProject!.isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '${AppLocalizations.of(context)!.translate('projects')} - ${AppLocalizations.of(context)!.translate('field_required')}',
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                  backgroundColor: Colors.red,
+                ),
+              );
+              return;
+            }
+            break;
+          case 'task_status_id':
+            if (selectedStatus == null || selectedStatus!.isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '${AppLocalizations.of(context)!.translate('task_status')} - ${AppLocalizations.of(context)!.translate('field_required')}',
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                  backgroundColor: Colors.red,
+                ),
+              );
+              return;
+            }
+            break;
+          case 'description':
+            if (descriptionController.text.trim().isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '${AppLocalizations.of(context)!.translate('description_list')} - ${AppLocalizations.of(context)!.translate('field_required')}',
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                  backgroundColor: Colors.red,
+                ),
+              );
+              return;
+            }
+            break;
+        }
+      }
+
+      // Проверяем кастомные поля
+      if (config.isCustomField) {
+        final customFieldIndex = customFields.indexWhere(
+          (f) => f.fieldName == config.fieldName && f.isCustomField,
+        );
+        if (customFieldIndex == -1 || customFields[customFieldIndex].controller.text.trim().isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '${config.fieldName} - ${AppLocalizations.of(context)!.translate('field_required')}',
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+      }
+
+      // Проверяем справочники
+      if (config.isDirectory && config.directoryId != null) {
+        final directoryFieldIndex = customFields.indexWhere(
+          (f) => f.directoryId == config.directoryId,
+        );
+        if (directoryFieldIndex == -1 || customFields[directoryFieldIndex].entryId == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '${config.fieldName} - ${AppLocalizations.of(context)!.translate('field_required')}',
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+      }
+    }
 
     for (var field in customFields) {
       String fieldName = field.fieldName.trim();
