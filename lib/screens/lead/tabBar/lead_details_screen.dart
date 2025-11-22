@@ -632,11 +632,11 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         return AppLocalizations.of(context)!.translate('source_details');
       case 'wa_phone':
         return 'WhatsApp:';
-      case 'instagram':
+      case 'insta_login':
         return 'Instagram:';
-      case 'facebook':
+      case 'facebook_login':
         return 'Facebook:';
-      case 'telegram':
+      case 'tg_nick':
         return 'Telegram:';
       case 'email':
         return AppLocalizations.of(context)!.translate('email_details');
@@ -721,16 +721,16 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       case 'source_id':
         return lead.source?.name ?? '';
 
-      case 'whatsapp':
+      case 'wa_phone':
         return lead.whatsApp ?? '';
 
-      case 'instagram':
+      case 'insta_login':
         return lead.instagram ?? '';
 
-      case 'facebook':
+      case 'facebook_login':
         return lead.facebook ?? '';
 
-      case 'telegram':
+      case 'tg_nick':
         return lead.telegram ?? '';
 
       case 'email':
