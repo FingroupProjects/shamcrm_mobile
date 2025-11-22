@@ -92,6 +92,16 @@ Future<void> _fetchNotifications(FetchNotifications event, Emitter<NotificationS
 
 Future<void> _deleteAllNotification(DeleteAllNotification event, Emitter<NotificationState> emit) async {
   ////print("🗑️ [DELETE ALL] Удаление всех уведомлений...");
+
+  // Проверяем, есть ли уведомления для удаления
+  if (state is NotificationDataLoaded) {
+    final currentState = state as NotificationDataLoaded;
+    if (currentState.notifications.isEmpty) {
+      // Если список пустой, не отправляем запрос
+      return;
+    }
+  }
+
   if (await _checkInternetConnection()) {
     ////print("🌐 [NETWORK] Интернет подключен. Отправляем запрос на удаление всех уведомлений...");
     try {
@@ -101,7 +111,7 @@ Future<void> _deleteAllNotification(DeleteAllNotification event, Emitter<Notific
       // Очистка кэша
       await NotificationCacheHandler.clearCache();
       ////print("💾 [CACHE] Кэш уведомлений очищен.");
-      
+
       // Успешные коды: 200, 201, 204, 429
       final successCodes = [200, 201, 204, 429];
       if (successCodes.contains(statusCode)) {
