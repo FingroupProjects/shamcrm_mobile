@@ -484,10 +484,10 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       case 'name':
         return deal.name;
 
-      case 'lead':
+      case 'lead_id':
         return deal.lead?.name ?? '';
 
-      case 'manager':
+      case 'manager_id':
         return deal.manager?.name ?? 'Система';
 
       case 'start_date':
@@ -502,7 +502,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       case 'description':
         return deal.description ?? '';
 
-      case 'author':
+      case 'author_id' || 'author':
         return deal.author?.name ?? '';
 
       case 'created_at':
