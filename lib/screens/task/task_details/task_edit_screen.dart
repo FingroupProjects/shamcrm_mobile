@@ -545,7 +545,9 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
       return MainFieldDropdownWidget(
         directoryId: directoryField.directoryId!,
         directoryName: directoryField.fieldName,
-        selectedField: null,
+        selectedField: directoryField.entryId != null
+            ? MainField(id: directoryField.entryId!, value: directoryField.controller.text)
+            : null,
         onSelectField: (MainField selectedField) {
           setState(() {
             final index = customFields.indexWhere((f) => f.directoryId == config.directoryId);
@@ -568,6 +570,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
             }
           });
         },
+        initialEntryId: directoryField.entryId,
       );
     }
 
@@ -1788,7 +1791,9 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                         ? MainFieldDropdownWidget(
                                         directoryId: field.directoryId!,
                                         directoryName: field.fieldName,
-                                        selectedField: null,
+                                        selectedField: field.entryId != null
+                                            ? MainField(id: field.entryId!, value: field.controller.text)
+                                            : null,
                                         onSelectField: (MainField selectedField) {
                                           setState(() {
                                             final idx = customFields.indexOf(field);
@@ -1807,7 +1812,9 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                               entryId: entryId,
                                             );
                                           });
-                                        })
+                                        },
+                                        initialEntryId: field.entryId,
+                                      )
                                         : CustomFieldWidget(
                                       fieldName: field.fieldName,
                                       valueController: field.controller,
