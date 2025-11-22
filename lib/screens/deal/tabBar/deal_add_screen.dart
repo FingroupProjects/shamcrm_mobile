@@ -737,7 +737,6 @@ class _DealAddScreenState extends State<DealAddScreen> {
   }
 
   Widget _buildSettingsMode() {
-    // Сортируем поля по position перед отображением
     final sortedFields = [...fieldConfigurations]..sort((a, b) => a.position.compareTo(b.position));
 
     return Column(
@@ -746,15 +745,13 @@ class _DealAddScreenState extends State<DealAddScreen> {
           child: ReorderableListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: sortedFields.length + 1,
-            // +1 для кнопки "Добавить поле"
             proxyDecorator: (child, index, animation) {
-              // Добавляем тень и увеличение при перетаскивании
               return AnimatedBuilder(
                 animation: animation,
                 builder: (BuildContext context, Widget? child) {
                   final double animValue = Curves.easeInOut.transform(animation.value);
-                  final double scale = 1.0 + (animValue * 0.05); // Увеличение на 5%
-                  final double elevation = animValue * 12.0; // Тень до 12
+                  final double scale = 1.0 + (animValue * 0.05);
+                  final double elevation = animValue * 12.0;
 
                   return Transform.scale(
                     scale: scale,
@@ -771,7 +768,6 @@ class _DealAddScreenState extends State<DealAddScreen> {
               );
             },
             onReorder: (oldIndex, newIndex) {
-              // Игнорируем перемещение кнопки "Добавить поле" (последний элемент)
               if (oldIndex == sortedFields.length || newIndex == sortedFields.length + 1) {
                 return;
               }
@@ -781,7 +777,6 @@ class _DealAddScreenState extends State<DealAddScreen> {
                   newIndex -= 1;
                 }
 
-                // Не позволяем переместить на место кнопки
                 if (newIndex >= sortedFields.length) {
                   newIndex = sortedFields.length - 1;
                 }
@@ -789,7 +784,6 @@ class _DealAddScreenState extends State<DealAddScreen> {
                 final item = sortedFields.removeAt(oldIndex);
                 sortedFields.insert(newIndex, item);
 
-                // Обновляем fieldConfigurations и position для всех полей
                 final updatedFields = <FieldConfiguration>[];
                 for (int i = 0; i < sortedFields.length; i++) {
                   final config = sortedFields[i];
@@ -811,12 +805,10 @@ class _DealAddScreenState extends State<DealAddScreen> {
                   ));
                 }
 
-                // Обновляем fieldConfigurations
                 fieldConfigurations = updatedFields;
               });
             },
             itemBuilder: (context, index) {
-              // Последний элемент - кнопка "Добавить поле"
               if (index == sortedFields.length) {
                 return Container(
                   key: _addFieldButtonKey,
@@ -859,31 +851,31 @@ class _DealAddScreenState extends State<DealAddScreen> {
                     ),
                   ],
                 ),
-                child: Column(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.drag_handle,
-                          color: Color(0xff99A4BA),
-                          size: 24,
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                    Icon(
+                      Icons.drag_handle,
+                      color: Color(0xff99A4BA),
+                      size: 24,
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            displayName,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xff1E2E52),
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Row(
                             children: [
-                              Text(
-                                displayName,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontFamily: 'Gilroy',
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xff1E2E52),
-                                ),
-                              ),
-                              SizedBox(height: 4),
                               Text(
                                 typeLabel,
                                 style: TextStyle(
@@ -893,140 +885,101 @@ class _DealAddScreenState extends State<DealAddScreen> {
                                   color: Color(0xff99A4BA),
                                 ),
                               ),
-                              if (!config.required) ...[
-                                SizedBox(height: 8),
-                                InkWell(
-                                  onTap: () {
-                                    setState(() {
-                                      final updatedConfig = FieldConfiguration(
-                                        id: config.id,
-                                        tableName: config.tableName,
-                                        fieldName: config.fieldName,
-                                        position: config.position,
-                                        required: config.required,
-                                        isActive: !config.isActive,
-                                        isCustomField: config.isCustomField,
-                                        createdAt: config.createdAt,
-                                        updatedAt: config.updatedAt,
-                                        customFieldId: config.customFieldId,
-                                        directoryId: config.directoryId,
-                                        type: config.type,
-                                        isDirectory: config.isDirectory,
-                                        showOnTable: config.showOnTable,
-                                      );
-
-                                      final idx = fieldConfigurations.indexWhere((f) => f.id == config.id);
-                                      if (idx != -1) {
-                                        fieldConfigurations[idx] = updatedConfig;
-                                      }
-                                    });
-                                  },
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Container(
-                                        width: 20,
-                                        height: 20,
-                                        decoration: BoxDecoration(
-                                          color: config.isActive ? Color(0xff4759FF) : Colors.white,
-                                          border: Border.all(
-                                            color: config.isActive ? Color(0xff4759FF) : Color(0xffE5E9F2),
-                                            width: 2,
-                                          ),
-                                          borderRadius: BorderRadius.circular(4),
-                                        ),
-                                        child: config.isActive
-                                            ? Icon(
-                                          Icons.check,
-                                          size: 14,
-                                          color: Colors.white,
-                                        )
-                                            : null,
-                                      ),
-                                      SizedBox(width: 8),
-                                      Flexible(
-                                        child: Text(
-                                          AppLocalizations.of(context)!.translate('show_field'),
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            fontFamily: 'Gilroy',
-                                            fontWeight: FontWeight.w500,
-                                            color: Color(0xff1E2E52),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
+                              if (config.required) ...[
+                                Spacer(),
+                                Container(
+                                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Color(0xffFFE5E5),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    AppLocalizations.of(context)!.translate('required'),
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontFamily: 'Gilroy',
+                                      fontWeight: FontWeight.w500,
+                                      color: Color(0xffFF4757),
+                                    ),
                                   ),
                                 ),
-                              ],
-                              SizedBox(height: 8),
-                              InkWell(
-                                onTap: () {
-                                  setState(() {
-                                    final updatedConfig = FieldConfiguration(
-                                      id: config.id,
-                                      tableName: config.tableName,
-                                      fieldName: config.fieldName,
-                                      position: config.position,
-                                      required: config.required,
-                                      isActive: config.isActive,
-                                      isCustomField: config.isCustomField,
-                                      createdAt: config.createdAt,
-                                      updatedAt: config.updatedAt,
-                                      customFieldId: config.customFieldId,
-                                      directoryId: config.directoryId,
-                                      type: config.type,
-                                      isDirectory: config.isDirectory,
-                                      showOnTable: !config.showOnTable,
-                                    );
+                              ]
+                            ],
+                          ),
+                          if (!config.required) ...[
+                            SizedBox(height: 12),
+                            GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () {
+                                setState(() {
+                                  final updatedConfig = FieldConfiguration(
+                                    id: config.id,
+                                    tableName: config.tableName,
+                                    fieldName: config.fieldName,
+                                    position: config.position,
+                                    required: config.required,
+                                    isActive: !config.isActive,
+                                    isCustomField: config.isCustomField,
+                                    createdAt: config.createdAt,
+                                    updatedAt: config.updatedAt,
+                                    customFieldId: config.customFieldId,
+                                    directoryId: config.directoryId,
+                                    type: config.type,
+                                    isDirectory: config.isDirectory,
+                                    showOnTable: config.showOnTable,
+                                  );
 
-                                    final idx = fieldConfigurations.indexWhere((f) => f.id == config.id);
-                                    if (idx != -1) {
-                                      fieldConfigurations[idx] = updatedConfig;
-                                    }
-                                  });
-                                },
+                                  final idx = fieldConfigurations.indexWhere((f) => f.id == config.id);
+                                  if (idx != -1) {
+                                    fieldConfigurations[idx] = updatedConfig;
+                                  }
+                                });
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 4),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Container(
-                                      width: 20,
-                                      height: 20,
+                                    AnimatedContainer(
+                                      duration: Duration(milliseconds: 200),
+                                      curve: Curves.easeInOut,
+                                      width: 24,
+                                      height: 24,
                                       decoration: BoxDecoration(
-                                        color: config.showOnTable ? Color(0xff4759FF) : Colors.white,
+                                        color: config.isActive ? Color(0xff4759FF) : Colors.white,
                                         border: Border.all(
-                                          color: config.showOnTable ? Color(0xff4759FF) : Color(0xffE5E9F2),
+                                          color: config.isActive ? Color(0xff4759FF) : Color(0xffCCD5E0),
                                           width: 2,
                                         ),
-                                        borderRadius: BorderRadius.circular(4),
+                                        borderRadius: BorderRadius.circular(6),
                                       ),
-                                      child: config.showOnTable
-                                          ? Icon(
-                                        Icons.check,
-                                        size: 14,
-                                        color: Colors.white,
-                                      )
-                                          : null,
-                                    ),
-                                    SizedBox(width: 8),
-                                    Flexible(
-                                      child: Text(
-                                        AppLocalizations.of(context)!.translate('show_on_table'),
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontFamily: 'Gilroy',
-                                          fontWeight: FontWeight.w500,
-                                          color: Color(0xff1E2E52),
+                                      child: AnimatedOpacity(
+                                        duration: Duration(milliseconds: 200),
+                                        opacity: config.isActive ? 1.0 : 0.0,
+                                        child: Icon(
+                                          Icons.check_rounded,
+                                          size: 16,
+                                          color: Colors.white,
                                         ),
+                                      ),
+                                    ),
+                                    SizedBox(width: 12),
+                                    Text(
+                                      AppLocalizations.of(context)!.translate('show_field'),
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontFamily: 'Gilroy',
+                                        fontWeight: FontWeight.w500,
+                                        color: config.isActive ? Color(0xff1E2E52) : Color(0xff6B7A99),
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                      ],
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -1123,7 +1076,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
                       }
                     } catch (e) {
                       if (kDebugMode) {
-                        print('LeadAddScreen: Error in save button: $e');
+                        print('DealAddScreen: Error in save button: $e');
                       }
                     } finally {
                       if (mounted) {
