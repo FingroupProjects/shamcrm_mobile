@@ -18,7 +18,7 @@ import Flutter
                 name: "com.softtech.crm_task_manager/widget",
                 binaryMessenger: controller.binaryMessenger
             )
-            print("✅ MethodChannel initialized")
+            //print("✅ MethodChannel initialized")
         }
         
         return super.application(application, didFinishLaunchingWithOptions: launchOptions)
@@ -30,19 +30,19 @@ import Flutter
         open url: URL,
         options: [UIApplication.OpenURLOptionsKey : Any] = [:]
     ) -> Bool {
-        print("📱 iOS Deep link received: \(url.absoluteString)")
+        //print("📱 iOS Deep link received: \(url.absoluteString)")
         
         // Парсим URL: shamcrm://widget?group=1&screen=0
         guard url.scheme == "shamcrm",
               url.host == "widget" else {
-            print("❌ Invalid URL scheme or host")
+            //print("❌ Invalid URL scheme or host")
             return false
         }
         
         // Получаем параметры из query
         guard let components = URLComponents(url: url, resolvingAgainstBaseURL: true),
               let queryItems = components.queryItems else {
-            print("❌ No query parameters found")
+            //print("❌ No query parameters found")
             return false
         }
         
@@ -52,17 +52,17 @@ import Flutter
         for item in queryItems {
             if item.name == "group", let value = item.value {
                 group = Int(value)
-                print("📊 Parsed group: \(value)")
+                //print("📊 Parsed group: \(value)")
             }
             if item.name == "screen", let value = item.value {
                 screen = Int(value)
-                print("📱 Parsed screen: \(value)")
+                //print("📱 Parsed screen: \(value)")
             }
         }
         
         // Отправляем в Flutter
         if let group = group, let screen = screen {
-            print("✅ Sending to Flutter: group=\(group), screen=\(screen)")
+            //print("✅ Sending to Flutter: group=\(group), screen=\(screen)")
             
             methodChannel?.invokeMethod("navigateFromWidget", arguments: [
                 "group": group,
@@ -71,7 +71,7 @@ import Flutter
             
             return true
         } else {
-            print("❌ Missing group or screen parameter")
+            //print("❌ Missing group or screen parameter")
             return false
         }
     }

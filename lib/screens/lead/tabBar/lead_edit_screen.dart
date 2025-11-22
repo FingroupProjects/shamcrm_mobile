@@ -212,7 +212,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
           uniqueId: '${Uuid().v4()}_init_dir_$i',
         ));
       } else {
-        print(
+        debugPrint(
             'DirectoryValue with id ${dirValue.id} has null entry, skipping...');
       }
     }
@@ -314,7 +314,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
   void _fetchAndAddCustomFields() {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       try {
-        print('Загрузка кастомных полей и справочников для лида');
+        debugPrint('Загрузка кастомных полей и справочников для лида');
 
         // ✅ НОВОЕ: Получаем кастомные поля с сервера
         final customFieldsData = await _apiService.getCustomFieldslead();
@@ -332,7 +332,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                 !field.isDirectoryField && field.fieldName == fieldName);
 
             if (!fieldExists) {
-              print('Добавлено кастомное поле: $fieldName (тип: $fieldType)');
+              debugPrint('Добавлено кастомное поле: $fieldName (тип: $fieldType)');
 
               customFieldsToAdd.add(CustomField(
                 fieldName: fieldName,
@@ -348,7 +348,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
             setState(() {
               customFields.addAll(customFieldsToAdd);
             });
-            print(
+            debugPrint(
                 'Добавлено новых кастомных полей: ${customFieldsToAdd.length}');
           }
         }
@@ -387,7 +387,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                     : null;
               }
 
-              print(
+              debugPrint(
                   'Добавлен справочник: ${link.directory.name} (ID: ${link.directory.id})');
 
               directoryFieldsToAdd.add(CustomField(
@@ -406,14 +406,14 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
             setState(() {
               customFields.addAll(directoryFieldsToAdd);
             });
-            print(
+            debugPrint(
                 'Добавлено новых справочников: ${directoryFieldsToAdd.length}');
           }
         }
 
-        print('Всего полей (кастомные + справочники): ${customFields.length}');
+        debugPrint('Всего полей (кастомные + справочники): ${customFields.length}');
       } catch (e) {
-        print('❌ Ошибка при получении данных: $e');
+        debugPrint('❌ Ошибка при получении данных: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -1111,8 +1111,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
     // WhatsApp уже правильно обрабатывается через _fullWhatsAppNumber
     String? whatsAppToSend = _fullWhatsAppNumber;
     
-    print('phoneToSend: $phoneToSend');
-    print('whatsAppToSend: $whatsAppToSend');
+    debugPrint('phoneToSend: $phoneToSend');
+    debugPrint('whatsAppToSend: $whatsAppToSend');
 
     DateTime? parsedBirthday;
     if (birthdayController.text.isNotEmpty) {
@@ -1208,9 +1208,9 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
     String? duplicateValue;
     if (_showDuplicateOptions && _duplicateOption != null) {
       duplicateValue = _duplicateOption == DuplicateOption.duplicate ? "1" : "0";
-      print('duplicateValue set to: $duplicateValue');
+      debugPrint('duplicateValue set to: $duplicateValue');
     } else {
-      print('duplicateValue not set: _showDuplicateOptions=$_showDuplicateOptions, _duplicateOption=$_duplicateOption');
+      debugPrint('duplicateValue not set: _showDuplicateOptions=$_showDuplicateOptions, _duplicateOption=$_duplicateOption');
     }
 
     bool isSystemManager = selectedManager == "-1" || selectedManager == "0";

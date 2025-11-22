@@ -191,7 +191,7 @@ class _DealCardState extends State<DealCard> {
                           onTap: () {
                             // 🛡️ Блокируем повторные нажатия
                             if (_isBottomSheetOpen) {
-                              print('⚠️ BottomSheet уже открыт, игнорируем нажатие');
+                              debugPrint('⚠️ BottomSheet уже открыт, игнорируем нажатие');
                               return;
                             }
                             
@@ -215,7 +215,7 @@ class _DealCardState extends State<DealCard> {
                             ).whenComplete(() {
                               // 🔓 Сбрасываем флаг после закрытия
                               _isBottomSheetOpen = false;
-                              print('✅ BottomSheet закрыт, флаг сброшен');
+                              debugPrint('✅ BottomSheet закрыт, флаг сброшен');
                             });
                           },
                           child: Container(

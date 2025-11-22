@@ -30,7 +30,7 @@ class BackgroundDataLoaderService {
   /// Запуск полной фоновой загрузки всех данных
   Future<void> loadAllDataInBackground() async {
     try {
-      //print('BackgroundLoader: Начало фоновой загрузки данных');
+      //debugPrint('BackgroundLoader: Начало фоновой загрузки данных');
 
       // Запускаем все загрузки параллельно (неблокирующие)
       await Future.wait([
@@ -42,9 +42,9 @@ class BackgroundDataLoaderService {
         _loadTutorialProgress(),
       ], eagerError: false); // Продолжаем даже если какая-то загрузка упала
 
-      //print('BackgroundLoader: Фоновая загрузка завершена');
+      //debugPrint('BackgroundLoader: Фоновая загрузка завершена');
     } catch (e) {
-      //print('BackgroundLoader: Ошибка фоновой загрузки: $e');
+      //debugPrint('BackgroundLoader: Ошибка фоновой загрузки: $e');
       // Не показываем ошибку пользователю, просто логируем
     }
   }
@@ -55,10 +55,10 @@ class BackgroundDataLoaderService {
 
   Future<void> _loadPermissions() async {
     try {
-      //print('BackgroundLoader: Загрузка разрешений');
+      //debugPrint('BackgroundLoader: Загрузка разрешений');
       context.read<PermissionsBloc>().add(FetchPermissionsEvent());
     } catch (e) {
-      //print('BackgroundLoader: Ошибка загрузки разрешений: $e');
+      //debugPrint('BackgroundLoader: Ошибка загрузки разрешений: $e');
     }
   }
 
@@ -68,13 +68,13 @@ class BackgroundDataLoaderService {
 
   Future<void> _loadUserData() async {
     try {
-      //print('BackgroundLoader: Загрузка данных пользователя');
+      //debugPrint('BackgroundLoader: Загрузка данных пользователя');
 
       final prefs = await SharedPreferences.getInstance();
       String userId = prefs.getString('userID') ?? '';
 
       if (userId.isEmpty) {
-        //print('BackgroundLoader: UserID не найден');
+        //debugPrint('BackgroundLoader: UserID не найден');
         return;
       }
 
@@ -99,9 +99,9 @@ class BackgroundDataLoaderService {
         context.read<MyTaskBloc>().add(FetchMyTaskStatuses());
       }
 
-      //print('BackgroundLoader: Данные пользователя загружены');
+      //debugPrint('BackgroundLoader: Данные пользователя загружены');
     } catch (e) {
-      //print('BackgroundLoader: Ошибка загрузки данных пользователя: $e');
+      //debugPrint('BackgroundLoader: Ошибка загрузки данных пользователя: $e');
     }
   }
 
@@ -111,11 +111,11 @@ class BackgroundDataLoaderService {
 
   Future<void> _loadFieldConfigurations() async {
     try {
-      //print('BackgroundLoader: Загрузка конфигураций полей');
+      //debugPrint('BackgroundLoader: Загрузка конфигураций полей');
       await _apiService.loadAndCacheAllFieldConfigurations();
-      //print('BackgroundLoader: Конфигурации полей загружены');
+      //debugPrint('BackgroundLoader: Конфигурации полей загружены');
     } catch (e) {
-      //print('BackgroundLoader: Ошибка загрузки конфигураций полей: $e');
+      //debugPrint('BackgroundLoader: Ошибка загрузки конфигураций полей: $e');
     }
   }
 
@@ -125,7 +125,7 @@ class BackgroundDataLoaderService {
 
   Future<void> _loadMiniAppSettings() async {
     try {
-      //print('BackgroundLoader: Загрузка MiniAppSettings');
+      //debugPrint('BackgroundLoader: Загрузка MiniAppSettings');
 
       final prefs = await SharedPreferences.getInstance();
       final organizationId = await _apiService.getSelectedOrganization();
@@ -142,10 +142,10 @@ class BackgroundDataLoaderService {
         await prefs.setBool('has_bonus', settings.hasBonus);
         await prefs.setBool('identify_by_phone', settings.identifyByPhone);
 
-        //print('BackgroundLoader: MiniAppSettings сохранены');
+        //debugPrint('BackgroundLoader: MiniAppSettings сохранены');
       }
     } catch (e) {
-      //print('BackgroundLoader: Ошибка загрузки MiniAppSettings: $e');
+      //debugPrint('BackgroundLoader: Ошибка загрузки MiniAppSettings: $e');
 
       // Загружаем из кэша в случае ошибки
       try {
@@ -154,10 +154,10 @@ class BackgroundDataLoaderService {
         if (savedSettings != null) {
           final settings = MiniAppSettings.fromJson(json.decode(savedSettings));
           await prefs.setInt('currency_id', settings.currencyId);
-          //print('BackgroundLoader: MiniAppSettings загружены из кэша');
+          //debugPrint('BackgroundLoader: MiniAppSettings загружены из кэша');
         }
       } catch (cacheError) {
-        //print('BackgroundLoader: Ошибка загрузки из кэша: $cacheError');
+        //debugPrint('BackgroundLoader: Ошибка загрузки из кэша: $cacheError');
       }
     }
   }
@@ -179,7 +179,7 @@ class BackgroundDataLoaderService {
 
  Future<void> _loadSettings() async {
   try {
-    print('BackgroundLoader: Загрузка Settings');
+    debugPrint('BackgroundLoader: Загрузка Settings');
 
     final prefs = await SharedPreferences.getInstance();
     final organizationId = await _apiService.getSelectedOrganization();
@@ -228,14 +228,14 @@ class BackgroundDataLoaderService {
         _toBool(response['result']['change_deal_to_multiple_statuses'])
       );
 
-      print('BackgroundLoader: Settings сохранены');
-      print('  - default_dial_code = $defaultDialCode');
-      print('  - managing_deal_status_visibility = ${_toBool(response['result']['managing_deal_status_visibility'])}');
-      print('  - change_deal_to_multiple_statuses = ${_toBool(response['result']['change_deal_to_multiple_statuses'])}');
-      print('  - has_deal_users = ${_toBool(response['result']['has_deal_users'])}');
+      debugPrint('BackgroundLoader: Settings сохранены');
+      debugPrint('  - default_dial_code = $defaultDialCode');
+      debugPrint('  - managing_deal_status_visibility = ${_toBool(response['result']['managing_deal_status_visibility'])}');
+      debugPrint('  - change_deal_to_multiple_statuses = ${_toBool(response['result']['change_deal_to_multiple_statuses'])}');
+      debugPrint('  - has_deal_users = ${_toBool(response['result']['has_deal_users'])}');
     }
   } catch (e) {
-    print('BackgroundLoader: Ошибка загрузки Settings: $e');
+    debugPrint('BackgroundLoader: Ошибка загрузки Settings: $e');
 
     // Устанавливаем значения по умолчанию
     try {
@@ -247,7 +247,7 @@ class BackgroundDataLoaderService {
       await prefs.setBool('change_deal_to_multiple_statuses', false); // ✅ НОВОЕ
       await prefs.setString('default_dial_code', '+992');
     } catch (prefsError) {
-      print('BackgroundLoader: Ошибка установки значений по умолчанию: $prefsError');
+      debugPrint('BackgroundLoader: Ошибка установки значений по умолчанию: $prefsError');
     }
   }
 }
@@ -258,25 +258,25 @@ class BackgroundDataLoaderService {
 
   Future<void> _loadTutorialProgress() async {
     try {
-      //print('BackgroundLoader: Загрузка TutorialProgress');
+      //debugPrint('BackgroundLoader: Загрузка TutorialProgress');
 
       final prefs = await SharedPreferences.getInstance();
       final progress = await _apiService.getTutorialProgress();
 
       await prefs.setString('tutorial_progress', json.encode(progress['result']));
-      //print('BackgroundLoader: TutorialProgress обновлён с сервера');
+      //debugPrint('BackgroundLoader: TutorialProgress обновлён с сервера');
     } catch (e) {
-      //print('BackgroundLoader: Ошибка загрузки TutorialProgress: $e');
+      //debugPrint('BackgroundLoader: Ошибка загрузки TutorialProgress: $e');
 
       // Загружаем из кэша
       try {
         final prefs = await SharedPreferences.getInstance();
         final savedProgress = prefs.getString('tutorial_progress');
         if (savedProgress != null) {
-          //print('BackgroundLoader: TutorialProgress загружен из кэша');
+          //debugPrint('BackgroundLoader: TutorialProgress загружен из кэша');
         }
       } catch (cacheError) {
-        //print('BackgroundLoader: Ошибка загрузки из кэша: $cacheError');
+        //debugPrint('BackgroundLoader: Ошибка загрузки из кэша: $cacheError');
       }
     }
   }
@@ -289,7 +289,7 @@ class BackgroundDataLoaderService {
     try {
       await _apiService.clearCachedSalesFunnels();
     } catch (e) {
-      //print('BackgroundLoader: Ошибка очистки кэша: $e');
+      //debugPrint('BackgroundLoader: Ошибка очистки кэша: $e');
     }
   }
 }

@@ -42,7 +42,7 @@ class _TemplatesPanelState extends State<TemplatesPanel> with SingleTickerProvid
 
   @override
   Widget build(BuildContext context) {
-    print('TemplatesPanel: Building panel');
+    debugPrint('TemplatesPanel: Building panel');
     return SlideTransition(
       position: _animation,
       child: Container(
@@ -105,7 +105,7 @@ class _TemplatesPanelState extends State<TemplatesPanel> with SingleTickerProvid
                                       ),
                                     ),
                                     onTap: () {
-  print('TemplatesPanel: Template selected: ${template.body}');
+  debugPrint('TemplatesPanel: Template selected: ${template.body}');
   // НЕ вызываем Navigator.pop() здесь!
   // Только передаем данные через callback
   widget.onTemplateSelected(template.body);

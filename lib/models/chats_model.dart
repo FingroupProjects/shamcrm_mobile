@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/models/integration_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chats_items.dart';
+import 'package:flutter/material.dart';
 
 class Integration {
   final int? id;
@@ -449,7 +450,7 @@ class Message {
         readStatus = ReadStatus.fromJson(json['read_status']);
       }
     } catch (e) {
-      print('Error parsing read_status: $e');
+      debugPrint('Error parsing read_status: $e');
       readStatus = null;
     }
     return Message(

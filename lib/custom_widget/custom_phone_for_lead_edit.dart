@@ -39,8 +39,8 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
   final prefs = await SharedPreferences.getInstance();
   String? savedDialCode = prefs.getString('default_dial_code');
   
-  print('CustomPhoneNumberInput: Сохранённый default_dial_code = $savedDialCode');
-  print('CustomPhoneNumberInput: selectedDialCode из параметров = ${widget.selectedDialCode}');
+  debugPrint('CustomPhoneNumberInput: Сохранённый default_dial_code = $savedDialCode');
+  debugPrint('CustomPhoneNumberInput: selectedDialCode из параметров = ${widget.selectedDialCode}');
 
   String? dialCodeToUse;
   
@@ -52,12 +52,12 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
     dialCodeToUse = '+992';
   }
 
-  print('CustomPhoneNumberInput: Используем dialCode = $dialCodeToUse');
+  debugPrint('CustomPhoneNumberInput: Используем dialCode = $dialCodeToUse');
 
   selectedCountry = countries.firstWhere(
     (country) => country.dialCode == dialCodeToUse,
     orElse: () {
-      print('CustomPhoneNumberInput: Страна с кодом $dialCodeToUse не найдена, используем TJ (+992)');
+      debugPrint('CustomPhoneNumberInput: Страна с кодом $dialCodeToUse не найдена, используем TJ (+992)');
       return countries.firstWhere(
         (country) => country.name == "TJ",
         orElse: () => countries.first,
@@ -77,13 +77,13 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (widget.onInputChanged != null) {
         String formattedNumber = selectedCountry!.dialCode + widget.controller.text;
-        print('CustomPhoneNumberInput: Инициализация - отправка "$formattedNumber"');
+        debugPrint('CustomPhoneNumberInput: Инициализация - отправка "$formattedNumber"');
         widget.onInputChanged!(formattedNumber);
       }
     });
   } else {
     // ✅ НОВОЕ: Если поле пустое, ничего не отправляем
-    print('CustomPhoneNumberInput: Инициализация - поле пустое, ничего не отправляем');
+    debugPrint('CustomPhoneNumberInput: Инициализация - поле пустое, ничего не отправляем');
   }
 
   setState(() {
@@ -391,7 +391,7 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
                 formattedNumber = selectedCountry!.dialCode + phoneNumber;
               }
               
-              print('CustomPhoneNumberInput: phoneNumber = "$phoneNumber", formattedNumber = "$formattedNumber"');
+              debugPrint('CustomPhoneNumberInput: phoneNumber = "$phoneNumber", formattedNumber = "$formattedNumber"');
               widget.onInputChanged!(formattedNumber);
             }
           },

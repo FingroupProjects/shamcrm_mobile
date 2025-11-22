@@ -38,7 +38,7 @@ class GoodDashboardWarehouseBloc extends Bloc<GoodDashboardWarehouseEvent, GoodD
     // Use cache if valid
     if (_isCacheValid()) {
       if (kDebugMode) {
-        print('GoodDashboardWarehouseBloc: Using cached data');
+        debugPrint('GoodDashboardWarehouseBloc: Using cached data');
       }
       emit(GoodDashboardWarehouseLoaded(_cachedGoods!));
       return;
@@ -67,16 +67,16 @@ class GoodDashboardWarehouseBloc extends Bloc<GoodDashboardWarehouseEvent, GoodD
       emit(GoodDashboardWarehouseLoading());
 
       if (kDebugMode) {
-        print('GoodDashboardWarehouseBloc: Loading first page...');
+        debugPrint('GoodDashboardWarehouseBloc: Loading first page...');
       }
 
       // Load first page
       final firstPageResponse = await apiService.getGoodDashboardWarehousePage(1);
 
       if (kDebugMode) {
-        print('GoodDashboardWarehouseBloc: First page loaded with ${firstPageResponse.data.length} items');
+        debugPrint('GoodDashboardWarehouseBloc: First page loaded with ${firstPageResponse.data.length} items');
         if (firstPageResponse.pagination != null) {
-          print('GoodDashboardWarehouseBloc: Current page: ${firstPageResponse.pagination!.currentPage}, Total pages: ${firstPageResponse.pagination!.totalPages}');
+          debugPrint('GoodDashboardWarehouseBloc: Current page: ${firstPageResponse.pagination!.currentPage}, Total pages: ${firstPageResponse.pagination!.totalPages}');
         }
       }
 
@@ -93,23 +93,23 @@ class GoodDashboardWarehouseBloc extends Bloc<GoodDashboardWarehouseEvent, GoodD
           firstPageResponse.pagination!.currentPage! < firstPageResponse.pagination!.totalPages!;
 
       if (kDebugMode) {
-        print('GoodDashboardWarehouseBloc: hasMorePages=$hasMorePages, isBackgroundLoading=$_isBackgroundLoading');
+        debugPrint('GoodDashboardWarehouseBloc: hasMorePages=$hasMorePages, isBackgroundLoading=$_isBackgroundLoading');
       }
 
       if (hasMorePages && !_isBackgroundLoading) {
         if (kDebugMode) {
-          print('GoodDashboardWarehouseBloc: Starting background loading of ${firstPageResponse.pagination!.totalPages! - 1} remaining pages...');
+          debugPrint('GoodDashboardWarehouseBloc: Starting background loading of ${firstPageResponse.pagination!.totalPages! - 1} remaining pages...');
         }
         _loadRemainingPagesInBackground(firstPageResponse.pagination!.totalPages!);
       } else {
         if (kDebugMode) {
-          print('GoodDashboardWarehouseBloc: No additional pages to load');
+          debugPrint('GoodDashboardWarehouseBloc: No additional pages to load');
         }
       }
 
     } catch (e) {
       if (kDebugMode) {
-        print('GoodDashboardWarehouseBloc: Error loading goods: $e');
+        debugPrint('GoodDashboardWarehouseBloc: Error loading goods: $e');
       }
       emit(GoodDashboardWarehouseError('Не удалось загрузить список Товаров!'));
     }
@@ -119,17 +119,17 @@ class GoodDashboardWarehouseBloc extends Bloc<GoodDashboardWarehouseEvent, GoodD
     _isBackgroundLoading = true;
 
     if (kDebugMode) {
-      print('GoodDashboardWarehouseBloc: _loadRemainingPagesInBackground - Total pages to load: $totalPages');
+      debugPrint('GoodDashboardWarehouseBloc: _loadRemainingPagesInBackground - Total pages to load: $totalPages');
     }
 
     _fetchRemainingPages(totalPages).then((_) {
       if (kDebugMode) {
-        print('GoodDashboardWarehouseBloc: Background loading completed. Total goods: ${_cachedGoods?.length ?? 0}');
+        debugPrint('GoodDashboardWarehouseBloc: Background loading completed. Total goods: ${_cachedGoods?.length ?? 0}');
       }
       _isBackgroundLoading = false;
     }).catchError((error) {
       if (kDebugMode) {
-        print('GoodDashboardWarehouseBloc: Error in background loading: $error');
+        debugPrint('GoodDashboardWarehouseBloc: Error in background loading: $error');
       }
       _isBackgroundLoading = false;
     });
@@ -141,19 +141,19 @@ class GoodDashboardWarehouseBloc extends Bloc<GoodDashboardWarehouseEvent, GoodD
       int currentPage = 2;
 
       if (kDebugMode) {
-        print('GoodDashboardWarehouseBloc: _fetchRemainingPages - Starting from page $currentPage to $totalPages');
+        debugPrint('GoodDashboardWarehouseBloc: _fetchRemainingPages - Starting from page $currentPage to $totalPages');
       }
 
       while (currentPage <= totalPages) {
         try {
           if (kDebugMode) {
-            print('GoodDashboardWarehouseBloc: Loading page $currentPage/$totalPages in background...');
+            debugPrint('GoodDashboardWarehouseBloc: Loading page $currentPage/$totalPages in background...');
           }
 
           final pageResponse = await apiService.getGoodDashboardWarehousePage(currentPage);
 
           if (kDebugMode) {
-            print('GoodDashboardWarehouseBloc: Page $currentPage response - ${pageResponse.data.length} items');
+            debugPrint('GoodDashboardWarehouseBloc: Page $currentPage response - ${pageResponse.data.length} items');
           }
 
           if (pageResponse.data.isNotEmpty) {
@@ -166,11 +166,11 @@ class GoodDashboardWarehouseBloc extends Bloc<GoodDashboardWarehouseEvent, GoodD
             add(UpdateGoodsInBackground(allGoods));
 
             if (kDebugMode) {
-              print('GoodDashboardWarehouseBloc: Background loaded page $currentPage, total goods now: ${allGoods.length}');
+              debugPrint('GoodDashboardWarehouseBloc: Background loaded page $currentPage, total goods now: ${allGoods.length}');
             }
           } else {
             if (kDebugMode) {
-              print('GoodDashboardWarehouseBloc: Page $currentPage returned empty data, stopping');
+              debugPrint('GoodDashboardWarehouseBloc: Page $currentPage returned empty data, stopping');
             }
             break;
           }
@@ -182,7 +182,7 @@ class GoodDashboardWarehouseBloc extends Bloc<GoodDashboardWarehouseEvent, GoodD
 
         } catch (e) {
           if (kDebugMode) {
-            print('GoodDashboardWarehouseBloc: Error loading page $currentPage: $e');
+            debugPrint('GoodDashboardWarehouseBloc: Error loading page $currentPage: $e');
           }
           // Continue to next page instead of breaking completely
           currentPage++;
@@ -193,12 +193,12 @@ class GoodDashboardWarehouseBloc extends Bloc<GoodDashboardWarehouseEvent, GoodD
       _lastLoadTime = DateTime.now();
 
       if (kDebugMode) {
-        print('GoodDashboardWarehouseBloc: _fetchRemainingPages completed. Final total: ${allGoods.length} goods');
+        debugPrint('GoodDashboardWarehouseBloc: _fetchRemainingPages completed. Final total: ${allGoods.length} goods');
       }
 
     } catch (e) {
       if (kDebugMode) {
-        print('GoodDashboardWarehouseBloc: Error in _fetchRemainingPages: $e');
+        debugPrint('GoodDashboardWarehouseBloc: Error in _fetchRemainingPages: $e');
       }
     }
   }

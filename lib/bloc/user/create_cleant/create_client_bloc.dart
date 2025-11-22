@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:bloc/bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:flutter/material.dart';
 import 'package:meta/meta.dart';
 
 part 'create_client_event.dart';
@@ -20,7 +21,7 @@ class CreateClientBloc extends Bloc<CreateClientEvent, CreateClientState> {
       var chatId = res['chatId'];
       emit(CreateClientSuccess(chatId: chatId));
     } catch (e) {
-      print('ApiService: Error creating client: $e');
+      debugPrint('ApiService: Error creating client: $e');
       emit(CreateClientError(message: 'Ошибка при создании чата: $e'));
     }
   } else {
@@ -35,7 +36,7 @@ class CreateClientBloc extends Bloc<CreateClientEvent, CreateClientState> {
       final result = await InternetAddress.lookup('example.com');
       return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
     } on SocketException catch (e) {
-      //print('Нет интернета!'); // For debugging
+      //debugPrint('Нет интернета!'); // For debugging
       return false;
     }
   }

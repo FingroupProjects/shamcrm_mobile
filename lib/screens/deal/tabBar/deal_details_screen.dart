@@ -151,12 +151,12 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
 
   void showTutorial() async {
     if (_isTutorialInProgress) {
-      //print('Tutorial already in progress, skipping');
+      //debugPrint('Tutorial already in progress, skipping');
       return;
     }
 
     if (targets.isEmpty) {
-      //print('No targets available for tutorial, skipping');
+      //debugPrint('No targets available for tutorial, skipping');
       return;
     }
 
@@ -167,7 +167,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
         tutorialProgress!['deals']?['view'] == true ||
         isTutorialShown ||
         _isTutorialShown) {
-      //print('Tutorial conditions not met');
+      //debugPrint('Tutorial conditions not met');
       return;
     }
 
@@ -195,7 +195,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       onSkip: () {
         prefs.setBool('isTutorialShownDealDetails', true);
         _apiService.markPageCompleted("deals", "view").catchError((e) {
-          //print('Error marking page completed on skip: $e');
+          //debugPrint('Error marking page completed on skip: $e');
         });
         setState(() {
           _isTutorialShown = true;
@@ -206,7 +206,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       onFinish: () {
         prefs.setBool('isTutorialShownDealDetails', true);
         _apiService.markPageCompleted("deals", "view").catchError((e) {
-          //print('Error marking page completed on finish: $e');
+          //debugPrint('Error marking page completed on finish: $e');
         });
         setState(() {
           _isTutorialShown = true;
@@ -298,7 +298,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
         //showTutorial();
       }
     } catch (e) {
-      //print('Error fetching tutorial progress: $e');
+      //debugPrint('Error fetching tutorial progress: $e');
       final prefs = await SharedPreferences.getInstance();
       final savedProgress = prefs.getString('tutorial_progress');
       if (savedProgress != null) {
@@ -603,7 +603,7 @@ Widget build(BuildContext context) {
             startDateString = DateFormat('dd/MM/yyyy').format(parsedStartDate);
           }
         } catch (e) {
-          print('Ошибка парсинга startDate: $e');
+          debugPrint('Ошибка парсинга startDate: $e');
           startDateString = null;
         }
         
@@ -614,7 +614,7 @@ Widget build(BuildContext context) {
             endDateString = DateFormat('dd/MM/yyyy').format(parsedEndDate);
           }
         } catch (e) {
-          print('Ошибка парсинга endDate: $e');
+          debugPrint('Ошибка парсинга endDate: $e');
           endDateString = null;
         }
         
@@ -625,7 +625,7 @@ Widget build(BuildContext context) {
             createdAtDateString = DateFormat('dd/MM/yyyy').format(parsedCreatedAt);
           }
         } catch (e) {
-          print('Ошибка парсинга createdAt: $e');
+          debugPrint('Ошибка парсинга createdAt: $e');
           createdAtDateString = null;
         }
 

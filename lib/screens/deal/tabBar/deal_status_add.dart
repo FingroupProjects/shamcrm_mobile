@@ -56,9 +56,9 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
       });
     }
     
-    print('CreateStatusDialog: managing_deal_status_visibility = $managingVisibility');
-    print('CreateStatusDialog: change_deal_to_multiple_statuses = $changeMultiple');
-    print('CreateStatusDialog: _isMultiSelectEnabled = $value');
+    debugPrint('CreateStatusDialog: managing_deal_status_visibility = $managingVisibility');
+    debugPrint('CreateStatusDialog: change_deal_to_multiple_statuses = $changeMultiple');
+    debugPrint('CreateStatusDialog: _isMultiSelectEnabled = $value');
   }
 
 
@@ -265,7 +265,7 @@ if (_isMultiSelectEnabled) ...[
       setState(() {
         _selectedUsers = users;
       });
-      print('CreateStatusDialog: Выбрано пользователей (просмотр): ${users.length}');
+      debugPrint('CreateStatusDialog: Выбрано пользователей (просмотр): ${users.length}');
     },
   ),
   const SizedBox(height: 20),
@@ -297,7 +297,7 @@ if (_isMultiSelectEnabled) ...[
       setState(() {
         _selectedChangeStatusUsers = users;
       });
-      print('CreateStatusDialog: Выбрано пользователей (изменение): ${users.length}');
+      debugPrint('CreateStatusDialog: Выбрано пользователей (изменение): ${users.length}');
     },
   ),
   const SizedBox(height: 20),
@@ -498,8 +498,8 @@ if (_isMultiSelectEnabled) ...[
                                   final changeStatusUserIds = _selectedChangeStatusUsers.map((user) => user.id).toList();
 
                               
-                              print('CreateStatusDialog: Отправка статуса с пользователями: $userIds');
-    print('CreateStatusDialog: Пользователи (изменение): $changeStatusUserIds');
+                              debugPrint('CreateStatusDialog: Отправка статуса с пользователями: $userIds');
+    debugPrint('CreateStatusDialog: Пользователи (изменение): $changeStatusUserIds');
 
                               context.read<DealBloc>().add(
                                     CreateDealStatus(

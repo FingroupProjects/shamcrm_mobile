@@ -380,7 +380,7 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
             child: BlocBuilder<MoneyOutcomeBloc, MoneyOutcomeState>(
               builder: (context, state) {
                 if (kDebugMode) {
-                  print("📝 [UI] Текущий статус MoneyOutcomeBloc: $state");
+                  debugPrint("📝 [UI] Текущий статус MoneyOutcomeBloc: $state");
                 }
 
                 if (state is MoneyOutcomeLoading) {

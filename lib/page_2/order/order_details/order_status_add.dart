@@ -26,10 +26,10 @@ class _CreateOrderStatusDialogState extends State<CreateOrderStatusDialog> {
 
   @override
   void dispose() {
-    print('CreateOrderStatusDialog: Вызов dispose');
+    debugPrint('CreateOrderStatusDialog: Вызов dispose');
     _titleController.dispose();
     _messageController.dispose();
-    print('CreateOrderStatusDialog: Контроллеры освобождены');
+    debugPrint('CreateOrderStatusDialog: Контроллеры освобождены');
     super.dispose();
   }
 
@@ -77,17 +77,17 @@ class _CreateOrderStatusDialogState extends State<CreateOrderStatusDialog> {
 
   @override
   Widget build(BuildContext context) {
-    print('CreateOrderStatusDialog: Начало build');
+    debugPrint('CreateOrderStatusDialog: Начало build');
     final localizations = AppLocalizations.of(context);
 
     return BlocProvider.value(
       value: widget.orderBloc,
       child: BlocListener<OrderBloc, OrderState>(
         listener: (context, state) {
-          // print(
+          // debugPrint(
           //     'CreateOrderStatusDialog: BlocListener, текущее состояние: ${state.runtimeType}');
           if (state is OrderStatusCreated) {
-            // print(
+            // debugPrint(
             //     'CreateOrderStatusDialog: Получено состояние OrderStatusCreated, закрываем диалог');
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -114,7 +114,7 @@ class _CreateOrderStatusDialogState extends State<CreateOrderStatusDialog> {
             );
             Navigator.of(context).pop(true);
           } else if (state is OrderError) {
-            // print(
+            // debugPrint(
             //     'CreateOrderStatusDialog: Получено состояние OrderError, сообщение об ошибке уже обрабатывается в OrderScreen');
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -235,7 +235,7 @@ class _CreateOrderStatusDialogState extends State<CreateOrderStatusDialog> {
                                         _isSuccess = v;
                                         if (_isSuccess) _isFailed = false;
                                       });
-                                      // print(
+                                      // debugPrint(
                                       //     'CreateOrderStatusDialog: _isSuccess изменен на $_isSuccess');
                                     }
                                   },
@@ -252,7 +252,7 @@ class _CreateOrderStatusDialogState extends State<CreateOrderStatusDialog> {
                                         _isFailed = v;
                                         if (_isFailed) _isSuccess = false;
                                       });
-                                      // print(
+                                      // debugPrint(
                                       //     'CreateOrderStatusDialog: _isFailed изменен на $_isFailed');
                                     }
                                   },
@@ -274,11 +274,11 @@ class _CreateOrderStatusDialogState extends State<CreateOrderStatusDialog> {
                       ),
                       child: TextButton(
                         onPressed: () {
-                          // print(
+                          // debugPrint(
                           //     'CreateOrderStatusDialog: Нажата кнопка "Добавить"');
                           final title = _titleController.text.trim();
                           final message = _messageController.text.trim();
-                          // print(
+                          // debugPrint(
                           //     'CreateOrderStatusDialog: title=$title, message=$message, isSuccess=$_isSuccess, isFailed=$_isFailed');
 
                           if (title.isNotEmpty && message.isNotEmpty) {
@@ -288,10 +288,10 @@ class _CreateOrderStatusDialogState extends State<CreateOrderStatusDialog> {
                               isSuccess: _isSuccess,
                               isFailed: _isFailed,
                             ));
-                            // print(
+                            // debugPrint(
                             //     'CreateOrderStatusDialog: Добавлено событие CreateOrderStatus');
                           } else {
-                            // print(
+                            // debugPrint(
                             //     'CreateOrderStatusDialog: Поля пусты, показываем ошибку');
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(

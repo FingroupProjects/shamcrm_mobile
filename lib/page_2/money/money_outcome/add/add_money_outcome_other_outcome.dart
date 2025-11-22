@@ -166,7 +166,7 @@ class _AddMoneyOutcomeOtherOutcomeState extends State<AddMoneyOutcomeOtherOutcom
             BlocListener<GetAllOutcomeCategoryBloc, GetAllOutcomeCategoryState>(
               listener: (context, state) {
                 if (state is GetAllOutcomeCategoryError && mounted) {
-                  print('Outcome category loading error: ${state.toString()}');
+                  debugPrint('Outcome category loading error: ${state.toString()}');
                   _showSnackBar(AppLocalizations.of(context)!.translate('error_loading_outcome_categories') ?? 'Ошибка загрузки категорий дохода', false);
                 }
               },
@@ -195,7 +195,7 @@ class _AddMoneyOutcomeOtherOutcomeState extends State<AddMoneyOutcomeOtherOutcom
                                 selectedCashRegister = selectedRegionData;
                               });
                             } catch (e) {
-                              print('Error selecting cash register: $e');
+                              debugPrint('Error selecting cash register: $e');
                               _showSnackBar(AppLocalizations.of(context)!.translate('error_selecting_cash_register') ?? 'Ошибка выбора кассы', false);
                             }
                           },

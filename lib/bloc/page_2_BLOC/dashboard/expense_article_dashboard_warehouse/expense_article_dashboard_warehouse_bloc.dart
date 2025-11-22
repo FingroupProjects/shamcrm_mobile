@@ -6,6 +6,7 @@ import 'package:bloc/bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/expense_article_dashboard_warehouse/expense_article_dashboard_warehouse_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/expense_article_dashboard_warehouse/expense_article_dashboard_warehouse_state.dart';
+import 'package:flutter/material.dart';
 
 class ExpenseArticleDashboardWarehouseBloc extends Bloc<ExpenseArticleDashboardWarehouseEvent, ExpenseArticleDashboardWarehouseState> {
   final ApiService apiService;
@@ -27,7 +28,7 @@ class ExpenseArticleDashboardWarehouseBloc extends Bloc<ExpenseArticleDashboardW
         allExpenseArticleDashboardWarehouseFetched = expenseArticleDashboardWarehouse.isEmpty;
         emit(ExpenseArticleDashboardWarehouseLoaded(expenseArticleDashboardWarehouse));
       } catch (e) {
-        print('Ошибка при загрузке статей расхода!');
+        debugPrint('Ошибка при загрузке статей расхода!');
         emit(ExpenseArticleDashboardWarehouseError('Не удалось загрузить список Статей расхода!'));
       }
     } else {

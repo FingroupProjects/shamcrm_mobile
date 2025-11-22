@@ -322,7 +322,7 @@ class _EditMoneyIncomeOtherIncomeState extends State<EditMoneyIncomeOtherIncome>
                                 selectedCashRegister = selectedRegionData;
                               });
                             } catch (e) {
-                              print('Error selecting cash register: $e');
+                              debugPrint('Error selecting cash register: $e');
                               _showSnackBar(
                                   AppLocalizations.of(context)!.translate('error_selecting_cash_register')
                                       ?? 'Ошибка выбора кассы',
