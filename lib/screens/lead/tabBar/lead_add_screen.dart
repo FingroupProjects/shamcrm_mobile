@@ -402,13 +402,82 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
     }
   }
 
-  Future<void> _addCustomField(String fieldName, String type) async {
+  Future<void> _addCustomField(String fieldName, {bool isDirectory = false, int? directoryId, String? type}) async {
+    if (isDirectory && directoryId != null) {
+      bool directoryExists = customFields.any((field) => field.isDirectoryField && field.directoryId == directoryId);
+      if (directoryExists) {
+        showCustomSnackBar(context: context, message: 'Справочник уже добавлен', isSuccess: true);
+        debugPrint("Directory with ID $directoryId already exists.");
+        return;
+      }
+      try {
+        // Сначала связываем справочник через API
+        await _apiService.linkDirectory(
+          directoryId: directoryId,
+          modelType: 'lead',
+          organizationId: _apiService.getSelectedOrganization().toString(),
+        );
+
+        showCustomSnackBar(context: context, message: 'Справочник успешно добавлен', isSuccess: true);
+
+        // Добавляем справочник локально сразу после успешного связывания
+        if (mounted) {
+          setState(() {
+            customFields.add(CustomField(
+              fieldName: fieldName,
+              uniqueId: Uuid().v4(),
+              isDirectoryField: true,
+              directoryId: directoryId,
+              type: null,
+              controller: TextEditingController(),
+              isCustomField: false,
+            ));
+          });
+        }
+
+        // После успешного добавления справочника перезагружаем конфигурацию полей
+        // Конфигурация с сервера уже будет содержать этот справочник
+        if (mounted) {
+          context.read<FieldConfigurationBloc>().add(
+              FetchFieldConfiguration('leads')
+          );
+        }
+
+        if (kDebugMode) {
+          print('LeadAddScreen: Successfully linked directory: $fieldName');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('LeadAddScreen: Error linking directory: $e');
+        }
+
+        // Показываем ошибку пользователю
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                e.toString(),
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+      return;
+    }
+
     // Если это не справочник, сначала добавляем через API
     try {
       await _apiService.addNewField(
         tableName: 'leads',
         fieldName: fieldName,
-        fieldType: type,
+        fieldType: type ?? 'string',
       );
 
       // КЭШИРОВАНИЕ ОТКЛЮЧЕНО
@@ -430,7 +499,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
             uniqueId: Uuid().v4(),
             isDirectoryField: false,
             directoryId: null,
-            type: type,
+            type: type ?? 'string',
             controller: TextEditingController(),
             isCustomField: true,
           ));
@@ -526,7 +595,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
             return AddCustomFieldDialog(
               onAddField: (fieldName, {String? type}) {
                 if (type != null) {
-                  _addCustomField(fieldName, type);
+                  _addCustomField(fieldName, type: type);
                 }
               },
             );
@@ -538,69 +607,11 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
           builder: (BuildContext context) {
             return AddCustomDirectoryDialog(
               onAddDirectory: (directory) async {
-                try {
-                  // Сначала связываем справочник через API
-                  await _apiService.linkDirectory(
-                    directoryId: directory.id,
-                    modelType: 'lead',
-                    organizationId: _apiService.getSelectedOrganization().toString(),
-                  );
-
-                  showCustomSnackBar(context: context, message: 'Справочник успешно добавлен');
-
-                  // КЭШИРОВАНИЕ ОТКЛЮЧЕНО
-                  // // Очищаем кэш перед перезагрузкой
-                  // await ApiService().clearFieldConfigurationCacheForTable('leads');
-
-                  // Добавляем справочник локально сразу после успешного связывания
-                  if (mounted) {
-                    setState(() {
-                      customFields.add(CustomField(
-                        fieldName: directory.name,
-                        uniqueId: Uuid().v4(),
-                        isDirectoryField: true,
-                        directoryId: directory.id,
-                        type: null,
-                        controller: TextEditingController(),
-                        isCustomField: false,
-                      ));
-                    });
-                  }
-
-                  // После успешного добавления справочника перезагружаем конфигурацию полей
-                  // Конфигурация с сервера уже будет содержать этот справочник
-                  if (mounted) {
-                    context.read<FieldConfigurationBloc>().add(
-                        FetchFieldConfiguration('leads')
-                    );
-                  }
-
-                  if (kDebugMode) {
-                    print('LeadAddScreen: Successfully linked directory: ${directory.name}');
-                  }
-                } catch (e) {
-                  if (kDebugMode) {
-                    print('LeadAddScreen: Error linking directory: $e');
-                  }
-
-                  // Показываем ошибку пользователю
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          e.toString(),
-                          style: TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.white,
-                          ),
-                        ),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                }
+                await _addCustomField(
+                  directory.name,
+                  isDirectory: true,
+                  directoryId: directory.id,
+                );
               },
             );
           },
