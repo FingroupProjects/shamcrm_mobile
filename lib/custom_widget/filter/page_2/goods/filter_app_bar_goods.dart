@@ -46,8 +46,8 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
   void initState() {
     super.initState();
     if (kDebugMode) {
-      print('GoodsFilterScreen: Инициализация экрана фильтров');
-      print(
+      debugPrint('GoodsFilterScreen: Инициализация экрана фильтров');
+      debugPrint(
           'GoodsFilterScreen: Начальные значения - category_ids: ${widget.initialCategoryIds}, '
           'discount_percent: ${widget.initialDiscountPercent}, label_id: ${widget.initialLabels}, '
           'is_active: ${widget.initialIsActive}');
@@ -58,7 +58,7 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
       discountPercentController.text =
           widget.initialDiscountPercent!.toStringAsFixed(2);
       if (kDebugMode) {
-        print(
+        debugPrint(
             'GoodsFilterScreen: Установлен начальный процент скидки: ${discountPercentController.text}');
       }
     }
@@ -66,14 +66,14 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
     if (widget.initialLabels != null) {
       selectedLabels = List.from(widget.initialLabels!);
       if (kDebugMode) {
-        print('GoodsFilterScreen: Установлены начальные label_id: $selectedLabels');
+        debugPrint('GoodsFilterScreen: Установлены начальные label_id: $selectedLabels');
       }
     }
 
     if (widget.initialIsActive != null) {
       isActive = widget.initialIsActive;
       if (kDebugMode) {
-        print('GoodsFilterScreen: Установлено начальное значение is_active: $isActive');
+        debugPrint('GoodsFilterScreen: Установлено начальное значение is_active: $isActive');
       }
     }
 
@@ -84,7 +84,7 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
   void dispose() {
     discountPercentController.dispose();
     if (kDebugMode) {
-      print('GoodsFilterScreen: Очистка ресурсов');
+      debugPrint('GoodsFilterScreen: Очистка ресурсов');
     }
     super.dispose();
   }
@@ -93,7 +93,7 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
     setState(() {
       isActive = status;
       if (kDebugMode) {
-        print('GoodsFilterScreen: Изменено значение is_active: $isActive');
+        debugPrint('GoodsFilterScreen: Изменено значение is_active: $isActive');
       }
     });
   }
@@ -121,7 +121,7 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
             onPressed: () {
               setState(() {
                 if (kDebugMode) {
-                  print('GoodsFilterScreen: Сброс фильтров');
+                  debugPrint('GoodsFilterScreen: Сброс фильтров');
                 }
                 widget.onResetFilters?.call();
                 selectedCategories = [];
@@ -175,15 +175,15 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
                 if (discount != null) {
                   filters['discount_percent'] = discount;
                   if (kDebugMode) {
-                    print(
+                    debugPrint(
                         'GoodsFilterScreen: Добавлен discount_percent: ${filters['discount_percent']}');
                   }
                 }
               }
 
               if (kDebugMode) {
-                print('GoodsFilterScreen: Применение фильтров: $filters');
-                print(
+                debugPrint('GoodsFilterScreen: Применение фильтров: $filters');
+                debugPrint(
                     'GoodsFilterScreen: onSelectedDataFilter существует: ${widget.onSelectedDataFilter != null}');
               }
 
@@ -194,7 +194,7 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
                 widget.onSelectedDataFilter?.call(filters);
               } else {
                 if (kDebugMode) {
-                  print(
+                  debugPrint(
                       'GoodsFilterScreen: Фильтры пусты, ничего не отправлено');
                 }
               }
@@ -234,13 +234,13 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
                         .contains(subCategory.parent?.id))
                     .toList();
                 if (kDebugMode) {
-                  print(
+                  debugPrint(
                       'GoodsFilterScreen: Установлены начальные подкатегории: ${selectedCategories.map((c) => c.name).toList()}, category_ids: ${selectedCategories.map((c) => c.parent?.id).toList()}');
                 }
               });
             } else {
               if (kDebugMode) {
-                print('GoodsFilterScreen: Список подкатегорий пуст в listener');
+                debugPrint('GoodsFilterScreen: Список подкатегорий пуст в listener');
               }
             }
           }
@@ -250,21 +250,21 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
           if (state is GoodsDataLoaded) {
             subCategories = state.subCategories;
             if (kDebugMode) {
-              print(
+              debugPrint(
                   'GoodsFilterScreen: Подкатегории из GoodsBloc: ${subCategories.length}');
-              print(
+              debugPrint(
                   'GoodsFilterScreen: ID подкатегорий: ${subCategories.map((c) => c.parent?.id).toList()}');
             }
           } else if (state is GoodsLoading) {
             if (kDebugMode) {
-              print('GoodsFilterScreen: Состояние загрузки подкатегорий');
+              debugPrint('GoodsFilterScreen: Состояние загрузки подкатегорий');
             }
             return const Center(
               child: CircularProgressIndicator(),
             );
           } else if (state is GoodsError) {
             if (kDebugMode) {
-              print(
+              debugPrint(
                   'GoodsFilterScreen: Ошибка загрузки подкатегорий: ${state.message}');
             }
             return Center(
@@ -277,7 +277,7 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
                   ElevatedButton(
                     onPressed: () {
                       if (kDebugMode) {
-                        print(
+                        debugPrint(
                             'GoodsFilterScreen: Повторная попытка загрузки подкатегорий');
                       }
                       context.read<GoodsBloc>().add(FetchSubCategories());
@@ -313,7 +313,7 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
                                   selectedCategories = categories;
                                   isCategoryValid = true;
                                   if (kDebugMode) {
-                                    print(
+                                    debugPrint(
                                         'GoodsFilterScreen: Выбраны подкатегории: ${categories.map((c) => c.name).toList()}, category_ids: ${categories.map((c) => c.parent?.id).toList()}');
                                   }
                                 });
@@ -335,7 +335,7 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
                                 setState(() {
                                   selectedLabels = labelIds;
                                   if (kDebugMode) {
-                                    print(
+                                    debugPrint(
                                         'GoodsFilterScreen: Выбраны label_id: $labelIds');
                                   }
                                 });
@@ -374,7 +374,7 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
                                   },
                                   onChanged: (value) {
                                     if (kDebugMode) {
-                                      print(
+                                      debugPrint(
                                           'GoodsFilterScreen: Введен процент скидки: $value');
                                     }
                                   },

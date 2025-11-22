@@ -52,7 +52,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
   Future<void> _UserIdCheck() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     userIdCheck = prefs.getString('userID') ?? '';
-    print('USERID: $userIdCheck');
+    debugPrint('USERID: $userIdCheck');
   }
 
   Future<void> _fetchChatData() async {
@@ -94,7 +94,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
         });
       }
     } catch (e) {
-      print("Ошибка загрузки данных Корп чата!");
+      debugPrint("Ошибка загрузки данных Корп чата!");
       setState(() {
         isLoading = false;
       });
@@ -106,7 +106,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
     // Проверяем, является ли чат типом support
     bool isSupportChat =
         widget.chatItem.avatar == 'assets/icons/Profile/image.png';
-    // print(
+    // debugPrint(
     //     'CorporateProfileScreen: avatar = ${widget.chatItem.avatar}, isSupportChat = $isSupportChat');
 
     if (isLoading) {

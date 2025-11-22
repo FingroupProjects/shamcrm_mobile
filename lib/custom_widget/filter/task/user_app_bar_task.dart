@@ -338,10 +338,10 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                   _selectedDirectoryFields.values.any((field) => field != null);
 
               if (hasFilters) {
-                print('APPLYING FILTERS');
+                debugPrint('APPLYING FILTERS');
                 widget.onUsersSelected?.call(filters);
               } else {
-                print('NOTHING!!!!!!');
+                debugPrint('NOTHING!!!!!!');
               }
 
               Navigator.pop(context);

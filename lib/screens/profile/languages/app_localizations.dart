@@ -26,7 +26,7 @@ class AppLocalizations {
 
     return true;
   } catch (e) {
-    print("Ошибка загрузки локализации: $e");
+    debugPrint("Ошибка загрузки локализации: $e");
     return false;
   }
 }

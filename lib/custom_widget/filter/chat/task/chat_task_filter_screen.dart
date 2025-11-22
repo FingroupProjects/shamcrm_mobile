@@ -430,7 +430,7 @@ class _ChatTaskFilterScreenState extends State<ChatTaskFilterScreen> {
                 filters['unread_only'] = true;
               }
 
-              print('APPLYING TASK FILTERS: $filters');
+              debugPrint('APPLYING TASK FILTERS: $filters');
               widget.onUsersSelected?.call(filters);
 
               Navigator.pop(context);

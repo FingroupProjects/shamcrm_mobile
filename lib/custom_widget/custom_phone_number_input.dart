@@ -40,8 +40,8 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
     final prefs = await SharedPreferences.getInstance();
     String? savedDialCode = prefs.getString('default_dial_code');
     
-    print('CustomPhoneNumberInput: Сохранённый default_dial_code = $savedDialCode');
-    print('CustomPhoneNumberInput: initialCountry = ${widget.initialCountry?.dialCode}');
+    debugPrint('CustomPhoneNumberInput: Сохранённый default_dial_code = $savedDialCode');
+    debugPrint('CustomPhoneNumberInput: initialCountry = ${widget.initialCountry?.dialCode}');
 
     if (widget.initialCountry != null) {
       selectedCountry = widget.initialCountry;
@@ -60,7 +60,7 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
       );
     }
 
-    print('CustomPhoneNumberInput: Выбрана страна: ${selectedCountry?.name}, код: ${selectedCountry?.dialCode}');
+    debugPrint('CustomPhoneNumberInput: Выбрана страна: ${selectedCountry?.name}, код: ${selectedCountry?.dialCode}');
 
     setState(() {
       _isLoading = false;
@@ -85,7 +85,7 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
         formattedNumber = (selectedCountry?.dialCode ?? '') + widget.controller.text;
       }
       
-      print('CustomPhoneNumberInput: phoneNumber = "${widget.controller.text}", formattedNumber = "$formattedNumber"');
+      debugPrint('CustomPhoneNumberInput: phoneNumber = "${widget.controller.text}", formattedNumber = "$formattedNumber"');
       widget.onInputChanged!(formattedNumber);
     }
   }

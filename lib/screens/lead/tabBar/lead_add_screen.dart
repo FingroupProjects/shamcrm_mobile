@@ -111,7 +111,7 @@ Future<void> _pickFile() async {
 
 void _fetchAndAddCustomFields() async {
   try {
-    print('Загрузка кастомных полей и справочников для лида');
+    debugPrint('Загрузка кастомных полей и справочников для лида');
     
     // Получаем кастомные поля
     final customFieldsData = await ApiService().getCustomFieldslead();
@@ -124,7 +124,7 @@ void _fetchAndAddCustomFields() async {
           String fieldName = fieldData['key'] ?? '';
           String fieldType = fieldData['type'] ?? 'string';
           
-          print('Добавлено кастомное поле: $fieldName (тип: $fieldType)');
+          debugPrint('Добавлено кастомное поле: $fieldName (тип: $fieldType)');
           
           return CustomField(
             fieldName: fieldName,
@@ -135,7 +135,7 @@ void _fetchAndAddCustomFields() async {
         }).toList());
       });
       
-      print('Всего загружено кастомных полей: ${customFields.length}');
+      debugPrint('Всего загружено кастомных полей: ${customFields.length}');
     }
 
     // Получаем связанные справочники для лида
@@ -143,7 +143,7 @@ void _fetchAndAddCustomFields() async {
     if (directoryLinkData.data != null) {
       setState(() {
         customFields.addAll(directoryLinkData.data!.map<CustomField>((link) {
-          print('Добавлен справочник: ${link.directory.name} (ID: ${link.directory.id})');
+          debugPrint('Добавлен справочник: ${link.directory.name} (ID: ${link.directory.id})');
           
           return CustomField(
             fieldName: link.directory.name,
@@ -155,19 +155,19 @@ void _fetchAndAddCustomFields() async {
         }).toList());
       });
       
-      print('Всего полей (кастомные + справочники): ${customFields.length}');
+      debugPrint('Всего полей (кастомные + справочники): ${customFields.length}');
     }
   } catch (e) {
-    print('❌ Ошибка при получении данных: $e');
+    debugPrint('❌ Ошибка при получении данных: $e');
   }
 }
 
 void _addCustomField(String fieldName, {bool isDirectory = false, int? directoryId, String? type}) {
-  //print('Добавление поля: $fieldName, isDirectory: $isDirectory, directoryId: $directoryId, type: $type');
+  //debugPrint('Добавление поля: $fieldName, isDirectory: $isDirectory, directoryId: $directoryId, type: $type');
   if (isDirectory && directoryId != null) {
     bool directoryExists = customFields.any((field) => field.isDirectoryField && field.directoryId == directoryId);
     if (directoryExists) {
-      //print('Справочник с directoryId: $directoryId уже добавлен, пропускаем');
+      //debugPrint('Справочник с directoryId: $directoryId уже добавлен, пропускаем');
       return;
     }
   }
@@ -184,7 +184,7 @@ void _addCustomField(String fieldName, {bool isDirectory = false, int? directory
 }
 
   void _showAddFieldMenu() {
-    //print('Открытие меню добавления поля');
+    //debugPrint('Открытие меню добавления поля');
     showMenu(
       context: context,
       position: RelativeRect.fromLTRB(300, 650, 200, 300),
@@ -220,7 +220,7 @@ void _addCustomField(String fieldName, {bool isDirectory = false, int? directory
         ),
       ],
     ).then((value) {
-      //print('Выбрано значение в меню: $value');
+      //debugPrint('Выбрано значение в меню: $value');
       if (value == 'manual') {
         showDialog(
   context: context,
@@ -238,16 +238,16 @@ void _addCustomField(String fieldName, {bool isDirectory = false, int? directory
           builder: (BuildContext context) {
             return AddCustomDirectoryDialog(
               onAddDirectory: (directory) {
-                //print('Выбран справочник: ${directory.name}, id: ${directory.id}');
+                //debugPrint('Выбран справочник: ${directory.name}, id: ${directory.id}');
                 _addCustomField(directory.name, isDirectory: true, directoryId: directory.id);
                 ApiService().linkDirectory(
                   directoryId: directory.id,
                   modelType: 'lead',
                   organizationId: ApiService().getSelectedOrganization().toString(),
                 ).then((_) {
-                  //print('Справочник успешно связан с моделью lead');
+                  //debugPrint('Справочник успешно связан с моделью lead');
                 }).catchError((e) {
-                  //print('Ошибка при связывании справочника: $e');
+                  //debugPrint('Ошибка при связывании справочника: $e');
                 });
               },
             );

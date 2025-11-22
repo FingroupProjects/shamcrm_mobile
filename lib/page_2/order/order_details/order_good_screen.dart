@@ -152,7 +152,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
 
   Widget _buildImageWidget(Good good) {
     if (baseUrl == null) {
-      //print('Base URL is null for ${good.goodName}');
+      //debugPrint('Base URL is null for ${good.goodName}');
       return _buildPlaceholderImage();
     }
 
@@ -163,11 +163,11 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
       files = good.variantGood!.files;
     }
 
-    //print('Good files for ${good.goodName}: ${good.good.files}');
-    //print('Variant good files for ${good.goodName}: ${good.variantGood?.files}');
+    //debugPrint('Good files for ${good.goodName}: ${good.good.files}');
+    //debugPrint('Variant good files for ${good.goodName}: ${good.variantGood?.files}');
 
     if (files.isEmpty) {
-      //print('No files found for ${good.goodName}');
+      //debugPrint('No files found for ${good.goodName}');
       return _buildPlaceholderImage();
     }
 
@@ -179,7 +179,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
         height: 100,
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
-          //print('Image loading error for ${good.goodName}: $error');
+          //debugPrint('Image loading error for ${good.goodName}: $error');
           return _buildPlaceholderImage();
         },
         loadingBuilder: (context, child, loadingProgress) {
@@ -207,7 +207,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
   // ИСПРАВЛЕННЫЙ МЕТОД - здесь была проблема!
   void _navigateToGoodsDetails(Good good) {
     int correctGoodId = good.getCorrectGoodId();
-    print('Navigating to GoodsDetailsScreen with ID: $correctGoodId (goodId: ${good.goodId}, variantGood.id: ${good.variantGood?.id}, good.id: ${good.good.id})');
+    debugPrint('Navigating to GoodsDetailsScreen with ID: $correctGoodId (goodId: ${good.goodId}, variantGood.id: ${good.variantGood?.id}, good.id: ${good.good.id})');
 
     if (correctGoodId == 0) {
       ScaffoldMessenger.of(context).showSnackBar(

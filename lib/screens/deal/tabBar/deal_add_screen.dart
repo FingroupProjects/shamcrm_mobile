@@ -85,7 +85,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
       });
     }
     
-    print('DealAddScreen: has_deal_users = $value');
+    debugPrint('DealAddScreen: has_deal_users = $value');
   }
 
  Future<void> _pickFile() async {
@@ -545,7 +545,7 @@ if (_hasDealUsers) ...[
       setState(() {
         _selectedUsers = users;
       });
-      print('DealAddScreen: Выбрано пользователей: ${users.length}');
+      debugPrint('DealAddScreen: Выбрано пользователей: ${users.length}');
     },
   ),
 ],

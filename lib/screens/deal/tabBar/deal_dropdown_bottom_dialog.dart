@@ -58,12 +58,12 @@ Future<void> showDealStatusBottomSheet(
   final String? organizationId = prefs.getString('organization_id') ?? '1';
   final String? salesFunnelId = prefs.getString('sales_funnel_id') ?? '1';
 
-  print('DropdownBottomSheet: organizationId = $organizationId');
-  print('DropdownBottomSheet: salesFunnelId = $salesFunnelId');
-  print('DropdownBottomSheet: managing_deal_status_visibility = $managingVisibility');
-  print('DropdownBottomSheet: change_deal_to_multiple_statuses = $changeMultiple');
-  print('DropdownBottomSheet: isMultiSelectEnabled = $isMultiSelectEnabled');
-  print('DropdownBottomSheet: Режим работы = ${isMultiSelectEnabled ? "МУЛЬТИВЫБОР" : "ОДИНОЧНЫЙ"}');
+  debugPrint('DropdownBottomSheet: organizationId = $organizationId');
+  debugPrint('DropdownBottomSheet: salesFunnelId = $salesFunnelId');
+  debugPrint('DropdownBottomSheet: managing_deal_status_visibility = $managingVisibility');
+  debugPrint('DropdownBottomSheet: change_deal_to_multiple_statuses = $changeMultiple');
+  debugPrint('DropdownBottomSheet: isMultiSelectEnabled = $isMultiSelectEnabled');
+  debugPrint('DropdownBottomSheet: Режим работы = ${isMultiSelectEnabled ? "МУЛЬТИВЫБОР" : "ОДИНОЧНЫЙ"}');
   
   String selectedValue = defaultValue;
   List<int> selectedStatusIds = [];
@@ -75,13 +75,13 @@ Future<void> showDealStatusBottomSheet(
     final dealData = await apiService.getDealById(deal.id);
     if (dealData?.dealStatuses != null && dealData!.dealStatuses!.isNotEmpty) {
       selectedStatusIds = dealData.dealStatuses!.map((s) => s.id).toList();
-      print('✅ Initialized from API: $selectedStatusIds');
+      debugPrint('✅ Initialized from API: $selectedStatusIds');
     } else {
       selectedStatusIds = [deal.statusId];
-      print('⚠️ Using current statusId: ${deal.statusId}');
+      debugPrint('⚠️ Using current statusId: ${deal.statusId}');
     }
   } catch (e) {
-    print('❌ Error loading deal statuses: $e');
+    debugPrint('❌ Error loading deal statuses: $e');
     selectedStatusIds = [deal.statusId];
   }
   isInitializing = false;
@@ -205,7 +205,7 @@ Future<void> showDealStatusBottomSheet(
                           isLoading = false;
                         });
 
-                        print('✅ Deal status updated: $selectedStatusIds');
+                        debugPrint('✅ Deal status updated: $selectedStatusIds');
                         Navigator.pop(context);
                         onSelect(selectedValue, selectedStatusIds);
                       }).catchError((error) {

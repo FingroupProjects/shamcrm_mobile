@@ -152,7 +152,7 @@ void main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
     WidgetService.initialize();
-        // await InternetMonitorService().initialize();
+        await InternetMonitorService().initialize();
 
     await _initializeFirebase();
 
@@ -526,7 +526,7 @@ class _MyAppState extends State<MyApp> {
         updateButton: localizations?.translate('app_update_button') ?? 'Обновить',
       );
     } catch (e) {
-      print('MyApp: Error checking version: $e');
+      // print('MyApp: Error checking version: $e');
     }
   }
 
@@ -698,11 +698,11 @@ Widget build(BuildContext context) {
         return supportedLocales.first;
       },
       // ✅ InternetAwareWrapper ЗДЕСЬ, в builder MaterialApp
-      // builder: (context, child) {
-      //   return InternetAwareWrapper(
-      //     child: child ?? const SizedBox.shrink(),
-      //   );
-      // },
+      builder: (context, child) {
+        return InternetAwareWrapper(
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
       home: Builder(
         builder: (context) {
           if (!widget.sessionValid) {

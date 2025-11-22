@@ -75,22 +75,22 @@ Future<void> _fetchMiniAppSettings() async {
   try {
     final prefs = await SharedPreferences.getInstance();
     final organizationId = await _apiService.getSelectedOrganization();
-    //print('Fetching MiniAppSettings for organizationId: $organizationId');
+    //debugPrint('Fetching MiniAppSettings for organizationId: $organizationId');
     
     final settingsList = await _apiService.getMiniAppSettings(organizationId);
     
     if (settingsList.isNotEmpty) {
       final settings = settingsList.first;
-      //print('Saving currency_id: ${settings.currencyId}');
+      //debugPrint('Saving currency_id: ${settings.currencyId}');
       await prefs.setInt('currency_id', settings.currencyId);
     } else {
-      //print('No settings found for organizationId: $organizationId');
+      //debugPrint('No settings found for organizationId: $organizationId');
     }
   } catch (e) {
-    //print('Error fetching mini-app settings: $e');
+    //debugPrint('Error fetching mini-app settings: $e');
     final prefs = await SharedPreferences.getInstance();
     final savedCurrencyId = prefs.getInt('currency_id');
-    //print('Using cached currency_id: $savedCurrencyId');
+    //debugPrint('Using cached currency_id: $savedCurrencyId');
   }
 }
 
@@ -159,11 +159,11 @@ Future<void> _fetchSettings() async {
       );
       
       if (kDebugMode) {
-        print('PinScreen: Настройки сохранены: localization = $localization, default_dial_code = $defaultDialCode');
+        debugPrint('PinScreen: Настройки сохранены: localization = $localization, default_dial_code = $defaultDialCode');
       }
     }
   } catch (e) {
-    print('Error fetching settings: $e');
+    debugPrint('Error fetching settings: $e');
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('integration_with_1C', false);
     await prefs.setBool('good_measurement', false);
@@ -254,7 +254,7 @@ Future<void> _fetchSettings() async {
         isPermissionsLoaded = true;
       });
     } catch (e) {
-      ////print('Error loading user role: $e');
+      ////debugPrint('Error loading user role: $e');
       setState(() {
         userRoleId = 0;
       });

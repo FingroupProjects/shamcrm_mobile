@@ -31,14 +31,14 @@ class _GoodDashboardWarehouseWidgetState extends State<GoodDashboardWarehouseWid
   void initState() {
     super.initState();
     if (kDebugMode) {
-      print('🟢 GoodWidget: initState');
+      debugPrint('🟢 GoodWidget: initState');
     }
 
     // ✅ Force fresh data load using RefreshGoodDashboardWarehouse
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         if (kDebugMode) {
-          print('🔥 GoodWidget: Forcing fresh data load (ignoring cache)');
+          debugPrint('🔥 GoodWidget: Forcing fresh data load (ignoring cache)');
         }
         context.read<GoodDashboardWarehouseBloc>().add(RefreshGoodDashboardWarehouse());
       }
@@ -58,7 +58,7 @@ class _GoodDashboardWarehouseWidgetState extends State<GoodDashboardWarehouseWid
 
   void _updateSelectedGoodData() {
     if (kDebugMode) {
-      print('🔄 GoodWidget: _updateSelectedGoodData started');
+      debugPrint('🔄 GoodWidget: _updateSelectedGoodData started');
     }
 
     if (widget.selectedGoodDashboardWarehouse != null && goodsList.isNotEmpty) {
@@ -67,12 +67,12 @@ class _GoodDashboardWarehouseWidgetState extends State<GoodDashboardWarehouseWid
               (good) => good.id.toString() == widget.selectedGoodDashboardWarehouse,
         );
         if (kDebugMode) {
-          print('🟢 GoodWidget: Selected good found - ${selectedGoodData?.name}');
+          debugPrint('🟢 GoodWidget: Selected good found - ${selectedGoodData?.name}');
         }
       } catch (e) {
         selectedGoodData = null;
         if (kDebugMode) {
-          print('🔴 GoodWidget: Selected good NOT found - searching for ${widget.selectedGoodDashboardWarehouse}');
+          debugPrint('🔴 GoodWidget: Selected good NOT found - searching for ${widget.selectedGoodDashboardWarehouse}');
         }
       }
     } else {
@@ -83,7 +83,7 @@ class _GoodDashboardWarehouseWidgetState extends State<GoodDashboardWarehouseWid
   @override
   Widget build(BuildContext context) {
     if (kDebugMode) {
-      print('🟡 GoodWidget: build() called');
+      debugPrint('🟡 GoodWidget: build() called');
     }
 
     return BlocListener<GoodDashboardWarehouseBloc, GoodDashboardWarehouseState>(
@@ -129,7 +129,7 @@ class _GoodDashboardWarehouseWidgetState extends State<GoodDashboardWarehouseWid
           BlocBuilder<GoodDashboardWarehouseBloc, GoodDashboardWarehouseState>(
             builder: (context, state) {
               if (kDebugMode) {
-                print('🔵 GoodWidget BlocBuilder: state=${state.runtimeType}');
+                debugPrint('🔵 GoodWidget BlocBuilder: state=${state.runtimeType}');
               }
 
               final isLoading = state is GoodDashboardWarehouseLoading;
@@ -138,9 +138,9 @@ class _GoodDashboardWarehouseWidgetState extends State<GoodDashboardWarehouseWid
               if (state is GoodDashboardWarehouseLoaded) {
                 goodsList = state.goodDashboardWarehouse;
                 if (kDebugMode) {
-                  print('🔵 GoodWidget BlocBuilder: SUCCESS - ${goodsList.length} goods loaded');
+                  debugPrint('🔵 GoodWidget BlocBuilder: SUCCESS - ${goodsList.length} goods loaded');
                   if (goodsList.isNotEmpty) {
-                    print('🔵 GoodWidget BlocBuilder: First good = ${goodsList.first.name}');
+                    debugPrint('🔵 GoodWidget BlocBuilder: First good = ${goodsList.first.name}');
                   }
                 }
                 _updateSelectedGoodData();
@@ -148,7 +148,7 @@ class _GoodDashboardWarehouseWidgetState extends State<GoodDashboardWarehouseWid
 
               if (state is GoodDashboardWarehouseError) {
                 if (kDebugMode) {
-                  print('🔴 GoodWidget BlocBuilder: ERROR - ${state.message}');
+                  debugPrint('🔴 GoodWidget BlocBuilder: ERROR - ${state.message}');
                 }
               }
 
@@ -162,8 +162,8 @@ class _GoodDashboardWarehouseWidgetState extends State<GoodDashboardWarehouseWid
                   : null;
 
               if (kDebugMode) {
-                print('🔵 GoodWidget: Rendering dropdown - items=${goodsList.length}, isLoading=$isLoading');
-                print('🔵 GoodWidget: actualInitialItem=${actualInitialItem?.name}');
+                debugPrint('🔵 GoodWidget: Rendering dropdown - items=${goodsList.length}, isLoading=$isLoading');
+                debugPrint('🔵 GoodWidget: actualInitialItem=${actualInitialItem?.name}');
               }
 
               return CustomDropdown<GoodDashboardWarehouse>.search(
@@ -278,7 +278,7 @@ class _GoodDashboardWarehouseWidgetState extends State<GoodDashboardWarehouseWid
                 initialItem: actualInitialItem,
                 onChanged: (value) {
                   if (kDebugMode) {
-                    print('🟢 GoodWidget: onChanged - selected ${value?.name}');
+                    debugPrint('🟢 GoodWidget: onChanged - selected ${value?.name}');
                   }
 
                   if (value != null) {

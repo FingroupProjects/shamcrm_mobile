@@ -37,7 +37,7 @@ class _GoodsScreenState extends State<GoodsScreen> {
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
     if (kDebugMode) {
-      print('GoodsScreen: Инициализация экрана товаров');
+      debugPrint('GoodsScreen: Инициализация экрана товаров');
     }
     context.read<GoodsBloc>().add(FetchGoods());
     context.read<GoodsBloc>().add(FetchSubCategories());
@@ -57,7 +57,7 @@ class _GoodsScreenState extends State<GoodsScreen> {
       setState(() {
         _canCreateProduct = canCreate && !integrationWith1C;
         if (kDebugMode) {
-          print(
+          debugPrint(
               'GoodsScreen: _canCreateProduct установлен в $_canCreateProduct (canCreate: $canCreate, integration_with_1C: $integrationWith1C)');
         }
       });
@@ -65,7 +65,7 @@ class _GoodsScreenState extends State<GoodsScreen> {
       setState(() {
         _canCreateProduct = false;
         if (kDebugMode) {
-          print('GoodsScreen: Ошибка при проверке прав: $e');
+          debugPrint('GoodsScreen: Ошибка при проверке прав: $e');
         }
       });
     }
@@ -78,7 +78,7 @@ class _GoodsScreenState extends State<GoodsScreen> {
       final state = context.read<GoodsBloc>().state;
       if (state is GoodsDataLoaded) {
         if (kDebugMode) {
-          print(
+          debugPrint(
               'GoodsScreen: Загрузка следующей страницы товаров, текущая страница: ${state.currentPage}');
         }
         context.read<GoodsBloc>().add(FetchMoreGoods(state.currentPage));
@@ -90,7 +90,7 @@ class _GoodsScreenState extends State<GoodsScreen> {
     setState(() {
       _isSearching = query.isNotEmpty;
       if (kDebugMode) {
-        print('GoodsScreen: Поиск товаров с запросом: $query');
+        debugPrint('GoodsScreen: Поиск товаров с запросом: $query');
       }
     });
     context.read<GoodsBloc>().add(SearchGoods(query));
@@ -101,7 +101,7 @@ class _GoodsScreenState extends State<GoodsScreen> {
       _isSearching = false;
       _searchController.clear();
       if (kDebugMode) {
-        print('GoodsScreen: Сброс поиска');
+        debugPrint('GoodsScreen: Сброс поиска');
       }
     });
     context.read<GoodsBloc>().add(FetchGoods());
@@ -109,12 +109,12 @@ class _GoodsScreenState extends State<GoodsScreen> {
 
   void _onFilterSelected(Map<String, dynamic> filters) {
     if (kDebugMode) {
-      print('GoodsScreen: Применение фильтров: $filters');
+      debugPrint('GoodsScreen: Применение фильтров: $filters');
     }
     setState(() {
       _currentFilters = Map.from(filters);
       if (kDebugMode) {
-        print('GoodsScreen: Сохранены текущие фильтры: $_currentFilters');
+        debugPrint('GoodsScreen: Сохранены текущие фильтры: $_currentFilters');
       }
     });
     context.read<GoodsBloc>().add(FilterGoods(filters));
@@ -122,12 +122,12 @@ class _GoodsScreenState extends State<GoodsScreen> {
 
   void _onResetFilters() {
     if (kDebugMode) {
-      print('GoodsScreen: Сброс фильтров');
+      debugPrint('GoodsScreen: Сброс фильтров');
     }
     setState(() {
       _currentFilters = {};
       if (kDebugMode) {
-        print('GoodsScreen: Очищены текущие фильтры');
+        debugPrint('GoodsScreen: Очищены текущие фильтры');
       }
     });
     context.read<GoodsBloc>().add(FilterGoods({}));
@@ -139,7 +139,7 @@ class _GoodsScreenState extends State<GoodsScreen> {
     _searchController.dispose();
     _searchFocusNode.dispose();
     if (kDebugMode) {
-      print('GoodsScreen: Очистка ресурсов');
+      debugPrint('GoodsScreen: Очистка ресурсов');
     }
     super.dispose();
   }
@@ -158,14 +158,14 @@ class _GoodsScreenState extends State<GoodsScreen> {
             setState(() {
               isClickAvatarIcon = !isClickAvatarIcon;
               if (kDebugMode) {
-                print(
+                debugPrint(
                     'GoodsScreen: Переключение на профиль: $isClickAvatarIcon');
               }
             });
           },
           clearButtonClickFiltr: (isSearching) {
             if (kDebugMode) {
-              print('GoodsScreen: Очистка фильтров через AppBar');
+              debugPrint('GoodsScreen: Очистка фильтров через AppBar');
             }
           },
           showSearchIcon: true,
@@ -208,7 +208,7 @@ class _GoodsScreenState extends State<GoodsScreen> {
                 } else if (state is GoodsBarcodeSearchResult) {
                   if (state.isSingle) {
                     if (kDebugMode) {
-                      print(
+                      debugPrint(
                           'GoodsScreen: Найден один товар, переход к карточке с id: ${state.goods.first.id}');
                     }
                     Navigator.push(
@@ -221,14 +221,14 @@ class _GoodsScreenState extends State<GoodsScreen> {
                       ),
                     ).then((_) {
                       if (kDebugMode) {
-                        print(
+                        debugPrint(
                             'GoodsScreen: Возврат из просмотра товара, загружаем обычный список');
                       }
                       context.read<GoodsBloc>().add(FetchGoods());
                     });
                   } else if (state.isMultiple) {
                     if (kDebugMode) {
-                      print(
+                      debugPrint(
                           'GoodsScreen: Найдено несколько товаров: ${state.goods.length}');
                     }
                     // Список отображается в builder
@@ -383,7 +383,7 @@ class _GoodsScreenState extends State<GoodsScreen> {
           ? FloatingActionButton(
               onPressed: () async {
                 if (kDebugMode) {
-                  print('GoodsScreen: Переход к экрану добавления товара');
+                  debugPrint('GoodsScreen: Переход к экрану добавления товара');
                 }
                 final result = await Navigator.push(
                   context,
@@ -391,7 +391,7 @@ class _GoodsScreenState extends State<GoodsScreen> {
                 );
                 if (result == true) {
                   if (kDebugMode) {
-                    print(
+                    debugPrint(
                         'GoodsScreen: Обновление списка товаров после добавления');
                   }
                   context.read<GoodsBloc>().add(FetchGoods());
