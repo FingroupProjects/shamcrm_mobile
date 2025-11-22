@@ -450,7 +450,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
   String _getFieldValue(FieldConfiguration fc, DealById deal) {
     if (fc.isCustomField && fc.customFieldId != null) {
       for (final field in deal.customFieldValues) {
-        if (field.value == fc.fieldName) {
+        if (field.customField?.name == fc.fieldName) {
           debugPrint("Matching custom field found: ${field.customField?.name} with value: ${field.value}");
           if (field.value.isNotEmpty) {
             return field.value;
@@ -463,10 +463,11 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
 
     if (fc.isDirectory && fc.directoryId != null) {
       for (var dirValue in deal.directoryValues) {
-        if (dirValue.entry.directory.id == fc.directoryId) {
+        if (dirValue.entry.directory.name == fc.fieldName) {
+          debugPrint("Matching directory field found: ${dirValue.entry.directory.name} with values: ${dirValue.entry.values}");
           List<String> values = [];
 
-          final value = dirValue.entry.values['value'];
+          final value = dirValue.entry.values.entries.first.value;
           if (value != null && value.toString().isNotEmpty) {
             values.add(value.toString());
           }
