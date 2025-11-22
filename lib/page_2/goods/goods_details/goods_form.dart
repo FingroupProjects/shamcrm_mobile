@@ -64,7 +64,7 @@ class _GoodsFormState extends State<GoodsForm> {
         subCategories = categories;
       });
     } catch (e) {
-      print('Error fetching subcategories: $e');
+      debugPrint('Error fetching subcategories: $e');
     } finally {
       widget.onLoadingChanged(false);
     }

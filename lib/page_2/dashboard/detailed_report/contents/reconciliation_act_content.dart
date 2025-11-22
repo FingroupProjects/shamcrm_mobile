@@ -41,7 +41,7 @@ class _ReconciliationActContentState extends State<ReconciliationActContent> {
                 },
                 onLongPress: (reconciliationItem) {
                   // Обработка длительного нажатия
-                  print('${localizations.translate('long_press_reconciliation_item')}: ${reconciliationItem.id}');
+                  debugPrint('${localizations.translate('long_press_reconciliation_item')}: ${reconciliationItem.id}');
                 },
                 isSelectionMode: false,
                 isSelected: false,

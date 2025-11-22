@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/models/lead_model.dart';
+import 'package:flutter/material.dart';
 
 class LeadNavigateChat {
   final int id;
@@ -18,7 +19,7 @@ class LeadNavigateChat {
   });
 
   factory LeadNavigateChat.fromJson(Map<String, dynamic> json) {
-    print('LeadNavigateChat: Parsing JSON for chat ID: ${json['id']}, Integration: ${json['integration']}');
+    debugPrint('LeadNavigateChat: Parsing JSON for chat ID: ${json['id']}, Integration: ${json['integration']}');
     return LeadNavigateChat(
       id: json['id'] is int
           ? json['id']
@@ -50,7 +51,7 @@ class Integration {
   });
 
   factory Integration.fromJson(Map<String, dynamic> json) {
-    print('Integration: Parsing JSON: $json');
+    debugPrint('Integration: Parsing JSON: $json');
     return Integration(
       id: json['id'] ?? 0,
       name: json['name'] ?? '',

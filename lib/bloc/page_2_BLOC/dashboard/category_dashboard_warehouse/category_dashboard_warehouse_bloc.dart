@@ -4,6 +4,7 @@ import 'package:bloc/bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/category_dashboard_warehouse/category_dashboard_warehouse_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/category_dashboard_warehouse/category_dashboard_warehouse_state.dart';
+import 'package:flutter/material.dart';
 
 
 class CategoryDashboardWarehouseBloc extends Bloc<CategoryDashboardWarehouseEvent, CategoryDashboardWarehouseState> {
@@ -23,7 +24,7 @@ class CategoryDashboardWarehouseBloc extends Bloc<CategoryDashboardWarehouseEven
         allCategoryDashboardWarehouseFetched = categoryDashboardWarehouse.isEmpty;
         emit(CategoryDashboardWarehouseLoaded(categoryDashboardWarehouse));
       } catch (e) {
-        print('Ошибка при загрузке категорий!');  // Для отладки
+        debugPrint('Ошибка при загрузке категорий!');  // Для отладки
         emit(CategoryDashboardWarehouseError('Не удалось загрузить список Категорий!'));
       }
     } else {

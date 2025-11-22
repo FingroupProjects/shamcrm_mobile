@@ -36,7 +36,58 @@ class _DealStatusRadioGroupWidgetState extends State<DealStatusRadioGroupWidget>
   @override
   void initState() {
     super.initState();
-    context.read<DealBloc>().add(FetchDealStatuses());
+    
+    // Проверяем, есть ли уже загруженные статусы в блоке
+    final currentState = context.read<DealBloc>().state;
+    if (currentState is DealLoaded) {
+      setState(() {
+        statusList = currentState.dealStatuses;
+      });
+      _updateSelectedStatus();
+    } else {
+      context.read<DealBloc>().add(FetchDealStatuses());
+    }
+  }
+
+  @override
+  void didUpdateWidget(DealStatusRadioGroupWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    
+    // Если selectedStatus изменился, обновляем selectedStatusData
+    if (oldWidget.selectedStatus != widget.selectedStatus) {
+      _updateSelectedStatus();
+    }
+  }
+
+  void _updateSelectedStatus() {
+    if (widget.selectedStatus != null && statusList.isNotEmpty) {
+      try {
+        final foundStatus = statusList.firstWhere(
+          (status) => status.id.toString() == widget.selectedStatus,
+        );
+        setState(() {
+          selectedStatusData = foundStatus;
+        });
+      } catch (e) {
+        setState(() {
+          selectedStatusData = null;
+        });
+      }
+    } else {
+      // Если selectedStatus null, сбрасываем выбранный статус
+      if (widget.selectedStatus == null && selectedStatusData != null) {
+        setState(() {
+          selectedStatusData = null;
+        });
+      } else if (statusList.length == 1 && selectedStatusData == null && widget.selectedStatus == null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          widget.onSelectStatus(statusList[0]);
+          setState(() {
+            selectedStatusData = statusList[0];
+          });
+        });
+      }
+    }
   }
 
   @override
@@ -44,17 +95,26 @@ class _DealStatusRadioGroupWidgetState extends State<DealStatusRadioGroupWidget>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        BlocBuilder<DealBloc, DealState>(
-          builder: (context, state) {
-            if (state is DealLoading) {
-              return const Center(child: CircularProgressIndicator());
+        Text(
+          AppLocalizations.of(context)!.translate('deal_statuses'),
+          style: statusTextStyle.copyWith(fontWeight: FontWeight.w400),
+        ),
+        const SizedBox(height: 4),
+        BlocListener<DealBloc, DealState>(
+          listener: (context, state) {
+            if (state is DealLoaded) {
+              setState(() {
+                statusList = state.dealStatuses;
+              });
+              _updateSelectedStatus();
             }
+            
             if (state is DealError) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                  AppLocalizations.of(context)!.translate(state.message),
+                      AppLocalizations.of(context)!.translate(state.message),
                       style: statusTextStyle.copyWith(color: Colors.white),
                     ),
                     behavior: SnackBarBehavior.floating,
@@ -72,99 +132,92 @@ class _DealStatusRadioGroupWidgetState extends State<DealStatusRadioGroupWidget>
                 );
               });
             }
-
-            if (state is DealLoaded) {
-              statusList = state.dealStatuses;
-
-              if (statusList.length == 1 && selectedStatusData == null) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  widget.onSelectStatus(statusList[0]);
-                  setState(() {
-                    selectedStatusData = statusList[0];
-                  });
-                });
-              } else if (widget.selectedStatus != null &&
-                  statusList.isNotEmpty) {
-                try {
-                  selectedStatusData = statusList.firstWhere(
-                    (status) => status.id.toString() == widget.selectedStatus,
-                  );
-                } catch (e) {
-                  selectedStatusData = null;
-                }
-              }
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    AppLocalizations.of(context)!.translate('deal_statuses'),
-                    style: statusTextStyle.copyWith(fontWeight: FontWeight.w400),
-                  ),
-                  const SizedBox(height: 4),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF4F7FD),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFFF4F7FD),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                width: 1,
+                color: const Color(0xFFF4F7FD),
+              ),
+            ),
+            child: CustomDropdown<DealStatus>.search(
+                    key: ValueKey(selectedStatusData?.id ?? 'no_selection'),
+                    closeDropDownOnClearFilterSearch: true,
+                    items: statusList,
+                    searchHintText: AppLocalizations.of(context)!.translate('search'),
+                    overlayHeight: 400,
+                    decoration: CustomDropdownDecoration(
+                      closedFillColor: const Color(0xffF4F7FD),
+                      expandedFillColor: Colors.white,
+                      closedBorder: Border.all(
+                        color: const Color(0xffF4F7FD),
                         width: 1,
-                        color: const Color(0xFFF4F7FD),
                       ),
+                      closedBorderRadius: BorderRadius.circular(12),
+                      expandedBorder: Border.all(
+                        color: const Color(0xffF4F7FD),
+                        width: 1,
+                      ),
+                      expandedBorderRadius: BorderRadius.circular(12),
                     ),
-                    child: CustomDropdown<DealStatus>.search(
-                      closeDropDownOnClearFilterSearch: true,
-                      items: statusList,
-                      searchHintText: AppLocalizations.of(context)!.translate('search'),
-                      overlayHeight: 400,
-                      decoration: CustomDropdownDecoration(
-                        closedFillColor: const Color(0xffF4F7FD),
-                        expandedFillColor: Colors.white,
-                        closedBorder: Border.all(
-                          color: const Color(0xffF4F7FD),
-                          width: 1,
-                        ),
-                        closedBorderRadius: BorderRadius.circular(12),
-                        expandedBorder: Border.all(
-                          color: const Color(0xffF4F7FD),
-                          width: 1,
-                        ),
-                        expandedBorderRadius: BorderRadius.circular(12),
-                      ),
-                      listItemBuilder:
-                          (context, item, isSelected, onItemSelect) {
-                        return Text(
-                          item.title,
-                          style: statusTextStyle,
+                    listItemBuilder:
+                        (context, item, isSelected, onItemSelect) {
+                      return Text(
+                        item.title,
+                        style: statusTextStyle,
+                      );
+                    },
+                    headerBuilder: (context, selectedItem, enabled) {
+                      if (statusList.isEmpty) {
+                        return const Center(
+                          child: SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                            ),
+                          ),
                         );
-                      },
-                      headerBuilder: (context, selectedItem, enabled) {
-                        return Text(
-                          selectedItem?.title ?? AppLocalizations.of(context)!.translate('select_status'),
-                          style: statusTextStyle,
+                      }
+                      return Text(
+                        selectedItem.title,
+                        style: statusTextStyle,
+                      );
+                    },
+                    hintBuilder: (context, hint, enabled) {
+                      if (statusList.isEmpty) {
+                        return const Center(
+                          child: SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                            ),
+                          ),
                         );
-                      },
-                      hintBuilder: (context, hint, enabled) => Text(
+                      }
+                      return Text(
                         AppLocalizations.of(context)!.translate('select_status'),
                         style: statusTextStyle.copyWith(fontSize: 14),
-                      ),
-                      excludeSelected: false,
-                      initialItem: statusList.contains(selectedStatusData) ? selectedStatusData : null,
-                      onChanged: (value) {
-                        if (value != null) {
-                          widget.onSelectStatus(value);
-                          setState(() {
-                            selectedStatusData = value;
-                          });
-                          FocusScope.of(context).unfocus();
-                        }
-                      },
-                    ),
+                      );
+                    },
+                    excludeSelected: false,
+                    initialItem: statusList.contains(selectedStatusData) ? selectedStatusData : null,
+                    onChanged: (value) {
+                      if (value != null) {
+                        widget.onSelectStatus(value);
+                        setState(() {
+                          selectedStatusData = value;
+                        });
+                        FocusScope.of(context).unfocus();
+                      }
+                    },
                   ),
-                ],
-              );
-            }
-            return const SizedBox();
-          },
+          ),
         ),
       ],
     );

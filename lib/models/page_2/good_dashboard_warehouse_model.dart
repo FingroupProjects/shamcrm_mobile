@@ -1,4 +1,6 @@
 // Response model to hold both data and pagination
+import 'package:flutter/material.dart';
+
 class GoodDashboardWarehouseResponse {
   final List<GoodDashboardWarehouse> data;
   final Pagination? pagination;
@@ -25,8 +27,8 @@ class GoodDashboardWarehouse {
         name: json['name'] as String,
       );
     } catch (e) {
-      print('Error parsing GoodDashboardWarehouse: $e');
-      print('JSON data: $json');
+      debugPrint('Error parsing GoodDashboardWarehouse: $e');
+      debugPrint('JSON data: $json');
       rethrow;
     }
   }

@@ -79,11 +79,11 @@ class Variant {
 
   factory Variant.fromJson(Map<String, dynamic> json) {
     if (kDebugMode) {
-      print('VariantModel: Парсинг варианта - id: ${json['id']}');
+      debugPrint('VariantModel: Парсинг варианта - id: ${json['id']}');
     }
     final attributeValues = (json['attribute_values'] as List<dynamic>?)?.map((v) {
       if (kDebugMode) {
-        print('VariantModel: Парсинг атрибута - value: ${v['value']}');
+        debugPrint('VariantModel: Парсинг атрибута - value: ${v['value']}');
       }
       return AttributeValue.fromJson(v as Map<String, dynamic>);
     }).toList() ?? [];

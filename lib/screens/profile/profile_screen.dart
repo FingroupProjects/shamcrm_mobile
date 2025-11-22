@@ -284,7 +284,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
       }
     } catch (e) {
-      print('ProfileScreen: Error in force logout: $e');
+      debugPrint('ProfileScreen: Error in force logout: $e');
       // Даже при ошибке пытаемся перейти на экран авторизации
       if (mounted) {
         Navigator.pushNamedAndRemoveUntil(
@@ -390,7 +390,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: SingleChildScrollView(
-                padding: const EdgeInsets.only(bottom: 80),
+                padding: const EdgeInsets.only(bottom: 56),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -427,6 +427,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               BiometricToggleWidget(),  
                               if (_hasPermissionForOneC)
                                 UpdateWidget1C(organization: selectedOrg),
+                              const SizedBox(height: 20),
+                              GestureDetector(
+                                onTap: _openAppStoreLink,
+                                child: Text(
+                                  '${AppLocalizations.of(context)!.translate('version_mobile')}: $_appVersion',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontFamily: 'Gilroy',
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: Color.fromARGB(255, 6, 44, 231),
+                                    decoration: TextDecoration.none,
+                                  ),
+                                ),
+                              ),
                             ],
                           );
                         } else if (state is OrganizationError) {
@@ -479,27 +494,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       },
                     ),
                   ],
-                ),
-              ),
-            ),
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                child: GestureDetector(
-                  onTap: _openAppStoreLink,
-                  child: Text(
-                    '${AppLocalizations.of(context)!.translate('version_mobile')}: $_appVersion',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: Color.fromARGB(255, 6, 44, 231),
-                      decoration: TextDecoration.none,
-                    ),
-                  ),
                 ),
               ),
             ),

@@ -84,10 +84,10 @@ class _HistoryDialogState extends State<HistoryDialog> {
         final localizations = AppLocalizations.of(context)!;
 
         final eventsTabTitle = _noticeCount == 1
-            ? '$_noticeCount ${localizations.translate('history_dialog_event')}'
+            ? localizations.translate('history_dialog_event')
             : _noticeCount > 1
-                ? '$_noticeCount ${localizations.translate('history_dialog_events')}'
-                : localizations.translate('history_dialog_events');
+            ? localizations.translate('history_dialog_events')
+            : localizations.translate('history_dialog_events');
 
         return Container(
           decoration: BoxDecoration(

@@ -134,7 +134,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
       });
     }
     
-    print('DealEditScreen: has_deal_users = $value');
+    debugPrint('DealEditScreen: has_deal_users = $value');
   }
 
   void _initializeControllers() {
@@ -169,7 +169,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
         .map((u) => u.userId.toString())
         .toList();
     
-    print('DealEditScreen: Загружены пользователи: $_initialUserIds');
+    debugPrint('DealEditScreen: Загружены пользователи: $_initialUserIds');
   }
     if (widget.directoryValues != null && widget.directoryValues!.isNotEmpty) {
       final seen = <String>{};
@@ -342,7 +342,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
           totalSize += file.lengthSync() / (1024 * 1024);
         }
       } catch (e) {
-        print('Error calculating file size: $e');
+        debugPrint('Error calculating file size: $e');
       }
     }
 
@@ -694,7 +694,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
       setState(() {
         _selectedUsers = users;
       });
-      print('DealEditScreen: Выбрано пользователей: ${users.length}');
+      debugPrint('DealEditScreen: Выбрано пользователей: ${users.length}');
     },
   ),
 ],
@@ -890,7 +890,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                     List<Map<String, int>> directoryValues = [];
                                             final userIds = _selectedUsers.map((user) => user.id).toList();
 
-    print('DealEditScreen: Сохранение с пользователями: $userIds');
+    debugPrint('DealEditScreen: Сохранение с пользователями: $userIds');
 
                                     for (var field in customFields) {
                                       String fieldName = field.fieldName.trim();

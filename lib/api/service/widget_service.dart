@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 class WidgetService {
@@ -9,17 +10,17 @@ class WidgetService {
   // Инициализация слушателя
   static void initialize() {
     platform.setMethodCallHandler(_handleMethodCall);
-    print('WidgetService initialized');
+    debugPrint('WidgetService initialized');
   }
   
   static Future<void> _handleMethodCall(MethodCall call) async {
-    print('WidgetService: Received method call: ${call.method}');
+    debugPrint('WidgetService: Received method call: ${call.method}');
     
     if (call.method == 'navigateFromWidget') {
       final int group = call.arguments['group'];
       final int screenIndex = call.arguments['screenIndex'];
       
-      print('WidgetService: Navigate to group=$group, screen=$screenIndex');
+      debugPrint('WidgetService: Navigate to group=$group, screen=$screenIndex');
       
       // Вызываем callback для навигации
       onNavigateFromWidget?.call(group, screenIndex);

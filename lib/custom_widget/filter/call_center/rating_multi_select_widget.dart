@@ -36,7 +36,7 @@ class _RatingMultiSelectWidgetState extends State<RatingMultiSelectWidget> {
           .where((rating) => widget.selectedRatings!.contains(rating.id.toString()))
           .toList();
       if (kDebugMode) {
-        print('RatingMultiSelectWidget: Initial selected ratings: $selectedRatingsData');
+        debugPrint('RatingMultiSelectWidget: Initial selected ratings: $selectedRatingsData');
       }
     }
   }
@@ -137,7 +137,7 @@ class _RatingMultiSelectWidgetState extends State<RatingMultiSelectWidget> {
             setState(() {
               selectedRatingsData = values;
               if (kDebugMode) {
-                print('RatingMultiSelectWidget: Selected ratings updated: $selectedRatingsData');
+                debugPrint('RatingMultiSelectWidget: Selected ratings updated: $selectedRatingsData');
               }
             });
             widget.onSelectRatings(values);

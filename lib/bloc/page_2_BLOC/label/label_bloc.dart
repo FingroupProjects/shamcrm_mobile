@@ -1,6 +1,7 @@
 // label_bloc.dart
 import 'package:bloc/bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:flutter/material.dart';
 import 'dart:io';
 import 'label_event.dart';
 import 'label_state.dart';
@@ -22,7 +23,7 @@ class LabelBloc extends Bloc<LabelEvent, LabelState> {
         allLabelsFetched = labels.isEmpty;
         emit(LabelLoaded(labels));
       } catch (e) {
-        print('Ошибка при загрузке меток!'); // Для отладки
+        debugPrint('Ошибка при загрузке меток!'); // Для отладки
         emit(LabelError('Не удалось загрузить список меток!'));
       }
     } else {
