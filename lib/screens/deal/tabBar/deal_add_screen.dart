@@ -257,6 +257,16 @@ class _DealAddScreenState extends State<DealAddScreen> {
             }
           },
         );
+      case 'user_ids':
+        return _hasDealUsers ? UserMultiSelectWidget(
+          selectedUsers: null,
+          onSelectUsers: (List<UserData> users) {
+            setState(() {
+              _selectedUsers = users;
+            });
+            print('DealAddScreen: Выбрано пользователей: ${users.length}');
+          },
+        ) : SizedBox.shrink();
       // case 'file':
       //   // Поле выбора файлов: отображаем согласно позиции в конфигурации
       //   return _buildFileSelection();
@@ -1592,21 +1602,6 @@ class _DealAddScreenState extends State<DealAddScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-
-                            // TODO get from custom fields
-                            if (_hasDealUsers) ...[
-                              const SizedBox(height: 8),
-                              UserMultiSelectWidget(
-                                selectedUsers: null,
-                                onSelectUsers: (List<UserData> users) {
-                                  setState(() {
-                                    _selectedUsers = users;
-                                  });
-                                  print('DealAddScreen: Выбрано пользователей: ${users.length}');
-                                },
-                              ),
-                            ],
-
                             ...(() {
                               final configured = _buildConfiguredFieldWidgets();
                               if (configured.isNotEmpty) {
