@@ -13,6 +13,7 @@ import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/delete_file_dialog.dart';
 import 'package:crm_task_manager/custom_widget/file_picker_dialog.dart';
 import 'package:crm_task_manager/models/file_helper.dart';
+import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/field_configuration.dart';
@@ -25,6 +26,7 @@ import 'package:crm_task_manager/screens/lead/tabBar/source_lead_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/add_custom_directory_dialog.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/main_field_dropdown_widget.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_status_list_edit.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -66,6 +68,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
   String? selectedSourceLead;
   String selectedDialCode = '';
   String selectedDialCodeWhatsapp = '';
+  int? _selectedStatuses;
+  String? selectedSalesFunnel;
 
   // Кастомные поля
   List<CustomField> customFields = [];
@@ -86,6 +90,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
   @override
   void initState() {
     super.initState();
+    _selectedStatuses = widget.statusId;
     context.read<SourceLeadBloc>().add(FetchSourceLead());
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     context.read<GetAllRegionBloc>().add(GetAllRegionEv());
@@ -296,6 +301,17 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
           hintText: AppLocalizations.of(context)!.translate('enter_email'),
           label: AppLocalizations.of(context)!.translate('email'),
           keyboardType: TextInputType.emailAddress,
+        );
+
+      case 'lead_status_id':
+        return LeadStatusEditpWidget(
+          selectedStatus: _selectedStatuses?.toString(), // Проверяем, что это не null
+          salesFunnelId: selectedSalesFunnel, // Убеждаемся, что передаем salesFunnelId
+          onSelectStatus: (LeadStatus selectedStatusData) {
+            setState(() {
+              _selectedStatuses = selectedStatusData.id;
+            });
+          },
         );
 
       default:
@@ -720,6 +736,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
         return localizations!.translate('Facebook');
       case 'email':
         return localizations!.translate('email');
+      case 'lead_status_id':
+        return localizations!.translate('lead_status');
       default:
         return config.fieldName;
     }
@@ -1753,7 +1771,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
 
       context.read<LeadBloc>().add(CreateLead(
         name: name,
-        leadStatusId: widget.statusId,
+        leadStatusId: _selectedStatuses ?? widget.statusId,
         phone: phone,
         regionId: selectedRegion != null ? int.parse(selectedRegion!) : null,
         managerId: !isSystemManager && selectedManager != null
