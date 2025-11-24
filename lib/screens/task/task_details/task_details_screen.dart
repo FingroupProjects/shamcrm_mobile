@@ -661,13 +661,38 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                   height: 24,
                 ),
                 onPressed: () async {
+                  final createdAtString = currentTask?.createdAt != null &&
+                      currentTask!.createdAt!.isNotEmpty
+                      ? DateFormat('dd/MM/yyyy')
+                      .format(DateTime.parse(currentTask!.createdAt!))
+                      : null;
+
                   if (currentTask != null) {
                     final shouldUpdate = await Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => TaskCopyScreen(
-                          task: currentTask!,
-                          statusId: currentTask!.taskStatus?.id ?? widget.statusId ?? 0,
+                          taskId: currentTask!.id,
+                          taskName: currentTask!.name,
+                          priority: currentTask!.priority,
+                          taskStatus:
+                          currentTask!.taskStatus?.taskStatus.toString() ??
+                              '',
+                          project: currentTask!.project?.id.toString(),
+                          user: currentTask!.user != null &&
+                              currentTask!.user!.isNotEmpty
+                              ? currentTask!.user!
+                              .map((user) => user.id)
+                              .toList()
+                              : null,
+                          statusId: currentTask!.taskStatus?.id ?? 0,
+                          description: currentTask!.description,
+                          startDate: currentTask!.startDate,
+                          endDate: currentTask!.endDate,
+                          createdAt: createdAtString,
+                          taskCustomFields: currentTask!.customFields,
+                          files: currentTask!.files,
+                          directoryValues: currentTask!.directoryValues,
                         ),
                       ),
                     );
