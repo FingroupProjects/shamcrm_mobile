@@ -3679,6 +3679,7 @@ Future<List<DealStatus>> getDealStatuses({
     List<FileHelper>? files,
     List<int>? dealStatusIds, // ✅ НОВОЕ
     List<int>? existingFiles, // ID существующих файлов
+    List<int>? userIds, // ✅ НОВОЕ: массив ID пользователей
   }) async {
     // Формируем путь с query-параметрами
     final updatedPath = await _appendQueryParams('/deal/$dealId');
@@ -3707,6 +3708,16 @@ Future<List<DealStatus>> getDealStatuses({
     }
     print('ApiService: Отправка deal_status_ids: $dealStatusIds');
   }
+  
+    // ✅ НОВОЕ: Добавляем user_ids
+    if (userIds != null && userIds.isNotEmpty) {
+      for (int i = 0; i < userIds.length; i++) {
+        request.fields['users[$i]'] = userIds[i].toString();
+      }
+      if (kDebugMode) {
+        print('ApiService: updateDeal - Added user_ids: $userIds');
+      }
+    }
   
     final customFieldsList = customFields ?? [];
     if (customFieldsList.isNotEmpty) {

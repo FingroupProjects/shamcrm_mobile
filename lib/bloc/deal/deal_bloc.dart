@@ -343,6 +343,7 @@ Future<void> _fetchDealStatuses(
         files: event.files,
         dealStatusIds: event.dealStatusIds,
         existingFiles: event.existingFiles,
+        userIds: event.userIds, // ✅ НОВОЕ: передаем userIds
       );
 
       if (result['success']) {
