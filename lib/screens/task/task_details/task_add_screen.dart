@@ -8,6 +8,7 @@ import 'package:crm_task_manager/bloc/project_task/project_task_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_withPriority.dart';
 import 'package:crm_task_manager/custom_widget/file_picker_dialog.dart';
+import 'package:crm_task_manager/models/file_helper.dart';
 import 'package:crm_task_manager/models/project_task_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
@@ -56,9 +57,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   final TextEditingController endDateController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
 
-  List<String> selectedFiles = [];
-  List<String> fileNames = [];
-  List<String> fileSizes = [];
+  List<FileHelper> files = [];
   int? selectedPriority;
   String? selectedProject;
   String? selectedStatus;
@@ -109,13 +108,14 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   Future<void> _saveFieldOrderToBackend() async {
     try {
       // Подготовка данных для отправки
+      // Используем оригинальные значения is_active и required с бэкенда
       final List<Map<String, dynamic>> updates = [];
       for (var config in fieldConfigurations) {
         updates.add({
           'id': config.id,
           'position': config.position,
-          'is_active': config.isActive ? 1 : 0,
-          'is_required': config.required ? 1 : 0,
+          'is_active': config.originalIsActive ?? (config.isActive ? 1 : 0),
+          'is_required': config.originalRequired ?? (config.required ? 1 : 0),
           'show_on_table': config.showOnTable ? 1 : 0,
         });
       }
@@ -217,14 +217,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
             });
           },
           priorityText: AppLocalizations.of(context)!.translate('urgent'),
-          validator: config.required
-              ? (value) {
-                  if (value == null || value.isEmpty) {
-              return AppLocalizations.of(context)!.translate('field_required');
-            }
-            return null;
-                }
-              : null,
+          validator: null, // Убрана логика required
         );
 
       case 'description':
@@ -265,14 +258,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
           controller: endDateController,
           label: AppLocalizations.of(context)!.translate('deadline'),
           hasError: isEndDateInvalid,
-          validator: config.required
-              ? (value) {
-                  if (value == null || value.isEmpty) {
-              return AppLocalizations.of(context)!.translate('field_required');
-            }
-            return null;
-                }
-              : null,
+          validator: null, // Убрана логика required
         );
 
       case 'task_status_id':
@@ -356,7 +342,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   }
 
   List<Widget> _buildConfiguredFieldWidgets() {
-    final sorted = fieldConfigurations.where((e) => e.isActive).toList()..sort((a, b) => a.position.compareTo(b.position));
+    // Сортируем только по позициям, без фильтрации по isActive
+    final sorted = [...fieldConfigurations]..sort((a, b) => a.position.compareTo(b.position));
 
     debugPrint("sorted fieldConfigurations: ${sorted.map((e) => e.fieldName).toList()}");
     debugPrint("not sorted fieldConfigurations: ${fieldConfigurations.map((e) => e.fieldName).toList()}");
@@ -707,6 +694,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                     type: config.type,
                     isDirectory: config.isDirectory,
                     showOnTable: config.showOnTable,
+                    originalIsActive: config.originalIsActive,
+                    originalRequired: config.originalRequired,
                   ));
                 }
 
@@ -826,6 +815,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                                     type: config.type,
                                     isDirectory: config.isDirectory,
                                     showOnTable: config.showOnTable,
+                                    originalIsActive: config.originalIsActive,
+                                    originalRequired: config.originalRequired,
                                   );
 
                                   final idx = fieldConfigurations.indexWhere((f) => f.id == config.id);
@@ -1025,36 +1016,33 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
 
   Future<void> _pickFile() async {
     // Вычисляем текущий общий размер файлов
-  double totalSize = selectedFiles.fold<double>(
-    0.0,
-    (sum, file) => sum + File(file).lengthSync() / (1024 * 1024),
-  );
-
-  // Показываем диалог выбора типа файла
-  final List<PickedFileInfo>? pickedFiles = await FilePickerDialog.show(
-    context: context,
-    allowMultiple: true,
-    maxSizeMB: 50.0,
-    currentTotalSizeMB: totalSize,
-    fileLabel: AppLocalizations.of(context)!.translate('file'),
-    galleryLabel: AppLocalizations.of(context)!.translate('gallery'),
-    cameraLabel: AppLocalizations.of(context)!.translate('camera'),
-    cancelLabel: AppLocalizations.of(context)!.translate('cancel'),
-    fileSizeTooLargeMessage: AppLocalizations.of(context)!.translate('file_size_too_large'),
-    errorPickingFileMessage: AppLocalizations.of(context)!.translate('error_picking_file'),
-  );
-
-  // Если файлы выбраны, добавляем их
-  if (pickedFiles != null && pickedFiles.isNotEmpty) {
-    setState(() {
-      for (var file in pickedFiles) {
-        selectedFiles.add(file.path);
-        fileNames.add(file.name);
-        fileSizes.add(file.sizeKB);
-      }
+    double totalSize = files.fold<double>(0.0, (sum, file) {
+      return sum + File(file.path).lengthSync() / (1024 * 1024);
     });
+
+    // Показываем диалог выбора типа файла
+    final List<PickedFileInfo>? pickedFiles = await FilePickerDialog.show(
+      context: context,
+      allowMultiple: true,
+      maxSizeMB: 50.0,
+      currentTotalSizeMB: totalSize,
+      fileLabel: AppLocalizations.of(context)!.translate('file'),
+      galleryLabel: AppLocalizations.of(context)!.translate('gallery'),
+      cameraLabel: AppLocalizations.of(context)!.translate('camera'),
+      cancelLabel: AppLocalizations.of(context)!.translate('cancel'),
+      fileSizeTooLargeMessage: AppLocalizations.of(context)!.translate('file_size_too_large'),
+      errorPickingFileMessage: AppLocalizations.of(context)!.translate('error_picking_file'),
+    );
+
+    // Если файлы выбраны, добавляем их
+    if (pickedFiles != null && pickedFiles.isNotEmpty) {
+      setState(() {
+        for (var file in pickedFiles) {
+          files.add(FileHelper(id: 0, name: file.name, path: file.path, size: file.sizeKB));
+        }
+      });
+    }
   }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -1140,6 +1128,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                             type: newFields[i].type,
                             isDirectory: newFields[i].isDirectory,
                             showOnTable: newFields[i].showOnTable,
+                            originalIsActive: newFields[i].originalIsActive,
+                            originalRequired: newFields[i].originalRequired,
                           ));
                         }
                       }
@@ -1174,6 +1164,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                       type: config.type,
                       isDirectory: config.isDirectory,
                       showOnTable: config.showOnTable,
+                      originalIsActive: config.originalIsActive,
+                      originalRequired: config.originalRequired,
                     );
                   }).toList();
                   isSettingsMode = true;
@@ -1535,189 +1527,11 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
       return;
     }
 
-    List<TaskFile> files = [];
-    for (int i = 0; i < selectedFiles.length; i++) {
-      files.add(TaskFile(
-        name: fileNames[i],
-        size: fileSizes[i],
-      ));
-    }
-
     List<Map<String, dynamic>> customFieldMap = [];
     List<Map<String, int>> directoryValues = [];
 
-    // Проверяем обязательные поля на основе конфигурации
-    for (var config in fieldConfigurations) {
-      if (!config.isActive || !config.required) continue;
-
-      // Проверяем системные поля
-      if (!config.isCustomField && !config.isDirectory) {
-        switch (config.fieldName) {
-          case 'name':
-            if (nameController.text.trim().isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '${AppLocalizations.of(context)!.translate('event_name')} - ${AppLocalizations.of(context)!.translate('field_required')}',
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  backgroundColor: Colors.red,
-                ),
-              );
-              return;
-            }
-            break;
-          case 'deadline':
-            if (endDateController.text.trim().isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '${AppLocalizations.of(context)!.translate('deadline')} - ${AppLocalizations.of(context)!.translate('field_required')}',
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  backgroundColor: Colors.red,
-                ),
-              );
-              return;
-            }
-            break;
-          case 'executor':
-            if (selectedUsers == null || selectedUsers!.isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '${AppLocalizations.of(context)!.translate('lead')} - ${AppLocalizations.of(context)!.translate('field_required')}',
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  backgroundColor: Colors.red,
-                ),
-              );
-              return;
-            }
-            break;
-          case 'project':
-            if (selectedProject == null || selectedProject!.isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '${AppLocalizations.of(context)!.translate('projects')} - ${AppLocalizations.of(context)!.translate('field_required')}',
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  backgroundColor: Colors.red,
-                ),
-              );
-              return;
-            }
-            break;
-          case 'task_status_id':
-            if (selectedStatus == null || selectedStatus!.isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '${AppLocalizations.of(context)!.translate('task_status')} - ${AppLocalizations.of(context)!.translate('field_required')}',
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  backgroundColor: Colors.red,
-                ),
-              );
-              return;
-            }
-            break;
-          case 'description':
-            if (descriptionController.text.trim().isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '${AppLocalizations.of(context)!.translate('description_list')} - ${AppLocalizations.of(context)!.translate('field_required')}',
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  backgroundColor: Colors.red,
-                ),
-              );
-              return;
-            }
-            break;
-        }
-      }
-
-      // Проверяем кастомные поля
-      if (config.isCustomField) {
-        final customFieldIndex = customFields.indexWhere(
-          (f) => f.fieldName == config.fieldName && f.isCustomField,
-        );
-        if (customFieldIndex == -1 || customFields[customFieldIndex].controller.text.trim().isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                '${config.fieldName} - ${AppLocalizations.of(context)!.translate('field_required')}',
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-              backgroundColor: Colors.red,
-            ),
-          );
-          return;
-        }
-      }
-
-      // Проверяем справочники
-      if (config.isDirectory && config.directoryId != null) {
-        final directoryFieldIndex = customFields.indexWhere(
-          (f) => f.directoryId == config.directoryId,
-        );
-        if (directoryFieldIndex == -1 || customFields[directoryFieldIndex].entryId == null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                '${config.fieldName} - ${AppLocalizations.of(context)!.translate('field_required')}',
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-              backgroundColor: Colors.red,
-            ),
-          );
-          return;
-        }
-      }
-    }
+    // Убрана проверка обязательных полей на основе конфигурации
+    // Все поля теперь опциональны
 
     for (var field in customFields) {
       String fieldName = field.fieldName.trim();
@@ -1816,7 +1630,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
       priority: selectedPriority,
       description: description,
       customFields: customFieldMap,
-      filePaths: selectedFiles,
+      files: files.isNotEmpty ? files : null,
       directoryValues: directoryValues,
       localizations: localizations,
     ));
@@ -1840,9 +1654,9 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
           height: 120,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            itemCount: fileNames.isEmpty ? 1 : fileNames.length + 1,
+            itemCount: files.isEmpty ? 1 : files.length + 1,
             itemBuilder: (context, index) {
-              if (fileNames.isEmpty || index == fileNames.length) {
+              if (files.isEmpty || index == files.length) {
                 return Padding(
                   padding: EdgeInsets.only(right: 16),
                   child: GestureDetector(
@@ -1869,7 +1683,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                 );
               }
 
-              final fileName = fileNames[index];
+              final fileName = files[index].name;
               final fileExtension = fileName.split('.').last.toLowerCase();
 
               return Padding(
@@ -1880,8 +1694,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                       width: 100,
                       child: Column(
                         children: [
-                          // ✅ КРИТИЧЕСКИ ВАЖНО: Передаем INDEX, а не fileName!
-                          _buildFileIcon(index, fileExtension),
+                          // НОВОЕ: Используем метод buildFileIcon для показа превью или иконки
+                          buildFileIcon(files, fileName, fileExtension),
                           SizedBox(height: 8),
                           Text(
                             fileName,
@@ -1903,13 +1717,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                       child: GestureDetector(
                         onTap: () {
                           setState(() {
-                            // Для task_edit и других *_edit файлов:
-                            // ДОБАВЬТЕ проверку на existingFiles!
-                            // (см. отдельный блок ниже)
-
-                            selectedFiles.removeAt(index);
-                            fileNames.removeAt(index);
-                            fileSizes.removeAt(index);
+                            files.removeAt(index);
                           });
                         },
                         child: Container(
@@ -1937,54 +1745,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
         ),
       ],
     );
-  }
-
-  /// Строит иконку файла или превью изображения
-  Widget _buildFileIcon(int index, String fileExtension) {
-    // ✅ ВАЖНО: Проверка валидности индекса!
-    if (index < 0 || index >= selectedFiles.length) {
-      return Image.asset(
-        'assets/icons/files/file.png',
-        width: 60,
-        height: 60,
-      );
-    }
-
-    final imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'heic', 'heif'];
-
-    if (imageExtensions.contains(fileExtension)) {
-      // ✅ ИСПРАВЛЕНИЕ: Используем index напрямую, БЕЗ indexOf()!
-      final filePath = selectedFiles[index];
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: Image.file(
-          File(filePath),
-          width: 60,
-          height: 60,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            return Image.asset(
-              'assets/icons/files/file.png',
-              width: 60,
-              height: 60,
-            );
-          },
-        ),
-      );
-    } else {
-      return Image.asset(
-        'assets/icons/files/$fileExtension.png',
-        width: 60,
-        height: 60,
-        errorBuilder: (context, error, stackTrace) {
-          return Image.asset(
-            'assets/icons/files/file.png',
-            width: 60,
-            height: 60,
-          );
-        },
-      );
-    }
   }
 
   Future<void> _checkPermissionsAndUser() async {

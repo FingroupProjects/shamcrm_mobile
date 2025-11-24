@@ -16,6 +16,8 @@ class FieldConfiguration extends Equatable {
   final String? type;
   final bool isDirectory;
   final bool showOnTable;
+  final int? originalIsActive; // Оригинальное значение is_active с бэкенда (0 или 1)
+  final int? originalRequired; // Оригинальное значение required с бэкенда (0 или 1)
 
   FieldConfiguration({
     required this.id,
@@ -32,6 +34,8 @@ class FieldConfiguration extends Equatable {
     this.type,
     required this.isDirectory,
     required this.showOnTable,
+    this.originalIsActive,
+    this.originalRequired,
   });
 
   @override
@@ -50,19 +54,25 @@ class FieldConfiguration extends Equatable {
         type,
         isDirectory,
         showOnTable,
+        originalIsActive,
+        originalRequired,
       ];
 
   factory FieldConfiguration.fromJson(Map<String, dynamic> json) {
 
     debugPrint('Parsing FieldConfiguration from JSON required field: ${json['required']}');
 
+    // Сохраняем оригинальные значения с бэкенда
+    final originalIsActive = json['is_active'] is int ? json['is_active'] : (json['is_active'] == true ? 1 : 0);
+    final originalRequired = json['required'] is int ? json['required'] : (json['required'] == true ? 1 : 0);
+
     return FieldConfiguration(
       id: json['id'],
       tableName: json['table_name'],
       fieldName: json['field_name'],
       position: json['position'],
-      required: json['required'] == 1,
-      isActive: json['is_active'],
+      required: false, // Сохраняем значение из JSON
+      isActive: true, // Всегда true для отображения, даже если с бэкенда пришло 0
       isCustomField: json['is_custom_field'],
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),
@@ -71,6 +81,8 @@ class FieldConfiguration extends Equatable {
       type: json['type'],
       isDirectory: json['is_directory'],
       showOnTable: json['show_on_table'] == 1,
+      originalIsActive: originalIsActive,
+      originalRequired: originalRequired,
     );
   }
 

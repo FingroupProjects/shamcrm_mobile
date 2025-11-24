@@ -17,7 +17,9 @@ import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_withPriority.dart';
 import 'package:crm_task_manager/custom_widget/file_picker_dialog.dart';
+import 'package:crm_task_manager/custom_widget/delete_file_dialog.dart' show DeleteFileDialog;
 import 'package:crm_task_manager/models/field_configuration.dart';
+import 'package:crm_task_manager/models/file_helper.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
 import 'package:crm_task_manager/models/project_task_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
@@ -89,15 +91,12 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   int? _selectedStatuses;
   List<CustomField> customFields = [];
   bool isEndDateInvalid = false;
-  List<String> selectedFiles = [];
-  List<String> fileNames = [];
-  List<String> fileSizes = [];
+  List<FileHelper> files = [];
   final ApiService _apiService = ApiService();
-  List<TaskFiles> existingFiles = [];
+  List<TaskFiles> existingFiles = []; // Для отслеживания удаленных файлов с сервера
   bool _canUpdateTask = false;
   bool _hasTaskCreateForMySelfPermission = false;
   int? _currentUserId;
-  List<String> newFiles = []; // Список для отслеживания новых файлов
 
   // Конфигурация полей с сервера
   Map<String, Widget> fieldWidgets = {};
@@ -123,8 +122,16 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
     _loadInitialData();
     selectedPriority ??= 1;
     if (widget.files != null) {
-      existingFiles = widget.files!;
-      fileNames = existingFiles.map((file) => file.name).toList();
+      files = widget.files!.map((file) {
+        return FileHelper(
+          id: file.id,
+          name: file.name,
+          path: file.path,
+          size: null, // TaskFiles не имеет поля size
+        );
+      }).toList();
+      // Сохраняем оригинальные файлы для отслеживания удалений
+      existingFiles = List.from(widget.files!);
     }
 
     // Загружаем конфигурацию полей
@@ -214,10 +221,10 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
           height: 120,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            itemCount: fileNames.isEmpty ? 1 : fileNames.length + 1,
+            itemCount: files.isEmpty ? 1 : files.length + 1,
             itemBuilder: (context, index) {
               // Кнопка добавления файла
-              if (fileNames.isEmpty || index == fileNames.length) {
+              if (files.isEmpty || index == files.length) {
                 return Padding(
                   padding: EdgeInsets.only(right: 16),
                   child: GestureDetector(
@@ -244,13 +251,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                 );
               }
 
-              // ✅ ИСПРАВЛЕНИЕ: Проверка границ
-              if (index < 0 || index >= fileNames.length) {
-                return SizedBox.shrink();
-              }
-
               // Отображение выбранных файлов
-              final fileName = fileNames[index];
+              final fileName = files[index].name;
               final fileExtension = fileName.split('.').last.toLowerCase();
 
               return Padding(
@@ -261,8 +263,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                       width: 100,
                       child: Column(
                         children: [
-                          // ✅ КРИТИЧЕСКИ ВАЖНО: Передаем INDEX, а не fileName!
-                          _buildFileIcon(index, fileExtension),
+                          // НОВОЕ: Используем метод buildFileIcon для показа превью или иконки
+                          buildFileIcon(files, fileName, fileExtension),
                           SizedBox(height: 8),
                           Text(
                             fileName,
@@ -278,32 +280,16 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                         ],
                       ),
                     ),
+                    // Кнопка удаления файла
                     Positioned(
                       right: -2,
                       top: -6,
                       child: GestureDetector(
                         onTap: () {
-                          setState(() {
-                            // Для task_edit и других *_edit файлов:
-                            // ДОБАВЬТЕ проверку на existingFiles!
-                            // (см. отдельный блок ниже)
-
-                            if (index >= 0 && index < selectedFiles.length) {
-                              final removedPath = selectedFiles[index];
-
-                              bool isExistingFile = existingFiles.any((f) => f.path == removedPath);
-
-                              if (isExistingFile) {
-                                existingFiles.removeWhere((f) => f.path == removedPath);
-                              } else {
-                                newFiles.remove(removedPath);
-                              }
-                            }
-
-                            selectedFiles.removeAt(index);
-                            fileNames.removeAt(index);
-                            fileSizes.removeAt(index);
-                          });
+                          showDeleteFileDialog(
+                            fileId: files[index].id,
+                            index: index,
+                          );
                         },
                         child: Container(
                           padding: EdgeInsets.all(4),
@@ -342,13 +328,14 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   Future<void> _saveFieldOrderToBackend() async {
     try {
       // Подготовка данных для отправки
+      // Используем оригинальные значения is_active и required с бэкенда
       final List<Map<String, dynamic>> updates = [];
       for (var config in fieldConfigurations) {
         updates.add({
           'id': config.id,
           'position': config.position,
-          'is_active': config.isActive ? 1 : 0,
-          'is_required': config.required ? 1 : 0,
+          'is_active': config.originalIsActive ?? (config.isActive ? 1 : 0),
+          'is_required': config.originalRequired ?? (config.required ? 1 : 0),
           'show_on_table': config.showOnTable ? 1 : 0,
         });
       }
@@ -395,24 +382,37 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   }
 
   CustomField _getOrCreateCustomField(FieldConfiguration config) {
-    final existingField = customFields.firstWhere(
-          (field) => field.fieldName == config.fieldName && field.isCustomField,
-      orElse: () {
-        // ✅ Only create new field if it doesn't exist
-        // This happens when user adds a NEW custom field via UI
-        final newField = CustomField(
-          fieldName: config.fieldName,
-          uniqueId: Uuid().v4(),
-          controller: TextEditingController(), // Empty for new fields
-          type: config.type ?? 'string',
-          isCustomField: true,
-        );
-        customFields.add(newField);
-        return newField;
-      },
+    final existingFieldIndex = customFields.indexWhere(
+      (field) => field.fieldName == config.fieldName && field.isCustomField,
     );
 
-    return existingField;
+    if (existingFieldIndex != -1) {
+      // Поле уже существует - обновляем type из конфигурации, если он был null или пустым
+      final existingField = customFields[existingFieldIndex];
+      final configType = config.type;
+      
+      if (existingField.type == null || 
+          existingField.type!.isEmpty || 
+          (configType != null && configType.isNotEmpty && existingField.type != configType)) {
+        customFields[existingFieldIndex] = existingField.copyWith(
+          type: configType ?? 'string',
+        );
+        return customFields[existingFieldIndex];
+      }
+      return existingField;
+    } else {
+      // ✅ Only create new field if it doesn't exist
+      // This happens when user adds a NEW custom field via UI
+      final newField = CustomField(
+        fieldName: config.fieldName,
+        uniqueId: Uuid().v4(),
+        controller: TextEditingController(), // Empty for new fields
+        type: config.type ?? 'string',
+        isCustomField: true,
+      );
+      customFields.add(newField);
+      return newField;
+    }
   }
 
   CustomField _getOrCreateDirectoryField(FieldConfiguration config) {
@@ -453,12 +453,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
             });
           },
           priorityText: AppLocalizations.of(context)!.translate('urgent'),
-          validator: config.required ? (value) {
-            if (value == null || value.isEmpty) {
-              return AppLocalizations.of(context)!.translate('field_required');
-            }
-            return null;
-          } : null,
+          validator: null, // Убрана логика required
         );
 
       case 'description':
@@ -499,12 +494,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
           controller: endDateController,
           label: AppLocalizations.of(context)!.translate('deadline'),
           hasError: isEndDateInvalid,
-          validator: config.required ? (value) {
-            if (value == null || value.isEmpty) {
-              return AppLocalizations.of(context)!.translate('field_required');
-            }
-            return null;
-          } : null,
+          validator: null, // Убрана логика required
         );
 
       case 'task_status_id':
@@ -593,10 +583,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   }
 
   List<Widget> _buildConfiguredFieldWidgets() {
-    final sorted = fieldConfigurations
-        .where((e) => e.isActive)
-        .toList()
-      ..sort((a, b) => a.position.compareTo(b.position));
+    // Сортируем только по позициям, без фильтрации по isActive
+    final sorted = [...fieldConfigurations]..sort((a, b) => a.position.compareTo(b.position));
 
     final widgets = <Widget>[];
     for (final config in sorted) {
@@ -1026,6 +1014,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                     type: config.type,
                     isDirectory: config.isDirectory,
                     showOnTable: config.showOnTable,
+                    originalIsActive: config.originalIsActive,
+                    originalRequired: config.originalRequired,
                   ));
                 }
 
@@ -1145,6 +1135,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                     type: config.type,
                                     isDirectory: config.isDirectory,
                                     showOnTable: config.showOnTable,
+                                    originalIsActive: config.originalIsActive,
+                                    originalRequired: config.originalRequired,
                                   );
 
                                   final idx = fieldConfigurations.indexWhere((f) => f.id == config.id);
@@ -1343,80 +1335,23 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
     }
   }
 
-  /// Строит иконку файла или превью изображения
-  Widget _buildFileIcon(int index, String fileExtension) {
-    // ✅ ВАЖНО: Проверка валидности индекса!
-    if (index < 0 || index >= selectedFiles.length) {
-      return Image.asset(
-        'assets/icons/files/file.png',
-        width: 60,
-        height: 60,
-      );
-    }
-
-    final imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'heic', 'heif'];
-
-    if (imageExtensions.contains(fileExtension)) {
-      // ✅ ИСПРАВЛЕНИЕ: Используем index напрямую, БЕЗ indexOf()!
-      final filePath = selectedFiles[index];
-      final file = File(filePath);
-
-      // Проверяем, существует ли файл локально
-      if (file.existsSync()) {
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: Image.file(
-            file,
-            width: 60,
-            height: 60,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              return Image.asset(
-                'assets/icons/files/file.png',
-                width: 60,
-                height: 60,
-              );
-            },
-          ),
-        );
-      } else {
-        // Файл с сервера - показываем иконку
-        return Image.asset(
-          'assets/icons/files/$fileExtension.png',
-          width: 60,
-          height: 60,
-          errorBuilder: (context, error, stackTrace) {
-            return Image.asset(
-              'assets/icons/files/file.png',
-              width: 60,
-              height: 60,
-            );
-          },
-        );
-      }
-    } else {
-      return Image.asset(
-        'assets/icons/files/$fileExtension.png',
-        width: 60,
-        height: 60,
-        errorBuilder: (context, error, stackTrace) {
-          return Image.asset(
-            'assets/icons/files/file.png',
-            width: 60,
-            height: 60,
-          );
-        },
-      );
-    }
-  }
-
   Future<void> _pickFile() async {
     // Вычисляем текущий общий размер файлов
-    double totalSize = selectedFiles.fold<double>(
-      0.0,
-      (sum, file) => sum + File(file).lengthSync() / (1024 * 1024),
-    );
+    double totalSize = files.fold<double>(0.0, (sum, file) {
+      if (file.path.startsWith('http://') || file.path.startsWith('https://')) {
+        int index = files.indexOf(file);
+        if (index >= 0 && index < files.length) {
+          final size = files[index].size;
+          final parsed = num.tryParse(size.toString());
+          return sum + (parsed != null ? parsed / 1024.0 : 0);
+        }
+        return sum;
+      }
 
+      return sum + File(file.path).lengthSync() / (1024 * 1024);
+    });
+
+    // Показываем диалог выбора типа файла
     final List<PickedFileInfo>? pickedFiles = await FilePickerDialog.show(
       context: context,
       allowMultiple: true,
@@ -1430,19 +1365,68 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
       errorPickingFileMessage: AppLocalizations.of(context)!.translate('error_picking_file'),
     );
 
+    // Если файлы выбраны, добавляем их
     if (pickedFiles != null && pickedFiles.isNotEmpty) {
       setState(() {
         for (var file in pickedFiles) {
-          selectedFiles.add(file.path);
-          fileNames.add(file.name);
-          fileSizes.add(file.sizeKB);
-          // ✅ ВАЖНО: Добавляем в список новых файлов
-          newFiles.add(file.path);
+          files.add(FileHelper(id: 0, name: file.name, path: file.path, size: file.sizeKB));
         }
       });
     }
   }
 
+  void showDeleteFileDialog({required int fileId, required int index}) {
+    bool isDeleting = false;
+
+    showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return DeleteFileDialog(
+          isDeleting: isDeleting,
+          fileId: fileId,
+          onDelete: (fileId) async {
+            if (files[index].id == 0) {
+              setState(() {
+                files.removeAt(index);
+              });
+              Navigator.of(context).pop(true);
+              return;
+            }
+
+            isDeleting = true;
+            setState(() {});
+
+            final response = await _apiService.deleteTaskFile(fileId);
+            if (response['result'] == 'Success') {
+              setState(() {
+                files.removeAt(index);
+              });
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    AppLocalizations.of(context)!.translate('error_delete_file'),
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+
+            Navigator.of(context).pop(true);
+          },
+          onCancel: () {
+            Navigator.of(context).pop(false);
+          },
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1528,6 +1512,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                             type: newFields[i].type,
                             isDirectory: newFields[i].isDirectory,
                             showOnTable: newFields[i].showOnTable,
+                            originalIsActive: newFields[i].originalIsActive,
+                            originalRequired: newFields[i].originalRequired,
                           ));
                         }
                       }
@@ -1562,6 +1548,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                       type: config.type,
                       isDirectory: config.isDirectory,
                       showOnTable: config.showOnTable,
+                      originalIsActive: config.originalIsActive,
+                      originalRequired: config.originalRequired,
                     );
                   }).toList();
                   isSettingsMode = true;
@@ -1617,16 +1605,22 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                 if (customFields.isEmpty) {
                   // Initialize custom fields from widget data
                   for (var customField in widget.taskCustomFields) {
-                    if (kDebugMode) {
-                      print('Loading custom field: ${customField.name} with value: ${customField.value}');
-                    }
+                    // Ищем соответствующую конфигурацию поля
+                    final matchingConfig = fieldConfigurations.where(
+                      (config) => config.isCustomField && config.fieldName == customField.name,
+                    ).firstOrNull;
+
+                    // Используем type из конфигурации, если type из виджета пустой
+                    final fieldType = (customField.type.isEmpty && matchingConfig?.type != null)
+                        ? matchingConfig!.type
+                        : (customField.type.isNotEmpty ? customField.type : null);
 
                     final controller = TextEditingController(text: customField.value);
                     customFields.add(CustomField(
                       fieldName: customField.name,
                       controller: controller,
                       uniqueId: Uuid().v4(),
-                      type: customField.type,
+                      type: fieldType,
                       isCustomField: true,
                     ));
                   }
@@ -1911,12 +1905,11 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                             String fieldValue = field.controller.text.trim();
                             String? fieldType = field.type;
 
-                            // ВАЖНО: Нормализуем тип поля - преобразуем "text" в "string"
-                            if (fieldType == 'text') {
+                            // Если type null или пустая строка, устанавливаем string по умолчанию
+                            // НО сохраняем 'text' как 'text', не преобразуем в 'string'
+                            if (fieldType == null || fieldType.isEmpty) {
                               fieldType = 'string';
                             }
-                            // Если type null, устанавливаем string по умолчанию
-                            fieldType ??= 'string';
 
                             if (fieldType == 'number' &&
                                 fieldValue.isNotEmpty) {
@@ -1979,6 +1972,29 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                             }
                           }
 
+                          // Преобразуем files в filePaths и existingFiles
+                          // Новые файлы (id == 0)
+                          final newFilePaths = files
+                              .where((f) => f.id == 0)
+                              .map((f) => f.path)
+                              .toList();
+
+                          // Существующие файлы (id != 0, которые не были удалены)
+                          final keptExistingFiles = files
+                              .where((f) => f.id != 0)
+                              .map((f) {
+                                // Находим соответствующий TaskFiles объект из оригинального списка
+                                return existingFiles.firstWhere(
+                                  (ef) => ef.id == f.id,
+                                  orElse: () => TaskFiles(
+                                    id: f.id,
+                                    name: f.name,
+                                    path: f.path,
+                                  ),
+                                );
+                              })
+                              .toList();
+
                           final localizations =
                           AppLocalizations.of(context)!;
 
@@ -1995,21 +2011,18 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                               projectId: selectedProject != null
                                   ? int.parse(selectedProject!)
                                   : null,
-                              userId: selectedUsers != null
-                                  ? selectedUsers!
-                                  .map(
+                              userId: selectedUsers?.map(
                                       (id) => int.parse(id))
-                                  .toList()
-                                  : null,
+                                  .toList(),
                               priority:
                               selectedPriority?.toString(),
                               description:
                               descriptionController.text,
                               customFields: customFieldList,
-                              filePaths: selectedFiles,
+                              filePaths: newFilePaths.isNotEmpty ? newFilePaths : null,
                               directoryValues: directoryValues,
                               localizations: localizations,
-                              existingFiles: existingFiles,
+                              existingFiles: keptExistingFiles.isNotEmpty ? keptExistingFiles : null,
                             ),
                           );
                         } catch (e) {

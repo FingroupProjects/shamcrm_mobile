@@ -3678,6 +3678,8 @@ Future<List<DealStatus>> getDealStatuses({
     List<Map<String, int>>? directoryValues,
     List<FileHelper>? files,
     List<int>? dealStatusIds, // ✅ НОВОЕ
+    List<int>? existingFiles, // ID существующих файлов
+    List<int>? userIds, // ✅ НОВОЕ: массив ID пользователей
   }) async {
     // Формируем путь с query-параметрами
     final updatedPath = await _appendQueryParams('/deal/$dealId');
@@ -3707,6 +3709,16 @@ Future<List<DealStatus>> getDealStatuses({
     print('ApiService: Отправка deal_status_ids: $dealStatusIds');
   }
   
+    // ✅ НОВОЕ: Добавляем user_ids
+    if (userIds != null && userIds.isNotEmpty) {
+      for (int i = 0; i < userIds.length; i++) {
+        request.fields['users[$i]'] = userIds[i].toString();
+      }
+      if (kDebugMode) {
+        print('ApiService: updateDeal - Added user_ids: $userIds');
+      }
+    }
+  
     final customFieldsList = customFields ?? [];
     if (customFieldsList.isNotEmpty) {
       for (int i = 0; i < customFieldsList.length; i++) {
@@ -3731,8 +3743,17 @@ Future<List<DealStatus>> getDealStatuses({
       }
     }
 
+    // Добавляем ID существующих файлов
+    if (existingFiles != null && existingFiles.isNotEmpty) {
+      for (int i = 0; i < existingFiles.length; i++) {
+        request.fields['existing_files[$i]'] = existingFiles[i].toString();
+      }
+    }
+
+    // Отправляем только новые файлы (id == 0)
     if (files != null && files.isNotEmpty) {
-      for (var fileData in files) {
+      final newFiles = files.where((f) => f.id == 0).toList();
+      for (var fileData in newFiles) {
         try {
           final file = await http.MultipartFile.fromPath(
             'files[]',
@@ -4534,7 +4555,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     List<int>? userId,
     String? description,
     List<Map<String, dynamic>>? customFields,
-    List<String>? filePaths,
+    List<FileHelper>? files,
     List<Map<String, int>>? directoryValues,
     int position = 1,
   }) async {
@@ -4605,10 +4626,20 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
         }
       }
 
-      if (filePaths != null && filePaths.isNotEmpty) {
-        for (var filePath in filePaths) {
-          final file = await http.MultipartFile.fromPath('files[]', filePath);
-          request.files.add(file);
+      // Отправляем файлы (все файлы при создании новые, id == 0)
+      if (files != null && files.isNotEmpty) {
+        final newFiles = files.where((f) => f.id == 0).toList();
+        for (var fileData in newFiles) {
+          try {
+            final file = await http.MultipartFile.fromPath(
+              'files[]',
+              fileData.path,
+              filename: fileData.name,
+            );
+            request.files.add(file);
+          } catch (e) {
+            debugPrint("Error adding file ${fileData.name}: $e");
+          }
         }
       }
 

@@ -654,8 +654,6 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         return AppLocalizations.of(context)!.translate('created_at_details');
       case 'lead_status_id':
         return AppLocalizations.of(context)!.translate('status_details');
-      case 'files':
-        return AppLocalizations.of(context)!.translate('files_details');
       default:
         return '${fc.fieldName}:';
     }
@@ -765,12 +763,6 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       case 'lead_status_id':
         return lead.leadStatus?.title ?? '';
 
-      case 'files':
-        if (lead.files != null && lead.files!.isNotEmpty) {
-          return '${lead.files!.length} ${AppLocalizations.of(context)!.translate('files')}';
-        }
-        return '';
-
       default:
         return '';
     }
@@ -790,6 +782,11 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     }
 
     for (var fc in _fieldConfiguration) {
+      // Пропускаем поле 'files', так как оно всегда показывается в конце
+      if (fc.fieldName == 'files') {
+        continue;
+      }
+      
       debugPrint("Processing field: ${fc.fieldName}");
       final fieldValue = _getFieldValue(fc, lead);
 
@@ -799,6 +796,14 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       details.add({
         'label': fieldName,
         'value': fieldValue,
+      });
+    }
+
+    // Всегда добавляем файлы в конец списка, если они есть
+    if (lead.files != null && lead.files!.isNotEmpty) {
+      details.add({
+        'label': AppLocalizations.of(context)!.translate('files_details'),
+        'value': '${lead.files!.length} ${AppLocalizations.of(context)!.translate('files')}',
       });
     }
   }
@@ -1473,12 +1478,12 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       final response = await _apiService.getFieldPositions(tableName: 'leads');
       if (!mounted) return;
 
-      // Фильтруем только активные поля и сортируем по position
-      final activeFields = response.result.where((field) => field.isActive).toList()
+      // Сортируем по position
+      final sortedFields = response.result.toList()
         ..sort((a, b) => a.position.compareTo(b.position));
 
       setState(() {
-        _fieldConfiguration = activeFields;
+        _fieldConfiguration = sortedFields;
         _isConfigurationLoaded = true;
       });
     } catch (e) {

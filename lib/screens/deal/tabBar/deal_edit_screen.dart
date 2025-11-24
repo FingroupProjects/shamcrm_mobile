@@ -39,6 +39,9 @@ import 'package:crm_task_manager/screens/deal/tabBar/deal_details/deal_name_list
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import 'package:crm_task_manager/models/directory_model.dart' as directory_model;
+import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
+import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
+import 'package:crm_task_manager/models/user_data_response.dart';
 
 class DealEditScreen extends StatefulWidget {
   final int dealId;
@@ -94,6 +97,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
   int? _selectedStatuses;
   String? selectedManager;
   String? selectedLead;
+  List<String>? selectedUsers; // ✅ НОВОЕ: список выбранных пользователей
   List<CustomField> customFields = [];
   bool isEndDateInvalid = false;
   List<int> _selectedStatusIds = []; // ✅ НОВОЕ: список выбранных ID
@@ -150,6 +154,16 @@ class _DealEditScreenState extends State<DealEditScreen> {
     startDateController.text = widget.startDate ?? '';
     endDateController.text = widget.endDate ?? '';
     sumController.text = widget.sum ?? '';
+    
+    // ✅ НОВОЕ: Инициализируем выбранных пользователей из dealById
+    if (widget.dealById?.users != null && widget.dealById!.users!.isNotEmpty) {
+      selectedUsers = widget.dealById!.users!
+          .where((dealUser) => dealUser.userId != null)
+          .map((dealUser) => dealUser.userId.toString())
+          .toList();
+    } else {
+      selectedUsers = [];
+    }
 
     // ✅ НОВОЕ: Initialize from customFieldValues
     if (widget.dealById?.customFieldValues != null) {
@@ -211,6 +225,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
   void _loadInitialData() {
     context.read<GetAllLeadBloc>().add(GetAllLeadEv());
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
+    context.read<GetAllClientBloc>().add(GetAllClientEv()); // ✅ НОВОЕ: загружаем пользователей
   }
 
   Future<void> _addCustomField(String fieldName,
@@ -389,13 +404,14 @@ class _DealEditScreenState extends State<DealEditScreen> {
   // Сохранение порядка полей на бэкенд
   Future<void> _saveFieldOrderToBackend() async {
     try {
+      // Используем оригинальные значения is_active и required с бэкенда
       final List<Map<String, dynamic>> updates = [];
       for (var config in fieldConfigurations) {
         updates.add({
           'id': config.id,
           'position': config.position,
-          'is_active': config.isActive ? 1 : 0,
-          'is_required': config.required ? 1 : 0,
+          'is_active': config.originalIsActive ?? (config.isActive ? 1 : 0),
+          'is_required': config.originalRequired ?? (config.required ? 1 : 0),
           'show_on_table': config.showOnTable ? 1 : 0,
         });
       }
@@ -526,6 +542,15 @@ class _DealEditScreenState extends State<DealEditScreen> {
             }
           },
         );
+      case 'users': // ✅ НОВОЕ: обработка поля users
+        return UserMultiSelectWidget(
+          selectedUsers: selectedUsers,
+          onSelectUsers: (List<UserData> selectedUsersData) {
+            setState(() {
+              selectedUsers = selectedUsersData.map((user) => user.id.toString()).toList();
+            });
+          },
+        );
       // case 'file':
       //   // Показ блока файлов согласно позиции в конфигурации
       //   return _buildFileSelection();
@@ -600,6 +625,8 @@ class _DealEditScreenState extends State<DealEditScreen> {
         return loc.translate('description_list');
       case 'deal_status_id':
         return loc.translate('deal_status');
+      case 'users': // ✅ НОВОЕ
+        return loc.translate('assignees_list');
       // case 'file':
       //   return loc.translate('file');
       default:
@@ -683,6 +710,8 @@ class _DealEditScreenState extends State<DealEditScreen> {
                     type: config.type,
                     isDirectory: config.isDirectory,
                     showOnTable: config.showOnTable,
+                    originalIsActive: config.originalIsActive,
+                    originalRequired: config.originalRequired,
                   ));
                 }
 
@@ -802,6 +831,8 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                     type: config.type,
                                     isDirectory: config.isDirectory,
                                     showOnTable: config.showOnTable,
+                                    originalIsActive: config.originalIsActive,
+                                    originalRequired: config.originalRequired,
                                   );
 
                                   final idx = fieldConfigurations.indexWhere((f) => f.id == config.id);
@@ -1356,6 +1387,8 @@ class _DealEditScreenState extends State<DealEditScreen> {
                             type: newFields[i].type,
                             isDirectory: newFields[i].isDirectory,
                             showOnTable: newFields[i].showOnTable,
+                            originalIsActive: newFields[i].originalIsActive,
+                            originalRequired: newFields[i].originalRequired,
                           ));
                         }
                       }
@@ -1390,6 +1423,8 @@ class _DealEditScreenState extends State<DealEditScreen> {
                       type: config.type,
                       isDirectory: config.isDirectory,
                       showOnTable: config.showOnTable,
+                      originalIsActive: config.originalIsActive,
+                      originalRequired: config.originalRequired,
                     );
                   }).toList();
                   isSettingsMode = true;
@@ -1426,6 +1461,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
       body: MultiBlocProvider(
         providers: [
           BlocProvider(create: (context) => MainFieldBloc()),
+          BlocProvider(create: (context) => GetAllClientBloc(apiService: ApiService())), // ✅ НОВОЕ: добавляем блок для пользователей
         ],
         child: BlocListener<DealBloc, DealState>(
           listener: (context, state) {
@@ -1491,16 +1527,12 @@ class _DealEditScreenState extends State<DealEditScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               // Динамические поля по конфигурации
+                              // Сортируем только по позициям, без фильтрации по isActive
                               ...(() {
                                 final sorted = [...fieldConfigurations]
                                   ..sort((a, b) => a.position.compareTo(b.position));
-                                
-                                // Фильтруем только активные поля и пропускаем поля, которые должны быть скрыты
-                                final activeFields = sorted.where((config) {
-                                  return config.isActive;
-                                }).toList();
 
-                                return activeFields.map((config) {
+                                return sorted.map((config) {
                                   return Column(
                                     children: [
                                       _buildFieldWidget(config),
@@ -1671,7 +1703,23 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                           }
                                         }
 
+                                        // Преобразуем files на новые и существующие
+                                        // Новые файлы (id == 0)
+                                        final newFiles = files.where((f) => f.id == 0).toList();
+
+                                        // Существующие файлы (id != 0)
+                                        final existingFileIds = files
+                                            .where((f) => f.id != 0)
+                                            .map((f) => f.id)
+                                            .toList();
+
                                         final localizations = AppLocalizations.of(context)!;
+                                        // ✅ НОВОЕ: преобразуем selectedUsers в List<int>
+                                        List<int>? userIds;
+                                        if (selectedUsers != null && selectedUsers!.isNotEmpty) {
+                                          userIds = selectedUsers!.map((id) => int.parse(id)).toList();
+                                        }
+                                        
                                         context.read<DealBloc>().add(UpdateDeal(
                                           dealId: widget.dealId,
                                           name: titleController.text,
@@ -1686,8 +1734,10 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                           customFields: customFieldList,
                                           directoryValues: directoryValues,
                                           localizations: localizations,
-                                          files: files,
+                                          files: newFiles.isNotEmpty ? newFiles : null,
+                                          existingFiles: existingFileIds.isNotEmpty ? existingFileIds : null,
                                           dealStatusIds: _selectedStatusIds,
+                                          userIds: userIds, // ✅ НОВОЕ: передаем выбранных пользователей
                                         ));
                                       } else {
                                         _showErrorSnackBar(AppLocalizations.of(context)!.translate('fill_required_fields'));

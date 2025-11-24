@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/models/taskbyId_model.dart';
+import 'package:crm_task_manager/models/file_helper.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
 abstract class TaskEvent {}
@@ -98,7 +99,7 @@ class CreateTask extends TaskEvent {
   final List<int>? userId;
   final String? description;
   final List<Map<String, dynamic>>? customFields; // Изменяем тип
-  final List<String>? filePaths;
+  final List<FileHelper>? files; // Изменено с List<String>? filePaths
   final List<Map<String, int>>? directoryValues;
   final AppLocalizations localizations;
 
@@ -113,7 +114,7 @@ class CreateTask extends TaskEvent {
     this.userId,
     this.description,
     this.customFields,
-    this.filePaths,
+    this.files,
     this.directoryValues,
     required this.localizations,
   });

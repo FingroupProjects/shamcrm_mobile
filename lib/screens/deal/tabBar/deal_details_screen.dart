@@ -440,8 +440,6 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
         return AppLocalizations.of(context)!.translate('creation_date_details');
       case 'deal_status_id':
         return AppLocalizations.of(context)!.translate('status_history');
-      case 'files':
-        return AppLocalizations.of(context)!.translate('files_details');
       default:
         return '${fc.fieldName}:';
     }
@@ -515,12 +513,6 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
         }
         return deal.dealStatus?.title ?? '';
 
-      case 'files':
-        if (deal.files.isNotEmpty) {
-          return '${deal.files.length} ${AppLocalizations.of(context)!.translate('files')}';
-        }
-        return '';
-
       default:
         return '';
     }
@@ -540,6 +532,11 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     }
 
     for (var fc in _fieldConfiguration) {
+      // Пропускаем поле 'files', так как оно всегда показывается в конце
+      if (fc.fieldName == 'files') {
+        continue;
+      }
+      
       final fieldValue = _getFieldValue(fc, deal);
 
       final fieldName = _getFieldName(fc);
@@ -550,6 +547,14 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
         'value': fieldValue,
       });
     }
+
+    // Всегда добавляем файлы в конец списка, если они есть
+    if (deal.files != null && deal.files.isNotEmpty) {
+      details.add({
+        'label': AppLocalizations.of(context)!.translate('files_details'),
+        'value': '${deal.files.length} ${AppLocalizations.of(context)!.translate('files')}',
+      });
+    }
   }
 
   Future<void> _loadFieldConfiguration() async {
@@ -557,9 +562,8 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       final response = await _apiService.getFieldPositions(tableName: 'deals');
       if (!mounted) return;
 
-      // Фильтруем только активные поля и сортируем по position
-      final activeFields = response.result.where((field) => field.isActive).toList()
-        ..sort((a, b) => a.position.compareTo(b.position));
+      // Сортируем только по position, без фильтрации по isActive
+      final activeFields = [...response.result]..sort((a, b) => a.position.compareTo(b.position));
 
       setState(() {
         _fieldConfiguration = activeFields;
