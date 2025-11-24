@@ -119,8 +119,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
         updates.add({
           'id': config.id,
           'position': config.position,
-          'is_active': config.isActive ? 1 : 0,
-          'is_required': config.required ? 1 : 0,
+          'is_active': config.originalIsActive ?? (config.isActive ? 1 : 0),
+          'is_required': config.originalRequired ?? (config.required ? 1 : 0),
           'show_on_table': config.showOnTable ? 1 : 0,
         });
       }
@@ -214,12 +214,6 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
           controller: titleController,
           hintText: AppLocalizations.of(context)!.translate('enter_name_list'),
           label: AppLocalizations.of(context)!.translate('name_list'),
-          validator: config.required ? (value) {
-            if (value == null || value.isEmpty) {
-              return AppLocalizations.of(context)!.translate('field_required');
-            }
-            return null;
-          } : null,
         );
 
       case 'phone':
@@ -821,6 +815,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                     type: config.type,
                     isDirectory: config.isDirectory,
                     showOnTable: config.showOnTable,
+                    originalIsActive: config.originalIsActive,
+                    originalRequired: config.originalRequired,
                   ));
                 }
 
@@ -925,78 +921,78 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                               ]
                             ],
                           ),
-                          if (!config.required) ...[
-                            SizedBox(height: 12),
-                            GestureDetector(
-                              behavior: HitTestBehavior.opaque,
-                              onTap: () {
-                                setState(() {
-                                  final updatedConfig = FieldConfiguration(
-                                    id: config.id,
-                                    tableName: config.tableName,
-                                    fieldName: config.fieldName,
-                                    position: config.position,
-                                    required: config.required,
-                                    isActive: !config.isActive,
-                                    isCustomField: config.isCustomField,
-                                    createdAt: config.createdAt,
-                                    updatedAt: config.updatedAt,
-                                    customFieldId: config.customFieldId,
-                                    directoryId: config.directoryId,
-                                    type: config.type,
-                                    isDirectory: config.isDirectory,
-                                    showOnTable: config.showOnTable,
-                                  );
+                          SizedBox(height: 12),
+                          GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () {
+                              setState(() {
+                                final updatedConfig = FieldConfiguration(
+                                  id: config.id,
+                                  tableName: config.tableName,
+                                  fieldName: config.fieldName,
+                                  position: config.position,
+                                  required: config.required,
+                                  isActive: !config.isActive,
+                                  isCustomField: config.isCustomField,
+                                  createdAt: config.createdAt,
+                                  updatedAt: config.updatedAt,
+                                  customFieldId: config.customFieldId,
+                                  directoryId: config.directoryId,
+                                  type: config.type,
+                                  isDirectory: config.isDirectory,
+                                  showOnTable: config.showOnTable,
+                                  originalIsActive: config.originalIsActive,
+                                  originalRequired: config.originalRequired,
+                                );
 
-                                  final idx = fieldConfigurations.indexWhere((f) => f.id == config.id);
-                                  if (idx != -1) {
-                                    fieldConfigurations[idx] = updatedConfig;
-                                  }
-                                });
-                              },
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 4),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    AnimatedContainer(
+                                final idx = fieldConfigurations.indexWhere((f) => f.id == config.id);
+                                if (idx != -1) {
+                                  fieldConfigurations[idx] = updatedConfig;
+                                }
+                              });
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  AnimatedContainer(
+                                    duration: Duration(milliseconds: 200),
+                                    curve: Curves.easeInOut,
+                                    width: 24,
+                                    height: 24,
+                                    decoration: BoxDecoration(
+                                      color: config.isActive ? Color(0xff4759FF) : Colors.white,
+                                      border: Border.all(
+                                        color: config.isActive ? Color(0xff4759FF) : Color(0xffCCD5E0),
+                                        width: 2,
+                                      ),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: AnimatedOpacity(
                                       duration: Duration(milliseconds: 200),
-                                      curve: Curves.easeInOut,
-                                      width: 24,
-                                      height: 24,
-                                      decoration: BoxDecoration(
-                                        color: config.isActive ? Color(0xff4759FF) : Colors.white,
-                                        border: Border.all(
-                                          color: config.isActive ? Color(0xff4759FF) : Color(0xffCCD5E0),
-                                          width: 2,
-                                        ),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: AnimatedOpacity(
-                                        duration: Duration(milliseconds: 200),
-                                        opacity: config.isActive ? 1.0 : 0.0,
-                                        child: Icon(
-                                          Icons.check_rounded,
-                                          size: 16,
-                                          color: Colors.white,
-                                        ),
+                                      opacity: config.isActive ? 1.0 : 0.0,
+                                      child: Icon(
+                                        Icons.check_rounded,
+                                        size: 16,
+                                        color: Colors.white,
                                       ),
                                     ),
-                                    SizedBox(width: 12),
-                                    Text(
-                                      AppLocalizations.of(context)!.translate('show_field'),
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontFamily: 'Gilroy',
-                                        fontWeight: FontWeight.w500,
-                                        color: config.isActive ? Color(0xff1E2E52) : Color(0xff6B7A99),
-                                      ),
+                                  ),
+                                  SizedBox(width: 12),
+                                  Text(
+                                    AppLocalizations.of(context)!.translate('show_field'),
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontFamily: 'Gilroy',
+                                      fontWeight: FontWeight.w500,
+                                      color: config.isActive ? Color(0xff1E2E52) : Color(0xff6B7A99),
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
+                          ),
                         ],
                       ),
                     ),
@@ -1306,6 +1302,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                             type: newFields[i].type,
                             isDirectory: newFields[i].isDirectory,
                             showOnTable: newFields[i].showOnTable,
+                            originalIsActive: newFields[i].originalIsActive,
+                            originalRequired: newFields[i].originalRequired,
                           ));
                         }
                       }
@@ -1340,6 +1338,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                       type: config.type,
                       isDirectory: config.isDirectory,
                       showOnTable: config.showOnTable,
+                      originalIsActive: config.originalIsActive,
+                      originalRequired: config.originalRequired,
                     );
                   }).toList();
                   isSettingsMode = true;
@@ -1510,12 +1510,12 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                               final sorted = [...fieldConfigurations]
                                 ..sort((a, b) => a.position.compareTo(b.position));
                               
-                              // Фильтруем только активные поля и пропускаем поля, которые должны быть скрыты
-                              final activeFields = sorted.where((config) {
-                                return config.isActive && config.fieldName != 'lead_status_id';
+                              // Пропускаем поле lead_status_id
+                              final filteredFields = sorted.where((config) {
+                                return config.fieldName != 'lead_status_id';
                               }).toList();
 
-                              return activeFields.map((config) {
+                              return filteredFields.map((config) {
                                 return Column(
                                   children: [
                                     _buildFieldWidget(config),

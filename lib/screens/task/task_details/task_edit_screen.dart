@@ -328,13 +328,14 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   Future<void> _saveFieldOrderToBackend() async {
     try {
       // Подготовка данных для отправки
+      // Используем оригинальные значения is_active и required с бэкенда
       final List<Map<String, dynamic>> updates = [];
       for (var config in fieldConfigurations) {
         updates.add({
           'id': config.id,
           'position': config.position,
-          'is_active': config.isActive ? 1 : 0,
-          'is_required': config.required ? 1 : 0,
+          'is_active': config.originalIsActive ?? (config.isActive ? 1 : 0),
+          'is_required': config.originalRequired ?? (config.required ? 1 : 0),
           'show_on_table': config.showOnTable ? 1 : 0,
         });
       }
@@ -452,12 +453,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
             });
           },
           priorityText: AppLocalizations.of(context)!.translate('urgent'),
-          validator: config.required ? (value) {
-            if (value == null || value.isEmpty) {
-              return AppLocalizations.of(context)!.translate('field_required');
-            }
-            return null;
-          } : null,
+          validator: null, // Убрана логика required
         );
 
       case 'description':
@@ -498,12 +494,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
           controller: endDateController,
           label: AppLocalizations.of(context)!.translate('deadline'),
           hasError: isEndDateInvalid,
-          validator: config.required ? (value) {
-            if (value == null || value.isEmpty) {
-              return AppLocalizations.of(context)!.translate('field_required');
-            }
-            return null;
-          } : null,
+          validator: null, // Убрана логика required
         );
 
       case 'task_status_id':
@@ -592,10 +583,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   }
 
   List<Widget> _buildConfiguredFieldWidgets() {
-    final sorted = fieldConfigurations
-        .where((e) => e.isActive)
-        .toList()
-      ..sort((a, b) => a.position.compareTo(b.position));
+    // Сортируем только по позициям, без фильтрации по isActive
+    final sorted = [...fieldConfigurations]..sort((a, b) => a.position.compareTo(b.position));
 
     final widgets = <Widget>[];
     for (final config in sorted) {
@@ -1025,6 +1014,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                     type: config.type,
                     isDirectory: config.isDirectory,
                     showOnTable: config.showOnTable,
+                    originalIsActive: config.originalIsActive,
+                    originalRequired: config.originalRequired,
                   ));
                 }
 
@@ -1144,6 +1135,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                     type: config.type,
                                     isDirectory: config.isDirectory,
                                     showOnTable: config.showOnTable,
+                                    originalIsActive: config.originalIsActive,
+                                    originalRequired: config.originalRequired,
                                   );
 
                                   final idx = fieldConfigurations.indexWhere((f) => f.id == config.id);
@@ -1519,6 +1512,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                             type: newFields[i].type,
                             isDirectory: newFields[i].isDirectory,
                             showOnTable: newFields[i].showOnTable,
+                            originalIsActive: newFields[i].originalIsActive,
+                            originalRequired: newFields[i].originalRequired,
                           ));
                         }
                       }
@@ -1553,6 +1548,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                       type: config.type,
                       isDirectory: config.isDirectory,
                       showOnTable: config.showOnTable,
+                      originalIsActive: config.originalIsActive,
+                      originalRequired: config.originalRequired,
                     );
                   }).toList();
                   isSettingsMode = true;
@@ -2014,12 +2011,9 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                               projectId: selectedProject != null
                                   ? int.parse(selectedProject!)
                                   : null,
-                              userId: selectedUsers != null
-                                  ? selectedUsers!
-                                  .map(
+                              userId: selectedUsers?.map(
                                       (id) => int.parse(id))
-                                  .toList()
-                                  : null,
+                                  .toList(),
                               priority:
                               selectedPriority?.toString(),
                               description:

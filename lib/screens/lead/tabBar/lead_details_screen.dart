@@ -1478,12 +1478,12 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       final response = await _apiService.getFieldPositions(tableName: 'leads');
       if (!mounted) return;
 
-      // Фильтруем только активные поля и сортируем по position
-      final activeFields = response.result.where((field) => field.isActive).toList()
+      // Сортируем по position
+      final sortedFields = response.result.toList()
         ..sort((a, b) => a.position.compareTo(b.position));
 
       setState(() {
-        _fieldConfiguration = activeFields;
+        _fieldConfiguration = sortedFields;
         _isConfigurationLoaded = true;
       });
     } catch (e) {

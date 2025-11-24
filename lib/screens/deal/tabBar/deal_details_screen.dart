@@ -562,9 +562,8 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       final response = await _apiService.getFieldPositions(tableName: 'deals');
       if (!mounted) return;
 
-      // Фильтруем только активные поля и сортируем по position
-      final activeFields = response.result.where((field) => field.isActive).toList()
-        ..sort((a, b) => a.position.compareTo(b.position));
+      // Сортируем только по position, без фильтрации по isActive
+      final activeFields = [...response.result]..sort((a, b) => a.position.compareTo(b.position));
 
       setState(() {
         _fieldConfiguration = activeFields;

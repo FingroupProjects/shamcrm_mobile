@@ -122,13 +122,14 @@ class _DealAddScreenState extends State<DealAddScreen> {
   Future<void> _saveFieldOrderToBackend() async {
     try {
       // Подготовка данных для отправки
+      // Используем оригинальные значения is_active и required с бэкенда
       final List<Map<String, dynamic>> updates = [];
       for (var config in fieldConfigurations) {
         updates.add({
           'id': config.id,
           'position': config.position,
-          'is_active': config.isActive ? 1 : 0,
-          'is_required': config.required ? 1 : 0,
+          'is_active': config.originalIsActive ?? (config.isActive ? 1 : 0),
+          'is_required': config.originalRequired ?? (config.required ? 1 : 0),
           'show_on_table': config.showOnTable ? 1 : 0,
         });
       }
@@ -445,15 +446,11 @@ class _DealAddScreenState extends State<DealAddScreen> {
   }
 
   List<Widget> _buildConfiguredFieldWidgets() {
+    // Сортируем только по позициям, без фильтрации по isActive
     final sorted = [...fieldConfigurations]..sort((a, b) => a.position.compareTo(b.position));
 
-    // Фильтруем только активные поля
-    final activeFields = sorted.where((config) {
-      return config.isActive;
-    }).toList();
-
     final widgets = <Widget>[];
-    for (final config in activeFields) {
+    for (final config in sorted) {
       final fieldWidget = _buildFieldWidget(config);
       if (fieldWidget != null) {
         widgets.add(fieldWidget);
@@ -812,6 +809,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
                     type: config.type,
                     isDirectory: config.isDirectory,
                     showOnTable: config.showOnTable,
+                    originalIsActive: config.originalIsActive,
+                    originalRequired: config.originalRequired,
                   ));
                 }
 
@@ -937,6 +936,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
                                     type: config.type,
                                     isDirectory: config.isDirectory,
                                     showOnTable: config.showOnTable,
+                                    originalIsActive: config.originalIsActive,
+                                    originalRequired: config.originalRequired,
                                   );
 
                                   final idx = fieldConfigurations.indexWhere((f) => f.id == config.id);
@@ -1432,6 +1433,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
                             type: newFields[i].type,
                             isDirectory: newFields[i].isDirectory,
                             showOnTable: newFields[i].showOnTable,
+                            originalIsActive: newFields[i].originalIsActive,
+                            originalRequired: newFields[i].originalRequired,
                           ));
                         }
                       }
@@ -1466,6 +1469,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
                       type: config.type,
                       isDirectory: config.isDirectory,
                       showOnTable: config.showOnTable,
+                      originalIsActive: config.originalIsActive,
+                      originalRequired: config.originalRequired,
                     );
                   }).toList();
                   isSettingsMode = true;

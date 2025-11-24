@@ -108,13 +108,14 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   Future<void> _saveFieldOrderToBackend() async {
     try {
       // Подготовка данных для отправки
+      // Используем оригинальные значения is_active и required с бэкенда
       final List<Map<String, dynamic>> updates = [];
       for (var config in fieldConfigurations) {
         updates.add({
           'id': config.id,
           'position': config.position,
-          'is_active': config.isActive ? 1 : 0,
-          'is_required': config.required ? 1 : 0,
+          'is_active': config.originalIsActive ?? (config.isActive ? 1 : 0),
+          'is_required': config.originalRequired ?? (config.required ? 1 : 0),
           'show_on_table': config.showOnTable ? 1 : 0,
         });
       }
@@ -216,14 +217,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
             });
           },
           priorityText: AppLocalizations.of(context)!.translate('urgent'),
-          validator: config.required
-              ? (value) {
-                  if (value == null || value.isEmpty) {
-              return AppLocalizations.of(context)!.translate('field_required');
-            }
-            return null;
-                }
-              : null,
+          validator: null, // Убрана логика required
         );
 
       case 'description':
@@ -264,14 +258,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
           controller: endDateController,
           label: AppLocalizations.of(context)!.translate('deadline'),
           hasError: isEndDateInvalid,
-          validator: config.required
-              ? (value) {
-                  if (value == null || value.isEmpty) {
-              return AppLocalizations.of(context)!.translate('field_required');
-            }
-            return null;
-                }
-              : null,
+          validator: null, // Убрана логика required
         );
 
       case 'task_status_id':
@@ -355,7 +342,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   }
 
   List<Widget> _buildConfiguredFieldWidgets() {
-    final sorted = fieldConfigurations.where((e) => e.isActive).toList()..sort((a, b) => a.position.compareTo(b.position));
+    // Сортируем только по позициям, без фильтрации по isActive
+    final sorted = [...fieldConfigurations]..sort((a, b) => a.position.compareTo(b.position));
 
     debugPrint("sorted fieldConfigurations: ${sorted.map((e) => e.fieldName).toList()}");
     debugPrint("not sorted fieldConfigurations: ${fieldConfigurations.map((e) => e.fieldName).toList()}");
@@ -706,6 +694,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                     type: config.type,
                     isDirectory: config.isDirectory,
                     showOnTable: config.showOnTable,
+                    originalIsActive: config.originalIsActive,
+                    originalRequired: config.originalRequired,
                   ));
                 }
 
@@ -825,6 +815,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                                     type: config.type,
                                     isDirectory: config.isDirectory,
                                     showOnTable: config.showOnTable,
+                                    originalIsActive: config.originalIsActive,
+                                    originalRequired: config.originalRequired,
                                   );
 
                                   final idx = fieldConfigurations.indexWhere((f) => f.id == config.id);
@@ -1136,6 +1128,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                             type: newFields[i].type,
                             isDirectory: newFields[i].isDirectory,
                             showOnTable: newFields[i].showOnTable,
+                            originalIsActive: newFields[i].originalIsActive,
+                            originalRequired: newFields[i].originalRequired,
                           ));
                         }
                       }
@@ -1170,6 +1164,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                       type: config.type,
                       isDirectory: config.isDirectory,
                       showOnTable: config.showOnTable,
+                      originalIsActive: config.originalIsActive,
+                      originalRequired: config.originalRequired,
                     );
                   }).toList();
                   isSettingsMode = true;
@@ -1534,178 +1530,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     List<Map<String, dynamic>> customFieldMap = [];
     List<Map<String, int>> directoryValues = [];
 
-    // Проверяем обязательные поля на основе конфигурации
-    for (var config in fieldConfigurations) {
-      if (!config.isActive || !config.required) continue;
-
-      // Проверяем системные поля
-      if (!config.isCustomField && !config.isDirectory) {
-        switch (config.fieldName) {
-          case 'name':
-            if (nameController.text.trim().isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '${AppLocalizations.of(context)!.translate('event_name')} - ${AppLocalizations.of(context)!.translate('field_required')}',
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  backgroundColor: Colors.red,
-                ),
-              );
-              return;
-            }
-            break;
-          case 'deadline':
-            if (endDateController.text.trim().isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '${AppLocalizations.of(context)!.translate('deadline')} - ${AppLocalizations.of(context)!.translate('field_required')}',
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  backgroundColor: Colors.red,
-                ),
-              );
-              return;
-            }
-            break;
-          case 'executor':
-            if (selectedUsers == null || selectedUsers!.isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '${AppLocalizations.of(context)!.translate('lead')} - ${AppLocalizations.of(context)!.translate('field_required')}',
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  backgroundColor: Colors.red,
-                ),
-              );
-              return;
-            }
-            break;
-          case 'project':
-            if (selectedProject == null || selectedProject!.isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '${AppLocalizations.of(context)!.translate('projects')} - ${AppLocalizations.of(context)!.translate('field_required')}',
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  backgroundColor: Colors.red,
-                ),
-              );
-              return;
-            }
-            break;
-          case 'task_status_id':
-            if (selectedStatus == null || selectedStatus!.isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '${AppLocalizations.of(context)!.translate('task_status')} - ${AppLocalizations.of(context)!.translate('field_required')}',
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  backgroundColor: Colors.red,
-                ),
-              );
-              return;
-            }
-            break;
-          case 'description':
-            if (descriptionController.text.trim().isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '${AppLocalizations.of(context)!.translate('description_list')} - ${AppLocalizations.of(context)!.translate('field_required')}',
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  backgroundColor: Colors.red,
-                ),
-              );
-              return;
-            }
-            break;
-        }
-      }
-
-      // Проверяем кастомные поля
-      if (config.isCustomField) {
-        final customFieldIndex = customFields.indexWhere(
-          (f) => f.fieldName == config.fieldName && f.isCustomField,
-        );
-        if (customFieldIndex == -1 || customFields[customFieldIndex].controller.text.trim().isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                '${config.fieldName} - ${AppLocalizations.of(context)!.translate('field_required')}',
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-              backgroundColor: Colors.red,
-            ),
-          );
-          return;
-        }
-      }
-
-      // Проверяем справочники
-      if (config.isDirectory && config.directoryId != null) {
-        final directoryFieldIndex = customFields.indexWhere(
-          (f) => f.directoryId == config.directoryId,
-        );
-        if (directoryFieldIndex == -1 || customFields[directoryFieldIndex].entryId == null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                '${config.fieldName} - ${AppLocalizations.of(context)!.translate('field_required')}',
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-              backgroundColor: Colors.red,
-            ),
-          );
-          return;
-        }
-      }
-    }
+    // Убрана проверка обязательных полей на основе конфигурации
+    // Все поля теперь опциональны
 
     for (var field in customFields) {
       String fieldName = field.fieldName.trim();
