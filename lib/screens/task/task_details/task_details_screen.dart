@@ -515,10 +515,23 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         _currentUserId == task.author!.id;
 
     for (var fc in _fieldConfiguration) {
+      // Пропускаем поле 'files', так как оно всегда показывается в конце
+      if (fc.fieldName == 'files') {
+        continue;
+      }
+      
       final value = _getFieldValue(fc, task);
       final label = _getFieldName(fc);
 
       details.add({'label': label, 'value': value});
+    }
+
+    // Всегда добавляем файлы в конец списка, если они есть
+    if (task.files != null && task.files!.isNotEmpty) {
+      details.add({
+        'label': AppLocalizations.of(context)!.translate('files_details'),
+        'value': '${task.files!.length} ${AppLocalizations.of(context)!.translate('files')}',
+      });
     }
   }
 
@@ -538,7 +551,6 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       case 'author':        return AppLocalizations.of(context)!.translate('author_details');
       case 'createdAt':     return AppLocalizations.of(context)!.translate('creation_date_details');
       case 'deal':          return AppLocalizations.of(context)!.translate('task_by_deal');
-      case 'files':         return AppLocalizations.of(context)!.translate('files_details');
       default:              return '${fc.fieldName}:';
     }
   }
@@ -596,9 +608,6 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       case 'author':      return task.author?.name ?? '';
       case 'createdAt':   return formatDate(task.createdAt);
       case 'deal':        return task.deal?.name ?? '';
-      case 'files':
-        if (task.files == null || task.files!.isEmpty) return '';
-        return '${task.files!.length} ${AppLocalizations.of(context)!.translate('files')}';
       default:            return '';
     }
   }

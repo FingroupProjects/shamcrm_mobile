@@ -440,8 +440,6 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
         return AppLocalizations.of(context)!.translate('creation_date_details');
       case 'deal_status_id':
         return AppLocalizations.of(context)!.translate('status_history');
-      case 'files':
-        return AppLocalizations.of(context)!.translate('files_details');
       default:
         return '${fc.fieldName}:';
     }
@@ -515,12 +513,6 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
         }
         return deal.dealStatus?.title ?? '';
 
-      case 'files':
-        if (deal.files.isNotEmpty) {
-          return '${deal.files.length} ${AppLocalizations.of(context)!.translate('files')}';
-        }
-        return '';
-
       default:
         return '';
     }
@@ -540,6 +532,11 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     }
 
     for (var fc in _fieldConfiguration) {
+      // Пропускаем поле 'files', так как оно всегда показывается в конце
+      if (fc.fieldName == 'files') {
+        continue;
+      }
+      
       final fieldValue = _getFieldValue(fc, deal);
 
       final fieldName = _getFieldName(fc);
@@ -548,6 +545,14 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       details.add({
         'label': fieldName,
         'value': fieldValue,
+      });
+    }
+
+    // Всегда добавляем файлы в конец списка, если они есть
+    if (deal.files != null && deal.files.isNotEmpty) {
+      details.add({
+        'label': AppLocalizations.of(context)!.translate('files_details'),
+        'value': '${deal.files.length} ${AppLocalizations.of(context)!.translate('files')}',
       });
     }
   }
