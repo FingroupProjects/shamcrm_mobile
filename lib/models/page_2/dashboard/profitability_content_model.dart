@@ -54,7 +54,7 @@ class ProfitabilityResult {
 class MonthData {
   final int month;
   final String monthName;
-  final double profitabilityPercentage; // Changed to double to handle numeric values
+  final num profitabilityPercentage; // Changed to double to handle numeric values
 
   MonthData({
     required this.month,

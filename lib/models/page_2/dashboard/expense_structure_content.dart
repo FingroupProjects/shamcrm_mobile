@@ -23,7 +23,7 @@ class DashboardExpenseResponse {
 }
 
 class ExpenseResult {
-  final int totalExpenses;
+  final num totalExpenses;
   final List<ExpenseItem> expenseStructure;
   final List<ExpenseItem> topExpenses;
   final Period period;
@@ -61,9 +61,9 @@ class ExpenseResult {
 class ExpenseItem {
   final String articleName;
   final String articleType;
-  final int sum;
+  final num sum;
   final String formattedSum;
-  final int percentage;
+  final num percentage;
 
   ExpenseItem({
     required this.articleName,

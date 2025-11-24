@@ -62,7 +62,7 @@ class OrderChartData {
 class DataPoint {
   final int id;
   final String label;
-  final int amount;
+  final num amount;
 
   DataPoint({required this.id, required this.label, required this.amount});
 

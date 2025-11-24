@@ -58,8 +58,8 @@ class SalesResult {
 class MonthData {
   final int month;
   final String monthName;
-  final int salesCount;
-  final int totalQuantity;
+  final num salesCount;
+  final num totalQuantity;
   final String totalAmount; // Keeping as String to preserve decimal format
 
   MonthData({
@@ -101,8 +101,8 @@ class MonthData {
 
 // Class to represent the summary object
 class Summary {
-  final int totalSalesCount;
-  final int totalQuantity;
+  final num totalSalesCount;
+  final num totalQuantity;
   final String totalAmount; // Keeping as String to preserve decimal format
 
   Summary({
