@@ -389,20 +389,42 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
 
   double _calculateInterval() {
     final maxY = _calculateMaxY();
-    // Более детальные интервалы для красивого UI
-    if (maxY <= 5) return 1;
-    if (maxY <= 10) return 2;
-    if (maxY <= 20) return 5;
-    if (maxY <= 50) return 10;
-    if (maxY <= 100) return 20;
-    if (maxY <= 200) return 25;
-    if (maxY <= 500) return 50;
-    if (maxY <= 1000) return 100;
-    if (maxY <= 2000) return 200;
-    if (maxY <= 5000) return 500;
-    if (maxY <= 10000) return 1000;
-    if (maxY <= 20000) return 2000;
-    return 5000;
+    
+    // Для очень больших значений используем фиксированные интервалы
+    // чтобы избежать слишком большого количества горизонтальных линий
+    if (maxY >= 500000) {
+      return 100000; // 100k интервалы для значений >= 500k
+    } else if (maxY >= 200000) {
+      return 50000; // 50k интервалы для значений >= 200k (например, 300k)
+    } else if (maxY >= 100000) {
+      return 30000; // 30k интервалы для значений >= 100k
+    } else if (maxY >= 50000) {
+      return 10000; // 10k интервалы для значений >= 50k
+    } else if (maxY >= 20000) {
+      return 5000; // 5k интервалы для значений >= 20k
+    } else if (maxY >= 10000) {
+      return 2000; // 2k интервалы для значений >= 10k
+    } else if (maxY >= 5000) {
+      return 1000; // 1k интервалы для значений >= 5k
+    } else if (maxY >= 2000) {
+      return 500; // 500 интервалы для значений >= 2k
+    } else if (maxY >= 1000) {
+      return 200; // 200 интервалы для значений >= 1k
+    } else if (maxY >= 500) {
+      return 100; // 100 интервалы для значений >= 500
+    } else if (maxY >= 200) {
+      return 50; // 50 интервалы для значений >= 200
+    } else if (maxY >= 100) {
+      return 20; // 20 интервалы для значений >= 100
+    } else if (maxY >= 50) {
+      return 10; // 10 интервалы для значений >= 50
+    } else if (maxY >= 20) {
+      return 5; // 5 интервалы для значений >= 20
+    } else if (maxY >= 10) {
+      return 2; // 2 интервалы для значений >= 10
+    } else {
+      return 1; // 1 интервал для малых значений
+    }
   }
 
   String _formatValue(double value) {
