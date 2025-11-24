@@ -270,29 +270,25 @@ Future<void> _initializeFirebaseMessaging(ApiService apiService) async {
       sound: true,
     );
 
-    // ✅ КРИТИЧНО: Обработка initial message
-    FirebaseMessaging.instance.getInitialMessage().then((RemoteMessage? message) {
-      if (message != null) {
-        debugPrint('_initializeFirebaseMessaging: Got initial message: ${message.data}');
-        // Сохраняем сообщение для обработки после инициализации
-        _handleInitialMessage(message);
-      }
-    });
+    // ✅ УБРАНО: НЕ обрабатываем getInitialMessage здесь!
+    // FirebaseMessaging.instance.getInitialMessage() - УДАЛЕНО
 
-    // ✅ Обработка сообщений когда приложение в foreground
+    // ✅ Обработка foreground сообщений
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       debugPrint('_initializeFirebaseMessaging: onMessage: ${message.data}');
       debugPrint('Push-уведомление получено в foreground: {id: ${message.data['id']}, type: ${message.data['type']}}');
     });
 
-    // ✅ КРИТИЧНО: Обработка нажатия на уведомление когда приложение в background
+    // ✅ КРИТИЧНО: Обработка background tap
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       debugPrint('_initializeFirebaseMessaging: onMessageOpenedApp: ${message.data}');
       debugPrint('Push-уведомление открыто из background: {id: ${message.data['id']}, type: ${message.data['type']}}');
-      FirebaseApi().handleMessage(message);
+      
+      // ⚠️ НЕ вызываем handleMessage здесь - пусть HomeScreen обработает!
+      // FirebaseApi().handleMessage(message); - УДАЛЕНО
     });
 
-    await getFCMTokens(apiService);
+    // await getFCMTokens(apiService);
 
     try {
       FirebaseApi firebaseApi = FirebaseApi();
@@ -311,44 +307,45 @@ Future<void> _initializeFirebaseMessaging(ApiService apiService) async {
   }
 }
 
-// ✅ НОВЫЙ МЕТОД: Обработка initial message
-Future<void> _handleInitialMessage(RemoteMessage message) async {
-  debugPrint('_handleInitialMessage: ${message.data}');
+
+// // ✅ НОВЫЙ МЕТОД: Обработка initial message
+// Future<void> _handleInitialMessage(RemoteMessage message) async {
+//   debugPrint('_handleInitialMessage: ${message.data}');
   
-  // Ждем инициализации приложения
-  await Future.delayed(Duration(seconds: 2));
+//   // Ждем инициализации приложения
+//   await Future.delayed(Duration(seconds: 2));
   
-  try {
-    await FirebaseApi().handleMessage(message);
-  } catch (e) {
-    debugPrint('_handleInitialMessage: Error: $e');
-  }
-}
+//   try {
+//     await FirebaseApi().handleMessage(message);
+//   } catch (e) {
+//     debugPrint('_handleInitialMessage: Error: $e');
+//   }
+// }
 
-Future<void> getFCMTokens(ApiService apiService) async {
-  try {
-    if (Firebase.apps.isEmpty) return;
+// Future<void> getFCMTokens(ApiService apiService) async {
+//   try {
+//     if (Firebase.apps.isEmpty) return;
 
-    try {
-      Firebase.app();
-    } catch (e) {
-      return;
-    }
+//     try {
+//       Firebase.app();
+//     } catch (e) {
+//       return;
+//     }
 
-    final String? fcmToken = await FirebaseMessaging.instance.getToken();
+//     final String? fcmToken = await FirebaseMessaging.instance.getToken();
     
-    if (fcmToken != null && fcmToken.isNotEmpty) {
-      try {
-        await apiService.sendDeviceToken(fcmToken);
-      } catch (e) {
-        //print('FCM Token: Ошибка отправки: $e');
-      }
-    }
+//     if (fcmToken != null && fcmToken.isNotEmpty) {
+//       try {
+//         await apiService.sendDeviceToken(fcmToken);
+//       } catch (e) {
+//         //print('FCM Token: Ошибка отправки: $e');
+//       }
+//     }
     
-  } catch (e) {
-    //print('FCM Token: Ошибка: $e');
-  }
-}
+//   } catch (e) {
+//     //print('FCM Token: Ошибка: $e');
+//   }
+// }
 
 class SessionValidationResult {
   final bool isValid;
