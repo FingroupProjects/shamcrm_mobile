@@ -12,6 +12,7 @@ import 'package:crm_task_manager/models/main_field_model.dart';
 import 'package:crm_task_manager/models/project_task_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/taskbyId_model.dart';
+import 'package:crm_task_manager/models/file_helper.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/models/directory_model.dart' as directory_model;
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/add_custom_directory_dialog.dart';
@@ -919,7 +920,17 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
       priority: selectedPriority,
       description: description,
       customFields: customFieldMap,
-      filePaths: selectedFiles,
+      files: selectedFiles.isNotEmpty
+          ? selectedFiles.asMap().entries.map((entry) {
+              final index = entry.key;
+              return FileHelper(
+                id: 0,
+                name: fileNames[index],
+                path: entry.value,
+                size: fileSizes[index],
+              );
+            }).toList()
+          : null,
       directoryValues: directoryValues,
       localizations: localizations,
     ));

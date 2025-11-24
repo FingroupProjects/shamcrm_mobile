@@ -17,7 +17,9 @@ import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_withPriority.dart';
 import 'package:crm_task_manager/custom_widget/file_picker_dialog.dart';
+import 'package:crm_task_manager/custom_widget/delete_file_dialog.dart' show DeleteFileDialog;
 import 'package:crm_task_manager/models/field_configuration.dart';
+import 'package:crm_task_manager/models/file_helper.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
 import 'package:crm_task_manager/models/project_task_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
@@ -89,15 +91,12 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   int? _selectedStatuses;
   List<CustomField> customFields = [];
   bool isEndDateInvalid = false;
-  List<String> selectedFiles = [];
-  List<String> fileNames = [];
-  List<String> fileSizes = [];
+  List<FileHelper> files = [];
   final ApiService _apiService = ApiService();
-  List<TaskFiles> existingFiles = [];
+  List<TaskFiles> existingFiles = []; // Для отслеживания удаленных файлов с сервера
   bool _canUpdateTask = false;
   bool _hasTaskCreateForMySelfPermission = false;
   int? _currentUserId;
-  List<String> newFiles = []; // Список для отслеживания новых файлов
 
   // Конфигурация полей с сервера
   Map<String, Widget> fieldWidgets = {};
@@ -123,8 +122,16 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
     _loadInitialData();
     selectedPriority ??= 1;
     if (widget.files != null) {
-      existingFiles = widget.files!;
-      fileNames = existingFiles.map((file) => file.name).toList();
+      files = widget.files!.map((file) {
+        return FileHelper(
+          id: file.id,
+          name: file.name,
+          path: file.path,
+          size: null, // TaskFiles не имеет поля size
+        );
+      }).toList();
+      // Сохраняем оригинальные файлы для отслеживания удалений
+      existingFiles = List.from(widget.files!);
     }
 
     // Загружаем конфигурацию полей
@@ -214,10 +221,10 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
           height: 120,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            itemCount: fileNames.isEmpty ? 1 : fileNames.length + 1,
+            itemCount: files.isEmpty ? 1 : files.length + 1,
             itemBuilder: (context, index) {
               // Кнопка добавления файла
-              if (fileNames.isEmpty || index == fileNames.length) {
+              if (files.isEmpty || index == files.length) {
                 return Padding(
                   padding: EdgeInsets.only(right: 16),
                   child: GestureDetector(
@@ -244,13 +251,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                 );
               }
 
-              // ✅ ИСПРАВЛЕНИЕ: Проверка границ
-              if (index < 0 || index >= fileNames.length) {
-                return SizedBox.shrink();
-              }
-
               // Отображение выбранных файлов
-              final fileName = fileNames[index];
+              final fileName = files[index].name;
               final fileExtension = fileName.split('.').last.toLowerCase();
 
               return Padding(
@@ -261,8 +263,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                       width: 100,
                       child: Column(
                         children: [
-                          // ✅ КРИТИЧЕСКИ ВАЖНО: Передаем INDEX, а не fileName!
-                          _buildFileIcon(index, fileExtension),
+                          // НОВОЕ: Используем метод buildFileIcon для показа превью или иконки
+                          buildFileIcon(files, fileName, fileExtension),
                           SizedBox(height: 8),
                           Text(
                             fileName,
@@ -278,32 +280,16 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                         ],
                       ),
                     ),
+                    // Кнопка удаления файла
                     Positioned(
                       right: -2,
                       top: -6,
                       child: GestureDetector(
                         onTap: () {
-                          setState(() {
-                            // Для task_edit и других *_edit файлов:
-                            // ДОБАВЬТЕ проверку на existingFiles!
-                            // (см. отдельный блок ниже)
-
-                            if (index >= 0 && index < selectedFiles.length) {
-                              final removedPath = selectedFiles[index];
-
-                              bool isExistingFile = existingFiles.any((f) => f.path == removedPath);
-
-                              if (isExistingFile) {
-                                existingFiles.removeWhere((f) => f.path == removedPath);
-                              } else {
-                                newFiles.remove(removedPath);
-                              }
-                            }
-
-                            selectedFiles.removeAt(index);
-                            fileNames.removeAt(index);
-                            fileSizes.removeAt(index);
-                          });
+                          showDeleteFileDialog(
+                            fileId: files[index].id,
+                            index: index,
+                          );
                         },
                         child: Container(
                           padding: EdgeInsets.all(4),
@@ -1356,80 +1342,23 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
     }
   }
 
-  /// Строит иконку файла или превью изображения
-  Widget _buildFileIcon(int index, String fileExtension) {
-    // ✅ ВАЖНО: Проверка валидности индекса!
-    if (index < 0 || index >= selectedFiles.length) {
-      return Image.asset(
-        'assets/icons/files/file.png',
-        width: 60,
-        height: 60,
-      );
-    }
-
-    final imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'heic', 'heif'];
-
-    if (imageExtensions.contains(fileExtension)) {
-      // ✅ ИСПРАВЛЕНИЕ: Используем index напрямую, БЕЗ indexOf()!
-      final filePath = selectedFiles[index];
-      final file = File(filePath);
-
-      // Проверяем, существует ли файл локально
-      if (file.existsSync()) {
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: Image.file(
-            file,
-            width: 60,
-            height: 60,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              return Image.asset(
-                'assets/icons/files/file.png',
-                width: 60,
-                height: 60,
-              );
-            },
-          ),
-        );
-      } else {
-        // Файл с сервера - показываем иконку
-        return Image.asset(
-          'assets/icons/files/$fileExtension.png',
-          width: 60,
-          height: 60,
-          errorBuilder: (context, error, stackTrace) {
-            return Image.asset(
-              'assets/icons/files/file.png',
-              width: 60,
-              height: 60,
-            );
-          },
-        );
-      }
-    } else {
-      return Image.asset(
-        'assets/icons/files/$fileExtension.png',
-        width: 60,
-        height: 60,
-        errorBuilder: (context, error, stackTrace) {
-          return Image.asset(
-            'assets/icons/files/file.png',
-            width: 60,
-            height: 60,
-          );
-        },
-      );
-    }
-  }
-
   Future<void> _pickFile() async {
     // Вычисляем текущий общий размер файлов
-    double totalSize = selectedFiles.fold<double>(
-      0.0,
-      (sum, file) => sum + File(file).lengthSync() / (1024 * 1024),
-    );
+    double totalSize = files.fold<double>(0.0, (sum, file) {
+      if (file.path.startsWith('http://') || file.path.startsWith('https://')) {
+        int index = files.indexOf(file);
+        if (index >= 0 && index < files.length) {
+          final size = files[index].size;
+          final parsed = num.tryParse(size.toString());
+          return sum + (parsed != null ? parsed / 1024.0 : 0);
+        }
+        return sum;
+      }
 
+      return sum + File(file.path).lengthSync() / (1024 * 1024);
+    });
+
+    // Показываем диалог выбора типа файла
     final List<PickedFileInfo>? pickedFiles = await FilePickerDialog.show(
       context: context,
       allowMultiple: true,
@@ -1443,19 +1372,68 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
       errorPickingFileMessage: AppLocalizations.of(context)!.translate('error_picking_file'),
     );
 
+    // Если файлы выбраны, добавляем их
     if (pickedFiles != null && pickedFiles.isNotEmpty) {
       setState(() {
         for (var file in pickedFiles) {
-          selectedFiles.add(file.path);
-          fileNames.add(file.name);
-          fileSizes.add(file.sizeKB);
-          // ✅ ВАЖНО: Добавляем в список новых файлов
-          newFiles.add(file.path);
+          files.add(FileHelper(id: 0, name: file.name, path: file.path, size: file.sizeKB));
         }
       });
     }
   }
 
+  void showDeleteFileDialog({required int fileId, required int index}) {
+    bool isDeleting = false;
+
+    showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return DeleteFileDialog(
+          isDeleting: isDeleting,
+          fileId: fileId,
+          onDelete: (fileId) async {
+            if (files[index].id == 0) {
+              setState(() {
+                files.removeAt(index);
+              });
+              Navigator.of(context).pop(true);
+              return;
+            }
+
+            isDeleting = true;
+            setState(() {});
+
+            final response = await _apiService.deleteTaskFile(fileId);
+            if (response['result'] == 'Success') {
+              setState(() {
+                files.removeAt(index);
+              });
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    AppLocalizations.of(context)!.translate('error_delete_file'),
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+
+            Navigator.of(context).pop(true);
+          },
+          onCancel: () {
+            Navigator.of(context).pop(false);
+          },
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1997,6 +1975,29 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                             }
                           }
 
+                          // Преобразуем files в filePaths и existingFiles
+                          // Новые файлы (id == 0)
+                          final newFilePaths = files
+                              .where((f) => f.id == 0)
+                              .map((f) => f.path)
+                              .toList();
+
+                          // Существующие файлы (id != 0, которые не были удалены)
+                          final keptExistingFiles = files
+                              .where((f) => f.id != 0)
+                              .map((f) {
+                                // Находим соответствующий TaskFiles объект из оригинального списка
+                                return existingFiles.firstWhere(
+                                  (ef) => ef.id == f.id,
+                                  orElse: () => TaskFiles(
+                                    id: f.id,
+                                    name: f.name,
+                                    path: f.path,
+                                  ),
+                                );
+                              })
+                              .toList();
+
                           final localizations =
                           AppLocalizations.of(context)!;
 
@@ -2024,10 +2025,10 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                               description:
                               descriptionController.text,
                               customFields: customFieldList,
-                              filePaths: selectedFiles,
+                              filePaths: newFilePaths.isNotEmpty ? newFilePaths : null,
                               directoryValues: directoryValues,
                               localizations: localizations,
-                              existingFiles: existingFiles,
+                              existingFiles: keptExistingFiles.isNotEmpty ? keptExistingFiles : null,
                             ),
                           );
                         } catch (e) {

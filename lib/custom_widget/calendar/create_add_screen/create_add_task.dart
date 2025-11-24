@@ -13,6 +13,7 @@ import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_withPriority.dart';
 import 'package:crm_task_manager/custom_widget/file_picker_dialog.dart';
 import 'package:crm_task_manager/models/project_task_model.dart';
+import 'package:crm_task_manager/models/file_helper.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_add_create_field.dart';
@@ -390,7 +391,17 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
                 userId: selectedUsers?.map((id) => int.parse(id)).toList(),
                 description: descriptionController.text,
                 customFields: customFieldMap,
-                filePaths: selectedFiles, 
+                files: selectedFiles.isNotEmpty
+                    ? selectedFiles.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        return FileHelper(
+                          id: 0,
+                          name: fileNames[index],
+                          path: entry.value,
+                          size: fileSizes[index],
+                        );
+                      }).toList()
+                    : null,
                 localizations: localizations, 
               ),
             );

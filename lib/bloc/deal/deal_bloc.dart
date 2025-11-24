@@ -342,6 +342,7 @@ Future<void> _fetchDealStatuses(
         directoryValues: event.directoryValues,
         files: event.files,
         dealStatusIds: event.dealStatusIds,
+        existingFiles: event.existingFiles,
       );
 
       if (result['success']) {

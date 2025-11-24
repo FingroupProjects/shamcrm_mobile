@@ -232,7 +232,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         userId: event.userId,
         description: event.description,
         customFields: event.customFields,
-        filePaths: event.filePaths,
+        files: event.files,
         directoryValues: event.directoryValues,
       );
       if (result['success']) {

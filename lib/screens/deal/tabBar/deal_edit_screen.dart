@@ -1671,6 +1671,16 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                           }
                                         }
 
+                                        // Преобразуем files на новые и существующие
+                                        // Новые файлы (id == 0)
+                                        final newFiles = files.where((f) => f.id == 0).toList();
+
+                                        // Существующие файлы (id != 0)
+                                        final existingFileIds = files
+                                            .where((f) => f.id != 0)
+                                            .map((f) => f.id)
+                                            .toList();
+
                                         final localizations = AppLocalizations.of(context)!;
                                         context.read<DealBloc>().add(UpdateDeal(
                                           dealId: widget.dealId,
@@ -1686,7 +1696,8 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                           customFields: customFieldList,
                                           directoryValues: directoryValues,
                                           localizations: localizations,
-                                          files: files,
+                                          files: newFiles.isNotEmpty ? newFiles : null,
+                                          existingFiles: existingFileIds.isNotEmpty ? existingFileIds : null,
                                           dealStatusIds: _selectedStatusIds,
                                         ));
                                       } else {

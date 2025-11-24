@@ -8,6 +8,7 @@ import 'package:crm_task_manager/bloc/project_task/project_task_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_withPriority.dart';
 import 'package:crm_task_manager/custom_widget/file_picker_dialog.dart';
+import 'package:crm_task_manager/models/file_helper.dart';
 import 'package:crm_task_manager/models/project_task_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
@@ -56,9 +57,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   final TextEditingController endDateController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
 
-  List<String> selectedFiles = [];
-  List<String> fileNames = [];
-  List<String> fileSizes = [];
+  List<FileHelper> files = [];
   int? selectedPriority;
   String? selectedProject;
   String? selectedStatus;
@@ -1025,36 +1024,33 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
 
   Future<void> _pickFile() async {
     // Вычисляем текущий общий размер файлов
-  double totalSize = selectedFiles.fold<double>(
-    0.0,
-    (sum, file) => sum + File(file).lengthSync() / (1024 * 1024),
-  );
-
-  // Показываем диалог выбора типа файла
-  final List<PickedFileInfo>? pickedFiles = await FilePickerDialog.show(
-    context: context,
-    allowMultiple: true,
-    maxSizeMB: 50.0,
-    currentTotalSizeMB: totalSize,
-    fileLabel: AppLocalizations.of(context)!.translate('file'),
-    galleryLabel: AppLocalizations.of(context)!.translate('gallery'),
-    cameraLabel: AppLocalizations.of(context)!.translate('camera'),
-    cancelLabel: AppLocalizations.of(context)!.translate('cancel'),
-    fileSizeTooLargeMessage: AppLocalizations.of(context)!.translate('file_size_too_large'),
-    errorPickingFileMessage: AppLocalizations.of(context)!.translate('error_picking_file'),
-  );
-
-  // Если файлы выбраны, добавляем их
-  if (pickedFiles != null && pickedFiles.isNotEmpty) {
-    setState(() {
-      for (var file in pickedFiles) {
-        selectedFiles.add(file.path);
-        fileNames.add(file.name);
-        fileSizes.add(file.sizeKB);
-      }
+    double totalSize = files.fold<double>(0.0, (sum, file) {
+      return sum + File(file.path).lengthSync() / (1024 * 1024);
     });
+
+    // Показываем диалог выбора типа файла
+    final List<PickedFileInfo>? pickedFiles = await FilePickerDialog.show(
+      context: context,
+      allowMultiple: true,
+      maxSizeMB: 50.0,
+      currentTotalSizeMB: totalSize,
+      fileLabel: AppLocalizations.of(context)!.translate('file'),
+      galleryLabel: AppLocalizations.of(context)!.translate('gallery'),
+      cameraLabel: AppLocalizations.of(context)!.translate('camera'),
+      cancelLabel: AppLocalizations.of(context)!.translate('cancel'),
+      fileSizeTooLargeMessage: AppLocalizations.of(context)!.translate('file_size_too_large'),
+      errorPickingFileMessage: AppLocalizations.of(context)!.translate('error_picking_file'),
+    );
+
+    // Если файлы выбраны, добавляем их
+    if (pickedFiles != null && pickedFiles.isNotEmpty) {
+      setState(() {
+        for (var file in pickedFiles) {
+          files.add(FileHelper(id: 0, name: file.name, path: file.path, size: file.sizeKB));
+        }
+      });
+    }
   }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -1535,14 +1531,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
       return;
     }
 
-    List<TaskFile> files = [];
-    for (int i = 0; i < selectedFiles.length; i++) {
-      files.add(TaskFile(
-        name: fileNames[i],
-        size: fileSizes[i],
-      ));
-    }
-
     List<Map<String, dynamic>> customFieldMap = [];
     List<Map<String, int>> directoryValues = [];
 
@@ -1816,7 +1804,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
       priority: selectedPriority,
       description: description,
       customFields: customFieldMap,
-      filePaths: selectedFiles,
+      files: files.isNotEmpty ? files : null,
       directoryValues: directoryValues,
       localizations: localizations,
     ));
@@ -1840,9 +1828,9 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
           height: 120,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            itemCount: fileNames.isEmpty ? 1 : fileNames.length + 1,
+            itemCount: files.isEmpty ? 1 : files.length + 1,
             itemBuilder: (context, index) {
-              if (fileNames.isEmpty || index == fileNames.length) {
+              if (files.isEmpty || index == files.length) {
                 return Padding(
                   padding: EdgeInsets.only(right: 16),
                   child: GestureDetector(
@@ -1869,7 +1857,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                 );
               }
 
-              final fileName = fileNames[index];
+              final fileName = files[index].name;
               final fileExtension = fileName.split('.').last.toLowerCase();
 
               return Padding(
@@ -1880,8 +1868,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                       width: 100,
                       child: Column(
                         children: [
-                          // ✅ КРИТИЧЕСКИ ВАЖНО: Передаем INDEX, а не fileName!
-                          _buildFileIcon(index, fileExtension),
+                          // НОВОЕ: Используем метод buildFileIcon для показа превью или иконки
+                          buildFileIcon(files, fileName, fileExtension),
                           SizedBox(height: 8),
                           Text(
                             fileName,
@@ -1903,13 +1891,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                       child: GestureDetector(
                         onTap: () {
                           setState(() {
-                            // Для task_edit и других *_edit файлов:
-                            // ДОБАВЬТЕ проверку на existingFiles!
-                            // (см. отдельный блок ниже)
-
-                            selectedFiles.removeAt(index);
-                            fileNames.removeAt(index);
-                            fileSizes.removeAt(index);
+                            files.removeAt(index);
                           });
                         },
                         child: Container(
@@ -1937,54 +1919,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
         ),
       ],
     );
-  }
-
-  /// Строит иконку файла или превью изображения
-  Widget _buildFileIcon(int index, String fileExtension) {
-    // ✅ ВАЖНО: Проверка валидности индекса!
-    if (index < 0 || index >= selectedFiles.length) {
-      return Image.asset(
-        'assets/icons/files/file.png',
-        width: 60,
-        height: 60,
-      );
-    }
-
-    final imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'heic', 'heif'];
-
-    if (imageExtensions.contains(fileExtension)) {
-      // ✅ ИСПРАВЛЕНИЕ: Используем index напрямую, БЕЗ indexOf()!
-      final filePath = selectedFiles[index];
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: Image.file(
-          File(filePath),
-          width: 60,
-          height: 60,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            return Image.asset(
-              'assets/icons/files/file.png',
-              width: 60,
-              height: 60,
-            );
-          },
-        ),
-      );
-    } else {
-      return Image.asset(
-        'assets/icons/files/$fileExtension.png',
-        width: 60,
-        height: 60,
-        errorBuilder: (context, error, stackTrace) {
-          return Image.asset(
-            'assets/icons/files/file.png',
-            width: 60,
-            height: 60,
-          );
-        },
-      );
-    }
   }
 
   Future<void> _checkPermissionsAndUser() async {
