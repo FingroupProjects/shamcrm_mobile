@@ -395,24 +395,37 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   }
 
   CustomField _getOrCreateCustomField(FieldConfiguration config) {
-    final existingField = customFields.firstWhere(
-          (field) => field.fieldName == config.fieldName && field.isCustomField,
-      orElse: () {
-        // ✅ Only create new field if it doesn't exist
-        // This happens when user adds a NEW custom field via UI
-        final newField = CustomField(
-          fieldName: config.fieldName,
-          uniqueId: Uuid().v4(),
-          controller: TextEditingController(), // Empty for new fields
-          type: config.type ?? 'string',
-          isCustomField: true,
-        );
-        customFields.add(newField);
-        return newField;
-      },
+    final existingFieldIndex = customFields.indexWhere(
+      (field) => field.fieldName == config.fieldName && field.isCustomField,
     );
 
-    return existingField;
+    if (existingFieldIndex != -1) {
+      // Поле уже существует - обновляем type из конфигурации, если он был null или пустым
+      final existingField = customFields[existingFieldIndex];
+      final configType = config.type;
+      
+      if (existingField.type == null || 
+          existingField.type!.isEmpty || 
+          (configType != null && configType.isNotEmpty && existingField.type != configType)) {
+        customFields[existingFieldIndex] = existingField.copyWith(
+          type: configType ?? 'string',
+        );
+        return customFields[existingFieldIndex];
+      }
+      return existingField;
+    } else {
+      // ✅ Only create new field if it doesn't exist
+      // This happens when user adds a NEW custom field via UI
+      final newField = CustomField(
+        fieldName: config.fieldName,
+        uniqueId: Uuid().v4(),
+        controller: TextEditingController(), // Empty for new fields
+        type: config.type ?? 'string',
+        isCustomField: true,
+      );
+      customFields.add(newField);
+      return newField;
+    }
   }
 
   CustomField _getOrCreateDirectoryField(FieldConfiguration config) {
@@ -1617,16 +1630,22 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                 if (customFields.isEmpty) {
                   // Initialize custom fields from widget data
                   for (var customField in widget.taskCustomFields) {
-                    if (kDebugMode) {
-                      print('Loading custom field: ${customField.name} with value: ${customField.value}');
-                    }
+                    // Ищем соответствующую конфигурацию поля
+                    final matchingConfig = fieldConfigurations.where(
+                      (config) => config.isCustomField && config.fieldName == customField.name,
+                    ).firstOrNull;
+
+                    // Используем type из конфигурации, если type из виджета пустой
+                    final fieldType = (customField.type.isEmpty && matchingConfig?.type != null)
+                        ? matchingConfig!.type
+                        : (customField.type.isNotEmpty ? customField.type : null);
 
                     final controller = TextEditingController(text: customField.value);
                     customFields.add(CustomField(
                       fieldName: customField.name,
                       controller: controller,
                       uniqueId: Uuid().v4(),
-                      type: customField.type,
+                      type: fieldType,
                       isCustomField: true,
                     ));
                   }
@@ -1911,12 +1930,11 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                             String fieldValue = field.controller.text.trim();
                             String? fieldType = field.type;
 
-                            // ВАЖНО: Нормализуем тип поля - преобразуем "text" в "string"
-                            if (fieldType == 'text') {
+                            // Если type null или пустая строка, устанавливаем string по умолчанию
+                            // НО сохраняем 'text' как 'text', не преобразуем в 'string'
+                            if (fieldType == null || fieldType.isEmpty) {
                               fieldType = 'string';
                             }
-                            // Если type null, устанавливаем string по умолчанию
-                            fieldType ??= 'string';
 
                             if (fieldType == 'number' &&
                                 fieldValue.isNotEmpty) {
