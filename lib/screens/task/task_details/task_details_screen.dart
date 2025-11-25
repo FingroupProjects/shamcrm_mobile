@@ -200,8 +200,9 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       final response = await _apiService.getFieldPositions(tableName: 'tasks');
       if (!mounted) return;
 
-      // Сортируем только по position, без фильтрации по isActive
-      final activeFields = [...response.result]..sort((a, b) => a.position.compareTo(b.position));
+      // Фильтруем только активные поля и сортируем по position
+      final activeFields = response.result.where((field) => field.isActive).toList()
+        ..sort((a, b) => a.position.compareTo(b.position));
 
       setState(() {
         _fieldConfiguration = activeFields;
@@ -518,7 +519,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       if (fc.fieldName == 'files') {
         continue;
       }
-      
+
       final value = _getFieldValue(fc, task);
       final label = _getFieldName(fc);
 
@@ -728,9 +729,9 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                 ),
                 onPressed: () async {
                   final createdAtString = currentTask?.createdAt != null &&
-                          currentTask!.createdAt!.isNotEmpty
+                      currentTask!.createdAt!.isNotEmpty
                       ? DateFormat('dd/MM/yyyy')
-                          .format(DateTime.parse(currentTask!.createdAt!))
+                      .format(DateTime.parse(currentTask!.createdAt!))
                       : null;
 
                   if (currentTask != null) {
@@ -742,14 +743,14 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                           taskName: currentTask!.name,
                           priority: currentTask!.priority,
                           taskStatus:
-                              currentTask!.taskStatus?.taskStatus.toString() ??
-                                  '',
+                          currentTask!.taskStatus?.taskStatus.toString() ??
+                              '',
                           project: currentTask!.project?.id.toString(),
                           user: currentTask!.user != null &&
-                                  currentTask!.user!.isNotEmpty
+                              currentTask!.user!.isNotEmpty
                               ? currentTask!.user!
-                                  .map((user) => user.id)
-                                  .toList()
+                              .map((user) => user.id)
+                              .toList()
                               : null,
                           statusId: currentTask!.taskStatus?.id ?? 0,
                           description: currentTask!.description,
@@ -844,7 +845,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                   fontWeight: FontWeight.w500,
                   color: Color(0xff1E2E52),
                   decoration:
-                      value.isNotEmpty ? TextDecoration.underline : null,
+                  value.isNotEmpty ? TextDecoration.underline : null,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -1088,7 +1089,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
   void _showUsersDialog(String users) {
     List<String> userList =
-        users.split(',').map((user) => user.trim()).toList();
+    users.split(',').map((user) => user.trim()).toList();
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -1388,122 +1389,122 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                 child: ListView(
                   children: [
                     _buildDetailsList(),
-   if (task.chat != null || task.isFinished == 0)
-  Row(
-    children: [
-      if (task.chat != null)
-        Expanded(
-          key: keyTaskNavigateChat,
-          flex: task.isFinished == 1 ? 100 : 55,
-          child: TaskNavigateToChat(
-            chatId: task.chat!.id,
-            taskName: widget.taskName,
-            canSendMessage: task.chat!.canSendMessage,
-          ),
-        ),
-      if (task.isFinished == 0) ...[
-        if (task.chat != null) SizedBox(width: 8, height: 60),
-        Expanded(
-          key: keyTaskForReview,
-          flex: task.chat != null ? 45 : 100,
-          child: ElevatedButton(
-            onPressed: () => showDialog(
-              context: context,
-              builder: (dialogContext) => AlertDialog(
-                contentPadding: EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-                title: Text(
-                  AppLocalizations.of(context)!.translate('confirm_task_completion'),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontFamily: 'Gilroy', fontSize: 18, fontWeight: FontWeight.w500),
-                ),
-                content: Container(
-                  width: double.maxFinite,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: TextButton(
-                          onPressed: () => Navigator.pop(dialogContext),
-                          style: TextButton.styleFrom(
-                            backgroundColor: Colors.red,
-                            minimumSize: Size(80, 48),
-                            padding: EdgeInsets.symmetric(horizontal: 16),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          ),
-                          child: Text(
-                            AppLocalizations.of(context)!.translate('cancel'),
-                            style: TextStyle(color: Colors.white, fontFamily: 'Gilroy', fontSize: 13, fontWeight: FontWeight.w500),
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: 16),
-                      Expanded(
-                        child: StatefulBuilder(
-                          builder: (context, setState) => TextButton(
-                            onPressed: _isLoading ? null : () async {
-                              setState(() => _isLoading = true);
-                              final taskId = int.parse(widget.taskId);
-                              try {
-                                final result = await context.read<ApiService>().finishTask(taskId);
-                                Navigator.pop(dialogContext);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(result['message'] ?? '', style: TextStyle(fontFamily: 'Gilroy', fontSize: 16, fontWeight: FontWeight.w500, color: Colors.white)),
-                                    behavior: SnackBarBehavior.floating,
-                                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                    backgroundColor: result['success'] == true ? Colors.green : Colors.red,
-                                    elevation: 3,
-                                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                                    duration: Duration(seconds: 2),
-                                  ),
-                                );
-                                if (result['success'] == true) {
-                                  context.read<CalendarBloc>().add(FetchCalendarEvents(widget.initialDate?.month ?? DateTime.now().month, widget.initialDate?.year ?? DateTime.now().year));
-                                  context.read<TaskBloc>().add(FetchTaskStatuses());
-                                }
-                              } catch (e) {
-                                Navigator.pop(dialogContext);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text(e.toString(), style: TextStyle(fontFamily: 'Gilroy', fontSize: 16, fontWeight: FontWeight.w500, color: Colors.white)), backgroundColor: Colors.red),
-                                );
-                              } finally {
-                                setState(() => _isLoading = false);
-                              }
-                            },
-                            style: TextButton.styleFrom(
-                              backgroundColor: Color(0xff1E2E52),
-                              minimumSize: Size(130, 48),
-                              padding: EdgeInsets.symmetric(horizontal: 16),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    if (task.chat != null || task.isFinished == 0)
+                      Row(
+                        children: [
+                          if (task.chat != null)
+                            Expanded(
+                              key: keyTaskNavigateChat,
+                              flex: task.isFinished == 1 ? 100 : 55,
+                              child: TaskNavigateToChat(
+                                chatId: task.chat!.id,
+                                taskName: widget.taskName,
+                                canSendMessage: task.chat!.canSendMessage,
+                              ),
                             ),
-                            child: _isLoading
-                                ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                                : Text(AppLocalizations.of(context)!.translate('confirm'), style: TextStyle(color: Colors.white, fontFamily: 'Gilroy', fontSize: 13, fontWeight: FontWeight.w500)),
-                          ),
-                        ),
+                          if (task.isFinished == 0) ...[
+                            if (task.chat != null) SizedBox(width: 8, height: 60),
+                            Expanded(
+                              key: keyTaskForReview,
+                              flex: task.chat != null ? 45 : 100,
+                              child: ElevatedButton(
+                                onPressed: () => showDialog(
+                                  context: context,
+                                  builder: (dialogContext) => AlertDialog(
+                                    contentPadding: EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                                    title: Text(
+                                      AppLocalizations.of(context)!.translate('confirm_task_completion'),
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(fontFamily: 'Gilroy', fontSize: 18, fontWeight: FontWeight.w500),
+                                    ),
+                                    content: Container(
+                                      width: double.maxFinite,
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Expanded(
+                                            child: TextButton(
+                                              onPressed: () => Navigator.pop(dialogContext),
+                                              style: TextButton.styleFrom(
+                                                backgroundColor: Colors.red,
+                                                minimumSize: Size(80, 48),
+                                                padding: EdgeInsets.symmetric(horizontal: 16),
+                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                              ),
+                                              child: Text(
+                                                AppLocalizations.of(context)!.translate('cancel'),
+                                                style: TextStyle(color: Colors.white, fontFamily: 'Gilroy', fontSize: 13, fontWeight: FontWeight.w500),
+                                              ),
+                                            ),
+                                          ),
+                                          SizedBox(width: 16),
+                                          Expanded(
+                                            child: StatefulBuilder(
+                                              builder: (context, setState) => TextButton(
+                                                onPressed: _isLoading ? null : () async {
+                                                  setState(() => _isLoading = true);
+                                                  final taskId = int.parse(widget.taskId);
+                                                  try {
+                                                    final result = await context.read<ApiService>().finishTask(taskId);
+                                                    Navigator.pop(dialogContext);
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                      SnackBar(
+                                                        content: Text(result['message'] ?? '', style: TextStyle(fontFamily: 'Gilroy', fontSize: 16, fontWeight: FontWeight.w500, color: Colors.white)),
+                                                        behavior: SnackBarBehavior.floating,
+                                                        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                                        backgroundColor: result['success'] == true ? Colors.green : Colors.red,
+                                                        elevation: 3,
+                                                        padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                                        duration: Duration(seconds: 2),
+                                                      ),
+                                                    );
+                                                    if (result['success'] == true) {
+                                                      context.read<CalendarBloc>().add(FetchCalendarEvents(widget.initialDate?.month ?? DateTime.now().month, widget.initialDate?.year ?? DateTime.now().year));
+                                                      context.read<TaskBloc>().add(FetchTaskStatuses());
+                                                    }
+                                                  } catch (e) {
+                                                    Navigator.pop(dialogContext);
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                      SnackBar(content: Text(e.toString(), style: TextStyle(fontFamily: 'Gilroy', fontSize: 16, fontWeight: FontWeight.w500, color: Colors.white)), backgroundColor: Colors.red),
+                                                    );
+                                                  } finally {
+                                                    setState(() => _isLoading = false);
+                                                  }
+                                                },
+                                                style: TextButton.styleFrom(
+                                                  backgroundColor: Color(0xff1E2E52),
+                                                  minimumSize: Size(130, 48),
+                                                  padding: EdgeInsets.symmetric(horizontal: 16),
+                                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                                ),
+                                                child: _isLoading
+                                                    ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                                                    : Text(AppLocalizations.of(context)!.translate('confirm'), style: TextStyle(color: Colors.white, fontFamily: 'Gilroy', fontSize: 13, fontWeight: FontWeight.w500)),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    backgroundColor: Color.fromARGB(255, 255, 255, 255),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  ),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  backgroundColor: Color(0xFF1E2E52),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                ),
+                                child: Text(
+                                  AppLocalizations.of(context)!.translate('for_review'),
+                                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600, fontFamily: 'Gilroy'),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-                backgroundColor: Color.fromARGB(255, 255, 255, 255),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              backgroundColor: Color(0xFF1E2E52),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            child: Text(
-              AppLocalizations.of(context)!.translate('for_review'),
-              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600, fontFamily: 'Gilroy'),
-            ),
-          ),
-        ),
-      ],
-    ],
-  ),
                     const SizedBox(height: 16),
                     ActionHistoryWidgetTask(
                         taskId: int.parse(widget.taskId), key: keyTaskHistory),

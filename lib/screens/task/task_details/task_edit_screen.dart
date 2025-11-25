@@ -328,14 +328,13 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   Future<void> _saveFieldOrderToBackend() async {
     try {
       // Подготовка данных для отправки
-      // Используем оригинальные значения is_active и required с бэкенда
       final List<Map<String, dynamic>> updates = [];
       for (var config in fieldConfigurations) {
         updates.add({
           'id': config.id,
           'position': config.position,
-          'is_active': config.originalIsActive ?? (config.isActive ? 1 : 0),
-          'is_required': config.originalRequired ?? (config.required ? 1 : 0),
+          'is_active': config.isActive ? 1 : 0,
+          'is_required': config.required ? 1 : 0,
           'show_on_table': config.showOnTable ? 1 : 0,
         });
       }
@@ -383,16 +382,16 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
 
   CustomField _getOrCreateCustomField(FieldConfiguration config) {
     final existingFieldIndex = customFields.indexWhere(
-      (field) => field.fieldName == config.fieldName && field.isCustomField,
+          (field) => field.fieldName == config.fieldName && field.isCustomField,
     );
 
     if (existingFieldIndex != -1) {
       // Поле уже существует - обновляем type из конфигурации, если он был null или пустым
       final existingField = customFields[existingFieldIndex];
       final configType = config.type;
-      
-      if (existingField.type == null || 
-          existingField.type!.isEmpty || 
+
+      if (existingField.type == null ||
+          existingField.type!.isEmpty ||
           (configType != null && configType.isNotEmpty && existingField.type != configType)) {
         customFields[existingFieldIndex] = existingField.copyWith(
           type: configType ?? 'string',
@@ -453,7 +452,12 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
             });
           },
           priorityText: AppLocalizations.of(context)!.translate('urgent'),
-          validator: null, // Убрана логика required
+          validator: config.required ? (value) {
+            if (value == null || value.isEmpty) {
+              return AppLocalizations.of(context)!.translate('field_required');
+            }
+            return null;
+          } : null,
         );
 
       case 'description':
@@ -494,7 +498,12 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
           controller: endDateController,
           label: AppLocalizations.of(context)!.translate('deadline'),
           hasError: isEndDateInvalid,
-          validator: null, // Убрана логика required
+          validator: config.required ? (value) {
+            if (value == null || value.isEmpty) {
+              return AppLocalizations.of(context)!.translate('field_required');
+            }
+            return null;
+          } : null,
         );
 
       case 'task_status_id':
@@ -583,8 +592,10 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   }
 
   List<Widget> _buildConfiguredFieldWidgets() {
-    // Сортируем только по позициям, без фильтрации по isActive
-    final sorted = [...fieldConfigurations]..sort((a, b) => a.position.compareTo(b.position));
+    final sorted = fieldConfigurations
+        .where((e) => e.isActive)
+        .toList()
+      ..sort((a, b) => a.position.compareTo(b.position));
 
     final widgets = <Widget>[];
     for (final config in sorted) {
@@ -767,10 +778,10 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   void _showAddFieldMenu() {
     final RenderBox? renderBox = _addFieldButtonKey.currentContext?.findRenderObject() as RenderBox?;
     if (renderBox == null) return;
-    
+
     final Offset offset = renderBox.localToGlobal(Offset.zero);
     final Size size = renderBox.size;
-    
+
     // Список элементов меню
     final menuItems = [
       PopupMenuItem(
@@ -798,11 +809,11 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
         ),
       ),
     ];
-    
+
     // Если элементов 5 или больше, показываем над кнопкой, иначе под кнопкой
     final showAbove = menuItems.length >= 5;
     final double verticalOffset = showAbove ? -8 : size.height + 8;
-    
+
     showMenu(
       context: context,
       position: RelativeRect.fromLTRB(
@@ -1014,8 +1025,6 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                     type: config.type,
                     isDirectory: config.isDirectory,
                     showOnTable: config.showOnTable,
-                    originalIsActive: config.originalIsActive,
-                    originalRequired: config.originalRequired,
                   ));
                 }
 
@@ -1135,8 +1144,6 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                     type: config.type,
                                     isDirectory: config.isDirectory,
                                     showOnTable: config.showOnTable,
-                                    originalIsActive: config.originalIsActive,
-                                    originalRequired: config.originalRequired,
                                   );
 
                                   final idx = fieldConfigurations.indexWhere((f) => f.id == config.id);
@@ -1512,8 +1519,6 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                             type: newFields[i].type,
                             isDirectory: newFields[i].isDirectory,
                             showOnTable: newFields[i].showOnTable,
-                            originalIsActive: newFields[i].originalIsActive,
-                            originalRequired: newFields[i].originalRequired,
                           ));
                         }
                       }
@@ -1548,8 +1553,6 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                       type: config.type,
                       isDirectory: config.isDirectory,
                       showOnTable: config.showOnTable,
-                      originalIsActive: config.originalIsActive,
-                      originalRequired: config.originalRequired,
                     );
                   }).toList();
                   isSettingsMode = true;
@@ -1607,7 +1610,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                   for (var customField in widget.taskCustomFields) {
                     // Ищем соответствующую конфигурацию поля
                     final matchingConfig = fieldConfigurations.where(
-                      (config) => config.isCustomField && config.fieldName == customField.name,
+                          (config) => config.isCustomField && config.fieldName == customField.name,
                     ).firstOrNull;
 
                     // Используем type из конфигурации, если type из виджета пустой
@@ -1783,32 +1786,32 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                   final customFieldWidgets = customFieldsList.map((field) {
                                     return field.isDirectoryField && field.directoryId != null
                                         ? MainFieldDropdownWidget(
-                                        directoryId: field.directoryId!,
-                                        directoryName: field.fieldName,
-                                        selectedField: field.entryId != null
-                                            ? MainField(id: field.entryId!, value: field.controller.text)
-                                            : null,
-                                        onSelectField: (MainField selectedField) {
-                                          setState(() {
-                                            final idx = customFields.indexOf(field);
-                                            customFields[idx] = field.copyWith(
-                                              entryId: selectedField.id,
-                                              controller: TextEditingController(
-                                                  text: selectedField.value),
-                                            );
-                                          });
-                                        },
-                                        controller: field.controller,
-                                        onSelectEntryId: (int entryId) {
-                                          setState(() {
-                                            final idx = customFields.indexOf(field);
-                                            customFields[idx] = field.copyWith(
-                                              entryId: entryId,
-                                            );
-                                          });
-                                        },
-                                        initialEntryId: field.entryId,
-                                      )
+                                      directoryId: field.directoryId!,
+                                      directoryName: field.fieldName,
+                                      selectedField: field.entryId != null
+                                          ? MainField(id: field.entryId!, value: field.controller.text)
+                                          : null,
+                                      onSelectField: (MainField selectedField) {
+                                        setState(() {
+                                          final idx = customFields.indexOf(field);
+                                          customFields[idx] = field.copyWith(
+                                            entryId: selectedField.id,
+                                            controller: TextEditingController(
+                                                text: selectedField.value),
+                                          );
+                                        });
+                                      },
+                                      controller: field.controller,
+                                      onSelectEntryId: (int entryId) {
+                                        setState(() {
+                                          final idx = customFields.indexOf(field);
+                                          customFields[idx] = field.copyWith(
+                                            entryId: entryId,
+                                          );
+                                        });
+                                      },
+                                      initialEntryId: field.entryId,
+                                    )
                                         : CustomFieldWidget(
                                       fieldName: field.fieldName,
                                       valueController: field.controller,
@@ -1983,16 +1986,16 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                           final keptExistingFiles = files
                               .where((f) => f.id != 0)
                               .map((f) {
-                                // Находим соответствующий TaskFiles объект из оригинального списка
-                                return existingFiles.firstWhere(
+                            // Находим соответствующий TaskFiles объект из оригинального списка
+                            return existingFiles.firstWhere(
                                   (ef) => ef.id == f.id,
-                                  orElse: () => TaskFiles(
-                                    id: f.id,
-                                    name: f.name,
-                                    path: f.path,
-                                  ),
-                                );
-                              })
+                              orElse: () => TaskFiles(
+                                id: f.id,
+                                name: f.name,
+                                path: f.path,
+                              ),
+                            );
+                          })
                               .toList();
 
                           final localizations =
@@ -2011,9 +2014,12 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                               projectId: selectedProject != null
                                   ? int.parse(selectedProject!)
                                   : null,
-                              userId: selectedUsers?.map(
+                              userId: selectedUsers != null
+                                  ? selectedUsers!
+                                  .map(
                                       (id) => int.parse(id))
-                                  .toList(),
+                                  .toList()
+                                  : null,
                               priority:
                               selectedPriority?.toString(),
                               description:

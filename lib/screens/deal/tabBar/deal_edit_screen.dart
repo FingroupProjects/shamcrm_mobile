@@ -404,14 +404,14 @@ class _DealEditScreenState extends State<DealEditScreen> {
   // Сохранение порядка полей на бэкенд
   Future<void> _saveFieldOrderToBackend() async {
     try {
-      // Используем оригинальные значения is_active и required с бэкенда
+      // Подготовка данных для отправки
       final List<Map<String, dynamic>> updates = [];
       for (var config in fieldConfigurations) {
         updates.add({
           'id': config.id,
           'position': config.position,
-          'is_active': config.originalIsActive ?? (config.isActive ? 1 : 0),
-          'is_required': config.originalRequired ?? (config.required ? 1 : 0),
+          'is_active': config.isActive ? 1 : 0,
+          'is_required': config.required ? 1 : 0,
           'show_on_table': config.showOnTable ? 1 : 0,
         });
       }
@@ -710,8 +710,6 @@ class _DealEditScreenState extends State<DealEditScreen> {
                     type: config.type,
                     isDirectory: config.isDirectory,
                     showOnTable: config.showOnTable,
-                    originalIsActive: config.originalIsActive,
-                    originalRequired: config.originalRequired,
                   ));
                 }
 
@@ -831,8 +829,6 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                     type: config.type,
                                     isDirectory: config.isDirectory,
                                     showOnTable: config.showOnTable,
-                                    originalIsActive: config.originalIsActive,
-                                    originalRequired: config.originalRequired,
                                   );
 
                                   final idx = fieldConfigurations.indexWhere((f) => f.id == config.id);
@@ -1387,8 +1383,6 @@ class _DealEditScreenState extends State<DealEditScreen> {
                             type: newFields[i].type,
                             isDirectory: newFields[i].isDirectory,
                             showOnTable: newFields[i].showOnTable,
-                            originalIsActive: newFields[i].originalIsActive,
-                            originalRequired: newFields[i].originalRequired,
                           ));
                         }
                       }
@@ -1423,8 +1417,6 @@ class _DealEditScreenState extends State<DealEditScreen> {
                       type: config.type,
                       isDirectory: config.isDirectory,
                       showOnTable: config.showOnTable,
-                      originalIsActive: config.originalIsActive,
-                      originalRequired: config.originalRequired,
                     );
                   }).toList();
                   isSettingsMode = true;

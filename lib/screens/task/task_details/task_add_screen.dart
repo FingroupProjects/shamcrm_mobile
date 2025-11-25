@@ -108,14 +108,13 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   Future<void> _saveFieldOrderToBackend() async {
     try {
       // Подготовка данных для отправки
-      // Используем оригинальные значения is_active и required с бэкенда
       final List<Map<String, dynamic>> updates = [];
       for (var config in fieldConfigurations) {
         updates.add({
           'id': config.id,
           'position': config.position,
-          'is_active': config.originalIsActive ?? (config.isActive ? 1 : 0),
-          'is_required': config.originalRequired ?? (config.required ? 1 : 0),
+          'is_active': config.isActive ? 1 : 0,
+          'is_required': config.required ? 1 : 0,
           'show_on_table': config.showOnTable ? 1 : 0,
         });
       }
@@ -164,7 +163,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   // Вспомогательный метод для создания/получения кастомного поля
   CustomField _getOrCreateCustomField(FieldConfiguration config) {
     final existingField = customFields.firstWhere(
-      (field) => field.fieldName == config.fieldName && field.isCustomField,
+          (field) => field.fieldName == config.fieldName && field.isCustomField,
       orElse: () {
         final newField = CustomField(
           fieldName: config.fieldName,
@@ -184,7 +183,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   // Вспомогательный метод для создания/получения поля-справочника
   CustomField _getOrCreateDirectoryField(FieldConfiguration config) {
     final existingField = customFields.firstWhere(
-      (field) => field.directoryId == config.directoryId,
+          (field) => field.directoryId == config.directoryId,
       orElse: () {
         final newField = CustomField(
           fieldName: config.fieldName,
@@ -217,7 +216,14 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
             });
           },
           priorityText: AppLocalizations.of(context)!.translate('urgent'),
-          validator: null, // Убрана логика required
+          validator: config.required
+              ? (value) {
+            if (value == null || value.isEmpty) {
+              return AppLocalizations.of(context)!.translate('field_required');
+            }
+            return null;
+          }
+              : null,
         );
 
       case 'description':
@@ -229,7 +235,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
           keyboardType: TextInputType.multiline,
         );
 
-      // Условно отображаем UserMultiSelectWidget
+    // Условно отображаем UserMultiSelectWidget
       case 'executor':
         if (_hasTaskCreatePermission || !_hasTaskCreateForMySelfPermission) {
           return UserMultiSelectWidget(
@@ -258,7 +264,14 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
           controller: endDateController,
           label: AppLocalizations.of(context)!.translate('deadline'),
           hasError: isEndDateInvalid,
-          validator: null, // Убрана логика required
+          validator: config.required
+              ? (value) {
+            if (value == null || value.isEmpty) {
+              return AppLocalizations.of(context)!.translate('field_required');
+            }
+            return null;
+          }
+              : null,
         );
 
       case 'task_status_id':
@@ -342,8 +355,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   }
 
   List<Widget> _buildConfiguredFieldWidgets() {
-    // Сортируем только по позициям, без фильтрации по isActive
-    final sorted = [...fieldConfigurations]..sort((a, b) => a.position.compareTo(b.position));
+    final sorted = fieldConfigurations.where((e) => e.isActive).toList()..sort((a, b) => a.position.compareTo(b.position));
 
     debugPrint("sorted fieldConfigurations: ${sorted.map((e) => e.fieldName).toList()}");
     debugPrint("not sorted fieldConfigurations: ${fieldConfigurations.map((e) => e.fieldName).toList()}");
@@ -408,8 +420,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
           });
           // Перезагружаем конфигурацию после успешной привязки справочника
           context.read<FieldConfigurationBloc>().add(
-                FetchFieldConfiguration('tasks'),
-              );
+            FetchFieldConfiguration('tasks'),
+          );
 
           // Сообщаем об успешном добавлении справочника
           ScaffoldMessenger.of(context).showSnackBar(
@@ -449,8 +461,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
 
       if (mounted) {
         context.read<FieldConfigurationBloc>().add(
-              FetchFieldConfiguration('tasks'),
-            );
+          FetchFieldConfiguration('tasks'),
+        );
         setState(() {
           customFields.add(CustomField(
             fieldName: fieldName,
@@ -470,10 +482,10 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   void _showAddFieldMenu() {
     final RenderBox? renderBox = _addFieldButtonKey.currentContext?.findRenderObject() as RenderBox?;
     if (renderBox == null) return;
-    
+
     final Offset offset = renderBox.localToGlobal(Offset.zero);
     final Size size = renderBox.size;
-    
+
     // Список элементов меню
     final menuItems = [
       PopupMenuItem(
@@ -501,11 +513,11 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
         ),
       ),
     ];
-    
+
     // Если элементов 5 или больше, показываем над кнопкой, иначе под кнопкой
     final showAbove = menuItems.length >= 5;
     final double verticalOffset = showAbove ? -8 : size.height + 8;
-    
+
     showMenu(
       context: context,
       position: RelativeRect.fromLTRB(
@@ -559,7 +571,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     for (int i = 0; i < fieldConfigurations.length; i++) {
       final current = fieldConfigurations[i];
       final original = originalFieldConfigurations!.firstWhere(
-        (f) => f.id == current.id,
+            (f) => f.id == current.id,
         orElse: () => current,
       );
 
@@ -576,55 +588,55 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   // Диалог подтверждения выхода из режима настроек без сохранения
   Future<bool> _showExitSettingsDialog() async {
     return await showDialog<bool>(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              backgroundColor: Colors.white,
-              title: Text(
-                AppLocalizations.of(context)!.translate('warning'),
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xff1E2E52),
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          title: Text(
+            AppLocalizations.of(context)!.translate('warning'),
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: Color(0xff1E2E52),
+            ),
+          ),
+          content: Text(
+            AppLocalizations.of(context)!.translate('position_changes_will_not_be_saved'),
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Color(0xff1E2E52),
+            ),
+          ),
+          actions: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: CustomButton(
+                    buttonText: AppLocalizations.of(context)!.translate('cancel'),
+                    onPressed: () => Navigator.of(context).pop(false),
+                    buttonColor: Color(0xff1E2E52),
+                    textColor: Colors.white,
+                  ),
                 ),
-              ),
-              content: Text(
-                AppLocalizations.of(context)!.translate('position_changes_will_not_be_saved'),
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xff1E2E52),
-                ),
-              ),
-              actions: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Expanded(
-                      child: CustomButton(
-                        buttonText: AppLocalizations.of(context)!.translate('cancel'),
-                        onPressed: () => Navigator.of(context).pop(false),
-                        buttonColor: Color(0xff1E2E52),
-                        textColor: Colors.white,
-                      ),
-                    ),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: CustomButton(
-                        buttonText: AppLocalizations.of(context)!.translate('dont_save'),
-                        onPressed: () => Navigator.of(context).pop(true),
-                        buttonColor: Colors.red,
-                        textColor: Colors.white,
-                      ),
-                    ),
-                  ],
+                SizedBox(width: 8),
+                Expanded(
+                  child: CustomButton(
+                    buttonText: AppLocalizations.of(context)!.translate('dont_save'),
+                    onPressed: () => Navigator.of(context).pop(true),
+                    buttonColor: Colors.red,
+                    textColor: Colors.white,
+                  ),
                 ),
               ],
-            );
-          },
-        ) ??
+            ),
+          ],
+        );
+      },
+    ) ??
         false;
   }
 
@@ -694,8 +706,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                     type: config.type,
                     isDirectory: config.isDirectory,
                     showOnTable: config.showOnTable,
-                    originalIsActive: config.originalIsActive,
-                    originalRequired: config.originalRequired,
                   ));
                 }
 
@@ -815,8 +825,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                                     type: config.type,
                                     isDirectory: config.isDirectory,
                                     showOnTable: config.showOnTable,
-                                    originalIsActive: config.originalIsActive,
-                                    originalRequired: config.originalRequired,
                                   );
 
                                   final idx = fieldConfigurations.indexWhere((f) => f.id == config.id);
@@ -891,56 +899,56 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
           ),
           child: isSavingFieldOrder
               ? Container(
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: Color(0xff4759FF).withOpacity(0.7),
-                    borderRadius: BorderRadius.circular(12),
+            height: 50,
+            decoration: BoxDecoration(
+              color: Color(0xff4759FF).withOpacity(0.7),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Center(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
                   ),
-                  child: Center(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        ),
-                        SizedBox(width: 12),
-                        Text(
-                          AppLocalizations.of(context)!.translate('saving'),
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                  SizedBox(width: 12),
+                  Text(
+                    AppLocalizations.of(context)!.translate('saving'),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ],
               ),
-                  ),
-                )
+            ),
+          )
               : CustomButton(
-                  buttonText: AppLocalizations.of(context)!.translate('save'),
-                  buttonColor: Color(0xff4759FF),
-                  textColor: Colors.white,
-                  onPressed: () async {
-                    setState(() {
-                      isSavingFieldOrder = true;
-                    });
+            buttonText: AppLocalizations.of(context)!.translate('save'),
+            buttonColor: Color(0xff4759FF),
+            textColor: Colors.white,
+            onPressed: () async {
+              setState(() {
+                isSavingFieldOrder = true;
+              });
 
-                    try {
+              try {
                 await _saveFieldOrderToBackend();
 
-                      if (mounted) {
-                        setState(() {
-                          originalFieldConfigurations = null;
-                          isSettingsMode = false;
-                        });
+                if (mounted) {
+                  setState(() {
+                    originalFieldConfigurations = null;
+                    isSettingsMode = false;
+                  });
 
-                        ScaffoldMessenger.of(context).showSnackBar(
+                  ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(
                         'Настройки полей сохранены',
@@ -996,7 +1004,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
       case 'deadline':
         return loc.translate('deadline');
       case 'task_status_id':
-      return loc.translate('task_status');
+        return loc.translate('task_status');
 
       default:
         return config.fieldName;
@@ -1128,8 +1136,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                             type: newFields[i].type,
                             isDirectory: newFields[i].isDirectory,
                             showOnTable: newFields[i].showOnTable,
-                            originalIsActive: newFields[i].originalIsActive,
-                            originalRequired: newFields[i].originalRequired,
                           ));
                         }
                       }
@@ -1164,8 +1170,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                       type: config.type,
                       isDirectory: config.isDirectory,
                       showOnTable: config.showOnTable,
-                      originalIsActive: config.originalIsActive,
-                      originalRequired: config.originalRequired,
                     );
                   }).toList();
                   isSettingsMode = true;
@@ -1530,8 +1534,178 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     List<Map<String, dynamic>> customFieldMap = [];
     List<Map<String, int>> directoryValues = [];
 
-    // Убрана проверка обязательных полей на основе конфигурации
-    // Все поля теперь опциональны
+    // Проверяем обязательные поля на основе конфигурации
+    for (var config in fieldConfigurations) {
+      if (!config.isActive || !config.required) continue;
+
+      // Проверяем системные поля
+      if (!config.isCustomField && !config.isDirectory) {
+        switch (config.fieldName) {
+          case 'name':
+            if (nameController.text.trim().isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '${AppLocalizations.of(context)!.translate('event_name')} - ${AppLocalizations.of(context)!.translate('field_required')}',
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                  backgroundColor: Colors.red,
+                ),
+              );
+              return;
+            }
+            break;
+          case 'deadline':
+            if (endDateController.text.trim().isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '${AppLocalizations.of(context)!.translate('deadline')} - ${AppLocalizations.of(context)!.translate('field_required')}',
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                  backgroundColor: Colors.red,
+                ),
+              );
+              return;
+            }
+            break;
+          case 'executor':
+            if (selectedUsers == null || selectedUsers!.isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '${AppLocalizations.of(context)!.translate('lead')} - ${AppLocalizations.of(context)!.translate('field_required')}',
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                  backgroundColor: Colors.red,
+                ),
+              );
+              return;
+            }
+            break;
+          case 'project':
+            if (selectedProject == null || selectedProject!.isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '${AppLocalizations.of(context)!.translate('projects')} - ${AppLocalizations.of(context)!.translate('field_required')}',
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                  backgroundColor: Colors.red,
+                ),
+              );
+              return;
+            }
+            break;
+          case 'task_status_id':
+            if (selectedStatus == null || selectedStatus!.isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '${AppLocalizations.of(context)!.translate('task_status')} - ${AppLocalizations.of(context)!.translate('field_required')}',
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                  backgroundColor: Colors.red,
+                ),
+              );
+              return;
+            }
+            break;
+          case 'description':
+            if (descriptionController.text.trim().isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '${AppLocalizations.of(context)!.translate('description_list')} - ${AppLocalizations.of(context)!.translate('field_required')}',
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                  backgroundColor: Colors.red,
+                ),
+              );
+              return;
+            }
+            break;
+        }
+      }
+
+      // Проверяем кастомные поля
+      if (config.isCustomField) {
+        final customFieldIndex = customFields.indexWhere(
+              (f) => f.fieldName == config.fieldName && f.isCustomField,
+        );
+        if (customFieldIndex == -1 || customFields[customFieldIndex].controller.text.trim().isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '${config.fieldName} - ${AppLocalizations.of(context)!.translate('field_required')}',
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+      }
+
+      // Проверяем справочники
+      if (config.isDirectory && config.directoryId != null) {
+        final directoryFieldIndex = customFields.indexWhere(
+              (f) => f.directoryId == config.directoryId,
+        );
+        if (directoryFieldIndex == -1 || customFields[directoryFieldIndex].entryId == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '${config.fieldName} - ${AppLocalizations.of(context)!.translate('field_required')}',
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+      }
+    }
 
     for (var field in customFields) {
       String fieldName = field.fieldName.trim();

@@ -523,94 +523,94 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
 
   // void _updateDetails(LeadById lead) {
   //   currentLead = lead;
-    // details = [
-    //   {
-    //     'label': AppLocalizations.of(context)!.translate('lead_name'),
-    //     'value': lead.name
-    //   },
-    //   {
-    //     'label': AppLocalizations.of(context)!.translate('phone_use'),
-    //     'value': lead.phone ?? ''
-    //   },
-    //   if (lead.manager != null)
-    //     {
-    //       'label':
-    //       '${AppLocalizations.of(context)!.translate('manager_details')}',
-    //       'value': '${lead.manager!.name} ${lead.manager!.lastname ?? ''}'
-    //     }
-    //   else
-    //     {'label': '', 'value': 'become_manager'},
-    //   {
-    //     'label': '${AppLocalizations.of(context)!.translate('region_details')}',
-    //     'value': lead.region?.name ?? ''
-    //   },
-    //   {
-    //     'label': '${AppLocalizations.of(context)!.translate('source_details')}',
-    //     'value': lead.source?.name ?? ''
-    //   },
-    //   {'label': 'WhatsApp:', 'value': lead.whatsApp ?? ''},
-    //   {'label': 'Instagram:', 'value': lead.instagram ?? ''},
-    //   {'label': 'Facebook:', 'value': lead.facebook ?? ''},
-    //   {'label': 'Telegram:', 'value': lead.telegram ?? ''},
-    //   {
-    //     'label': '${AppLocalizations.of(context)!.translate('email_details')}',
-    //     'value': lead.email ?? ''
-    //   },
-    //   if (lead.phone_verified_at != null)
-    //     {
-    //       'label': '${AppLocalizations.of(context)!.translate('birthday_details')}',
-    //       'value': formatDate(lead.birthday)
-    //     },
-    //   if (lead.phone_verified_at != null)
-    //     {
-    //       'label': '${AppLocalizations.of(context)!.translate('price_type_details')}',
-    //       'value': lead.priceType?.name ?? ''
-    //     },
-    //   {
-    //     'label':
-    //     '${AppLocalizations.of(context)!.translate('description_details_lead')}',
-    //     'value': lead.description ?? ''
-    //   },
-    //   {
-    //     'label': '${AppLocalizations.of(context)!.translate('author_details')}',
-    //     'value': lead.author?.name ?? ''
-    //   },
-    //   {
-    //     'label': '${AppLocalizations.of(context)!.translate('sales_funnel_details')}',
-    //     'value': lead.salesFunnel?.name ?? ''
-    //   },
-    //   {
-    //     'label':
-    //     '${AppLocalizations.of(context)!.translate('created_at_details')}',
-    //     'value': formatDate(lead.createdAt)
-    //   },
-    //   {
-    //     'label': '${AppLocalizations.of(context)!.translate('status_details')}',
-    //     'value': lead.leadStatus?.title ?? ''
-    //   },
-    //   if (lead.files != null && lead.files!.isNotEmpty)
-    //     {
-    //       'label': AppLocalizations.of(context)!.translate('files_details'),
-    //       'value':
-    //       '${lead.files!.length} ${AppLocalizations.of(context)!.translate('files')}'
-    //     },
-    // ];
-    // for (var field in lead.leadCustomFields) {
-    //   details.add({'label': '${field.key}:', 'value': field.value});
-    // }
-    // for (var dirValue in lead.directoryValues) {
-    //   if (dirValue.entry != null) {
-    //     final directoryName = dirValue.entry!.directory.name;
-    //
-    //     // Проходим по всем полям в values
-    //     for (var fieldValue in dirValue.entry!.values) {
-    //       details.add({
-    //         'label': '$directoryName',
-    //         'value': fieldValue.value
-    //       });
-    //     }
-    //   }
-    // }
+  // details = [
+  //   {
+  //     'label': AppLocalizations.of(context)!.translate('lead_name'),
+  //     'value': lead.name
+  //   },
+  //   {
+  //     'label': AppLocalizations.of(context)!.translate('phone_use'),
+  //     'value': lead.phone ?? ''
+  //   },
+  //   if (lead.manager != null)
+  //     {
+  //       'label':
+  //       '${AppLocalizations.of(context)!.translate('manager_details')}',
+  //       'value': '${lead.manager!.name} ${lead.manager!.lastname ?? ''}'
+  //     }
+  //   else
+  //     {'label': '', 'value': 'become_manager'},
+  //   {
+  //     'label': '${AppLocalizations.of(context)!.translate('region_details')}',
+  //     'value': lead.region?.name ?? ''
+  //   },
+  //   {
+  //     'label': '${AppLocalizations.of(context)!.translate('source_details')}',
+  //     'value': lead.source?.name ?? ''
+  //   },
+  //   {'label': 'WhatsApp:', 'value': lead.whatsApp ?? ''},
+  //   {'label': 'Instagram:', 'value': lead.instagram ?? ''},
+  //   {'label': 'Facebook:', 'value': lead.facebook ?? ''},
+  //   {'label': 'Telegram:', 'value': lead.telegram ?? ''},
+  //   {
+  //     'label': '${AppLocalizations.of(context)!.translate('email_details')}',
+  //     'value': lead.email ?? ''
+  //   },
+  //   if (lead.phone_verified_at != null)
+  //     {
+  //       'label': '${AppLocalizations.of(context)!.translate('birthday_details')}',
+  //       'value': formatDate(lead.birthday)
+  //     },
+  //   if (lead.phone_verified_at != null)
+  //     {
+  //       'label': '${AppLocalizations.of(context)!.translate('price_type_details')}',
+  //       'value': lead.priceType?.name ?? ''
+  //     },
+  //   {
+  //     'label':
+  //     '${AppLocalizations.of(context)!.translate('description_details_lead')}',
+  //     'value': lead.description ?? ''
+  //   },
+  //   {
+  //     'label': '${AppLocalizations.of(context)!.translate('author_details')}',
+  //     'value': lead.author?.name ?? ''
+  //   },
+  //   {
+  //     'label': '${AppLocalizations.of(context)!.translate('sales_funnel_details')}',
+  //     'value': lead.salesFunnel?.name ?? ''
+  //   },
+  //   {
+  //     'label':
+  //     '${AppLocalizations.of(context)!.translate('created_at_details')}',
+  //     'value': formatDate(lead.createdAt)
+  //   },
+  //   {
+  //     'label': '${AppLocalizations.of(context)!.translate('status_details')}',
+  //     'value': lead.leadStatus?.title ?? ''
+  //   },
+  //   if (lead.files != null && lead.files!.isNotEmpty)
+  //     {
+  //       'label': AppLocalizations.of(context)!.translate('files_details'),
+  //       'value':
+  //       '${lead.files!.length} ${AppLocalizations.of(context)!.translate('files')}'
+  //     },
+  // ];
+  // for (var field in lead.leadCustomFields) {
+  //   details.add({'label': '${field.key}:', 'value': field.value});
+  // }
+  // for (var dirValue in lead.directoryValues) {
+  //   if (dirValue.entry != null) {
+  //     final directoryName = dirValue.entry!.directory.name;
+  //
+  //     // Проходим по всем полям в values
+  //     for (var fieldValue in dirValue.entry!.values) {
+  //       details.add({
+  //         'label': '$directoryName',
+  //         'value': fieldValue.value
+  //       });
+  //     }
+  //   }
+  // }
   // }
 
 
@@ -786,7 +786,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       if (fc.fieldName == 'files') {
         continue;
       }
-      
+
       debugPrint("Processing field: ${fc.fieldName}");
       final fieldValue = _getFieldValue(fc, lead);
 
@@ -1478,12 +1478,12 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       final response = await _apiService.getFieldPositions(tableName: 'leads');
       if (!mounted) return;
 
-      // Сортируем по position
-      final sortedFields = response.result.toList()
+      // Фильтруем только активные поля и сортируем по position
+      final activeFields = response.result.where((field) => field.isActive).toList()
         ..sort((a, b) => a.position.compareTo(b.position));
 
       setState(() {
-        _fieldConfiguration = sortedFields;
+        _fieldConfiguration = activeFields;
         _isConfigurationLoaded = true;
       });
     } catch (e) {
