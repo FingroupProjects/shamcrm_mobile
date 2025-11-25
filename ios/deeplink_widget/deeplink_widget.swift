@@ -8,81 +8,146 @@
 import WidgetKit
 import SwiftUI
 
-struct Provider: AppIntentTimelineProvider {
+// MARK: - Provider
+struct Provider: TimelineProvider {
     func placeholder(in context: Context) -> SimpleEntry {
-        SimpleEntry(date: Date(), configuration: ConfigurationAppIntent())
+        SimpleEntry(date: Date())
     }
 
-    func snapshot(for configuration: ConfigurationAppIntent, in context: Context) async -> SimpleEntry {
-        SimpleEntry(date: Date(), configuration: configuration)
+    func getSnapshot(in context: Context, completion: @escaping (SimpleEntry) -> ()) {
+        let entry = SimpleEntry(date: Date())
+        completion(entry)
     }
-    
-    func timeline(for configuration: ConfigurationAppIntent, in context: Context) async -> Timeline<SimpleEntry> {
-        var entries: [SimpleEntry] = []
 
-        // Generate a timeline consisting of five entries an hour apart, starting from the current date.
+    func getTimeline(in context: Context, completion: @escaping (Timeline<Entry>) -> ()) {
         let currentDate = Date()
-        for hourOffset in 0 ..< 5 {
-            let entryDate = Calendar.current.date(byAdding: .hour, value: hourOffset, to: currentDate)!
-            let entry = SimpleEntry(date: entryDate, configuration: configuration)
-            entries.append(entry)
-        }
-
-        return Timeline(entries: entries, policy: .atEnd)
+        let nextUpdate = Calendar.current.date(byAdding: .hour, value: 1, to: currentDate)!
+        let entry = SimpleEntry(date: currentDate)
+        let timeline = Timeline(entries: [entry], policy: .after(nextUpdate))
+        completion(timeline)
     }
-
-//    func relevances() async -> WidgetRelevances<ConfigurationAppIntent> {
-//        // Generate a list containing the contexts this widget is relevant in.
-//    }
 }
 
+// MARK: - Entry
 struct SimpleEntry: TimelineEntry {
     let date: Date
-    let configuration: ConfigurationAppIntent
 }
 
+// MARK: - Widget View
 struct deeplink_widgetEntryView : View {
     var entry: Provider.Entry
 
     var body: some View {
-        VStack {
-            Text("Time:")
-            Text(entry.date, style: .time)
-
-            Text("Favorite Emoji:")
-            Text(entry.configuration.favoriteEmoji)
+        VStack(spacing: 12) {
+                // Заголовок
+                HStack(spacing: 8) {
+                    Image(uiImage: UIImage(named: "AppIcon") ?? UIImage())
+                        .resizable()
+                        .frame(width: 28, height: 28)
+                        .cornerRadius(6)
+                    
+                    Text("shamCRM")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(Color(red: 0.12, green: 0.18, blue: 0.32))
+                    
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                
+                // Кнопки
+                HStack(spacing: 8) {
+                    // Dashboard
+                    WidgetButton(
+                        icon: "chart.bar.fill",
+                        label: "Дашборд",
+                        screenIdentifier: "dashboard"
+                    )
+                    
+                    // Tasks
+                    WidgetButton(
+                        icon: "checkmark.circle.fill",
+                        label: "Задачи",
+                        screenIdentifier: "tasks"
+                    )
+                    
+                    // Leads
+                    WidgetButton(
+                        icon: "person.fill",
+                        label: "Лиды",
+                        screenIdentifier: "leads"
+                    )
+                    
+                    // Deals
+                    WidgetButton(
+                        icon: "briefcase.fill",
+                        label: "Сделки",
+                        screenIdentifier: "deals"
+                    )
+                    
+                    // Chats
+                    WidgetButton(
+                        icon: "message.fill",
+                        label: "Чаты",
+                        screenIdentifier: "chats"
+                    )
+                }
+                .padding(.horizontal, 12)
+                .padding(.bottom, 12)
         }
     }
 }
 
+// MARK: - Widget Button
+struct WidgetButton: View {
+    let icon: String
+    let label: String
+    let screenIdentifier: String
+    
+    var body: some View {
+        Link(destination: createDeepLink()) {
+            VStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.system(size: 24))
+                    .foregroundColor(Color(red: 0.12, green: 0.18, blue: 0.32))
+                
+                Text(label)
+                    .font(.system(size: 9))
+                    .foregroundColor(Color.gray)
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 8)
+            .background(Color(red: 0.97, green: 0.97, blue: 0.98))
+            .cornerRadius(12)
+        }
+    }
+    
+    private func createDeepLink() -> URL {
+        // Deep link формат: shamcrm://widget?screen=dashboard
+        let urlString = "shamcrm://widget?screen=\(screenIdentifier)"
+        return URL(string: urlString)!
+    }
+}
+
+// MARK: - Widget Configuration
 struct deeplink_widget: Widget {
     let kind: String = "deeplink_widget"
 
     var body: some WidgetConfiguration {
-        AppIntentConfiguration(kind: kind, intent: ConfigurationAppIntent.self, provider: Provider()) { entry in
+        StaticConfiguration(kind: kind, provider: Provider()) { entry in
             deeplink_widgetEntryView(entry: entry)
-                .containerBackground(.fill.tertiary, for: .widget)
+                .containerBackground(Color.white, for: .widget)
         }
+        .configurationDisplayName("shamCRM")
+        .description("Быстрый доступ к разделам shamCRM")
+        .supportedFamilies([.systemMedium])
     }
 }
 
-extension ConfigurationAppIntent {
-    fileprivate static var smiley: ConfigurationAppIntent {
-        let intent = ConfigurationAppIntent()
-        intent.favoriteEmoji = "😀"
-        return intent
-    }
-    
-    fileprivate static var starEyes: ConfigurationAppIntent {
-        let intent = ConfigurationAppIntent()
-        intent.favoriteEmoji = "🤩"
-        return intent
-    }
-}
-
-#Preview(as: .systemSmall) {
+// MARK: - Preview
+#Preview(as: .systemMedium) {
     deeplink_widget()
 } timeline: {
-    SimpleEntry(date: .now, configuration: .smiley)
-    SimpleEntry(date: .now, configuration: .starEyes)
+    SimpleEntry(date: .now)
 }

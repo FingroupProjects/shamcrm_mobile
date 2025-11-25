@@ -48,19 +48,9 @@ class _HomeScreenState extends State<HomeScreen> {
     // ✅ ИСПРАВЛЕНИЕ: Инициализируем экраны СИНХРОННО
     _initializeScreensSync();
 
-    // ✅ Подписываемся на события от виджета
-    WidgetService.onNavigateFromWidget = (group, screenIndex) {
-      if (mounted) {
-        setState(() {
-          if (group == 1 && screenIndex < _widgetOptionsGroup1.length) {
-            _selectedIndexGroup1 = screenIndex;
-            _selectedIndexGroup2 = -1;
-          } else if (group == 2 && screenIndex < _widgetOptionsGroup2.length) {
-            _selectedIndexGroup2 = screenIndex;
-            _selectedIndexGroup1 = -1;
-          }
-        });
-      }
+    // ✅ Подписываемся на события от виджета с screen identifier
+    WidgetService.onNavigateFromWidget = (String screenIdentifier) {
+      _navigateToScreenByIdentifier(screenIdentifier);
     };
 
     // 🚀 Запускаем фоновую загрузку ПОСЛЕ отрисовки первого кадра
@@ -123,6 +113,97 @@ class _HomeScreenState extends State<HomeScreen> {
           _isBackgroundLoading = false;
         });
       }
+    }
+  }
+
+  // ==========================================================================
+  // МАППИНГ SCREEN IDENTIFIER К ИНДЕКСУ ЭКРАНА
+  // ==========================================================================
+
+  /// Маппинг screen identifier к title key для поиска индекса
+  String? _getTitleKeyByIdentifier(String identifier) {
+    switch (identifier) {
+      case 'dashboard':
+        return 'appbar_dashboard';
+      case 'tasks':
+        return 'appbar_tasks';
+      case 'leads':
+        return 'appbar_leads';
+      case 'deals':
+        return 'appbar_deals';
+      case 'chats':
+        return 'appbar_chats';
+      default:
+        return null;
+    }
+  }
+
+  /// Получает индекс экрана по screen identifier
+  /// Возвращает -1 если экран не найден или не инициализирован
+  int _getScreenIndexByIdentifier(String identifier) {
+    // Если экраны еще не инициализированы, возвращаем -1
+    if (!_isInitialized || _navBarTitleKeysGroup1.isEmpty) {
+      return -1;
+    }
+
+    // Получаем title key для данного identifier
+    final titleKey = _getTitleKeyByIdentifier(identifier);
+    if (titleKey == null) {
+      debugPrint('HomeScreen: Unknown screen identifier: $identifier');
+      return -1;
+    }
+
+    // Ищем индекс экрана по title key в Group1
+    final index = _navBarTitleKeysGroup1.indexOf(titleKey);
+    if (index == -1) {
+      debugPrint('HomeScreen: Screen "$identifier" not found (user may not have permission)');
+      return -1;
+    }
+
+    return index;
+  }
+
+  /// Навигация к экрану по screen identifier
+  /// Обрабатывает случаи, когда экраны еще не инициализированы
+  void _navigateToScreenByIdentifier(String screenIdentifier, {int retryCount = 0}) {
+    if (!mounted) return;
+
+    // Максимальное количество попыток (10 попыток = до 5 секунд ожидания)
+    const maxRetries = 10;
+
+    // Если экраны еще не инициализированы, ждем инициализации
+    if (!_isInitialized) {
+      if (retryCount >= maxRetries) {
+        debugPrint('HomeScreen: Max retries reached, cannot navigate to "$screenIdentifier"');
+        return;
+      }
+      
+      debugPrint('HomeScreen: Screens not initialized yet, waiting... (retry $retryCount/$maxRetries)');
+      // Ждем инициализации и затем навигируем с экспоненциальной задержкой
+      final delay = Duration(milliseconds: 500 + (retryCount * 100));
+      Future.delayed(delay, () {
+        if (mounted) {
+          _navigateToScreenByIdentifier(screenIdentifier, retryCount: retryCount + 1);
+        }
+      });
+      return;
+    }
+
+    // Получаем индекс экрана
+    final screenIndex = _getScreenIndexByIdentifier(screenIdentifier);
+    
+    if (screenIndex == -1) {
+      debugPrint('HomeScreen: Cannot navigate to "$screenIdentifier" - screen not available');
+      return;
+    }
+
+    // Навигируем к экрану
+    if (mounted) {
+      setState(() {
+        _selectedIndexGroup1 = screenIndex;
+        _selectedIndexGroup2 = -1;
+      });
+      debugPrint('HomeScreen: Navigated to "$screenIdentifier" at index $screenIndex');
     }
   }
 

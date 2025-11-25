@@ -4,8 +4,8 @@ import 'package:flutter/services.dart';
 class WidgetService {
   static const platform = MethodChannel('com.softtech.crm_task_manager/widget');
   
-  // Callback для навигации
-  static Function(int group, int screenIndex)? onNavigateFromWidget;
+  // Callback для навигации с screen identifier
+  static Function(String screenIdentifier)? onNavigateFromWidget;
   
   // Инициализация слушателя
   static void initialize() {
@@ -17,13 +17,16 @@ class WidgetService {
     debugPrint('WidgetService: Received method call: ${call.method}');
     
     if (call.method == 'navigateFromWidget') {
-      final int group = call.arguments['group'];
-      final int screenIndex = call.arguments['screenIndex'];
+      final String? screenIdentifier = call.arguments['screen'] as String?;
       
-      debugPrint('WidgetService: Navigate to group=$group, screen=$screenIndex');
-      
-      // Вызываем callback для навигации
-      onNavigateFromWidget?.call(group, screenIndex);
+      if (screenIdentifier != null) {
+        debugPrint('WidgetService: Navigate to screen=$screenIdentifier');
+        
+        // Вызываем callback для навигации с screen identifier
+        onNavigateFromWidget?.call(screenIdentifier);
+      } else {
+        debugPrint('WidgetService: Missing screen identifier');
+      }
     }
   }
 }
