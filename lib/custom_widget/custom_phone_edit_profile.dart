@@ -42,8 +42,8 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
     final prefs = await SharedPreferences.getInstance();
     String? savedDialCode = prefs.getString('default_dial_code');
     
-    print('CustomPhoneNumberInput: Сохранённый default_dial_code = $savedDialCode');
-    print('CustomPhoneNumberInput: selectedDialCode из параметров = ${widget.selectedDialCode}');
+    debugPrint('CustomPhoneNumberInput: Сохранённый default_dial_code = $savedDialCode');
+    debugPrint('CustomPhoneNumberInput: selectedDialCode из параметров = ${widget.selectedDialCode}');
 
     // Определяем, какой код использовать
     String? dialCodeToUse;
@@ -59,13 +59,13 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
       dialCodeToUse = '+992';
     }
 
-    print('CustomPhoneNumberInput: Используем dialCode = $dialCodeToUse');
+    debugPrint('CustomPhoneNumberInput: Используем dialCode = $dialCodeToUse');
 
     // Ищем страну по коду
     selectedCountry = countries.firstWhere(
       (country) => country.dialCode == dialCodeToUse,
       orElse: () {
-        print('CustomPhoneNumberInput: Страна с кодом $dialCodeToUse не найдена, используем TJ (+992)');
+        debugPrint('CustomPhoneNumberInput: Страна с кодом $dialCodeToUse не найдена, используем TJ (+992)');
         return countries.firstWhere(
           (country) => country.name == "TJ",
           orElse: () => countries.first,
@@ -73,13 +73,13 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
       },
     );
 
-    print('CustomPhoneNumberInput: Выбрана страна: ${selectedCountry?.name}, код: ${selectedCountry?.dialCode}');
+    debugPrint('CustomPhoneNumberInput: Выбрана страна: ${selectedCountry?.name}, код: ${selectedCountry?.dialCode}');
 
     // Очищаем код страны из начального текста, если он присутствует
     if (widget.controller.text.startsWith(selectedCountry?.dialCode ?? '')) {
       widget.controller.text =
           widget.controller.text.substring(selectedCountry!.dialCode.length);
-      print('CustomPhoneNumberInput: Очищен код страны из текста: ${widget.controller.text}');
+      debugPrint('CustomPhoneNumberInput: Очищен код страны из текста: ${widget.controller.text}');
     }
 
     // Валидируем начальный текст
@@ -313,9 +313,10 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
                           widget.controller.text = '';
                           _errorText = null;
                           _hasReachedMaxLength = false;
-                          if (newValue != null && widget.onInputChanged != null) {
-                            widget.onInputChanged!('');
-                          }
+                                               if (newValue != null && widget.onInputChanged != null) {
+                          widget.onInputChanged!('');
+                        }
+
                         });
                       },
               ),
@@ -340,7 +341,13 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
                   }
 
                   _validatePhoneNumber(phoneNumber);
-                  final formattedNumber = (selectedCountry?.dialCode ?? '') + phoneNumber;
+                   // ✅ ИСПРАВЛЕНО: отправляем код региона ТОЛЬКО если есть цифры
+                String formattedNumber;
+                if (phoneNumber.isEmpty) {
+                  formattedNumber = ''; // Пустая строка, если нет номера
+                } else {
+                  formattedNumber = (selectedCountry?.dialCode ?? '') + phoneNumber;
+                }
 
                   if (widget.onInputChanged != null) {
                     widget.onInputChanged!(formattedNumber);

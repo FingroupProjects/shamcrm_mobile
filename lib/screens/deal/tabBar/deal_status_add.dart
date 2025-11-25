@@ -41,10 +41,14 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
     _loadMultiSelectSetting(); // ✅ НОВОЕ: загружаем настройку
   }
 
-  // ✅ НОВОЕ: Загрузка настройки
+  // ✅ ОБНОВЛЁННАЯ ЛОГИКА
   Future<void> _loadMultiSelectSetting() async {
     final prefs = await SharedPreferences.getInstance();
-    final value = prefs.getBool('managing_deal_status_visibility') ?? false;
+    final managingVisibility = prefs.getBool('managing_deal_status_visibility') ?? false;
+    final changeMultiple = prefs.getBool('change_deal_to_multiple_statuses') ?? false;
+    
+    // Если хотя бы один флаг true, включаем мультивыбор
+    final value = managingVisibility || changeMultiple;
     
     if (mounted) {
       setState(() {
@@ -52,8 +56,11 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
       });
     }
     
-    print('CreateStatusDialog: managing_deal_status_visibility = $value');
+    debugPrint('CreateStatusDialog: managing_deal_status_visibility = $managingVisibility');
+    debugPrint('CreateStatusDialog: change_deal_to_multiple_statuses = $changeMultiple');
+    debugPrint('CreateStatusDialog: _isMultiSelectEnabled = $value');
   }
+
 
   Widget _buildTextFieldWithLabel({
     required String label,
@@ -258,7 +265,7 @@ if (_isMultiSelectEnabled) ...[
       setState(() {
         _selectedUsers = users;
       });
-      print('CreateStatusDialog: Выбрано пользователей (просмотр): ${users.length}');
+      debugPrint('CreateStatusDialog: Выбрано пользователей (просмотр): ${users.length}');
     },
   ),
   const SizedBox(height: 20),
@@ -290,7 +297,7 @@ if (_isMultiSelectEnabled) ...[
       setState(() {
         _selectedChangeStatusUsers = users;
       });
-      print('CreateStatusDialog: Выбрано пользователей (изменение): ${users.length}');
+      debugPrint('CreateStatusDialog: Выбрано пользователей (изменение): ${users.length}');
     },
   ),
   const SizedBox(height: 20),
@@ -491,8 +498,8 @@ if (_isMultiSelectEnabled) ...[
                                   final changeStatusUserIds = _selectedChangeStatusUsers.map((user) => user.id).toList();
 
                               
-                              print('CreateStatusDialog: Отправка статуса с пользователями: $userIds');
-    print('CreateStatusDialog: Пользователи (изменение): $changeStatusUserIds');
+                              debugPrint('CreateStatusDialog: Отправка статуса с пользователями: $userIds');
+    debugPrint('CreateStatusDialog: Пользователи (изменение): $changeStatusUserIds');
 
                               context.read<DealBloc>().add(
                                     CreateDealStatus(

@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 class MyTask {
   final int id;
   final String name;
@@ -49,7 +51,7 @@ class MyTask {
         overdue: json['overdue'] is int ? json['overdue'] : 0,
       );
     } catch (e) {
-      print('Error parsing MyTask: $e, JSON: $json');
+      debugPrint('Error parsing MyTask: $e, JSON: $json');
       return MyTask(
         id: 0,
         name: 'Ошибка загрузки',
@@ -98,7 +100,7 @@ class MyTaskCustomField {
         value: json['value'] ?? '',
       );
     } catch (e) {
-      print('Error parsing MyTaskCustomField: $e');
+      debugPrint('Error parsing MyTaskCustomField: $e');
       return MyTaskCustomField(id: 0, key: 'Unknown', value: 'Unknown');
     }
   }

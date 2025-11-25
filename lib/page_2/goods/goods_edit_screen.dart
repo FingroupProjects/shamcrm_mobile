@@ -84,7 +84,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
   stockQuantityController =
       TextEditingController(text: widget.goods.quantity?.toString() ?? '');
   commentsController.text = widget.goods.comments ?? '';
-  //print('GoodsEditScreen: Initializing selectlabel with value: ${widget.goods.label?.id?.toString()}');
+  //debugPrint('GoodsEditScreen: Initializing selectlabel with value: ${widget.goods.label?.id?.toString()}');
   selectlabel = widget.goods.label?.id?.toString(); // Исправлено
   isActive = widget.goods.isActive ?? false;
   selectedUnit = widget.goods.unit?.id?.toString();
@@ -126,7 +126,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
 
       _initializeFieldsWithData();
     } catch (e) {
-      print('❌ Error in _loadAllDataSequentially: $e');
+      debugPrint('❌ Error in _loadAllDataSequentially: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -255,16 +255,16 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
 
   Future<void> fetchSubCategories() async {
     try {
-      print('🔍 Fetching subcategories...');
+      debugPrint('🔍 Fetching subcategories...');
       final categories = await _apiService.getSubCategoryAttributes();
-      print('✅ Subcategories fetched successfully: ${categories.length} categories');
+      debugPrint('✅ Subcategories fetched successfully: ${categories.length} categories');
       if (mounted) {
         setState(() {
           subCategories = categories;
         });
       }
     } catch (e) {
-      print('❌ Error fetching subcategories: $e');
+      debugPrint('❌ Error fetching subcategories: $e');
       throw e;
     }
   }

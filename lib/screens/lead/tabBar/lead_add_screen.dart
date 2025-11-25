@@ -598,6 +598,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
       color: Colors.white,
       items: menuItems,
     ).then((value) {
+      //debugPrint('Выбрано значение в меню: $value');
       if (value == 'manual') {
         showDialog(
           context: context,

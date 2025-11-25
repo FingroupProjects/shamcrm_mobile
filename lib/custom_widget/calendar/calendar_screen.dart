@@ -130,17 +130,17 @@ void _changeView(String view) {
   // Находим событие по ID из всех событий
   CalendarEventData? event;
   
-  print('🔍 Ищем событие: id=$id, type=$type');
-  print('📋 Всего дат с событиями: ${_events.length}');
+  debugPrint('🔍 Ищем событие: id=$id, type=$type');
+  debugPrint('📋 Всего дат с событиями: ${_events.length}');
   
   // Ищем событие в _events
   for (var eventList in _events.values) {
-    print('  📦 Список событий, длина: ${eventList.length}');
+    debugPrint('  📦 Список событий, длина: ${eventList.length}');
     for (var e in eventList) {
-      print('    🎯 Событие: id=${e.id}, type=${e.type}, title="${e.title}"');
+      debugPrint('    🎯 Событие: id=${e.id}, type=${e.type}, title="${e.title}"');
       if (e.id == id && e.type == type) {
         event = e;
-        print('✅ Найдено событие: "${e.title}"');
+        debugPrint('✅ Найдено событие: "${e.title}"');
         break;
       }
     }
@@ -148,12 +148,12 @@ void _changeView(String view) {
   }
   
   if (event == null) {
-    print('❌ Событие НЕ найдено!');
+    debugPrint('❌ Событие НЕ найдено!');
   }
   
   switch (type) {
     case 'task':
-      print('🚀 Переход в TaskDetailsScreen с taskName: "${event?.title ?? ''}"');
+      debugPrint('🚀 Переход в TaskDetailsScreen с taskName: "${event?.title ?? ''}"');
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -318,7 +318,7 @@ void _changeView(String view) {
         _events.clear();
         _filteredDates.clear();
 
-        print('📅 Загружено событий: ${state.events.length}');
+        debugPrint('📅 Загружено событий: ${state.events.length}');
 
         for (var event in state.events) {
           final eventDate = DateTime(event.date.year, event.date.month, event.date.day);
@@ -336,14 +336,14 @@ void _changeView(String view) {
             ),
           );
           
-          print('  ✏️ Добавлено: id=${event.id}, name="${event.name}", type=${event.type}');
+          debugPrint('  ✏️ Добавлено: id=${event.id}, name="${event.name}", type=${event.type}');
           
           if (_searchController.text.isNotEmpty || _selectedTypes.isNotEmpty || _selectedUsers.isNotEmpty) {
             _filteredDates.add(eventDate);
           }
         }
         
-        print('📊 Итого в _events: ${_events.length} дат');
+        debugPrint('📊 Итого в _events: ${_events.length} дат');
       });
     }
   },

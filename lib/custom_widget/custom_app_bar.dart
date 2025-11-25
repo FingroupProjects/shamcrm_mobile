@@ -457,7 +457,7 @@ class _CustomAppBarState extends State<CustomAppBar>
         });
       }
     } catch (e) {
-      //print('Error checking overdue tasks: $e');
+      //debugPrint('Error checking overdue tasks: $e');
     }
   }
 
@@ -491,7 +491,7 @@ class _CustomAppBarState extends State<CustomAppBar>
 
 // Обновляем обработчик сброса фильтров
   void _handleChatFiltersReset() {
-    print('CustomAppBar: Resetting chat filters');
+    // debugPrint('CustomAppBar: Resetting chat filters');
     _setFiltersActive(false);
     widget.onChatLeadFiltersReset?.call();
     widget.onChatTaskFiltersReset?.call();
@@ -502,7 +502,7 @@ class _CustomAppBarState extends State<CustomAppBar>
       await _audioPlayer.setAsset('assets/audio/get.mp3');
       await _audioPlayer.play();
     } catch (e) {
-      //print('Error playing sound: $e');
+      //debugPrint('Error playing sound: $e');
     }
   }
 
@@ -518,8 +518,8 @@ class _CustomAppBarState extends State<CustomAppBar>
 
 
   Future<void> _setUpSocketForNotifications() async {
-    debugPrint(
-        '--------------------------- start socket CUSTOM APPBAR:::::::----------------');
+    // debugPrint(
+    //     '--------------------------- start socket CUSTOM APPBAR:::::::----------------');
     final prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('token');
     final enteredDomainMap = await ApiService().getEnteredDomain();
@@ -539,8 +539,8 @@ class _CustomAppBarState extends State<CustomAppBar>
     );
 
     String userId = prefs.getString('unique_id') ?? '';
-    //print('userID--------------------------------------------------popopop-p : $userId');
-    //print(userId);
+    //debugPrint('userID--------------------------------------------------popopop-p : $userId');
+    //debugPrint(userId);
 
     final myPresenceChannel = socketClient.presenceChannel(
       'presence-user.$userId',
@@ -554,7 +554,7 @@ class _CustomAppBarState extends State<CustomAppBar>
           'X-Tenant': '$enteredDomain-back'
         },
         onAuthFailed: (exception, trace) {
-          debugPrint('Auth failed: ${exception.toString()}');
+          // debugPrint('Auth failed: ${exception.toString()}');
         },
       ),
     );
@@ -563,27 +563,27 @@ class _CustomAppBarState extends State<CustomAppBar>
       myPresenceChannel.subscribeIfNotUnsubscribed();
       notificationSubscription =
           myPresenceChannel.bind('notification.created').listen((event) {
-            debugPrint('Получено уведомление через сокет: ${event.data}');
+            // debugPrint('Получено уведомление через сокет: ${event.data}');
             try {
               final data = jsonDecode(event.data);
-              debugPrint('Данные уведомления: $data');
+              // debugPrint('Данные уведомления: $data');
               setState(() {
                 _hasNewNotification = true;
               });
               prefs.setBool('hasNewNotification', true);
               _playSound();
             } catch (e) {
-              debugPrint('Ошибка парсинга данных уведомления: $e');
+              // debugPrint('Ошибка парсинга данных уведомления: $e');
             }
           });
     });
 
     try {
       await socketClient.connect();
-      //print('Socket connection SUCCESSS');
+      //debugPrint('Socket connection SUCCESSS');
     } catch (e) {
       if (kDebugMode) {
-        //print('Socket connection error!');
+        //debugPrint('Socket connection error!');
       }
     }
   }
@@ -628,7 +628,7 @@ class _CustomAppBarState extends State<CustomAppBar>
         });
       }
     } catch (e) {
-      //print('Ошибка при загрузке изображения!');
+      //debugPrint('Ошибка при загрузке изображения!');
       if (_userImage.isEmpty && _cachedUserImage.isNotEmpty) {
         setState(() {
           _userImage = _cachedUserImage;
@@ -1070,34 +1070,34 @@ class _CustomAppBarState extends State<CustomAppBar>
                           initialSources: _safeConvertToMapList(
                               widget.initialChatFilters?['sources']),
                           initialStatuses:
-                              widget.initialChatFilters?['statuses'],
+                          widget.initialChatFilters?['statuses'],
                           initialFromDate:
-                              widget.initialChatFilters?['fromDate'],
+                          widget.initialChatFilters?['fromDate'],
                           initialToDate: widget.initialChatFilters?['toDate'],
                           initialHasSuccessDeals:
-                              widget.initialChatFilters?['hasSuccessDeals'],
+                          widget.initialChatFilters?['hasSuccessDeals'],
                           initialHasInProgressDeals:
-                              widget.initialChatFilters?['hasInProgressDeals'],
+                          widget.initialChatFilters?['hasInProgressDeals'],
                           initialHasFailureDeals:
-                              widget.initialChatFilters?['hasFailureDeals'],
+                          widget.initialChatFilters?['hasFailureDeals'],
                           initialHasNotices:
-                              widget.initialChatFilters?['hasNotices'],
+                          widget.initialChatFilters?['hasNotices'],
                           initialHasContact:
-                              widget.initialChatFilters?['hasContact'],
+                          widget.initialChatFilters?['hasContact'],
                           initialHasChat: widget.initialChatFilters?['hasChat'],
                           initialHasNoReplies:
-                              widget.initialChatFilters?['hasNoReplies'],
+                          widget.initialChatFilters?['hasNoReplies'],
                           initialHasUnreadMessages:
-                              widget.initialChatFilters?['hasUnreadMessages'],
+                          widget.initialChatFilters?['hasUnreadMessages'],
                           initialHasDeal: widget.initialChatFilters?['hasDeal'],
                           // initialHasOrders: widget.initialChatFilters?['hasOrders'],
                           initialDaysWithoutActivity:
-                              widget.initialChatFilters?['daysWithoutActivity'],
+                          widget.initialChatFilters?['daysWithoutActivity'],
                           initialDirectoryValues: _safeConvertToMapList(
                               widget.initialChatFilters?['directory_values']),
                           initialSalesFunnelId: widget.currentSalesFunnelId ??
                               widget.initialChatFilters?[
-                                  'current_sales_funnel_id'] ??
+                              'current_sales_funnel_id'] ??
                               widget.initialChatFilters?['sales_funnel_id'],
                           onManagersSelected: widget.onChatLeadFiltersApplied,
                           onResetFilters: widget.onChatLeadFiltersReset,
@@ -1114,7 +1114,7 @@ class _CustomAppBarState extends State<CustomAppBar>
               offset: const Offset(10, 0),
               child: Tooltip(
                 message:
-                    AppLocalizations.of(context)!.translate('task_filters'),
+                AppLocalizations.of(context)!.translate('task_filters'),
                 preferBelow: false,
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -1137,7 +1137,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                     width: 24,
                     height: 24,
                     color:
-                        widget.hasActiveChatFilters ? Colors.blue : _iconColor,
+                    widget.hasActiveChatFilters ? Colors.blue : _iconColor,
                   ),
                   onPressed: () {
                     setState(() {
@@ -1150,13 +1150,13 @@ class _CustomAppBarState extends State<CustomAppBar>
                       MaterialPageRoute(
                         builder: (context) => ChatTaskFilterScreen(
                           initialUsers: widget
-                                  .initialChatFilters?['executor_ids']
-                                  ?.cast<int>() ??
+                              .initialChatFilters?['executor_ids']
+                              ?.cast<int>() ??
                               [],
 // СТАЛО:
                           initialAuthors: () {
                             final authorIds =
-                                widget.initialChatFilters?['author_ids'];
+                            widget.initialChatFilters?['author_ids'];
                             if (authorIds is List && authorIds.isNotEmpty) {
                               return authorIds
                                   .map((id) => id.toString())
@@ -1167,7 +1167,7 @@ class _CustomAppBarState extends State<CustomAppBar>
 
                           initialProjects: () {
                             final projectIds =
-                                widget.initialChatFilters?['project_ids'];
+                            widget.initialChatFilters?['project_ids'];
                             if (projectIds is List && projectIds.isNotEmpty) {
                               return projectIds
                                   .map((id) => id.toString())
@@ -1176,46 +1176,46 @@ class _CustomAppBarState extends State<CustomAppBar>
                             return [];
                           }(),
                           initialStatuses: (widget.initialChatFilters?[
-                                          'task_status_ids'] as List<dynamic>?)
-                                      ?.cast<int>()
-                                      .isNotEmpty ==
-                                  true
+                          'task_status_ids'] as List<dynamic>?)
+                              ?.cast<int>()
+                              .isNotEmpty ==
+                              true
                               ? (widget.initialChatFilters!['task_status_ids']
-                                      as List<dynamic>)
-                                  .cast<int>()
-                                  .first
+                          as List<dynamic>)
+                              .cast<int>()
+                              .first
                               : null,
                           initialFromDate:
-                              widget.initialChatFilters?['task_created_from'] !=
-                                      null
-                                  ? DateTime.parse(widget
-                                      .initialChatFilters!['task_created_from'])
-                                  : null,
+                          widget.initialChatFilters?['task_created_from'] !=
+                              null
+                              ? DateTime.parse(widget
+                              .initialChatFilters!['task_created_from'])
+                              : null,
                           initialToDate: widget
-                                      .initialChatFilters?['task_created_to'] !=
-                                  null
+                              .initialChatFilters?['task_created_to'] !=
+                              null
                               ? DateTime.parse(
-                                  widget.initialChatFilters!['task_created_to'])
+                              widget.initialChatFilters!['task_created_to'])
                               : null,
                           initialDeadlineFromDate: widget
-                                      .initialChatFilters?['deadline_from'] !=
-                                  null
+                              .initialChatFilters?['deadline_from'] !=
+                              null
                               ? DateTime.parse(
-                                  widget.initialChatFilters!['deadline_from'])
+                              widget.initialChatFilters!['deadline_from'])
                               : null,
                           initialDeadlineToDate:
-                              widget.initialChatFilters?['deadline_to'] != null
-                                  ? DateTime.parse(
-                                      widget.initialChatFilters!['deadline_to'])
-                                  : null,
+                          widget.initialChatFilters?['deadline_to'] != null
+                              ? DateTime.parse(
+                              widget.initialChatFilters!['deadline_to'])
+                              : null,
                           initialDepartment: widget
                               .initialChatFilters?['department_id']
                               ?.toString(),
                           initialTaskNumber:
-                              widget.initialChatFilters?['task_number'],
+                          widget.initialChatFilters?['task_number'],
                           initialUnreadOnly:
-                              widget.initialChatFilters?['unread_only'] ??
-                                  false,
+                          widget.initialChatFilters?['unread_only'] ??
+                              false,
                           onUsersSelected: widget.onChatTaskFiltersApplied,
                           onResetFilters: widget.onChatTaskFiltersReset,
                         ),
@@ -1298,9 +1298,9 @@ class _CustomAppBarState extends State<CustomAppBar>
                         initialFromDate: widget.initialManagerEventFromDate,
                         initialToDate: widget.initialManagerEventToDate,
                         initialNoticeFromDate:
-                            widget.initialNoticeManagerEventFromDate,
+                        widget.initialNoticeManagerEventFromDate,
                         initialNoticeToDate:
-                            widget.initialNoticeManagerEventToDate,
+                        widget.initialNoticeManagerEventToDate,
                         onResetFilters: widget.onEventResetFilters,
                       ),
                     ),
@@ -1358,7 +1358,7 @@ class _CustomAppBarState extends State<CustomAppBar>
               offset: const Offset(6, 0),
               child: Tooltip(
                 message:
-                    AppLocalizations.of(context)!.translate('appbar_my_tasks'),
+                AppLocalizations.of(context)!.translate('appbar_my_tasks'),
                 preferBelow: false,
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -1528,14 +1528,14 @@ class _CustomAppBarState extends State<CustomAppBar>
                             ),
                           );
                           break;
-                        // case 'gps':
-                        //   Navigator.push(
-                        //     context,
-                        //     MaterialPageRoute(
-                        //       builder: (context) => MusicPage(),
-                        //     ),
-                        //   );
-                        //   break;
+                      // case 'gps':
+                      //   Navigator.push(
+                      //     context,
+                      //     MaterialPageRoute(
+                      //       builder: (context) => MusicPage(),
+                      //     ),
+                      //   );
+                      //   break;
                       }
                     },
                     itemBuilder: (BuildContext context) =>
@@ -1713,7 +1713,7 @@ class _CustomAppBarState extends State<CustomAppBar>
           initialToDate: widget.initialManagerLeadToDate,
           initialHasSuccessDeals: widget.initialManagerLeadHasSuccessDeals,
           initialHasInProgressDeals:
-              widget.initialManagerLeadHasInProgressDeals,
+          widget.initialManagerLeadHasInProgressDeals,
           initialHasFailureDeals: widget.initialManagerLeadHasFailureDeals,
           initialHasNotices: widget.initialManagerLeadHasNotices,
           initialHasContact: widget.initialManagerLeadHasContact,
@@ -1723,11 +1723,10 @@ class _CustomAppBarState extends State<CustomAppBar>
           initialHasDeal: widget.initialManagerLeadHasDeal,
           initialHasOrders: widget.initialManagerLeadHasOrders,
           initialDaysWithoutActivity:
-              widget.initialManagerLeadDaysWithoutActivity,
+          widget.initialManagerLeadDaysWithoutActivity,
           onResetFilters: widget.onLeadResetFilters,
           initialDirectoryValues:
-              _safeConvertToMapList(widget.initialDirectoryValuesLead),
-          initialCustomFieldSelections: widget.initialLeadCustomFields,
+          _safeConvertToMapList(widget.initialDirectoryValuesLead),
         ),
       ),
     );
@@ -1752,10 +1751,9 @@ class _CustomAppBarState extends State<CustomAppBar>
           onResetFilters: widget.onDealResetFilters,
           initialDealNames: widget.initialDealNames, // Передаем новый параметр
           initialDaysWithoutActivity:
-              widget.initialManagerDealDaysWithoutActivity,
+          widget.initialManagerDealDaysWithoutActivity,
           initialDirectoryValues:
-              _safeConvertToMapList(widget.initialDirectoryValuesDeal),
-          initialCustomFieldSelections: null,
+          _safeConvertToMapList(widget.initialDirectoryValuesDeal),
         ),
       ),
     );

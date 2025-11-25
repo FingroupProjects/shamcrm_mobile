@@ -1,5 +1,31 @@
 import 'package:crm_task_manager/models/user.dart';
 
+
+// Добавить в login_model.dart
+class ForgotPinResponse {
+  final int code;
+  final String email;
+  
+  ForgotPinResponse({
+    required this.code,
+    required this.email,
+  });
+  
+  factory ForgotPinResponse.fromJson(Map<String, dynamic> json) {
+    return ForgotPinResponse(
+      code: json['code'],
+      email: json['email'] ?? '',
+    );
+  }
+  
+  Map<String, dynamic> toJson() {
+    return {
+      'code': code,
+      'email': email,
+    };
+  }
+}
+
 class LoginModel {
   final String login;
   final String password;

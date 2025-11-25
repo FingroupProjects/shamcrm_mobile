@@ -29,11 +29,11 @@ class _CashBalanceContentState extends State<CashBalanceContent> {
                 cashRegister: cashRegister,
                 onClick: (register) {
                   // Обработка нажатия на кассовый регистр
-                  print('Выбран кассовый регистр: ${register.name}');
+                  debugPrint('Выбран кассовый регистр: ${register.name}');
                 },
                 onLongPress: (register) {
                   // Обработка длительного нажатия
-                  print('Длительное нажатие на кассовый регистр: ${register.name}');
+                  debugPrint('Длительное нажатие на кассовый регистр: ${register.name}');
                 },
                 isSelectionMode: false,
                 isSelected: false,

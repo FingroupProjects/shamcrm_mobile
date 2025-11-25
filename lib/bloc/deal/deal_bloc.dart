@@ -318,43 +318,43 @@ Future<void> _fetchDealStatuses(
     }
   }
 
-  Future<void> _updateDeal(UpdateDeal event, Emitter<DealState> emit) async {
-    emit(DealLoading());
+ Future<void> _updateDeal(UpdateDeal event, Emitter<DealState> emit) async {
+  emit(DealLoading());
 
-    if (!await _checkInternetConnection()) {
-      emit(DealError(event.localizations.translate('no_internet_connection')));
-      return;
-    }
-
-    try {
-      final result = await apiService.updateDeal(
-        dealId: event.dealId,
-        name: event.name,
-        dealStatusId: event.dealStatusId,
-        managerId: event.managerId,
-        startDate: event.startDate,
-        endDate: event.endDate,
-        sum: event.sum ?? '',
-        description: event.description,
-        dealtypeId: event.dealtypeId,
-        leadId: event.leadId,
-        customFields: event.customFields,
-        directoryValues: event.directoryValues,
-        files: event.files,
-        dealStatusIds: event.dealStatusIds,
-        existingFiles: event.existingFiles,
-        userIds: event.userIds, // ✅ НОВОЕ: передаем userIds
-      );
-
-      if (result['success']) {
-        emit(DealSuccess(event.localizations.translate('deal_updated_successfully')));
-      } else {
-        emit(DealError(result['message']));
-      }
-    } catch (e) {
-      emit(DealError(event.localizations.translate('error_deal_update')));
-    }
+  if (!await _checkInternetConnection()) {
+    emit(DealError(event.localizations.translate('no_internet_connection')));
+    return;
   }
+
+  try {
+    final result = await apiService.updateDeal(
+      dealId: event.dealId,
+      name: event.name,
+      dealStatusId: event.dealStatusId,
+      managerId: event.managerId,
+      startDate: event.startDate,
+      endDate: event.endDate,
+      sum: event.sum ?? '',
+      description: event.description,
+      dealtypeId: event.dealtypeId,
+      leadId: event.leadId,
+      customFields: event.customFields,
+      directoryValues: event.directoryValues,
+      files: event.files,
+        dealStatusIds: event.dealStatusIds,
+      existingFiles: event.existingFiles,
+      userIds: event.userIds, // ✅ НОВОЕ: передаем userIds
+    );
+
+    if (result['success']) {
+      emit(DealSuccess(event.localizations.translate('deal_updated_successfully')));
+    } else {
+      emit(DealError(result['message']));
+    }
+  } catch (e) {
+    emit(DealError(event.localizations.translate('error_deal_update')));
+  }
+}
 
   Future<bool> _checkInternetConnection() async {
     try {

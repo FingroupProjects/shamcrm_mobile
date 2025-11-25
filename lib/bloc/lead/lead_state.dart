@@ -1,4 +1,5 @@
-import 'package:crm_task_manager/models/lead_model.dart'; // Модель для Lead
+import 'package:crm_task_manager/models/lead_model.dart';
+import 'package:flutter/material.dart'; // Модель для Lead
 
 abstract class LeadState {}
 
@@ -18,7 +19,7 @@ class LeadLoaded extends LeadState {
     List<LeadStatus>? leadStatuses,
     Map<int, int>? leadCounts,
   }) {
-    print("-------------------------TaskLoaded------------------");
+    debugPrint("-------------------------TaskLoaded------------------");
     return LeadLoaded(
       leadStatuses ?? this.leadStatuses,
       leadCounts: leadCounts ?? this.leadCounts,

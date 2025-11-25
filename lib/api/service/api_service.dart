@@ -198,7 +198,7 @@ String? _extractErrorMessageFromResponse(http.Response response) {
   Future<void> _initializeIfDomainExists() async {
     // Сначала проверяем валидность сессии
     if (!await _isSessionValid()) {
-      print('ApiService: Session is invalid, redirecting to auth');
+      // debugPrint('ApiService: Session is invalid, redirecting to auth');
       await _forceLogoutAndRedirect();
       return;
     }
@@ -288,7 +288,7 @@ Future<void> _setFallbackDomain() async {
   Future<void> initializeWithDomain(String domain, String mainDomain) async {
     baseUrl = 'https://$domain-back.$mainDomain/api';
     baseUrlSocket = 'https://$domain-back.$mainDomain/broadcasting/auth';
-    print('Initialized baseUrl: $baseUrl, baseUrlSocket: $baseUrlSocket');
+    // debugPrint('Initialized baseUrl: $baseUrl, baseUrlSocket: $baseUrlSocket');
 
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('domain', domain);
@@ -348,14 +348,14 @@ Future<String> getDynamicBaseUrl() async {
   // Общая обработка ответа от сервера 401
     Future<http.Response> _handleResponse(http.Response response) async {
     if (response.statusCode == 401) {
-      print('ApiService: Received 401, forcing logout and redirect');
+      // debugPrint('ApiService: Received 401, forcing logout and redirect');
       await _forceLogoutAndRedirect();
       throw Exception('Неавторизованный доступ!');
     }
 
     // Дополнительная проверка на другие критические ошибки
     if (response.statusCode >= 500) {
-      print('ApiService: Server error ${response.statusCode}');
+      // debugPrint('ApiService: Server error ${response.statusCode}');
       // Можно добавить дополнительную логику для серверных ошибок
     }
 
@@ -375,7 +375,7 @@ Future<String> getDynamicBaseUrl() async {
     // Сброс значений при выходе
     baseUrl = null;
     baseUrlSocket = null;
-    ////print('API сброшено');
+    ////debugPrint('API сброшено');
   }
 
   // Метод для получения токена из SharedPreferences
@@ -425,7 +425,7 @@ Future<String> getDynamicBaseUrl() async {
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       if (kDebugMode) {
-        print('ApiService: getUserByEmail - Response: $data');
+        // debugPrint('ApiService: getUserByEmail - Response: $data');
       }
       final organizationId = data['organization_id']?.toString() ??
           data['user']?['organization_id']?.toString() ??
@@ -437,8 +437,8 @@ Future<String> getDynamicBaseUrl() async {
       };
     } else {
       if (kDebugMode) {
-        print(
-            'ApiService: getUserByEmail - Error: Status ${response.statusCode}, Body: ${response.body}');
+        // debugPrint(
+        //     'ApiService: getUserByEmail - Error: Status ${response.statusCode}, Body: ${response.body}');
       }
       throw Exception('Пользователь с таким email не найден');
     }
@@ -455,19 +455,19 @@ Future<String> getDynamicBaseUrl() async {
     if (organizationId != null && organizationId.isNotEmpty) {
       await prefs.setString('selectedOrganization', organizationId);
       if (kDebugMode) {
-        print(
+        debugPrint(
             'ApiService: saveEmailVerificationData - Saved organization_id: $organizationId');
       }
     } else {
       if (kDebugMode) {
-        print(
+        debugPrint(
             'ApiService: saveEmailVerificationData - Warning: organization_id is null or empty');
       }
     }
 
     baseUrl = 'https://$domain/api';
     if (kDebugMode) {
-      print(
+      debugPrint(
           'ApiService: saveEmailVerificationData - Saved domain: $domain, login: $login');
     }
   }
@@ -483,7 +483,7 @@ Future<String> getDynamicBaseUrl() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final verifiedDomain = prefs.getString('verifiedDomain');
     if (kDebugMode) {
-      print('ApiService: getVerifiedDomain - verifiedDomain: $verifiedDomain');
+      debugPrint('ApiService: getVerifiedDomain - verifiedDomain: $verifiedDomain');
     }
     return verifiedDomain;
   }
@@ -496,11 +496,11 @@ Future<String> getDynamicBaseUrl() async {
       baseUrl = 'https://$domain/api';
       baseUrlSocket = 'https://$domain/broadcasting/auth';
       if (kDebugMode) {
-        print(
+        debugPrint(
             'ApiService: initializeWithEmailFlow - Initialized with domain: $domain, organization_id: $organizationId');
       }
     } else {
-      print(
+      debugPrint(
           'ApiService: initializeWithEmailFlow - Error: verifiedDomain is null');
       throw Exception('Домен не установлен');
     }
@@ -517,13 +517,13 @@ Future<String> getDynamicBaseUrl() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
     // Выводим в консоль текущие права доступа до удаления
-    ////print('Перед удалением: ${prefs.getStringList('permissions')}');
+    ////debugPrint('Перед удалением: ${prefs.getStringList('permissions')}');
 
     // Удаляем права доступа
     await prefs.remove('permissions');
 
     // Проверяем, что ключ действительно удалён
-    ////print('После удаления: ${prefs.getStringList('permissions')}');
+    ////debugPrint('После удаления: ${prefs.getStringList('permissions')}');
   }
 
   //_________________________________ START___API__METHOD__GET__POST__PATCH__DELETE____________________________________________//
@@ -569,15 +569,15 @@ Future<String> getDynamicBaseUrl() async {
   if (baseUrl == null) {
     await _initializeIfDomainExists();
     if (baseUrl == null) {
-      print('Error: baseUrl is null');
+      debugPrint('Error: baseUrl is null');
       throw Exception('Base URL is not initialized');
     }
   }
 
   final token = await getToken();
   final updatedPath = await _appendQueryParams(path);
-  print('ApiService: _postRequest with updatedPath: $baseUrl$updatedPath');
-  print('ApiService: Request body: ${json.encode(body)}');
+  debugPrint('ApiService: _postRequest with updatedPath: $baseUrl$updatedPath');
+  debugPrint('ApiService: Request body: ${json.encode(body)}');
 
   final response = await http.post(
     Uri.parse('$baseUrl$updatedPath'),
@@ -590,8 +590,8 @@ Future<String> getDynamicBaseUrl() async {
     body: json.encode(body),
   );
 
-  print('ApiService: _postRequest response status: ${response.statusCode}');
-  print('ApiService: _postRequest response body: ${response.body}');
+  debugPrint('ApiService: _postRequest response status: ${response.statusCode}');
+  debugPrint('ApiService: _postRequest response body: ${response.body}');
   return _handleResponse(response);
 }
 
@@ -605,14 +605,14 @@ Future<String> getDynamicBaseUrl() async {
       'Device': 'mobile',
     });
 
-    //print('ApiService: _multipartPostRequest with path: ${request.url}');
+    //debugPrint('ApiService: _multipartPostRequest with path: ${request.url}');
 
     final streamedResponse = await request.send();
     final response = await http.Response.fromStream(streamedResponse);
 
-    //print(
+    //debugPrint(
     // 'ApiService: _multipartPostRequest response status: ${response.statusCode}');
-    //print('ApiService: _multipartPostRequest response body: ${response.body}');
+    //debugPrint('ApiService: _multipartPostRequest response body: ${response.body}');
     return _handleResponse(response);
   }
 
@@ -704,7 +704,7 @@ Future<http.Response> _patchRequest(
     // Проверяем токен
     final token = await getToken();
     if (token == null || token.isEmpty) {
-      print('ApiService: Token is null or empty');
+      debugPrint('ApiService: Token is null or empty');
       return false;
     }
 
@@ -725,7 +725,7 @@ Future<http.Response> _patchRequest(
 
         if (enteredDomain == null || enteredDomain.isEmpty ||
             enteredMainDomain == null || enteredMainDomain.isEmpty) {
-          print('ApiService: No valid domain found');
+          debugPrint('ApiService: No valid domain found');
           return false;
         }
       }
@@ -734,13 +734,13 @@ Future<http.Response> _patchRequest(
     // Проверяем организацию
     final organizationId = await getSelectedOrganization();
     if (organizationId == null || organizationId.isEmpty) {
-      print('ApiService: Organization ID is null or empty');
+      debugPrint('ApiService: Organization ID is null or empty');
       return false;
     }
 
     return true;
   } catch (e) {
-    print('ApiService: Error checking session validity: $e');
+    debugPrint('ApiService: Error checking session validity: $e');
     return false;
   }
 }
@@ -748,7 +748,7 @@ Future<http.Response> _patchRequest(
   // Новый метод для принудительного сброса к начальному экрану
   Future<void> _forceLogoutAndRedirect() async {
     try {
-      print('ApiService: Force logout and redirect to auth');
+      debugPrint('ApiService: Force logout and redirect to auth');
 
       // Полная очистка данных
       await logout();
@@ -767,7 +767,7 @@ Future<http.Response> _patchRequest(
         );
       }
     } catch (e) {
-      print('ApiService: Error in force logout: $e');
+      debugPrint('ApiService: Error in force logout: $e');
     }
   }
 
@@ -782,27 +782,43 @@ Future<http.Response> _patchRequest(
   // Добавление метода для отправки токена устройства
 Future<void> sendDeviceToken(String deviceToken) async {
   try {
-    print('sendDeviceToken: Начало отправки токена');
+    debugPrint('═══════════════════════════════════════════════════════════');
+    debugPrint('sendDeviceToken: 📤 Начало отправки токена');
+    debugPrint('sendDeviceToken: Token: ${deviceToken.substring(0, 20)}...');
     
-    // ← ДОБАВЬ ПРОВЕРКУ
+    // ✅ ПРОВЕРКА 1: baseUrl инициализирован?
     if (baseUrl == null || baseUrl!.isEmpty) {
-      print('sendDeviceToken: baseUrl не инициализирован! Пропускаем отправку.');
-      await _savePendingToken(deviceToken); // ← сохраняем на потом
+      debugPrint('sendDeviceToken: ❌ baseUrl не инициализирован!');
+      debugPrint('sendDeviceToken: 💾 Сохраняем токен как отложенный');
+      await _savePendingToken(deviceToken);
       return;
     }
 
+    debugPrint('sendDeviceToken: ✅ baseUrl: $baseUrl');
+
+    // ✅ ПРОВЕРКА 2: Токен авторизации
     final token = await getToken();
+    if (token == null || token.isEmpty) {
+      debugPrint('sendDeviceToken: ⚠️ Токен авторизации отсутствует');
+      await _savePendingToken(deviceToken);
+      return;
+    }
+
+    debugPrint('sendDeviceToken: ✅ Authorization token: ${token.substring(0, 20)}...');
+
+    // ✅ ПРОВЕРКА 3: Organization ID
     final organizationId = await getSelectedOrganization();
-    
+    debugPrint('sendDeviceToken: Organization ID: ${organizationId ?? "не указан"}');
+
     final url = '$baseUrl/add-fcm-token${organizationId != null ? '?organization_id=$organizationId' : ''}';
-    print('sendDeviceToken: Full URL: $url');
+    debugPrint('sendDeviceToken: 🌐 Full URL: $url');
 
     final response = await http.post(
       Uri.parse(url),
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
+        'Authorization': 'Bearer $token',
         'Device': 'mobile'
       },
       body: json.encode({
@@ -811,15 +827,27 @@ Future<void> sendDeviceToken(String deviceToken) async {
       }),
     );
 
+    debugPrint('sendDeviceToken: 📬 Response status: ${response.statusCode}');
+    debugPrint('sendDeviceToken: 📬 Response body: ${response.body}');
+
     if (response.statusCode == 200) {
-      print('sendDeviceToken: FCM-токен успешно отправлен!');
+      debugPrint('sendDeviceToken: ✅ FCM-токен успешно отправлен!');
+      // Удаляем отложенный токен при успешной отправке
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('pending_fcm_token');
+      debugPrint('sendDeviceToken: 🗑️ Отложенный токен удалён');
     } else {
-      print('sendDeviceToken: Ошибка ${response.statusCode}: ${response.body}');
+      debugPrint('sendDeviceToken: ❌ Ошибка ${response.statusCode}');
       await _savePendingToken(deviceToken);
     }
+
+    debugPrint('═══════════════════════════════════════════════════════════');
   } catch (e, stackTrace) {
-    print('sendDeviceToken: Exception: $e');
-    await _savePendingToken(deviceToken); // ← сохраняем при ошибке
+    debugPrint('═══════════════════════════════════════════════════════════');
+    debugPrint('sendDeviceToken: 💥 Exception: $e');
+    debugPrint('sendDeviceToken: StackTrace: $stackTrace');
+    debugPrint('═══════════════════════════════════════════════════════════');
+    await _savePendingToken(deviceToken);
     rethrow;
   }
 }
@@ -828,7 +856,7 @@ Future<void> sendDeviceToken(String deviceToken) async {
 Future<void> _savePendingToken(String token) async {
   final prefs = await SharedPreferences.getInstance();
   await prefs.setString('pending_fcm_token', token);
-  print('sendDeviceToken: Токен сохранён как отложенный');
+  debugPrint('sendDeviceToken: Токен сохранён как отложенный');
 }
 
 Future<void> ensureInitialized() async {
@@ -839,17 +867,17 @@ Future<void> ensureInitialized() async {
 
 Future<void> sendPendingFCMToken() async {
   try {
-    print('ApiService: Проверка отложенного FCM токена');
+    debugPrint('ApiService: Проверка отложенного FCM токена');
     
     final prefs = await SharedPreferences.getInstance();
     final pendingToken = prefs.getString('pending_fcm_token');
     
     if (pendingToken != null && pendingToken.isNotEmpty) {
-      print('ApiService: Найден отложенный FCM токен, отправляем на сервер');
+      debugPrint('ApiService: Найден отложенный FCM токен, отправляем на сервер');
       
       // Проверяем что baseUrl инициализирован
       // if (baseUrl.isEmpty) {
-      //   print('ApiService: baseUrl не инициализирован, пропускаем отправку');
+      //   debugPrint('ApiService: baseUrl не инициализирован, пропускаем отправку');
       //   return;
       // }
       
@@ -857,14 +885,14 @@ Future<void> sendPendingFCMToken() async {
       
       // Удаляем токен после успешной отправки
       await prefs.remove('pending_fcm_token');
-      print('ApiService: FCM токен успешно отправлен и удалён из локального хранилища');
+      debugPrint('ApiService: FCM токен успешно отправлен и удалён из локального хранилища');
       
     } else {
-      print('ApiService: Отложенный FCM токен не найден');
+      debugPrint('ApiService: Отложенный FCM токен не найден');
     }
     
   } catch (e) {
-    print('ApiService: Ошибка отправки отложенного FCM токена: $e');
+    debugPrint('ApiService: Ошибка отправки отложенного FCM токена: $e');
   }
 }
 //_________________________________ END___API__METHOD__POST__DEVICE__TOKEN_________________________________________________//
@@ -895,8 +923,8 @@ Future<void> sendPendingFCMToken() async {
         mainDomain.isNotEmpty) {
       baseUrl = 'https://$domain-back.$mainDomain/api';
       baseUrlSocket = 'https://$domain-back.$mainDomain/broadcasting/auth';
-      print('Initialized baseUrl: $baseUrl, baseUrlSocket: $baseUrlSocket');
-      print('Saved domain: $domain, mainDomain: $mainDomain');
+      debugPrint('Initialized baseUrl: $baseUrl, baseUrlSocket: $baseUrlSocket');
+      debugPrint('Saved domain: $domain, mainDomain: $mainDomain');
     } else {
       throw Exception('QR данные не найдены в SharedPreferences');
     }
@@ -917,9 +945,9 @@ Future<void> sendPendingFCMToken() async {
     await initializeFromQrData();
 
     if (kDebugMode) {
-      print(
+      debugPrint(
           'ApiService: saveQrData - domain: $domain, mainDomain: $mainDomain, organizationId: $organizationId');
-      print('ApiService: saveQrData - baseUrl after init: $baseUrl');
+      debugPrint('ApiService: saveQrData - baseUrl after init: $baseUrl');
     }
   }
 
@@ -969,9 +997,9 @@ Future<void> sendPendingFCMToken() async {
 
 // Метод для проверки домена
   Future<DomainCheck> checkDomain(String domain) async {
-    ////print(
+    ////debugPrint(
     // '-=--=-=-=-=-=-=-==-=-=-=CHECK-DOMAIN-=--==-=-=--=-==--==-=-=-=-=-=-=-');
-    ////print(domain);
+    ////debugPrint(domain);
     // Эндпоинт /checkDomain входит в _excludedEndpoints, поэтому не используем _appendQueryParams
     final organizationId = await getSelectedOrganization();
     final response = await _postRequestDomain(
@@ -1004,10 +1032,10 @@ Future<void> sendPendingFCMToken() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('enteredMainDomain', mainDomain);
     await prefs.setString('enteredDomain', domain);
-    ////print('Ввведеный Doмен:----------------------');
-    ////print('ДОМЕН: ${prefs.getString('enteredMainDomain')}');
-    ////print('Ввведеный Poddomen---=----:----------------------');
-    ////print('ПОДДОМЕН: ${prefs.getString('enteredDomain')}');
+    ////debugPrint('Ввведеный Doмен:----------------------');
+    ////debugPrint('ДОМЕН: ${prefs.getString('enteredMainDomain')}');
+    ////debugPrint('Ввведеный Poddomen---=----:----------------------');
+    ////debugPrint('ПОДДОМЕН: ${prefs.getString('enteredDomain')}');
   }
 
 // Метод для получения введенного домена
@@ -1016,7 +1044,7 @@ Future<void> sendPendingFCMToken() async {
     String? mainDomain = prefs.getString('enteredMainDomain');
     String? domain = prefs.getString('enteredDomain');
     if (kDebugMode) {
-      print(
+      debugPrint(
           'ApiService: getEnteredDomain - mainDomain: $mainDomain, domain: $domain');
     }
     return {
@@ -1026,15 +1054,15 @@ Future<void> sendPendingFCMToken() async {
   }
 
 Future<String> getStaticBaseUrl() async {
-  print('🔍 [ApiService] Начинаем получение StaticBaseUrl...');
+  debugPrint('🔍 [ApiService] Начинаем получение StaticBaseUrl...');
   
   // Сначала пробуем новую логику с email
   String? verifiedDomain = await getVerifiedDomain();
-  print('🔍 [ApiService] verifiedDomain: "$verifiedDomain"');
+  debugPrint('🔍 [ApiService] verifiedDomain: "$verifiedDomain"');
   
   if (verifiedDomain != null && verifiedDomain.isNotEmpty) {
     final result = 'https://$verifiedDomain/storage';
-    print('✅ [ApiService] Используем verifiedDomain: "$result"');
+    debugPrint('✅ [ApiService] Используем verifiedDomain: "$result"');
     return result;
   }
 
@@ -1042,14 +1070,14 @@ Future<String> getStaticBaseUrl() async {
   Map<String, String?> qrData = await getQrData();
   String? qrDomain = qrData['domain'];
   String? qrMainDomain = qrData['mainDomain'];
-  print('🔍 [ApiService] qrDomain: "$qrDomain", qrMainDomain: "$qrMainDomain"');
+  debugPrint('🔍 [ApiService] qrDomain: "$qrDomain", qrMainDomain: "$qrMainDomain"');
 
   if (qrDomain != null &&
       qrDomain.isNotEmpty &&
       qrMainDomain != null &&
       qrMainDomain.isNotEmpty) {
     final result = 'https://$qrDomain-back.$qrMainDomain/storage';
-    print('✅ [ApiService] Используем QR данные: "$result"');
+    debugPrint('✅ [ApiService] Используем QR данные: "$result"');
     return result;
   }
 
@@ -1057,19 +1085,19 @@ Future<String> getStaticBaseUrl() async {
   Map<String, String?> domains = await getEnteredDomain();
   String? mainDomain = domains['enteredMainDomain'];
   String? domain = domains['enteredDomain'];
-  print('🔍 [ApiService] enteredDomain: "$domain", enteredMainDomain: "$mainDomain"');
+  debugPrint('🔍 [ApiService] enteredDomain: "$domain", enteredMainDomain: "$mainDomain"');
 
   if (domain != null &&
       domain.isNotEmpty &&
       mainDomain != null &&
       mainDomain.isNotEmpty) {
     final result = 'https://$domain-back.$mainDomain/storage';
-    print('✅ [ApiService] Используем entered domains: "$result"');
+    debugPrint('✅ [ApiService] Используем entered domains: "$result"');
     return result;
   } else {
     // Fallback на дефолтный домен, если ничего не найдено
     const result = 'https://shamcrm.com/storage';
-    print('⚠️ [ApiService] Используем fallback URL: "$result"');
+    debugPrint('⚠️ [ApiService] Используем fallback URL: "$result"');
     return result;
   }
 }
@@ -1091,21 +1119,21 @@ Future<String> getStaticBaseUrl() async {
 
 // Метод для проверки логина и пароля
  Future<LoginResponse> login(LoginModel loginModel) async {
-  print('ApiService: Starting login process');
-  print('ApiService: Login model: ${json.encode(loginModel.toJson())}');
+  debugPrint('ApiService: Starting login process');
+  debugPrint('ApiService: Login model: ${json.encode(loginModel.toJson())}');
 
   final organizationId = await getSelectedOrganization();
-  print('ApiService: Using organization_id: $organizationId');
+  debugPrint('ApiService: Using organization_id: $organizationId');
 
   // Проверяем baseUrl перед запросом
   if (baseUrl == null) {
-    print('ApiService: baseUrl is null, trying to initialize');
+    debugPrint('ApiService: baseUrl is null, trying to initialize');
     await _initializeIfDomainExists();
     if (baseUrl == null) {
       throw Exception('Failed to initialize baseUrl for login');
     }
   }
-  print('ApiService: Current baseUrl: $baseUrl');
+  debugPrint('ApiService: Current baseUrl: $baseUrl');
 
   final response = await _postRequest(
     '/login${organizationId != null ? '?organization_id=$organizationId' : ''}',
@@ -1113,7 +1141,7 @@ Future<String> getStaticBaseUrl() async {
   );
 
   if (kDebugMode) {
-    print('ApiService: login - Response: ${response.body}');
+    debugPrint('ApiService: login - Response: ${response.body}');
   }
 
   if (response.statusCode == 200) {
@@ -1128,11 +1156,11 @@ Future<String> getStaticBaseUrl() async {
     if (effectiveOrgId != null && effectiveOrgId.isNotEmpty) {
       await saveSelectedOrganization(effectiveOrgId);
       if (kDebugMode) {
-        print('ApiService: login - Saved organization_id from response: $effectiveOrgId');
+        debugPrint('ApiService: login - Saved organization_id from response: $effectiveOrgId');
       }
     } else {
       if (kDebugMode) {
-        print('ApiService: login - Warning: organization_id is null, trying /organization');
+        debugPrint('ApiService: login - Warning: organization_id is null, trying /organization');
       }
       // Пробуем получить organization_id из /organization
       try {
@@ -1140,50 +1168,50 @@ Future<String> getStaticBaseUrl() async {
         if (organizationsResponse.statusCode == 200) {
           final organizations = json.decode(organizationsResponse.body);
           if (kDebugMode) {
-            print('ApiService: login - /organization response: $organizations');
+            debugPrint('ApiService: login - /organization response: $organizations');
           }
           if (organizations is List && organizations.isNotEmpty) {
             effectiveOrgId = organizations[0]['id']?.toString();
             if (effectiveOrgId != null && effectiveOrgId.isNotEmpty) {
               await saveSelectedOrganization(effectiveOrgId);
               if (kDebugMode) {
-                print('ApiService: login - Saved organization_id from /organization: $effectiveOrgId');
+                debugPrint('ApiService: login - Saved organization_id from /organization: $effectiveOrgId');
               }
             } else {
               effectiveOrgId = '1'; // Дефолт id = 1
               await saveSelectedOrganization(effectiveOrgId);
               if (kDebugMode) {
-                print('ApiService: login - No valid organization_id, using default: $effectiveOrgId');
+                debugPrint('ApiService: login - No valid organization_id, using default: $effectiveOrgId');
               }
             }
           } else {
             effectiveOrgId = '1'; // Дефолт id = 1
             await saveSelectedOrganization(effectiveOrgId);
             if (kDebugMode) {
-              print('ApiService: login - Empty organizations list, using default: $effectiveOrgId');
+              debugPrint('ApiService: login - Empty organizations list, using default: $effectiveOrgId');
             }
           }
         } else {
           effectiveOrgId = '1'; // Дефолт id = 1
           await saveSelectedOrganization(effectiveOrgId);
           if (kDebugMode) {
-            print('ApiService: login - Failed to fetch /organization, using default: $effectiveOrgId');
+            debugPrint('ApiService: login - Failed to fetch /organization, using default: $effectiveOrgId');
           }
         }
       } catch (e) {
         effectiveOrgId = '1'; // Дефолт id = 1
         await saveSelectedOrganization(effectiveOrgId);
         if (kDebugMode) {
-          print('ApiService: login - Exception fetching /organization: $e, using default: $effectiveOrgId');
+          debugPrint('ApiService: login - Exception fetching /organization: $e, using default: $effectiveOrgId');
         }
       }
     }
 
-    print('ApiService: Login successful, token saved');
+    debugPrint('ApiService: Login successful, token saved');
     return loginResponse;
   } else {
     if (kDebugMode) {
-      print('ApiService: login - Error: Status ${response.statusCode}, Body: ${response.body}');
+      debugPrint('ApiService: login - Error: Status ${response.statusCode}, Body: ${response.body}');
     }
 
     // Извлекаем сообщение об ошибке из ответа сервера
@@ -1194,7 +1222,7 @@ Future<String> getStaticBaseUrl() async {
         errorMessage = errorData['message'].toString();
       }
     } catch (e) {
-      print('ApiService: login - Error parsing error response: $e');
+      debugPrint('ApiService: login - Error parsing error response: $e');
     }
 
     throw Exception('$errorMessage Status: ${response.statusCode}');
@@ -1205,14 +1233,14 @@ Future<String> getStaticBaseUrl() async {
   Future<void> savePermissions(List<String> permissions) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setStringList('permissions', permissions);
-    // ////print('Сохранённые права доступа: ${prefs.getStringList('permissions')}');
+    // ////debugPrint('Сохранённые права доступа: ${prefs.getStringList('permissions')}');
   }
 
 // Получение списка прав доступа из SharedPreferences
   Future<List<String>> getPermissions() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final permissions = prefs.getStringList('permissions') ?? [];
-    // ////print('Извлечённые права доступа: $permissions');
+    // ////debugPrint('Извлечённые права доступа: $permissions');
     return permissions;
   }
 
@@ -1227,7 +1255,7 @@ Future<String> getStaticBaseUrl() async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/get-all-permissions');
     if (kDebugMode) {
-      //print('ApiService: fetchPermissionsByRoleId - Generated path: $path');
+      //debugPrint('ApiService: fetchPermissionsByRoleId - Generated path: $path');
     }
 
     try {
@@ -1248,53 +1276,72 @@ Future<String> getStaticBaseUrl() async {
         throw Exception('Ошибка при получении прав доступа!!');
       }
     } catch (e) {
-      ////print('Ошибка при выполнении запроса fetchPermissionsByRoleId: $e');
+      ////debugPrint('Ошибка при выполнении запроса fetchPermissionsByRoleId: $e');
       rethrow;
     }
   }
 
 //_________________________________ END___API__LOGIN____________________________________________//
+Future<ForgotPinResponse> forgotPin(LoginModel loginModel) async {
+  try {
+    final organizationId = await getSelectedOrganization();
+    final url = '/forgotPin${organizationId != null ? '?organization_id=$organizationId' : ''}';
 
-  Future<String> forgotPin(LoginModel loginModel) async {
-    try {
-      // Эндпоинт /forgotPin входит в _excludedEndpoints, поэтому не используем _appendQueryParams
-      final organizationId = await getSelectedOrganization();
+    final response = await _postRequest(
+      url,
+      {
+        'login': loginModel.login,
+        'password': loginModel.password,
+      },
+    );
 
-      // Формирование URL с учетом ID организации
-      final url =
-          '/forgotPin${organizationId != null ? '?organization_id=$organizationId' : ''}';
+    // ✅ Успешный ответ
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> decodedJson = json.decode(response.body);
 
-      // Запрос к API
-      final response = await _postRequest(
-        url,
-        {
-          'login': loginModel.login,
-          'password': loginModel.password,
-        },
-      );
-
-      // Обработка успешного ответа
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> decodedJson = json.decode(response.body);
-
-        if (decodedJson['result'] != null) {
-          return decodedJson['result'].toString();
-        } else {
-          throw Exception('Не удалось получить временный PIN.');
-        }
-      }
-      // Обработка ошибок сервера
-      else if (response.statusCode == 400) {
-        throw Exception('Некорректные данные запроса.');
+      if (decodedJson['result'] != null) {
+        return ForgotPinResponse.fromJson(decodedJson['result']);
       } else {
-        ////print('Ошибка API forgotPin!');
-        throw Exception('Ошибка сервера!');
+        throw Exception('Не удалось получить временный PIN.');
       }
-    } catch (e) {
-      ////print('Ошибка в forgotPin!');
-      throw Exception('Ошибка в запросе!');
     }
+    // 🔴 Ошибка валидации (422)
+    else if (response.statusCode == 422) {
+      final Map<String, dynamic> decodedJson = json.decode(response.body);
+
+      // Приоритет 1: message
+      if (decodedJson['message'] != null && decodedJson['message'].toString().isNotEmpty) {
+        throw Exception(decodedJson['message']);
+      }
+      // Приоритет 2: errors.login[0]
+      else if (decodedJson['errors'] != null) {
+        if (decodedJson['errors']['login'] != null) {
+          final loginErrors = decodedJson['errors']['login'] as List;
+          if (loginErrors.isNotEmpty) {
+            throw Exception(loginErrors[0]);
+          }
+        }
+        // Общая ошибка из errors
+        throw Exception('Проверьте введённые данные');
+      }
+      // Fallback
+      else {
+        throw Exception('Неверный логин или пользователь не найден');
+      }
+    }
+    // 🔴 Некорректный запрос (400)
+    else if (response.statusCode == 400) {
+      throw Exception('Некорректные данные запроса');
+    }
+    // 🔴 Другие ошибки
+    else {
+      throw Exception('Ошибка сервера (${response.statusCode})');
+    }
+  } catch (e) {
+    // Пробрасываем исключение для обработки в BLoC
+    rethrow;
   }
+}
 
 //_________________________________ START_____API__SCREEN__LEAD____________________________________________//
 
@@ -1302,7 +1349,7 @@ Future<String> getStaticBaseUrl() async {
   Future<LeadById> getLeadById(int leadId) async {
     try {
       final path = await _appendQueryParams('/lead/$leadId');
-      //print('ApiService: getLeadById - Generated path: $path');
+      //debugPrint('ApiService: getLeadById - Generated path: $path');
 
       final response = await _getRequest(path);
       if (response.statusCode == 200) {
@@ -1313,7 +1360,7 @@ Future<String> getStaticBaseUrl() async {
         throw Exception('Ошибка загрузки лида ID!');
       }
     } catch (e) {
-      //print('ApiService: getLeadById - Error:');
+      //debugPrint('ApiService: getLeadById - Error:');
       throw Exception('Ошибка загрузки лида ID!');
     }
   }
@@ -1350,7 +1397,7 @@ Future<String> getStaticBaseUrl() async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     path = await _appendQueryParams(path);
     if (kDebugMode) {
-      print('ApiService: getLeads - After _appendQueryParams: $path');
+      //debugPrint('ApiService: getLeads - After _appendQueryParams: $path');
     }
 
     // Добавляем sales_funnel_id из аргумента, если он передан
@@ -1512,7 +1559,7 @@ Future<String> getStaticBaseUrl() async {
     }
 
     if (kDebugMode) {
-      print('ApiService: getLeads - Final path: $path');
+      debugPrint('ApiService: getLeads - Final path: $path');
     }
     final response = await _getRequest(path);
     if (response.statusCode == 200) {
@@ -1693,7 +1740,7 @@ Future<String> getStaticBaseUrl() async {
       // Если список лидов не пуст, значит статус содержит элементы
       return leads.isNotEmpty;
     } catch (e) {
-      ////print('Error while checking if status has leads!');
+      ////debugPrint('Error while checking if status has leads!');
       return false;
     }
   }
@@ -1704,7 +1751,7 @@ Future<String> getStaticBaseUrl() async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/lead-status');
     if (kDebugMode) {
-      //print('ApiService: createLeadStatus - Generated path: $path');
+      //debugPrint('ApiService: createLeadStatus - Generated path: $path');
     }
 
     final response = await _postRequest(path, {
@@ -1726,7 +1773,7 @@ Future<String> getStaticBaseUrl() async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/lead/changeStatus/$leadId');
     if (kDebugMode) {
-      //print('ApiService: updateLeadStatus - Generated path: $path');
+      //debugPrint('ApiService: updateLeadStatus - Generated path: $path');
     }
 
     final response = await _postRequest(
@@ -1738,7 +1785,7 @@ Future<String> getStaticBaseUrl() async {
     );
 
     if (response.statusCode == 200) {
-      ////print('Статус задачи успешно обновлен');
+      ////debugPrint('Статус задачи успешно обновлен');
     } else if (response.statusCode == 422) {
       final responseData = jsonDecode(response.body);
       final errorMessage = responseData['message'];
@@ -1755,7 +1802,7 @@ Future<String> getStaticBaseUrl() async {
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       final path = await _appendQueryParams('/lead/history/$leadId');
       if (kDebugMode) {
-        //print('ApiService: getLeadHistory - Generated path: $path');
+        //debugPrint('ApiService: getLeadHistory - Generated path: $path');
       }
 
       final response = await _getRequest(path);
@@ -1765,11 +1812,11 @@ Future<String> getStaticBaseUrl() async {
         final List<dynamic> jsonList = decodedJson['result']['history'];
         return jsonList.map((json) => LeadHistory.fromJson(json)).toList();
       } else {
-        ////print('Failed to load lead history!');
+        ////debugPrint('Failed to load lead history!');
         throw Exception('Ошибка загрузки истории лида!');
       }
     } catch (e) {
-      ////print('Error occurred!');
+      ////debugPrint('Error occurred!');
       throw Exception('Ошибка загрузки истории лида!');
     }
   }
@@ -1780,7 +1827,7 @@ Future<String> getStaticBaseUrl() async {
       final path =
           await _appendQueryParams('/notices/history-by-lead-id/$leadId');
       if (kDebugMode) {
-        //print('ApiService: getNoticeHistory - Generated path: $path');
+        //debugPrint('ApiService: getNoticeHistory - Generated path: $path');
       }
 
       final response = await _getRequest(path);
@@ -1802,7 +1849,7 @@ Future<String> getStaticBaseUrl() async {
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       final path = await _appendQueryParams('/deal/history-by-lead-id/$leadId');
       if (kDebugMode) {
-        //print('ApiService: getDealHistoryLead - Generated path: $path');
+        //debugPrint('ApiService: getDealHistoryLead - Generated path: $path');
       }
 
       final response = await _getRequest(path);
@@ -1826,7 +1873,7 @@ Future<String> getStaticBaseUrl() async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams(basePath);
     if (kDebugMode) {
-      //print('ApiService: getLeadNotes - Generated path: $path');
+      //debugPrint('ApiService: getLeadNotes - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -1854,7 +1901,7 @@ Future<String> getStaticBaseUrl() async {
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       final path = await _appendQueryParams('/notices');
       if (kDebugMode) {
-        //print('ApiService: createNotes - Generated path: $path');
+        //debugPrint('ApiService: createNotes - Generated path: $path');
       }
       var uri = Uri.parse('$baseUrl$path');
 
@@ -1926,7 +1973,7 @@ Future<String> getStaticBaseUrl() async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/notices/$noteId');
     if (kDebugMode) {
-      //print('ApiService: updateNotes - Generated path: $path');
+      //debugPrint('ApiService: updateNotes - Generated path: $path');
     }
 
     final response = await _patchRequest(path, {
@@ -1958,7 +2005,7 @@ Future<String> getStaticBaseUrl() async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/notices/$noteId');
     if (kDebugMode) {
-      //print('ApiService: deleteNotes - Generated path: $path');
+      //debugPrint('ApiService: deleteNotes - Generated path: $path');
     }
 
     final response = await _deleteRequest(path);
@@ -1979,7 +2026,7 @@ Future<String> getStaticBaseUrl() async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams(basePath);
     if (kDebugMode) {
-      //print('ApiService: getLeadDeals - Generated path: $path');
+      //debugPrint('ApiService: getLeadDeals - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -2067,20 +2114,20 @@ Future<String> getStaticBaseUrl() async {
       }
     }
 
-    if (kDebugMode) {
-      print('ApiService: createLeadWithData - Request fields:');
-      request.fields.forEach((key, value) {
-        print('  $key: $value');
-      });
-    }
+  if (kDebugMode) {
+    debugPrint('ApiService: createLeadWithData - Request fields:');
+    request.fields.forEach((key, value) {
+      debugPrint('  $key: $value');
+    });
+  }
 
     final streamedResponse = await request.send();
     final response = await http.Response.fromStream(streamedResponse);
 
-    if (kDebugMode) {
-      print('ApiService: createLeadWithData - Response status: ${response.statusCode}');
-      print('ApiService: createLeadWithData - Response body: ${response.body}');
-    }
+  if (kDebugMode) {
+    debugPrint('ApiService: createLeadWithData - Response status: ${response.statusCode}');
+    debugPrint('ApiService: createLeadWithData - Response body: ${response.body}');
+  }
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       return {'success': true, 'message': 'lead_created_successfully'};
@@ -2152,7 +2199,7 @@ Future<String> getStaticBaseUrl() async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/lead/$leadId');
     if (kDebugMode) {
-      //print('ApiService: updateLead - Generated path: $path');
+      //debugPrint('ApiService: updateLead - Generated path: $path');
     }
 
     final response = await _patchRequest(
@@ -2231,7 +2278,7 @@ Future<String> getStaticBaseUrl() async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/lead/$leadId');
     if (kDebugMode) {
-      //print('ApiService: updateLeadWithData - Generated path: $path');
+      //debugPrint('ApiService: updateLeadWithData - Generated path: $path');
     }
     var uri = Uri.parse('$baseUrl$path');
 
@@ -2398,7 +2445,7 @@ Future<String> getStaticBaseUrl() async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/service/by-sales-funnel-id');
     if (kDebugMode) {
-      //print('ApiService: getAllDealNames - Generated path: $path');
+      //debugPrint('ApiService: getAllDealNames - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -2416,7 +2463,7 @@ Future<String> getStaticBaseUrl() async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/region');
     if (kDebugMode) {
-      //print('ApiService: getAllRegion - Generated path: $path');
+      //debugPrint('ApiService: getAllRegion - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -2436,7 +2483,7 @@ Future<String> getStaticBaseUrl() async {
     }
 
     if (kDebugMode) {
-      // ////print('getAll region!');
+      // ////debugPrint('getAll region!');
     }
 
     return dataRegion;
@@ -2447,7 +2494,7 @@ Future<String> getStaticBaseUrl() async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/source');
     if (kDebugMode) {
-      //print('ApiService: getAllSource - Generated path: $path');
+      //debugPrint('ApiService: getAllSource - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -2471,7 +2518,7 @@ Future<String> getStaticBaseUrl() async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/manager');
     if (kDebugMode) {
-      //print('ApiService: getAllManager - Generated path: $path');
+      //debugPrint('ApiService: getAllManager - Generated path: $path');
     }
 
     // Используем общий метод для выполнения GET-запроса
@@ -2501,7 +2548,7 @@ Future<String> getStaticBaseUrl() async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/lead');
     if (kDebugMode) {
-      //print('ApiService: getAllLeadMulti - Generated path: $path');
+      //debugPrint('ApiService: getAllLeadMulti - Generated path: $path');
     }
 
     // Используем общий метод для выполнения GET-запроса
@@ -2541,7 +2588,7 @@ Future<String> getStaticBaseUrl() async {
       final path = await _appendQueryParams(basePath);
 
       if (kDebugMode) {
-        print('ApiService: getLeadPage - Loading page $page, path: $path');
+        debugPrint('ApiService: getLeadPage - Loading page $page, path: $path');
       }
 
       // Выполняем GET запрос
@@ -2555,9 +2602,9 @@ Future<String> getStaticBaseUrl() async {
           final pageResponse = LeadsDataResponse.fromJson(data);
 
           if (kDebugMode) {
-            print('ApiService: Page $page loaded successfully with ${pageResponse.result?.length ?? 0} items');
+            debugPrint('ApiService: Page $page loaded successfully with ${pageResponse.result?.length ?? 0} items');
             if (pageResponse.pagination != null) {
-              print('ApiService: Pagination - current: ${pageResponse.pagination!.currentPage}, total pages: ${pageResponse.pagination!.totalPages}');
+              debugPrint('ApiService: Pagination - current: ${pageResponse.pagination!.currentPage}, total pages: ${pageResponse.pagination!.totalPages}');
             }
           }
 
@@ -2575,7 +2622,7 @@ Future<String> getStaticBaseUrl() async {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('ApiService: Error loading page $page: $e');
+        debugPrint('ApiService: Error loading page $page: $e');
       }
       rethrow;
     }
@@ -2586,7 +2633,7 @@ Future<String> getStaticBaseUrl() async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/lead-status/$leadStatusId');
     if (kDebugMode) {
-      //print('ApiService: deleteLeadStatuses - Generated path: $path');
+      //debugPrint('ApiService: deleteLeadStatuses - Generated path: $path');
     }
 
     final response = await _deleteRequest(path);
@@ -2604,7 +2651,7 @@ Future<String> getStaticBaseUrl() async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/lead-status/$leadStatusId');
     if (kDebugMode) {
-      //print('ApiService: updateLeadStatusEdit - Generated path: $path');
+      //debugPrint('ApiService: updateLeadStatusEdit - Generated path: $path');
     }
 
     final payload = {
@@ -2631,7 +2678,7 @@ Future<String> getStaticBaseUrl() async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/lead/$leadId');
     if (kDebugMode) {
-      //print('ApiService: deleteLead - Generated path: $path');
+      //debugPrint('ApiService: deleteLead - Generated path: $path');
     }
 
     final response = await _deleteRequest(path);
@@ -2650,7 +2697,7 @@ Future<String> getStaticBaseUrl() async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams(basePath);
     if (kDebugMode) {
-      //print('ApiService: getContactPerson - Generated path: $path');
+      //debugPrint('ApiService: getContactPerson - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -2675,7 +2722,7 @@ Future<String> getStaticBaseUrl() async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/contactPerson');
     if (kDebugMode) {
-      //print('ApiService: createContactPerson - Generated path: $path');
+      //debugPrint('ApiService: createContactPerson - Generated path: $path');
     }
 
     final response = await _postRequest(path, {
@@ -2717,7 +2764,7 @@ Future<String> getStaticBaseUrl() async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/contactPerson/$contactpersonId');
     if (kDebugMode) {
-      //print('ApiService: updateContactPerson - Generated path: $path');
+      //debugPrint('ApiService: updateContactPerson - Generated path: $path');
     }
 
     final response = await _patchRequest(path, {
@@ -2753,7 +2800,7 @@ Future<String> getStaticBaseUrl() async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/contactPerson/$contactpersonId');
     if (kDebugMode) {
-      //print('ApiService: deleteContactPerson - Generated path: $path');
+      //debugPrint('ApiService: deleteContactPerson - Generated path: $path');
     }
 
     final response = await _deleteRequest(path);
@@ -2772,11 +2819,11 @@ Future<String> getStaticBaseUrl() async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams(basePath);
     if (kDebugMode) {
-      //print('ApiService: getLeadToChat - Generated path: $path');
+      //debugPrint('ApiService: getLeadToChat - Generated path: $path');
     }
 
     final response = await _getRequest(path);
-    ////print('Request path: $path');
+    ////debugPrint('Request path: $path');
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
@@ -2793,14 +2840,14 @@ Future<String> getStaticBaseUrl() async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/source');
     if (kDebugMode) {
-      //print('ApiService: getSourceLead - Generated path: $path');
+      //debugPrint('ApiService: getSourceLead - Generated path: $path');
     }
 
     final response = await _getRequest(path);
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      ////print('Полученные данные: $data');
+      ////debugPrint('Полученные данные: $data');
       return (data as List)
           .map((sourceLead) => SourceLead.fromJson(sourceLead))
           .toList();
@@ -2812,7 +2859,7 @@ Future<String> getStaticBaseUrl() async {
   Future<List<LeadStatusForFilter>> getLeadStatusForFilter() async {
     final path = await _appendQueryParams('/lead/statuses');
     if (kDebugMode) {
-      //print('ApiService: getLeadStatusForFilter - Generated path: $path');
+      //debugPrint('ApiService: getLeadStatusForFilter - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -2831,7 +2878,7 @@ Future<String> getStaticBaseUrl() async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/priceType');
     if (kDebugMode) {
-      //print('ApiService: getPriceType - Generated path: $path');
+      //debugPrint('ApiService: getPriceType - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -2852,19 +2899,19 @@ Future<String> getStaticBaseUrl() async {
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       final path = await _appendQueryParams('/lead/sendToOneC/$leadId');
       if (kDebugMode) {
-        //print('ApiService: postLeadToC - Generated path: $path');
+        //debugPrint('ApiService: postLeadToC - Generated path: $path');
       }
 
       final response = await _postRequest(path, {});
 
       if (response.statusCode == 200) {
-        ////print('Успешно отправлено в 1С');
+        ////debugPrint('Успешно отправлено в 1С');
       } else {
-        ////print('Ошибка отправки в 1С Лид!');
+        ////debugPrint('Ошибка отправки в 1С Лид!');
         throw Exception('Ошибка отправки в 1С!');
       }
     } catch (e) {
-      ////print('Произошла ошибка!');
+      ////debugPrint('Произошла ошибка!');
       throw Exception('Ошибка отправки в 1С!');
     }
   }
@@ -2874,7 +2921,7 @@ Future<String> getStaticBaseUrl() async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/get-all-data');
     if (kDebugMode) {
-      //print('ApiService: getData1C - Generated path: $path');
+      //debugPrint('ApiService: getData1C - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -2900,7 +2947,7 @@ Future<String> getStaticBaseUrl() async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/lead/get/custom-fields');
     if (kDebugMode) {
-      //print('ApiService: getCustomFieldslead - Generated path: $path');
+      //debugPrint('ApiService: getCustomFieldslead - Generated path: $path');
     }
 
     // Выполняем запрос
@@ -2922,7 +2969,7 @@ Future<String> getStaticBaseUrl() async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/lead-status/$leadStatusId');
     if (kDebugMode) {
-      //print('ApiService: getLeadStatus - Generated path: $path');
+      //debugPrint('ApiService: getLeadStatus - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -2943,7 +2990,7 @@ Future<String> getStaticBaseUrl() async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/lead/insert');
     if (kDebugMode) {
-      //print('ApiService: addLeadsFromContacts - Generated path: $path');
+      //debugPrint('ApiService: addLeadsFromContacts - Generated path: $path');
     }
 
     final response = await _postRequest(
@@ -2980,7 +3027,7 @@ Future<String> getStaticBaseUrl() async {
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       final path = await _appendQueryParams('/deal/$dealId');
       if (kDebugMode) {
-        print('ApiService: getDealById - Generated path: $path');
+        debugPrint('ApiService: getDealById - Generated path: $path');
       }
 
       final response = await _getRequest(path);
@@ -3315,7 +3362,7 @@ Future<List<DealStatus>> getDealStatuses({
       // Если список лидов не пуст, значит статус содержит элементы
       return deals.isNotEmpty;
     } catch (e) {
-      ////print('Error while checking if status has deals!');
+      ////debugPrint('Error while checking if status has deals!');
       return false;
     }
   }
@@ -3335,8 +3382,8 @@ Future<List<DealStatus>> getDealStatuses({
     final path = await _appendQueryParams('/deal/statuses');
 
     if (kDebugMode) {
-      print('ApiService: createDealStatus - userIds: $userIds');
-      print('ApiService: createDealStatus - changeStatusUserIds: $changeStatusUserIds'); // ✅ НОВОЕ
+      debugPrint('ApiService: createDealStatus - userIds: $userIds');
+      debugPrint('ApiService: createDealStatus - changeStatusUserIds: $changeStatusUserIds'); // ✅ НОВОЕ
     }
 
     final organizationId = await getSelectedOrganization();
@@ -3358,7 +3405,7 @@ Future<List<DealStatus>> getDealStatuses({
     };
 
     if (kDebugMode) {
-      print('ApiService: createDealStatus request body: $body');
+      debugPrint('ApiService: createDealStatus request body: $body');
     }
 
     final response = await _postRequest(path, body);
@@ -3375,7 +3422,7 @@ Future<List<DealStatus>> getDealStatuses({
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       final path = await _appendQueryParams('/deal/history/$dealId');
       if (kDebugMode) {
-        //print('ApiService: getDealHistory - Generated path: $path');
+        //debugPrint('ApiService: getDealHistory - Generated path: $path');
       }
 
       final response = await _getRequest(path);
@@ -3385,11 +3432,11 @@ Future<List<DealStatus>> getDealStatuses({
         final List<dynamic> jsonList = decodedJson['result']['history'];
         return jsonList.map((json) => DealHistory.fromJson(json)).toList();
       } else {
-        ////print('Failed to load deal history!');
+        ////debugPrint('Failed to load deal history!');
         throw Exception('Ошибка загрузки истории сделки!');
       }
     } catch (e) {
-      ////print('Error occurred!');
+      ////debugPrint('Error occurred!');
       throw Exception('Ошибка загрузки истории сделки!');
     }
   }
@@ -3399,7 +3446,7 @@ Future<List<DealStatus>> getDealStatuses({
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       final path = await _appendQueryParams('/order/history/$orderId');
       if (kDebugMode) {
-        //print('ApiService: getOrderHistory - Generated path: $path');
+        //debugPrint('ApiService: getOrderHistory - Generated path: $path');
       }
 
       final response = await _getRequest(path);
@@ -3409,11 +3456,11 @@ Future<List<DealStatus>> getDealStatuses({
         final List<dynamic> jsonList = decodedJson['result']['history'];
         return jsonList.map((json) => OrderHistory.fromJson(json)).toList();
       } else {
-        ////print('Failed to load order history!');
+        ////debugPrint('Failed to load order history!');
         throw Exception('Ошибка загрузки истории заказа!');
       }
     } catch (e) {
-      ////print('Error occurred: $e');
+      ////debugPrint('Error occurred: $e');
       throw Exception('Ошибка загрузки истории заказа!');
     }
   }
@@ -3434,9 +3481,9 @@ Future<List<DealStatus>> getDealStatuses({
     // ============ МУЛЬТИВЫБОР (как было) ============
     final path = await _appendQueryParams('/deal/change-multiple-status/$dealId');
     if (kDebugMode) {
-      print('ApiService: MULTI-SELECT mode');
-      print('ApiService: Path: $path');
-      print('ApiService: Statuses: $statusIds');
+      debugPrint('ApiService: MULTI-SELECT mode');
+      debugPrint('ApiService: Path: $path');
+      debugPrint('ApiService: Statuses: $statusIds');
     }
 
     final response = await _postRequest(
@@ -3449,7 +3496,7 @@ Future<List<DealStatus>> getDealStatuses({
 
     if (response.statusCode == 200) {
       if (kDebugMode) {
-        print('✅ Статусы успешно обновлены (multi-select)');
+        debugPrint('✅ Статусы успешно обновлены (multi-select)');
       }
     } else if (response.statusCode == 422) {
       throw DealStatusUpdateException(
@@ -3488,9 +3535,9 @@ Future<List<DealStatus>> getDealStatuses({
     }
     
     if (kDebugMode) {
-      print('ApiService: SINGLE-SELECT mode');
-      print('ApiService: Path: $path');
-      print('ApiService: from_status_id: $currentStatusId → to_status_id: $toStatusId');
+      debugPrint('ApiService: SINGLE-SELECT mode');
+      debugPrint('ApiService: Path: $path');
+      debugPrint('ApiService: from_status_id: $currentStatusId → to_status_id: $toStatusId');
     }
 
     final response = await _postRequest(
@@ -3506,7 +3553,7 @@ Future<List<DealStatus>> getDealStatuses({
 
     if (response.statusCode == 200) {
       if (kDebugMode) {
-        print('✅ Статус успешно обновлён (single-select)');
+        debugPrint('✅ Статус успешно обновлён (single-select)');
       }
     } else if (response.statusCode == 422) {
       throw DealStatusUpdateException(
@@ -3524,7 +3571,7 @@ Future<List<DealStatus>> getDealStatuses({
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/task/getByDeal/$dealId');
     if (kDebugMode) {
-      //print('ApiService: getDealTasks - Generated path: $path');
+      //debugPrint('ApiService: getDealTasks - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -3558,8 +3605,8 @@ Future<List<DealStatus>> getDealStatuses({
     try {
       final updatedPath = await _appendQueryParams('/deal');
       if (kDebugMode) {
-        print('ApiService: createDeal - Generated path: $updatedPath');
-        print('ApiService: createDeal - userIds: $userIds'); // ✅ НОВОЕ
+        debugPrint('ApiService: createDeal - Generated path: $updatedPath');
+        debugPrint('ApiService: createDeal - userIds: $userIds'); // ✅ НОВОЕ
       }
 
       var request = http.MultipartRequest('POST', Uri.parse('$baseUrl$updatedPath'));
@@ -3596,7 +3643,7 @@ Future<List<DealStatus>> getDealStatuses({
         for (int i = 0; i < userIds.length; i++) {
           request.fields['users[$i]'] = userIds[i].toString();
         }
-        print('ApiService: createDeal - Added user_ids: $userIds');
+        debugPrint('ApiService: createDeal - Added user_ids: $userIds');
       }
 
       if (customFields != null && customFields.isNotEmpty) {
@@ -3687,76 +3734,76 @@ Future<List<DealStatus>> getDealStatuses({
     // Формируем путь с query-параметрами
     final updatedPath = await _appendQueryParams('/deal/$dealId');
     if (kDebugMode) {
-      //print('ApiService: updateDeal - Generated path: $updatedPath');
+      debugPrint('ApiService: updateDeal - Generated path: $updatedPath');
+      debugPrint('ApiService: updateDeal - userIds: $userIds'); // ✅ НОВОЕ
     }
     var request =
         http.MultipartRequest('POST', Uri.parse('$baseUrl$updatedPath'));
 
-    request.fields['name'] = name;
-    request.fields['deal_status_id'] = dealStatusId.toString();
-    if (managerId != null) request.fields['manager_id'] = managerId.toString();
-    if (startDate != null)
-      request.fields['start_date'] = DateFormat('yyyy-MM-dd').format(startDate);
-    if (endDate != null)
-      request.fields['end_date'] = DateFormat('yyyy-MM-dd').format(endDate);
-    if (sum.isNotEmpty) request.fields['sum'] = sum;
-    if (description != null) request.fields['description'] = description;
-    if (dealtypeId != null)
-      request.fields['deal_type_id'] = dealtypeId.toString();
-    if (leadId != null) request.fields['lead_id'] = leadId.toString();
- // ✅ НОВОЕ: Отправляем массив статусов
+  request.fields['name'] = name;
+  request.fields['deal_status_id'] = dealStatusId.toString();
+  if (managerId != null) request.fields['manager_id'] = managerId.toString();
+  if (startDate != null)
+    request.fields['start_date'] = DateFormat('yyyy-MM-dd').format(startDate);
+  if (endDate != null)
+    request.fields['end_date'] = DateFormat('yyyy-MM-dd').format(endDate);
+  if (sum.isNotEmpty) request.fields['sum'] = sum;
+  if (description != null) request.fields['description'] = description;
+  if (dealtypeId != null)
+    request.fields['deal_type_id'] = dealtypeId.toString();
+  if (leadId != null) request.fields['lead_id'] = leadId.toString();
+
+  // Отправляем массив статусов
   if (dealStatusIds != null && dealStatusIds.isNotEmpty) {
     for (int i = 0; i < dealStatusIds.length; i++) {
       request.fields['deal_status_ids[$i]'] = dealStatusIds[i].toString();
     }
-    print('ApiService: Отправка deal_status_ids: $dealStatusIds');
+    debugPrint('ApiService: Отправка deal_status_ids: $dealStatusIds');
   }
-  
-    // ✅ НОВОЕ: Добавляем user_ids
-    if (userIds != null && userIds.isNotEmpty) {
-      for (int i = 0; i < userIds.length; i++) {
-        request.fields['users[$i]'] = userIds[i].toString();
-      }
-      if (kDebugMode) {
-        print('ApiService: updateDeal - Added user_ids: $userIds');
-      }
-    }
-  
-    final customFieldsList = customFields ?? [];
-    if (customFieldsList.isNotEmpty) {
-      for (int i = 0; i < customFieldsList.length; i++) {
-        var field = customFieldsList[i];
-        request.fields['deal_custom_fields[$i][key]'] =
-            field['key']!.toString();
-        request.fields['deal_custom_fields[$i][value]'] =
-            field['value']!.toString();
-        request.fields['deal_custom_fields[$i][type]'] =
-            field['type']?.toString() ?? 'string';
-      }
-    }
 
-    final directoryValuesList = directoryValues ?? [];
-    if (directoryValuesList.isNotEmpty) {
-      for (int i = 0; i < directoryValuesList.length; i++) {
-        var value = directoryValuesList[i];
-        request.fields['directory_values[$i][directory_id]'] =
-            value['directory_id'].toString();
-        request.fields['directory_values[$i][entry_id]'] =
-            value['entry_id'].toString();
-      }
+  // ✅ НОВОЕ: Добавляем user_ids
+  if (userIds != null && userIds.isNotEmpty) {
+    for (int i = 0; i < userIds.length; i++) {
+      request.fields['users[$i]'] = userIds[i].toString();
     }
+    debugPrint('ApiService: updateDeal - Added user_ids: $userIds');
+  }
 
-    // Добавляем ID существующих файлов
+  final customFieldsList = customFields ?? [];
+  if (customFieldsList.isNotEmpty) {
+    for (int i = 0; i < customFieldsList.length; i++) {
+      var field = customFieldsList[i];
+      request.fields['deal_custom_fields[$i][key]'] =
+          field['key']!.toString();
+      request.fields['deal_custom_fields[$i][value]'] =
+          field['value']!.toString();
+      request.fields['deal_custom_fields[$i][type]'] =
+          field['type']?.toString() ?? 'string';
+    }
+  }
+
+  final directoryValuesList = directoryValues ?? [];
+  if (directoryValuesList.isNotEmpty) {
+    for (int i = 0; i < directoryValuesList.length; i++) {
+      var value = directoryValuesList[i];
+      request.fields['directory_values[$i][directory_id]'] =
+          value['directory_id'].toString();
+      request.fields['directory_values[$i][entry_id]'] =
+          value['entry_id'].toString();
+    }
+  }
+
+  // Добавляем ID существующих файлов
     if (existingFiles != null && existingFiles.isNotEmpty) {
       for (int i = 0; i < existingFiles.length; i++) {
         request.fields['existing_files[$i]'] = existingFiles[i].toString();
       }
-    }
+  }
 
-    // Отправляем только новые файлы (id == 0)
+  // Отправляем только новые файлы (id == 0)
     if (files != null && files.isNotEmpty) {
       final newFiles = files.where((f) => f.id == 0).toList();
-      for (var fileData in newFiles) {
+    for (var fileData in newFiles) {
         try {
           final file = await http.MultipartFile.fromPath(
             'files[]',
@@ -3767,40 +3814,39 @@ Future<List<DealStatus>> getDealStatuses({
         } catch (e) {
           debugPrint("Error adding file ${fileData.name}: $e");
         }
-      }
-    }
-
-    final response = await _multipartPostRequest('/deal/$dealId', request);
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'message': 'deal_updated_successfully'};
-    } else if (response.statusCode == 422) {
-      if (response.body.contains('"name"')) {
-        return {'success': false, 'message': 'invalid_name_length'};
-      }
-      if (response.body.contains('sum')) {
-        return {'success': false, 'message': 'invalid_sum_format'};
-      }
-      if (response.body.contains('type')) {
-        return {'success': false, 'message': 'invalid_field_type'};
-      }
-      if (response.body.contains('deal_custom_fields')) {
-        return {'success': false, 'message': 'invalid_custom_fields'};
-      }
-      return {'success': false, 'message': 'unknown_error'};
-    } else if (response.statusCode == 500) {
-      return {'success': false, 'message': 'error_server_text'};
-    } else {
-      return {'success': false, 'message': 'error_deal_update'};
     }
   }
 
+  final response = await _multipartPostRequest('/deal/$dealId', request);
+
+  if (response.statusCode == 200 || response.statusCode == 201) {
+    return {'success': true, 'message': 'deal_updated_successfully'};
+  } else if (response.statusCode == 422) {
+    if (response.body.contains('"name"')) {
+      return {'success': false, 'message': 'invalid_name_length'};
+    }
+    if (response.body.contains('sum')) {
+      return {'success': false, 'message': 'invalid_sum_format'};
+    }
+    if (response.body.contains('type')) {
+      return {'success': false, 'message': 'invalid_field_type'};
+    }
+    if (response.body.contains('deal_custom_fields')) {
+      return {'success': false, 'message': 'invalid_custom_fields'};
+    }
+    return {'success': false, 'message': 'unknown_error'};
+  } else if (response.statusCode == 500) {
+    return {'success': false, 'message': 'error_server_text'};
+  } else {
+    return {'success': false, 'message': 'error_deal_update'};
+  }
+}
 // Метод для Удаления Статуса Сделки
   Future<Map<String, dynamic>> deleteDealStatuses(int dealStatusId) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/deal/statuses/$dealStatusId');
     if (kDebugMode) {
-      //print('ApiService: deleteDealStatuses - Generated path: $path');
+      //debugPrint('ApiService: deleteDealStatuses - Generated path: $path');
     }
 
     final response = await _deleteRequest(path);
@@ -3817,7 +3863,7 @@ Future<List<DealStatus>> getDealStatuses({
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/deal/$dealId');
     if (kDebugMode) {
-      //print('ApiService: deleteDeal - Generated path: $path');
+      //debugPrint('ApiService: deleteDeal - Generated path: $path');
     }
 
     final response = await _deleteRequest(path);
@@ -3834,7 +3880,7 @@ Future<List<DealStatus>> getDealStatuses({
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/deal/get/custom-fields');
     if (kDebugMode) {
-      //print('ApiService: getCustomFieldsdeal - Generated path: $path');
+      //debugPrint('ApiService: getCustomFieldsdeal - Generated path: $path');
     }
 
     // Выполняем запрос
@@ -3867,8 +3913,8 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
   final path = await _appendQueryParams('/deal/statuses/$dealStatusId');
 
   if (kDebugMode) {
-    print('ApiService: updateDealStatusEdit - userIds: $userIds');
-    print('ApiService: updateDealStatusEdit - changeStatusUserIds: $changeStatusUserIds'); // ✅ НОВОЕ
+    debugPrint('ApiService: updateDealStatusEdit - userIds: $userIds');
+    debugPrint('ApiService: updateDealStatusEdit - changeStatusUserIds: $changeStatusUserIds'); // ✅ НОВОЕ
   }
 
   final organizationId = await getSelectedOrganization();
@@ -3891,7 +3937,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
   };
   
   if (kDebugMode) {
-    print('ApiService: updateDealStatusEdit payload: $payload');
+    debugPrint('ApiService: updateDealStatusEdit payload: $payload');
   }
   
   final response = await _patchRequest(path, payload);
@@ -3906,7 +3952,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/deal/statuses/$dealStatusId');
     if (kDebugMode) {
-      //print('ApiService: getDealStatus - Generated path: $path');
+      //debugPrint('ApiService: getDealStatus - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -3931,7 +3977,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       final path = await _appendQueryParams('/task/$taskId');
       if (kDebugMode) {
-        //print('ApiService: getTaskById - Generated path: $path');
+        //debugPrint('ApiService: getTaskById - Generated path: $path');
       }
 
       final response = await _getRequest(path);
@@ -3984,7 +4030,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     path = await _appendQueryParams(path);
     if (kDebugMode) {
-      //print('ApiService: getTasks - Generated path: $path');
+      //debugPrint('ApiService: getTasks - Generated path: $path');
     }
 
     bool hasFilters = (search != null && search.isNotEmpty) ||
@@ -4118,7 +4164,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
         throw Exception('Нет данных о задачах в ответе');
       }
     } else {
-      ////print('Error response! - ${response.body}');
+      ////debugPrint('Error response! - ${response.body}');
       throw Exception('Ошибка загрузки задач!');
     }
   }
@@ -4132,7 +4178,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       final path = await _appendQueryParams('/task-status');
       if (kDebugMode) {
-        //print('ApiService: getTaskStatuses - Generated path: $path');
+        //debugPrint('ApiService: getTaskStatuses - Generated path: $path');
       }
 
       final response = await _getRequest(path);
@@ -4145,17 +4191,17 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
           prefs.getString('cachedTaskStatuses_$organizationId');
           if (cachedStatuses != null) {
             final decodedData = json.decode(cachedStatuses);
-            // ////print(
+            // ////debugPrint(
             //     '------------------------------ Старые данные в кэше ------------------------------');
-            // ////print(decodedData); // Старые данные
+            // ////debugPrint(decodedData); // Старые данные
           }
 
           // Обновляем кэш новыми данными
           await prefs.setString('cachedTaskStatuses_$organizationId',
               json.encode(data['result']));
-          // ////print(
+          // ////debugPrint(
           //     '------------------------------------ Новые данные, которые сохраняются в кэш ---------------------------------');
-          // ////print(data['result']); // Новые данные, которые будут сохранены в кэш
+          // ////debugPrint(data['result']); // Новые данные, которые будут сохранены в кэш
 
           return (data['result'] as List)
               .map((status) => TaskStatus.fromJson(status))
@@ -4167,7 +4213,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
         throw Exception('Ошибка ${response.statusCode}!');
       }
     } catch (e) {
-      ////print('Ошибка загрузки статусов задач. Используем кэшированные данные.');
+      ////debugPrint('Ошибка загрузки статусов задач. Используем кэшированные данные.');
       // Если запрос не удался, пытаемся загрузить данные из кэша
       final cachedStatuses =
       prefs.getString('cachedTaskStatuses_$organizationId');
@@ -4193,18 +4239,18 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
       // Если список лидов не пуст, значит статус содержит элементы
       return tasks.isNotEmpty;
     } catch (e) {
-      ////print('Error while checking if status has deals!');
+      ////debugPrint('Error while checking if status has deals!');
       return false;
     }
   }
 
 // Обновление статуса карточки Задачи в колонке
-  Future<void> updateTaskStatus(int taskId, int position, int statusId) async {
-    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/task/changeStatus/$taskId');
-    if (kDebugMode) {
-      //print('ApiService: updateTaskStatus - Generated path: $path');
-    }
+ Future<void> updateTaskStatus(int taskId, int position, int statusId) async {
+  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+  final path = await _appendQueryParams('/task/changeStatus/$taskId');
+  if (kDebugMode) {
+    //debugPrint('ApiService: updateTaskStatus - Generated path: $path');
+  }
 
     final response = await _postRequest(path, {
       'position': 1,
@@ -4212,7 +4258,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     });
 
     if (response.statusCode == 200) {
-      ////print('Статус задачи успешно обновлен');
+      ////debugPrint('Статус задачи успешно обновлен');
     } else if (response.statusCode == 422) {
       // ПАРСИМ JSON ОТВЕТ ОТ СЕРВЕРА
       final jsonResponse = json.decode(response.body);
@@ -4329,7 +4375,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       final path = await _appendQueryParams('/task-status');
       if (kDebugMode) {
-        //print('ApiService: CreateTaskStatusAdd - Generated path: $path');
+        //debugPrint('ApiService: CreateTaskStatusAdd - Generated path: $path');
       }
 
       // Выполняем запрос
@@ -4406,7 +4452,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       final path = await _appendQueryParams('/task/createFromDeal/$dealId');
       if (kDebugMode) {
-        //print('ApiService: createTaskFromDeal - Generated path: $path');
+        //debugPrint('ApiService: createTaskFromDeal - Generated path: $path');
       }
       var uri = Uri.parse('$baseUrl$path');
 
@@ -4567,7 +4613,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       final path = await _appendQueryParams('/task');
       if (kDebugMode) {
-        //print('ApiService: createTask - Generated path: $path');
+        //debugPrint('ApiService: createTask - Generated path: $path');
       }
       var uri = Uri.parse('$baseUrl$path');
 
@@ -4741,7 +4787,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       final path = await _appendQueryParams('/task/$taskId');
       if (kDebugMode) {
-        //print('ApiService: updateTask - Generated path: $path');
+        //debugPrint('ApiService: updateTask - Generated path: $path');
       }
       var uri = Uri.parse('$baseUrl$path');
 
@@ -4828,7 +4874,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
           'message': 'task_update_successfully',
         };
       } else if (response.statusCode == 422) {
-        ////print('Server Response: ${response.body}'); // Добавим для отладки
+        ////debugPrint('Server Response: ${response.body}'); // Добавим для отладки
 
         // Обработка ошибок валидации
         if (response.body.contains('name')) {
@@ -4865,7 +4911,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
           'message': 'error_server_text',
         };
       } else {
-        ////print('Server Response: ${response.body}'); // Добавим для отладки
+        ////debugPrint('Server Response: ${response.body}'); // Добавим для отладки
 
         return {
           'success': false,
@@ -4873,7 +4919,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
         };
       }
     } catch (e) {
-      ////print('Update Task Error: $e'); // Добавим для отладки
+      ////debugPrint('Update Task Error: $e'); // Добавим для отладки
 
       return {
         'success': false,
@@ -4888,7 +4934,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       final path = await _appendQueryParams('/task/history/$taskId');
       if (kDebugMode) {
-        //print('ApiService: getTaskHistory - Generated path: $path');
+        //debugPrint('ApiService: getTaskHistory - Generated path: $path');
       }
 
       final response = await _getRequest(path);
@@ -4898,11 +4944,11 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
         final List<dynamic> jsonList = decodedJson['result']['history'];
         return jsonList.map((json) => TaskHistory.fromJson(json)).toList();
       } else {
-        ////print('Failed to load task history!');
+        ////debugPrint('Failed to load task history!');
         throw Exception('Ошибка загрузки истории задач!');
       }
     } catch (e) {
-      ////print('Error occurred!');
+      ////debugPrint('Error occurred!');
       throw Exception('Ошибка загрузки истории задач!');
     }
   }
@@ -4912,7 +4958,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/project');
     if (kDebugMode) {
-      //print('ApiService: getAllProject - Generated path: $path');
+      //debugPrint('ApiService: getAllProject - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -4943,7 +4989,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     path = await _appendQueryParams(path);
     if (kDebugMode) {
-      print('ApiService: getTaskProject - Generated path: $path');
+      debugPrint('ApiService: getTaskProject - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -4967,7 +5013,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     }
 
     if (kDebugMode) {
-      // ////print('getAll project!');
+      // ////debugPrint('getAll project!');
     }
 
     return dataProject;
@@ -4979,13 +5025,13 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       final path = await _appendQueryParams('/user');
       if (kDebugMode) {
-        //print('ApiService: getUserTask - Generated path: $path');
+        //debugPrint('ApiService: getUserTask - Generated path: $path');
       }
 
-      ////print('Отправка запроса на /user');
+      ////debugPrint('Отправка запроса на /user');
       final response = await _getRequest(path);
-      // ////print('Статус ответа!');
-      // ////print('Тело ответа!');
+      // ////debugPrint('Статус ответа!');
+      // ////debugPrint('Тело ответа!');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -5013,7 +5059,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/role');
     if (kDebugMode) {
-      //print('ApiService: getRoles - Generated path: $path');
+      //debugPrint('ApiService: getRoles - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -5037,22 +5083,22 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/taskStatusName');
     if (kDebugMode) {
-      //print('ApiService: getStatusName - Generated path: $path');
+      //debugPrint('ApiService: getStatusName - Generated path: $path');
     }
 
-    ////print('Начало запроса статусов задач'); // Отладочный вывод
+    ////debugPrint('Начало запроса статусов задач'); // Отладочный вывод
     final response = await _getRequest(path);
-    ////print('Статус код ответа!'); // Отладочный вывод
+    ////debugPrint('Статус код ответа!'); // Отладочный вывод
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      ////print('Полученные данные: $data'); // Отладочный вывод
+      ////debugPrint('Полученные данные: $data'); // Отладочный вывод
 
       if (data['result'] != null) {
         final statusList = (data['result'] as List)
             .map((name) => StatusName.fromJson(name))
             .toList();
-        ////print(
+        ////debugPrint(
         // 'Преобразованный список статусов: $statusList'); // Отладочный вывод
         return statusList;
       } else {
@@ -5068,7 +5114,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/task/$taskId');
     if (kDebugMode) {
-      //print('ApiService: deleteTask - Generated path: $path');
+      //debugPrint('ApiService: deleteTask - Generated path: $path');
     }
 
     final response = await _deleteRequest(path);
@@ -5085,7 +5131,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/task-status/$taskStatusId');
     if (kDebugMode) {
-      //print('ApiService: deleteTaskStatuses - Generated path: $path');
+      //debugPrint('ApiService: deleteTaskStatuses - Generated path: $path');
     }
 
     final response = await _deleteRequest(path);
@@ -5102,7 +5148,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/task/finish');
     if (kDebugMode) {
-      //print('ApiService: finishTask - Generated path: $path');
+      //debugPrint('ApiService: finishTask - Generated path: $path');
     }
 
     final response = await _postRequest(path, {
@@ -5136,7 +5182,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/task/get/custom-fields');
     if (kDebugMode) {
-      //print('ApiService: getCustomFields - Generated path: $path');
+      //debugPrint('ApiService: getCustomFields - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -5157,7 +5203,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/task-status/$taskStatusId');
     if (kDebugMode) {
-      //print('ApiService: getTaskStatus - Generated path: $path');
+      //debugPrint('ApiService: getTaskStatus - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -5185,7 +5231,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/task-status/$taskStatusId');
     if (kDebugMode) {
-      //print('ApiService: updateTaskStatusEdit - Generated path: $path');
+      //debugPrint('ApiService: updateTaskStatusEdit - Generated path: $path');
     }
 
     final roles = roleIds.map((roleId) => {"role_id": roleId}).toList();
@@ -5215,7 +5261,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/task/deleteFile/$fileId');
     if (kDebugMode) {
-      //print('ApiService: deleteTaskFile - Generated path: $path');
+      //debugPrint('ApiService: deleteTaskFile - Generated path: $path');
     }
 
     final response = await _deleteRequest(path);
@@ -5231,7 +5277,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/department');
     if (kDebugMode) {
-      //print('ApiService: getDepartments - Generated path: $path');
+      //debugPrint('ApiService: getDepartments - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -5239,7 +5285,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       final result = data['result']; // Извлекаем массив из ключа "result"
-      ////print('Полученные данные отделов: $result');
+      ////debugPrint('Полученные данные отделов: $result');
       return (result as List)
           .map((department) => Department.fromJson(department))
           .toList();
@@ -5252,7 +5298,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/directory');
     if (kDebugMode) {
-      //print('ApiService: getDirectory - Generated path: $path');
+      //debugPrint('ApiService: getDirectory - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -5276,7 +5322,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     }
 
     if (kDebugMode) {
-      ////print('getAll directory!');
+      ////debugPrint('getAll directory!');
     }
 
     return dataDirectory;
@@ -5287,15 +5333,15 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     final path =
         await _appendQueryParams('/directory/getMainFields/$directoryId');
     if (kDebugMode) {
-      //print('ApiService: getMainFields - Generated path: $path');
+      //debugPrint('ApiService: getMainFields - Generated path: $path');
     }
 
-    ////print('Вызов getMainFields для directoryId: $directoryId');
+    ////debugPrint('Вызов getMainFields для directoryId: $directoryId');
     final response = await _getRequest(path);
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      ////print('Ответ getMainFields для directoryId $directoryId: $data');
+      ////debugPrint('Ответ getMainFields для directoryId $directoryId: $data');
       if (data['result'] != null) {
         return MainFieldResponse.fromJson(data);
       } else {
@@ -5318,7 +5364,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/directoryLink');
     if (kDebugMode) {
-      //print('ApiService: linkDirectory - Generated path: $path');
+      //debugPrint('ApiService: linkDirectory - Generated path: $path');
     }
 
     final response = await _postRequest(
@@ -5335,7 +5381,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     }
 
     if (kDebugMode) {
-      ////print('Directory linked successfully!');
+      ////debugPrint('Directory linked successfully!');
     }
   }
 
@@ -5343,7 +5389,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/directoryLink/task');
     if (kDebugMode) {
-      //print('ApiService: getTaskDirectoryLinks - Generated path: $path');
+      //debugPrint('ApiService: getTaskDirectoryLinks - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -5369,7 +5415,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/directoryLink/lead');
     if (kDebugMode) {
-      //print('ApiService: getLeadDirectoryLinks - Generated path: $path');
+      //debugPrint('ApiService: getLeadDirectoryLinks - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -5395,7 +5441,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/directoryLink/deal');
     if (kDebugMode) {
-      //print('ApiService: getDealDirectoryLinks - Generated path: $path');
+      //debugPrint('ApiService: getDealDirectoryLinks - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -5423,7 +5469,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/dashboard/lead-chart');
     if (kDebugMode) {
-      //print('ApiService: getLeadChart - Generated path: $path');
+      //debugPrint('ApiService: getLeadChart - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -5444,7 +5490,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/dashboard/leadConversion-chart');
     if (kDebugMode) {
-      //print('ApiService: getLeadConversionData - Generated path: $path');
+      //debugPrint('ApiService: getLeadConversionData - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -5470,7 +5516,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/dashboard/dealStats');
     if (kDebugMode) {
-      //print('ApiService: getDealStatsData - Generated path: $path');
+      //debugPrint('ApiService: getDealStatsData - Generated path: $path');
     }
 
     try {
@@ -5484,7 +5530,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
         throw Exception('Ошибка загрузки данных!');
       }
     } catch (e) {
-      ////print('Ошибка запроса!');
+      ////debugPrint('Ошибка запроса!');
       throw ('');
     }
   }
@@ -5494,7 +5540,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/dashboard/task-chart');
     if (kDebugMode) {
-      //print('ApiService: getTaskChartData - Generated path: $path');
+      //debugPrint('ApiService: getTaskChartData - Generated path: $path');
     }
 
     try {
@@ -5529,7 +5575,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/dashboard/lead-process-speed');
     if (kDebugMode) {
-      //print('ApiService: getProcessSpeedData - Generated path: $path');
+      //debugPrint('ApiService: getProcessSpeedData - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -5554,7 +5600,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/dashboard/users-chart');
     if (kDebugMode) {
-      //print('ApiService: getUsersChartData - Generated path: $path');
+      //debugPrint('ApiService: getUsersChartData - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -5584,7 +5630,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     final path = await _appendQueryParams('/dashboard/user/$userId/overdue-tasks');
 
     if (kDebugMode) {
-      // print('ApiService: getUserOverdueTasksData - Generated path: $path');
+      // debugPrint('ApiService: getUserOverdueTasksData - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -5614,7 +5660,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/dashboard/dealStats/for-manager');
     if (kDebugMode) {
-      //print('ApiService: getDealStatsManagerData - Generated path: $path');
+      //debugPrint('ApiService: getDealStatsManagerData - Generated path: $path');
     }
 
     try {
@@ -5628,7 +5674,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
         throw Exception('Ошибка загрузки данных!');
       }
     } catch (e) {
-      ////print('Ошибка запроса!');
+      ////debugPrint('Ошибка запроса!');
       throw ('');
     }
   }
@@ -5638,7 +5684,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/dashboard/lead-chart/for-manager');
     if (kDebugMode) {
-      //print('ApiService: getLeadChartManager - Generated path: $path');
+      //debugPrint('ApiService: getLeadChartManager - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -5660,7 +5706,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     final path =
         await _appendQueryParams('/dashboard/leadConversion-chart/for-manager');
     if (kDebugMode) {
-      //print('ApiService: getLeadConversionDataManager - Generated path: $path');
+      //debugPrint('ApiService: getLeadConversionDataManager - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -5686,7 +5732,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     final path =
         await _appendQueryParams('/dashboard/lead-process-speed/for/manager');
     if (kDebugMode) {
-      //print('ApiService: getProcessSpeedDataManager - Generated path: $path');
+      //debugPrint('ApiService: getProcessSpeedDataManager - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -5712,7 +5758,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/dashboard/task-chart/for-manager');
     if (kDebugMode) {
-      //print('ApiService: getTaskChartDataManager - Generated path: $path');
+      //debugPrint('ApiService: getTaskChartDataManager - Generated path: $path');
     }
 
     try {
@@ -5742,7 +5788,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/dashboard/completed-task-chart');
     if (kDebugMode) {
-      //print('ApiService: getUserStatsManager - Generated path: $path');
+      //debugPrint('ApiService: getUserStatsManager - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -5952,7 +5998,7 @@ Future<PaginationDTO<Chats>> getAllChats(
   final fullUrl = '$baseUrl$path';
   
   // ДОБАВЛЕНО: Отладочный вывод
-  print('ApiService.getAllChats: Final URL: $fullUrl');
+  debugPrint('ApiService.getAllChats: Final URL: $fullUrl');
 
   try {
     final response = await http.get(
@@ -5984,7 +6030,7 @@ Future<PaginationDTO<Chats>> getAllChats(
       throw Exception('Ошибка ${response.statusCode}: ${response.body}');
     }
   } catch (e) {
-    print('ApiService.getAllChats: Error: $e');
+    debugPrint('ApiService.getAllChats: Error: $e');
     rethrow;
   }
 }
@@ -5995,7 +6041,7 @@ Future<String> getDynamicBaseUrlFixed() async {
 
   if (cachedBaseUrl != null && cachedBaseUrl.isNotEmpty && cachedBaseUrl != 'null') {
     if (kDebugMode) {
-      print('ApiService: Using cached baseUrl: $cachedBaseUrl');
+      debugPrint('ApiService: Using cached baseUrl: $cachedBaseUrl');
     }
     return cachedBaseUrl;
   }
@@ -6009,7 +6055,7 @@ Future<ChatsGetId> getChatById(int chatId) async {
   path = await _appendQueryParams(path);
 
   if (kDebugMode) {
-    //print('ApiService.getChatById: Generated path: $path');
+    //debugPrint('ApiService.getChatById: Generated path: $path');
   }
 
   final response = await http.get(
@@ -6024,8 +6070,8 @@ Future<ChatsGetId> getChatById(int chatId) async {
   );
 
   if (kDebugMode) {
-    //print('ApiService.getChatById: Response status: ${response.statusCode}');
-    //print('ApiService.getChatById: Response body: ${response.body}');
+    //debugPrint('ApiService.getChatById: Response status: ${response.statusCode}');
+    //debugPrint('ApiService.getChatById: Response body: ${response.body}');
   }
 
   if (response.statusCode == 200) {
@@ -6046,7 +6092,7 @@ Future<ChatsGetId> getChatById(int chatId) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/chat/read');
     if (kDebugMode) {
-      //print('ApiService: sendMessages - Generated path: $path');
+      //debugPrint('ApiService: sendMessages - Generated path: $path');
     }
 
     // Prepare the body
@@ -6138,7 +6184,7 @@ Future<List<Message>> getMessages(
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/v2/chat/clearCache/$chatId');
     if (kDebugMode) {
-      //print('ApiService: closeChatSocket - Generated path: $path');
+      //debugPrint('ApiService: closeChatSocket - Generated path: $path');
     }
 
     final response = await _postRequest(path, {});
@@ -6153,7 +6199,7 @@ Future<List<Message>> getMessages(
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/v2/chat/get-integration/$chatId');
     if (kDebugMode) {
-      //print('ApiService: getIntegrationForLead - Generated path: $path');
+      //debugPrint('ApiService: getIntegrationForLead - Generated path: $path');
     }
 
     final response = await http.get(
@@ -6166,15 +6212,15 @@ Future<List<Message>> getMessages(
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      // debug//print('API response: $data'); // Лог для отладки
+      // debug//debugPrint('API response: $data'); // Лог для отладки
       if (data['result'] != null) {
         return IntegrationForLead.fromJson(data['result']);
       } else {
-        // debug//print('Integration not found in response: $data');
+        // debug//debugPrint('Integration not found in response: $data');
         throw Exception('Интеграция не найдена в ответе');
       }
     } else {
-      // debug//print('API error: ${response.statusCode}, body: ${response.body}');
+      // debug//debugPrint('API error: ${response.statusCode}, body: ${response.body}');
       throw Exception(
           'Ошибка ${response.statusCode}: Не удалось получить интеграцию');
     }
@@ -6186,7 +6232,7 @@ Future<List<Message>> getMessages(
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/v2/chat/sendMessage/$chatId');
     if (kDebugMode) {
-      //print('ApiService: sendMessage - Generated path: $path');
+      //debugPrint('ApiService: sendMessage - Generated path: $path');
     }
 
     final response = await _postRequest(path, {
@@ -6203,7 +6249,7 @@ Future<List<Message>> getMessages(
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/v2/chat/pinMessage/$messageId');
     if (kDebugMode) {
-      //print('ApiService: pinMessage - Generated path: $path');
+      //debugPrint('ApiService: pinMessage - Generated path: $path');
     }
 
     final response = await _postRequest(path, {});
@@ -6217,7 +6263,7 @@ Future<List<Message>> getMessages(
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/v2/chat/pinMessage/$messageId');
     if (kDebugMode) {
-      //print('ApiService: unpinMessage - Generated path: $path');
+      //debugPrint('ApiService: unpinMessage - Generated path: $path');
     }
 
     final response = await _postRequest(path, {});
@@ -6231,7 +6277,7 @@ Future<List<Message>> getMessages(
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/v2/chat/editMessage/$messageId');
     if (kDebugMode) {
-      //print('ApiService: editMessage - Generated path: $path');
+      //debugPrint('ApiService: editMessage - Generated path: $path');
     }
 
     final response = await _postRequest(path, {
@@ -6249,7 +6295,7 @@ Future<List<Message>> getMessages(
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/v2/chat/sendVoice/$chatId');
     if (kDebugMode) {
-      //print('ApiService: sendChatAudioFile - Generated path: $path');
+      //debugPrint('ApiService: sendChatAudioFile - Generated path: $path');
     }
 
     String requestUrl = '$baseUrl$path';
@@ -6270,25 +6316,25 @@ Future<List<Message>> getMessages(
         ),
       );
       if (kDebugMode) {
-        ////print('response.statusCode!');
+        ////debugPrint('response.statusCode!');
       }
 
       if (response.statusCode == 200) {
         if (kDebugMode) {
-          ////print('Audio message sent successfully!');
+          ////debugPrint('Audio message sent successfully!');
         }
       } else {
         if (kDebugMode) {
-          ////print('Error sending audio message: ${response.data}');
+          ////debugPrint('Error sending audio message: ${response.data}');
         }
         throw Exception('Error sending audio message: ${response.data}');
       }
     } on DioException catch (e) {
       if (kDebugMode) {
-        ////print('Exception caught!');
+        ////debugPrint('Exception caught!');
       }
       if (kDebugMode) {
-        ////print(e.response?.data);
+        ////debugPrint(e.response?.data);
       }
       throw Exception('Failed to send audio message due to an exception!');
     }
@@ -6300,7 +6346,7 @@ Future<List<Message>> getMessages(
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/v2/chat/sendFile/$chatId');
     if (kDebugMode) {
-      //print('ApiService: sendChatFile - Generated path: $path');
+      //debugPrint('ApiService: sendChatFile - Generated path: $path');
     }
 
     String requestUrl = '$baseUrl$path';
@@ -6323,7 +6369,7 @@ Future<List<Message>> getMessages(
         ),
       );
       if (kDebugMode) {
-        ////print('response.statusCode!');
+        ////debugPrint('response.statusCode!');
       }
 
       if (response.statusCode == 200) {
@@ -6332,13 +6378,13 @@ Future<List<Message>> getMessages(
         }
       } else {
         if (kDebugMode) {
-          ////print('Error sending audio message: ${response.data}');
+          ////debugPrint('Error sending audio message: ${response.data}');
         }
         throw Exception('Error sending audio message: ${response.data}');
       }
     } catch (e) {
       if (kDebugMode) {
-        ////print('Exception caught!');
+        ////debugPrint('Exception caught!');
       }
       throw Exception('Failed to send audio message due to an exception!');
     }
@@ -6349,7 +6395,7 @@ Future<List<Message>> getMessages(
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/v2/chat/sendFile/$chatId');
     if (kDebugMode) {
-      //print('ApiService: sendFile - Generated path: $path');
+      //debugPrint('ApiService: sendFile - Generated path: $path');
     }
 
     final response = await _postRequest(path, {
@@ -6366,7 +6412,7 @@ Future<List<Message>> getMessages(
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/v2/chat/sendVoice/$chatId');
     if (kDebugMode) {
-      //print('ApiService: sendVoice - Generated path: $path');
+      //debugPrint('ApiService: sendVoice - Generated path: $path');
     }
 
     final response = await _postRequest(path, {
@@ -6400,12 +6446,12 @@ Future<List<Message>> getMessages(
 //       );
 
 //       if (response.statusCode == 200) {
-//         ////print('Messages marked as read');
+//         ////debugPrint('Messages marked as read');
 //       } else {
-//         ////print('Error marking messages as read!');
+//         ////debugPrint('Error marking messages as read!');
 //       }
 //     } catch (e) {
-//       ////print('Exception when marking messages as read!');
+//       ////debugPrint('Exception when marking messages as read!');
 //     }
 //   }
 
@@ -6415,7 +6461,7 @@ Future<List<Message>> getMessages(
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       final path = await _appendQueryParams('/v2/chat/$chatId');
       if (kDebugMode) {
-        //print('ApiService: deleteChat - Generated path: $path');
+        //debugPrint('ApiService: deleteChat - Generated path: $path');
       }
 
       final response = await _deleteRequest(path);
@@ -6456,7 +6502,7 @@ Future<List<Message>> getMessages(
     final token = await getToken();
     final path = await _appendQueryParams('/department/get/users');
     if (kDebugMode) {
-      //print('ApiService: getAllUser - Generated path: $path');
+      //debugPrint('ApiService: getAllUser - Generated path: $path');
     }
 
     final response = await http.get(
@@ -6471,7 +6517,7 @@ Future<List<Message>> getMessages(
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       if (kDebugMode) {
-        //print('ApiService: getAllUser - Response: $data');
+        //debugPrint('ApiService: getAllUser - Response: $data');
       }
       if (data['result'] != null) {
         dataUser = UsersDataResponse.fromJson(data);
@@ -6490,7 +6536,7 @@ Future<List<Message>> getMessages(
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/user/getAnotherUsers/');
     if (kDebugMode) {
-      //print('ApiService: getAnotherUsers - Generated path: $path');
+      //debugPrint('ApiService: getAnotherUsers - Generated path: $path');
     }
 
     final response = await http.get(
@@ -6513,10 +6559,10 @@ Future<List<Message>> getMessages(
     }
 
     if (kDebugMode) {
-      // ////print('Статус ответа!');
+      // ////debugPrint('Статус ответа!');
     }
     if (kDebugMode) {
-      // ////print('getAll user!');
+      // ////debugPrint('getAll user!');
     }
 
     return dataUser;
@@ -6528,7 +6574,7 @@ Future<List<Message>> getMessages(
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/user/users-not-in-chat/$chatId');
     if (kDebugMode) {
-      //print('ApiService: getUsersNotInChat - Generated path: $path');
+      //debugPrint('ApiService: getUsersNotInChat - Generated path: $path');
     }
 
     final response = await http.get(
@@ -6552,10 +6598,10 @@ Future<List<Message>> getMessages(
     }
 
     if (kDebugMode) {
-      // ////print('Статус ответа!');
+      // ////debugPrint('Статус ответа!');
     }
     if (kDebugMode) {
-      // ////print('getUsersNotInChat!');
+      // ////debugPrint('getUsersNotInChat!');
     }
 
     return dataUser;
@@ -6568,7 +6614,7 @@ Future<List<Message>> getMessages(
     final path =
         await _appendQueryParams('/chat/users/without-corporate-chat/');
     if (kDebugMode) {
-      //print('ApiService: getUsersWihtoutCorporateChat - Generated path: $path');
+      //debugPrint('ApiService: getUsersWihtoutCorporateChat - Generated path: $path');
     }
 
     final response = await http.get(
@@ -6578,11 +6624,11 @@ Future<List<Message>> getMessages(
         if (token != null) 'Authorization': 'Bearer $token',
       },
     );
-    ////print(
+    ////debugPrint(
     // '----------------------------------------------------------------------');
-    ////print(
+    ////debugPrint(
     // '-------------------------------getUsersWihtoutCorporateChat---------------------------------------');
-    ////print(response);
+    ////debugPrint(response);
 
     late UsersDataResponse dataUser;
 
@@ -6597,10 +6643,10 @@ Future<List<Message>> getMessages(
     }
 
     if (kDebugMode) {
-      // ////print('Статус ответа!');
+      // ////debugPrint('Статус ответа!');
     }
     if (kDebugMode) {
-      // ////print('getAll user!');
+      // ////debugPrint('getAll user!');
     }
 
     return dataUser;
@@ -6625,16 +6671,16 @@ Future<List<Message>> getMessages(
       final organizationId = await getSelectedOrganization();
       if (organizationId == null) {
         if (kDebugMode) {
-          print(
+          debugPrint(
               'ApiService: createNewClient - Using fallback organization_id=1');
         }
       }
 
       if (kDebugMode) {
-        print('ApiService: createNewClient - Base URL: $baseUrl');
-        print('ApiService: createNewClient - Generated path: $path');
-        print('ApiService: createNewClient - Token: $token');
-        print('ApiService: createNewClient - Organization ID: $organizationId');
+        debugPrint('ApiService: createNewClient - Base URL: $baseUrl');
+        debugPrint('ApiService: createNewClient - Generated path: $path');
+        debugPrint('ApiService: createNewClient - Token: $token');
+        debugPrint('ApiService: createNewClient - Organization ID: $organizationId');
       }
 
       final response = await http.post(
@@ -6653,9 +6699,9 @@ Future<List<Message>> getMessages(
       );
 
       if (kDebugMode) {
-        print(
+        debugPrint(
             'ApiService: createNewClient - Status code: ${response.statusCode}');
-        print('ApiService: createNewClient - Response body: ${response.body}');
+        debugPrint('ApiService: createNewClient - Response body: ${response.body}');
       }
 
       if (response.statusCode == 200) {
@@ -6668,7 +6714,7 @@ Future<List<Message>> getMessages(
       }
     } catch (e) {
       if (kDebugMode) {
-        print('ApiService: createNewClient - Error: $e');
+        debugPrint('ApiService: createNewClient - Error: $e');
       }
       throw Exception('Failed to create chat: $e');
     }
@@ -6688,7 +6734,7 @@ Future<List<Message>> getMessages(
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       final path = await _appendQueryParams('/chat/createGroup');
       if (kDebugMode) {
-        //print('ApiService: createGroupChat - Generated path: $path');
+        //debugPrint('ApiService: createGroupChat - Generated path: $path');
       }
 
       final response = await _postRequest(
@@ -6746,7 +6792,7 @@ Future<List<Message>> getMessages(
       final path =
           await _appendQueryParams('/chat/addUserToGroup/$chatId/$userId');
       if (kDebugMode) {
-        //print('ApiService: addUserToGroup - Generated path: $path');
+        //debugPrint('ApiService: addUserToGroup - Generated path: $path');
       }
 
       final response = await _postRequest(
@@ -6793,7 +6839,7 @@ Future<List<Message>> getMessages(
       final path =
           await _appendQueryParams('/chat/removeUserFromGroup/$chatId/$userId');
       if (kDebugMode) {
-        //print('ApiService: deleteUserFromGroup - Generated path: $path');
+        //debugPrint('ApiService: deleteUserFromGroup - Generated path: $path');
       }
 
       final response = await _postRequest(
@@ -6834,10 +6880,10 @@ Future<List<Message>> getMessages(
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/v2/chat/delete-message/$messageId');
     if (kDebugMode) {
-      //print('ApiService: DeleteMessage - Generated path: $path');
+      //debugPrint('ApiService: DeleteMessage - Generated path: $path');
     }
 
-    ////print('Sending DELETE request to API with path: $path');
+    ////debugPrint('Sending DELETE request to API with path: $path');
 
     // Используем _deleteRequest для отправки DELETE-запроса
     final response = await _deleteRequest(path);
@@ -6858,7 +6904,7 @@ Future<List<Message>> getMessages(
     final token = await getToken();
     final path = await _appendQueryParams('/v2/chat/templates');
     if (kDebugMode) {
-      //print('ApiService: getTemplates - Generated path: $path');
+      //debugPrint('ApiService: getTemplates - Generated path: $path');
     }
 
     final response = await http.get(
@@ -6890,7 +6936,7 @@ Future<List<Message>> getMessages(
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       final path = await _appendQueryParams('/lead/getByChat/$chatId');
       if (kDebugMode) {
-        //print('ApiService: getChatProfile - Generated path: $path');
+        //debugPrint('ApiService: getChatProfile - Generated path: $path');
       }
 
       final response = await _getRequest(path);
@@ -6905,11 +6951,11 @@ Future<List<Message>> getMessages(
       } else if (response.statusCode == 404) {
         throw ('Такого Лида не существует');
       } else {
-        ////print('Ошибка загрузки профиля чата!');
+        ////debugPrint('Ошибка загрузки профиля чата!');
         throw Exception('${response.statusCode}');
       }
     } catch (e) {
-      ////print('Ошибка в getChatProfile!');
+      ////debugPrint('Ошибка в getChatProfile!');
       throw ('Ошибка загрузки профиля чата!');
     }
   }
@@ -6919,47 +6965,47 @@ Future<List<Message>> getMessages(
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       final path = await _appendQueryParams('/task/getByChat/$chatId');
       if (kDebugMode) {
-        //print('ApiService: getTaskProfile - Generated path: $path');
+        //debugPrint('ApiService: getTaskProfile - Generated path: $path');
       }
 
-      ////print('Organization ID: $organizationId'); // Добавим логирование
+      ////debugPrint('Organization ID: $organizationId'); // Добавим логирование
 
       final response = await _getRequest(path);
 
-      ////print('Response status code!'); // Логируем статус ответа
-      ////print('Response body!'); // Логируем тело ответа
+      ////debugPrint('Response status code!'); // Логируем статус ответа
+      ////debugPrint('Response body!'); // Логируем тело ответа
 
       if (response.statusCode == 200) {
         try {
           final dynamic decodedJson = json.decode(response.body);
-          ////print(
+          ////debugPrint(
           // 'Decoded JSON type: ${decodedJson.runtimeType}'); // Логируем тип декодированного JSON
-          ////print('Decoded JSON: $decodedJson'); // Отладочный вывод
+          ////debugPrint('Decoded JSON: $decodedJson'); // Отладочный вывод
 
           if (decodedJson is Map<String, dynamic>) {
             if (decodedJson['result'] != null) {
-              ////print(
+              ////debugPrint(
               // 'Result type: ${decodedJson['result'].runtimeType}'); // Логируем тип результата
               return TaskProfile.fromJson(decodedJson['result']);
             } else {
-              ////print('Result is null');
+              ////debugPrint('Result is null');
               throw Exception('Данные задачи не найдены');
             }
           } else {
-            ////print('Decoded JSON is not a Map: ${decodedJson.runtimeType}');
+            ////debugPrint('Decoded JSON is not a Map: ${decodedJson.runtimeType}');
             throw Exception('Неверный формат ответа');
           }
         } catch (parseError) {
-          ////print('Ошибка парсинга JSON: $parseError');
+          ////debugPrint('Ошибка парсинга JSON: $parseError');
           throw Exception('Ошибка парсинга ответа: $parseError');
         }
       } else {
-        ////print('Ошибка загрузки задачи!');
+        ////debugPrint('Ошибка загрузки задачи!');
         throw Exception('Ошибка загрузки задачи!');
       }
     } catch (e) {
-      ////print('Полная ошибка в getTaskProfile!');
-      ////print('Трассировка стека: ${StackTrace.current}');
+      ////debugPrint('Полная ошибка в getTaskProfile!');
+      ////debugPrint('Трассировка стека: ${StackTrace.current}');
       throw Exception('Ошибка загрузки задачи!');
     }
   } // Упрощённый метод для получения интеграции лида (теперь не нужен отдельный класс IntegrationForLead)
@@ -7008,7 +7054,7 @@ Future<List<Message>> getMessages(
     final path = await _appendQueryParams('/v2/chat/readMessages/$chatId');
     // Лог для отладки пути и параметров
     if (kDebugMode) {
-      //print('ApiService: readMessages - Путь: $path, messageId: $messageId, token: $token');
+      //debugPrint('ApiService: readMessages - Путь: $path, messageId: $messageId, token: $token');
     }
 
     final body = json.encode({'up_to_message_id': messageId});
@@ -7033,8 +7079,8 @@ Future<List<Message>> getMessages(
 
       // Лог для ответа сервера
       if (kDebugMode) {
-        //print('ApiService.readMessages: Код ответа: ${response.statusCode}');
-        //print('ApiService.readMessages: Тело ответа: ${response.body}');
+        //debugPrint('ApiService.readMessages: Код ответа: ${response.statusCode}');
+        //debugPrint('ApiService.readMessages: Тело ответа: ${response.body}');
       }
 
       if (response.statusCode == 200) {
@@ -7046,7 +7092,7 @@ Future<List<Message>> getMessages(
     } catch (e) {
       // Лог для всех ошибок, включая TimeoutException
       if (kDebugMode) {
-        //print('ApiService.readMessages: Поймано исключение: $e');
+        //debugPrint('ApiService.readMessages: Поймано исключение: $e');
       }
       rethrow;
     }
@@ -7060,14 +7106,14 @@ Future<List<Message>> getMessages(
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/organization');
     if (kDebugMode) {
-      //print('ApiService: getOrganization - Generated path: $path');
+      //debugPrint('ApiService: getOrganization - Generated path: $path');
     }
 
     final response = await _getRequest(path);
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      ////print('Тело ответа: $data'); // Для отладки
+      ////debugPrint('Тело ответа: $data'); // Для отладки
 
       if (data['result'] != null && data['result']['data'] != null) {
         return (data['result']['data'] as List)
@@ -7107,7 +7153,7 @@ Future<void> saveSelectedOrganization(String organizationId) async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
   await prefs.setString('selectedOrganization', organizationId);
   if (kDebugMode) {
-    print('ApiService: saveSelectedOrganization - Saved: $organizationId');
+    debugPrint('ApiService: saveSelectedOrganization - Saved: $organizationId');
   }
 }
 
@@ -7120,7 +7166,7 @@ Future<void> _removeOrganizationId() async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/logout');
     if (kDebugMode) {
-      //print('ApiService: logoutAccount - Generated path: $path');
+      //debugPrint('ApiService: logoutAccount - Generated path: $path');
     }
 
     final response = await _postRequest(path, {});
@@ -7132,24 +7178,23 @@ Future<void> _removeOrganizationId() async {
 
 // Существующий метод для получения выбранной воронки
  Future<String?> getSelectedSalesFunnel() async {
-  print('🔍 ApiService: Getting selected sales funnel from SharedPreferences');
+  debugPrint('🔍 ApiService: Getting selected sales funnel from SharedPreferences');
   final prefs = await SharedPreferences.getInstance();
   final funnelId = prefs.getString('selected_sales_funnel');
 
   if (funnelId == null || funnelId.isEmpty || funnelId == 'null') {
-    print('⚠️ ApiService: No valid funnel ID found in SharedPreferences');
+    debugPrint('⚠️ ApiService: No valid funnel ID found in SharedPreferences');
     return null;
   }
-
-  print('✅ ApiService: Retrieved selected funnel ID: $funnelId');
+  
+  debugPrint('✅ ApiService: Retrieved selected funnel ID: $funnelId');
   return funnelId;
 }
 // Существующий метод для сохранения выбранной воронки
  Future<void> saveSelectedSalesFunnel(String funnelId) async {
-  print('🔧 ApiService: Saving selected sales funnel ID: $funnelId');
-
+  debugPrint('🔧 ApiService: Saving selected sales funnel ID: $funnelId');
   if (funnelId.isEmpty || funnelId == 'null') {
-    print('⚠️ ApiService: Attempting to save invalid funnelId: $funnelId');
+    debugPrint('⚠️ ApiService: Attempting to save invalid funnelId: $funnelId');
     return;
   }
 
@@ -7159,54 +7204,54 @@ Future<void> _removeOrganizationId() async {
   // Проверяем, что сохранилось
   final saved = prefs.getString('selected_sales_funnel');
   if (saved == funnelId) {
-    print('✅ ApiService: Selected sales funnel ID saved successfully: $funnelId');
+    debugPrint('✅ ApiService: Selected sales funnel ID saved successfully: $funnelId');
   } else {
-    print('❌ ApiService: Failed to save funnel ID. Expected: $funnelId, Got: $saved');
+    debugPrint('❌ ApiService: Failed to save funnel ID. Expected: $funnelId, Got: $saved');
   }
 }
 
   Future<void> saveSelectedDealSalesFunnel(String funnelId) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('deal_selected_sales_funnel', funnelId);
-    //print('ApiService: Saved deal funnel ID $funnelId to SharedPreferences');
+    //debugPrint('ApiService: Saved deal funnel ID $funnelId to SharedPreferences');
   }
 
   Future<String?> getSelectedDealSalesFunnel() async {
     final prefs = await SharedPreferences.getInstance();
     final funnelId = prefs.getString('deal_selected_sales_funnel');
-    //print('ApiService: Retrieved deal funnel ID $funnelId from SharedPreferences');
+    //debugPrint('ApiService: Retrieved deal funnel ID $funnelId from SharedPreferences');
     return funnelId;
   }
 
   Future<void> saveSelectedEventSalesFunnel(String funnelId) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('event_selected_sales_funnel', funnelId);
-    //print('ApiService: Saved event funnel ID $funnelId to SharedPreferences');
+    //debugPrint('ApiService: Saved event funnel ID $funnelId to SharedPreferences');
   }
 
   Future<String?> getSelectedEventSalesFunnel() async {
     final prefs = await SharedPreferences.getInstance();
     final funnelId = prefs.getString('event_selected_sales_funnel');
-    //print('ApiService: Retrieved event funnel ID $funnelId from SharedPreferences');
+    //debugPrint('ApiService: Retrieved event funnel ID $funnelId from SharedPreferences');
     return funnelId;
   }
 
   Future<void> saveSelectedChatSalesFunnel(String funnelId) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      //print('ApiService.saveSelectedChatSalesFunnel: Saving funnelId: $funnelId');
+      //debugPrint('ApiService.saveSelectedChatSalesFunnel: Saving funnelId: $funnelId');
       final success =
           await prefs.setString('selected_chat_sales_funnel', funnelId);
-      //print('ApiService.saveSelectedChatSalesFunnel: Save success: $success');
+      //debugPrint('ApiService.saveSelectedChatSalesFunnel: Save success: $success');
 
       // Проверяем, что значение сохранено
       final savedFunnelId = prefs.getString('selected_chat_sales_funnel');
-      //print('ApiService.saveSelectedChatSalesFunnel: Verified saved funnelId: $savedFunnelId');
+      //debugPrint('ApiService.saveSelectedChatSalesFunnel: Verified saved funnelId: $savedFunnelId');
       if (savedFunnelId != funnelId) {
-        //print('ApiService.saveSelectedChatSalesFunnel: Warning - saved funnelId ($savedFunnelId) does not match input ($funnelId)');
+        //debugPrint('ApiService.saveSelectedChatSalesFunnel: Warning - saved funnelId ($savedFunnelId) does not match input ($funnelId)');
       }
     } catch (e) {
-      //print('ApiService.saveSelectedChatSalesFunnel: Error saving funnelId: $e');
+      //debugPrint('ApiService.saveSelectedChatSalesFunnel: Error saving funnelId: $e');
       rethrow;
     }
   }
@@ -7215,37 +7260,37 @@ Future<void> _removeOrganizationId() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final selectedFunnel = prefs.getString('selected_chat_sales_funnel');
-      //print('ApiService.getSelectedChatSalesFunnel: Retrieved funnelId: $selectedFunnel');
+      //debugPrint('ApiService.getSelectedChatSalesFunnel: Retrieved funnelId: $selectedFunnel');
       return selectedFunnel;
     } catch (e) {
-      //print('ApiService.getSelectedChatSalesFunnel: Error retrieving funnelId: $e');
+      //debugPrint('ApiService.getSelectedChatSalesFunnel: Error retrieving funnelId: $e');
       return null;
     }
   }
 
 // Новый метод для сохранения списка воронок в кэш
   Future<void> cacheSalesFunnels(List<SalesFunnel> funnels) async {
-    //print('ApiService: Caching sales funnels');
+    //debugPrint('ApiService: Caching sales funnels');
     final prefs = await SharedPreferences.getInstance();
     final funnelsJson = funnels.map((funnel) => funnel.toJson()).toList();
     await prefs.setString('cached_sales_funnels', json.encode(funnelsJson));
-    //print('ApiService: Cached ${funnels.length} sales funnels');
+    //debugPrint('ApiService: Cached ${funnels.length} sales funnels');
   }
 
 // Новый метод для получения списка воронок из кэша
   Future<List<SalesFunnel>> getCachedSalesFunnels() async {
-    //print('ApiService: Retrieving cached sales funnels');
+    //debugPrint('ApiService: Retrieving cached sales funnels');
     final prefs = await SharedPreferences.getInstance();
     final funnelsJson = prefs.getString('cached_sales_funnels');
     if (funnelsJson != null) {
       final List<dynamic> decoded = json.decode(funnelsJson);
       final funnels =
           decoded.map((json) => SalesFunnel.fromJson(json)).toList();
-      //print(
+      //debugPrint(
       // 'ApiService: Retrieved ${funnels.length} cached sales funnels: $funnels');
       return funnels;
     }
-    //print('ApiService: No cached sales funnels found');
+    //debugPrint('ApiService: No cached sales funnels found');
     return [];
   }
 
@@ -7314,7 +7359,6 @@ Future<String> _appendQueryParams(String path) async {
     final uri = Uri.parse(path);
     // Используем queryParametersAll для сохранения всех значений (включая повторяющиеся ключи)
     final existingParamsAll = Map<String, List<String>>.from(uri.queryParametersAll);
-
     // Получаем ID из SharedPreferences
     final organizationId = await getSelectedOrganization();
     final salesFunnelId = await getSelectedSalesFunnel();
@@ -7398,10 +7442,10 @@ Future<String> _appendQueryParams(String path) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     String path = await _appendQueryParams('/notification/readAll');
     if (kDebugMode) {
-      //print('ApiService: DeleteAllNotifications - Generated path: $path');
+      //debugPrint('ApiService: DeleteAllNotifications - Generated path: $path');
     }
 
-    ////print('Sending POST request to API with path: $path');
+    ////debugPrint('Sending POST request to API with path: $path');
 
     final response = await _postRequest(path, {});
 
@@ -7420,7 +7464,7 @@ Future<String> _appendQueryParams(String path) async {
     String path =
         await _appendQueryParams('/notification/read/$notificationId');
     if (kDebugMode) {
-      //print('ApiService: DeleteNotifications - Generated path: $path');
+      //debugPrint('ApiService: DeleteNotifications - Generated path: $path');
     }
 
     Map<String, dynamic> body = {
@@ -7428,7 +7472,7 @@ Future<String> _appendQueryParams(String path) async {
       'organization_id': await getSelectedOrganization(),
     };
 
-    ////print('Sending POST request to API with path: $path');
+    ////debugPrint('Sending POST request to API with path: $path');
 
     final response = await _postRequest(path, body);
 
@@ -7451,7 +7495,7 @@ Future<String> _appendQueryParams(String path) async {
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       final path = await _appendQueryParams('/user/$userId');
       if (kDebugMode) {
-        //print('ApiService: getUserById - Generated path: $path');
+        //debugPrint('ApiService: getUserById - Generated path: $path');
       }
 
       final response = await _getRequest(path);
@@ -7470,9 +7514,9 @@ Future<String> _appendQueryParams(String path) async {
         if (userProfile.uniqueId != null) {
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('unique_id', userProfile.uniqueId!);
-          ////print('unique_id сохранён: ${userProfile.uniqueId}');
+          ////debugPrint('unique_id сохранён: ${userProfile.uniqueId}');
         } else {
-          ////print('unique_id не получен от сервера');
+          ////debugPrint('unique_id не получен от сервера');
         }
 
         return userProfile;
@@ -7480,7 +7524,7 @@ Future<String> _appendQueryParams(String path) async {
         throw Exception('Ошибка загрузки User ID: ${response.statusCode}');
       }
     } catch (e) {
-      ////print('Ошибка загрузки User ID: $e');
+      ////debugPrint('Ошибка загрузки User ID: $e');
       throw Exception('Ошибка загрузки User ID');
     }
   }
@@ -7499,7 +7543,7 @@ Future<String> _appendQueryParams(String path) async {
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       final path = await _appendQueryParams('/profile/$userId');
       if (kDebugMode) {
-        //print('ApiService: updateProfile - Generated path: $path');
+        //debugPrint('ApiService: updateProfile - Generated path: $path');
       }
 
       // Создаем URL для обновления профиля
@@ -7575,13 +7619,13 @@ Future<String> _appendQueryParams(String path) async {
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       final path = await _appendQueryParams('/my-task/$taskId');
       if (kDebugMode) {
-        //print('ApiService: getMyTaskById - Generated path: $path');
+        //debugPrint('ApiService: getMyTaskById - Generated path: $path');
       }
 
       final response = await _getRequest(path);
 
-      ////print('Response status code: ${response.statusCode}');
-      ////print('Response body: ${response.body}');
+      ////debugPrint('Response status code: ${response.statusCode}');
+      ////debugPrint('Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedJson = json.decode(response.body);
@@ -7596,7 +7640,7 @@ Future<String> _appendQueryParams(String path) async {
         throw ('HTTP Error');
       }
     } catch (e) {
-      ////print('Error in getMyTaskById: $e');
+      ////debugPrint('Error in getMyTaskById: $e');
       throw ('Ошибка загрузки task ID');
     }
   }
@@ -7606,7 +7650,7 @@ Future<String> _appendQueryParams(String path) async {
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       final path = await _appendQueryParams('/my-task/check/overdue');
       if (kDebugMode) {
-        //print('ApiService: checkOverdueTasks - Generated path: $path');
+        //debugPrint('ApiService: checkOverdueTasks - Generated path: $path');
       }
 
       final response = await _getRequest(path);
@@ -7641,11 +7685,11 @@ Future<String> _appendQueryParams(String path) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     path = await _appendQueryParams(path);
     if (kDebugMode) {
-      //print('ApiService: getMyTasks - Generated path: $path');
+      //debugPrint('ApiService: getMyTasks - Generated path: $path');
     }
 
     // Логируем конечный URL запроса
-    // ////print('Sending request to API with path: $path');
+    // ////debugPrint('Sending request to API with path: $path');
     final response = await _getRequest(path);
 
     if (response.statusCode == 200) {
@@ -7659,7 +7703,7 @@ Future<String> _appendQueryParams(String path) async {
       }
     } else {
       // Логирование ошибки с ответом сервера
-      ////print('Error response! - ${response.body}');
+      ////debugPrint('Error response! - ${response.body}');
       throw Exception('Ошибка загрузки задач!');
     }
   }
@@ -7672,7 +7716,7 @@ Future<String> _appendQueryParams(String path) async {
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       final path = await _appendQueryParams('/my-task-status');
       if (kDebugMode) {
-        //print('ApiService: getMyTaskStatuses - Generated path: $path');
+        //debugPrint('ApiService: getMyTaskStatuses - Generated path: $path');
       }
 
       // Отправляем запрос на сервер
@@ -7692,9 +7736,9 @@ Future<String> _appendQueryParams(String path) async {
           await prefs.setString(
               'cachedMyTaskStatuses_${await getSelectedOrganization()}',
               json.encode(data['result']));
-          // ////print(
+          // ////debugPrint(
           //     '------------------------------------ Новые данные, которые сохраняются в кэш ---------------------------------');
-          // ////print(data['result']); // Новые данные, которые будут сохранены в кэш
+          // ////debugPrint(data['result']); // Новые данные, которые будут сохранены в кэш
 
           return (data['result'] as List)
               .map((status) => MyTaskStatus.fromJson(status))
@@ -7706,7 +7750,7 @@ Future<String> _appendQueryParams(String path) async {
         throw Exception('Ошибка ${response.statusCode}!');
       }
     } catch (e) {
-      ////print('Ошибка загрузки статусов задач. Используем кэшированные данные.');
+      ////debugPrint('Ошибка загрузки статусов задач. Используем кэшированные данные.');
       // Если запрос не удался, пытаемся загрузить данные из кэша
       final cachedStatuses = prefs
           .getString('cachedMyTaskStatuses_${await getSelectedOrganization()}');
@@ -10311,17 +10355,18 @@ Future<String> _appendQueryParams(String path) async {
 
     if (types != null && types.isNotEmpty) {
       if (kDebugMode) {
-        // print('📅 Calendar types to send: $types (count: ${types.length})');
+        debugPrint('📅 Calendar types to send: $types (count: ${types.length})');
       }
       url += types.map((type) => '&type[]=${Uri.encodeComponent(type)}').join();
     }
 
     if (kDebugMode) {
-      // print('📅 Calendar URL after types: $url');
+      debugPrint('📅 Calendar URL after types: $url');
     }
 
     if (userIds != null && userIds.isNotEmpty) {
       url += userIds
+      // TODO check if users[] or user_id[]
           .map((userId) => '&user_id[]=$userId')
           .join(); // Append user IDs
     }
@@ -10329,7 +10374,7 @@ Future<String> _appendQueryParams(String path) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams(url);
     if (kDebugMode) {
-      // print('📅 Calendar API URL: $path');
+      debugPrint('📅 Calendar API URL: $path');
     }
 
     final response = await _getRequest(path);
@@ -10377,13 +10422,13 @@ Future<String> _appendQueryParams(String path) async {
       if (filters.containsKey('startDate') && filters['startDate'] != null) {
         path += '&from=${Uri.encodeQueryComponent(filters['startDate'])}';
         if (kDebugMode) {
-          //print('ApiService: Добавлен параметр from: ${filters['startDate']}');
+          //debugPrint('ApiService: Добавлен параметр from: ${filters['startDate']}');
         }
       }
       if (filters.containsKey('endDate') && filters['endDate'] != null) {
         path += '&to=${Uri.encodeQueryComponent(filters['endDate'])}';
         if (kDebugMode) {
-          //print('ApiService: Добавлен параметр to: ${filters['endDate']}');
+          //debugPrint('ApiService: Добавлен параметр to: ${filters['endDate']}');
         }
       }
       if (filters.containsKey('leads') &&
@@ -10394,7 +10439,7 @@ Future<String> _appendQueryParams(String path) async {
           path += '&lead_id[]=$leadId';
         }
         if (kDebugMode) {
-          //print('ApiService: Добавлены lead_id: $leadIds');
+          //debugPrint('ApiService: Добавлены lead_id: $leadIds');
         }
       }
       if (filters.containsKey('operators') &&
@@ -10405,7 +10450,7 @@ Future<String> _appendQueryParams(String path) async {
           path += '&operator_id[]=$operatorId';
         }
         if (kDebugMode) {
-          //print('ApiService: Добавлены operator_id: $operatorIds');
+          //debugPrint('ApiService: Добавлены operator_id: $operatorIds');
         }
       }
       if (filters.containsKey('ratings') &&
@@ -10416,7 +10461,7 @@ Future<String> _appendQueryParams(String path) async {
           path += '&rating[]=$ratingId';
         }
         if (kDebugMode) {
-          //print('ApiService: Добавлены rating: $ratingIds');
+          //debugPrint('ApiService: Добавлены rating: $ratingIds');
         }
       }
       if (filters.containsKey('remarks') &&
@@ -10425,7 +10470,7 @@ Future<String> _appendQueryParams(String path) async {
         final remarks = (filters['remarks'] as List)[0] as int;
         path += '&remarks=$remarks';
         if (kDebugMode) {
-          //print('ApiService: Добавлен параметр remarks: $remarks');
+          //debugPrint('ApiService: Добавлен параметр remarks: $remarks');
         }
       }
     }
@@ -10433,7 +10478,7 @@ Future<String> _appendQueryParams(String path) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id (только если не добавлена выше)
     path = await _appendQueryParams(path);
     if (kDebugMode) {
-      //print('ApiService: getAllCalls - Generated path: $path');
+      //debugPrint('ApiService: getAllCalls - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -10441,7 +10486,7 @@ Future<String> _appendQueryParams(String path) async {
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       if (kDebugMode) {
-        //print('ApiService: Response for getAllCalls: $data');
+        //debugPrint('ApiService: Response for getAllCalls: $data');
       }
       if (data['result']['data'] != null) {
         final calls = (data['result']['data'] as List)
@@ -10457,7 +10502,7 @@ Future<String> _appendQueryParams(String path) async {
       }
     } else {
       if (kDebugMode) {
-        //print('ApiService: Error response body: ${response.body}');
+        //debugPrint('ApiService: Error response body: ${response.body}');
       }
       throw ('Ошибка загрузки звонков');
     }
@@ -10479,13 +10524,13 @@ Future<String> _appendQueryParams(String path) async {
       if (filters.containsKey('startDate') && filters['startDate'] != null) {
         path += '&from=${Uri.encodeQueryComponent(filters['startDate'])}';
         if (kDebugMode) {
-          //print('ApiService: Добавлен параметр from: ${filters['startDate']}');
+          //debugPrint('ApiService: Добавлен параметр from: ${filters['startDate']}');
         }
       }
       if (filters.containsKey('endDate') && filters['endDate'] != null) {
         path += '&to=${Uri.encodeQueryComponent(filters['endDate'])}';
         if (kDebugMode) {
-          //print('ApiService: Добавлен параметр to: ${filters['endDate']}');
+          //debugPrint('ApiService: Добавлен параметр to: ${filters['endDate']}');
         }
       }
       if (filters.containsKey('leads') &&
@@ -17480,18 +17525,18 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
     if (kDebugMode) {
       print('ApiService: Ответ сервера: statusCode=${response.statusCode}');
     }
-
+    
     if (response.statusCode == 200) {
       final Map<String, dynamic> data = json.decode(response.body);
       final variantsResponse = GoodVariantsResponse.fromJson(data);
-
+      
       if (kDebugMode) {
         print('ApiService: Успешно получено ${variantsResponse.result?.data?.length ?? 0} вариантов товаров');
         if (variantsResponse.result?.pagination != null) {
           print('ApiService: Pagination - current: ${variantsResponse.result!.pagination!.currentPage}, total pages: ${variantsResponse.result!.pagination!.totalPages}');
         }
       }
-
+      
       return variantsResponse;
     } else {
       if (kDebugMode) {

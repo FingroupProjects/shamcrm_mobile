@@ -107,8 +107,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
         _hasDealUsers = value;
       });
     }
-
-    print('DealAddScreen: has_deal_users = $value');
+    
+    debugPrint('DealAddScreen: has_deal_users = $value');
   }
 
   Future<void> _loadFieldConfiguration() async {
@@ -587,10 +587,10 @@ class _DealAddScreenState extends State<DealAddScreen> {
   void _showAddFieldMenu() {
     final RenderBox? renderBox = _addFieldButtonKey.currentContext?.findRenderObject() as RenderBox?;
     if (renderBox == null) return;
-    
+
     final Offset offset = renderBox.localToGlobal(Offset.zero);
     final Size size = renderBox.size;
-    
+
     // Список элементов меню
     final menuItems = [
       PopupMenuItem(
@@ -618,11 +618,11 @@ class _DealAddScreenState extends State<DealAddScreen> {
         ),
       ),
     ];
-    
+
     // Если элементов 5 или больше, показываем над кнопкой, иначе под кнопкой
     final showAbove = menuItems.length >= 5;
     final double verticalOffset = showAbove ? -8 : size.height + 8;
-    
+
     showMenu(
       context: context,
       position: RelativeRect.fromLTRB(

@@ -1,7 +1,7 @@
 class ChartDataContent {
   final int id;
   final String name;
-  final int amount;
+  final num amount;
 
   ChartDataContent({
     required this.id,

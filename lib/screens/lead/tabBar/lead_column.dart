@@ -96,7 +96,7 @@ class _LeadColumnState extends State<LeadColumn> {
     try {
       await _apiService.markPageCompleted("leads", "index");
     } catch (e) {
-      print('LeadColumn: Error marking page completed: $e');
+      debugPrint('LeadColumn: Error marking page completed: $e');
     }
   }
 
@@ -107,14 +107,14 @@ class _LeadColumnState extends State<LeadColumn> {
 
   @override
   Widget build(BuildContext context) {
-    print('LeadColumn: Building for statusId: ${widget.statusId}');
+    debugPrint('LeadColumn: Building for statusId: ${widget.statusId}');
     return Scaffold(
       backgroundColor: Colors.white,
       body: RefreshIndicator(
         onRefresh: _onRefresh,
         child: BlocBuilder<LeadBloc, LeadState>(
           builder: (context, state) {
-            print('LeadColumn: BlocBuilder state: ${state.runtimeType}');
+            debugPrint('LeadColumn: BlocBuilder state: ${state.runtimeType}');
 
             if (state is LeadLoading) {
               return const Center(
@@ -124,7 +124,7 @@ class _LeadColumnState extends State<LeadColumn> {
 
             if (state is LeadDataLoaded) {
               final leads = state.leads.where((l) => l.statusId == widget.statusId).toList();
-              print('LeadColumn: Filtered ${leads.length} leads for status ${widget.statusId}');
+              debugPrint('LeadColumn: Filtered ${leads.length} leads for status ${widget.statusId}');
 
               if (leads.isNotEmpty) {
                 if (!_isInitialized && !_isTutorialShown && !widget.isLeadScreenTutorialCompleted) {

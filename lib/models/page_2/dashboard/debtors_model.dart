@@ -28,10 +28,10 @@ class DebtorsResponse extends Equatable {
 }
 
 class DebtorsResult extends Equatable {
-  final int totalDebt;
+  final num totalDebt;
   final List<Debtor> debtors;
   final Period period;
-  final double percentageChange;
+  final num percentageChange;
   final bool isPositiveChange;
 
   const DebtorsResult({
@@ -70,7 +70,7 @@ class Debtor extends Equatable {
   final int id;
   final String name;
   final String? phone;
-  final int debtAmount;
+  final num debtAmount;
 
   const Debtor({
     required this.id,

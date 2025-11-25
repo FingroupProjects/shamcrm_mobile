@@ -11,7 +11,7 @@ import 'package:crm_task_manager/bloc/main_field/main_field_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
-import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart'; 
+import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/bloc/field_configuration/field_configuration_bloc.dart';
 import 'package:crm_task_manager/bloc/field_configuration/field_configuration_event.dart';
 import 'package:crm_task_manager/bloc/field_configuration/field_configuration_state.dart';
@@ -24,6 +24,7 @@ import 'package:crm_task_manager/models/file_helper.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
+import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_status_list_edit.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/add_custom_directory_dialog.dart';
@@ -31,17 +32,22 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_create_cu
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/main_field_dropdown_widget.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/deal_name_list.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'package:crm_task_manager/models/directory_model.dart' as directory_model;
 import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
 import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
+import 'package:crm_task_manager/models/directory_model.dart'
+    as directory_model;
 
 class DealEditScreen extends StatefulWidget {
   final int dealId;
@@ -60,6 +66,8 @@ class DealEditScreen extends StatefulWidget {
   final List<DealFiles>? files;
   final List<DealStatusById>? dealStatuses; // ✅ НОВОЕ: массив статусов
   final DealById? dealById; // ✅ НОВОЕ: добавьте полный объект deal
+    final List<DealUser>? users; // ✅ НОВОЕ: список пользователей
+
 
   DealEditScreen({
     required this.dealId,
@@ -77,6 +85,7 @@ class DealEditScreen extends StatefulWidget {
     this.directoryValues,
     this.files,
     this.dealStatuses, // ✅ ДОБАВЬТЕ ЭТУ СТРОКУ В КОНСТРУКТОР!
+        this.users, // ✅ НОВОЕ
     this.dealById, // ✅ ДОБАВЬТЕ ЭТУ СТРОКУ В КОНСТРУКТОР!
   });
 
@@ -93,26 +102,26 @@ class _DealEditScreenState extends State<DealEditScreen> {
   final TextEditingController sumController = TextEditingController();
   final ApiService _apiService = ApiService();
 
-
   int? _selectedStatuses;
   String? selectedManager;
   String? selectedLead;
-  List<String>? selectedUsers; // ✅ НОВОЕ: список выбранных пользователей
   List<CustomField> customFields = [];
   bool isEndDateInvalid = false;
+  List<DealFiles> existingFiles = [];
+  List<String> newFiles = [];
   List<int> _selectedStatusIds = []; // ✅ НОВОЕ: список выбранных ID
+  List<String>? selectedUsers; // ✅ НОВОЕ: список выбранных пользователей
   List<FileHelper> files = [];
-
-
   // Конфигурация полей (как в лидах)
-
   List<FieldConfiguration> fieldConfigurations = [];
   bool isConfigurationLoaded = false;
   bool isSettingsMode = false;
   bool isSavingFieldOrder = false;
   List<FieldConfiguration>? originalFieldConfigurations;
   final GlobalKey _addFieldButtonKey = GlobalKey();
-
+  bool _hasDealUsers = false;
+  List<UserData> _selectedUsers = [];
+  List<String>? _initialUserIds; // Для хранения начальных ID пользователей
 
   @override
   void initState() {
@@ -126,6 +135,8 @@ class _DealEditScreenState extends State<DealEditScreen> {
         _loadFieldConfiguration();
       }
     });
+    _loadHasDealUsersSetting(); // ✅ НОВОЕ
+
     if (widget.files != null) {
       files = widget.files!.map((file) {
         return FileHelper(
@@ -144,6 +155,19 @@ class _DealEditScreenState extends State<DealEditScreen> {
       );
     }
   }
+// ✅ НОВОЕ: Загрузка настройки has_deal_users
+  Future<void> _loadHasDealUsersSetting() async {
+    final prefs = await SharedPreferences.getInstance();
+    final value = prefs.getBool('has_deal_users') ?? false;
+
+    if (mounted) {
+      setState(() {
+        _hasDealUsers = value;
+      });
+    }
+
+    debugPrint('DealEditScreen: has_deal_users = $value');
+  }
 
   void _initializeControllers() {
     titleController.text = widget.dealName;
@@ -154,7 +178,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
     startDateController.text = widget.startDate ?? '';
     endDateController.text = widget.endDate ?? '';
     sumController.text = widget.sum ?? '';
-    
+
     // ✅ НОВОЕ: Инициализируем выбранных пользователей из dealById
     if (widget.dealById?.users != null && widget.dealById!.users!.isNotEmpty) {
       selectedUsers = widget.dealById!.users!
@@ -184,16 +208,42 @@ class _DealEditScreenState extends State<DealEditScreen> {
         }
       }
     }
+  // ✅ НОВОЕ: Инициализируем список ID
+  if (widget.dealStatuses != null && widget.dealStatuses!.isNotEmpty) {
+    _selectedStatusIds = widget.dealStatuses!.map((s) => s.id).toList();
+  } else {
+    _selectedStatusIds = [widget.statusId];
+  }
+    if (widget.directoryValues != null && widget.directoryValues!.isNotEmpty) {
+      final seen = <String>{};
+      final uniqueDirectoryValues = widget.directoryValues!.where((dirValue) {
+        final key = '${dirValue.entry.directory.id}_${dirValue.entry.id}';
+        return seen.add(key);
+      }).toList();
 
-    // Initialize selected status IDs
-    if (widget.dealStatuses != null && widget.dealStatuses!.isNotEmpty) {
-      _selectedStatusIds = widget.dealStatuses!.map((s) => s.id).toList();
-    } else {
-      _selectedStatusIds = [widget.statusId];
+      // ✅ НОВОЕ: Инициализируем список ID пользователей
+      if (widget.users != null && widget.users!.isNotEmpty) {
+        _initialUserIds = widget.users!
+            .where((u) => u.user != null)
+            .map((u) => u.userId.toString())
+            .toList();
+
+        debugPrint('DealEditScreen: Загружены пользователи: $_initialUserIds');
+      }
+
+      // TODO check dir values initialization
+      for (var dirValue in uniqueDirectoryValues) {
+        customFields.add(CustomField(
+          fieldName: dirValue.entry.directory.name,
+          controller:
+              TextEditingController(text: dirValue.entry.values['value'] ?? ''),
+          isDirectoryField: true,
+          directoryId: dirValue.entry.directory.id,
+          entryId: dirValue.entry.id,
+          uniqueId: Uuid().v4(),
+        ));
+      }
     }
-
-    // Initialize directory values...
-    // (rest of your code)
   }
 
   void _fetchAndAddDirectoryFields() async {
@@ -320,10 +370,10 @@ class _DealEditScreenState extends State<DealEditScreen> {
   void _showAddFieldMenu() {
     final RenderBox? renderBox = _addFieldButtonKey.currentContext?.findRenderObject() as RenderBox?;
     if (renderBox == null) return;
-    
+
     final Offset offset = renderBox.localToGlobal(Offset.zero);
     final Size size = renderBox.size;
-    
+
     // Список элементов меню
     final menuItems = [
       PopupMenuItem(
@@ -351,11 +401,11 @@ class _DealEditScreenState extends State<DealEditScreen> {
         ),
       ),
     ];
-    
+
     // Если элементов 5 или больше, показываем над кнопкой, иначе под кнопкой
     final showAbove = menuItems.length >= 5;
     final double verticalOffset = showAbove ? -8 : size.height + 8;
-    
+
     showMenu(
       context: context,
       position: RelativeRect.fromLTRB(
@@ -1487,7 +1537,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
 
               if (isSettingsMode) {
                 return _buildSettingsMode();
-              }              
+              }
 
               return Form(
                 key: _formKey,
@@ -1696,7 +1746,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                         if (selectedUsers != null && selectedUsers!.isNotEmpty) {
                                           userIds = selectedUsers!.map((id) => int.parse(id)).toList();
                                         }
-                                        
+
                                         context.read<DealBloc>().add(UpdateDeal(
                                           dealId: widget.dealId,
                                           name: titleController.text,

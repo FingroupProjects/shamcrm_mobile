@@ -292,7 +292,7 @@ void _resetFilters() {
     setState(() {
       selectedRemarkStatus = status;
       if (kDebugMode) {
-        print('CallCenterFilterScreen: Remark status changed to: $selectedRemarkStatus');
+        debugPrint('CallCenterFilterScreen: Remark status changed to: $selectedRemarkStatus');
       }
     });
   }
@@ -334,7 +334,7 @@ void _applyFilters() async {
   };
 
   if (kDebugMode) {
-    print('CallCenterFilterScreen: Applying filters: $filters');
+    debugPrint('CallCenterFilterScreen: Applying filters: $filters');
   }
 
   widget.onSelectedDataFilter?.call(filters);
@@ -501,7 +501,7 @@ Widget build(BuildContext context) {
                                   setState(() {
                                     _selectedLeads = selectedUsersData;
                                     if (kDebugMode) {
-                                      print('CallCenterFilterScreen: Selected leads: ${_selectedLeads.map((l) => l.id).toList()}');
+                                      debugPrint('CallCenterFilterScreen: Selected leads: ${_selectedLeads.map((l) => l.id).toList()}');
                                     }
                                   });
                                 },

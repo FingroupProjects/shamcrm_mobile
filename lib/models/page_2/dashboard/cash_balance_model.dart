@@ -39,9 +39,9 @@ class Result {
 }
 
 class CashBalanceSummary {
-  int? totalBalance;
-  int? previousBalance;
-  int? percentageChange;
+  num? totalBalance;
+  num? previousBalance;
+  num? percentageChange;
   bool? isPositiveChange;
   List<CashRegisters>? cashRegisters;
   List<Movements>? movements;
@@ -94,7 +94,7 @@ class CashBalanceSummary {
 class CashRegisters {
   int? id;
   String? name;
-  int? balance;
+  num? balance;
   String? updatedAt;
 
   CashRegisters({this.id, this.name, this.balance, this.updatedAt});
@@ -120,7 +120,7 @@ class Movements {
   String? time;
   String? operation;
   String? counterparty;
-  int? amount;
+  num? amount;
   String? formattedAmount;
   String? method;
   String? operationType;
@@ -214,8 +214,8 @@ class CheckingAccounts {
   String? path;
   int? perPage;
   String? prevPageUrl;
-  int? to;
-  int? total;
+  num? to;
+  num? total;
 
   CheckingAccounts({
     this.currentPage,

@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/api/service/firebase_api.dart';
 import 'package:crm_task_manager/api/service/widget_service.dart';
 import 'package:crm_task_manager/bloc/permission/permession_bloc.dart';
 import 'package:crm_task_manager/bloc/permission/permession_event.dart';
@@ -15,6 +16,9 @@ import 'package:crm_task_manager/screens/empty_screen.dart';
 import 'package:crm_task_manager/screens/lead/lead_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_screen.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -24,13 +28,13 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _selectedIndexGroup1 = 0; // ✅ ИСПРАВЛЕНИЕ: Начинаем с 0 вместо -1
+  int _selectedIndexGroup1 = 0;
   int _selectedIndexGroup2 = -1;
   final TextEditingController _searchController = TextEditingController();
   bool _isPushHandled = false;
   bool _isBackgroundLoading = false;
-  bool _isInitialized = false; // ✅ НОВОЕ: Флаг инициализации
-  DateTime? _lastPermissionUpdate; // Для оптимизации обновления разрешений
+  bool _isInitialized = false;
+  DateTime? _lastPermissionUpdate;
 
   List<Widget> _widgetOptionsGroup1 = [];
   List<Widget> _widgetOptionsGroup2 = [];
@@ -45,10 +49,10 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
 
-    // ✅ ИСПРАВЛЕНИЕ: Инициализируем экраны СИНХРОННО
+    // ✅ Инициализируем экраны синхронно
     _initializeScreensSync();
 
-    // ✅ Подписываемся на события от виджета
+    // ✅ Подписываемся на события от виджета (Android формат)
     WidgetService.onNavigateFromWidget = (group, screenIndex) {
       if (mounted) {
         setState(() {
@@ -63,11 +67,18 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     };
 
-    // 🚀 Запускаем фоновую загрузку ПОСЛЕ отрисовки первого кадра
+    // ✅ Подписываемся на события от виджета (iOS формат: screen identifier)
+    WidgetService.onNavigateFromWidgetByScreen = (screenIdentifier) {
+      if (mounted) {
+        _navigateToScreenByIdentifier(screenIdentifier);
+      }
+    };
+
+    // ✅ Запускаем фоновую загрузку и обработку push после отрисовки
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && !_isBackgroundLoading) {
-        _loadDataInBackground(); // ✅ загрузка разрешений в фоновом режиме
-
+        _loadDataInBackground();
+        _handleInitialMessage();
       }
     });
   }
@@ -75,8 +86,61 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     WidgetService.onNavigateFromWidget = null;
+    WidgetService.onNavigateFromWidgetByScreen = null;
     _searchController.dispose();
     super.dispose();
+  }
+
+  // ==========================================================================
+  // ✅ НАВИГАЦИЯ ПО ИДЕНТИФИКАТОРУ ЭКРАНА (iOS)
+  // ==========================================================================
+
+  void _navigateToScreenByIdentifier(String screenIdentifier) {
+    if (!_isInitialized) {
+      // Если экраны еще не инициализированы, ждем и пробуем снова
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) {
+          _navigateToScreenByIdentifier(screenIdentifier);
+        }
+      });
+      return;
+    }
+
+    // Маппинг идентификаторов экранов на их типы
+    int? targetIndex;
+    
+    // Ищем экран в группе 1
+    for (int i = 0; i < _widgetOptionsGroup1.length; i++) {
+      final widget = _widgetOptionsGroup1[i];
+      
+      // Проверяем тип виджета по его runtimeType
+      if (screenIdentifier == 'dashboard' && widget is DashboardScreen) {
+        targetIndex = i;
+        break;
+      } else if (screenIdentifier == 'tasks' && widget is TaskScreen) {
+        targetIndex = i;
+        break;
+      } else if (screenIdentifier == 'leads' && widget is LeadScreen) {
+        targetIndex = i;
+        break;
+      } else if (screenIdentifier == 'deals' && widget is DealScreen) {
+        targetIndex = i;
+        break;
+      } else if (screenIdentifier == 'chats' && widget is ChatsScreen) {
+        targetIndex = i;
+        break;
+      }
+    }
+
+    if (targetIndex != null) {
+      setState(() {
+        _selectedIndexGroup1 = targetIndex!;
+        _selectedIndexGroup2 = -1;
+      });
+      debugPrint('HomeScreen: Navigated to screen=$screenIdentifier at index=$targetIndex');
+    } else {
+      debugPrint('HomeScreen: Screen $screenIdentifier not found or not available');
+    }
   }
 
   // ==========================================================================
@@ -104,7 +168,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     try {
-      //print('HomeScreen: 🚀 Начало фоновой загрузки данных');
+      debugPrint('HomeScreen: 🚀 Начало фоновой загрузки данных');
 
       final apiService = context.read<ApiService>();
       final backgroundLoader = BackgroundDataLoaderService(
@@ -114,9 +178,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
       await backgroundLoader.loadAllDataInBackground();
 
-      //print('HomeScreen: ✅ Фоновая загрузка завершена успешно');
+      debugPrint('HomeScreen: ✅ Фоновая загрузка завершена успешно');
     } catch (e) {
-      //print('HomeScreen: ❌ Ошибка фоновой загрузки: $e');
+      debugPrint('HomeScreen: ❌ Ошибка фоновой загрузки: $e');
     } finally {
       if (mounted) {
         setState(() {
@@ -126,6 +190,58 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // ==========================================================================
+  // ✅ ОБРАБОТКА PUSH УВЕДОМЛЕНИЯ (НОВОЕ)
+  // ==========================================================================
+
+  Future<void> _handleInitialMessage() async {
+    try {
+      debugPrint('HomeScreen: 🔍 Проверка наличия initialMessage');
+
+      final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      final RemoteMessage? initialMessage = args?['initialMessage'] as RemoteMessage?;
+
+      if (initialMessage != null) {
+        debugPrint('HomeScreen: ✅ Получено initialMessage из PinScreen');
+        debugPrint('HomeScreen: 📦 Data: ${initialMessage.data}');
+
+        // ✅ КРИТИЧНО: Ждем пока HomeScreen полностью загрузится
+        await Future.delayed(const Duration(milliseconds: 500));
+
+        if (!mounted) {
+          debugPrint('HomeScreen: ⚠️ Widget unmounted');
+          return;
+        }
+
+        // ✅ ИСПРАВЛЕНИЕ: Сразу обрабатываем сообщение
+        FirebaseApi? firebaseApi;
+        if (Firebase.apps.isNotEmpty) {
+          try {
+            Firebase.app();
+            firebaseApi = FirebaseApi();
+            debugPrint('HomeScreen: ✅ FirebaseApi создан');
+          } catch (e) {
+            debugPrint('HomeScreen: ❌ Ошибка FirebaseApi: $e');
+          }
+        }
+
+        if (firebaseApi != null) {
+          try {
+            debugPrint('HomeScreen: 🚀 Обработка initialMessage');
+            await firebaseApi.handleMessage(initialMessage);
+            debugPrint('HomeScreen: ✅ initialMessage обработано');
+          } catch (e) {
+            debugPrint('HomeScreen: ❌ Ошибка обработки: $e');
+          }
+        }
+      } else {
+        debugPrint('HomeScreen: ℹ️ Нет initialMessage (обычный запуск)');
+      }
+    } catch (e, stackTrace) {
+      debugPrint('HomeScreen: ❌ Критическая ошибка: $e');
+      debugPrint('StackTrace: $stackTrace');
+    }
+  }
   // ==========================================================================
   // ИНИЦИАЛИЗАЦИЯ ЭКРАНОВ С РАЗРЕШЕНИЯМИ
   // ==========================================================================
@@ -141,14 +257,14 @@ class _HomeScreenState extends State<HomeScreen> {
       permissionsBloc.add(FetchPermissionsEvent());
       // Ждем загрузки разрешений
       await permissionsBloc.stream.firstWhere(
-        (state) => state is PermissionsLoaded || state is PermissionsError,
+            (state) => state is PermissionsLoaded || state is PermissionsError,
       );
     }
 
     if (!mounted) return;
 
     // Проверяем разрешения из PermissionsBloc
-    bool hasPermission(String permission) => permissionsBloc.hasPermission(permission); // ✅ Проверяем разрешения из PermissionsBloc
+    bool hasPermission(String permission) => permissionsBloc.hasPermission(permission);
 
     List<Widget> widgetsGroup1 = [];
     List<Widget> widgetsGroup2 = [];
@@ -271,6 +387,10 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // ==========================================================================
+  // DID CHANGE DEPENDENCIES
+  // ==========================================================================
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -294,6 +414,10 @@ class _HomeScreenState extends State<HomeScreen> {
       });
     }
   }
+
+  // ==========================================================================
+  // BUILD
+  // ==========================================================================
 
   @override
   Widget build(BuildContext context) {
@@ -332,37 +456,37 @@ class _HomeScreenState extends State<HomeScreen> {
             backgroundColor: Colors.white,
             bottomNavigationBar: _isInitialized
                 ? MyNavBar(
-                    currentIndexGroup1: _selectedIndexGroup1,
-                    currentIndexGroup2: _selectedIndexGroup2,
-                    onItemSelected: (groupIndex, itemIndex) {
-                      // Обновляем разрешения при переключении табов (с ограничением частоты)
-                      final now = DateTime.now();
-                      if (_lastPermissionUpdate == null || now.difference(_lastPermissionUpdate!) > const Duration(seconds: 5)) {
-                        context.read<PermissionsBloc>().add(FetchPermissionsEvent());
-                        _lastPermissionUpdate = now;
-                      }
+              currentIndexGroup1: _selectedIndexGroup1,
+              currentIndexGroup2: _selectedIndexGroup2,
+              onItemSelected: (groupIndex, itemIndex) {
+                // Обновляем разрешения при переключении табов (с ограничением частоты)
+                final now = DateTime.now();
+                if (_lastPermissionUpdate == null || now.difference(_lastPermissionUpdate!) > const Duration(seconds: 5)) {
+                  context.read<PermissionsBloc>().add(FetchPermissionsEvent());
+                  _lastPermissionUpdate = now;
+                }
 
-                      setState(() {
-                        if (groupIndex == 1) {
-                          _selectedIndexGroup1 = itemIndex;
-                          _selectedIndexGroup2 = -1;
-                        } else if (groupIndex == 2) {
-                          _selectedIndexGroup2 = itemIndex;
-                          _selectedIndexGroup1 = -1;
-                        }
-                      });
-                    },
-                    navBarTitlesGroup1: _navBarTitleKeysGroup1
-                        .map((key) => key.isEmpty ? '' : AppLocalizations.of(context)!.translate(key))
-                        .toList(),
-                    navBarTitlesGroup2: _navBarTitleKeysGroup2
-                        .map((key) => key.isEmpty ? '' : AppLocalizations.of(context)!.translate(key))
-                        .toList(),
-                    activeIconsGroup1: _activeIconsGroup1,
-                    activeIconsGroup2: _activeIconsGroup2,
-                    inactiveIconsGroup1: _inactiveIconsGroup1,
-                    inactiveIconsGroup2: _inactiveIconsGroup2,
-                  )
+                setState(() {
+                  if (groupIndex == 1) {
+                    _selectedIndexGroup1 = itemIndex;
+                    _selectedIndexGroup2 = -1;
+                  } else if (groupIndex == 2) {
+                    _selectedIndexGroup2 = itemIndex;
+                    _selectedIndexGroup1 = -1;
+                  }
+                });
+              },
+              navBarTitlesGroup1: _navBarTitleKeysGroup1
+                  .map((key) => key.isEmpty ? '' : AppLocalizations.of(context)!.translate(key))
+                  .toList(),
+              navBarTitlesGroup2: _navBarTitleKeysGroup2
+                  .map((key) => key.isEmpty ? '' : AppLocalizations.of(context)!.translate(key))
+                  .toList(),
+              activeIconsGroup1: _activeIconsGroup1,
+              activeIconsGroup2: _activeIconsGroup2,
+              inactiveIconsGroup1: _inactiveIconsGroup1,
+              inactiveIconsGroup2: _inactiveIconsGroup2,
+            )
                 : SizedBox.shrink(), // Скрываем навбар пока не инициализировано
           );
         },

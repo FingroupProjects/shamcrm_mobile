@@ -33,8 +33,8 @@ class TopSellingResult {
   final String path;
   final int perPage; // Non-nullable
   final String? prevPageUrl;
-  final int to; // Non-nullable
-  final int total; // Non-nullable
+  final num to; // Non-nullable
+  final num total; // Non-nullable
 
   TopSellingResult({
     this.currentPage,
@@ -97,7 +97,7 @@ class TopSellingData {
   final int id;
   final String name;
   final String category;
-  final int totalQuantity;
+  final num totalQuantity;
   final String totalAmount;
   final String avgPrice;
 

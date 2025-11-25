@@ -58,40 +58,35 @@ struct ShamCRMWidgetEntryView : View {
                     WidgetButton(
                         icon: "chart.bar.fill",
                         label: "Дашборд",
-                        group: 1,
-                        screen: 0
+                        screenIdentifier: "dashboard"
                     )
                     
                     // Tasks
                     WidgetButton(
                         icon: "checkmark.circle.fill",
                         label: "Задачи",
-                        group: 1,
-                        screen: 1
+                        screenIdentifier: "tasks"
                     )
                     
                     // Leads
                     WidgetButton(
                         icon: "person.fill",
                         label: "Лиды",
-                        group: 1,
-                        screen: 2
+                        screenIdentifier: "leads"
                     )
                     
                     // Deals
                     WidgetButton(
                         icon: "briefcase.fill",
                         label: "Сделки",
-                        group: 1,
-                        screen: 3
+                        screenIdentifier: "deals"
                     )
                     
                     // Chats
                     WidgetButton(
                         icon: "message.fill",
                         label: "Чаты",
-                        group: 1,
-                        screen: 4
+                        screenIdentifier: "chats"
                     )
                 }
                 .padding(.horizontal, 12)
@@ -106,8 +101,7 @@ struct ShamCRMWidgetEntryView : View {
 struct WidgetButton: View {
     let icon: String
     let label: String
-    let group: Int
-    let screen: Int
+    let screenIdentifier: String
     
     var body: some View {
         Link(destination: createDeepLink()) {
@@ -129,14 +123,13 @@ struct WidgetButton: View {
     }
     
     private func createDeepLink() -> URL {
-        // Deep link формат: shamcrm://widget?group=1&screen=0
-        let urlString = "shamcrm://widget?group=\(group)&screen=\(screen)"
+        // Deep link формат: shamcrm://widget?screen=dashboard
+        let urlString = "shamcrm://widget?screen=\(screenIdentifier)"
         return URL(string: urlString)!
     }
 }
 
 // MARK: - Widget Configuration
-@main
 struct ShamCRMWidget: Widget {
     let kind: String = "ShamCRMWidget"
 

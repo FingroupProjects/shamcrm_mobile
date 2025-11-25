@@ -630,10 +630,10 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                   customFieldFilters.isNotEmpty;
 
               if (hasFilters) {
-                print('APPLYING FILTERS');
+                debugPrint('APPLYING FILTERS');
                 widget.onUsersSelected?.call(filters);
               } else {
-                print('NOTHING!!!!!!');
+                debugPrint('NOTHING!!!!!!');
               }
 
               Navigator.pop(context);

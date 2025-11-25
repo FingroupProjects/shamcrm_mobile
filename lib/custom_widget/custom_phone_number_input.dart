@@ -40,8 +40,8 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
     final prefs = await SharedPreferences.getInstance();
     String? savedDialCode = prefs.getString('default_dial_code');
     
-    print('CustomPhoneNumberInput: Сохранённый default_dial_code = $savedDialCode');
-    print('CustomPhoneNumberInput: initialCountry = ${widget.initialCountry?.dialCode}');
+    debugPrint('CustomPhoneNumberInput: Сохранённый default_dial_code = $savedDialCode');
+    debugPrint('CustomPhoneNumberInput: initialCountry = ${widget.initialCountry?.dialCode}');
 
     if (widget.initialCountry != null) {
       selectedCountry = widget.initialCountry;
@@ -60,7 +60,7 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
       );
     }
 
-    print('CustomPhoneNumberInput: Выбрана страна: ${selectedCountry?.name}, код: ${selectedCountry?.dialCode}');
+    debugPrint('CustomPhoneNumberInput: Выбрана страна: ${selectedCountry?.name}, код: ${selectedCountry?.dialCode}');
 
     setState(() {
       _isLoading = false;
@@ -70,12 +70,22 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
   void _onTextChanged() {
     final maxLength = phoneNumberLengths[selectedCountry?.dialCode] ?? 0;
     final value = widget.controller.text;
+    
     if (value.length > maxLength) {
       widget.controller.text = value.substring(0, maxLength);
       widget.controller.selection = TextSelection.fromPosition(TextPosition(offset: maxLength));
     }
-    final formattedNumber = (selectedCountry?.dialCode ?? '') + widget.controller.text;
+    
+    // ✅ ИСПРАВЛЕНО: отправляем код региона ТОЛЬКО если есть цифры
     if (widget.onInputChanged != null) {
+      String formattedNumber;
+      if (widget.controller.text.isEmpty) {
+        formattedNumber = ''; // Пустая строка, если нет номера
+      } else {
+        formattedNumber = (selectedCountry?.dialCode ?? '') + widget.controller.text;
+      }
+      
+      debugPrint('CustomPhoneNumberInput: phoneNumber = "${widget.controller.text}", formattedNumber = "$formattedNumber"');
       widget.onInputChanged!(formattedNumber);
     }
   }
@@ -112,16 +122,25 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
             if (phoneNumber.length > newMaxLength) {
               phoneNumber = phoneNumber.substring(0, newMaxLength);
             }
+            
             WidgetsBinding.instance.addPostFrameCallback((_) {
               setState(() {
                 selectedCountry = matchedCountry;
                 widget.controller.text = phoneNumber;
               });
-              final formattedNumber = (matchedCountry?.dialCode ?? '') + phoneNumber;
+              
+              // ✅ ИСПРАВЛЕНО: отправляем код региона ТОЛЬКО если есть цифры
               if (widget.onInputChanged != null) {
+                String formattedNumber;
+                if (phoneNumber.isEmpty) {
+                  formattedNumber = '';
+                } else {
+                  formattedNumber = (matchedCountry?.dialCode ?? '') + phoneNumber;
+                }
                 widget.onInputChanged!(formattedNumber);
               }
             });
+            
             return TextEditingValue(
               text: phoneNumber,
               selection: TextSelection.collapsed(offset: phoneNumber.length),
@@ -134,6 +153,8 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
           if (phoneNumber.length > maxLength) {
             phoneNumber = phoneNumber.substring(0, maxLength);
           }
+          
+          // ✅ ИСПРАВЛЕНО: _onTextChanged вызовется автоматически через listener
           return TextEditingValue(
             text: phoneNumber,
             selection: TextSelection.collapsed(offset: phoneNumber.length),
@@ -144,6 +165,8 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
         if (phoneNumber.length > maxLength) {
           phoneNumber = phoneNumber.substring(0, maxLength);
         }
+        
+        // ✅ ИСПРАВЛЕНО: _onTextChanged вызовется автоматически через listener
         return TextEditingValue(
           text: phoneNumber,
           selection: TextSelection.collapsed(offset: phoneNumber.length),
@@ -225,8 +248,10 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
                             setState(() {
                               selectedCountry = country;
                               widget.controller.text = '';
+                              
+                              // ✅ ИСПРАВЛЕНО: отправляем пустую строку при смене региона
                               if (widget.onInputChanged != null) {
-                                widget.onInputChanged!(country.dialCode);
+                                widget.onInputChanged!('');
                               }
                             });
                             Navigator.pop(context);

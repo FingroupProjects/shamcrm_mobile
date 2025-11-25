@@ -1,4 +1,4 @@
-import 'dart:io'; // Добавляем для проверки платформы
+import 'dart:io';
 import 'package:crm_task_manager/bloc/login/login_bloc.dart';
 import 'package:crm_task_manager/bloc/login/login_event.dart';
 import 'package:crm_task_manager/bloc/login/login_state.dart';
@@ -28,7 +28,10 @@ class LoginScreen extends StatelessWidget {
         child: BlocListener<LoginBloc, LoginState>(
           listener: (context, state) async {
             if (state is LoginLoaded) {
-              ////print('Received userId: ${state.user.id}');
+              debugPrint('════════════════════════════════════════════════════════');
+              debugPrint('LoginScreen: ✅ LOGIN SUCCESSFUL');
+              debugPrint('════════════════════════════════════════════════════════');
+              
               userID.value = state.user.id.toString();
 
               SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -36,64 +39,78 @@ class LoginScreen extends StatelessWidget {
               await prefs.setString('userID', state.user.id.toString());
               await prefs.setString('userLogin', state.user.login.toString());
 
-              // Сохраняем первую роль как раньше для обратной совместимости
+              // Сохраняем роли
               if (state.user.role != null && state.user.role!.isNotEmpty) {
                 await prefs.setString('userRoleName', state.user.role![0].name);
-                // Сохраняем все роли в новое поле, соединяя их через запятую
-                String allRoles =
-                    state.user.role!.map((role) => role.name).join(', ');
+                String allRoles = state.user.role!.map((role) => role.name).join(', ');
                 await prefs.setString('userAllRoles', allRoles);
               } else {
                 await prefs.setString('userRoleName', 'No role assigned');
                 await prefs.setString('userAllRoles', 'No role assigned');
               }
 
-              // НОВОЕ: Сохраняем информацию о hasMiniApp из ответа сервера
-              bool hasMiniApp = state.hasMiniApp; // Теперь это поле есть в LoginLoaded
-              
+              // Сохраняем hasMiniApp
+              bool hasMiniApp = state.hasMiniApp;
               await prefs.setBool('hasMiniApp', hasMiniApp);
-              //print('Saved hasMiniApp: $hasMiniApp');
+              debugPrint('LoginScreen: Saved hasMiniApp: $hasMiniApp');
 
-              // Получение и отправка FCM-токена с проверкой APNS
-              // Получение и отправка FCM-токена с проверкой APNS
-// Получение и отправка FCM-токена
-try {
-  //print('LoginScreen: Начало получения FCM токена');
-  
-  String? fcmToken;
-  
-  if (Platform.isIOS) {
-    // Для iOS сначала проверяем APNS
-    String? apnsToken = await FirebaseMessaging.instance.getAPNSToken();
-    //print('LoginScreen: APNS token: ${apnsToken != null ? "получен" : "null"}');
-    
-    if (apnsToken != null) {
-      fcmToken = await FirebaseMessaging.instance.getToken();
-    } else {
-      //print('LoginScreen: APNS токен недоступен, пробуем получить FCM без него');
-      // Пробуем получить FCM токен даже без APNS
-      fcmToken = await FirebaseMessaging.instance.getToken();
-    }
-  } else {
-    // Для Android
-    fcmToken = await FirebaseMessaging.instance.getToken();
-  }
-  
-  if (fcmToken != null && fcmToken.isNotEmpty) {
-    //print('LoginScreen: FCM токен получен: ${fcmToken.substring(0, 20)}...');
-    await apiService.sendDeviceToken(fcmToken);
-    //print('LoginScreen: FCM токен отправлен на сервер');
-  } else {
-    //print('LoginScreen: ❌ Не удалось получить FCM токен');
-  }
-} catch (e, stackTrace) {
-  //print('LoginScreen: Ошибка получения/отправки FCM токена: $e');
-  //print('LoginScreen: StackTrace: $stackTrace');
-}
-await apiService.ensureInitialized();
-await apiService.sendPendingFCMToken(); // ← ДОБАВЬ
-              final savedOrganization =
-                  await apiService.getSelectedOrganization();
+              // ✅ КРИТИЧНО: Инициализируем ApiService ПЕРЕД отправкой FCM
+              debugPrint('LoginScreen: 🔧 Инициализация ApiService...');
+              await apiService.ensureInitialized();
+              
+              // Проверяем что baseUrl инициализирован
+              debugPrint('LoginScreen: 🌐 Checking baseUrl: ${apiService.baseUrl}');
+              
+              if (apiService.baseUrl == null || apiService.baseUrl!.isEmpty) {
+                debugPrint('LoginScreen: ⚠️ baseUrl все еще null, пробуем явную инициализацию');
+                await apiService.initialize();
+                debugPrint('LoginScreen: 🌐 After initialize: ${apiService.baseUrl}');
+              }
+              
+              debugPrint('LoginScreen: ✅ ApiService инициализирован успешно');
+
+              // ✅ ТЕПЕРЬ отправляем FCM токен
+              try {
+                debugPrint('LoginScreen: 📡 Получение FCM токена...');
+                
+                String? fcmToken;
+                
+                if (Platform.isIOS) {
+                  // Для iOS сначала проверяем APNS
+                  String? apnsToken = await FirebaseMessaging.instance.getAPNSToken();
+                  debugPrint('LoginScreen: APNS token: ${apnsToken != null ? "получен" : "null"}');
+                  
+                  if (apnsToken != null) {
+                    fcmToken = await FirebaseMessaging.instance.getToken();
+                  } else {
+                    debugPrint('LoginScreen: APNS токен недоступен, пробуем FCM без него');
+                    fcmToken = await FirebaseMessaging.instance.getToken();
+                  }
+                } else {
+                  // Для Android
+                  fcmToken = await FirebaseMessaging.instance.getToken();
+                }
+                
+                if (fcmToken != null && fcmToken.isNotEmpty) {
+                  debugPrint('LoginScreen: ✅ FCM токен получен: ${fcmToken.substring(0, 20)}...');
+                  
+                  // ✅ Отправляем токен
+                  await apiService.sendDeviceToken(fcmToken);
+                  debugPrint('LoginScreen: ✅ FCM токен успешно отправлен на сервер');
+                } else {
+                  debugPrint('LoginScreen: ❌ Не удалось получить FCM токен');
+                }
+              } catch (e, stackTrace) {
+                debugPrint('LoginScreen: ❌ Ошибка получения/отправки FCM: $e');
+                debugPrint('LoginScreen: StackTrace: $stackTrace');
+              }
+              
+              // ✅ Отправляем отложенный токен если есть
+              debugPrint('LoginScreen: 📤 Проверка отложенных токенов...');
+              await apiService.sendPendingFCMToken();
+
+              // Сохраняем организацию
+              final savedOrganization = await apiService.getSelectedOrganization();
               if (savedOrganization == null) {
                 final organizations = await apiService.getOrganization();
                 if (organizations.isNotEmpty) {
@@ -103,9 +120,16 @@ await apiService.sendPendingFCMToken(); // ← ДОБАВЬ
                 }
               }
 
-              // Показываем анимацию 2 секунды перед переходом
+              debugPrint('════════════════════════════════════════════════════════');
+              debugPrint('LoginScreen: ✅ ALL OPERATIONS COMPLETED');
+              debugPrint('════════════════════════════════════════════════════════');
+
+              // ✅ ЗАДЕРЖКА ПОСЛЕ ВСЕХ ОПЕРАЦИЙ (включая FCM)
               await Future.delayed(Duration(seconds: 2));
+              
+              // ✅ Теперь переходим на PIN экран
               await _checkPinSetupStatus(context);
+              
             } else if (state is LoginError) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -173,14 +197,12 @@ await apiService.sendPendingFCMToken(); // ← ДОБАВЬ
                     isPassword: true,
                   ),
                   SizedBox(height: 16),
-                  // Показываем анимацию загрузки для состояний LoginLoading и LoginLoaded
                   if (state is LoginLoading || state is LoginLoaded)
                     Center(
                       child: CircularProgressIndicator(
                         color: Color(0xff1E2E52),
                       ),
                     )
-                  // Показываем кнопку только если состояние Initial или Error
                   else
                     CustomButton(
                       buttonText: localizations.translate('login_button'),

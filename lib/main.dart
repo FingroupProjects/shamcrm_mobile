@@ -148,12 +148,11 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
     GlobalKey<ScaffoldMessengerState>();
-
 void main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
     WidgetService.initialize();
-        // await InternetMonitorService().initialize();
+        await InternetMonitorService().initialize();
 
     await _initializeFirebase();
 
@@ -271,13 +270,31 @@ Future<void> _initializeFirebaseMessaging(ApiService apiService) async {
       sound: true,
     );
 
-    await getFCMTokens(apiService);
+    // ✅ УБРАНО: НЕ обрабатываем getInitialMessage здесь!
+    // FirebaseMessaging.instance.getInitialMessage() - УДАЛЕНО
+
+    // ✅ Обработка foreground сообщений
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      debugPrint('_initializeFirebaseMessaging: onMessage: ${message.data}');
+      debugPrint('Push-уведомление получено в foreground: {id: ${message.data['id']}, type: ${message.data['type']}}');
+    });
+
+    // ✅ КРИТИЧНО: Обработка background tap
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      debugPrint('_initializeFirebaseMessaging: onMessageOpenedApp: ${message.data}');
+      debugPrint('Push-уведомление открыто из background: {id: ${message.data['id']}, type: ${message.data['type']}}');
+      
+      // ⚠️ НЕ вызываем handleMessage здесь - пусть HomeScreen обработает!
+      // FirebaseApi().handleMessage(message); - УДАЛЕНО
+    });
+
+    // await getFCMTokens(apiService);
 
     try {
       FirebaseApi firebaseApi = FirebaseApi();
       await firebaseApi.initNotifications();
     } catch (e) {
-      //print('Firebase Messaging: Ошибка: $e');
+      debugPrint('Firebase Messaging: Ошибка: $e');
     }
     
   } catch (e) {
@@ -285,35 +302,50 @@ Future<void> _initializeFirebaseMessaging(ApiService apiService) async {
     
     if (!errorString.contains('already exists') && 
         !errorString.contains('duplicate')) {
-      //print('Firebase Messaging: Ошибка: $e');
+      debugPrint('Firebase Messaging: Ошибка: $e');
     }
   }
 }
 
-Future<void> getFCMTokens(ApiService apiService) async {
-  try {
-    if (Firebase.apps.isEmpty) return;
 
-    try {
-      Firebase.app();
-    } catch (e) {
-      return;
-    }
+// // ✅ НОВЫЙ МЕТОД: Обработка initial message
+// Future<void> _handleInitialMessage(RemoteMessage message) async {
+//   debugPrint('_handleInitialMessage: ${message.data}');
+  
+//   // Ждем инициализации приложения
+//   await Future.delayed(Duration(seconds: 2));
+  
+//   try {
+//     await FirebaseApi().handleMessage(message);
+//   } catch (e) {
+//     debugPrint('_handleInitialMessage: Error: $e');
+//   }
+// }
 
-    final String? fcmToken = await FirebaseMessaging.instance.getToken();
+// Future<void> getFCMTokens(ApiService apiService) async {
+//   try {
+//     if (Firebase.apps.isEmpty) return;
+
+//     try {
+//       Firebase.app();
+//     } catch (e) {
+//       return;
+//     }
+
+//     final String? fcmToken = await FirebaseMessaging.instance.getToken();
     
-    if (fcmToken != null && fcmToken.isNotEmpty) {
-      try {
-        await apiService.sendDeviceToken(fcmToken);
-      } catch (e) {
-        //print('FCM Token: Ошибка отправки: $e');
-      }
-    }
+//     if (fcmToken != null && fcmToken.isNotEmpty) {
+//       try {
+//         await apiService.sendDeviceToken(fcmToken);
+//       } catch (e) {
+//         //print('FCM Token: Ошибка отправки: $e');
+//       }
+//     }
     
-  } catch (e) {
-    //print('FCM Token: Ошибка: $e');
-  }
-}
+//   } catch (e) {
+//     //print('FCM Token: Ошибка: $e');
+//   }
+// }
 
 class SessionValidationResult {
   final bool isValid;
@@ -491,7 +523,7 @@ class _MyAppState extends State<MyApp> {
         updateButton: localizations?.translate('app_update_button') ?? 'Обновить',
       );
     } catch (e) {
-      print('MyApp: Error checking version: $e');
+      // print('MyApp: Error checking version: $e');
     }
   }
 
@@ -663,11 +695,11 @@ Widget build(BuildContext context) {
         return supportedLocales.first;
       },
       // ✅ InternetAwareWrapper ЗДЕСЬ, в builder MaterialApp
-      // builder: (context, child) {
-      //   return InternetAwareWrapper(
-      //     child: child ?? const SizedBox.shrink(),
-      //   );
-      // },
+      builder: (context, child) {
+        return InternetAwareWrapper(
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
       home: Builder(
         builder: (context) {
           if (!widget.sessionValid) {

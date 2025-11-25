@@ -60,17 +60,23 @@ class _EditDealStatusScreenState extends State<EditDealStatusScreen> {
   }
 
   // ✅ НОВОЕ: Загрузка настройки
-  Future<void> _loadMultiSelectSetting() async {
+ Future<void> _loadMultiSelectSetting() async {
     final prefs = await SharedPreferences.getInstance();
-    final value = prefs.getBool('managing_deal_status_visibility') ?? false;
-
+    final managingVisibility = prefs.getBool('managing_deal_status_visibility') ?? false;
+    final changeMultiple = prefs.getBool('change_deal_to_multiple_statuses') ?? false;
+    
+    // Если хотя бы один флаг true, включаем мультивыбор
+    final value = managingVisibility || changeMultiple;
+    
     if (mounted) {
       setState(() {
         _isMultiSelectEnabled = value;
       });
     }
-
-    print('EditDealStatusScreen: managing_deal_status_visibility = $value');
+    
+    debugPrint('EditDealStatusScreen: managing_deal_status_visibility = $managingVisibility');
+    debugPrint('EditDealStatusScreen: change_deal_to_multiple_statuses = $changeMultiple');
+    debugPrint('EditDealStatusScreen: _isMultiSelectEnabled = $value');
   }
 
   void _loadDealStatus() {
@@ -94,9 +100,9 @@ class _EditDealStatusScreenState extends State<EditDealStatusScreen> {
       final changeStatusUserIds =
           _selectedChangeStatusUsers.map((user) => user.id).toList();
 
-      print(
+      debugPrint(
           'EditDealStatusScreen: Сохранение пользователей (просмотр): $userIds');
-      print(
+      debugPrint(
           'EditDealStatusScreen: Сохранение пользователей (изменение): $changeStatusUserIds');
 
       _dealBloc.add(
@@ -202,9 +208,9 @@ class _EditDealStatusScreenState extends State<EditDealStatusScreen> {
                 ?.map((user) => user.userId.toString())
                 .toList();
 
-            print(
+            debugPrint(
                 'EditDealStatusScreen: Загружены пользователи (просмотр): $_initialUserIds');
-            print(
+            debugPrint(
                 'EditDealStatusScreen: Загружены пользователи (изменение): $_initialChangeStatusUserIds');
 
             _dataLoaded = true;
@@ -357,7 +363,7 @@ class _EditDealStatusScreenState extends State<EditDealStatusScreen> {
                                       setState(() {
                                         _selectedUsers = users;
                                       });
-                                      print(
+                                      debugPrint(
                                           'EditDealStatusScreen: Выбрано пользователей (просмотр): ${users.length}');
                                     },
                                   ),
@@ -398,7 +404,7 @@ class _EditDealStatusScreenState extends State<EditDealStatusScreen> {
                                       setState(() {
                                         _selectedChangeStatusUsers = users;
                                       });
-                                      print(
+                                      debugPrint(
                                           'EditDealStatusScreen: Выбрано пользователей (изменение): ${users.length}');
                                     },
                                   ),

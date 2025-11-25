@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class IncomingDocumentHistoryResponse {
@@ -70,7 +71,7 @@ class IncomingDocumentHistory {
       try {
         return DateFormat('dd/MM/yyyy HH:mm').parse(dateStr); // Альтернативный формат
       } catch (e) {
-        print('Error parsing date $dateStr: $e');
+        debugPrint('Error parsing date $dateStr: $e');
         return null;
       }
     }

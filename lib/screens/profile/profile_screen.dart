@@ -284,7 +284,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
       }
     } catch (e) {
-      print('ProfileScreen: Error in force logout: $e');
+      debugPrint('ProfileScreen: Error in force logout: $e');
       // Даже при ошибке пытаемся перейти на экран авторизации
       if (mounted) {
         Navigator.pushNamedAndRemoveUntil(

@@ -2,6 +2,8 @@
 // models/lead_history_model.dart
 // ==========================================
 
+import 'package:flutter/material.dart';
+
 class LeadHistory {
   final int id;
   final User? user;
@@ -36,7 +38,7 @@ class LeadHistory {
         changes: changes,
       );
     } catch (e) {
-      print('Ошибка парсинга LeadHistory: $e');
+      debugPrint('Ошибка парсинга LeadHistory: $e');
       return LeadHistory(
         id: 0,
         user: null,

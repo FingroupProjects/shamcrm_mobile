@@ -33,10 +33,11 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
+import 'package:crm_task_manager/models/directory_model.dart'
+    as directory_model;
 import 'dart:io';
 
 import '../../../models/lead_model.dart';
-import '../../../page_2/dashboard/detailed_report/contents/goods_content.dart';
 import 'lead_details/add_custom_directory_dialog.dart';
 import 'lead_details/lead_create_custom.dart' show AddCustomFieldDialog;
 import 'lead_details/lead_status_list_edit.dart';
@@ -126,7 +127,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
   String? _selectedPriceType;
   String selectedDialCode = '+992';
   String selectedWhatsAppDialCode = '+992';
-  String? _fullWhatsAppNumber; // Новая переменная для хранения полного номера WhatsApp
+  String?
+      _fullWhatsAppNumber; // Новая переменная для хранения полного номера WhatsApp
   List<CustomField> customFields = [];
   final ApiService _apiService = ApiService();
   List<FileHelper> files = [];
@@ -150,7 +152,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
     _selectedPriceType = widget.priceTypeId;
     selectedSalesFunnel = widget.salesFunnelId;
 
-    if (selectedSalesFunnel != null && selectedSalesFunnel != widget.salesFunnelId) {
+    if (selectedSalesFunnel != null &&
+        selectedSalesFunnel != widget.salesFunnelId) {
       _showDuplicateOptions = true;
       _duplicateOption = DuplicateOption.duplicate;
     }
@@ -226,7 +229,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
           uniqueId: '${Uuid().v4()}_init_dir_$i',
         ));
       } else {
-        print('DirectoryValue with id ${dirValue.id} has null entry, skipping...');
+        debugPrint(
+            'DirectoryValue with id ${dirValue.id} has null entry, skipping...');
       }
     }
 
@@ -1311,7 +1315,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                 isDirectoryField: true,
                 directoryId: link.directory.id,
                 entryId: entryId,
-                uniqueId: '${Uuid().v4()}_${DateTime.now().millisecondsSinceEpoch}',
+                uniqueId:
+                    '${Uuid().v4()}_api_dir_${DateTime.now().millisecondsSinceEpoch}',
               ));
             }
           }
@@ -1462,6 +1467,9 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
+        forceMaterialTransparency: true,
+        backgroundColor: const Color.fromARGB(255, 255, 255, 255),
+        elevation: 0,
         title: Transform.translate(
           offset: const Offset(-10, 0),
           child: Text(
@@ -1603,7 +1611,6 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
           //   tooltip: 'Обновить структуру полей',
           // ),
         ],
-        backgroundColor: const Color.fromARGB(255, 255, 255, 255),
       ),
       body: BlocConsumer<FieldConfigurationBloc, FieldConfigurationState>(
         listener: (context, configState) {
@@ -1791,6 +1798,9 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                       }
                                   )
                                       : CustomFieldWidget(
+                                    key: ValueKey(
+                                        'field_${field.fieldName}${field.isCustomField}'),
+
                                     fieldName: field.fieldName,
                                     valueController: field.controller,
                                     type: field.type,

@@ -32,7 +32,7 @@ class _GoodsRadioGroupWidgetState extends State<GoodsRadioGroupWidget> {
   void initState() {
     super.initState();
     if (kDebugMode) {
-      //print('🟢 GoodsWidget: initState - showPrice=${widget.showPrice}');
+      //debugPrint('🟢 GoodsWidget: initState - showPrice=${widget.showPrice}');
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -40,20 +40,20 @@ class _GoodsRadioGroupWidgetState extends State<GoodsRadioGroupWidget> {
         final state = context.read<GetAllGoodsListBloc>().state;
 
         if (kDebugMode) {
-          //print('🟢 GoodsWidget: postFrameCallback - state=${state.runtimeType}');
+          //debugPrint('🟢 GoodsWidget: postFrameCallback - state=${state.runtimeType}');
         }
 
         if (state is GetAllGoodsListSuccess) {
           goodsList = state.goodsList;
           if (kDebugMode) {
-            //print('🟢 GoodsWidget: Found cached data - ${goodsList.length} goods');
+            //debugPrint('🟢 GoodsWidget: Found cached data - ${goodsList.length} goods');
           }
           _updateSelectedGoodData();
         }
 
         if (state is! GetAllGoodsListSuccess) {
           if (kDebugMode) {
-            //print('🟢 GoodsWidget: Dispatching GetAllGoodsListEv()');
+            //debugPrint('🟢 GoodsWidget: Dispatching GetAllGoodsListEv()');
           }
           context.read<GetAllGoodsListBloc>().add(GetAllGoodsListEv());
         }
@@ -70,12 +70,12 @@ class _GoodsRadioGroupWidgetState extends State<GoodsRadioGroupWidget> {
           (good) => good.id.toString() == widget.selectedGood,
         );
         if (kDebugMode) {
-          print('🟢 GoodsWidget: Selected good found - ${selectedGoodData?.fullName ?? selectedGoodData?.good?.name}');
+          debugPrint('🟢 GoodsWidget: Selected good found - ${selectedGoodData?.fullName ?? selectedGoodData?.good?.name}');
         }
       } catch (e) {
         selectedGoodData = null; // ИСПРАВЛЕНО: обнуляем если не найден
         if (kDebugMode) {
-          print('🔴 GoodsWidget: Selected good NOT found - searching for ${widget.selectedGood}');
+          debugPrint('🔴 GoodsWidget: Selected good NOT found - searching for ${widget.selectedGood}');
         }
       }
     }
@@ -84,7 +84,7 @@ class _GoodsRadioGroupWidgetState extends State<GoodsRadioGroupWidget> {
   @override
   Widget build(BuildContext context) {
     if (kDebugMode) {
-      //print('🟡 GoodsWidget: build() called');
+      //debugPrint('🟡 GoodsWidget: build() called');
     }
 
     return Column(
@@ -103,7 +103,7 @@ class _GoodsRadioGroupWidgetState extends State<GoodsRadioGroupWidget> {
         BlocBuilder<GetAllGoodsListBloc, GetAllGoodsListState>(
           builder: (context, state) {
             if (kDebugMode) {
-              //print('🔵 GoodsWidget BlocBuilder: state=${state.runtimeType}');
+              //debugPrint('🔵 GoodsWidget BlocBuilder: state=${state.runtimeType}');
             }
 
             final isLoading = state is GetAllGoodsListLoading;
@@ -111,9 +111,9 @@ class _GoodsRadioGroupWidgetState extends State<GoodsRadioGroupWidget> {
             if (state is GetAllGoodsListSuccess) {
               goodsList = state.goodsList;
               if (kDebugMode) {
-                //print('🔵 GoodsWidget BlocBuilder: SUCCESS - ${goodsList.length} goods loaded');
+                //debugPrint('🔵 GoodsWidget BlocBuilder: SUCCESS - ${goodsList.length} goods loaded');
                 if (goodsList.isNotEmpty) {
-                  //print('🔵 GoodsWidget BlocBuilder: First good = ${goodsList.first.name}, price=${goodsList.first.price}');
+                  //debugPrint('🔵 GoodsWidget BlocBuilder: First good = ${goodsList.first.name}, price=${goodsList.first.price}');
                 }
               }
               // ИСПРАВЛЕНО: Обновляем selectedGoodData из текущего списка
@@ -122,13 +122,13 @@ class _GoodsRadioGroupWidgetState extends State<GoodsRadioGroupWidget> {
 
             if (state is GetAllGoodsListError) {
               if (kDebugMode) {
-                //print('🔴 GoodsWidget BlocBuilder: ERROR - ${state.message}');
+                //debugPrint('🔴 GoodsWidget BlocBuilder: ERROR - ${state.message}');
               }
             }
 
             if (kDebugMode) {
-              //print('🔵 GoodsWidget BlocBuilder: Rendering dropdown - items=${goodsList.length}, isLoading=$isLoading');
-              //print('🔵 GoodsWidget BlocBuilder: selectedGoodData=${selectedGoodData?.name}, id=${selectedGoodData?.id}');
+              //debugPrint('🔵 GoodsWidget BlocBuilder: Rendering dropdown - items=${goodsList.length}, isLoading=$isLoading');
+              //debugPrint('🔵 GoodsWidget BlocBuilder: selectedGoodData=${selectedGoodData?.name}, id=${selectedGoodData?.id}');
             }
 
             // ИСПРАВЛЕНО: Проверяем что selectedGoodData действительно в списке
@@ -137,7 +137,7 @@ class _GoodsRadioGroupWidgetState extends State<GoodsRadioGroupWidget> {
                 : null;
 
             if (kDebugMode && selectedGoodData != null && !goodsList.contains(selectedGoodData)) {
-              //print('⚠️ GoodsWidget: selectedGoodData not in list, resetting to null');
+              //debugPrint('⚠️ GoodsWidget: selectedGoodData not in list, resetting to null');
             }
 
             debugPrint("GoodsWidget dropdown items count: ${goodsList.length}");
@@ -167,7 +167,7 @@ class _GoodsRadioGroupWidgetState extends State<GoodsRadioGroupWidget> {
               ),
               listItemBuilder: (context, item, isSelected, onItemSelect) {
                 if (kDebugMode) {
-                  //print('🟣 GoodsWidget: listItemBuilder called for ${item.name}');
+                  //debugPrint('🟣 GoodsWidget: listItemBuilder called for ${item.name}');
                 }
 
                 return Column(
@@ -200,7 +200,7 @@ class _GoodsRadioGroupWidgetState extends State<GoodsRadioGroupWidget> {
               },
               headerBuilder: (context, selectedItem, enabled) {
                 if (kDebugMode) {
-                  //print('🟣 GoodsWidget: headerBuilder called - isLoading=$isLoading, selected=${selectedItem.name}');
+                  //debugPrint('🟣 GoodsWidget: headerBuilder called - isLoading=$isLoading, selected=${selectedItem.name}');
                 }
 
                 if (isLoading) {
@@ -245,7 +245,7 @@ class _GoodsRadioGroupWidgetState extends State<GoodsRadioGroupWidget> {
               },
               hintBuilder: (context, hint, enabled) {
                 if (kDebugMode) {
-                  //print('🟣 GoodsWidget: hintBuilder called - isLoading=$isLoading');
+                  //debugPrint('🟣 GoodsWidget: hintBuilder called - isLoading=$isLoading');
                 }
 
                 if (isLoading) {
@@ -273,7 +273,7 @@ class _GoodsRadioGroupWidgetState extends State<GoodsRadioGroupWidget> {
               },
               noResultFoundBuilder: (context, text) {
                 if (kDebugMode) {
-                  //print('🟣 GoodsWidget: noResultFoundBuilder called - isLoading=$isLoading, text=$text');
+                  //debugPrint('🟣 GoodsWidget: noResultFoundBuilder called - isLoading=$isLoading, text=$text');
                 }
 
                 if (isLoading) {
@@ -312,7 +312,7 @@ class _GoodsRadioGroupWidgetState extends State<GoodsRadioGroupWidget> {
               },
               onChanged: (value) {
                 if (kDebugMode) {
-                  //print('🟢 GoodsWidget: onChanged - selected ${value?.name}');
+                  //debugPrint('🟢 GoodsWidget: onChanged - selected ${value?.name}');
                 }
 
                 if (value != null) {
