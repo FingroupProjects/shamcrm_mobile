@@ -38,6 +38,7 @@ import 'package:crm_task_manager/models/directory_model.dart'
 import 'dart:io';
 
 import '../../../models/lead_model.dart';
+import '../../../page_2/dashboard/detailed_report/contents/goods_content.dart';
 import 'lead_details/add_custom_directory_dialog.dart';
 import 'lead_details/lead_create_custom.dart' show AddCustomFieldDialog;
 import 'lead_details/lead_status_list_edit.dart';
