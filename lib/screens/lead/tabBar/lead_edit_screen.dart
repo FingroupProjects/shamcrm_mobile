@@ -40,6 +40,7 @@ import '../../../page_2/dashboard/detailed_report/contents/goods_content.dart';
 import 'lead_details/add_custom_directory_dialog.dart';
 import 'lead_details/lead_create_custom.dart' show AddCustomFieldDialog;
 import 'lead_details/lead_status_list_edit.dart';
+import 'lead_details/sales_funnel_list.dart';
 
 class LeadEditScreen extends StatefulWidget {
   final int leadId;
@@ -676,6 +677,24 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
           },
         );
 
+      case 'sales_funnel_id':
+        return SalesFunnelWidget(
+          selectedSalesFunnel: selectedSalesFunnel,
+          onChanged: (String? newValue) {
+            setState(() {
+              selectedSalesFunnel = newValue;
+              _showDuplicateOptions = newValue != null &&
+                  newValue != widget.salesFunnelId;
+              if (_showDuplicateOptions &&
+                  _duplicateOption == null) {
+                _duplicateOption = DuplicateOption.duplicate;
+              } else if (!_showDuplicateOptions) {
+                _duplicateOption = null;
+              }
+            });
+          },
+        );
+
       default:
         return SizedBox.shrink();
     }
@@ -841,6 +860,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
         return localizations!.translate('email');
       case 'lead_status_id':
         return localizations!.translate('lead_status');
+      case 'sales_funnel_id':
+        return localizations!.translate('sales_funnel');
       default:
         return config.fieldName;
     }
@@ -1779,7 +1800,6 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                 ],
                               );
                             }).toList(),
-
                             // Файлы (всегда показываем)
                             _buildFileSelection(),
                             const SizedBox(height: 16),
