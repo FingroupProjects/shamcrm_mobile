@@ -334,7 +334,7 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
           'id': config.id,
           'position': config.position,
           'is_active': config.isActive ? 1 : 0,
-          'is_required': config.required ? 1 : 0,
+          'is_required': config.originalRequired ? 1 : 0, // Используем originalRequired
           'show_on_table': config.showOnTable ? 1 : 0,
         });
       }
@@ -452,12 +452,6 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
             });
           },
           priorityText: AppLocalizations.of(context)!.translate('urgent'),
-          validator: config.required ? (value) {
-            if (value == null || value.isEmpty) {
-              return AppLocalizations.of(context)!.translate('field_required');
-            }
-            return null;
-          } : null,
         );
 
       case 'description':
@@ -498,12 +492,6 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
           controller: endDateController,
           label: AppLocalizations.of(context)!.translate('deadline'),
           hasError: isEndDateInvalid,
-          validator: config.required ? (value) {
-            if (value == null || value.isEmpty) {
-              return AppLocalizations.of(context)!.translate('field_required');
-            }
-            return null;
-          } : null,
         );
 
       case 'task_status_id':
@@ -621,12 +609,6 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
           });
         },
         priorityText: AppLocalizations.of(context)!.translate('urgent'),
-        validator: (value) {
-          if (value == null || value.isEmpty) {
-            return AppLocalizations.of(context)!.translate('field_required');
-          }
-          return null;
-        },
       ),
       CustomTextField(
         controller: descriptionController,
@@ -656,12 +638,6 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
         controller: endDateController,
         label: AppLocalizations.of(context)!.translate('deadline'),
         hasError: isEndDateInvalid,
-        validator: (value) {
-          if (value == null || value.isEmpty) {
-            return AppLocalizations.of(context)!.translate('field_required');
-          }
-          return null;
-        },
       ),
     ], spacing: 8);
   }
@@ -1015,7 +991,7 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
                     tableName: config.tableName,
                     fieldName: config.fieldName,
                     position: i + 1,
-                    required: config.required,
+                    required: false, // Всегда false в UI
                     isActive: config.isActive,
                     isCustomField: config.isCustomField,
                     createdAt: config.createdAt,
@@ -1025,6 +1001,7 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
                     type: config.type,
                     isDirectory: config.isDirectory,
                     showOnTable: config.showOnTable,
+                    originalRequired: config.originalRequired, // Сохраняем оригинальное значение
                   ));
                 }
 
@@ -1102,30 +1079,10 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
                                   color: Color(0xff99A4BA),
                                 ),
                               ),
-                              if (config.required) ...[
-                                Spacer(),
-                                Container(
-                                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: Color(0xffFFE5E5),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    AppLocalizations.of(context)!.translate('required'),
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      fontFamily: 'Gilroy',
-                                      fontWeight: FontWeight.w500,
-                                      color: Color(0xffFF4757),
-                                    ),
-                                  ),
-                                ),
-                              ]
                             ],
                           ),
-                          if (!config.required) ...[
-                            SizedBox(height: 12),
-                            GestureDetector(
+                          SizedBox(height: 12),
+                          GestureDetector(
                               behavior: HitTestBehavior.opaque,
                               onTap: () {
                                 setState(() {
@@ -1134,7 +1091,7 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
                                     tableName: config.tableName,
                                     fieldName: config.fieldName,
                                     position: config.position,
-                                    required: config.required,
+                                    required: false, // Всегда false в UI
                                     isActive: !config.isActive,
                                     isCustomField: config.isCustomField,
                                     createdAt: config.createdAt,
@@ -1144,6 +1101,7 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
                                     type: config.type,
                                     isDirectory: config.isDirectory,
                                     showOnTable: config.showOnTable,
+                                    originalRequired: config.originalRequired, // Сохраняем оригинальное значение
                                   );
 
                                   final idx = fieldConfigurations.indexWhere((f) => f.id == config.id);
@@ -1194,7 +1152,6 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
                                 ),
                               ),
                             ),
-                          ],
                         ],
                       ),
                     ),
@@ -1509,7 +1466,7 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
                             tableName: newFields[i].tableName,
                             fieldName: newFields[i].fieldName,
                             position: maxPosition + i + 1,
-                            required: newFields[i].required,
+                            required: false, // Всегда false в UI
                             isActive: newFields[i].isActive,
                             isCustomField: newFields[i].isCustomField,
                             createdAt: newFields[i].createdAt,
@@ -1519,6 +1476,7 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
                             type: newFields[i].type,
                             isDirectory: newFields[i].isDirectory,
                             showOnTable: newFields[i].showOnTable,
+                            originalRequired: newFields[i].originalRequired, // Сохраняем оригинальное значение
                           ));
                         }
                       }
@@ -1543,7 +1501,7 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
                       tableName: config.tableName,
                       fieldName: config.fieldName,
                       position: config.position,
-                      required: config.required,
+                      required: false, // Всегда false в UI
                       isActive: config.isActive,
                       isCustomField: config.isCustomField,
                       createdAt: config.createdAt,
@@ -1553,6 +1511,7 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
                       type: config.type,
                       isDirectory: config.isDirectory,
                       showOnTable: config.showOnTable,
+                      originalRequired: config.originalRequired, // Сохраняем оригинальное значение
                     );
                   }).toList();
                   isSettingsMode = true;
@@ -1903,178 +1862,7 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
                           List<Map<String, dynamic>> customFieldList = [];
                           List<Map<String, int>> directoryValues = [];
 
-                          // Проверяем обязательные поля на основе конфигурации
-                          for (var config in fieldConfigurations) {
-                            if (!config.isActive || !config.required) continue;
-
-                            // Проверяем системные поля
-                            if (!config.isCustomField && !config.isDirectory) {
-                              switch (config.fieldName) {
-                                case 'name':
-                                  if (nameController.text.trim().isEmpty) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          '${AppLocalizations.of(context)!.translate('event_name')} - ${AppLocalizations.of(context)!.translate('field_required')}',
-                                          style: TextStyle(
-                                            fontFamily: 'Gilroy',
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w500,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                        backgroundColor: Colors.red,
-                                      ),
-                                    );
-                                    return;
-                                  }
-                                  break;
-                                case 'deadline':
-                                  if (endDateController.text.trim().isEmpty) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          '${AppLocalizations.of(context)!.translate('deadline')} - ${AppLocalizations.of(context)!.translate('field_required')}',
-                                          style: TextStyle(
-                                            fontFamily: 'Gilroy',
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w500,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                        backgroundColor: Colors.red,
-                                      ),
-                                    );
-                                    return;
-                                  }
-                                  break;
-                                case 'executor':
-                                  if (selectedUsers == null || selectedUsers!.isEmpty) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          '${AppLocalizations.of(context)!.translate('assignees_list')} - ${AppLocalizations.of(context)!.translate('field_required')}',
-                                          style: TextStyle(
-                                            fontFamily: 'Gilroy',
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w500,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                        backgroundColor: Colors.red,
-                                      ),
-                                    );
-                                    return;
-                                  }
-                                  break;
-                                case 'project':
-                                  if (selectedProject == null || selectedProject!.isEmpty) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          '${AppLocalizations.of(context)!.translate('projects')} - ${AppLocalizations.of(context)!.translate('field_required')}',
-                                          style: TextStyle(
-                                            fontFamily: 'Gilroy',
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w500,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                        backgroundColor: Colors.red,
-                                      ),
-                                    );
-                                    return;
-                                  }
-                                  break;
-                                case 'task_status_id':
-                                  if (_selectedStatuses == null) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          '${AppLocalizations.of(context)!.translate('task_status')} - ${AppLocalizations.of(context)!.translate('field_required')}',
-                                          style: TextStyle(
-                                            fontFamily: 'Gilroy',
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w500,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                        backgroundColor: Colors.red,
-                                      ),
-                                    );
-                                    return;
-                                  }
-                                  break;
-                                case 'description':
-                                  if (descriptionController.text.trim().isEmpty) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          '${AppLocalizations.of(context)!.translate('description_list')} - ${AppLocalizations.of(context)!.translate('field_required')}',
-                                          style: TextStyle(
-                                            fontFamily: 'Gilroy',
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w500,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                        backgroundColor: Colors.red,
-                                      ),
-                                    );
-                                    return;
-                                  }
-                                  break;
-                              }
-                            }
-
-                            // Проверяем кастомные поля
-                            if (config.isCustomField) {
-                              final customFieldIndex = customFields.indexWhere(
-                                (f) => f.fieldName == config.fieldName && f.isCustomField,
-                              );
-                              if (customFieldIndex == -1 || customFields[customFieldIndex].controller.text.trim().isEmpty) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      '${config.fieldName} - ${AppLocalizations.of(context)!.translate('field_required')}',
-                                      style: TextStyle(
-                                        fontFamily: 'Gilroy',
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                                return;
-                              }
-                            }
-
-                            // Проверяем справочники
-                            if (config.isDirectory && config.directoryId != null) {
-                              final directoryFieldIndex = customFields.indexWhere(
-                                (f) => f.directoryId == config.directoryId,
-                              );
-                              if (directoryFieldIndex == -1 || customFields[directoryFieldIndex].entryId == null) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      '${config.fieldName} - ${AppLocalizations.of(context)!.translate('field_required')}',
-                                      style: TextStyle(
-                                        fontFamily: 'Gilroy',
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                                return;
-                              }
-                            }
-                          }
+                          // Убрали все проверки обязательных полей - в мобильном приложении нет обязательных полей
 
                           for (var field in customFields) {
                             String fieldName = field.fieldName.trim();

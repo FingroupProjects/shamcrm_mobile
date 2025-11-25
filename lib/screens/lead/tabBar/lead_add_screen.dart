@@ -120,7 +120,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
           'id': config.id,
           'position': config.position,
           'is_active': config.isActive ? 1 : 0,
-          'is_required': config.required ? 1 : 0,
+          'is_required': config.originalRequired ? 1 : 0, // Используем originalRequired
           'show_on_table': config.showOnTable ? 1 : 0,
         });
       }
@@ -214,12 +214,6 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
           controller: titleController,
           hintText: AppLocalizations.of(context)!.translate('enter_name_list'),
           label: AppLocalizations.of(context)!.translate('name_list'),
-          validator: config.required ? (value) {
-            if (value == null || value.isEmpty) {
-              return AppLocalizations.of(context)!.translate('field_required');
-            }
-            return null;
-          } : null,
         );
 
       case 'phone':
@@ -811,7 +805,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                     tableName: config.tableName,
                     fieldName: config.fieldName,
                     position: i + 1,
-                    required: config.required,
+                    required: false, // Всегда false в UI
                     isActive: config.isActive,
                     isCustomField: config.isCustomField,
                     createdAt: config.createdAt,
@@ -821,6 +815,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                     type: config.type,
                     isDirectory: config.isDirectory,
                     showOnTable: config.showOnTable,
+                    originalRequired: config.originalRequired, // Сохраняем оригинальное значение
                   ));
                 }
 
@@ -904,30 +899,10 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                                   color: Color(0xff99A4BA),
                                 ),
                               ),
-                              if (config.required) ...[
-                                Spacer(),
-                                Container(
-                                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: Color(0xffFFE5E5),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    AppLocalizations.of(context)!.translate('required'),
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      fontFamily: 'Gilroy',
-                                      fontWeight: FontWeight.w500,
-                                      color: Color(0xffFF4757),
-                                    ),
-                                  ),
-                                ),
-                              ]
                             ],
                           ),
-                          if (!config.required) ...[
-                            SizedBox(height: 12),
-                            GestureDetector(
+                          SizedBox(height: 12),
+                          GestureDetector(
                               behavior: HitTestBehavior.opaque,
                               onTap: () {
                                 setState(() {
@@ -936,7 +911,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                                     tableName: config.tableName,
                                     fieldName: config.fieldName,
                                     position: config.position,
-                                    required: config.required,
+                                    required: false, // Всегда false в UI
                                     isActive: !config.isActive,
                                     isCustomField: config.isCustomField,
                                     createdAt: config.createdAt,
@@ -946,6 +921,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                                     type: config.type,
                                     isDirectory: config.isDirectory,
                                     showOnTable: config.showOnTable,
+                                    originalRequired: config.originalRequired, // Сохраняем оригинальное значение
                                   );
 
                                   final idx = fieldConfigurations.indexWhere((f) => f.id == config.id);
@@ -996,7 +972,6 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                                 ),
                               ),
                             ),
-                          ],
                         ],
                       ),
                     ),
@@ -1296,7 +1271,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                             tableName: newFields[i].tableName,
                             fieldName: newFields[i].fieldName,
                             position: maxPosition + i + 1,
-                            required: newFields[i].required,
+                            required: false, // Всегда false в UI
                             isActive: newFields[i].isActive,
                             isCustomField: newFields[i].isCustomField,
                             createdAt: newFields[i].createdAt,
@@ -1306,6 +1281,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                             type: newFields[i].type,
                             isDirectory: newFields[i].isDirectory,
                             showOnTable: newFields[i].showOnTable,
+                            originalRequired: newFields[i].originalRequired, // Сохраняем оригинальное значение
                           ));
                         }
                       }
@@ -1330,7 +1306,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                       tableName: config.tableName,
                       fieldName: config.fieldName,
                       position: config.position,
-                      required: config.required,
+                      required: false, // Всегда false в UI
                       isActive: config.isActive,
                       isCustomField: config.isCustomField,
                       createdAt: config.createdAt,
@@ -1340,6 +1316,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                       type: config.type,
                       isDirectory: config.isDirectory,
                       showOnTable: config.showOnTable,
+                      originalRequired: config.originalRequired, // Сохраняем оригинальное значение
                     );
                   }).toList();
                   isSettingsMode = true;
