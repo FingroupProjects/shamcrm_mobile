@@ -137,22 +137,22 @@ class _HomeScreenState extends State<HomeScreen> {
 Future<void> _handleInitialMessage() async {
   try {
     debugPrint('HomeScreen: 🔍 Проверка наличия initialMessage');
-    
+
     final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     final RemoteMessage? initialMessage = args?['initialMessage'] as RemoteMessage?;
-    
+
     if (initialMessage != null) {
       debugPrint('HomeScreen: ✅ Получено initialMessage из PinScreen');
       debugPrint('HomeScreen: 📦 Data: ${initialMessage.data}');
-      
+
       // ✅ КРИТИЧНО: Ждем пока HomeScreen полностью загрузится
       await Future.delayed(const Duration(milliseconds: 500));
-      
+
       if (!mounted) {
         debugPrint('HomeScreen: ⚠️ Widget unmounted');
         return;
       }
-      
+
       // ✅ ИСПРАВЛЕНИЕ: Сразу обрабатываем сообщение
       FirebaseApi? firebaseApi;
       if (Firebase.apps.isNotEmpty) {
@@ -164,7 +164,7 @@ Future<void> _handleInitialMessage() async {
           debugPrint('HomeScreen: ❌ Ошибка FirebaseApi: $e');
         }
       }
-      
+
       if (firebaseApi != null) {
         try {
           debugPrint('HomeScreen: 🚀 Обработка initialMessage');
