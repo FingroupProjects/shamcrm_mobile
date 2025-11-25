@@ -1076,6 +1076,9 @@ Future<String> getStaticBaseUrl() async {
 
 // Метод для получения полного URL файла
   Future<String> getFileUrl(String filePath) async {
+    if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
+      return filePath;
+    }
     final baseUrl = await getStaticBaseUrl();
     // Убираем лишние слеши, если они есть в начале filePath
     final cleanPath =
