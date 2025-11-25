@@ -2046,7 +2046,7 @@ Future<ForgotPinResponse> forgotPin(LoginModel loginModel) async {
     // Формируем путь с query-параметрами
     final updatedPath = await _appendQueryParams('/lead');
     if (kDebugMode) {
-      print('ApiService: createLeadWithData - Generated path: $updatedPath');
+      debugPrint('ApiService: createLeadWithData - Generated path: $updatedPath');
     }
 
     final token = await getToken();
@@ -6374,7 +6374,7 @@ Future<List<Message>> getMessages(
 
       if (response.statusCode == 200) {
         if (kDebugMode) {
-          ////print('Audio message sent successfully!');
+          ////debugPrint('Audio message sent successfully!');
         }
       } else {
         if (kDebugMode) {
@@ -7296,49 +7296,49 @@ Future<void> _removeOrganizationId() async {
 
 // Новый метод для очистки кэша воронок
   Future<void> clearCachedSalesFunnels() async {
-    //print('ApiService: Clearing cached sales funnels');
+    //debugPrint('ApiService: Clearing cached sales funnels');
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('cached_sales_funnels');
-    //print('ApiService: Cached sales funnels cleared');
+    //debugPrint('ApiService: Cached sales funnels cleared');
   }
 
 // Предполагаемый существующий метод для загрузки воронок с сервера
   Future<List<SalesFunnel>> getSalesFunnels() async {
-    //print('ApiService: Starting getSalesFunnels request');
+    //debugPrint('ApiService: Starting getSalesFunnels request');
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/sales-funnel');
     if (kDebugMode) {
-      //print('ApiService: getSalesFunnels - Generated path: $path');
+      //debugPrint('ApiService: getSalesFunnels - Generated path: $path');
     }
 
     try {
       final response = await _getRequest(path);
-      //print(
+      //debugPrint(
       // 'ApiService: getSalesFunnels response status: ${response.statusCode}');
-      //print('ApiService: getSalesFunnels response body: ${response.body}');
+      //debugPrint('ApiService: getSalesFunnels response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        //print('ApiService: Decoded JSON data: $data');
+        //debugPrint('ApiService: Decoded JSON data: $data');
 
         if (data['result'] != null && data['result'] is List) {
           List<SalesFunnel> funnels = (data['result'] as List)
               .map((funnel) => SalesFunnel.fromJson(funnel))
               .toList();
-          //print('ApiService: Parsed ${funnels.length} sales funnels: $funnels');
+          //debugPrint('ApiService: Parsed ${funnels.length} sales funnels: $funnels');
           // Сохраняем воронки в кэш после успешной загрузки
           await cacheSalesFunnels(funnels);
           return funnels;
         } else {
-          //print('ApiService: No funnels found in response');
+          //debugPrint('ApiService: No funnels found in response');
           throw Exception('Воронки продаж не найдены');
         }
       } else {
-        //print('ApiService: Failed with status code ${response.statusCode}');
+        //debugPrint('ApiService: Failed with status code ${response.statusCode}');
         throw Exception('Ошибка ${response.statusCode}!');
       }
     } catch (e) {
-      //print('ApiService: Error in getSalesFunnels');
+      //debugPrint('ApiService: Error in getSalesFunnels');
       rethrow;
     }
   }
@@ -7408,7 +7408,7 @@ Future<String> _appendQueryParams(String path) async {
     String path = await _appendQueryParams(
         '/notification/unread?page=$page&per_page=$perPage');
     if (kDebugMode) {
-      //print('ApiService: getAllNotifications - Generated path: $path');
+      //debugPrint('ApiService: getAllNotifications - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -7421,7 +7421,7 @@ Future<String> _appendQueryParams(String path) async {
             try {
               return Notifications.fromJson(json);
             } catch (e) {
-              //print('Ошибка десериализации уведомления: $e, JSON: $json');
+              //debugPrint('Ошибка десериализации уведомления: $e, JSON: $json');
               rethrow;
             }
           }).toList();
@@ -7429,7 +7429,7 @@ Future<String> _appendQueryParams(String path) async {
           throw Exception('Нет данных о уведомлениях в ответе');
         }
       } catch (e) {
-        //print('Ошибка декодирования ответа: $e');
+        //debugPrint('Ошибка декодирования ответа: $e');
         throw Exception('Ошибка обработки ответа сервера: $e');
       }
     } else {
@@ -7776,7 +7776,7 @@ Future<String> _appendQueryParams(String path) async {
       // Если список лидов не пуст, значит статус содержит элементы
       return tasks.isNotEmpty;
     } catch (e) {
-      ////print('Error while checking if status has deals!');
+      ////debugPrint('Error while checking if status has deals!');
       return false;
     }
   }
@@ -7787,7 +7787,7 @@ Future<String> _appendQueryParams(String path) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/my-task/change-status/$taskId');
     if (kDebugMode) {
-      //print('ApiService: updateMyTaskStatus - Generated path: $path');
+      //debugPrint('ApiService: updateMyTaskStatus - Generated path: $path');
     }
 
     final response = await _postRequest(path, {
@@ -7796,7 +7796,7 @@ Future<String> _appendQueryParams(String path) async {
     });
 
     if (response.statusCode == 200) {
-      ////print('Статус задачи успешно обновлен');
+      ////debugPrint('Статус задачи успешно обновлен');
     } else if (response.statusCode == 422) {
       throw MyTaskStatusUpdateException(
           422, 'Вы не можете переместить задачу на этот статус');
@@ -7888,7 +7888,7 @@ Future<String> _appendQueryParams(String path) async {
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       final path = await _appendQueryParams('/my-task-status');
       if (kDebugMode) {
-        //print('ApiService: CreateMyTaskStatusAdd - Generated path: $path');
+        //debugPrint('ApiService: CreateMyTaskStatusAdd - Generated path: $path');
       }
 
       // Выполняем запрос
@@ -7961,7 +7961,7 @@ Future<String> _appendQueryParams(String path) async {
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       final path = await _appendQueryParams('/my-task');
       if (kDebugMode) {
-        //print('ApiService: createMyTask - Generated path: $path');
+        //debugPrint('ApiService: createMyTask - Generated path: $path');
       }
 
       var uri = Uri.parse('$baseUrl$path');
@@ -8064,7 +8064,7 @@ Future<String> _appendQueryParams(String path) async {
         };
       }
     } catch (e) {
-      ////print('Detailed error: $e');
+      ////debugPrint('Detailed error: $e');
       return {
         'success': false,
         'message': 'Ошибка при выполнении запроса!',
@@ -8089,7 +8089,7 @@ Future<String> _appendQueryParams(String path) async {
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       final path = await _appendQueryParams('/my-task/$taskId');
       if (kDebugMode) {
-        //print('ApiService: updateMyTask - Generated path: $path');
+        //debugPrint('ApiService: updateMyTask - Generated path: $path');
       }
 
       var uri = Uri.parse('$baseUrl$path');
@@ -8177,7 +8177,7 @@ Future<String> _appendQueryParams(String path) async {
         };
       }
     } catch (e) {
-      ////print('Detailed error: $e');
+      ////debugPrint('Detailed error: $e');
       return {
         'success': false,
         'message': 'Ошибка при выполнении запроса!',
@@ -8192,7 +8192,7 @@ Future<String> _appendQueryParams(String path) async {
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       final path = await _appendQueryParams('/my-task/history/$taskId');
       if (kDebugMode) {
-        //print('ApiService: getMyTaskHistory - Generated path: $path');
+        //debugPrint('ApiService: getMyTaskHistory - Generated path: $path');
       }
 
       // Используем метод _getRequest вместо прямого выполнения запроса
@@ -8203,11 +8203,11 @@ Future<String> _appendQueryParams(String path) async {
         final List<dynamic> jsonList = decodedJson['result']['history'];
         return jsonList.map((json) => MyTaskHistory.fromJson(json)).toList();
       } else {
-        ////print('Failed to load task history!');
+        ////debugPrint('Failed to load task history!');
         throw Exception('Ошибка загрузки истории задач!');
       }
     } catch (e) {
-      ////print('Error occurred!');
+      ////debugPrint('Error occurred!');
       throw Exception('Ошибка загрузки истории задач!');
     }
   }
@@ -8217,22 +8217,22 @@ Future<String> _appendQueryParams(String path) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/my-taskStatusName');
     if (kDebugMode) {
-      //print('ApiService: getMyStatusName - Generated path: $path');
+      //debugPrint('ApiService: getMyStatusName - Generated path: $path');
     }
 
-    ////print('Начало запроса статусов задач'); // Отладочный вывод
+    ////debugPrint('Начало запроса статусов задач'); // Отладочный вывод
     final response = await _getRequest(path);
-    ////print('Статус код ответа!'); // Отладочный вывод
+    ////debugPrint('Статус код ответа!'); // Отладочный вывод
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      ////print('Полученные данные: $data'); // Отладочный вывод
+      ////debugPrint('Полученные данные: $data'); // Отладочный вывод
 
       if (data['result'] != null) {
         final statusList = (data['result'] as List)
             .map((name) => MyStatusName.fromJson(name))
             .toList();
-        ////print(
+        ////debugPrint(
         // 'Преобразованный список статусов: $statusList'); // Отладочный вывод
         return statusList;
       } else {
@@ -8248,7 +8248,7 @@ Future<String> _appendQueryParams(String path) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/my-task/$taskId');
     if (kDebugMode) {
-      //print('ApiService: deleteMyTask - Generated path: $path');
+      //debugPrint('ApiService: deleteMyTask - Generated path: $path');
     }
 
     final response = await _deleteRequest(path);
@@ -8265,7 +8265,7 @@ Future<String> _appendQueryParams(String path) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/my-task-status/$taskStatusId');
     if (kDebugMode) {
-      //print('ApiService: deleteMyTaskStatuses - Generated path: $path');
+      //debugPrint('ApiService: deleteMyTaskStatuses - Generated path: $path');
     }
 
     final response = await _deleteRequest(path);
@@ -8282,7 +8282,7 @@ Future<String> _appendQueryParams(String path) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/my-task/finish');
     if (kDebugMode) {
-      //print('ApiService: finishMyTask - Generated path: $path');
+      //debugPrint('ApiService: finishMyTask - Generated path: $path');
     }
 
     final response = await _postRequest(path, {
@@ -8316,7 +8316,7 @@ Future<String> _appendQueryParams(String path) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/my-task/get/custom-fields');
     if (kDebugMode) {
-      //print('ApiService: getMyCustomFields - Generated path: $path');
+      //debugPrint('ApiService: getMyCustomFields - Generated path: $path');
     }
 
     // Выполняем запрос
@@ -8338,7 +8338,7 @@ Future<String> _appendQueryParams(String path) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/my-task-status/$myTaskStatusId');
     if (kDebugMode) {
-      //print('ApiService: getMyTaskStatus - Generated path: $path');
+      //debugPrint('ApiService: getMyTaskStatus - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -8359,7 +8359,7 @@ Future<String> _appendQueryParams(String path) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/my-task-status/$myTaskStatusId');
     if (kDebugMode) {
-      //print('ApiService: updateMyTaskStatusEdit - Generated path: $path');
+      //debugPrint('ApiService: updateMyTaskStatusEdit - Generated path: $path');
     }
 
     final payload = {
@@ -8430,7 +8430,7 @@ Future<String> _appendQueryParams(String path) async {
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       path = await _appendQueryParams(path);
       if (kDebugMode) {
-        //print('ApiService: getEvents - Generated path: $path');
+        //debugPrint('ApiService: getEvents - Generated path: $path');
       }
 
       final response = await _getRequest(path);
@@ -8456,7 +8456,7 @@ Future<String> _appendQueryParams(String path) async {
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       final path = await _appendQueryParams('/notices/show/$noticeId');
       if (kDebugMode) {
-        //print('ApiService: getNoticeById - Generated path: $path');
+        //debugPrint('ApiService: getNoticeById - Generated path: $path');
       }
 
       final response = await _getRequest(path);
@@ -8491,7 +8491,7 @@ Future<String> _appendQueryParams(String path) async {
       // Формируем путь с query-параметрами
       final path = await _appendQueryParams('/notices');
       if (kDebugMode) {
-        //print('ApiService: createNotice - Generated path: $path');
+        //debugPrint('ApiService: createNotice - Generated path: $path');
       }
 
       var request = http.MultipartRequest('POST', Uri.parse('$baseUrl$path'));
@@ -8559,7 +8559,7 @@ Future<String> _appendQueryParams(String path) async {
     // Формируем путь с query-параметрами
     final path = await _appendQueryParams('/notices/$noticeId');
     if (kDebugMode) {
-      //print('ApiService: updateNotice - Generated path: $path');
+      //debugPrint('ApiService: updateNotice - Generated path: $path');
     }
 
     var request = http.MultipartRequest('POST', Uri.parse('$baseUrl$path'));
@@ -8612,7 +8612,7 @@ Future<String> _appendQueryParams(String path) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/notices/$noticeId');
     if (kDebugMode) {
-      //print('ApiService: deleteNotice - Generated path: $path');
+      //debugPrint('ApiService: deleteNotice - Generated path: $path');
     }
 
     final response = await _deleteRequest(path);
@@ -8629,7 +8629,7 @@ Future<String> _appendQueryParams(String path) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/notices/finish/$noticeId');
     if (kDebugMode) {
-      //print('ApiService: finishNotice - Generated path: $path');
+      //debugPrint('ApiService: finishNotice - Generated path: $path');
     }
 
     final response = await _patchRequest(path, {
@@ -8648,7 +8648,7 @@ Future<String> _appendQueryParams(String path) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/noteSubject/by-sales-funnel-id');
     if (kDebugMode) {
-      //print('ApiService: getAllSubjects - Generated path: $path');
+      //debugPrint('ApiService: getAllSubjects - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -8667,7 +8667,7 @@ Future<String> _appendQueryParams(String path) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/user');
     if (kDebugMode) {
-      //print('ApiService: getAllAuthor - Generated path: $path');
+      //debugPrint('ApiService: getAllAuthor - Generated path: $path');
     }
 
     final response = await http.get(
@@ -8690,10 +8690,10 @@ Future<String> _appendQueryParams(String path) async {
     }
 
     if (kDebugMode) {
-      // ////print('Статус ответа!');
+      // ////debugPrint('Статус ответа!');
     }
     if (kDebugMode) {
-      // ////print('getAll author!');
+      // ////debugPrint('getAll author!');
     }
 
     return dataAuthor;
@@ -8722,7 +8722,7 @@ Future<String> _appendQueryParams(String path) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/tutorials/getProgress');
     if (kDebugMode) {
-      //print('ApiService: getTutorialProgress - Generated path: $path');
+      //debugPrint('ApiService: getTutorialProgress - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -8740,7 +8740,7 @@ Future<String> _appendQueryParams(String path) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/setting');
     if (kDebugMode) {
-      //print('ApiService: getSettings - Generated path: $path');
+      //debugPrint('ApiService: getSettings - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -8759,7 +8759,7 @@ Future<String> _appendQueryParams(String path) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/mini-app/setting');
     if (kDebugMode) {
-      //print('ApiService: getMiniAppSettings - Generated path: $path');
+      //debugPrint('ApiService: getMiniAppSettings - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -8784,7 +8784,7 @@ Future<String> _appendQueryParams(String path) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/tutorials/markPageCompleted');
     if (kDebugMode) {
-      //print('ApiService: markPageCompleted - Generated path: $path');
+      //debugPrint('ApiService: markPageCompleted - Generated path: $path');
     }
 
     final response = await _postRequest(
@@ -8808,7 +8808,7 @@ Future<String> _appendQueryParams(String path) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/attribute');
     if (kDebugMode) {
-      //print('ApiService: getAllCharacteristics - Generated path: $path');
+      //debugPrint('ApiService: getAllCharacteristics - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -8830,7 +8830,7 @@ Future<String> _appendQueryParams(String path) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     path = await _appendQueryParams(path);
     if (kDebugMode) {
-      //print('ApiService: getCategory - Generated path: $path');
+      //debugPrint('ApiService: getCategory - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -8857,14 +8857,14 @@ Future<String> _appendQueryParams(String path) async {
       final path =
           await _appendQueryParams('/category/get-by-parent-id/$categoryId');
       if (kDebugMode) {
-        //print('ApiService: getSubCategoryById - Generated path: $path');
+        //debugPrint('ApiService: getSubCategoryById - Generated path: $path');
       }
 
       final response = await _getRequest(path);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedJson = json.decode(response.body);
-        ////print(decodedJson);
+        ////debugPrint(decodedJson);
         return SubCategoryResponseASD.fromJson(decodedJson);
       } else {
         throw Exception(
@@ -8889,7 +8889,7 @@ Future<String> _appendQueryParams(String path) async {
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       final path = await _appendQueryParams('/category');
       if (kDebugMode) {
-        //print('ApiService: createCategory - Generated path: $path');
+        //debugPrint('ApiService: createCategory - Generated path: $path');
       }
 
       var uri = Uri.parse('$baseUrl$path');
@@ -8959,7 +8959,7 @@ Future<String> _appendQueryParams(String path) async {
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       final path = await _appendQueryParams('/category/update/$categoryId');
       if (kDebugMode) {
-        //print('ApiService: updateCategory - Generated path: $path');
+        //debugPrint('ApiService: updateCategory - Generated path: $path');
       }
 
       var uri = Uri.parse('$baseUrl$path');
@@ -9008,7 +9008,7 @@ Future<String> _appendQueryParams(String path) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/category/$categoryId');
     if (kDebugMode) {
-      //print('ApiService: deleteCategory - Generated path: $path');
+      //debugPrint('ApiService: deleteCategory - Generated path: $path');
     }
 
     final response = await _deleteRequest(path);
@@ -9033,7 +9033,7 @@ Future<String> _appendQueryParams(String path) async {
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       final path = await _appendQueryParams('/category/update/$subCategoryId');
       if (kDebugMode) {
-        //print('ApiService: updateSubCategory - Generated path: $path');
+        //debugPrint('ApiService: updateSubCategory - Generated path: $path');
       }
 
       var uri = Uri.parse('$baseUrl$path');
@@ -9124,14 +9124,14 @@ Future<String> _appendQueryParams(String path) async {
           path += '&label_id[]=$labelId';
         }
         if (kDebugMode) {
-          //print('ApiService: Добавлены label_id: $labelIds');
+          //debugPrint('ApiService: Добавлены label_id: $labelIds');
         }
       }
 
       if (filters.containsKey('is_active')) {
         path += '&is_active=${filters['is_active'] ? 1 : 0}';
         if (kDebugMode) {
-          //print('ApiService: Добавлен параметр is_active: ${filters['is_active']}');
+          //debugPrint('ApiService: Добавлен параметр is_active: ${filters['is_active']}');
         }
       }
     }
@@ -9139,12 +9139,12 @@ Future<String> _appendQueryParams(String path) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     path = await _appendQueryParams(path);
     if (kDebugMode) {
-      //print('ApiService: getGoods - Generated path: $path');
+      //debugPrint('ApiService: getGoods - Generated path: $path');
     }
 
     final response = await _getRequest(path);
     if (kDebugMode) {
-      //print(
+      //debugPrint(
       // 'ApiService: Ответ сервера: statusCode=${response.statusCode}, body=${response.body}');
     }
     if (response.statusCode == 200) {
@@ -9157,19 +9157,19 @@ Future<String> _appendQueryParams(String path) async {
         final totalPages = data['result']['total_pages'] ??
             (goods.length < perPage ? page : page + 1);
         if (kDebugMode) {
-          //print(
+          //debugPrint(
           // 'ApiService: Успешно получено ${goods.length} товаров, всего: $total, страниц: $totalPages');
         }
         return goods;
       } else {
         if (kDebugMode) {
-          //print('ApiService: Ошибка формата данных: $data');
+          //debugPrint('ApiService: Ошибка формата данных: $data');
         }
         throw Exception('Ошибка: Неверный формат данных');
       }
     } else {
       if (kDebugMode) {
-        //print('ApiService: Ошибка загрузки товаров: ${response.statusCode}');
+        //debugPrint('ApiService: Ошибка загрузки товаров: ${response.statusCode}');
       }
       throw Exception('Ошибка загрузки товаров: ${response.statusCode}');
     }
@@ -9240,7 +9240,7 @@ Future<String> _appendQueryParams(String path) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final updatedPath = await _appendQueryParams(path);
     if (kDebugMode) {
-      //print('ApiService: getGoodsById - Generated path: $updatedPath');
+      //debugPrint('ApiService: getGoodsById - Generated path: $updatedPath');
     }
 
     final response = await _getRequest(updatedPath);
@@ -9262,17 +9262,17 @@ Future<String> _appendQueryParams(String path) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/category/get/subcategories');
     if (kDebugMode) {
-      //print('ApiService: getSubCategoryAttributes - Generated path: $path');
+      //debugPrint('ApiService: getSubCategoryAttributes - Generated path: $path');
     }
 
     final response = await _getRequest(path);
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> data = json.decode(response.body);
-      ////print('Response data: $data'); // Debug: //print the response
+      ////debugPrint('Response data: $data'); // Debug: //print the response
       if (data.containsKey('data')) {
         return (data['data'] as List).map((item) {
-          ////print('Item: $item'); // Debug: //print each item
+          ////debugPrint('Item: $item'); // Debug: //print each item
           return SubCategoryAttributesData.fromJson(
               item as Map<String, dynamic>);
         }).toList();
@@ -9307,7 +9307,7 @@ Future<String> _appendQueryParams(String path) async {
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       final path = await _appendQueryParams('/good');
       if (kDebugMode) {
-        //print('ApiService: createGoods - Generated path: $path');
+        //debugPrint('ApiService: createGoods - Generated path: $path');
       }
 
       var uri = Uri.parse('$baseUrl$path');
@@ -9408,8 +9408,8 @@ Future<String> _appendQueryParams(String path) async {
         };
       }
     } catch (e, stackTrace) {
-      // //print('ApiService: Error in createGoods: $e');
-      // //print('ApiService: Stack trace: $stackTrace');
+      // //debugPrint('ApiService: Error in createGoods: $e');
+      // //debugPrint('ApiService: Stack trace: $stackTrace');
       return {
         'success': false,
         'message': 'Произошла ошибка',
@@ -9440,7 +9440,7 @@ Future<String> _appendQueryParams(String path) async {
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       final path = await _appendQueryParams('/good/$goodId');
       if (kDebugMode) {
-        //print('ApiService: updateGoods - Generated path: $path');
+        //debugPrint('ApiService: updateGoods - Generated path: $path');
       }
 
       var uri = Uri.parse('$baseUrl$path');
@@ -9452,12 +9452,12 @@ Future<String> _appendQueryParams(String path) async {
         'Content-Type': 'multipart/form-data; charset=utf-8',
       });
 
-      ////print('ApiService: Sending updateGoods request:');
-      ////print('ApiService: goodId: $goodId, name: $name, parentId: $parentId, description: $description');
-      ////print('ApiService: quantity: $quantity, isActive: $isActive, discountPrice: $discountPrice, branch: $branch, comments: $comments, mainImageIndex: $mainImageIndex');
-      ////print('ApiService: attributes: $attributes');
-      ////print('ApiService: variants: $variants');
-      ////print('ApiService: images: ${images.map((file) => file.path).toList()}');
+      ////debugPrint('ApiService: Sending updateGoods request:');
+      ////debugPrint('ApiService: goodId: $goodId, name: $name, parentId: $parentId, description: $description');
+      ////debugPrint('ApiService: quantity: $quantity, isActive: $isActive, discountPrice: $discountPrice, branch: $branch, comments: $comments, mainImageIndex: $mainImageIndex');
+      ////debugPrint('ApiService: attributes: $attributes');
+      ////debugPrint('ApiService: variants: $variants');
+      ////debugPrint('ApiService: images: ${images.map((file) => file.path).toList()}');
 
       request.fields['name'] = name;
       request.fields['category_id'] = parentId.toString();
@@ -9475,15 +9475,15 @@ Future<String> _appendQueryParams(String path) async {
       if (storageId != null) {
         request.fields['branch_id'] = storageId.toString();
         request.fields['storage_id'] = storageId.toString();
-        ////print('ApiService: Added branch: $branch');
+        ////debugPrint('ApiService: Added branch: $branch');
       }
       if (comments != null && comments.isNotEmpty) {
         request.fields['comments'] = comments;
-        ////print('ApiService: Added comments: $comments');
+        ////debugPrint('ApiService: Added comments: $comments');
       }
       if (discountPrice != null) {
         request.fields['price'] = discountPrice.toString();
-        ////print('ApiService: Added discount_price: $discountPrice');
+        ////debugPrint('ApiService: Added discount_price: $discountPrice');
       }
 
       for (int i = 0; i < attributes.length; i++) {
@@ -9491,19 +9491,19 @@ Future<String> _appendQueryParams(String path) async {
             attributes[i]['category_attribute_id'].toString();
         request.fields['attributes[$i][value]'] =
             attributes[i]['value'].toString();
-        ////print('ApiService: Added attribute $i: ${request.fields['attributes[$i][category_attribute_id]']}, ${request.fields['attributes[$i][value]']}');
+        ////debugPrint('ApiService: Added attribute $i: ${request.fields['attributes[$i][category_attribute_id]']}, ${request.fields['attributes[$i][value]']}');
       }
 
       for (int i = 0; i < variants.length; i++) {
         if (variants[i].containsKey('id')) {
           request.fields['variants[$i][id]'] = variants[i]['id'].toString();
-          ////print('ApiService: Added variant ID $i: ${variants[i]['id']}');
+          ////debugPrint('ApiService: Added variant ID $i: ${variants[i]['id']}');
         }
         request.fields['variants[$i][is_active]'] =
             variants[i]['is_active'] ? '1' : '0';
         request.fields['variants[$i][price]'] =
             (variants[i]['price'] ?? 0.0).toString();
-        ////print('ApiService: Added variant $i: is_active=${variants[i]['is_active']}, price=${variants[i]['price']}');
+        ////debugPrint('ApiService: Added variant $i: is_active=${variants[i]['is_active']}, price=${variants[i]['price']}');
 
         List<dynamic> variantAttributes =
             variants[i]['variant_attributes'] ?? [];
@@ -9511,14 +9511,14 @@ Future<String> _appendQueryParams(String path) async {
           if (variantAttributes[j].containsKey('id')) {
             request.fields['variants[$i][variant_attributes][$j][id]'] =
                 variantAttributes[j]['id'].toString();
-            ////print('ApiService: Added variant attribute ID $i-$j: ${variantAttributes[j]['id']}');
+            ////debugPrint('ApiService: Added variant attribute ID $i-$j: ${variantAttributes[j]['id']}');
           }
           request.fields[
                   'variants[$i][variant_attributes][$j][category_attribute_id]'] =
               variantAttributes[j]['category_attribute_id'].toString();
           request.fields['variants[$i][variant_attributes][$j][value]'] =
               variantAttributes[j]['value'].toString();
-          ////print('ApiService: Added variant attribute $i-$j: ${variantAttributes[j]}');
+          ////debugPrint('ApiService: Added variant attribute $i-$j: ${variantAttributes[j]}');
         }
 
         List<File> variantFiles = variants[i]['files'] ?? [];
@@ -9528,9 +9528,9 @@ Future<String> _appendQueryParams(String path) async {
             final imageFile = await http.MultipartFile.fromPath(
                 'variants[$i][files][$j]', file.path);
             request.files.add(imageFile);
-            ////print('ApiService: Added variant file $i-$j: ${file.path}');
+            ////debugPrint('ApiService: Added variant file $i-$j: ${file.path}');
           } else {
-            ////print('ApiService: Variant file not found, skipping: ${file.path}');
+            ////debugPrint('ApiService: Variant file not found, skipping: ${file.path}');
           }
         }
       }
@@ -9543,9 +9543,9 @@ Future<String> _appendQueryParams(String path) async {
           request.files.add(imageFile);
           request.fields['files[$i][is_main]'] =
               i == (mainImageIndex ?? 0) ? '1' : '0';
-          ////print('ApiService: Added general image $i: ${file.path}, is_main: ${request.fields['files[$i][is_main]']}');
+          ////debugPrint('ApiService: Added general image $i: ${file.path}, is_main: ${request.fields['files[$i][is_main]']}');
         } else {
-          ////print('ApiService: General image not found, skipping: ${file.path}');
+          ////debugPrint('ApiService: General image not found, skipping: ${file.path}');
         }
       }
 
@@ -9553,8 +9553,8 @@ Future<String> _appendQueryParams(String path) async {
       final response = await http.Response.fromStream(streamedResponse);
       final responseBody = json.decode(response.body);
 
-      ////print('ApiService: Response status: ${response.statusCode}');
-      ////print('ApiService: Response body: $responseBody');
+      ////debugPrint('ApiService: Response status: ${response.statusCode}');
+      ////debugPrint('ApiService: Response body: $responseBody');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return {
@@ -9570,8 +9570,8 @@ Future<String> _appendQueryParams(String path) async {
         };
       }
     } catch (e, stackTrace) {
-      ////print('ApiService: Error in updateGoods: ');
-      ////print('ApiService: Stack trace: $stackTrace');
+      ////debugPrint('ApiService: Error in updateGoods: ');
+      ////debugPrint('ApiService: Stack trace: $stackTrace');
       return {
         'success': false,
         'message': 'An error occurred: ',
@@ -9587,7 +9587,7 @@ Future<String> _appendQueryParams(String path) async {
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       final path = await _appendQueryParams('/good/$goodId');
       if (kDebugMode) {
-        //print('ApiService: deleteGoods - Generated path: $path');
+        //debugPrint('ApiService: deleteGoods - Generated path: $path');
       }
 
       var uri = Uri.parse('$baseUrl$path');
@@ -9609,7 +9609,7 @@ Future<String> _appendQueryParams(String path) async {
             jsonResponse['message'] ?? 'Ошибка при удалении товара');
       }
     } catch (e) {
-      ////print('Ошибка удаления товара: ');
+      ////debugPrint('Ошибка удаления товара: ');
       return false;
     }
   }
@@ -9618,7 +9618,7 @@ Future<String> _appendQueryParams(String path) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/label');
     if (kDebugMode) {
-      //print('ApiService: getLabels - Generated path: $path');
+      //debugPrint('ApiService: getLabels - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -9641,12 +9641,12 @@ Future<String> _appendQueryParams(String path) async {
     String path = '/good/getByBarcode?barcode=$barcode';
     path = await _appendQueryParams(path);
     if (kDebugMode) {
-      print('ApiService: Запрос товаров по штрихкоду: $path');
+      debugPrint('ApiService: Запрос товаров по штрихкоду: $path');
     }
 
     final response = await _getRequest(path);
     if (kDebugMode) {
-      print(
+      debugPrint(
           'ApiService: Ответ сервера: statusCode=${response.statusCode}, body=${response.body}');
     }
 
@@ -9654,7 +9654,7 @@ Future<String> _appendQueryParams(String path) async {
       final Map<String, dynamic> data = json.decode(response.body);
       if (data.containsKey('errors') && data['errors'] != null) {
         if (kDebugMode) {
-          print('ApiService: Ошибка сервера: ${data['errors']}');
+          debugPrint('ApiService: Ошибка сервера: ${data['errors']}');
         }
         throw Exception('Ошибка сервера: ${data['errors']}');
       }
@@ -9662,7 +9662,7 @@ Future<String> _appendQueryParams(String path) async {
         final result = data['result'];
         if (result == null || result == 'Товар не найден') {
           if (kDebugMode) {
-            print('ApiService: Товары по штрихкоду не найдены');
+            debugPrint('ApiService: Товары по штрихкоду не найдены');
           }
           return [];
         }
@@ -9674,7 +9674,7 @@ Future<String> _appendQueryParams(String path) async {
           goodsData = [result];
         } else {
           if (kDebugMode) {
-            print(
+            debugPrint(
                 'ApiService: Ошибка формата данных: result не является списком или объектом: $data');
           }
           throw Exception('Ошибка: Неверный формат данных');
@@ -9684,20 +9684,20 @@ Future<String> _appendQueryParams(String path) async {
             .map((item) => Goods.fromJson(item as Map<String, dynamic>))
             .toList();
         if (kDebugMode) {
-          print(
+          debugPrint(
               'ApiService: Успешно получено ${goods.length} товаров по штрихкоду');
         }
         return goods;
       } else {
         if (kDebugMode) {
-          print(
+          debugPrint(
               'ApiService: Ошибка формата данных: отсутствует поле result в $data');
         }
         throw Exception('Ошибка: Неверный формат данных');
       }
     } else {
       if (kDebugMode) {
-        print(
+        debugPrint(
             'ApiService: Ошибка загрузки товаров по штрихкоду: ${response.statusCode}');
       }
       throw Exception('Ошибка загрузки товаров: ${response.statusCode}');
@@ -9714,7 +9714,7 @@ Future<String> _appendQueryParams(String path) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/order-status');
     if (kDebugMode) {
-      //print('ApiService: getOrderStatuses - Generated path: $path');
+      //debugPrint('ApiService: getOrderStatuses - Generated path: $path');
     }
 
     try {
@@ -9736,7 +9736,7 @@ Future<String> _appendQueryParams(String path) async {
         throw Exception('Ошибка сервера');
       }
     } catch (e) {
-      ////print(
+      ////debugPrint(
       // 'Ошибка загрузки статусов заказов. Используем кэшированные данные.');
       final cachedStatuses = prefs
           .getString('cachedOrderStatuses_${await getSelectedOrganization()}');
@@ -9798,7 +9798,7 @@ Future<String> _appendQueryParams(String path) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams(url);
     if (kDebugMode) {
-      //print('ApiService: getOrders - Generated path: $path');
+      //debugPrint('ApiService: getOrders - Generated path: $path');
     }
 
     try {
@@ -9821,7 +9821,7 @@ Future<String> _appendQueryParams(String path) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/order/$orderId');
     if (kDebugMode) {
-      //print('ApiService: getOrderDetails - Generated path: $path');
+      //debugPrint('ApiService: getOrderDetails - Generated path: $path');
     }
 
     try {
@@ -9836,7 +9836,7 @@ Future<String> _appendQueryParams(String path) async {
         throw Exception('Ошибка сервера!');
       }
     } catch (e) {
-      ////print(
+      ////debugPrint(
       // 'Ошибка загрузки деталей заказа: . Используем кэшированные данные.');
       final cachedOrder = prefs.getString('cachedOrder_$orderId');
       if (cachedOrder != null) {
@@ -9859,14 +9859,14 @@ Future<String> _appendQueryParams(String path) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams(url);
     if (kDebugMode) {
-      //print('ApiService: getOrdersByLead - Generated path: $path');
+      //debugPrint('ApiService: getOrdersByLead - Generated path: $path');
     }
 
     try {
       final response = await _getRequest(path);
       if (kDebugMode) {
-        // //print('Request URL: $path');
-        // //print('Response status: ${response.statusCode}');
+        // //debugPrint('Request URL: $path');
+        // //debugPrint('Response status: ${response.statusCode}');
       }
 
       if (response.statusCode == 200) {
@@ -9877,7 +9877,7 @@ Future<String> _appendQueryParams(String path) async {
       }
     } catch (e) {
       if (kDebugMode) {
-        // //print('Ошибка загрузки заказов по лиду: $e');
+        // //debugPrint('Ошибка загрузки заказов по лиду: $e');
       }
       throw Exception('Ошибка загрузки заказов:');
     }
@@ -9904,7 +9904,7 @@ Future<String> _appendQueryParams(String path) async {
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       final path = await _appendQueryParams('/order/store/from-online-shop');
       if (kDebugMode) {
-        //print('ApiService: createOrder - Generated path: $path');
+        //debugPrint('ApiService: createOrder - Generated path: $path');
       }
 
       final uri = Uri.parse('$baseUrl$path');
@@ -9937,7 +9937,7 @@ Future<String> _appendQueryParams(String path) async {
       body['branch_id'] = branchId;
     
 
-      ////print('ApiService: Тело запроса для создания заказа: ${jsonEncode(body)}');
+      ////debugPrint('ApiService: Тело запроса для создания заказа: ${jsonEncode(body)}');
 
       final response = await http.post(
         uri,
@@ -9950,8 +9950,8 @@ Future<String> _appendQueryParams(String path) async {
         body: jsonEncode(body),
       );
 
-      ////print('ApiService: Код ответа сервера: ${response.statusCode}');
-      ////print('ApiService: Тело ответа сервера: ${response.body}');
+      ////debugPrint('ApiService: Код ответа сервера: ${response.statusCode}');
+      ////debugPrint('ApiService: Тело ответа сервера: ${response.body}');
 
       if (<int>[200, 201, 202, 203, 204, 300, 301]
           .contains(response.statusCode)) {
@@ -9981,7 +9981,7 @@ Future<String> _appendQueryParams(String path) async {
         throw (jsonResponse['message'] ?? 'Ошибка при создании заказа');
       }
     } catch (e) {
-      ////print('ApiService: Ошибка создания заказа: ');
+      ////debugPrint('ApiService: Ошибка создания заказа: ');
       return {'success': false, 'error': e.toString()};
     }
   }
@@ -10006,7 +10006,7 @@ Future<String> _appendQueryParams(String path) async {
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       final path = await _appendQueryParams('/order/$orderId');
       if (kDebugMode) {
-        //print('ApiService: updateOrder - Generated path: $path');
+        //debugPrint('ApiService: updateOrder - Generated path: $path');
       }
 
       final uri = Uri.parse('$baseUrl$path');
@@ -10040,7 +10040,7 @@ Future<String> _appendQueryParams(String path) async {
       // Всегда отправляем branch_id, если он указан
       body['branch_id'] = branchId;
 
-      ////print('ApiService: Тело запроса для обновления заказа: ${jsonEncode(body)}');
+      ////debugPrint('ApiService: Тело запроса для обновления заказа: ${jsonEncode(body)}');
 
       final response = await http.patch(
         uri,
@@ -10053,8 +10053,8 @@ Future<String> _appendQueryParams(String path) async {
         body: jsonEncode(body),
       );
 
-      ////print('ApiService: Код ответа сервера: ${response.statusCode}');
-      ////print('ApiService: Тело ответа сервера: ${response.body}');
+      ////debugPrint('ApiService: Код ответа сервера: ${response.statusCode}');
+      ////debugPrint('ApiService: Тело ответа сервера: ${response.body}');
 
       // Обрабатываем коды ответа 200, 201, 202, 203, 204, 300, 301 как успешные
       if (<int>[200, 201, 202, 203, 204, 300, 301]
@@ -10080,8 +10080,8 @@ Future<String> _appendQueryParams(String path) async {
             jsonResponse['message'] ?? 'Ошибка при обновлении заказа');
       }
     } catch (e, stackTrace) {
-      ////print('ApiService: Ошибка обновления заказа: ');
-      ////print('ApiService: StackTrace: $stackTrace');
+      ////debugPrint('ApiService: Ошибка обновления заказа: ');
+      ////debugPrint('ApiService: StackTrace: $stackTrace');
       return {'success': false, 'error': e.toString()};
     }
   }
@@ -10097,7 +10097,7 @@ Future<String> _appendQueryParams(String path) async {
       final path =
           await _appendQueryParams('/delivery-address?lead_id=$leadId');
       if (kDebugMode) {
-        //print('ApiService: getDeliveryAddresses - Generated path: $path');
+        //debugPrint('ApiService: getDeliveryAddresses - Generated path: $path');
       }
 
       final response = await _getRequest(path);
@@ -10121,7 +10121,7 @@ Future<String> _appendQueryParams(String path) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/mini-app/delivery-address');
     if (kDebugMode) {
-      print('ApiService: createDeliveryAddress - Generated path: $path');
+      debugPrint('ApiService: createDeliveryAddress - Generated path: $path');
     }
 
     final response = await _postRequest(
@@ -10133,7 +10133,7 @@ Future<String> _appendQueryParams(String path) async {
     );
     
     if (kDebugMode) {
-      print('ApiService: createDeliveryAddress - Response status: ${response.statusCode}');
+      debugPrint('ApiService: createDeliveryAddress - Response status: ${response.statusCode}');
     }
     
     return response;
@@ -10148,7 +10148,7 @@ Future<String> _appendQueryParams(String path) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/order-status');
     if (kDebugMode) {
-      //print('ApiService: createOrderStatus - Generated path: $path');
+      //debugPrint('ApiService: createOrderStatus - Generated path: $path');
     }
 
     final response = await _postRequest(
@@ -10174,7 +10174,7 @@ Future<String> _appendQueryParams(String path) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/order-status/$statusId');
     if (kDebugMode) {
-      //print('ApiService: updateOrderStatus - Generated path: $path');
+      //debugPrint('ApiService: updateOrderStatus - Generated path: $path');
     }
 
     final response = await _patchRequest(
@@ -10193,7 +10193,7 @@ Future<String> _appendQueryParams(String path) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/order-status/$statusId');
     if (kDebugMode) {
-      //print('ApiService: deleteOrderStatus - Generated path: $path');
+      //debugPrint('ApiService: deleteOrderStatus - Generated path: $path');
     }
 
     final response = await _deleteRequest(path);
@@ -10204,7 +10204,7 @@ Future<String> _appendQueryParams(String path) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/orders?status_id=$statusId');
     if (kDebugMode) {
-      //print('ApiService: checkIfStatusHasOrders - Generated path: $path');
+      //debugPrint('ApiService: checkIfStatusHasOrders - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -10226,7 +10226,7 @@ Future<String> _appendQueryParams(String path) async {
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       final path = await _appendQueryParams('/order/$orderId');
       if (kDebugMode) {
-        //print('ApiService: deleteOrder - Generated path: $path');
+        //debugPrint('ApiService: deleteOrder - Generated path: $path');
       }
 
       final uri = Uri.parse('$baseUrl$path');
@@ -10248,7 +10248,7 @@ Future<String> _appendQueryParams(String path) async {
             jsonResponse['message'] ?? 'Ошибка при удалении заказа');
       }
     } catch (e) {
-      ////print('Ошибка удаления заказа: ');
+      ////debugPrint('Ошибка удаления заказа: ');
       return false;
     }
   }
@@ -10265,7 +10265,7 @@ Future<String> _appendQueryParams(String path) async {
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       final path = await _appendQueryParams('/order/changeStatus/$orderId');
       if (kDebugMode) {
-        //print('ApiService: changeOrderStatus - Generated path: $path');
+        //debugPrint('ApiService: changeOrderStatus - Generated path: $path');
       }
 
       final uri = Uri.parse('$baseUrl$path');
@@ -10290,7 +10290,7 @@ Future<String> _appendQueryParams(String path) async {
             jsonResponse['message'] ?? 'Ошибка при смене статуса заказа');
       }
     } catch (e) {
-      ////print('Ошибка смены статуса заказа: ');
+      ////debugPrint('Ошибка смены статуса заказа: ');
       return false;
     }
   }
@@ -10299,7 +10299,7 @@ Future<String> _appendQueryParams(String path) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/storage');
     if (kDebugMode) {
-      //print('ApiService: getBranches - Generated path: $path');
+      //debugPrint('ApiService: getBranches - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -10322,7 +10322,7 @@ Future<String> _appendQueryParams(String path) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/lead');
     if (kDebugMode) {
-      //print('ApiService: getLeadOrders - Generated path: $path');
+      //debugPrint('ApiService: getLeadOrders - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -10541,7 +10541,7 @@ Future<String> _appendQueryParams(String path) async {
           path += '&lead_id[]=$leadId';
         }
         if (kDebugMode) {
-          //print('ApiService: Добавлены lead_id: $leadIds');
+          //debugPrint('ApiService: Добавлены lead_id: $leadIds');
         }
       }
       if (filters.containsKey('operators') &&
@@ -10552,7 +10552,7 @@ Future<String> _appendQueryParams(String path) async {
           path += '&operator_id[]=$operatorId';
         }
         if (kDebugMode) {
-          //print('ApiService: Добавлены operator_id: $operatorIds');
+          //debugPrint('ApiService: Добавлены operator_id: $operatorIds');
         }
       }
       if (filters.containsKey('ratings') &&
@@ -10563,7 +10563,7 @@ Future<String> _appendQueryParams(String path) async {
           path += '&rating[]=$ratingId';
         }
         if (kDebugMode) {
-          //print('ApiService: Добавлены rating: $ratingIds');
+          //debugPrint('ApiService: Добавлены rating: $ratingIds');
         }
       }
       if (filters.containsKey('remarks') &&
@@ -10572,7 +10572,7 @@ Future<String> _appendQueryParams(String path) async {
         final remarks = (filters['remarks'] as List)[0] as int;
         path += '&remarks=$remarks';
         if (kDebugMode) {
-          //print('ApiService: Добавлен параметр remarks: $remarks');
+          //debugPrint('ApiService: Добавлен параметр remarks: $remarks');
         }
       }
     }
@@ -10580,7 +10580,7 @@ Future<String> _appendQueryParams(String path) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     path = await _appendQueryParams(path);
     if (kDebugMode) {
-      //print('ApiService: getIncomingCalls - Generated path: $path');
+      //debugPrint('ApiService: getIncomingCalls - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -10588,7 +10588,7 @@ Future<String> _appendQueryParams(String path) async {
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       if (kDebugMode) {
-        //print('ApiService: Response for getIncomingCalls: $data');
+        //debugPrint('ApiService: Response for getIncomingCalls: $data');
       }
       if (data['result']['data'] != null) {
         final calls = (data['result']['data'] as List)
@@ -10604,7 +10604,7 @@ Future<String> _appendQueryParams(String path) async {
       }
     } else {
       if (kDebugMode) {
-        //print('ApiService: Error response body: ${response.body}');
+        //debugPrint('ApiService: Error response body: ${response.body}');
       }
       throw ('Ошибка загрузки входящих звонков');
     }
@@ -10626,13 +10626,13 @@ Future<String> _appendQueryParams(String path) async {
       if (filters.containsKey('startDate') && filters['startDate'] != null) {
         path += '&from=${Uri.encodeQueryComponent(filters['startDate'])}';
         if (kDebugMode) {
-          //print('ApiService: Добавлен параметр from: ${filters['startDate']}');
+          //debugPrint('ApiService: Добавлен параметр from: ${filters['startDate']}');
         }
       }
       if (filters.containsKey('endDate') && filters['endDate'] != null) {
         path += '&to=${Uri.encodeQueryComponent(filters['endDate'])}';
         if (kDebugMode) {
-          //print('ApiService: Добавлен параметр to: ${filters['endDate']}');
+          //debugPrint('ApiService: Добавлен параметр to: ${filters['endDate']}');
         }
       }
       if (filters.containsKey('leads') &&
@@ -10643,7 +10643,7 @@ Future<String> _appendQueryParams(String path) async {
           path += '&lead_id[]=$leadId';
         }
         if (kDebugMode) {
-          //print('ApiService: Добавлены lead_id: $leadIds');
+          //debugPrint('ApiService: Добавлены lead_id: $leadIds');
         }
       }
       if (filters.containsKey('operators') &&
@@ -10654,7 +10654,7 @@ Future<String> _appendQueryParams(String path) async {
           path += '&operator_id[]=$operatorId';
         }
         if (kDebugMode) {
-          //print('ApiService: Добавлены operator_id: $operatorIds');
+          //debugPrint('ApiService: Добавлены operator_id: $operatorIds');
         }
       }
       if (filters.containsKey('ratings') &&
@@ -10665,7 +10665,7 @@ Future<String> _appendQueryParams(String path) async {
           path += '&rating[]=$ratingId';
         }
         if (kDebugMode) {
-          //print('ApiService: Добавлены rating: $ratingIds');
+          //debugPrint('ApiService: Добавлены rating: $ratingIds');
         }
       }
       if (filters.containsKey('remarks') &&
@@ -10674,7 +10674,7 @@ Future<String> _appendQueryParams(String path) async {
         final remarks = (filters['remarks'] as List)[0] as int;
         path += '&remarks=$remarks';
         if (kDebugMode) {
-          //print('ApiService: Добавлен параметр remarks: $remarks');
+          //debugPrint('ApiService: Добавлен параметр remarks: $remarks');
         }
       }
     }
@@ -10682,7 +10682,7 @@ Future<String> _appendQueryParams(String path) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     path = await _appendQueryParams(path);
     if (kDebugMode) {
-      //print('ApiService: getOutgoingCalls - Generated path: $path');
+      //debugPrint('ApiService: getOutgoingCalls - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -10690,7 +10690,7 @@ Future<String> _appendQueryParams(String path) async {
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       if (kDebugMode) {
-        //print('ApiService: Response for getOutgoingCalls: $data');
+        //debugPrint('ApiService: Response for getOutgoingCalls: $data');
       }
       if (data['result']['data'] != null) {
         final calls = (data['result']['data'] as List)
@@ -10706,7 +10706,7 @@ Future<String> _appendQueryParams(String path) async {
       }
     } else {
       if (kDebugMode) {
-        //print('ApiService: Error response body: ${response.body}');
+        //debugPrint('ApiService: Error response body: ${response.body}');
       }
       throw ('Ошибка загрузки исходящих звонков');
     }
@@ -10728,13 +10728,13 @@ Future<String> _appendQueryParams(String path) async {
       if (filters.containsKey('startDate') && filters['startDate'] != null) {
         path += '&from=${Uri.encodeQueryComponent(filters['startDate'])}';
         if (kDebugMode) {
-          //print('ApiService: Добавлен параметр from: ${filters['startDate']}');
+          //debugPrint('ApiService: Добавлен параметр from: ${filters['startDate']}');
         }
       }
       if (filters.containsKey('endDate') && filters['endDate'] != null) {
         path += '&to=${Uri.encodeQueryComponent(filters['endDate'])}';
         if (kDebugMode) {
-          //print('ApiService: Добавлен параметр to: ${filters['endDate']}');
+          //debugPrint('ApiService: Добавлен параметр to: ${filters['endDate']}');
         }
       }
       if (filters.containsKey('leads') &&
@@ -10745,7 +10745,7 @@ Future<String> _appendQueryParams(String path) async {
           path += '&lead_id[]=$leadId';
         }
         if (kDebugMode) {
-          //print('ApiService: Добавлены lead_id: $leadIds');
+          //debugPrint('ApiService: Добавлены lead_id: $leadIds');
         }
       }
       if (filters.containsKey('operators') &&
@@ -10756,7 +10756,7 @@ Future<String> _appendQueryParams(String path) async {
           path += '&operator_id[]=$operatorId';
         }
         if (kDebugMode) {
-          //print('ApiService: Добавлены operator_id: $operatorIds');
+          //debugPrint('ApiService: Добавлены operator_id: $operatorIds');
         }
       }
       if (filters.containsKey('ratings') &&
@@ -10767,7 +10767,7 @@ Future<String> _appendQueryParams(String path) async {
           path += '&rating[]=$ratingId';
         }
         if (kDebugMode) {
-          //print('ApiService: Добавлены rating: $ratingIds');
+          //debugPrint('ApiService: Добавлены rating: $ratingIds');
         }
       }
       if (filters.containsKey('remarks') &&
@@ -10776,7 +10776,7 @@ Future<String> _appendQueryParams(String path) async {
         final remarks = (filters['remarks'] as List)[0] as int;
         path += '&remarks=$remarks';
         if (kDebugMode) {
-          //print('ApiService: Добавлен параметр remarks: $remarks');
+          //debugPrint('ApiService: Добавлен параметр remarks: $remarks');
         }
       }
     }
@@ -10784,7 +10784,7 @@ Future<String> _appendQueryParams(String path) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     path = await _appendQueryParams(path);
     if (kDebugMode) {
-      //print('ApiService: getMissedCalls - Generated path: $path');
+      //debugPrint('ApiService: getMissedCalls - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -10792,7 +10792,7 @@ Future<String> _appendQueryParams(String path) async {
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       if (kDebugMode) {
-        //print('ApiService: Response for getMissedCalls: $data');
+        //debugPrint('ApiService: Response for getMissedCalls: $data');
       }
       if (data['result']['data'] != null) {
         final calls = (data['result']['data'] as List)
@@ -10808,7 +10808,7 @@ Future<String> _appendQueryParams(String path) async {
       }
     } else {
       if (kDebugMode) {
-        //print('ApiService: Error response body: ${response.body}');
+        //debugPrint('ApiService: Error response body: ${response.body}');
       }
       throw ('Ошибка загрузки пропущенных звонков');
     }
@@ -10820,14 +10820,14 @@ Future<String> _appendQueryParams(String path) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/calls/$callId');
     if (kDebugMode) {
-      //print('ApiService: getCallById - Generated path: $path');
+      //debugPrint('ApiService: getCallById - Generated path: $path');
     }
 
     final response = await _getRequest(path);
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      //print("API response for getCallById: $data");
+      //debugPrint("API response for getCallById: $data");
       if (data['result'] != null && data['result'] is Map<String, dynamic>) {
         return CallById.fromJson(data['result'] as Map<String, dynamic>);
       } else {
@@ -10843,7 +10843,7 @@ Future<String> _appendQueryParams(String path) async {
     final path =
         await _appendQueryParams('/calls/statistic/get-call-statistics');
     if (kDebugMode) {
-      //print('ApiService: getCallStatistics - Generated path: $path');
+      //debugPrint('ApiService: getCallStatistics - Generated path: $path');
     }
 
     try {
@@ -10871,7 +10871,7 @@ Future<String> _appendQueryParams(String path) async {
     final path =
         await _appendQueryParams('/calls/statistic/get-call-analytics');
     if (kDebugMode) {
-      //print('ApiService: getCallAnalytics - Generated path: $path');
+      //debugPrint('ApiService: getCallAnalytics - Generated path: $path');
     }
 
     try {
@@ -10899,7 +10899,7 @@ Future<String> _appendQueryParams(String path) async {
     final path = await _appendQueryParams(
         '/calls/statistic/monthly-stats?operator_id=$operatorId');
     if (kDebugMode) {
-      //print('ApiService: getMonthlyCallStats - Generated path: $path');
+      //debugPrint('ApiService: getMonthlyCallStats - Generated path: $path');
     }
 
     try {
@@ -10927,7 +10927,7 @@ Future<String> _appendQueryParams(String path) async {
     String path = await _appendQueryParams(
         '/calls/statistic/summary?operator_id=$operatorId');
     if (kDebugMode) {
-      //print('ApiService: getCallSummaryStats - Generated path: $path');
+      //debugPrint('ApiService: getCallSummaryStats - Generated path: $path');
     }
 
     try {
@@ -10958,7 +10958,7 @@ Future<String> _appendQueryParams(String path) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     String path = await _appendQueryParams('/calls/set-rating/$callId');
     if (kDebugMode) {
-      //print('ApiService: setCallRating - Generated path: $path');
+      //debugPrint('ApiService: setCallRating - Generated path: $path');
     }
     final body = {
       'rating': rating,
@@ -10966,7 +10966,7 @@ Future<String> _appendQueryParams(String path) async {
     };
 
     if (kDebugMode) {
-      //print("API Request: setCallRating (PUT) with path: $path, body: $body");
+      //debugPrint("API Request: setCallRating (PUT) with path: $path, body: $body");
     }
     final response = await _putRequest(path, body); // заменили на PUT
 
@@ -10983,7 +10983,7 @@ Future<String> _appendQueryParams(String path) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     String path = await _appendQueryParams('/calls/add-report/$callId');
     if (kDebugMode) {
-      //print('ApiService: addCallReport - Generated path: $path');
+      //debugPrint('ApiService: addCallReport - Generated path: $path');
     }
     final body = {
       'report': report,
@@ -10991,7 +10991,7 @@ Future<String> _appendQueryParams(String path) async {
     };
 
     if (kDebugMode) {
-      //print("API Request: addCallReport (PUT) with path: $path, body: $body");
+      //debugPrint("API Request: addCallReport (PUT) with path: $path, body: $body");
     }
     final response = await _putRequest(path, body); // заменили на PUT
 
@@ -11004,7 +11004,7 @@ Future<String> _appendQueryParams(String path) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     String path = await _appendQueryParams('/operators');
     if (kDebugMode) {
-      //print('ApiService: getOperators - Generated path: $path');
+      //debugPrint('ApiService: getOperators - Generated path: $path');
     }
 
     try {
@@ -11075,7 +11075,7 @@ Future<String> _appendQueryParams(String path) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     path = await _appendQueryParams(path);
     if (kDebugMode) {
-      print('ApiService: getIncomingDocuments - Generated path: $path');
+      debugPrint('ApiService: getIncomingDocuments - Generated path: $path');
     }
 
     try {
@@ -11103,7 +11103,7 @@ Future<IncomingDocument> getIncomingDocumentById(int documentId) async {
 
     final path = await _appendQueryParams(url);
     if (kDebugMode) {
-      print('ApiService: getIncomingDocumentById - Generated path: $path');
+      debugPrint('ApiService: getIncomingDocumentById - Generated path: $path');
     }
 
     try {
@@ -11124,7 +11124,7 @@ Future<IncomingDocument> getIncomingDocumentById(int documentId) async {
 
     final path = await _appendQueryParams(url);
     if (kDebugMode) {
-      print('ApiService: approveIncomingDocument - Generated path: $path');
+      debugPrint('ApiService: approveIncomingDocument - Generated path: $path');
     }
 
     try {
@@ -11147,7 +11147,7 @@ Future<IncomingDocument> getIncomingDocumentById(int documentId) async {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         if (kDebugMode) {
-          print(
+          debugPrint(
               'ApiService: approveIncomingDocument - Document $documentId approved successfully');
         }
       } else {
@@ -11166,7 +11166,7 @@ Future<IncomingDocument> getIncomingDocumentById(int documentId) async {
 
     final path = await _appendQueryParams(url);
     if (kDebugMode) {
-      print('ApiService: unApproveIncomingDocument - Generated path: $path');
+      debugPrint('ApiService: unApproveIncomingDocument - Generated path: $path');
     }
 
     try {
@@ -11189,7 +11189,7 @@ Future<IncomingDocument> getIncomingDocumentById(int documentId) async {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         if (kDebugMode) {
-          print(
+          debugPrint(
               'ApiService: unApproveIncomingDocument - Document $documentId unapproved successfully');
         }
       } else {
@@ -11214,7 +11214,7 @@ Future<IncomingDocument> getIncomingDocumentById(int documentId) async {
       });
 
       if (kDebugMode) {
-        print('ApiService: restoreIncomingDocument - Request body: $body');
+        debugPrint('ApiService: restoreIncomingDocument - Request body: $body');
       }
 
       final response = await http.post(
@@ -11230,7 +11230,7 @@ Future<IncomingDocument> getIncomingDocumentById(int documentId) async {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         if (kDebugMode) {
-          print('ApiService: restoreIncomingDocument - Document $documentId restored successfully');
+          debugPrint('ApiService: restoreIncomingDocument - Document $documentId restored successfully');
         }
         return {'result': 'Success'};
       } else {
@@ -11248,7 +11248,7 @@ Future<IncomingDocument> getIncomingDocumentById(int documentId) async {
 
     final path = await _appendQueryParams(url);
     if (kDebugMode) {
-      print('ApiService: getIncomingDocumentHistory - Generated path: $path');
+      debugPrint('ApiService: getIncomingDocumentHistory - Generated path: $path');
     }
 
     try {
@@ -11387,7 +11387,7 @@ Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
       });
 
       if (kDebugMode) {
-      print('ApiService: deleteIncomingDocument - Request body: $body');
+      debugPrint('ApiService: deleteIncomingDocument - Request body: $body');
     }
 
       final response = await http.delete(
@@ -11552,7 +11552,7 @@ Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
 
     final path = await _appendQueryParams(url);
     if (kDebugMode) {
-      print('ApiService: getClientSales - Generated path: $path');
+      debugPrint('ApiService: getClientSales - Generated path: $path');
     }
 
     try {
@@ -11576,7 +11576,7 @@ Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
 
     final path = await _appendQueryParams(url);
     if (kDebugMode) {
-      print('ApiService: getIncomingDocumentById - Generated path: $path');
+      debugPrint('ApiService: getIncomingDocumentById - Generated path: $path');
     }
 
     try {
@@ -11654,7 +11654,7 @@ Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
       });
 
       if (kDebugMode) {
-        print('ApiService: deleteClientSaleDocument - Request body: $body');
+        debugPrint('ApiService: deleteClientSaleDocument - Request body: $body');
       }
 
       final response = await http.delete(
@@ -11932,14 +11932,14 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/storage');
     if (kDebugMode) {
-      //print('ApiService: getStorage - Generated path: $path');
+      //debugPrint('ApiService: getStorage - Generated path: $path');
     }
 
     final response = await _getRequest(path);
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      ////print('Полученные данные складов: $data');
+      ////debugPrint('Полученные данные складов: $data');
 
       // Извлекаем массив из поля "result"
       final List<dynamic> resultList = data['result'] ?? [];
@@ -11957,7 +11957,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     var path = await _appendQueryParams('/storage');
     if (kDebugMode) {
-      //print('ApiService: getStorage - Generated path: $path');
+      //debugPrint('ApiService: getStorage - Generated path: $path');
     }
 
     path += search != null && search.isNotEmpty ? '&search=$search' : '';
@@ -11966,7 +11966,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      ////print('Полученные данные складов: $data');
+      ////debugPrint('Полученные данные складов: $data');
 
       // Извлекаем массив из поля "result"
       final List<dynamic> resultList = data['result'] ?? [];
@@ -11984,7 +11984,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
   ) async {
     final path = await _appendQueryParams('/storage');
     if (kDebugMode) {
-      print('ApiService: createStorage - Generated path: $path');
+      debugPrint('ApiService: createStorage - Generated path: $path');
     }
     final organizationId = await getSelectedOrganization() ?? '';
     final salesFunnelId = await getSelectedSalesFunnel() ?? '';
@@ -12015,7 +12015,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     final path = await _appendQueryParams('/storage/$id');
 
     if (kDebugMode) {
-      print('ApiService: updateStorage - Generated path: $path');
+      debugPrint('ApiService: updateStorage - Generated path: $path');
     }
 
     final organizationId = await getSelectedOrganization() ?? '';
@@ -12052,7 +12052,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     final salesFunnelId = await getSelectedSalesFunnel() ?? '';
     final path = await _appendQueryParams('/storage/$storageId');
     if (kDebugMode) {
-      //print('ApiService: deleteSupplier - Generated path: $path');
+      //debugPrint('ApiService: deleteSupplier - Generated path: $path');
     }
 
     final response = await _deleteRequestWithBody(path,
@@ -12072,7 +12072,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     String path = await _appendQueryParams('/unit');
 
     if (kDebugMode) {
-      print("ApiService: getAllMeasureUnits - Generated path: $path");
+      debugPrint("ApiService: getAllMeasureUnits - Generated path: $path");
     }
 
     final response = await _getRequest(path);
@@ -12103,7 +12103,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     }
     
     if (kDebugMode) {
-      //print('ApiService: getMeasureUnits - Generated path: $path');
+      //debugPrint('ApiService: getMeasureUnits - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -12128,7 +12128,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
   ) async {
     final path = await _appendQueryParams('/unit');
     if (kDebugMode) {
-      //print('ApiService: createSupplier - Generated path: $path');
+      //debugPrint('ApiService: createSupplier - Generated path: $path');
     }
     final organizationId = await getSelectedOrganization() ?? '';
     final salesFunnelId = await getSelectedSalesFunnel() ?? '';
@@ -12155,7 +12155,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     final salesFunnelId = await getSelectedSalesFunnel() ?? '';
     final path = await _appendQueryParams('/unit/$supplierId');
     if (kDebugMode) {
-      //print('ApiService: deleteSupplier - Generated path: $path');
+      //debugPrint('ApiService: deleteSupplier - Generated path: $path');
     }
 
     final response = await _deleteRequestWithBody(path,
@@ -12174,7 +12174,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       {required MeasureUnitModel supplier, required int id}) async {
     final path = await _appendQueryParams('/unit/$id');
     if (kDebugMode) {
-      //print('ApiService: updateSupplier - Generated path: $path');
+      //debugPrint('ApiService: updateSupplier - Generated path: $path');
     }
     final organizationId = await getSelectedOrganization() ?? '';
     final salesFunnelId = await getSelectedSalesFunnel() ?? '';
@@ -12212,7 +12212,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     }
     
     if (kDebugMode) {
-      //print('ApiService: getPriceTypes - Generated path: $path');
+      //debugPrint('ApiService: getPriceTypes - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -12237,7 +12237,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       ) async {
     final path = await _appendQueryParams('/priceType');
     if (kDebugMode) {
-      print('ApiService: createPriceType - Generated path: $path');
+      debugPrint('ApiService: createPriceType - Generated path: $path');
     }
     final organizationId = await getSelectedOrganization() ?? '';
     final salesFunnelId = await getSelectedSalesFunnel() ?? '';
@@ -12251,7 +12251,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       if (kDebugMode) {
-        print('createPriceType success: ${response.body}');
+        debugPrint('createPriceType success: ${response.body}');
       }
       return;
     } else {
@@ -12266,7 +12266,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
   }) async {
     final path = await _appendQueryParams('/priceType/$id');
     if (kDebugMode) {
-      print('ApiService: updatePriceType - Generated path: $path');
+      debugPrint('ApiService: updatePriceType - Generated path: $path');
     }
     final organizationId = await getSelectedOrganization() ?? '';
     final salesFunnelId = await getSelectedSalesFunnel() ?? '';
@@ -12280,7 +12280,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       if (kDebugMode) {
-        print('updatePriceType success: ${response.body}');
+        debugPrint('updatePriceType success: ${response.body}');
       }
       return;
     } else {
@@ -12297,7 +12297,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     final salesFunnelId = await getSelectedSalesFunnel() ?? '';
     final path = await _appendQueryParams('/priceType/$priceTypeId');
     if (kDebugMode) {
-      print('ApiService: deletePriceType - Generated path: $path');
+      debugPrint('ApiService: deletePriceType - Generated path: $path');
     }
 
     final response = await _deleteRequestWithBody(
@@ -12310,7 +12310,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
     if (response.statusCode == 200 || response.statusCode == 204) {
       if (kDebugMode) {
-        print('deletePriceType success: ${response.body}');
+        debugPrint('deletePriceType success: ${response.body}');
       }
       return;
     } else {
@@ -12328,7 +12328,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       String organizationId, String salesFunnelId) async {
     final path = await _appendQueryParams('/suppliers');
     if (kDebugMode) {
-      //print('ApiService: createSupplier - Generated path: $path');
+      //debugPrint('ApiService: createSupplier - Generated path: $path');
     }
 
     final body = {
@@ -12358,7 +12358,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       {required Supplier supplier, required int id}) async {
     final path = await _appendQueryParams('/suppliers/$id');
     if (kDebugMode) {
-      //print('ApiService: updateSupplier - Generated path: $path');
+      //debugPrint('ApiService: updateSupplier - Generated path: $path');
     }
     final organizationId = await getSelectedOrganization() ?? '';
     final salesFunnelId = await getSelectedSalesFunnel() ?? '';
@@ -12392,7 +12392,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     final salesFunnelId = await getSelectedSalesFunnel() ?? '';
     final path = await _appendQueryParams('/suppliers/$supplierId');
     if (kDebugMode) {
-      //print('ApiService: deleteSupplier - Generated path: $path');
+      //debugPrint('ApiService: deleteSupplier - Generated path: $path');
     }
 
     final response = await _deleteRequestWithBody(path,
@@ -12410,7 +12410,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/suppliers');
     if (kDebugMode) {
-      //print('ApiService: getSuppliers - Generated path: $path');
+      //debugPrint('ApiService: getSuppliers - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -12439,14 +12439,14 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     }
     
     if (kDebugMode) {
-      //print('ApiService: getSupplier - Generated path: $path');
+      //debugPrint('ApiService: getSupplier - Generated path: $path');
     }
 
     final response = await _getRequest(path);
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      ////print('Полученные данные поставщиков: $data');
+      ////debugPrint('Полученные данные поставщиков: $data');
 
       // Извлекаем массив из поля "result"
       final List<dynamic> resultList = data['result']["data"] ?? [];
@@ -12481,7 +12481,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
     final path = await _appendQueryParams(url);
     if (kDebugMode) {
-      print('ApiService: getCashRegister - Generated path: $path');
+      debugPrint('ApiService: getCashRegister - Generated path: $path');
     }
 
     try {
@@ -12563,7 +12563,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
     final path = await _appendQueryParams(url);
     if (kDebugMode) {
-      print('ApiService: getExpenses - Generated path: $path');
+      debugPrint('ApiService: getExpenses - Generated path: $path');
     }
 
     try {
@@ -12645,7 +12645,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
     final path = await _appendQueryParams(url);
     if (kDebugMode) {
-      print('ApiService: getIncomes - Generated path: $path');
+      debugPrint('ApiService: getIncomes - Generated path: $path');
     }
 
     try {
@@ -12766,7 +12766,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
       final path = await _appendQueryParams(url);
       if (kDebugMode) {
-        print('ApiService: getSupplierReturnDocumentById - Generated path: $path');
+        debugPrint('ApiService: getSupplierReturnDocumentById - Generated path: $path');
       }
 
       final response = await _getRequest(path);
@@ -12790,7 +12790,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
     final path = await _appendQueryParams(url);
     if (kDebugMode) {
-      print('ApiService: approveSupplierReturnDocument - Generated path: $path');
+      debugPrint('ApiService: approveSupplierReturnDocument - Generated path: $path');
     }
 
     try {
@@ -12817,7 +12817,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
     final path = await _appendQueryParams(url);
     if (kDebugMode) {
-      print('ApiService: unApproveSupplierReturnDocument - Generated path: $path');
+      debugPrint('ApiService: unApproveSupplierReturnDocument - Generated path: $path');
     }
 
     try {
@@ -12959,7 +12959,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       });
 
       if (kDebugMode) {
-        print('ApiService: deleteSupplierReturnDocument - Request body: $body');
+        debugPrint('ApiService: deleteSupplierReturnDocument - Request body: $body');
       }
 
       final response = await http.delete(
@@ -12997,7 +12997,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       });
 
       if (kDebugMode) {
-        print('ApiService: restoreSupplierReturnDocument - Request body: $body');
+        debugPrint('ApiService: restoreSupplierReturnDocument - Request body: $body');
       }
 
       final response = await http.post(
@@ -13013,7 +13013,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         if (kDebugMode) {
-          print('ApiService: restoreSupplierReturnDocument - Document $documentId restored successfully');
+          debugPrint('ApiService: restoreSupplierReturnDocument - Document $documentId restored successfully');
         }
         return {'result': 'Success'};
       } else {
@@ -13196,7 +13196,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       path = await _appendQueryParams(path);
       if (kDebugMode) {
-        print('ApiService: getMoneyIncomeDocuments - Generated path: $path');
+        debugPrint('ApiService: getMoneyIncomeDocuments - Generated path: $path');
       }
 
       try {
@@ -13547,7 +13547,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     path = await _appendQueryParams(path);
     if (kDebugMode) {
-      print('ApiService: getMoneyOutcomeDocuments - Generated path: $path');
+      debugPrint('ApiService: getMoneyOutcomeDocuments - Generated path: $path');
     }
 
     try {
@@ -13824,7 +13824,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
     final path = await _appendQueryParams(url);
     if (kDebugMode) {
-      print('ApiService: getClientReturns - Generated path: $path');
+      debugPrint('ApiService: getClientReturns - Generated path: $path');
     }
 
     try {
@@ -13850,7 +13850,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
       final path = await _appendQueryParams(url);
       if (kDebugMode) {
-        print('ApiService: getClientReturnById - Generated path: $path');
+        debugPrint('ApiService: getClientReturnById - Generated path: $path');
       }
 
       final response = await _getRequest(path);
@@ -13932,8 +13932,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       });
 
       if (kDebugMode) {
-        print('ApiService: deleteClientReturnDocument - Request body: $body');
-        print('ApiService: deleteClientReturnDocument - Request params: $pathWithParams');
+        debugPrint('ApiService: deleteClientReturnDocument - Request body: $body');
+        debugPrint('ApiService: deleteClientReturnDocument - Request params: $pathWithParams');
       }
 
       final response = await http.delete(
@@ -14253,7 +14253,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     path = await _appendQueryParams(path);
     if (kDebugMode) {
-      print('ApiService: getWriteOffDocuments - Generated path: $path');
+      debugPrint('ApiService: getWriteOffDocuments - Generated path: $path');
     }
 
     try {
@@ -14279,7 +14279,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
     final path = await _appendQueryParams(url);
     if (kDebugMode) {
-      print('ApiService: getWriteOffDocumentById - Generated path: $path');
+      debugPrint('ApiService: getWriteOffDocumentById - Generated path: $path');
     }
 
     try {
@@ -14359,7 +14359,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       });
 
       if (kDebugMode) {
-        print('ApiService: deleteWriteOffDocument - Request body: $body');
+        debugPrint('ApiService: deleteWriteOffDocument - Request body: $body');
       }
 
       final response = await http.delete(
@@ -14657,7 +14657,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
     final path = await _appendQueryParams(url);
     if (kDebugMode) {
-      print('ApiService: getMovementDocuments - Generated path: $path');
+      debugPrint('ApiService: getMovementDocuments - Generated path: $path');
     }
 
     try {
@@ -14682,7 +14682,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
     final path = await _appendQueryParams(url);
     if (kDebugMode) {
-      print('ApiService: getMovementDocumentById - Generated path: $path');
+      debugPrint('ApiService: getMovementDocumentById - Generated path: $path');
     }
 
     try {
@@ -14758,7 +14758,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       });
 
       if (kDebugMode) {
-        print('ApiService: deleteMovementDocument - Request body: $body');
+        debugPrint('ApiService: deleteMovementDocument - Request body: $body');
       }
 
       final response = await http.delete(
@@ -15052,7 +15052,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
     path = await _appendQueryParams(path);
     if (kDebugMode) {
-      print('ApiService: getSalesDashboardGoodsReport - Generated path: $path');
+      debugPrint('ApiService: getSalesDashboardGoodsReport - Generated path: $path');
     }
 
     try {
@@ -15088,7 +15088,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
     path = await _appendQueryParams(path);
     if (kDebugMode) {
-      print('ApiService: getBatchRemainders - Generated path: $path');
+      debugPrint('ApiService: getBatchRemainders - Generated path: $path');
     }
 
     try {
@@ -15168,7 +15168,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         path += '$separator$encodedParams';
       }
       if (kDebugMode) {
-        print('ApiService: getDebtorsList - Generated path: $path, filter: $filters');
+        debugPrint('ApiService: getDebtorsList - Generated path: $path, filter: $filters');
       }
 
       final response = await _getRequest(path);
@@ -15242,7 +15242,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         path += '$separator$encodedParams';
       }
       if (kDebugMode) {
-        print('ApiService: getCreditorsList - Generated path: $path, filter: $filters');
+        debugPrint('ApiService: getCreditorsList - Generated path: $path, filter: $filters');
       }
 
       final response = await _getRequest(path);
@@ -15281,7 +15281,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       }
 
       if (kDebugMode) {
-        print('ApiService: getIlliquidGoods - Generated path: $path');
+        debugPrint('ApiService: getIlliquidGoods - Generated path: $path');
       }
 
       final response = await _getRequest(path);
@@ -15356,7 +15356,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     }
 
     if (kDebugMode) {
-      print('ApiService: getCashBalance - Generated path: $path');
+      debugPrint('ApiService: getCashBalance - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -16266,14 +16266,14 @@ Future<List<CategoryDashboardWarehouse>> getCategoryDashboardWarehouse() async {
   // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
   final path = await _appendQueryParams('/category');
   if (kDebugMode) {
-    print('ApiService: getCategoryDashboardWarehouse - Generated path: $path');
+    debugPrint('ApiService: getCategoryDashboardWarehouse - Generated path: $path');
   }
 
   final response = await _getRequest(path);
 
   if (response.statusCode == 200) {
     final data = json.decode(response.body);
-    print('Полученные данные: $data');  // Для отладки, как в примере
+    debugPrint('Полученные данные: $data');  // Для отладки, как в примере
     // Данные в "result", не прямой массив
     final resultList = data['result'] as List?;
     if (resultList == null) {
@@ -16293,14 +16293,14 @@ Future<List<OrderStatusWarehouse>> getOrderStatusWarehouse() async {
   // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
   final path = await _appendQueryParams('/order-status');
   if (kDebugMode) {
-    print('ApiService: getOrderStatusWarehouse - Generated path: $path');
+    debugPrint('ApiService: getOrderStatusWarehouse - Generated path: $path');
   }
 
   final response = await _getRequest(path);
 
   if (response.statusCode == 200) {
     final data = json.decode(response.body);
-    print('Полученные данные: $data');  // Для отладки
+    debugPrint('Полученные данные: $data');  // Для отладки
     // Данные в "result", не прямой массив
     final resultList = data['result'] as List?;
     if (resultList == null) {
@@ -16317,7 +16317,7 @@ Future<List<OrderStatusWarehouse>> getOrderStatusWarehouse() async {
   Future<List<DashboardGoodsMovementHistory>> getDashboardGoodsMovementHistoryList(int goodId) async {
     final path = await _appendQueryParams('/dashboard/good-movement-history/$goodId');
     if (kDebugMode) {
-      print('ApiService: getDashboardGoodsMovementHistoryList - Generated path: $path');
+      debugPrint('ApiService: getDashboardGoodsMovementHistoryList - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -16325,7 +16325,7 @@ Future<List<OrderStatusWarehouse>> getOrderStatusWarehouse() async {
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       if (kDebugMode) {
-        print('ApiService: Полученные данные истории движения товара $goodId: $data');
+        debugPrint('ApiService: Полученные данные истории движения товара $goodId: $data');
       }
       final resultList = data['result'] as List?;
       if (resultList == null) {
@@ -16352,7 +16352,7 @@ Future<List<OrderStatusWarehouse>> getOrderStatusWarehouse() async {
       final path = await _appendQueryParams(basePath);
 
       if (kDebugMode) {
-        print('ApiService: getGoodDashboardWarehousePage - Loading page $page, path: $path');
+        debugPrint('ApiService: getGoodDashboardWarehousePage - Loading page $page, path: $path');
       }
 
       // Execute GET request
@@ -16362,7 +16362,7 @@ Future<List<OrderStatusWarehouse>> getOrderStatusWarehouse() async {
         final data = json.decode(response.body);
 
         if (kDebugMode) {
-          print('ApiService: Received data: $data');
+          debugPrint('ApiService: Received data: $data');
         }
 
         // Parse response
@@ -16380,8 +16380,8 @@ Future<List<OrderStatusWarehouse>> getOrderStatusWarehouse() async {
             final pagination = dgrmodel.Pagination.fromJson(resultObj['pagination'] as Map<String, dynamic>);
 
             if (kDebugMode) {
-              print('ApiService: Page $page loaded successfully with ${goodsList.length} items');
-              print('ApiService: Pagination - current: ${pagination.currentPage}, total pages: ${pagination.totalPages}');
+              debugPrint('ApiService: Page $page loaded successfully with ${goodsList.length} items');
+              debugPrint('ApiService: Pagination - current: ${pagination.currentPage}, total pages: ${pagination.totalPages}');
             }
 
             return dgrmodel.GoodDashboardWarehouseResponse(
@@ -16406,7 +16406,7 @@ Future<List<OrderStatusWarehouse>> getOrderStatusWarehouse() async {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('ApiService: Error loading page $page: $e');
+        debugPrint('ApiService: Error loading page $page: $e');
       }
       rethrow;
     }
@@ -16417,14 +16417,14 @@ Future<List<OrderStatusWarehouse>> getOrderStatusWarehouse() async {
 Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehouse() async {
   final path = await _appendQueryParams('/article?type=expense');
   if (kDebugMode) {
-    print('ApiService: getExpenseArticleDashboardWarehouse - Generated path: $path');
+    debugPrint('ApiService: getExpenseArticleDashboardWarehouse - Generated path: $path');
   }
 
   final response = await _getRequest(path);
 
   if (response.statusCode == 200) {
     final data = json.decode(response.body);
-    print('Полученные данные статей расхода: $data');
+    debugPrint('Полученные данные статей расхода: $data');
     
     // Navigate to nested data: result -> data
     final resultData = data['result'];
@@ -16489,7 +16489,7 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
       final path = await _appendQueryParams('/field-position?table=$tableName');
 
       if (kDebugMode) {
-        print('ApiService: getFieldPositions - Generated path: $path');
+        debugPrint('ApiService: getFieldPositions - Generated path: $path');
       }
 
       final response = await _getRequest(path);
@@ -16502,7 +16502,7 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
       }
     } catch (e) {
       if (kDebugMode) {
-        print('ApiService: getFieldPositions - Error: $e');
+        debugPrint('ApiService: getFieldPositions - Error: $e');
       }
       throw Exception('Ошибка загрузки конфигурации полей!');
     }
@@ -16527,11 +16527,11 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
     //   await prefs.setInt('${cacheKey}_timestamp', DateTime.now().millisecondsSinceEpoch);
     //
     //   if (kDebugMode) {
-    //     print('ApiService: Cached field configuration for $tableName');
+    //     debugPrint('ApiService: Cached field configuration for $tableName');
     //   }
     // } catch (e) {
     //   if (kDebugMode) {
-    //     print('ApiService: Error caching field configuration: $e');
+    //     debugPrint('ApiService: Error caching field configuration: $e');
     //   }
     // }
   }
@@ -16555,7 +16555,7 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
     //     final config = FieldConfigurationResponse.fromJson(jsonData);
     //
     //     if (kDebugMode) {
-    //       print('ApiService: Loaded cached field configuration for $tableName');
+    //       debugPrint('ApiService: Loaded cached field configuration for $tableName');
     //     }
     //
     //     return config;
@@ -16564,7 +16564,7 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
     //   return null;
     // } catch (e) {
     //   if (kDebugMode) {
-    //     print('ApiService: Error loading cached field configuration: $e');
+    //     debugPrint('ApiService: Error loading cached field configuration: $e');
     //   }
     //   return null;
     // }
@@ -16575,7 +16575,7 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
   Future<void> loadAndCacheAllFieldConfigurations() async {
     try {
       if (kDebugMode) {
-        print('ApiService: Loading all field configurations');
+        debugPrint('ApiService: Loading all field configurations');
       }
 
       final tables = ['leads', 'tasks', 'deals'];
@@ -16587,21 +16587,21 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
           await cacheFieldConfiguration(tableName: tableName, configuration: config);
 
           if (kDebugMode) {
-            print('ApiService: Successfully cached configuration for $tableName');
+            debugPrint('ApiService: Successfully cached configuration for $tableName');
           }
         } catch (e) {
           if (kDebugMode) {
-            print('ApiService: Error loading configuration for $tableName: $e');
+            debugPrint('ApiService: Error loading configuration for $tableName: $e');
           }
         }
       }
 
       if (kDebugMode) {
-        print('ApiService: Finished loading all field configurations');
+        debugPrint('ApiService: Finished loading all field configurations');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('ApiService: Error in loadAndCacheAllFieldConfigurations: $e');
+        debugPrint('ApiService: Error in loadAndCacheAllFieldConfigurations: $e');
       }
     }
   }
@@ -16622,11 +16622,11 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
       }
 
       if (kDebugMode) {
-        print('ApiService: Cleared all field configuration cache');
+        debugPrint('ApiService: Cleared all field configuration cache');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('ApiService: Error clearing field configuration cache: $e');
+        debugPrint('ApiService: Error clearing field configuration cache: $e');
       }
     }
   }
@@ -16643,11 +16643,11 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
       await prefs.remove('${cacheKey}_timestamp');
 
       if (kDebugMode) {
-        print('ApiService: Cleared field configuration cache for $tableName');
+        debugPrint('ApiService: Cleared field configuration cache for $tableName');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('ApiService: Error clearing field configuration cache for $tableName: $e');
+        debugPrint('ApiService: Error clearing field configuration cache for $tableName: $e');
       }
     }
   }
@@ -16662,8 +16662,8 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
       final path = await _appendQueryParams('/field-position?table=$tableName');
 
       if (kDebugMode) {
-        print('ApiService: updateFieldPositions - Generated path: $path');
-        print('ApiService: updateFieldPositions - Updates: $updates');
+        debugPrint('ApiService: updateFieldPositions - Generated path: $path');
+        debugPrint('ApiService: updateFieldPositions - Updates: $updates');
       }
 
       // Подготавливаем тело запроса
@@ -16680,7 +16680,7 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
 
       if (response.statusCode == 200) {
         if (kDebugMode) {
-          print('ApiService: Field positions updated successfully');
+          debugPrint('ApiService: Field positions updated successfully');
         }
         return {
           'success': true,
@@ -16691,7 +16691,7 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
       }
     } catch (e) {
       if (kDebugMode) {
-        print('ApiService: updateFieldPositions - Error: $e');
+        debugPrint('ApiService: updateFieldPositions - Error: $e');
       }
       throw Exception('Ошибка обновления позиций полей: $e');
     }
@@ -16729,7 +16729,7 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
     final path = await _appendQueryParams('/lead/get/custom-fields');
 
     if (kDebugMode) {
-      print('ApiService: getLeadCustomFields - Generated path: $path');
+      debugPrint('ApiService: getLeadCustomFields - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -16756,7 +16756,7 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
   Future<List<String>> getLeadCustomFieldValues(String key) async {
     final path = await _appendQueryParams('/lead/get/custom-field-values?key=$key');
     if (kDebugMode) {
-      print('ApiService: getLeadCustomFieldValues - Generated path: $path');
+      debugPrint('ApiService: getLeadCustomFieldValues - Generated path: $path');
     }
     final response = await _getRequest(path);
     if (response.statusCode == 200) {
@@ -16783,7 +16783,7 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
     final path = await _appendQueryParams('/deal/get/custom-fields');
 
     if (kDebugMode) {
-      print('ApiService: getLeadCustomFields - Generated path: $path');
+      debugPrint('ApiService: getLeadCustomFields - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -16810,7 +16810,7 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
   Future<List<String>> getDealCustomFieldValues(String key) async {
     final path = await _appendQueryParams('/deal/get/custom-field-values?key=$key');
     if (kDebugMode) {
-      print('ApiService: getLeadCustomFieldValues - Generated path: $path');
+      debugPrint('ApiService: getLeadCustomFieldValues - Generated path: $path');
     }
     final response = await _getRequest(path);
     if (response.statusCode == 200) {
@@ -16834,7 +16834,7 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
     final path = await _appendQueryParams('/field-position?table=tasks');
 
     if (kDebugMode) {
-      print('ApiService: getTaskCustomFields - Generated path: $path');
+      debugPrint('ApiService: getTaskCustomFields - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -16849,8 +16849,8 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
           ?? <String>[];
 
       if (kDebugMode) {
-        print('ApiService: getTaskCustomFields - Response status: ${response.statusCode}');
-        print('ApiService: getTaskCustomFields - Response ls: $ls');
+        debugPrint('ApiService: getTaskCustomFields - Response status: ${response.statusCode}');
+        debugPrint('ApiService: getTaskCustomFields - Response ls: $ls');
       }
 
       return ls;
@@ -16869,7 +16869,7 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
   Future<List<String>> getTaskCustomFieldValues(String key) async {
     final path = await _appendQueryParams('/task/get/custom-field-values?key=$key');
     if (kDebugMode) {
-      print('ApiService: getTaskCustomFieldValues - Generated path: $path');
+      debugPrint('ApiService: getTaskCustomFieldValues - Generated path: $path');
     }
     final response = await _getRequest(path);
     if (response.statusCode == 200) {
@@ -16900,7 +16900,7 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
     path += '&is_service=0';
 
     if (kDebugMode) {
-      print('ApiService: getGoodsOpenings - path: $path');
+      debugPrint('ApiService: getGoodsOpenings - path: $path');
     }
 
     final response = await _getRequest(path);
@@ -16987,8 +16987,8 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
       };
 
       if (kDebugMode) {
-        print('ApiService: createGoodsOpening - path: $path');
-        print('ApiService: createGoodsOpening - body: $body');
+        debugPrint('ApiService: createGoodsOpening - path: $path');
+        debugPrint('ApiService: createGoodsOpening - body: $body');
       }
 
       final response = await _postRequest(path, body);
@@ -17030,8 +17030,8 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
       };
 
       if (kDebugMode) {
-        print('ApiService: updateGoodsOpening - path: $path');
-        print('ApiService: updateGoodsOpening - body: $body');
+        debugPrint('ApiService: updateGoodsOpening - path: $path');
+        debugPrint('ApiService: updateGoodsOpening - body: $body');
       }
 
       final response = await _patchRequest(path, body);
@@ -17057,7 +17057,7 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
     String path = await _appendQueryParams('/initial-balance/lead');
 
     if (kDebugMode) {
-      print('ApiService: getClientOpenings - path: $path');
+      debugPrint('ApiService: getClientOpenings - path: $path');
     }
 
     final response = await _getRequest(path);
@@ -17141,8 +17141,8 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
       };
 
       if (kDebugMode) {
-        print('ApiService: createClientOpening - path: $path');
-        print('ApiService: createClientOpening - body: $body');
+        debugPrint('ApiService: createClientOpening - path: $path');
+        debugPrint('ApiService: createClientOpening - body: $body');
       }
 
       final response = await _postRequest(path, body);
@@ -17180,8 +17180,8 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
       };
 
       if (kDebugMode) {
-        print('ApiService: createClientOpening - path: $path');
-        print('ApiService: createClientOpening - body: $body');
+        debugPrint('ApiService: createClientOpening - path: $path');
+        debugPrint('ApiService: createClientOpening - body: $body');
       }
 
       final response = await _patchRequest(path, body);
@@ -17207,7 +17207,7 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
     String path = await _appendQueryParams('/initial-balance/supplier');
 
     if (kDebugMode) {
-      print('ApiService: getSupplierOpenings - path: $path');
+      debugPrint('ApiService: getSupplierOpenings - path: $path');
     }
 
     final response = await _getRequest(path);
@@ -17245,8 +17245,8 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
       };
 
       if (kDebugMode) {
-        print('ApiService: createSupplierOpening - path: $path');
-        print('ApiService: createSupplierOpening - body: $body');
+        debugPrint('ApiService: createSupplierOpening - path: $path');
+        debugPrint('ApiService: createSupplierOpening - body: $body');
       }
 
       final response = await _postRequest(path, body);
@@ -17283,8 +17283,8 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
       };
 
       if (kDebugMode) {
-        print('ApiService: editSupplierOpening - path: $path');
-        print('ApiService: editSupplierOpening - body: $body');
+        debugPrint('ApiService: editSupplierOpening - path: $path');
+        debugPrint('ApiService: editSupplierOpening - body: $body');
       }
 
       final response = await _patchRequest(path, body);
@@ -17359,7 +17359,7 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
     String path = await _appendQueryParams('/cash-register-initial-balance');
 
     if (kDebugMode) {
-      print('ApiService: getCashRegisterOpenings - path: $path');
+      debugPrint('ApiService: getCashRegisterOpenings - path: $path');
     }
 
     final response = await _getRequest(path);
@@ -17382,7 +17382,7 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
       String path = await _appendQueryParams('/initial-balance/get/cash-registers');
 
       if (kDebugMode) {
-        print('ApiService: getCashRegisters - path: $path');
+        debugPrint('ApiService: getCashRegisters - path: $path');
       }
 
       final response = await _getRequest(path);
@@ -17404,7 +17404,7 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
       }
     } catch (e) {
       if (kDebugMode) {
-        print('ApiService: getCashRegisters - Error: $e');
+        debugPrint('ApiService: getCashRegisters - Error: $e');
       }
       rethrow;
     }
@@ -17424,7 +17424,7 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
       }]};
 
       if (kDebugMode) {
-        print('ApiService: createCashRegisterOpening - path: $path, body: $body');
+        debugPrint('ApiService: createCashRegisterOpening - path: $path, body: $body');
       }
 
       final response = await _postRequest(path, body);
@@ -17441,7 +17441,7 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
       }
     } catch (e) {
       if (kDebugMode) {
-        print('ApiService: createCashRegisterOpening - Error: $e');
+        debugPrint('ApiService: createCashRegisterOpening - Error: $e');
       }
       rethrow;
     }
@@ -17461,7 +17461,7 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
       };
 
       if (kDebugMode) {
-        print('ApiService: createCashRegisterOpening - path: $path, body: $body');
+        debugPrint('ApiService: createCashRegisterOpening - path: $path, body: $body');
       }
 
       final response = await _patchRequest(path, body);
@@ -17478,7 +17478,7 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
       }
     } catch (e) {
       if (kDebugMode) {
-        print('ApiService: createCashRegisterOpening - Error: $e');
+        debugPrint('ApiService: createCashRegisterOpening - Error: $e');
       }
       rethrow;
     }
@@ -17518,12 +17518,12 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     path = await _appendQueryParams(path);
     if (kDebugMode) {
-      print('ApiService: getGoodVariantsForDropdown - Generated path: $path');
+      debugPrint('ApiService: getGoodVariantsForDropdown - Generated path: $path');
     }
 
     final response = await _getRequest(path);
     if (kDebugMode) {
-      print('ApiService: Ответ сервера: statusCode=${response.statusCode}');
+      debugPrint('ApiService: Ответ сервера: statusCode=${response.statusCode}');
     }
     
     if (response.statusCode == 200) {
@@ -17531,16 +17531,16 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
       final variantsResponse = GoodVariantsResponse.fromJson(data);
       
       if (kDebugMode) {
-        print('ApiService: Успешно получено ${variantsResponse.result?.data?.length ?? 0} вариантов товаров');
+        debugPrint('ApiService: Успешно получено ${variantsResponse.result?.data?.length ?? 0} вариантов товаров');
         if (variantsResponse.result?.pagination != null) {
-          print('ApiService: Pagination - current: ${variantsResponse.result!.pagination!.currentPage}, total pages: ${variantsResponse.result!.pagination!.totalPages}');
+          debugPrint('ApiService: Pagination - current: ${variantsResponse.result!.pagination!.currentPage}, total pages: ${variantsResponse.result!.pagination!.totalPages}');
         }
       }
       
       return variantsResponse;
     } else {
       if (kDebugMode) {
-        print('ApiService: Ошибка загрузки вариантов товаров: ${response.statusCode}');
+        debugPrint('ApiService: Ошибка загрузки вариантов товаров: ${response.statusCode}');
       }
       throw Exception('Ошибка загрузки вариантов товаров: ${response.statusCode}');
     }
