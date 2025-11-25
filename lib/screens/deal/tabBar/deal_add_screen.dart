@@ -445,8 +445,11 @@ class _DealAddScreenState extends State<DealAddScreen> {
   }
 
   List<Widget> _buildConfiguredFieldWidgets() {
-    // Сортируем только по позициям, без фильтрации по isActive
-    final sorted = [...fieldConfigurations]..sort((a, b) => a.position.compareTo(b.position));
+    // Фильтруем только активные поля и сортируем по позициям
+    final sorted = fieldConfigurations
+        .where((config) => config.isActive)
+        .toList()
+      ..sort((a, b) => a.position.compareTo(b.position));
 
     final widgets = <Widget>[];
     for (final config in sorted) {

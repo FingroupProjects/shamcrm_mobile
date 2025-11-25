@@ -339,10 +339,11 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   }
 
   List<Widget> _buildConfiguredFieldWidgets() {
-    final sorted = fieldConfigurations.where((e) => e.isActive).toList()..sort((a, b) => a.position.compareTo(b.position));
-
-    debugPrint("sorted fieldConfigurations: ${sorted.map((e) => e.fieldName).toList()}");
-    debugPrint("not sorted fieldConfigurations: ${fieldConfigurations.map((e) => e.fieldName).toList()}");
+    // Фильтруем только активные поля и сортируем по позициям
+    final sorted = fieldConfigurations
+        .where((config) => config.isActive)
+        .toList()
+      ..sort((a, b) => a.position.compareTo(b.position));
 
     final widgets = <Widget>[];
     for (final config in sorted) {

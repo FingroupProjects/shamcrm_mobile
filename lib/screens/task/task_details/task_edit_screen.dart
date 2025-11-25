@@ -580,8 +580,9 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   }
 
   List<Widget> _buildConfiguredFieldWidgets() {
+    // Фильтруем только активные поля и сортируем по позициям
     final sorted = fieldConfigurations
-        .where((e) => e.isActive)
+        .where((config) => config.isActive)
         .toList()
       ..sort((a, b) => a.position.compareTo(b.position));
 

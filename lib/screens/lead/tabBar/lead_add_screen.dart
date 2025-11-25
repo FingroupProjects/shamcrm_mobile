@@ -1482,17 +1482,14 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             // Динамическое построение полей на основе конфигурации с сервера
-                            // Сортируем по position перед отображением
+                            // Фильтруем только активные поля и сортируем по позициям
                             ...(() {
-                              final sorted = [...fieldConfigurations]
+                              final sorted = fieldConfigurations
+                                  .where((config) => config.isActive && config.fieldName != 'lead_status_id')
+                                  .toList()
                                 ..sort((a, b) => a.position.compareTo(b.position));
 
-                              // Фильтруем только активные поля и пропускаем поля, которые должны быть скрыты
-                              final activeFields = sorted.where((config) {
-                                return config.isActive && config.fieldName != 'lead_status_id';
-                              }).toList();
-
-                              return activeFields.map((config) {
+                              return sorted.map((config) {
                                 return Column(
                                   children: [
                                     _buildFieldWidget(config),

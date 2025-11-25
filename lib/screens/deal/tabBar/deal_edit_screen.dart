@@ -1502,9 +1502,11 @@ class _DealEditScreenState extends State<DealEditScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               // Динамические поля по конфигурации
-                              // Сортируем только по позициям, без фильтрации по isActive
+                              // Фильтруем только активные поля и сортируем по позициям
                               ...(() {
-                                final sorted = [...fieldConfigurations]
+                                final sorted = fieldConfigurations
+                                    .where((config) => config.isActive)
+                                    .toList()
                                   ..sort((a, b) => a.position.compareTo(b.position));
 
                                 return sorted.map((config) {
