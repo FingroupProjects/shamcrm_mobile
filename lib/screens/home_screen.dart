@@ -52,7 +52,7 @@ class _HomeScreenState extends State<HomeScreen> {
     // ✅ Инициализируем экраны синхронно
     _initializeScreensSync();
 
-    // ✅ Подписываемся на события от виджета
+    // ✅ Подписываемся на события от виджета (Android формат)
     WidgetService.onNavigateFromWidget = (group, screenIndex) {
       if (mounted) {
         setState(() {
@@ -64,6 +64,13 @@ class _HomeScreenState extends State<HomeScreen> {
             _selectedIndexGroup1 = -1;
           }
         });
+      }
+    };
+
+    // ✅ Подписываемся на события от виджета (iOS формат: screen identifier)
+    WidgetService.onNavigateFromWidgetByScreen = (screenIdentifier) {
+      if (mounted) {
+        _navigateToScreenByIdentifier(screenIdentifier);
       }
     };
 
@@ -79,8 +86,61 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     WidgetService.onNavigateFromWidget = null;
+    WidgetService.onNavigateFromWidgetByScreen = null;
     _searchController.dispose();
     super.dispose();
+  }
+
+  // ==========================================================================
+  // ✅ НАВИГАЦИЯ ПО ИДЕНТИФИКАТОРУ ЭКРАНА (iOS)
+  // ==========================================================================
+
+  void _navigateToScreenByIdentifier(String screenIdentifier) {
+    if (!_isInitialized) {
+      // Если экраны еще не инициализированы, ждем и пробуем снова
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) {
+          _navigateToScreenByIdentifier(screenIdentifier);
+        }
+      });
+      return;
+    }
+
+    // Маппинг идентификаторов экранов на их типы
+    int? targetIndex;
+    
+    // Ищем экран в группе 1
+    for (int i = 0; i < _widgetOptionsGroup1.length; i++) {
+      final widget = _widgetOptionsGroup1[i];
+      
+      // Проверяем тип виджета по его runtimeType
+      if (screenIdentifier == 'dashboard' && widget is DashboardScreen) {
+        targetIndex = i;
+        break;
+      } else if (screenIdentifier == 'tasks' && widget is TaskScreen) {
+        targetIndex = i;
+        break;
+      } else if (screenIdentifier == 'leads' && widget is LeadScreen) {
+        targetIndex = i;
+        break;
+      } else if (screenIdentifier == 'deals' && widget is DealScreen) {
+        targetIndex = i;
+        break;
+      } else if (screenIdentifier == 'chats' && widget is ChatsScreen) {
+        targetIndex = i;
+        break;
+      }
+    }
+
+    if (targetIndex != null) {
+      setState(() {
+        _selectedIndexGroup1 = targetIndex!;
+        _selectedIndexGroup2 = -1;
+      });
+      debugPrint('HomeScreen: Navigated to screen=$screenIdentifier at index=$targetIndex');
+    } else {
+      debugPrint('HomeScreen: Screen $screenIdentifier not found or not available');
+    }
   }
 
   // ==========================================================================
