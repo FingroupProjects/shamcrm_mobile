@@ -52,7 +52,7 @@ class _HomeScreenState extends State<HomeScreen> {
     // ✅ Инициализируем экраны синхронно
     _initializeScreensSync();
 
-    // ✅ Подписываемся на события от виджета (Android формат)
+    // ✅ Подписываемся на события от виджета (legacy Android формат)
     WidgetService.onNavigateFromWidget = (group, screenIndex) {
       if (mounted) {
         setState(() {
@@ -67,7 +67,7 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     };
 
-    // ✅ Подписываемся на события от виджета (iOS формат: screen identifier)
+    // ✅ Подписываемся на события от виджета (screen identifier - iOS and Android)
     WidgetService.onNavigateFromWidgetByScreen = (screenIdentifier) {
       if (mounted) {
         _navigateToScreenByIdentifier(screenIdentifier);
@@ -79,8 +79,21 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted && !_isBackgroundLoading) {
         _loadDataInBackground();
         _handleInitialMessage();
+        _checkPendingWidgetNavigation();
       }
     });
+  }
+  
+  // ==========================================================================
+  // ✅ CHECK PENDING WIDGET NAVIGATION (for cold start from widget)
+  // ==========================================================================
+  
+  void _checkPendingWidgetNavigation() {
+    final pendingScreen = WidgetService.consumePendingNavigation();
+    if (pendingScreen != null) {
+      debugPrint('HomeScreen: Found pending widget navigation: $pendingScreen');
+      _navigateToScreenByIdentifier(pendingScreen);
+    }
   }
 
   @override

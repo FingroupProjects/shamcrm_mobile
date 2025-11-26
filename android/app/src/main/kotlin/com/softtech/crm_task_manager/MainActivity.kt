@@ -1,5 +1,7 @@
 package com.softtech.crm_task_manager
 
+import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -13,6 +15,9 @@ class MainActivity : FlutterFragmentActivity() {
     
     private val CHANNEL = "com.softtech.crm_task_manager/widget"
     private var methodChannel: MethodChannel? = null
+    
+    // Store pending navigation for when Flutter isn't ready yet
+    private var pendingScreenIdentifier: String? = null
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,7 +40,26 @@ class MainActivity : FlutterFragmentActivity() {
             CHANNEL
         )
         
+        // Handle method calls from Flutter
+        methodChannel?.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "updateWidget" -> {
+                    updateWidget()
+                    result.success(true)
+                }
+                else -> {
+                    result.notImplemented()
+                }
+            }
+        }
+        
         Log.d("MainActivity", "MethodChannel configured")
+        
+        // Send pending navigation if any
+        pendingScreenIdentifier?.let { screen ->
+            sendScreenToFlutter(screen)
+            pendingScreenIdentifier = null
+        }
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -46,24 +70,51 @@ class MainActivity : FlutterFragmentActivity() {
 
     private fun handleWidgetIntent(intent: Intent?) {
         intent?.let {
-            val group = it.getIntExtra("group_index", -1)
-            val screenIndex = it.getIntExtra("screen_index", -1)
+            val screenIdentifier = it.getStringExtra("screen_identifier")
             
-            Log.d("MainActivity", "Widget intent received: group=$group, screen=$screenIndex")
+            Log.d("MainActivity", "Widget intent received: screen=$screenIdentifier")
             
-            if (group != -1 && screenIndex != -1) {
-                // Отправляем данные в Flutter
-                sendToFlutter(group, screenIndex)
+            if (!screenIdentifier.isNullOrEmpty()) {
+                if (methodChannel != null) {
+                    // Flutter is ready, send immediately
+                    sendScreenToFlutter(screenIdentifier)
+                } else {
+                    // Flutter not ready yet, store for later
+                    pendingScreenIdentifier = screenIdentifier
+                    Log.d("MainActivity", "Stored pending navigation: $screenIdentifier")
+                }
             }
         }
     }
     
-    private fun sendToFlutter(group: Int, screenIndex: Int) {
+    private fun sendScreenToFlutter(screenIdentifier: String) {
         methodChannel?.invokeMethod("navigateFromWidget", mapOf(
-            "group" to group,
-            "screenIndex" to screenIndex
+            "screen" to screenIdentifier
         ))
         
-        Log.d("MainActivity", "Sent to Flutter: group=$group, screen=$screenIndex")
+        Log.d("MainActivity", "Sent to Flutter: screen=$screenIdentifier")
+    }
+    
+    private fun updateWidget() {
+        try {
+            val appWidgetManager = AppWidgetManager.getInstance(this)
+            val widgetComponent = ComponentName(this, ShamCRMWidgetProvider::class.java)
+            val widgetIds = appWidgetManager.getAppWidgetIds(widgetComponent)
+            
+            if (widgetIds.isNotEmpty()) {
+                // Send broadcast to update all widget instances
+                val intent = Intent(this, ShamCRMWidgetProvider::class.java).apply {
+                    action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
+                    putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, widgetIds)
+                }
+                sendBroadcast(intent)
+                
+                Log.d("MainActivity", "Widget update triggered for ${widgetIds.size} widgets")
+            } else {
+                Log.d("MainActivity", "No widgets to update")
+            }
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Error updating widget: ${e.message}", e)
+        }
     }
 }

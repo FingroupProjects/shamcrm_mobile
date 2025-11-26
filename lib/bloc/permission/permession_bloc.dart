@@ -29,6 +29,15 @@ class PermissionsBloc extends Bloc<PermissionsEvent, PermissionsState> {
       // Sync permissions to iOS widget via App Groups
       await WidgetService.syncPermissionsToWidget(permissions);
       
+      // Sync visibility flags to Android widget
+      await WidgetService.syncWidgetVisibilityToAndroid({
+        'dashboard': permissions.contains('section.dashboard'),
+        'tasks': permissions.contains('task.read'),
+        'leads': permissions.contains('lead.read'),
+        'deals': permissions.contains('deal.read'),
+        'chats': true, // Chats always visible
+      });
+      
       // Also sync current language to widget
       await LanguageManager.syncCurrentLanguageToWidget();
       
