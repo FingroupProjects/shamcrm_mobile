@@ -18,13 +18,47 @@ class WidgetService {
 
   // Инициализация слушателя
   static void initialize() {
+    debugPrint('WidgetService: === initialize() called ===');
     platform.setMethodCallHandler(_handleMethodCall);
-    debugPrint('WidgetService initialized');
+    debugPrint('WidgetService: MethodCallHandler set');
+    
+    // Check for pending navigation from Android (cold start scenario)
+    _checkAndroidPendingNavigation();
+  }
+  
+  /// Check if Android has pending navigation stored (for cold start)
+  static Future<void> _checkAndroidPendingNavigation() async {
+    debugPrint('WidgetService: === _checkAndroidPendingNavigation() ===');
+    debugPrint('WidgetService: Platform.isAndroid = ${Platform.isAndroid}');
+    
+    if (!Platform.isAndroid) {
+      debugPrint('WidgetService: Not Android, skipping');
+      return;
+    }
+    
+    try {
+      debugPrint('WidgetService: Calling getPendingNavigation on native...');
+      final pendingScreen = await platform.invokeMethod<String>('getPendingNavigation');
+      debugPrint('WidgetService: Native returned: "$pendingScreen"');
+      
+      if (pendingScreen != null && pendingScreen.isNotEmpty) {
+        debugPrint('WidgetService: Storing pending navigation: $pendingScreen');
+        _pendingScreenNavigation = pendingScreen;
+      } else {
+        debugPrint('WidgetService: No pending navigation from native');
+      }
+    } catch (e) {
+      debugPrint('WidgetService: Error checking pending navigation: $e');
+    }
+    
+    debugPrint('WidgetService: _pendingScreenNavigation = $_pendingScreenNavigation');
   }
 
   static Future<void> _handleMethodCall(MethodCall call) async {
-    debugPrint('WidgetService: Received method call: ${call.method}');
+    debugPrint('WidgetService: === _handleMethodCall ===');
+    debugPrint('WidgetService: Method: ${call.method}');
     debugPrint('WidgetService: Arguments: ${call.arguments}');
+    debugPrint('WidgetService: onNavigateFromWidgetByScreen is null: ${onNavigateFromWidgetByScreen == null}');
 
     if (call.method == 'navigateFromWidget') {
       final args = call.arguments as Map<dynamic, dynamic>?;
@@ -40,6 +74,7 @@ class WidgetService {
         final int screenIndex = args['screenIndex'] as int;
 
         debugPrint('WidgetService: Legacy format - Navigate to group=$group, screen=$screenIndex');
+        debugPrint('WidgetService: onNavigateFromWidget is null: ${onNavigateFromWidget == null}');
 
         // Вызываем callback для навигации (legacy)
         onNavigateFromWidget?.call(group, screenIndex);
@@ -52,9 +87,11 @@ class WidgetService {
 
         // If callback is set, call it immediately
         if (onNavigateFromWidgetByScreen != null) {
+          debugPrint('WidgetService: Callback exists, calling now');
           onNavigateFromWidgetByScreen!(screenIdentifier);
         } else {
           // Store for later when HomeScreen is ready
+          debugPrint('WidgetService: Callback is NULL, storing for later');
           _pendingScreenNavigation = screenIdentifier;
           debugPrint('WidgetService: Stored pending navigation: $screenIdentifier');
         }
@@ -66,10 +103,16 @@ class WidgetService {
   
   /// Check and consume pending navigation (called by HomeScreen when ready)
   static String? consumePendingNavigation() {
+    debugPrint('WidgetService: === consumePendingNavigation() called ===');
+    debugPrint('WidgetService: Current _pendingScreenNavigation = $_pendingScreenNavigation');
+    
     final pending = _pendingScreenNavigation;
     _pendingScreenNavigation = null;
+    
     if (pending != null) {
-      debugPrint('WidgetService: Consuming pending navigation: $pending');
+      debugPrint('WidgetService: Consuming and returning: $pending');
+    } else {
+      debugPrint('WidgetService: No pending navigation to consume');
     }
     return pending;
   }

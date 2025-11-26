@@ -89,10 +89,18 @@ class _HomeScreenState extends State<HomeScreen> {
   // ==========================================================================
   
   void _checkPendingWidgetNavigation() {
+    debugPrint('HomeScreen: === _checkPendingWidgetNavigation() ===');
+    debugPrint('HomeScreen: _isInitialized = $_isInitialized');
+    debugPrint('HomeScreen: _widgetOptionsGroup1.length = ${_widgetOptionsGroup1.length}');
+    
     final pendingScreen = WidgetService.consumePendingNavigation();
+    debugPrint('HomeScreen: pendingScreen from WidgetService: $pendingScreen');
+    
     if (pendingScreen != null) {
       debugPrint('HomeScreen: Found pending widget navigation: $pendingScreen');
       _navigateToScreenByIdentifier(pendingScreen);
+    } else {
+      debugPrint('HomeScreen: No pending navigation');
     }
   }
 
@@ -109,10 +117,16 @@ class _HomeScreenState extends State<HomeScreen> {
   // ==========================================================================
 
   void _navigateToScreenByIdentifier(String screenIdentifier) {
+    debugPrint('HomeScreen: === _navigateToScreenByIdentifier($screenIdentifier) ===');
+    debugPrint('HomeScreen: _isInitialized = $_isInitialized');
+    debugPrint('HomeScreen: mounted = $mounted');
+    
     if (!_isInitialized) {
+      debugPrint('HomeScreen: Not initialized yet, scheduling retry in 500ms');
       // Если экраны еще не инициализированы, ждем и пробуем снова
       Future.delayed(const Duration(milliseconds: 500), () {
         if (mounted) {
+          debugPrint('HomeScreen: Retrying navigation after delay');
           _navigateToScreenByIdentifier(screenIdentifier);
         }
       });
@@ -123,61 +137,79 @@ class _HomeScreenState extends State<HomeScreen> {
     int? targetIndexGroup1;
     int? targetIndexGroup2;
     
+    debugPrint('HomeScreen: Searching in Group1 (${_widgetOptionsGroup1.length} screens)');
+    
     // Ищем экран в группе 1
     for (int i = 0; i < _widgetOptionsGroup1.length; i++) {
       final widget = _widgetOptionsGroup1[i];
+      debugPrint('HomeScreen: Group1[$i] = ${widget.runtimeType}');
       
       // Проверяем тип виджета по его runtimeType
       if (screenIdentifier == 'dashboard' && widget is DashboardScreen) {
         targetIndexGroup1 = i;
+        debugPrint('HomeScreen: Found dashboard at index $i');
         break;
       } else if (screenIdentifier == 'tasks' && widget is TaskScreen) {
         targetIndexGroup1 = i;
+        debugPrint('HomeScreen: Found tasks at index $i');
         break;
       } else if (screenIdentifier == 'leads' && widget is LeadScreen) {
         targetIndexGroup1 = i;
+        debugPrint('HomeScreen: Found leads at index $i');
         break;
       } else if (screenIdentifier == 'deals' && widget is DealScreen) {
         targetIndexGroup1 = i;
+        debugPrint('HomeScreen: Found deals at index $i');
         break;
       } else if (screenIdentifier == 'chats' && widget is ChatsScreen) {
         targetIndexGroup1 = i;
+        debugPrint('HomeScreen: Found chats at index $i');
         break;
       } else if (screenIdentifier == 'warehouse' && widget is WarehouseAccountingScreen) {
         targetIndexGroup1 = i;
+        debugPrint('HomeScreen: Found warehouse at index $i');
         break;
       }
     }
 
     // Ищем экран в группе 2 (Orders, Online Store)
     if (targetIndexGroup1 == null) {
+      debugPrint('HomeScreen: Not found in Group1, searching Group2 (${_widgetOptionsGroup2.length} screens)');
       for (int i = 0; i < _widgetOptionsGroup2.length; i++) {
         final widget = _widgetOptionsGroup2[i];
+        debugPrint('HomeScreen: Group2[$i] = ${widget.runtimeType}');
         
         if (screenIdentifier == 'orders' && widget is OrderScreen) {
           targetIndexGroup2 = i;
+          debugPrint('HomeScreen: Found orders at index $i');
           break;
         } else if (screenIdentifier == 'online_store' && widget is OnlineStoreScreen) {
           targetIndexGroup2 = i;
+          debugPrint('HomeScreen: Found online_store at index $i');
           break;
         }
       }
     }
 
+    debugPrint('HomeScreen: targetIndexGroup1 = $targetIndexGroup1');
+    debugPrint('HomeScreen: targetIndexGroup2 = $targetIndexGroup2');
+
     if (targetIndexGroup1 != null) {
+      debugPrint('HomeScreen: Setting _selectedIndexGroup1 = $targetIndexGroup1');
       setState(() {
         _selectedIndexGroup1 = targetIndexGroup1!;
         _selectedIndexGroup2 = -1;
       });
-      debugPrint('HomeScreen: Navigated to Group1 screen=$screenIdentifier at index=$targetIndexGroup1');
+      debugPrint('HomeScreen: ✅ Navigated to Group1 screen=$screenIdentifier at index=$targetIndexGroup1');
     } else if (targetIndexGroup2 != null) {
+      debugPrint('HomeScreen: Setting _selectedIndexGroup2 = $targetIndexGroup2');
       setState(() {
         _selectedIndexGroup2 = targetIndexGroup2!;
         _selectedIndexGroup1 = -1;
       });
-      debugPrint('HomeScreen: Navigated to Group2 screen=$screenIdentifier at index=$targetIndexGroup2');
+      debugPrint('HomeScreen: ✅ Navigated to Group2 screen=$screenIdentifier at index=$targetIndexGroup2');
     } else {
-      debugPrint('HomeScreen: Screen $screenIdentifier not found or not available');
+      debugPrint('HomeScreen: ❌ Screen $screenIdentifier not found or not available');
     }
   }
 

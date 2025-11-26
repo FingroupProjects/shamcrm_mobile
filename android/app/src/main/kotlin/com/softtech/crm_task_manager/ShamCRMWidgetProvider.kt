@@ -54,6 +54,8 @@ class ShamCRMWidgetProvider : AppWidgetProvider() {
             for ((index, button) in allButtons.withIndex()) {
                 val isVisible = visibility[button.key] ?: true
                 
+                Log.d("ShamCRMWidget", "Button ${button.key}: visible=$isVisible")
+                
                 if (isVisible) {
                     // Show button
                     views.setViewVisibility(button.containerId, View.VISIBLE)
@@ -69,9 +71,14 @@ class ShamCRMWidgetProvider : AppWidgetProvider() {
                         putExtra("screen_identifier", button.key)
                     }
                     
+                    Log.d("ShamCRMWidget", "Created intent for ${button.key}: screen_identifier=${intent.getStringExtra("screen_identifier")}")
+                    
+                    val requestCode = appWidgetId * 10 + index
+                    Log.d("ShamCRMWidget", "PendingIntent requestCode: $requestCode")
+                    
                     val pendingIntent = PendingIntent.getActivity(
                         context,
-                        appWidgetId * 10 + index, // Use fixed index for unique request codes
+                        requestCode,
                         intent,
                         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                     )
