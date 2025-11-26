@@ -1,3 +1,10 @@
+//
+//  deeplink_widget.swift
+//  deeplink_widget
+//
+//  Created by softtech on 25/11/25.
+//
+
 import WidgetKit
 import SwiftUI
 
@@ -27,15 +34,11 @@ struct SimpleEntry: TimelineEntry {
 }
 
 // MARK: - Widget View
-struct ShamCRMWidgetEntryView : View {
+struct deeplink_widgetEntryView : View {
     var entry: Provider.Entry
 
     var body: some View {
-        ZStack {
-            // Фон
-            Color.white
-            
-            VStack(spacing: 12) {
+        VStack(spacing: 12) {
                 // Заголовок
                 HStack(spacing: 8) {
                     Image(uiImage: UIImage(named: "AppIcon") ?? UIImage())
@@ -91,9 +94,7 @@ struct ShamCRMWidgetEntryView : View {
                 }
                 .padding(.horizontal, 12)
                 .padding(.bottom, 12)
-            }
         }
-        .cornerRadius(16)
     }
 }
 
@@ -130,12 +131,13 @@ struct WidgetButton: View {
 }
 
 // MARK: - Widget Configuration
-struct ShamCRMWidget: Widget {
-    let kind: String = "ShamCRMWidget"
+struct deeplink_widget: Widget {
+    let kind: String = "deeplink_widget"
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
-            ShamCRMWidgetEntryView(entry: entry)
+            deeplink_widgetEntryView(entry: entry)
+                .containerBackground(Color.white, for: .widget)
         }
         .configurationDisplayName("shamCRM")
         .description("Быстрый доступ к разделам shamCRM")
@@ -144,9 +146,8 @@ struct ShamCRMWidget: Widget {
 }
 
 // MARK: - Preview
-struct ShamCRMWidget_Previews: PreviewProvider {
-    static var previews: some View {
-        ShamCRMWidgetEntryView(entry: SimpleEntry(date: Date()))
-            .previewContext(WidgetPreviewContext(family: .systemMedium))
-    }
+#Preview(as: .systemMedium) {
+    deeplink_widget()
+} timeline: {
+    SimpleEntry(date: .now)
 }

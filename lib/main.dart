@@ -179,7 +179,7 @@ void main() async {
     
     await AppTrackingTransparency.requestTrackingAuthorization();
     await _initializeFirebaseMessaging(apiService);
-
+    
     RemoteMessage? initialMessage;
     try {
       if (Firebase.apps.isNotEmpty) {

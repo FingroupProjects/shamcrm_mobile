@@ -30,48 +30,56 @@ import Flutter
         open url: URL,
         options: [UIApplication.OpenURLOptionsKey : Any] = [:]
     ) -> Bool {
-        //print("📱 iOS Deep link received: \(url.absoluteString)")
+        print("📱 iOS Deep link received: \(url.absoluteString)")
         
-        // Парсим URL: shamcrm://widget?group=1&screen=0
+        // Парсим URL: shamcrm://widget?screen=dashboard
         guard url.scheme == "shamcrm",
               url.host == "widget" else {
-            //print("❌ Invalid URL scheme or host")
+            print("❌ Invalid URL scheme or host")
             return false
         }
         
         // Получаем параметры из query
         guard let components = URLComponents(url: url, resolvingAgainstBaseURL: true),
               let queryItems = components.queryItems else {
-            //print("❌ No query parameters found")
+            print("❌ No query parameters found")
             return false
         }
         
-        var group: Int?
-        var screen: Int?
+        var screenIdentifier: String?
         
         for item in queryItems {
-            if item.name == "group", let value = item.value {
-                group = Int(value)
-                //print("📊 Parsed group: \(value)")
-            }
             if item.name == "screen", let value = item.value {
-                screen = Int(value)
-                //print("📱 Parsed screen: \(value)")
+                screenIdentifier = value
+                print("📱 Parsed screen identifier: \(value)")
             }
         }
         
         // Отправляем в Flutter
-        if let group = group, let screen = screen {
-            //print("✅ Sending to Flutter: group=\(group), screen=\(screen)")
+        if let screenIdentifier = screenIdentifier {
+            // Убеждаемся, что methodChannel инициализирован
+            if methodChannel == nil {
+                // Если methodChannel еще не создан, инициализируем его
+                if let controller = window?.rootViewController as? FlutterViewController {
+                    methodChannel = FlutterMethodChannel(
+                        name: "com.softtech.crm_task_manager/widget",
+                        binaryMessenger: controller.binaryMessenger
+                    )
+                    print("✅ MethodChannel initialized in deep link handler")
+                }
+            }
             
-            methodChannel?.invokeMethod("navigateFromWidget", arguments: [
-                "group": group,
-                "screenIndex": screen
-            ])
+            // Небольшая задержка, чтобы убедиться, что Flutter готов
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                print("✅ Sending to Flutter: screen=\(screenIdentifier)")
+                self.methodChannel?.invokeMethod("navigateFromWidget", arguments: [
+                    "screen": screenIdentifier
+                ])
+            }
             
             return true
         } else {
-            //print("❌ Missing group or screen parameter")
+            print("❌ Missing screen parameter")
             return false
         }
     }
