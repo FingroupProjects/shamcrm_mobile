@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/api/service/widget_service.dart';
 import 'package:crm_task_manager/bloc/permission/permession_event.dart';
 import 'package:crm_task_manager/bloc/permission/permession_state.dart';
 import 'package:crm_task_manager/models/permission.dart';
@@ -23,6 +24,10 @@ class PermissionsBloc extends Bloc<PermissionsEvent, PermissionsState> {
           .toList();
 
       await apiService.savePermissions(permissions);
+      
+      // Sync permissions to iOS widget via App Groups
+      await WidgetService.syncPermissionsToWidget(permissions);
+      
       emit(PermissionsLoaded(permissionModels));
     } catch (e) {
       emit(PermissionsError('Ошибка при загрузке прав доступа!'));

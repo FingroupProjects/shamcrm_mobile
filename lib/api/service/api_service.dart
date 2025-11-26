@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/services.dart';
 import 'package:crm_task_manager/models/LeadStatusForFilter.dart';
 import 'package:crm_task_manager/models/api_exception_model.dart';
 import 'package:crm_task_manager/models/author_data_response.dart';
@@ -403,6 +404,26 @@ Future<String> getDynamicBaseUrl() async {
 
     // Очищаем новые данные email-flow
     await clearEmailVerificationData();
+    
+    // Clear widget permissions on iOS (via App Groups)
+    await _clearWidgetPermissions();
+  }
+  
+  // Clear widget permissions on logout
+  Future<void> _clearWidgetPermissions() async {
+    try {
+      // Import is at the top of the file, but we need to call the static method
+      // This will be handled by the WidgetService
+      const platform = MethodChannel('com.softtech.crm_task_manager/widget');
+      if (Platform.isIOS) {
+        await platform.invokeMethod('syncPermissionsToWidget', {
+          'permissions': <String>[],
+        });
+        debugPrint('ApiService: Cleared widget permissions on logout');
+      }
+    } catch (e) {
+      debugPrint('ApiService: Error clearing widget permissions: $e');
+    }
   }
 
 // Метод для получения информации о пользователе по email

@@ -107,7 +107,8 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     // Маппинг идентификаторов экранов на их типы
-    int? targetIndex;
+    int? targetIndexGroup1;
+    int? targetIndexGroup2;
     
     // Ищем экран в группе 1
     for (int i = 0; i < _widgetOptionsGroup1.length; i++) {
@@ -115,29 +116,53 @@ class _HomeScreenState extends State<HomeScreen> {
       
       // Проверяем тип виджета по его runtimeType
       if (screenIdentifier == 'dashboard' && widget is DashboardScreen) {
-        targetIndex = i;
+        targetIndexGroup1 = i;
         break;
       } else if (screenIdentifier == 'tasks' && widget is TaskScreen) {
-        targetIndex = i;
+        targetIndexGroup1 = i;
         break;
       } else if (screenIdentifier == 'leads' && widget is LeadScreen) {
-        targetIndex = i;
+        targetIndexGroup1 = i;
         break;
       } else if (screenIdentifier == 'deals' && widget is DealScreen) {
-        targetIndex = i;
+        targetIndexGroup1 = i;
         break;
       } else if (screenIdentifier == 'chats' && widget is ChatsScreen) {
-        targetIndex = i;
+        targetIndexGroup1 = i;
+        break;
+      } else if (screenIdentifier == 'warehouse' && widget is WarehouseAccountingScreen) {
+        targetIndexGroup1 = i;
         break;
       }
     }
 
-    if (targetIndex != null) {
+    // Ищем экран в группе 2 (Orders, Online Store)
+    if (targetIndexGroup1 == null) {
+      for (int i = 0; i < _widgetOptionsGroup2.length; i++) {
+        final widget = _widgetOptionsGroup2[i];
+        
+        if (screenIdentifier == 'orders' && widget is OrderScreen) {
+          targetIndexGroup2 = i;
+          break;
+        } else if (screenIdentifier == 'online_store' && widget is OnlineStoreScreen) {
+          targetIndexGroup2 = i;
+          break;
+        }
+      }
+    }
+
+    if (targetIndexGroup1 != null) {
       setState(() {
-        _selectedIndexGroup1 = targetIndex!;
+        _selectedIndexGroup1 = targetIndexGroup1!;
         _selectedIndexGroup2 = -1;
       });
-      debugPrint('HomeScreen: Navigated to screen=$screenIdentifier at index=$targetIndex');
+      debugPrint('HomeScreen: Navigated to Group1 screen=$screenIdentifier at index=$targetIndexGroup1');
+    } else if (targetIndexGroup2 != null) {
+      setState(() {
+        _selectedIndexGroup2 = targetIndexGroup2!;
+        _selectedIndexGroup1 = -1;
+      });
+      debugPrint('HomeScreen: Navigated to Group2 screen=$screenIdentifier at index=$targetIndexGroup2');
     } else {
       debugPrint('HomeScreen: Screen $screenIdentifier not found or not available');
     }

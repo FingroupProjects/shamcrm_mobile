@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -49,6 +51,27 @@ class WidgetService {
       } else {
         debugPrint('WidgetService: Unknown format - arguments: $args');
       }
+    }
+  }
+
+  /// Sync permissions to iOS widget via App Groups
+  /// This allows the widget to show/hide icons based on user permissions
+  static Future<void> syncPermissionsToWidget(List<String> permissions) async {
+    // Only sync on iOS
+    if (!Platform.isIOS) {
+      debugPrint('WidgetService: Skipping permission sync (not iOS)');
+      return;
+    }
+
+    try {
+      final result = await platform.invokeMethod('syncPermissionsToWidget', {
+        'permissions': permissions,
+      });
+      debugPrint('WidgetService: Synced ${permissions.length} permissions to widget: $result');
+    } on PlatformException catch (e) {
+      debugPrint('WidgetService: Failed to sync permissions to widget: ${e.message}');
+    } catch (e) {
+      debugPrint('WidgetService: Error syncing permissions: $e');
     }
   }
 }

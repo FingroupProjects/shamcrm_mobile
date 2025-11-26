@@ -1,9 +1,13 @@
 import UIKit
 import Flutter
+import WidgetKit
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
     private var methodChannel: FlutterMethodChannel?
+    
+    // App Group identifier for sharing data with widget
+    private let appGroupId = "group.com.softtech.crmTaskManager"
     
     override func application(
         _ application: UIApplication,
@@ -18,10 +22,46 @@ import Flutter
                 name: "com.softtech.crm_task_manager/widget",
                 binaryMessenger: controller.binaryMessenger
             )
+            
+            // Setup method call handler for syncing permissions to widget
+            methodChannel?.setMethodCallHandler { [weak self] (call, result) in
+                if call.method == "syncPermissionsToWidget" {
+                    if let args = call.arguments as? [String: Any],
+                       let permissions = args["permissions"] as? [String] {
+                        self?.syncPermissionsToWidget(permissions: permissions)
+                        result(true)
+                    } else {
+                        result(FlutterError(code: "INVALID_ARGS", message: "Invalid arguments", details: nil))
+                    }
+                } else {
+                    result(FlutterMethodNotImplemented)
+                }
+            }
+            
             //print("✅ MethodChannel initialized")
         }
         
         return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+    }
+    
+    // MARK: - Sync Permissions to Widget via App Groups
+    private func syncPermissionsToWidget(permissions: [String]) {
+        guard let userDefaults = UserDefaults(suiteName: appGroupId) else {
+            print("❌ Failed to access App Group UserDefaults")
+            return
+        }
+        
+        // Save permissions to shared UserDefaults
+        userDefaults.set(permissions, forKey: "user_permissions")
+        userDefaults.synchronize()
+        
+        print("✅ Synced \(permissions.count) permissions to widget: \(permissions)")
+        
+        // Reload widget timelines to reflect new permissions
+        if #available(iOS 14.0, *) {
+            WidgetCenter.shared.reloadAllTimelines()
+            print("✅ Widget timelines reloaded")
+        }
     }
     
     // MARK: - Deep Link Handler (для виджета)
