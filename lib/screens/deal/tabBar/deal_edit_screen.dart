@@ -214,8 +214,8 @@ class _DealEditScreenState extends State<DealEditScreen> {
         });
       }
     } catch (e) {
-      _showErrorSnackBar(AppLocalizations.of(context)!
-          .translate('error_fetching_directories'));
+      // _showErrorSnackBar(AppLocalizations.of(context)!
+      //     .translate('error_fetching_directories'));
     }
   }
 
