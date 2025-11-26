@@ -41,6 +41,7 @@
 
         <!-- Первый ряд (первые 4 кнопки) -->
         <LinearLayout
+            android:id="@+id/first_row_layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
@@ -154,6 +155,7 @@
 
         <!-- Второй ряд (остальные кнопки) -->
         <LinearLayout
+            android:id="@+id/second_row_layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"

@@ -52,21 +52,74 @@ class ShamCRMWidgetProvider : AppWidgetProvider() {
                 WidgetButton("online_store", R.id.btn_online_store, R.id.icon_online_store, R.drawable.ic_online_store)
             )
             
-            var visibleCount = 0
+            // Collect visible buttons
+            val visibleButtons = allButtons.filter { button ->
+                visibility[button.key] ?: true
+            }
             
-            for ((index, button) in allButtons.withIndex()) {
-                val isVisible = visibility[button.key] ?: true
+            // Define slot mappings for first row (4 slots)
+            val firstRowSlots = listOf(
+                R.id.btn_dashboard,
+                R.id.btn_tasks,
+                R.id.btn_leads,
+                R.id.btn_deals
+            )
+            
+            // Define slot mappings for second row (4 slots)
+            val secondRowSlots = listOf(
+                R.id.btn_chats,
+                R.id.btn_warehouse,
+                R.id.btn_orders,
+                R.id.btn_online_store
+            )
+            
+            // Get icon and label IDs for each slot
+            val slotIconIds = listOf(
+                R.id.icon_dashboard, R.id.icon_tasks, R.id.icon_leads, R.id.icon_deals,
+                R.id.icon_chats, R.id.icon_warehouse, R.id.icon_orders, R.id.icon_online_store
+            )
+            
+            val slotLabelIds = listOf(
+                R.id.label_dashboard, R.id.label_tasks, R.id.label_leads, R.id.label_deals,
+                R.id.label_chats, R.id.label_warehouse, R.id.label_orders, R.id.label_online_store
+            )
+            
+            // Mapping of button keys to label text (Russian labels from XML)
+            val labelTextMap = mapOf(
+                "dashboard" to "Дашборд",
+                "tasks" to "Задачи",
+                "leads" to "Лиды",
+                "deals" to "Сделки",
+                "chats" to "Чаты",
+                "warehouse" to "Учёт",
+                "orders" to "Заказы",
+                "online_store" to "Магазин"
+            )
+            
+            // Assign visible buttons to slots
+            for (i in 0 until 8) {
+                val slotContainer = if (i < 4) firstRowSlots[i] else secondRowSlots[i - 4]
+                val slotIcon = slotIconIds[i]
+                val slotLabel = slotLabelIds[i]
                 
-                Log.d("ShamCRMWidget", "Button ${button.key}: visible=$isVisible")
-                
-                if (isVisible) {
-                    // Show button
-                    views.setViewVisibility(button.containerId, View.VISIBLE)
+                if (i < visibleButtons.size) {
+                    // Assign visible button to this slot
+                    val button = visibleButtons[i]
                     
-                    // Set icon
-                    views.setImageViewResource(button.iconId, button.drawableId)
+                    // Find original index of button in allButtons list for unique requestCode
+                    val originalButtonIndex = allButtons.indexOfFirst { it.key == button.key }
                     
-                    // Create click intent with screen identifier (not index)
+                    // Show the slot container
+                    views.setViewVisibility(slotContainer, View.VISIBLE)
+                    
+                    // Set icon programmatically
+                    views.setImageViewResource(slotIcon, button.drawableId)
+                    
+                    // Set label text
+                    val labelText = labelTextMap[button.key] ?: button.key
+                    views.setTextViewText(slotLabel, labelText)
+                    
+                    // Create click intent with screen identifier
                     val intent = Intent(context, MainActivity::class.java).apply {
                         action = Intent.ACTION_MAIN
                         addCategory(Intent.CATEGORY_LAUNCHER)
@@ -79,11 +132,10 @@ class ShamCRMWidgetProvider : AppWidgetProvider() {
                         putExtra("screen_identifier", button.key)
                     }
                     
-                    Log.d("ShamCRMWidget", "Created intent for ${button.key}: screen_identifier=${intent.getStringExtra("screen_identifier")}")
+                    Log.d("ShamCRMWidget", "Assigned button ${button.key} to slot $i (original index: $originalButtonIndex)")
                     
-                    val requestCode = appWidgetId * 10 + index
-                    Log.d("ShamCRMWidget", "PendingIntent requestCode: $requestCode")
-                    
+                    // Use original button index for unique requestCode (not slot index)
+                    val requestCode = appWidgetId * 100 + originalButtonIndex
                     val pendingIntent = PendingIntent.getActivity(
                         context,
                         requestCode,
@@ -91,16 +143,22 @@ class ShamCRMWidgetProvider : AppWidgetProvider() {
                         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                     )
                     
-                    views.setOnClickPendingIntent(button.containerId, pendingIntent)
-                    visibleCount++
+                    views.setOnClickPendingIntent(slotContainer, pendingIntent)
                 } else {
-                    // Hide button
-                    views.setViewVisibility(button.containerId, View.GONE)
+                    // Hide unused slot
+                    views.setViewVisibility(slotContainer, View.GONE)
                 }
+            }
+            
+            // Hide second row if 4 or fewer buttons visible
+            if (visibleButtons.size <= 4) {
+                views.setViewVisibility(R.id.second_row_layout, View.GONE)
+            } else {
+                views.setViewVisibility(R.id.second_row_layout, View.VISIBLE)
             }
 
             appWidgetManager.updateAppWidget(appWidgetId, views)
-            Log.d("ShamCRMWidget", "Widget updated — ID=$appWidgetId, visible buttons: $visibleCount")
+            Log.d("ShamCRMWidget", "Widget updated — ID=$appWidgetId, visible buttons: ${visibleButtons.size}")
         } catch (e: Exception) {
             Log.e("ShamCRMWidget", "Error updating widget: ${e.message}", e)
         }

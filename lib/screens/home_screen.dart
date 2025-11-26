@@ -27,7 +27,7 @@ class HomeScreen extends StatefulWidget {
   _HomeScreenState createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   int _selectedIndexGroup1 = 0;
   int _selectedIndexGroup2 = -1;
   final TextEditingController _searchController = TextEditingController();
@@ -48,10 +48,31 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    
+    // ✅ Подписываемся на изменения жизненного цикла приложения
+    WidgetsBinding.instance.addObserver(this);
 
     // ✅ Инициализируем экраны синхронно
     _initializeScreensSync();
 
+    // ✅ Устанавливаем callback'и для навигации от виджета
+    _setupWidgetNavigationCallbacks();
+
+    // ✅ Запускаем фоновую загрузку и обработку push после отрисовки
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !_isBackgroundLoading) {
+        _loadDataInBackground();
+        _handleInitialMessage();
+        _checkPendingWidgetNavigation();
+      }
+    });
+  }
+  
+  // ==========================================================================
+  // ✅ SETUP WIDGET NAVIGATION CALLBACKS
+  // ==========================================================================
+  
+  void _setupWidgetNavigationCallbacks() {
     // ✅ Подписываемся на события от виджета (legacy Android формат)
     WidgetService.onNavigateFromWidget = (group, screenIndex) {
       if (mounted) {
@@ -70,18 +91,35 @@ class _HomeScreenState extends State<HomeScreen> {
     // ✅ Подписываемся на события от виджета (screen identifier - iOS and Android)
     WidgetService.onNavigateFromWidgetByScreen = (screenIdentifier) {
       if (mounted) {
+        debugPrint('HomeScreen: Callback triggered for: $screenIdentifier');
         _navigateToScreenByIdentifier(screenIdentifier);
       }
     };
-
-    // ✅ Запускаем фоновую загрузку и обработку push после отрисовки
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && !_isBackgroundLoading) {
-        _loadDataInBackground();
-        _handleInitialMessage();
-        _checkPendingWidgetNavigation();
+  }
+  
+  // ==========================================================================
+  // ✅ APP LIFECYCLE OBSERVER
+  // ==========================================================================
+  
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    debugPrint('HomeScreen: App lifecycle changed to $state');
+    
+    if (state == AppLifecycleState.resumed) {
+      // ✅ Когда приложение возобновляется, проверяем pending navigation
+      // и убеждаемся, что callback установлен
+      if (mounted) {
+        _setupWidgetNavigationCallbacks();
+        
+        // Проверяем pending navigation с небольшой задержкой
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (mounted) {
+            _checkPendingWidgetNavigation();
+          }
+        });
       }
-    });
+    }
   }
   
   // ==========================================================================
@@ -106,6 +144,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    // ✅ Отписываемся от изменений жизненного цикла
+    WidgetsBinding.instance.removeObserver(this);
+    
     WidgetService.onNavigateFromWidget = null;
     WidgetService.onNavigateFromWidgetByScreen = null;
     _searchController.dispose();
