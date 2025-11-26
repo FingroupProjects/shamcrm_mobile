@@ -1,10 +1,12 @@
 import 'dart:io';
+
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/models/pagination_dto.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter/foundation.dart';
 
 part 'chats_event.dart';
 part 'chats_state.dart';
@@ -29,25 +31,20 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
     on<ResetUnreadCount>(_resetUnreadCount);
   }
 
-  // ИСПРАВЛЕННАЯ функция: сортировка только для corporate
+  // Сортировка только для corporate
   List<Chats> _sortChatsIfNeeded(List<Chats> chats, String endPoint) {
-    // Сортировка ТОЛЬКО для corporate endpoint
     if (endPoint == 'corporate') {
       final indexedChats = chats.asMap().entries.toList();
       
       indexedChats.sort((a, b) {
-        // Support чаты всегда наверху
         if (a.value.type == 'support' && b.value.type != 'support') return -1;
         if (a.value.type != 'support' && b.value.type == 'support') return 1;
-        
-        // Остальные чаты сохраняют порядок от сервера
         return a.key.compareTo(b.key);
       });
       
       return indexedChats.map((e) => e.value).toList();
     }
     
-    // Для lead и task возвращаем как есть
     return chats;
   }
 
@@ -72,11 +69,11 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
   // Начальная загрузка чатов
   Future<void> _fetchChatsEvent(FetchChats event, Emitter<ChatsState> emit) async {
     if (_isFetching) {
-      //print('ChatsBloc._fetchChatsEvent: Skipping fetch, another fetch is in progress');
+      debugPrint('ChatsBloc._fetchChatsEvent: Skipping fetch, another fetch is in progress');
       return;
     }
     _isFetching = true;
-    //print('ChatsBloc._fetchChatsEvent: Starting fetch - endpoint: ${event.endPoint}, query: ${event.query}, salesFunnelId: ${event.salesFunnelId}');
+    debugPrint('ChatsBloc._fetchChatsEvent: Starting fetch - endpoint: ${event.endPoint}, query: ${event.query}, salesFunnelId: ${event.salesFunnelId}');
 
     _updateFetchParameters(event);
     _lastFetchedPage = 0;
@@ -91,9 +88,8 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
           event.salesFunnelId,
           event.filters,
         );
-        //print('ChatsBloc._fetchChatsEvent: Fetched ${pagination.data.length} chats for endpoint ${event.endPoint}, page 1');
+        debugPrint('ChatsBloc._fetchChatsEvent: Fetched ${pagination.data.length} chats for endpoint ${event.endPoint}, page 1');
 
-        // ПРИМЕНЯЕМ УСЛОВНУЮ СОРТИРОВКУ
         final sortedChats = _sortChatsIfNeeded(pagination.data, event.endPoint);
         
         chatsPagination = PaginationDTO(
@@ -107,11 +103,11 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
         _lastFetchedPage = 1;
         emit(ChatsLoaded(chatsPagination!));
       } catch (e) {
-        //print('ChatsBloc._fetchChatsEvent: Error: $e, Type: ${e.runtimeType}');
+        debugPrint('ChatsBloc._fetchChatsEvent: Error: $e, Type: ${e.runtimeType}');
         emit(ChatsError(e.toString()));
       }
     } else {
-      //print('ChatsBloc._fetchChatsEvent: No internet connection');
+      debugPrint('ChatsBloc._fetchChatsEvent: No internet connection');
       emit(ChatsError('No internet connection'));
     }
     _isFetching = false;
@@ -128,7 +124,6 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
           endPoint, 1, _currentQuery, _currentSalesFunnelId, _currentFilters
         );
         
-        // ПРИМЕНЯЕМ УСЛОВНУЮ СОРТИРОВКУ
         final sortedChats = _sortChatsIfNeeded(chatsPagination!.data, endPoint);
         
         chatsPagination = PaginationDTO(
@@ -156,19 +151,17 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
       final nextPage = state.chatsPagination.currentPage + 1;
 
       if (nextPage <= state.chatsPagination.totalPage && nextPage > _lastFetchedPage) {
-        //print('ChatsBloc._getNextPageChatsEvent: Loading page $nextPage for endpoint $endPoint');
+        debugPrint('ChatsBloc._getNextPageChatsEvent: Loading page $nextPage for endpoint $endPoint');
 
         if (await _checkInternetConnection()) {
           try {
             final nextPageChats = await apiService.getAllChats(
               endPoint, nextPage, _currentQuery, _currentSalesFunnelId, _currentFilters
             );
-            //print('ChatsBloc._getNextPageChatsEvent: Fetched ${nextPageChats.data.length} chats for page ${nextPageChats.currentPage}');
+            debugPrint('ChatsBloc._getNextPageChatsEvent: Fetched ${nextPageChats.data.length} chats for page ${nextPageChats.currentPage}');
 
-            // Объединяем данные
             chatsPagination = state.chatsPagination.merge(nextPageChats);
             
-            // ПРИМЕНЯЕМ УСЛОВНУЮ СОРТИРОВКУ к объединённому списку
             final sortedChats = _sortChatsIfNeeded(chatsPagination!.data, endPoint);
             
             chatsPagination = PaginationDTO(
@@ -182,24 +175,27 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
             _lastFetchedPage = nextPage;
             emit(ChatsLoaded(chatsPagination!));
           } catch (e) {
-            //print('ChatsBloc._getNextPageChatsEvent: Error: $e');
+            debugPrint('ChatsBloc._getNextPageChatsEvent: Error: $e');
             emit(ChatsError(e.toString()));
           }
         } else {
           emit(ChatsError('Нет подключения к интернету'));
         }
       } else {
-        //print('ChatsBloc._getNextPageChatsEvent: No more pages to load');
+        debugPrint('ChatsBloc._getNextPageChatsEvent: No more pages to load');
       }
     }
   }
 
+  // 🔹 ИСПРАВЛЕННЫЙ МЕТОД
   Future<void> _updateChatsFromSocketFetch(UpdateChatsFromSocket event, Emitter<ChatsState> emit) async {
-    //print('ChatsBloc._updateChatsFromSocketFetch: Updating chat via socket: ${event.chat.id}, type: ${event.chat.type}');
-if (event.chat.id == 0 || event.chat.type == null) {
-    //print('ChatsBloc: Invalid chat from socket, skipping');
-    return;
-  }
+    debugPrint('ChatsBloc._updateChatsFromSocketFetch: Updating chat via socket: ${event.chat.id}, type: ${event.chat.type}, unreadCount from event: ${event.chat.unreadCount}');
+    
+    if (event.chat.id == 0 || event.chat.type == null) {
+      debugPrint('ChatsBloc: Invalid chat from socket, skipping');
+      return;
+    }
+    
     if (state is ChatsLoaded) {
       final currentState = state as ChatsLoaded;
       final currentChats = currentState.chatsPagination.data;
@@ -207,11 +203,46 @@ if (event.chat.id == 0 || event.chat.type == null) {
       final chatIndex = updatedChats.indexWhere((chat) => chat.id == event.chat.id);
 
       if (chatIndex != -1) {
-        updatedChats[chatIndex] = event.chat;
-        //print('ChatsBloc._updateChatsFromSocketFetch: Updated existing chat ID: ${event.chat.id}');
+        final oldChat = updatedChats[chatIndex];
+        
+        debugPrint('ChatsBloc: Old chat data - ID: ${oldChat.id}, unreadCount: ${oldChat.unreadCount}, lastMessage: "${oldChat.lastMessage}"');
+        debugPrint('ChatsBloc: New chat data - ID: ${event.chat.id}, unreadCount: ${event.chat.unreadCount}, lastMessage: "${event.chat.lastMessage}"');
+        
+        // 🔹 Проверяем, изменилось ли сообщение
+        final isNewMessage = oldChat.lastMessage != event.chat.lastMessage;
+        
+        // 🔹 Определяем новый счётчик
+        int newUnreadCount;
+        
+        if (event.chat.unreadCount > 0) {
+          // Если сервер прислал счётчик > 0, используем его
+          newUnreadCount = event.chat.unreadCount;
+          debugPrint('ChatsBloc: Using unreadCount from server: $newUnreadCount for chat ID: ${event.chat.id}');
+        } else if (isNewMessage) {
+          // Если сообщение изменилось, но сервер прислал 0, инкрементируем локально
+          newUnreadCount = oldChat.unreadCount + 1;
+          debugPrint('ChatsBloc: New message detected, incremented unreadCount from ${oldChat.unreadCount} to $newUnreadCount for chat ID: ${event.chat.id}');
+        } else {
+          // Сообщение не изменилось, оставляем старый счётчик
+          newUnreadCount = oldChat.unreadCount;
+          debugPrint('ChatsBloc: No changes detected, keeping unreadCount: $newUnreadCount for chat ID: ${event.chat.id}');
+        }
+
+        // 🔹 Обновляем чат, сохраняя старое имя и аватар
+        final updatedChat = oldChat.copyWith(
+          lastMessage: event.chat.lastMessage,
+          unreadCount: newUnreadCount,
+          createDate: event.chat.createDate,
+          messageType: event.chat.messageType,
+        );
+
+        updatedChats[chatIndex] = updatedChat;
+        debugPrint('ChatsBloc._updateChatsFromSocketFetch: Updated existing chat ID: ${event.chat.id}, final unreadCount: $newUnreadCount');
+
       } else {
+        // Новый чат
         updatedChats.insert(0, event.chat);
-        //print('ChatsBloc._updateChatsFromSocketFetch: Added new chat ID: ${event.chat.id}');
+        debugPrint('ChatsBloc._updateChatsFromSocketFetch: Added new chat ID: ${event.chat.id}, unreadCount: ${event.chat.unreadCount}');
       }
 
       // ПРИМЕНЯЕМ УСЛОВНУЮ СОРТИРОВКУ
@@ -227,9 +258,10 @@ if (event.chat.id == 0 || event.chat.type == null) {
       );
 
       emit(ChatsLoaded(chatsPagination!));
+      
     } else if (state is ChatsInitial || state is ChatsError) {
       if (_isFetching) {
-        //print('ChatsBloc._updateChatsFromSocketFetch: Skipping fetch, another fetch is in progress');
+        debugPrint('ChatsBloc._updateChatsFromSocketFetch: Skipping fetch, another fetch is in progress');
         return;
       }
       _isFetching = true;
@@ -242,7 +274,6 @@ if (event.chat.id == 0 || event.chat.type == null) {
           _currentFilters,
         );
         
-        // ПРИМЕНЯЕМ УСЛОВНУЮ СОРТИРОВКУ
         final sortedChats = _sortChatsIfNeeded(chatsPagination!.data, endPoint);
         
         chatsPagination = PaginationDTO(
@@ -256,7 +287,7 @@ if (event.chat.id == 0 || event.chat.type == null) {
         _lastFetchedPage = 1;
         emit(ChatsLoaded(chatsPagination!));
       } catch (e) {
-        //print('ChatsBloc._updateChatsFromSocketFetch: Error: $e');
+        debugPrint('ChatsBloc._updateChatsFromSocketFetch: Error: $e');
         emit(ChatsError(e.toString()));
       }
       _isFetching = false;
@@ -285,34 +316,44 @@ if (event.chat.id == 0 || event.chat.type == null) {
 
   // Очистка чатов
   Future<void> _clearChatsEvent(ClearChats event, Emitter<ChatsState> emit) async {
-    //print('ChatsBloc._clearChatsEvent: Clearing chats and resetting chatsPagination for endpoint $endPoint');
+    debugPrint('ChatsBloc._clearChatsEvent: Clearing chats and resetting chatsPagination for endpoint $endPoint');
     chatsPagination = null;
     _lastFetchedPage = 0;
     emit(ChatsInitial());
   }
 
-Future<void> _resetUnreadCount(ResetUnreadCount event, Emitter<ChatsState> emit) async {
-  if (state is ChatsLoaded) {
-    final currentState = state as ChatsLoaded;
-    final updatedChats = List<Chats>.from(currentState.chatsPagination.data);
-    final chatIndex = updatedChats.indexWhere((chat) => chat.id == event.chatId);
+  // 🔹 ИСПРАВЛЕННЫЙ МЕТОД - Сброс счётчика непрочитанных
+  Future<void> _resetUnreadCount(ResetUnreadCount event, Emitter<ChatsState> emit) async {
+    debugPrint('ChatsBloc._resetUnreadCount: Resetting unreadCount for chat ID: ${event.chatId}');
+    
+    if (state is ChatsLoaded) {
+      final currentState = state as ChatsLoaded;
+      final updatedChats = List<Chats>.from(currentState.chatsPagination.data);
+      final chatIndex = updatedChats.indexWhere((chat) => chat.id == event.chatId);
 
-    if (chatIndex != -1) {
-      // Обновляем только конкретный чат
-      updatedChats[chatIndex] = updatedChats[chatIndex].copyWith(unreadCount: 0);
-      //print('ChatsBloc._resetUnreadCount: Reset unreadCount for chat ID: ${event.chatId}');
-      
-      // НЕ пересортировываем, сохраняем порядок
-      chatsPagination = PaginationDTO(
-        data: updatedChats,
-        count: currentState.chatsPagination.count,
-        total: currentState.chatsPagination.total,
-        perPage: currentState.chatsPagination.perPage,
-        currentPage: currentState.chatsPagination.currentPage,
-        totalPage: currentState.chatsPagination.totalPage,
-      );
-      emit(ChatsLoaded(chatsPagination!));
+      if (chatIndex != -1) {
+        final oldUnreadCount = updatedChats[chatIndex].unreadCount;
+        
+        // Обновляем только конкретный чат
+        updatedChats[chatIndex] = updatedChats[chatIndex].copyWith(unreadCount: 0);
+        
+        debugPrint('ChatsBloc._resetUnreadCount: Reset unreadCount for chat ID: ${event.chatId} from $oldUnreadCount to 0');
+        
+        // НЕ пересортировываем, сохраняем порядок
+        chatsPagination = PaginationDTO(
+          data: updatedChats,
+          count: currentState.chatsPagination.count,
+          total: currentState.chatsPagination.total,
+          perPage: currentState.chatsPagination.perPage,
+          currentPage: currentState.chatsPagination.currentPage,
+          totalPage: currentState.chatsPagination.totalPage,
+        );
+        emit(ChatsLoaded(chatsPagination!));
+      } else {
+        debugPrint('ChatsBloc._resetUnreadCount: Chat ID ${event.chatId} not found in current state');
+      }
+    } else {
+      debugPrint('ChatsBloc._resetUnreadCount: State is not ChatsLoaded, cannot reset unreadCount');
     }
   }
-}
 }
