@@ -23,9 +23,10 @@ import WidgetKit
                 binaryMessenger: controller.binaryMessenger
             )
             
-            // Setup method call handler for syncing permissions to widget
+            // Setup method call handler for syncing data to widget
             methodChannel?.setMethodCallHandler { [weak self] (call, result) in
-                if call.method == "syncPermissionsToWidget" {
+                switch call.method {
+                case "syncPermissionsToWidget":
                     if let args = call.arguments as? [String: Any],
                        let permissions = args["permissions"] as? [String] {
                         self?.syncPermissionsToWidget(permissions: permissions)
@@ -33,7 +34,15 @@ import WidgetKit
                     } else {
                         result(FlutterError(code: "INVALID_ARGS", message: "Invalid arguments", details: nil))
                     }
-                } else {
+                case "syncLanguageToWidget":
+                    if let args = call.arguments as? [String: Any],
+                       let languageCode = args["languageCode"] as? String {
+                        self?.syncLanguageToWidget(languageCode: languageCode)
+                        result(true)
+                    } else {
+                        result(FlutterError(code: "INVALID_ARGS", message: "Invalid arguments", details: nil))
+                    }
+                default:
                     result(FlutterMethodNotImplemented)
                 }
             }
@@ -61,6 +70,26 @@ import WidgetKit
         if #available(iOS 14.0, *) {
             WidgetCenter.shared.reloadAllTimelines()
             print("✅ Widget timelines reloaded")
+        }
+    }
+    
+    // MARK: - Sync Language to Widget via App Groups
+    private func syncLanguageToWidget(languageCode: String) {
+        guard let userDefaults = UserDefaults(suiteName: appGroupId) else {
+            print("❌ Failed to access App Group UserDefaults")
+            return
+        }
+        
+        // Save language code to shared UserDefaults
+        userDefaults.set(languageCode, forKey: "app_language")
+        userDefaults.synchronize()
+        
+        print("✅ Synced language to widget: \(languageCode)")
+        
+        // Reload widget timelines to reflect new language
+        if #available(iOS 14.0, *) {
+            WidgetCenter.shared.reloadAllTimelines()
+            print("✅ Widget timelines reloaded for language change")
         }
     }
     

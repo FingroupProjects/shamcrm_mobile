@@ -74,4 +74,25 @@ class WidgetService {
       debugPrint('WidgetService: Error syncing permissions: $e');
     }
   }
+
+  /// Sync language to iOS widget via App Groups
+  /// This allows the widget to display labels in the correct language
+  static Future<void> syncLanguageToWidget(String languageCode) async {
+    // Only sync on iOS
+    if (!Platform.isIOS) {
+      debugPrint('WidgetService: Skipping language sync (not iOS)');
+      return;
+    }
+
+    try {
+      final result = await platform.invokeMethod('syncLanguageToWidget', {
+        'languageCode': languageCode,
+      });
+      debugPrint('WidgetService: Synced language to widget: $languageCode, result: $result');
+    } on PlatformException catch (e) {
+      debugPrint('WidgetService: Failed to sync language to widget: ${e.message}');
+    } catch (e) {
+      debugPrint('WidgetService: Error syncing language: $e');
+    }
+  }
 }

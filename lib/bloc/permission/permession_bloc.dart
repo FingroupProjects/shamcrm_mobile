@@ -5,6 +5,7 @@ import 'package:crm_task_manager/api/service/widget_service.dart';
 import 'package:crm_task_manager/bloc/permission/permession_event.dart';
 import 'package:crm_task_manager/bloc/permission/permession_state.dart';
 import 'package:crm_task_manager/models/permission.dart';
+import 'package:crm_task_manager/screens/profile/languages/local_manager_lang.dart';
 
 class PermissionsBloc extends Bloc<PermissionsEvent, PermissionsState> {
   final ApiService apiService;
@@ -27,6 +28,9 @@ class PermissionsBloc extends Bloc<PermissionsEvent, PermissionsState> {
       
       // Sync permissions to iOS widget via App Groups
       await WidgetService.syncPermissionsToWidget(permissions);
+      
+      // Also sync current language to widget
+      await LanguageManager.syncCurrentLanguageToWidget();
       
       emit(PermissionsLoaded(permissionModels));
     } catch (e) {

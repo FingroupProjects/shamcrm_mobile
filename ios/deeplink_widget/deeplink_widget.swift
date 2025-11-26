@@ -11,6 +11,58 @@ import SwiftUI
 // MARK: - App Group ID
 private let appGroupId = "group.com.softtech.crmTaskManager"
 
+// MARK: - Localization Helper
+struct WidgetLocalizations {
+    // Supported languages: ru, uz, en
+    static let translations: [String: [String: String]] = [
+        "ru": [
+            "dashboard": "Дашборд",
+            "tasks": "Задачи",
+            "leads": "Лиды",
+            "deals": "Сделки",
+            "chats": "Чаты",
+            "warehouse": "Учёт",
+            "orders": "Заказы",
+            "online_store": "Магазин",
+            "login_prompt": "Войдите в приложение"
+        ],
+        "uz": [
+            "dashboard": "Boshqaruv",
+            "tasks": "Vazifalar",
+            "leads": "Lidlar",
+            "deals": "Bitimlar",
+            "chats": "Chatlar",
+            "warehouse": "Hisoblar",
+            "orders": "Buyurtmalar",
+            "online_store": "Do'kon",
+            "login_prompt": "Ilovaga kiring"
+        ],
+        "en": [
+            "dashboard": "Dashboard",
+            "tasks": "Tasks",
+            "leads": "Leads",
+            "deals": "Deals",
+            "chats": "Chats",
+            "warehouse": "Accounting",
+            "orders": "Orders",
+            "online_store": "Store",
+            "login_prompt": "Log in to the app"
+        ]
+    ]
+    
+    static func getLanguage() -> String {
+        guard let userDefaults = UserDefaults(suiteName: appGroupId) else {
+            return "ru"
+        }
+        return userDefaults.string(forKey: "app_language") ?? "ru"
+    }
+    
+    static func translate(_ key: String) -> String {
+        let language = getLanguage()
+        return translations[language]?[key] ?? translations["ru"]?[key] ?? key
+    }
+}
+
 // MARK: - Permission Helper
 struct PermissionHelper {
     static func getPermissions() -> [String] {
@@ -34,19 +86,24 @@ struct PermissionHelper {
 struct WidgetButtonData: Identifiable {
     let id = UUID()
     let icon: String
-    let label: String
+    let labelKey: String  // Translation key
     let screenIdentifier: String
+    
+    var label: String {
+        return WidgetLocalizations.translate(labelKey)
+    }
 }
 
 // MARK: - Provider
 struct Provider: TimelineProvider {
     func placeholder(in context: Context) -> SimpleEntry {
-        SimpleEntry(date: Date(), permissions: [])
+        SimpleEntry(date: Date(), permissions: [], language: "ru")
     }
 
     func getSnapshot(in context: Context, completion: @escaping (SimpleEntry) -> ()) {
         let permissions = PermissionHelper.getPermissions()
-        let entry = SimpleEntry(date: Date(), permissions: permissions)
+        let language = WidgetLocalizations.getLanguage()
+        let entry = SimpleEntry(date: Date(), permissions: permissions, language: language)
         completion(entry)
     }
 
@@ -54,7 +111,8 @@ struct Provider: TimelineProvider {
         let currentDate = Date()
         let nextUpdate = Calendar.current.date(byAdding: .minute, value: 30, to: currentDate)!
         let permissions = PermissionHelper.getPermissions()
-        let entry = SimpleEntry(date: currentDate, permissions: permissions)
+        let language = WidgetLocalizations.getLanguage()
+        let entry = SimpleEntry(date: currentDate, permissions: permissions, language: language)
         let timeline = Timeline(entries: [entry], policy: .after(nextUpdate))
         completion(timeline)
     }
@@ -64,6 +122,7 @@ struct Provider: TimelineProvider {
 struct SimpleEntry: TimelineEntry {
     let date: Date
     let permissions: [String]
+    let language: String
     
     func hasPermission(_ permission: String) -> Bool {
         return permissions.contains(permission)
@@ -86,7 +145,7 @@ struct deeplink_widgetEntryView : View {
         if entry.hasPermission("section.dashboard") {
             buttons.append(WidgetButtonData(
                 icon: "chart.bar.fill",
-                label: "Дашборд",
+                labelKey: "dashboard",
                 screenIdentifier: "dashboard"
             ))
         }
@@ -95,7 +154,7 @@ struct deeplink_widgetEntryView : View {
         if entry.hasPermission("task.read") {
             buttons.append(WidgetButtonData(
                 icon: "checkmark.circle.fill",
-                label: "Задачи",
+                labelKey: "tasks",
                 screenIdentifier: "tasks"
             ))
         }
@@ -104,7 +163,7 @@ struct deeplink_widgetEntryView : View {
         if entry.hasPermission("lead.read") {
             buttons.append(WidgetButtonData(
                 icon: "person.fill",
-                label: "Лиды",
+                labelKey: "leads",
                 screenIdentifier: "leads"
             ))
         }
@@ -113,7 +172,7 @@ struct deeplink_widgetEntryView : View {
         if entry.hasPermission("deal.read") {
             buttons.append(WidgetButtonData(
                 icon: "briefcase.fill",
-                label: "Сделки",
+                labelKey: "deals",
                 screenIdentifier: "deals"
             ))
         }
@@ -121,7 +180,7 @@ struct deeplink_widgetEntryView : View {
         // Chats - always visible (no permission required)
         buttons.append(WidgetButtonData(
             icon: "message.fill",
-            label: "Чаты",
+            labelKey: "chats",
             screenIdentifier: "chats"
         ))
         
@@ -130,7 +189,7 @@ struct deeplink_widgetEntryView : View {
         if hasWarehouseAccess {
             buttons.append(WidgetButtonData(
                 icon: "doc.text.fill",
-                label: "Учёт",
+                labelKey: "warehouse",
                 screenIdentifier: "warehouse"
             ))
         }
@@ -139,7 +198,7 @@ struct deeplink_widgetEntryView : View {
         if entry.hasPermission("order.read") && hasWarehouseAccess {
             buttons.append(WidgetButtonData(
                 icon: "cart.fill",
-                label: "Заказы",
+                labelKey: "orders",
                 screenIdentifier: "orders"
             ))
         }
@@ -148,7 +207,7 @@ struct deeplink_widgetEntryView : View {
         if entry.hasPermission("order.read") && !hasWarehouseAccess {
             buttons.append(WidgetButtonData(
                 icon: "storefront.fill",
-                label: "Магазин",
+                labelKey: "online_store",
                 screenIdentifier: "online_store"
             ))
         }
@@ -181,7 +240,7 @@ struct deeplink_widgetEntryView : View {
                     Image(systemName: "person.crop.circle.badge.questionmark")
                         .font(.system(size: 28))
                         .foregroundColor(Color.gray)
-                    Text("Войдите в приложение")
+                    Text(WidgetLocalizations.translate("login_prompt"))
                         .font(.system(size: 11))
                         .foregroundColor(Color.gray)
                 }
@@ -299,5 +358,5 @@ struct deeplink_widget: Widget {
         "deal.read",
         "accounting_of_goods",
         "order.read"
-    ])
+    ], language: "ru")
 }
