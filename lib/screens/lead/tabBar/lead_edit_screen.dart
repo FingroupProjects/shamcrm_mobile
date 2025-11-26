@@ -332,7 +332,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                 !field.isDirectoryField && field.fieldName == fieldName);
 
             if (!fieldExists) {
-              debugPrint('Добавлено кастомное поле: $fieldName (тип: $fieldType)');
+              debugPrint(
+                  'Добавлено кастомное поле: $fieldName (тип: $fieldType)');
 
               customFieldsToAdd.add(CustomField(
                 fieldName: fieldName,
@@ -411,24 +412,25 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
           }
         }
 
-        debugPrint('Всего полей (кастомные + справочники): ${customFields.length}');
+        debugPrint(
+            'Всего полей (кастомные + справочники): ${customFields.length}');
       } catch (e) {
         debugPrint('❌ Ошибка при получении данных: $e');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              AppLocalizations.of(context)!
-                  .translate('error_fetching_directories'),
-              style: TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.white,
-              ),
-            ),
-            backgroundColor: Colors.red,
-          ),
-        );
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   SnackBar(
+        //     content: Text(
+        //       AppLocalizations.of(context)!
+        //           .translate('error_fetching_directories'),
+        //       style: TextStyle(
+        //         fontFamily: 'Gilroy',
+        //         fontSize: 16,
+        //         fontWeight: FontWeight.w500,
+        //         color: Colors.white,
+        //       ),
+        //     ),
+        //     backgroundColor: Colors.red,
+        //   ),
+        // );
       }
     });
   }
@@ -1100,165 +1102,222 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                   .translate('add'),
                               buttonColor: const Color(0xff4759FF),
                               textColor: Colors.white,
-                            onPressed: () {
-  if (_formKey.currentState!.validate()) {
-    // ✅ ИСПРАВЛЕНО: Формируем номер ТОЛЬКО если есть цифры
-    String? phoneToSend;
-    if (phoneController.text.isNotEmpty) {
-      phoneToSend = selectedDialCode + phoneController.text;
-    }
-    
-    // WhatsApp уже правильно обрабатывается через _fullWhatsAppNumber
-    String? whatsAppToSend = _fullWhatsAppNumber;
-    
-    debugPrint('phoneToSend: $phoneToSend');
-    debugPrint('whatsAppToSend: $whatsAppToSend');
+                              onPressed: () {
+                                if (_formKey.currentState!.validate()) {
+                                  // ✅ ИСПРАВЛЕНО: Формируем номер ТОЛЬКО если есть цифры
+                                  String? phoneToSend;
+                                  if (phoneController.text.isNotEmpty) {
+                                    phoneToSend =
+                                        selectedDialCode + phoneController.text;
+                                  }
 
-    DateTime? parsedBirthday;
-    if (birthdayController.text.isNotEmpty) {
-      try {
-        parsedBirthday = DateFormat('dd/MM/yyyy').parseStrict(birthdayController.text);
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              AppLocalizations.of(context)!.translate('error_enter_birth_day'),
-            ),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
-      }
-    }
-    
-    List<Map<String, dynamic>> customFieldList = [];
-    List<Map<String, int>> directoryValues = [];
+                                  // WhatsApp уже правильно обрабатывается через _fullWhatsAppNumber
+                                  String? whatsAppToSend = _fullWhatsAppNumber;
 
-    for (var field in customFields) {
-      String fieldName = field.fieldName.trim();
-      String fieldValue = field.controller.text.trim();
-      String? fieldType = field.type;
+                                  debugPrint('phoneToSend: $phoneToSend');
+                                  debugPrint('whatsAppToSend: $whatsAppToSend');
 
-      if (fieldType == 'number' && fieldValue.isNotEmpty) {
-        if (!RegExp(r'^\d+$').hasMatch(fieldValue)) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                AppLocalizations.of(context)!.translate('enter_valid_number'),
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-              backgroundColor: Colors.red,
-            ),
-          );
-          return;
-        }
-      }
+                                  DateTime? parsedBirthday;
+                                  if (birthdayController.text.isNotEmpty) {
+                                    try {
+                                      parsedBirthday = DateFormat('dd/MM/yyyy')
+                                          .parseStrict(birthdayController.text);
+                                    } catch (e) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            AppLocalizations.of(context)!
+                                                .translate(
+                                                    'error_enter_birth_day'),
+                                          ),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                      return;
+                                    }
+                                  }
 
-      if ((fieldType == 'date' || fieldType == 'datetime') && fieldValue.isNotEmpty) {
-        try {
-          DateTime parsedDate;
-          if (fieldValue.contains('GMT+0500')) {
-            parsedDate = DateFormat("EEE MMM dd yyyy HH:mm:ss 'GMT+0500 (Таджикистан)'").parse(fieldValue);
-          } else {
-            parsedDate = fieldType == 'date'
-                ? DateFormat('dd/MM/yyyy').parse(fieldValue)
-                : DateFormat('dd/MM/yyyy HH:mm').parse(fieldValue);
-          }
-          fieldValue = fieldType == 'date'
-              ? DateFormat('dd/MM/yyyy').format(parsedDate)
-              : DateFormat('dd/MM/yyyy HH:mm').format(parsedDate);
-        } catch (e) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                AppLocalizations.of(context)!.translate('enter_valid_$fieldType'),
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-              backgroundColor: Colors.red,
-            ),
-          );
-          return;
-        }
-      }
-      
-      if (field.isDirectoryField && field.directoryId != null && field.entryId != null) {
-        directoryValues.add({
-          'directory_id': field.directoryId!,
-          'entry_id': field.entryId!,
-        });
-      } else if (fieldName.isNotEmpty && fieldValue.isNotEmpty) {
-        customFieldList.add({
-          'key': fieldName,
-          'value': fieldValue,
-          'type': fieldType ?? 'string',
-        });
-      }
-    }
+                                  List<Map<String, dynamic>> customFieldList =
+                                      [];
+                                  List<Map<String, int>> directoryValues = [];
 
-    String? duplicateValue;
-    if (_showDuplicateOptions && _duplicateOption != null) {
-      duplicateValue = _duplicateOption == DuplicateOption.duplicate ? "1" : "0";
-      debugPrint('duplicateValue set to: $duplicateValue');
-    } else {
-      debugPrint('duplicateValue not set: _showDuplicateOptions=$_showDuplicateOptions, _duplicateOption=$_duplicateOption');
-    }
+                                  for (var field in customFields) {
+                                    String fieldName = field.fieldName.trim();
+                                    String fieldValue =
+                                        field.controller.text.trim();
+                                    String? fieldType = field.type;
 
-    bool isSystemManager = selectedManager == "-1" || selectedManager == "0";
-    final leadBloc = context.read<LeadBloc>();
-    final localizations = AppLocalizations.of(context)!;
-    
-    leadBloc.add(UpdateLead(
-      leadId: widget.leadId,
-      name: titleController.text,
-      phone: phoneToSend ?? '', // Provide a default empty string if null
-      waPhone: whatsAppToSend,
-      regionId: selectedRegion != null ? int.tryParse(selectedRegion!) : null,
-      managerId: !isSystemManager && selectedManager != null ? int.tryParse(selectedManager!) : null,
-      sourseId: selectedSource != null ? int.tryParse(selectedSource!) : null,
-      instaLogin: instaLoginController.text.isEmpty ? null : instaLoginController.text,
-      facebookLogin: facebookLoginController.text.isEmpty ? null : facebookLoginController.text,
-      tgNick: telegramController.text.isEmpty ? null : telegramController.text,
-      birthday: parsedBirthday,
-      email: emailController.text.isEmpty ? null : emailController.text,
-      description: descriptionController.text.isEmpty ? null : descriptionController.text,
-      leadStatusId: _selectedStatuses!.toInt(),
-      customFields: customFieldList,
-      directoryValues: directoryValues,
-      localizations: localizations,
-      isSystemManager: isSystemManager,
-      filePaths: newFiles,
-      existingFiles: existingFiles,
-      priceTypeId: _selectedPriceType,
-      salesFunnelId: selectedSalesFunnel,
-      duplicate: duplicateValue,
-    ));
-  } else {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          AppLocalizations.of(context)!.translate('fill_required_fields'),
-          style: TextStyle(
-            fontFamily: 'Gilroy',
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: Colors.white,
-          ),
-        ),
-        backgroundColor: Colors.red,
-      ),
-    );
-  }
-},
+                                    if (fieldType == 'number' &&
+                                        fieldValue.isNotEmpty) {
+                                      if (!RegExp(r'^\d+$')
+                                          .hasMatch(fieldValue)) {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              AppLocalizations.of(context)!
+                                                  .translate(
+                                                      'enter_valid_number'),
+                                              style: TextStyle(
+                                                fontFamily: 'Gilroy',
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w500,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
+                                        return;
+                                      }
+                                    }
+
+                                    if ((fieldType == 'date' ||
+                                            fieldType == 'datetime') &&
+                                        fieldValue.isNotEmpty) {
+                                      try {
+                                        DateTime parsedDate;
+                                        if (fieldValue.contains('GMT+0500')) {
+                                          parsedDate = DateFormat(
+                                                  "EEE MMM dd yyyy HH:mm:ss 'GMT+0500 (Таджикистан)'")
+                                              .parse(fieldValue);
+                                        } else {
+                                          parsedDate = fieldType == 'date'
+                                              ? DateFormat('dd/MM/yyyy')
+                                                  .parse(fieldValue)
+                                              : DateFormat('dd/MM/yyyy HH:mm')
+                                                  .parse(fieldValue);
+                                        }
+                                        fieldValue = fieldType == 'date'
+                                            ? DateFormat('dd/MM/yyyy')
+                                                .format(parsedDate)
+                                            : DateFormat('dd/MM/yyyy HH:mm')
+                                                .format(parsedDate);
+                                      } catch (e) {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              AppLocalizations.of(context)!
+                                                  .translate(
+                                                      'enter_valid_$fieldType'),
+                                              style: TextStyle(
+                                                fontFamily: 'Gilroy',
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w500,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
+                                        return;
+                                      }
+                                    }
+
+                                    if (field.isDirectoryField &&
+                                        field.directoryId != null &&
+                                        field.entryId != null) {
+                                      directoryValues.add({
+                                        'directory_id': field.directoryId!,
+                                        'entry_id': field.entryId!,
+                                      });
+                                    } else if (fieldName.isNotEmpty &&
+                                        fieldValue.isNotEmpty) {
+                                      customFieldList.add({
+                                        'key': fieldName,
+                                        'value': fieldValue,
+                                        'type': fieldType ?? 'string',
+                                      });
+                                    }
+                                  }
+
+                                  String? duplicateValue;
+                                  if (_showDuplicateOptions &&
+                                      _duplicateOption != null) {
+                                    duplicateValue = _duplicateOption ==
+                                            DuplicateOption.duplicate
+                                        ? "1"
+                                        : "0";
+                                    debugPrint(
+                                        'duplicateValue set to: $duplicateValue');
+                                  } else {
+                                    debugPrint(
+                                        'duplicateValue not set: _showDuplicateOptions=$_showDuplicateOptions, _duplicateOption=$_duplicateOption');
+                                  }
+
+                                  bool isSystemManager =
+                                      selectedManager == "-1" ||
+                                          selectedManager == "0";
+                                  final leadBloc = context.read<LeadBloc>();
+                                  final localizations =
+                                      AppLocalizations.of(context)!;
+
+                                  leadBloc.add(UpdateLead(
+                                    leadId: widget.leadId,
+                                    name: titleController.text,
+                                    phone: phoneToSend ??
+                                        '', // Provide a default empty string if null
+                                    waPhone: whatsAppToSend,
+                                    regionId: selectedRegion != null
+                                        ? int.tryParse(selectedRegion!)
+                                        : null,
+                                    managerId: !isSystemManager &&
+                                            selectedManager != null
+                                        ? int.tryParse(selectedManager!)
+                                        : null,
+                                    sourseId: selectedSource != null
+                                        ? int.tryParse(selectedSource!)
+                                        : null,
+                                    instaLogin:
+                                        instaLoginController.text.isEmpty
+                                            ? null
+                                            : instaLoginController.text,
+                                    facebookLogin:
+                                        facebookLoginController.text.isEmpty
+                                            ? null
+                                            : facebookLoginController.text,
+                                    tgNick: telegramController.text.isEmpty
+                                        ? null
+                                        : telegramController.text,
+                                    birthday: parsedBirthday,
+                                    email: emailController.text.isEmpty
+                                        ? null
+                                        : emailController.text,
+                                    description:
+                                        descriptionController.text.isEmpty
+                                            ? null
+                                            : descriptionController.text,
+                                    leadStatusId: _selectedStatuses!.toInt(),
+                                    customFields: customFieldList,
+                                    directoryValues: directoryValues,
+                                    localizations: localizations,
+                                    isSystemManager: isSystemManager,
+                                    filePaths: newFiles,
+                                    existingFiles: existingFiles,
+                                    priceTypeId: _selectedPriceType,
+                                    salesFunnelId: selectedSalesFunnel,
+                                    duplicate: duplicateValue,
+                                  ));
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        AppLocalizations.of(context)!
+                                            .translate('fill_required_fields'),
+                                        style: TextStyle(
+                                          fontFamily: 'Gilroy',
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              },
                             );
                           }
                         },

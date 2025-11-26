@@ -810,32 +810,41 @@ class _ChatsScreenState extends State<ChatsScreen>
   // Используем список подписок, чтобы избежать перезаписи
   final List<StreamSubscription<ChannelReadEvent>> subscriptions = [];
 
-  subscriptions.add(
-    myPresenceChannel.bind('chat.created').listen((event) async {
-      debugPrint('ChatsScreen: Received chat.created event: ${event.data}');
-      try {
-        final chatData = json.decode(event.data);
-        final chat = Chats.fromJson(chatData);
+ subscriptions.add(
+  myPresenceChannel.bind('chat.created').listen((event) async {
+    debugPrint('ChatsScreen: Received chat.created event: ${event.data}');
+    try {
+      final chatData = json.decode(event.data);
+      // Фикс: извлекаем внутренний 'chat', с проверкой
+      if (chatData.containsKey('chat') && chatData['chat'] is Map<String, dynamic>) {
+        final chat = Chats.fromJson(chatData['chat']);
         await updateFromSocket(chat: chat);
-      } catch (e, stackTrace) {
-        debugPrint('ChatsScreen: Error processing chat.created event: $e, StackTrace: $stackTrace');
+      } else {
+        debugPrint('ChatsScreen: Invalid chat.created data format: ${event.data}');
       }
-    }),
-  );
+    } catch (e, stackTrace) {
+      debugPrint('ChatsScreen: Error processing chat.created event: $e, StackTrace: $stackTrace');
+    }
+  }),
+);
 
-  subscriptions.add(
-    myPresenceChannel.bind('chat.updated').listen((event) async {
-      debugPrint('ChatsScreen: Received chat.updated event: ${event.data}');
-      try {
-        final chatData = json.decode(event.data);
-        final chat = Chats.fromJson(chatData);
+subscriptions.add(
+  myPresenceChannel.bind('chat.updated').listen((event) async {
+    debugPrint('ChatsScreen: Received chat.updated event: ${event.data}');
+    try {
+      final chatData = json.decode(event.data);
+      // Фикс: извлекаем внутренний 'chat', с проверкой
+      if (chatData.containsKey('chat') && chatData['chat'] is Map<String, dynamic>) {
+        final chat = Chats.fromJson(chatData['chat']);
         await updateFromSocket(chat: chat);
-      } catch (e, stackTrace) {
-        debugPrint('ChatsScreen: Error processing chat.updated event: $e, StackTrace: $stackTrace');
+      } else {
+        debugPrint('ChatsScreen: Invalid chat.updated data format: ${event.data}');
       }
-    }),
-  );
-
+    } catch (e, stackTrace) {
+      debugPrint('ChatsScreen: Error processing chat.updated event: $e, StackTrace: $stackTrace');
+    }
+  }),
+);
   // Сохраняем подписки для последующей очистки
   chatSubscribtion = subscriptions.first; // Для совместимости с текущей структурой
 
@@ -849,7 +858,10 @@ class _ChatsScreenState extends State<ChatsScreen>
 
 Future<void> updateFromSocket({required Chats chat}) async {
   debugPrint('ChatsScreen: updateFromSocket called for chat ID: ${chat.id}, type: ${chat.type}, current endPointInTab: $endPointInTab');
-  
+  if (chat.type == null) {
+    debugPrint('ChatsScreen: Skipping update due to null chat type');
+    return;
+  }
   // Определяем, к какой вкладке относится чат
   String chatEndpoint;
   if (chat.type == 'lead') {

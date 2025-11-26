@@ -196,7 +196,10 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
 
   Future<void> _updateChatsFromSocketFetch(UpdateChatsFromSocket event, Emitter<ChatsState> emit) async {
     //print('ChatsBloc._updateChatsFromSocketFetch: Updating chat via socket: ${event.chat.id}, type: ${event.chat.type}');
-
+if (event.chat.id == 0 || event.chat.type == null) {
+    //print('ChatsBloc: Invalid chat from socket, skipping');
+    return;
+  }
     if (state is ChatsLoaded) {
       final currentState = state as ChatsLoaded;
       final currentChats = currentState.chatsPagination.data;
