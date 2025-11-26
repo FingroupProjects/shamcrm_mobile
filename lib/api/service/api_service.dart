@@ -6178,7 +6178,7 @@ Future<List<Message>> getMessages(
       throw Exception('Failed to send audio message due to an exception!');
     }
   }
-
+  
 // Метод для отправки файла
   Future<void> sendFile(int chatId, String filePath) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
