@@ -211,7 +211,7 @@ class WidgetService {
       final prefs = await SharedPreferences.getInstance();
       
       // Clear all widget visibility flags
-      final keys = ['dashboard', 'tasks', 'leads', 'deals', 'chats'];
+      final keys = ['dashboard', 'tasks', 'leads', 'deals', 'chats', 'warehouse', 'orders', 'online_store'];
       for (final key in keys) {
         await prefs.remove('widget_show_$key');
       }

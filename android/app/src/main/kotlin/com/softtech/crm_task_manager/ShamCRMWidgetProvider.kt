@@ -46,7 +46,10 @@ class ShamCRMWidgetProvider : AppWidgetProvider() {
                 WidgetButton("tasks", R.id.btn_tasks, R.id.icon_tasks, R.drawable.ic_tasks),
                 WidgetButton("leads", R.id.btn_leads, R.id.icon_leads, R.drawable.ic_leads),
                 WidgetButton("deals", R.id.btn_deals, R.id.icon_deals, R.drawable.ic_deals),
-                WidgetButton("chats", R.id.btn_chats, R.id.icon_chats, R.drawable.ic_chats)
+                WidgetButton("chats", R.id.btn_chats, R.id.icon_chats, R.drawable.ic_chats),
+                WidgetButton("warehouse", R.id.btn_warehouse, R.id.icon_warehouse, R.drawable.ic_warehouse),
+                WidgetButton("orders", R.id.btn_orders, R.id.icon_orders, R.drawable.ic_orders),
+                WidgetButton("online_store", R.id.btn_online_store, R.id.icon_online_store, R.drawable.ic_online_store)
             )
             
             var visibleCount = 0
@@ -67,7 +70,12 @@ class ShamCRMWidgetProvider : AppWidgetProvider() {
                     val intent = Intent(context, MainActivity::class.java).apply {
                         action = Intent.ACTION_MAIN
                         addCategory(Intent.CATEGORY_LAUNCHER)
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                        // FLAG_ACTIVITY_NEW_TASK: needed for widget clicks (creates new task if app not running)
+                        // FLAG_ACTIVITY_SINGLE_TOP: ensures onNewIntent is called if activity is already on top (singleTop launch mode)
+                        // FLAG_ACTIVITY_CLEAR_TOP: clears activities on top of the target
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or 
+                                Intent.FLAG_ACTIVITY_SINGLE_TOP or 
+                                Intent.FLAG_ACTIVITY_CLEAR_TOP
                         putExtra("screen_identifier", button.key)
                     }
                     
@@ -109,7 +117,7 @@ class ShamCRMWidgetProvider : AppWidgetProvider() {
             Context.MODE_PRIVATE
         )
         
-        val keys = listOf("dashboard", "tasks", "leads", "deals", "chats")
+        val keys = listOf("dashboard", "tasks", "leads", "deals", "chats", "warehouse", "orders", "online_store")
         val visibility = mutableMapOf<String, Boolean>()
         
         for (key in keys) {
@@ -117,7 +125,12 @@ class ShamCRMWidgetProvider : AppWidgetProvider() {
             val flutterKey = "flutter.widget_show_$key"
             
             // Default to true if not set (show all buttons by default)
-            visibility[key] = prefs.getBoolean(flutterKey, true)
+            // Exception: warehouse, orders, online_store default to false (permission-based)
+            val defaultValue = when (key) {
+                "warehouse", "orders", "online_store" -> false
+                else -> true
+            }
+            visibility[key] = prefs.getBoolean(flutterKey, defaultValue)
         }
         
         Log.d("ShamCRMWidget", "Visibility flags: $visibility")

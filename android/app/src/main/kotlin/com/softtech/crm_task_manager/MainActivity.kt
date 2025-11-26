@@ -41,6 +41,17 @@ class MainActivity : FlutterFragmentActivity() {
         
         // Store widget navigation in SharedPreferences for Flutter to read
         handleWidgetIntent(intent)
+        
+        // If app is cold-started from widget, send navigation to Flutter after engine is ready
+        val screenIdentifier = intent?.getStringExtra("screen_identifier")
+        if (!screenIdentifier.isNullOrEmpty()) {
+            Log.d("MainActivity", "onCreate: Scheduling sendScreenToFlutter for: $screenIdentifier")
+            // Delay to ensure Flutter engine is ready
+            handler.postDelayed({
+                Log.d("MainActivity", "onCreate: Executing delayed sendScreenToFlutter for: $screenIdentifier")
+                sendScreenToFlutter(screenIdentifier)
+            }, 500) // Longer delay for cold start
+        }
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {

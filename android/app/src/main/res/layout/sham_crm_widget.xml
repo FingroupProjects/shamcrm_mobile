@@ -32,137 +32,236 @@
             android:textStyle="bold" />
     </LinearLayout>
 
-    <!-- 5 кнопок с подписями -->
+    <!-- Кнопки с подписями (до 8 кнопок) - поддержка двух рядов -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="horizontal"
-        android:gravity="center"
-        android:weightSum="5">
+        android:orientation="vertical"
+        android:gravity="center">
 
-        <!-- Дашборд -->
+        <!-- Первый ряд (первые 4 кнопки) -->
         <LinearLayout
-            android:id="@+id/btn_dashboard"
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
+            android:orientation="horizontal"
             android:gravity="center"
-            android:padding="8dp">
+            android:layout_marginBottom="6dp">
 
-            <ImageView
-                android:id="@+id/icon_dashboard"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:contentDescription="Дашборд" />
-
-            <TextView
-                android:layout_width="wrap_content"
+            <!-- Дашборд -->
+            <LinearLayout
+                android:id="@+id/btn_dashboard"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="Дашборд"
-                android:textSize="10sp"
-                android:textColor="#666666" />
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="8dp">
+
+                <ImageView
+                    android:id="@+id/icon_dashboard"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:contentDescription="Дашборд" />
+
+                <TextView
+                    android:id="@+id/label_dashboard"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Дашборд"
+                    android:textSize="10sp"
+                    android:textColor="#666666" />
+            </LinearLayout>
+
+            <!-- Задачи -->
+            <LinearLayout
+                android:id="@+id/btn_tasks"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="8dp">
+
+                <ImageView
+                    android:id="@+id/icon_tasks"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:contentDescription="Задачи" />
+
+                <TextView
+                    android:id="@+id/label_tasks"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Задачи"
+                    android:textSize="10sp"
+                    android:textColor="#666666" />
+            </LinearLayout>
+
+            <!-- Лиды -->
+            <LinearLayout
+                android:id="@+id/btn_leads"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="8dp">
+
+                <ImageView
+                    android:id="@+id/icon_leads"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:contentDescription="Лиды" />
+
+                <TextView
+                    android:id="@+id/label_leads"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Лиды"
+                    android:textSize="10sp"
+                    android:textColor="#666666" />
+            </LinearLayout>
+
+            <!-- Сделки -->
+            <LinearLayout
+                android:id="@+id/btn_deals"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="8dp">
+
+                <ImageView
+                    android:id="@+id/icon_deals"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:contentDescription="Сделки" />
+
+                <TextView
+                    android:id="@+id/label_deals"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Сделки"
+                    android:textSize="10sp"
+                    android:textColor="#666666" />
+            </LinearLayout>
         </LinearLayout>
 
-        <!-- Задачи -->
+        <!-- Второй ряд (остальные кнопки) -->
         <LinearLayout
-            android:id="@+id/btn_tasks"
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:gravity="center"
-            android:padding="8dp">
+            android:orientation="horizontal"
+            android:gravity="center">
 
-            <ImageView
-                android:id="@+id/icon_tasks"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:contentDescription="Задачи" />
-
-            <TextView
-                android:layout_width="wrap_content"
+            <!-- Чаты -->
+            <LinearLayout
+                android:id="@+id/btn_chats"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="Задачи"
-                android:textSize="10sp"
-                android:textColor="#666666" />
-        </LinearLayout>
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="8dp">
 
-        <!-- Лиды -->
-        <LinearLayout
-            android:id="@+id/btn_leads"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:gravity="center"
-            android:padding="8dp">
+                <ImageView
+                    android:id="@+id/icon_chats"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:contentDescription="Чаты" />
 
-            <ImageView
-                android:id="@+id/icon_leads"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:contentDescription="Лиды" />
+                <TextView
+                    android:id="@+id/label_chats"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Чаты"
+                    android:textSize="10sp"
+                    android:textColor="#666666" />
+            </LinearLayout>
 
-            <TextView
-                android:layout_width="wrap_content"
+            <!-- Учёт (Warehouse) -->
+            <LinearLayout
+                android:id="@+id/btn_warehouse"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="Лиды"
-                android:textSize="10sp"
-                android:textColor="#666666" />
-        </LinearLayout>
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="8dp">
 
-        <!-- Сделки -->
-        <LinearLayout
-            android:id="@+id/btn_deals"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:gravity="center"
-            android:padding="8dp">
+                <ImageView
+                    android:id="@+id/icon_warehouse"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:contentDescription="Учёт" />
 
-            <ImageView
-                android:id="@+id/icon_deals"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:contentDescription="Сделки" />
+                <TextView
+                    android:id="@+id/label_warehouse"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Учёт"
+                    android:textSize="10sp"
+                    android:textColor="#666666" />
+            </LinearLayout>
 
-            <TextView
-                android:layout_width="wrap_content"
+            <!-- Заказы (Orders) -->
+            <LinearLayout
+                android:id="@+id/btn_orders"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="Сделки"
-                android:textSize="10sp"
-                android:textColor="#666666" />
-        </LinearLayout>
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="8dp">
 
-        <!-- Чаты -->
-        <LinearLayout
-            android:id="@+id/btn_chats"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:gravity="center"
-            android:padding="8dp">
+                <ImageView
+                    android:id="@+id/icon_orders"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:contentDescription="Заказы" />
 
-            <ImageView
-                android:id="@+id/icon_chats"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:contentDescription="Чаты" />
+                <TextView
+                    android:id="@+id/label_orders"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Заказы"
+                    android:textSize="10sp"
+                    android:textColor="#666666" />
+            </LinearLayout>
 
-            <TextView
-                android:layout_width="wrap_content"
+            <!-- Магазин (Online Store) -->
+            <LinearLayout
+                android:id="@+id/btn_online_store"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="Чаты"
-                android:textSize="10sp"
-                android:textColor="#666666" />
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="8dp">
+
+                <ImageView
+                    android:id="@+id/icon_online_store"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:contentDescription="Магазин" />
+
+                <TextView
+                    android:id="@+id/label_online_store"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Магазин"
+                    android:textSize="10sp"
+                    android:textColor="#666666" />
+            </LinearLayout>
         </LinearLayout>
 
     </LinearLayout>

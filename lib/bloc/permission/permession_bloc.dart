@@ -30,12 +30,25 @@ class PermissionsBloc extends Bloc<PermissionsEvent, PermissionsState> {
       await WidgetService.syncPermissionsToWidget(permissions);
       
       // Sync visibility flags to Android widget
+      // Warehouse/Accounting - requires accounting_of_goods OR accounting_money
+      final hasWarehouseAccess = permissions.contains('accounting_of_goods') || 
+                                 permissions.contains('accounting_money');
+      
+      // Orders - requires order.read AND warehouse access
+      final hasOrdersAccess = permissions.contains('order.read') && hasWarehouseAccess;
+      
+      // Online Store - requires order.read WITHOUT warehouse access
+      final hasOnlineStoreAccess = permissions.contains('order.read') && !hasWarehouseAccess;
+      
       await WidgetService.syncWidgetVisibilityToAndroid({
         'dashboard': permissions.contains('section.dashboard'),
         'tasks': permissions.contains('task.read'),
         'leads': permissions.contains('lead.read'),
         'deals': permissions.contains('deal.read'),
         'chats': true, // Chats always visible
+        'warehouse': hasWarehouseAccess,
+        'orders': hasOrdersAccess,
+        'online_store': hasOnlineStoreAccess,
       });
       
       // Also sync current language to widget
