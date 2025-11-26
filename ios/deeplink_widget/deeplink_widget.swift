@@ -125,12 +125,12 @@ struct deeplink_widgetEntryView : View {
             screenIdentifier: "chats"
         ))
         
-        // Warehouse - requires accounting_of_goods OR accounting_money
+        // Warehouse/Accounting - requires accounting_of_goods OR accounting_money
         let hasWarehouseAccess = entry.hasAnyPermission(["accounting_of_goods", "accounting_money"])
         if hasWarehouseAccess {
             buttons.append(WidgetButtonData(
-                icon: "shippingbox.fill",
-                label: "Склад",
+                icon: "doc.text.fill",
+                label: "Учёт",
                 screenIdentifier: "warehouse"
             ))
         }
