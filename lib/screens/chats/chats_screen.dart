@@ -719,7 +719,7 @@ class _ChatsScreenState extends State<ChatsScreen>
     });
   }
 
- Future<void> setUpServices() async {
+Future<void> setUpServices() async {
   debugPrint('ChatsScreen: Starting socket setup');
   final prefs = await SharedPreferences.getInstance();
   String? token = prefs.getString('token');
@@ -815,8 +815,12 @@ class _ChatsScreenState extends State<ChatsScreen>
       debugPrint('ChatsScreen: Received chat.created event: ${event.data}');
       try {
         final chatData = json.decode(event.data);
-        final chat = Chats.fromJson(chatData);
-        await updateFromSocket(chat: chat);
+        if (chatData.containsKey('chat') && chatData['chat'] is Map<String, dynamic>) {
+          final chat = Chats.fromJson(chatData['chat']);
+          await updateFromSocket(chat: chat);
+        } else {
+          debugPrint('ChatsScreen: Invalid chat.created data format: ${event.data}');
+        }
       } catch (e, stackTrace) {
         debugPrint('ChatsScreen: Error processing chat.created event: $e, StackTrace: $stackTrace');
       }
@@ -828,8 +832,12 @@ class _ChatsScreenState extends State<ChatsScreen>
       debugPrint('ChatsScreen: Received chat.updated event: ${event.data}');
       try {
         final chatData = json.decode(event.data);
-        final chat = Chats.fromJson(chatData);
-        await updateFromSocket(chat: chat);
+        if (chatData.containsKey('chat') && chatData['chat'] is Map<String, dynamic>) {
+          final chat = Chats.fromJson(chatData['chat']);
+          await updateFromSocket(chat: chat);
+        } else {
+          debugPrint('ChatsScreen: Invalid chat.updated data format: ${event.data}');
+        }
       } catch (e, stackTrace) {
         debugPrint('ChatsScreen: Error processing chat.updated event: $e, StackTrace: $stackTrace');
       }
@@ -848,7 +856,12 @@ class _ChatsScreenState extends State<ChatsScreen>
 }
 
 Future<void> updateFromSocket({required Chats chat}) async {
-  debugPrint('ChatsScreen: updateFromSocket called for chat ID: ${chat.id}, type: ${chat.type}, current endPointInTab: $endPointInTab');
+  debugPrint('ChatsScreen: updateFromSocket called for chat ID: ${chat.id}, type: ${chat.type}, unreadCount: ${chat.unreadCount}, lastMessage: "${chat.lastMessage}", current endPointInTab: $endPointInTab');
+  
+  if (chat.type == null) {
+    debugPrint('ChatsScreen: Skipping update due to null chat type');
+    return;
+  }
   
   // Определяем, к какой вкладке относится чат
   String chatEndpoint;
@@ -871,7 +884,8 @@ Future<void> updateFromSocket({required Chats chat}) async {
     // Если обновляется текущая вкладка, обновляем UI
     if (chatEndpoint == endPointInTab) {
       debugPrint('ChatsScreen: Chat update for active tab $chatEndpoint, refreshing UI');
-      _pagingControllers[chatEndpoint]!.refresh();
+      // НЕ вызываем refresh, чтобы не перезагружать данные
+      // _pagingControllers[chatEndpoint]!.refresh();
     } else {
       // Для неактивной вкладки очищаем данные, чтобы они загрузились заново при переключении
       debugPrint('ChatsScreen: Chat update for inactive tab $chatEndpoint, marking for refresh');
@@ -881,7 +895,6 @@ Future<void> updateFromSocket({required Chats chat}) async {
     debugPrint('ChatsScreen: No bloc found for endpoint $chatEndpoint');
   }
 }
-
   void updateChats() {
     _chatsBlocs[endPointInTab]!.add(RefreshChats());
   }
@@ -1238,17 +1251,51 @@ void onTap(Chats chat) {
     );
   }
 bool _shouldRefreshData(List<Chats> current, List<Chats> updated) {
-  if (current.isEmpty && updated.isEmpty) return false; // ← Оба пустые — не обновляем
-  if (current.length != updated.length) return true;
+  if (current.isEmpty && updated.isEmpty) {
+    debugPrint('_ChatItemsWidget._shouldRefreshData: Both lists are empty, no refresh needed');
+    return false;
+  }
+  
+  if (current.length != updated.length) {
+    debugPrint('_ChatItemsWidget._shouldRefreshData: Length changed from ${current.length} to ${updated.length}');
+    return true;
+  }
   
   final currentIds = current.map((c) => c.id).toSet();
   final updatedIds = updated.map((c) => c.id).toSet();
   
   if (!currentIds.containsAll(updatedIds) || !updatedIds.containsAll(currentIds)) {
+    debugPrint('_ChatItemsWidget._shouldRefreshData: Chat IDs changed');
     return true;
   }
   
-  return _isOrderChanged(current, updated);
+  // 🔹 НОВАЯ ПРОВЕРКА: сравниваем unreadCount и lastMessage
+  for (int i = 0; i < updated.length; i++) {
+    final updatedChat = updated[i];
+    final currentChat = current.firstWhere(
+      (c) => c.id == updatedChat.id, 
+      orElse: () => updatedChat,
+    );
+    
+    if (currentChat.unreadCount != updatedChat.unreadCount) {
+      debugPrint('_ChatItemsWidget._shouldRefreshData: unreadCount changed for chat ID ${updatedChat.id}: ${currentChat.unreadCount} -> ${updatedChat.unreadCount}');
+      return true;
+    }
+    
+    if (currentChat.lastMessage != updatedChat.lastMessage) {
+      debugPrint('_ChatItemsWidget._shouldRefreshData: lastMessage changed for chat ID ${updatedChat.id}');
+      return true;
+    }
+  }
+  
+  // Проверяем изменение порядка
+  if (_isOrderChanged(current, updated)) {
+    debugPrint('_ChatItemsWidget._shouldRefreshData: Order changed');
+    return true;
+  }
+  
+  debugPrint('_ChatItemsWidget._shouldRefreshData: No changes detected');
+  return false;
 }
   @override
   Widget build(BuildContext context) {
