@@ -66,6 +66,16 @@ class ShamCRMWidgetProvider : AppWidgetProvider() {
             Log.d("ShamCRMWidget", "Using ${if (isCompact) "COMPACT" else "FULL"} layout for ${visibleButtons.size} buttons")
             
             val views = RemoteViews(context.packageName, layoutId)
+
+            // Clicking outside shortcut icons should open the app home screen
+            val rootIntent = createLaunchIntent(context, null)
+            val rootPendingIntent = PendingIntent.getActivity(
+                context,
+                appWidgetId * 1000,
+                rootIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            views.setOnClickPendingIntent(R.id.widget_root, rootPendingIntent)
             
             // Mapping of button keys to label text (Russian labels)
             val labelTextMap = mapOf(
@@ -171,14 +181,18 @@ class ShamCRMWidgetProvider : AppWidgetProvider() {
         }
     }
     
-    private fun createLaunchIntent(context: Context, screenKey: String): Intent {
+    private fun createLaunchIntent(context: Context, screenKey: String?): Intent {
         return Intent(context, MainActivity::class.java).apply {
             action = Intent.ACTION_MAIN
             addCategory(Intent.CATEGORY_LAUNCHER)
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or 
                     Intent.FLAG_ACTIVITY_SINGLE_TOP or 
                     Intent.FLAG_ACTIVITY_CLEAR_TOP
-            putExtra("screen_identifier", screenKey)
+            if (!screenKey.isNullOrEmpty()) {
+                putExtra("screen_identifier", screenKey)
+            } else {
+                removeExtra("screen_identifier")
+            }
         }
     }
     
