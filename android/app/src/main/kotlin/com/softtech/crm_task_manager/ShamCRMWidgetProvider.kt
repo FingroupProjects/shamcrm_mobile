@@ -35,6 +35,8 @@ class ShamCRMWidgetProvider : AppWidgetProvider() {
         appWidgetId: Int
     ) {
         try {
+            val views = RemoteViews(context.packageName, R.layout.sham_crm_widget)
+            
             // Read visibility flags from Flutter's SharedPreferences
             val visibility = getVisibilityFlags(context)
             
@@ -55,67 +57,32 @@ class ShamCRMWidgetProvider : AppWidgetProvider() {
                 visibility[button.key] ?: true
             }
             
-            // Choose layout based on visible button count
-            val layoutId = if (visibleButtons.size <= 5) {
-                R.layout.sham_crm_widget_single_row
-            } else {
-                R.layout.sham_crm_widget
-            }
+            // Define slot mappings for first row (4 slots)
+            val firstRowSlots = listOf(
+                R.id.btn_dashboard,
+                R.id.btn_tasks,
+                R.id.btn_leads,
+                R.id.btn_deals
+            )
             
-            val isSingleRow = layoutId == R.layout.sham_crm_widget_single_row
-            val views = RemoteViews(context.packageName, layoutId)
+            // Define slot mappings for second row (4 slots)
+            val secondRowSlots = listOf(
+                R.id.btn_chats,
+                R.id.btn_warehouse,
+                R.id.btn_orders,
+                R.id.btn_online_store
+            )
             
-            // Slot mappings based on layout selection
-            val slotContainerIds = if (isSingleRow) {
-                listOf(
-                    R.id.btn_dashboard,
-                    R.id.btn_tasks,
-                    R.id.btn_leads,
-                    R.id.btn_deals,
-                    R.id.btn_chats
-                )
-            } else {
-                listOf(
-                    R.id.btn_dashboard,
-                    R.id.btn_tasks,
-                    R.id.btn_leads,
-                    R.id.btn_deals,
-                    R.id.btn_chats,
-                    R.id.btn_warehouse,
-                    R.id.btn_orders,
-                    R.id.btn_online_store
-                )
-            }
+            // Get icon and label IDs for each slot
+            val slotIconIds = listOf(
+                R.id.icon_dashboard, R.id.icon_tasks, R.id.icon_leads, R.id.icon_deals,
+                R.id.icon_chats, R.id.icon_warehouse, R.id.icon_orders, R.id.icon_online_store
+            )
             
-            val slotIconIds = if (isSingleRow) {
-                listOf(
-                    R.id.icon_dashboard,
-                    R.id.icon_tasks,
-                    R.id.icon_leads,
-                    R.id.icon_deals,
-                    R.id.icon_chats
-                )
-            } else {
-                listOf(
-                    R.id.icon_dashboard, R.id.icon_tasks, R.id.icon_leads, R.id.icon_deals,
-                    R.id.icon_chats, R.id.icon_warehouse, R.id.icon_orders, R.id.icon_online_store
-                )
-            }
-            
-            val slotLabelIds = if (isSingleRow) {
-                listOf(
-                    R.id.label_dashboard,
-                    R.id.label_tasks,
-                    R.id.label_leads,
-                    R.id.label_deals,
-                    R.id.label_chats
-                )
-            } else {
-                listOf(
-                    R.id.label_dashboard, R.id.label_tasks, R.id.label_leads, R.id.label_deals,
-                    R.id.label_chats, R.id.label_warehouse, R.id.label_orders, R.id.label_online_store
-                )
-            }
+            val slotLabelIds = listOf(
+                R.id.label_dashboard, R.id.label_tasks, R.id.label_leads, R.id.label_deals,
+                R.id.label_chats, R.id.label_warehouse, R.id.label_orders, R.id.label_online_store
+            )
             
             // Mapping of button keys to label text (Russian labels from XML)
             val labelTextMap = mapOf(
@@ -130,13 +97,14 @@ class ShamCRMWidgetProvider : AppWidgetProvider() {
             )
             
             // Assign visible buttons to slots
-            slotContainerIds.forEachIndexed { index, slotContainer ->
-                val slotIcon = slotIconIds[index]
-                val slotLabel = slotLabelIds[index]
+            for (i in 0 until 8) {
+                val slotContainer = if (i < 4) firstRowSlots[i] else secondRowSlots[i - 4]
+                val slotIcon = slotIconIds[i]
+                val slotLabel = slotLabelIds[i]
                 
-                if (index < visibleButtons.size) {
+                if (i < visibleButtons.size) {
                     // Assign visible button to this slot
-                    val button = visibleButtons[index]
+                    val button = visibleButtons[i]
                     
                     // Find original index of button in allButtons list for unique requestCode
                     val originalButtonIndex = allButtons.indexOfFirst { it.key == button.key }
@@ -164,7 +132,7 @@ class ShamCRMWidgetProvider : AppWidgetProvider() {
                         putExtra("screen_identifier", button.key)
                     }
                     
-                    Log.d("ShamCRMWidget", "Assigned button ${button.key} to slot $index (original index: $originalButtonIndex)")
+                    Log.d("ShamCRMWidget", "Assigned button ${button.key} to slot $i (original index: $originalButtonIndex)")
                     
                     // Use original button index for unique requestCode (not slot index)
                     val requestCode = appWidgetId * 100 + originalButtonIndex
@@ -182,13 +150,15 @@ class ShamCRMWidgetProvider : AppWidgetProvider() {
                 }
             }
             
-            // For two-row layout, hide second row if not needed
-            if (!isSingleRow && visibleButtons.size <= 4) {
+            // Hide second row if 4 or fewer buttons visible
+            if (visibleButtons.size <= 4) {
                 views.setViewVisibility(R.id.second_row_layout, View.GONE)
+            } else {
+                views.setViewVisibility(R.id.second_row_layout, View.VISIBLE)
             }
 
             appWidgetManager.updateAppWidget(appWidgetId, views)
-            Log.d("ShamCRMWidget", "Widget updated — ID=$appWidgetId, layout=${if (layoutId == R.layout.sham_crm_widget_single_row) "single_row" else "two_row"}, visible buttons: ${visibleButtons.size}")
+            Log.d("ShamCRMWidget", "Widget updated — ID=$appWidgetId, visible buttons: ${visibleButtons.size}")
         } catch (e: Exception) {
             Log.e("ShamCRMWidget", "Error updating widget: ${e.message}", e)
         }

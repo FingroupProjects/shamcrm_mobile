@@ -6,35 +6,10 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@drawable/widget_background"
-    android:padding="2dp">
-
-    <!-- Заголовок -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingBottom="2dp">
-
-        <ImageView
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:scaleType="fitCenter"
-            android:src="@mipmap/ic_launcher" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="10dp"
-            android:text="shamCRM"
-            android:textColor="#1E2E52"
-            android:textSize="20sp"
-            android:textStyle="normal" />
-    </LinearLayout>
+    android:padding="4dp">
 
     <!-- Первый ряд (4 кнопки) -->
     <LinearLayout
-        android:id="@+id/first_row_layout"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
@@ -192,12 +167,11 @@
 
     <!-- Второй ряд (4 кнопки) -->
     <LinearLayout
-        android:id="@+id/second_row_layout"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
         android:orientation="horizontal"
-        android:gravity="start|center_vertical">
+        android:gravity="center">
 
         <!-- Чаты -->
         <LinearLayout
