@@ -5827,9 +5827,8 @@ Future<ChatsGetId> getChatById(int chatId) async {
   String path = '/v2/chat/$chatId';
   path = await _appendQueryParams(path);
 
-  if (kDebugMode) {
-    //debugPrint('ApiService.getChatById: Generated path: $path');
-  }
+  debugPrint('════════════════════════════════════════════════════════');
+  debugPrint('🔍 [getChatById] Requesting: $baseUrl$path');
 
   final response = await http.get(
     Uri.parse('$baseUrl$path'),
@@ -5842,16 +5841,37 @@ Future<ChatsGetId> getChatById(int chatId) async {
     },
   );
 
-  if (kDebugMode) {
-    //debugPrint('ApiService.getChatById: Response status: ${response.statusCode}');
-    //debugPrint('ApiService.getChatById: Response body: ${response.body}');
-  }
+  debugPrint('📥 [getChatById] Status: ${response.statusCode}');
+  debugPrint('📥 [getChatById] Full Response: ${response.body}');
 
   if (response.statusCode == 200) {
     final data = json.decode(response.body);
+    
+    // ✅ ЛОГИРУЕМ СТРУКТУРУ ВЕРХНЕГО УРОВНЯ
+    debugPrint('📊 [getChatById] Top-level keys: ${data.keys.toList()}');
+    
     if (data['result'] != null) {
-      // Передаём именно result в fromJson
-      return ChatsGetId.fromJson(data['result']);
+      final result = data['result'];
+      
+      // ✅ ЛОГИРУЕМ СТРУКТУРУ result
+      debugPrint('📊 [getChatById] Result keys: ${result.keys.toList()}');
+      debugPrint('📊 [getChatById] Result type: ${result['type']}');
+      debugPrint('📊 [getChatById] Result name: "${result['name']}"');
+      debugPrint('📊 [getChatById] Result group: ${result['group']}');
+      debugPrint('📊 [getChatById] Result chatUsers type: ${result['chatUsers']?.runtimeType}');
+      debugPrint('📊 [getChatById] Result chatUsers length: ${result['chatUsers']?.length}');
+      
+      if (result['chatUsers'] != null && result['chatUsers'] is List) {
+        debugPrint('📊 [getChatById] ChatUsers content:');
+        for (var i = 0; i < (result['chatUsers'] as List).length; i++) {
+          final user = result['chatUsers'][i];
+          debugPrint('   [$i] type: ${user['type']}, participant: ${user['participant']?['name']}');
+        }
+      }
+      
+      debugPrint('════════════════════════════════════════════════════════');
+      
+      return ChatsGetId.fromJson(result);
     } else {
       throw Exception('Результат отсутствует в ответе');
     }
