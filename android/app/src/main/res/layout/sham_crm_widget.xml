@@ -9,13 +9,13 @@
     android:padding="4dp">
 
     <!-- Заголовок -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingStart="8dp"
-        android:paddingBottom="4dp">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="8dp"
+            android:paddingBottom="2dp">
 
         <ImageView
             android:layout_width="32dp"
@@ -39,7 +39,9 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:orientation="horizontal"
-        android:gravity="center">
+        android:gravity="center_vertical"
+        android:paddingTop="1dp"
+        android:paddingBottom="1dp">
 
         <!-- Дашборд -->
         <LinearLayout
@@ -49,14 +51,15 @@
             android:layout_weight="1"
             android:orientation="vertical"
             android:gravity="center"
-            android:padding="1dp">
+            android:paddingTop="1dp"
+            android:paddingBottom="1dp">
 
             <ImageView
                 android:id="@+id/icon_dashboard"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:background="@drawable/widget_button_bg"
-                android:padding="6dp"
+                android:padding="10dp"
                 android:scaleType="fitCenter"
                 android:tint="@android:color/white"
                 android:contentDescription="Дашборд" />
@@ -81,14 +84,15 @@
             android:layout_weight="1"
             android:orientation="vertical"
             android:gravity="center"
-            android:padding="1dp">
+            android:paddingTop="1dp"
+            android:paddingBottom="1dp">
 
             <ImageView
                 android:id="@+id/icon_tasks"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:background="@drawable/widget_button_bg"
-                android:padding="6dp"
+                android:padding="10dp"
                 android:scaleType="fitCenter"
                 android:tint="@android:color/white"
                 android:contentDescription="Задачи" />
@@ -113,14 +117,15 @@
             android:layout_weight="1"
             android:orientation="vertical"
             android:gravity="center"
-            android:padding="1dp">
+            android:paddingTop="1dp"
+            android:paddingBottom="1dp">
 
             <ImageView
                 android:id="@+id/icon_leads"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:background="@drawable/widget_button_bg"
-                android:padding="6dp"
+                android:padding="10dp"
                 android:scaleType="fitCenter"
                 android:tint="@android:color/white"
                 android:contentDescription="Лиды" />
@@ -145,14 +150,15 @@
             android:layout_weight="1"
             android:orientation="vertical"
             android:gravity="center"
-            android:padding="1dp">
+            android:paddingTop="1dp"
+            android:paddingBottom="1dp">
 
             <ImageView
                 android:id="@+id/icon_deals"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:background="@drawable/widget_button_bg"
-                android:padding="6dp"
+                android:padding="10dp"
                 android:scaleType="fitCenter"
                 android:tint="@android:color/white"
                 android:contentDescription="Сделки" />
@@ -187,14 +193,15 @@
             android:layout_weight="1"
             android:orientation="vertical"
             android:gravity="center"
-            android:padding="1dp">
+            android:paddingTop="1dp"
+            android:paddingBottom="1dp">
 
             <ImageView
                 android:id="@+id/icon_chats"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:background="@drawable/widget_button_bg"
-                android:padding="6dp"
+                android:padding="10dp"
                 android:scaleType="fitCenter"
                 android:tint="@android:color/white"
                 android:contentDescription="Чаты" />
@@ -219,14 +226,15 @@
             android:layout_weight="1"
             android:orientation="vertical"
             android:gravity="center"
-            android:padding="1dp">
+            android:paddingTop="1dp"
+            android:paddingBottom="1dp">
 
             <ImageView
                 android:id="@+id/icon_warehouse"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:background="@drawable/widget_button_bg"
-                android:padding="6dp"
+                android:padding="10dp"
                 android:scaleType="fitCenter"
                 android:tint="@android:color/white"
                 android:contentDescription="Учёт" />
@@ -251,14 +259,15 @@
             android:layout_weight="1"
             android:orientation="vertical"
             android:gravity="center"
-            android:padding="1dp">
+            android:paddingTop="1dp"
+            android:paddingBottom="1dp">
 
             <ImageView
                 android:id="@+id/icon_orders"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:background="@drawable/widget_button_bg"
-                android:padding="6dp"
+                android:padding="10dp"
                 android:scaleType="fitCenter"
                 android:tint="@android:color/white"
                 android:contentDescription="Заказы" />
@@ -283,14 +292,15 @@
             android:layout_weight="1"
             android:orientation="vertical"
             android:gravity="center"
-            android:padding="1dp">
+            android:paddingTop="1dp"
+            android:paddingBottom="1dp">
 
             <ImageView
                 android:id="@+id/icon_online_store"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:background="@drawable/widget_button_bg"
-                android:padding="6dp"
+                android:padding="10dp"
                 android:scaleType="fitCenter"
                 android:tint="@android:color/white"
                 android:contentDescription="Магазин" />
