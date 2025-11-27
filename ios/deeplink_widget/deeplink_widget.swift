@@ -144,7 +144,7 @@ struct deeplink_widgetEntryView : View {
         // Dashboard - requires section.dashboard
         if entry.hasPermission("section.dashboard") {
             buttons.append(WidgetButtonData(
-                icon: "chart.bar.fill",
+                icon: "ic_dashboard",
                 labelKey: "dashboard",
                 screenIdentifier: "dashboard"
             ))
@@ -153,7 +153,7 @@ struct deeplink_widgetEntryView : View {
         // Tasks - requires task.read
         if entry.hasPermission("task.read") {
             buttons.append(WidgetButtonData(
-                icon: "checkmark.circle.fill",
+                icon: "ic_tasks",
                 labelKey: "tasks",
                 screenIdentifier: "tasks"
             ))
@@ -162,7 +162,7 @@ struct deeplink_widgetEntryView : View {
         // Leads - requires lead.read
         if entry.hasPermission("lead.read") {
             buttons.append(WidgetButtonData(
-                icon: "person.fill",
+                icon: "ic_leads",
                 labelKey: "leads",
                 screenIdentifier: "leads"
             ))
@@ -171,7 +171,7 @@ struct deeplink_widgetEntryView : View {
         // Deals - requires deal.read
         if entry.hasPermission("deal.read") {
             buttons.append(WidgetButtonData(
-                icon: "briefcase.fill",
+                icon: "ic_deals",
                 labelKey: "deals",
                 screenIdentifier: "deals"
             ))
@@ -179,7 +179,7 @@ struct deeplink_widgetEntryView : View {
         
         // Chats - always visible (no permission required)
         buttons.append(WidgetButtonData(
-            icon: "message.fill",
+            icon: "ic_chats",
             labelKey: "chats",
             screenIdentifier: "chats"
         ))
@@ -188,7 +188,7 @@ struct deeplink_widgetEntryView : View {
         let hasWarehouseAccess = entry.hasAnyPermission(["accounting_of_goods", "accounting_money"])
         if hasWarehouseAccess {
             buttons.append(WidgetButtonData(
-                icon: "doc.text.fill",
+                icon: "ic_warehouse",
                 labelKey: "warehouse",
                 screenIdentifier: "warehouse"
             ))
@@ -197,7 +197,7 @@ struct deeplink_widgetEntryView : View {
         // Orders - requires order.read AND warehouse access
         if entry.hasPermission("order.read") && hasWarehouseAccess {
             buttons.append(WidgetButtonData(
-                icon: "cart.fill",
+                icon: "ic_orders",
                 labelKey: "orders",
                 screenIdentifier: "orders"
             ))
@@ -206,7 +206,7 @@ struct deeplink_widgetEntryView : View {
         // Online Store - requires order.read WITHOUT warehouse access
         if entry.hasPermission("order.read") && !hasWarehouseAccess {
             buttons.append(WidgetButtonData(
-                icon: "storefront.fill",
+                icon: "ic_online_store",
                 labelKey: "online_store",
                 screenIdentifier: "online_store"
             ))
@@ -218,14 +218,15 @@ struct deeplink_widgetEntryView : View {
     var body: some View {
         VStack(spacing: 8) {
             // Header
-            HStack(spacing: 8) {
-                Image(uiImage: UIImage(named: "AppIcon") ?? UIImage())
+            HStack(spacing: 6) {
+                // App icon from widget assets
+                Image("app_icon")
                     .resizable()
-                    .frame(width: 28, height: 28)
-                    .cornerRadius(6)
+                    .frame(width: 24, height: 24)
+                    .cornerRadius(5)
                 
                 Text("shamCRM")
-                    .font(.system(size: 18, weight: .bold))
+                    .font(.system(size: 13))
                     .foregroundColor(Color(red: 0.12, green: 0.18, blue: 0.32))
                 
                 Spacer()
@@ -247,20 +248,21 @@ struct deeplink_widgetEntryView : View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .padding(.bottom, 12)
             } else if visibleButtons.count <= 5 {
-                // Single row for 5 or fewer buttons
+                // Single row for 5 or fewer buttons - use larger size
                 HStack(spacing: 6) {
                     ForEach(visibleButtons) { button in
                         WidgetButton(
                             icon: button.icon,
                             label: button.label,
-                            screenIdentifier: button.screenIdentifier
+                            screenIdentifier: button.screenIdentifier,
+                            isLarge: true
                         )
                     }
                 }
                 .padding(.horizontal, 12)
                 .padding(.bottom, 12)
             } else {
-                // Two rows for more than 5 buttons
+                // Two rows for more than 5 buttons - use current size
                 VStack(spacing: 6) {
                     // First row - first 4 buttons
                     HStack(spacing: 6) {
@@ -268,7 +270,8 @@ struct deeplink_widgetEntryView : View {
                             WidgetButton(
                                 icon: button.icon,
                                 label: button.label,
-                                screenIdentifier: button.screenIdentifier
+                                screenIdentifier: button.screenIdentifier,
+                                isLarge: false
                             )
                         }
                     }
@@ -279,7 +282,8 @@ struct deeplink_widgetEntryView : View {
                             WidgetButton(
                                 icon: button.icon,
                                 label: button.label,
-                                screenIdentifier: button.screenIdentifier
+                                screenIdentifier: button.screenIdentifier,
+                                isLarge: false
                             )
                         }
                         // Add spacers to align buttons to the left if less than 4 in second row
@@ -303,24 +307,50 @@ struct WidgetButton: View {
     let icon: String
     let label: String
     let screenIdentifier: String
+    let isLarge: Bool  // Controls size based on button count
+    
+    // Color constants matching Android widget
+    private let buttonBackgroundColor = Color(red: 0.12, green: 0.18, blue: 0.32) // #1E2E52
+    private let textColor = Color(red: 0.12, green: 0.18, blue: 0.32) // #1E2E52
+    
+    // Computed properties for sizes
+    private var circleSize: CGFloat {
+        isLarge ? 52 : 45  // Bigger for 1-5 buttons, current for more
+    }
+    
+    private var iconSize: CGFloat {
+        isLarge ? 22 : 19  // Bigger for 1-5 buttons, current for more
+    }
+    
+    private var textSize: CGFloat {
+        isLarge ? 10 : 9  // Bigger text for 1-5 buttons, current for more
+    }
     
     var body: some View {
         Link(destination: createDeepLink()) {
-            VStack(spacing: 3) {
-                Image(systemName: icon)
-                    .font(.system(size: 20))
-                    .foregroundColor(Color(red: 0.12, green: 0.18, blue: 0.32))
+            VStack(spacing: 2) {
+                // Circular button with icon
+                ZStack {
+                    Circle()
+                        .fill(buttonBackgroundColor)
+                        .frame(width: circleSize, height: circleSize)
+                    
+                    Image(icon)
+                        .resizable()
+                        .renderingMode(.template)
+                        .foregroundColor(.white)
+                        .scaledToFit()
+                        .frame(width: iconSize, height: iconSize)
+                }
                 
+                // Label text
                 Text(label)
-                    .font(.system(size: 8))
-                    .foregroundColor(Color.gray)
+                    .font(.system(size: textSize))
+                    .foregroundColor(textColor)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 6)
-            .background(Color(red: 0.97, green: 0.97, blue: 0.98))
-            .cornerRadius(10)
         }
     }
     
