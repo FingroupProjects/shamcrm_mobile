@@ -111,7 +111,7 @@ class ShamCRMWidgetProvider : AppWidgetProvider() {
                         
                         Log.d("ShamCRMWidget", "Compact: Assigned ${button.key} to slot $i")
                     } else {
-                        views.setViewVisibility(containerId, View.GONE)
+                        views.setViewVisibility(containerId, View.INVISIBLE)
                     }
                 }
             } else {
@@ -152,7 +152,7 @@ class ShamCRMWidgetProvider : AppWidgetProvider() {
                         
                         Log.d("ShamCRMWidget", "Full: Assigned ${button.key} to slot $i")
                     } else {
-                        views.setViewVisibility(containerId, View.GONE)
+                        views.setViewVisibility(containerId, View.INVISIBLE)
                     }
                 }
                 
