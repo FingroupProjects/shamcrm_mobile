@@ -13,14 +13,13 @@
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingBottom="12dp">
+        android:paddingBottom="8dp">
 
         <ImageView
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:src="@mipmap/ic_launcher"
-            android:background="@drawable/circle_avatar"
-            android:padding="6dp" />
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:scaleType="fitCenter"
+            android:src="@mipmap/ic_launcher" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -29,7 +28,7 @@
             android:text="shamCRM"
             android:textColor="#1E2E52"
             android:textSize="20sp"
-            android:textStyle="bold" />
+            android:textStyle="normal" />
     </LinearLayout>
 
     <!-- Кнопки с подписями (до 8 кнопок) - поддержка двух рядов -->
@@ -57,15 +56,22 @@
                 android:orientation="vertical"
                 android:gravity="center"
                 android:layout_margin="4dp"
-                android:padding="12dp"
-                android:background="@drawable/widget_button_bg">
+                android:padding="8dp">
 
-                <ImageView
-                    android:id="@+id/icon_dashboard"
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:tint="#1E2E52"
-                    android:contentDescription="Дашборд" />
+                <FrameLayout
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="@drawable/widget_button_bg"
+                    android:padding="10dp">
+
+                    <ImageView
+                        android:id="@+id/icon_dashboard"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:tint="@android:color/white"
+                        android:layout_gravity="center"
+                        android:contentDescription="Дашборд" />
+                </FrameLayout>
 
                 <TextView
                     android:id="@+id/label_dashboard"
@@ -73,8 +79,8 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:text="Дашборд"
-                    android:textSize="8sp"
-                    android:textColor="#666666" />
+                    android:textSize="10sp"
+                    android:textColor="#1E2E52" />
             </LinearLayout>
 
             <!-- Задачи -->
@@ -86,15 +92,22 @@
                 android:orientation="vertical"
                 android:gravity="center"
                 android:layout_margin="4dp"
-                android:padding="12dp"
-                android:background="@drawable/widget_button_bg">
+                android:padding="8dp">
 
-                <ImageView
-                    android:id="@+id/icon_tasks"
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:tint="#1E2E52"
-                    android:contentDescription="Задачи" />
+                <FrameLayout
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="@drawable/widget_button_bg"
+                    android:padding="10dp">
+
+                    <ImageView
+                        android:id="@+id/icon_tasks"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:tint="@android:color/white"
+                        android:layout_gravity="center"
+                        android:contentDescription="Задачи" />
+                </FrameLayout>
 
                 <TextView
                     android:id="@+id/label_tasks"
@@ -102,8 +115,8 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:text="Задачи"
-                    android:textSize="8sp"
-                    android:textColor="#666666" />
+                    android:textSize="10sp"
+                    android:textColor="#1E2E52" />
             </LinearLayout>
 
             <!-- Лиды -->
@@ -115,15 +128,22 @@
                 android:orientation="vertical"
                 android:gravity="center"
                 android:layout_margin="4dp"
-                android:padding="12dp"
-                android:background="@drawable/widget_button_bg">
+                android:padding="8dp">
 
-                <ImageView
-                    android:id="@+id/icon_leads"
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:tint="#1E2E52"
-                    android:contentDescription="Лиды" />
+                <FrameLayout
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="@drawable/widget_button_bg"
+                    android:padding="10dp">
+
+                    <ImageView
+                        android:id="@+id/icon_leads"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:tint="@android:color/white"
+                        android:layout_gravity="center"
+                        android:contentDescription="Лиды" />
+                </FrameLayout>
 
                 <TextView
                     android:id="@+id/label_leads"
@@ -131,8 +151,8 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:text="Лиды"
-                    android:textSize="8sp"
-                    android:textColor="#666666" />
+                    android:textSize="10sp"
+                    android:textColor="#1E2E52" />
             </LinearLayout>
 
             <!-- Сделки -->
@@ -144,15 +164,22 @@
                 android:orientation="vertical"
                 android:gravity="center"
                 android:layout_margin="4dp"
-                android:padding="12dp"
-                android:background="@drawable/widget_button_bg">
+                android:padding="8dp">
 
-                <ImageView
-                    android:id="@+id/icon_deals"
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:tint="#1E2E52"
-                    android:contentDescription="Сделки" />
+                <FrameLayout
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="@drawable/widget_button_bg"
+                    android:padding="10dp">
+
+                    <ImageView
+                        android:id="@+id/icon_deals"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:tint="@android:color/white"
+                        android:layout_gravity="center"
+                        android:contentDescription="Сделки" />
+                </FrameLayout>
 
                 <TextView
                     android:id="@+id/label_deals"
@@ -160,8 +187,8 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:text="Сделки"
-                    android:textSize="8sp"
-                    android:textColor="#666666" />
+                    android:textSize="10sp"
+                    android:textColor="#1E2E52" />
             </LinearLayout>
         </LinearLayout>
 
@@ -182,15 +209,22 @@
                 android:orientation="vertical"
                 android:gravity="center"
                 android:layout_margin="4dp"
-                android:padding="12dp"
-                android:background="@drawable/widget_button_bg">
+                android:padding="8dp">
 
-                <ImageView
-                    android:id="@+id/icon_chats"
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:tint="#1E2E52"
-                    android:contentDescription="Чаты" />
+                <FrameLayout
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="@drawable/widget_button_bg"
+                    android:padding="10dp">
+
+                    <ImageView
+                        android:id="@+id/icon_chats"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:tint="@android:color/white"
+                        android:layout_gravity="center"
+                        android:contentDescription="Чаты" />
+                </FrameLayout>
 
                 <TextView
                     android:id="@+id/label_chats"
@@ -198,8 +232,8 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:text="Чаты"
-                    android:textSize="8sp"
-                    android:textColor="#666666" />
+                    android:textSize="10sp"
+                    android:textColor="#1E2E52" />
             </LinearLayout>
 
             <!-- Учёт (Warehouse) -->
@@ -211,15 +245,22 @@
                 android:orientation="vertical"
                 android:gravity="center"
                 android:layout_margin="4dp"
-                android:padding="12dp"
-                android:background="@drawable/widget_button_bg">
+                android:padding="8dp">
 
-                <ImageView
-                    android:id="@+id/icon_warehouse"
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:tint="#1E2E52"
-                    android:contentDescription="Учёт" />
+                <FrameLayout
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="@drawable/widget_button_bg"
+                    android:padding="10dp">
+
+                    <ImageView
+                        android:id="@+id/icon_warehouse"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:tint="@android:color/white"
+                        android:layout_gravity="center"
+                        android:contentDescription="Учёт" />
+                </FrameLayout>
 
                 <TextView
                     android:id="@+id/label_warehouse"
@@ -227,8 +268,8 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:text="Учёт"
-                    android:textSize="8sp"
-                    android:textColor="#666666" />
+                    android:textSize="10sp"
+                    android:textColor="#1E2E52" />
             </LinearLayout>
 
             <!-- Заказы (Orders) -->
@@ -240,15 +281,22 @@
                 android:orientation="vertical"
                 android:gravity="center"
                 android:layout_margin="4dp"
-                android:padding="12dp"
-                android:background="@drawable/widget_button_bg">
+                android:padding="8dp">
 
-                <ImageView
-                    android:id="@+id/icon_orders"
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:tint="#1E2E52"
-                    android:contentDescription="Заказы" />
+                <FrameLayout
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="@drawable/widget_button_bg"
+                    android:padding="10dp">
+
+                    <ImageView
+                        android:id="@+id/icon_orders"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:tint="@android:color/white"
+                        android:layout_gravity="center"
+                        android:contentDescription="Заказы" />
+                </FrameLayout>
 
                 <TextView
                     android:id="@+id/label_orders"
@@ -256,8 +304,8 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:text="Заказы"
-                    android:textSize="8sp"
-                    android:textColor="#666666" />
+                    android:textSize="10sp"
+                    android:textColor="#1E2E52" />
             </LinearLayout>
 
             <!-- Магазин (Online Store) -->
@@ -269,15 +317,22 @@
                 android:orientation="vertical"
                 android:gravity="center"
                 android:layout_margin="4dp"
-                android:padding="12dp"
-                android:background="@drawable/widget_button_bg">
+                android:padding="8dp">
 
-                <ImageView
-                    android:id="@+id/icon_online_store"
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:tint="#1E2E52"
-                    android:contentDescription="Магазин" />
+                <FrameLayout
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="@drawable/widget_button_bg"
+                    android:padding="10dp">
+
+                    <ImageView
+                        android:id="@+id/icon_online_store"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:tint="@android:color/white"
+                        android:layout_gravity="center"
+                        android:contentDescription="Магазин" />
+                </FrameLayout>
 
                 <TextView
                     android:id="@+id/label_online_store"
@@ -285,8 +340,8 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:text="Магазин"
-                    android:textSize="8sp"
-                    android:textColor="#666666" />
+                    android:textSize="10sp"
+                    android:textColor="#1E2E52" />
             </LinearLayout>
         </LinearLayout>
 
