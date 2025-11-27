@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Single Row Layout: 5x1 size - UP TO 5 ITEMS -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"
+    android:background="@drawable/widget_background"
+    android:gravity="center"
+    android:padding="2dp">
+
+    <!-- Дашборд -->
+    <LinearLayout
+        android:id="@+id/btn_dashboard"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="1dp">
+
+        <FrameLayout
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="@drawable/widget_button_bg"
+            android:padding="6dp">
+
+            <ImageView
+                android:id="@+id/icon_dashboard"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:tint="@android:color/white"
+                android:layout_gravity="center"
+                android:contentDescription="Дашборд" />
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/label_dashboard"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:text="Дашборд"
+            android:textSize="9sp"
+            android:textColor="#1E2E52"
+            android:maxLines="1"
+            android:ellipsize="end" />
+    </LinearLayout>
+
+    <!-- Задачи -->
+    <LinearLayout
+        android:id="@+id/btn_tasks"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="1dp">
+
+        <FrameLayout
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="@drawable/widget_button_bg"
+            android:padding="6dp">
+
+            <ImageView
+                android:id="@+id/icon_tasks"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:tint="@android:color/white"
+                android:layout_gravity="center"
+                android:contentDescription="Задачи" />
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/label_tasks"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:text="Задачи"
+            android:textSize="9sp"
+            android:textColor="#1E2E52"
+            android:maxLines="1"
+            android:ellipsize="end" />
+    </LinearLayout>
+
+    <!-- Лиды -->
+    <LinearLayout
+        android:id="@+id/btn_leads"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="1dp">
+
+        <FrameLayout
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="@drawable/widget_button_bg"
+            android:padding="6dp">
+
+            <ImageView
+                android:id="@+id/icon_leads"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:tint="@android:color/white"
+                android:layout_gravity="center"
+                android:contentDescription="Лиды" />
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/label_leads"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:text="Лиды"
+            android:textSize="9sp"
+            android:textColor="#1E2E52"
+            android:maxLines="1"
+            android:ellipsize="end" />
+    </LinearLayout>
+
+    <!-- Сделки -->
+    <LinearLayout
+        android:id="@+id/btn_deals"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="1dp">
+
+        <FrameLayout
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="@drawable/widget_button_bg"
+            android:padding="6dp">
+
+            <ImageView
+                android:id="@+id/icon_deals"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:tint="@android:color/white"
+                android:layout_gravity="center"
+                android:contentDescription="Сделки" />
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/label_deals"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:text="Сделки"
+            android:textSize="9sp"
+            android:textColor="#1E2E52"
+            android:maxLines="1"
+            android:ellipsize="end" />
+    </LinearLayout>
+
+    <!-- Чаты -->
+    <LinearLayout
+        android:id="@+id/btn_chats"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="1dp">
+
+        <FrameLayout
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="@drawable/widget_button_bg"
+            android:padding="6dp">
+
+            <ImageView
+                android:id="@+id/icon_chats"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:tint="@android:color/white"
+                android:layout_gravity="center"
+                android:contentDescription="Чаты" />
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/label_chats"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:text="Чаты"
+            android:textSize="9sp"
+            android:textColor="#1E2E52"
+            android:maxLines="1"
+            android:ellipsize="end" />
+    </LinearLayout>
+
+</LinearLayout>
+
