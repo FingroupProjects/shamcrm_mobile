@@ -148,6 +148,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
     GlobalKey<ScaffoldMessengerState>();
+    
 void main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
@@ -179,7 +180,7 @@ void main() async {
     
     await AppTrackingTransparency.requestTrackingAuthorization();
     await _initializeFirebaseMessaging(apiService);
-    
+
     RemoteMessage? initialMessage;
     try {
       if (Firebase.apps.isNotEmpty) {
