@@ -11,11 +11,9 @@ import android.widget.RemoteViews
 
 class ShamCRMWidgetProvider : AppWidgetProvider() {
     
-    // Button configuration: key (screen identifier), container ID, icon ID, drawable resource
+    // Button configuration: key (screen identifier), drawable resource
     private data class WidgetButton(
         val key: String,
-        val containerId: Int,
-        val iconId: Int,
         val drawableId: Int
     )
     
@@ -35,21 +33,19 @@ class ShamCRMWidgetProvider : AppWidgetProvider() {
         appWidgetId: Int
     ) {
         try {
-            val views = RemoteViews(context.packageName, R.layout.sham_crm_widget)
-            
             // Read visibility flags from Flutter's SharedPreferences
             val visibility = getVisibilityFlags(context)
             
             // Define all buttons (key = screen identifier for navigation)
             val allButtons = listOf(
-                WidgetButton("dashboard", R.id.btn_dashboard, R.id.icon_dashboard, R.drawable.ic_dashboard),
-                WidgetButton("tasks", R.id.btn_tasks, R.id.icon_tasks, R.drawable.ic_tasks),
-                WidgetButton("leads", R.id.btn_leads, R.id.icon_leads, R.drawable.ic_leads),
-                WidgetButton("deals", R.id.btn_deals, R.id.icon_deals, R.drawable.ic_deals),
-                WidgetButton("chats", R.id.btn_chats, R.id.icon_chats, R.drawable.ic_chats),
-                WidgetButton("warehouse", R.id.btn_warehouse, R.id.icon_warehouse, R.drawable.ic_warehouse),
-                WidgetButton("orders", R.id.btn_orders, R.id.icon_orders, R.drawable.ic_orders),
-                WidgetButton("online_store", R.id.btn_online_store, R.id.icon_online_store, R.drawable.ic_online_store)
+                WidgetButton("dashboard", R.drawable.ic_dashboard),
+                WidgetButton("tasks", R.drawable.ic_tasks),
+                WidgetButton("leads", R.drawable.ic_leads),
+                WidgetButton("deals", R.drawable.ic_deals),
+                WidgetButton("chats", R.drawable.ic_chats),
+                WidgetButton("warehouse", R.drawable.ic_warehouse),
+                WidgetButton("orders", R.drawable.ic_orders),
+                WidgetButton("online_store", R.drawable.ic_online_store)
             )
             
             // Collect visible buttons
@@ -57,34 +53,21 @@ class ShamCRMWidgetProvider : AppWidgetProvider() {
                 visibility[button.key] ?: true
             }
             
-            // Define slot mappings for first row (4 slots)
-            val firstRowSlots = listOf(
-                R.id.btn_dashboard,
-                R.id.btn_tasks,
-                R.id.btn_leads,
-                R.id.btn_deals
-            )
+            // Choose layout based on visible button count:
+            // - Compact layout (1-4 items): smaller widget with transparent margins
+            // - Full layout (5-8 items): fills entire widget area with 2 rows
+            val isCompact = visibleButtons.size <= 4
+            val layoutId = if (isCompact) {
+                R.layout.sham_crm_widget_compact
+            } else {
+                R.layout.sham_crm_widget
+            }
             
-            // Define slot mappings for second row (4 slots)
-            val secondRowSlots = listOf(
-                R.id.btn_chats,
-                R.id.btn_warehouse,
-                R.id.btn_orders,
-                R.id.btn_online_store
-            )
+            Log.d("ShamCRMWidget", "Using ${if (isCompact) "COMPACT" else "FULL"} layout for ${visibleButtons.size} buttons")
             
-            // Get icon and label IDs for each slot
-            val slotIconIds = listOf(
-                R.id.icon_dashboard, R.id.icon_tasks, R.id.icon_leads, R.id.icon_deals,
-                R.id.icon_chats, R.id.icon_warehouse, R.id.icon_orders, R.id.icon_online_store
-            )
+            val views = RemoteViews(context.packageName, layoutId)
             
-            val slotLabelIds = listOf(
-                R.id.label_dashboard, R.id.label_tasks, R.id.label_leads, R.id.label_deals,
-                R.id.label_chats, R.id.label_warehouse, R.id.label_orders, R.id.label_online_store
-            )
-            
-            // Mapping of button keys to label text (Russian labels from XML)
+            // Mapping of button keys to label text (Russian labels)
             val labelTextMap = mapOf(
                 "dashboard" to "Дашборд",
                 "tasks" to "Задачи",
@@ -96,71 +79,106 @@ class ShamCRMWidgetProvider : AppWidgetProvider() {
                 "online_store" to "Магазин"
             )
             
-            // Assign visible buttons to slots
-            for (i in 0 until 8) {
-                val slotContainer = if (i < 4) firstRowSlots[i] else secondRowSlots[i - 4]
-                val slotIcon = slotIconIds[i]
-                val slotLabel = slotLabelIds[i]
+            if (isCompact) {
+                // Compact layout: single row with 4 slots
+                val compactSlots = listOf(
+                    Triple(R.id.btn_dashboard, R.id.icon_dashboard, R.id.label_dashboard),
+                    Triple(R.id.btn_tasks, R.id.icon_tasks, R.id.label_tasks),
+                    Triple(R.id.btn_leads, R.id.icon_leads, R.id.label_leads),
+                    Triple(R.id.btn_deals, R.id.icon_deals, R.id.label_deals)
+                )
                 
-                if (i < visibleButtons.size) {
-                    // Assign visible button to this slot
-                    val button = visibleButtons[i]
+                for (i in 0 until 4) {
+                    val (containerId, iconId, labelId) = compactSlots[i]
                     
-                    // Find original index of button in allButtons list for unique requestCode
-                    val originalButtonIndex = allButtons.indexOfFirst { it.key == button.key }
-                    
-                    // Show the slot container
-                    views.setViewVisibility(slotContainer, View.VISIBLE)
-                    
-                    // Set icon programmatically
-                    views.setImageViewResource(slotIcon, button.drawableId)
-                    
-                    // Set label text
-                    val labelText = labelTextMap[button.key] ?: button.key
-                    views.setTextViewText(slotLabel, labelText)
-                    
-                    // Create click intent with screen identifier
-                    val intent = Intent(context, MainActivity::class.java).apply {
-                        action = Intent.ACTION_MAIN
-                        addCategory(Intent.CATEGORY_LAUNCHER)
-                        // FLAG_ACTIVITY_NEW_TASK: needed for widget clicks (creates new task if app not running)
-                        // FLAG_ACTIVITY_SINGLE_TOP: ensures onNewIntent is called if activity is already on top (singleTop launch mode)
-                        // FLAG_ACTIVITY_CLEAR_TOP: clears activities on top of the target
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or 
-                                Intent.FLAG_ACTIVITY_SINGLE_TOP or 
-                                Intent.FLAG_ACTIVITY_CLEAR_TOP
-                        putExtra("screen_identifier", button.key)
+                    if (i < visibleButtons.size) {
+                        val button = visibleButtons[i]
+                        val originalButtonIndex = allButtons.indexOfFirst { it.key == button.key }
+                        
+                        views.setViewVisibility(containerId, View.VISIBLE)
+                        views.setImageViewResource(iconId, button.drawableId)
+                        views.setTextViewText(labelId, labelTextMap[button.key] ?: button.key)
+                        
+                        val intent = createLaunchIntent(context, button.key)
+                        val requestCode = appWidgetId * 100 + originalButtonIndex
+                        val pendingIntent = PendingIntent.getActivity(
+                            context,
+                            requestCode,
+                            intent,
+                            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                        )
+                        views.setOnClickPendingIntent(containerId, pendingIntent)
+                        
+                        Log.d("ShamCRMWidget", "Compact: Assigned ${button.key} to slot $i")
+                    } else {
+                        views.setViewVisibility(containerId, View.GONE)
                     }
-                    
-                    Log.d("ShamCRMWidget", "Assigned button ${button.key} to slot $i (original index: $originalButtonIndex)")
-                    
-                    // Use original button index for unique requestCode (not slot index)
-                    val requestCode = appWidgetId * 100 + originalButtonIndex
-                    val pendingIntent = PendingIntent.getActivity(
-                        context,
-                        requestCode,
-                        intent,
-                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                    )
-                    
-                    views.setOnClickPendingIntent(slotContainer, pendingIntent)
-                } else {
-                    // Hide unused slot
-                    views.setViewVisibility(slotContainer, View.GONE)
                 }
-            }
-            
-            // Hide second row if 4 or fewer buttons visible
-            if (visibleButtons.size <= 4) {
-                views.setViewVisibility(R.id.second_row_layout, View.GONE)
             } else {
-                views.setViewVisibility(R.id.second_row_layout, View.VISIBLE)
+                // Full layout: two rows with 8 slots total
+                val fullSlots = listOf(
+                    // First row
+                    Triple(R.id.btn_dashboard, R.id.icon_dashboard, R.id.label_dashboard),
+                    Triple(R.id.btn_tasks, R.id.icon_tasks, R.id.label_tasks),
+                    Triple(R.id.btn_leads, R.id.icon_leads, R.id.label_leads),
+                    Triple(R.id.btn_deals, R.id.icon_deals, R.id.label_deals),
+                    // Second row
+                    Triple(R.id.btn_chats, R.id.icon_chats, R.id.label_chats),
+                    Triple(R.id.btn_warehouse, R.id.icon_warehouse, R.id.label_warehouse),
+                    Triple(R.id.btn_orders, R.id.icon_orders, R.id.label_orders),
+                    Triple(R.id.btn_online_store, R.id.icon_online_store, R.id.label_online_store)
+                )
+                
+                for (i in 0 until 8) {
+                    val (containerId, iconId, labelId) = fullSlots[i]
+                    
+                    if (i < visibleButtons.size) {
+                        val button = visibleButtons[i]
+                        val originalButtonIndex = allButtons.indexOfFirst { it.key == button.key }
+                        
+                        views.setViewVisibility(containerId, View.VISIBLE)
+                        views.setImageViewResource(iconId, button.drawableId)
+                        views.setTextViewText(labelId, labelTextMap[button.key] ?: button.key)
+                        
+                        val intent = createLaunchIntent(context, button.key)
+                        val requestCode = appWidgetId * 100 + originalButtonIndex
+                        val pendingIntent = PendingIntent.getActivity(
+                            context,
+                            requestCode,
+                            intent,
+                            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                        )
+                        views.setOnClickPendingIntent(containerId, pendingIntent)
+                        
+                        Log.d("ShamCRMWidget", "Full: Assigned ${button.key} to slot $i")
+                    } else {
+                        views.setViewVisibility(containerId, View.GONE)
+                    }
+                }
+                
+                // Handle second row visibility for full layout
+                if (visibleButtons.size <= 4) {
+                    views.setViewVisibility(R.id.second_row_layout, View.GONE)
+                } else {
+                    views.setViewVisibility(R.id.second_row_layout, View.VISIBLE)
+                }
             }
 
             appWidgetManager.updateAppWidget(appWidgetId, views)
-            Log.d("ShamCRMWidget", "Widget updated — ID=$appWidgetId, visible buttons: ${visibleButtons.size}")
+            Log.d("ShamCRMWidget", "Widget updated — ID=$appWidgetId, visible buttons: ${visibleButtons.size}, layout: ${if (isCompact) "compact" else "full"}")
         } catch (e: Exception) {
             Log.e("ShamCRMWidget", "Error updating widget: ${e.message}", e)
+        }
+    }
+    
+    private fun createLaunchIntent(context: Context, screenKey: String): Intent {
+        return Intent(context, MainActivity::class.java).apply {
+            action = Intent.ACTION_MAIN
+            addCategory(Intent.CATEGORY_LAUNCHER)
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or 
+                    Intent.FLAG_ACTIVITY_SINGLE_TOP or 
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra("screen_identifier", screenKey)
         }
     }
     

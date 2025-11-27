@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Compact Layout: 5x1 size (single row) - UP TO 4 ITEMS -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- Transparent margin wrapper - makes widget appear smaller -->
+    <LinearLayout
+        android:id="@+id/widget_root"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="16dp"
+        android:orientation="vertical"
+        android:background="@drawable/widget_background"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:paddingTop="10dp"
+        android:paddingBottom="10dp">
+
+        <!-- Заголовок -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingBottom="8dp">
+
+            <ImageView
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:scaleType="fitCenter"
+                android:src="@mipmap/ic_launcher" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="shamCRM"
+                android:textColor="#1E2E52"
+                android:textSize="18sp"
+                android:textStyle="normal" />
+        </LinearLayout>
+
+        <!-- Кнопки (одна строка, до 4 элементов) -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center">
+
+            <!-- Дашборд -->
+            <LinearLayout
+                android:id="@+id/btn_dashboard"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="4dp">
+
+            <ImageView
+                android:id="@+id/icon_dashboard"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="@drawable/widget_button_bg"
+                android:padding="10dp"
+                android:scaleType="fitCenter"
+                android:tint="@android:color/white"
+                android:contentDescription="Дашборд" />
+
+                <TextView
+                    android:id="@+id/label_dashboard"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Дашборд"
+                    android:textSize="10sp"
+                    android:textColor="#1E2E52"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
+            </LinearLayout>
+
+            <!-- Задачи -->
+            <LinearLayout
+                android:id="@+id/btn_tasks"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="4dp">
+
+            <ImageView
+                android:id="@+id/icon_tasks"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="@drawable/widget_button_bg"
+                android:padding="10dp"
+                android:scaleType="fitCenter"
+                android:tint="@android:color/white"
+                android:contentDescription="Задачи" />
+
+                <TextView
+                    android:id="@+id/label_tasks"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Задачи"
+                    android:textSize="10sp"
+                    android:textColor="#1E2E52"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
+            </LinearLayout>
+
+            <!-- Лиды -->
+            <LinearLayout
+                android:id="@+id/btn_leads"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="4dp">
+
+            <ImageView
+                android:id="@+id/icon_leads"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="@drawable/widget_button_bg"
+                android:padding="10dp"
+                android:scaleType="fitCenter"
+                android:tint="@android:color/white"
+                android:contentDescription="Лиды" />
+
+                <TextView
+                    android:id="@+id/label_leads"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Лиды"
+                    android:textSize="10sp"
+                    android:textColor="#1E2E52"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
+            </LinearLayout>
+
+            <!-- Сделки -->
+            <LinearLayout
+                android:id="@+id/btn_deals"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="4dp">
+
+            <ImageView
+                android:id="@+id/icon_deals"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="@drawable/widget_button_bg"
+                android:padding="10dp"
+                android:scaleType="fitCenter"
+                android:tint="@android:color/white"
+                android:contentDescription="Сделки" />
+
+                <TextView
+                    android:id="@+id/label_deals"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Сделки"
+                    android:textSize="10sp"
+                    android:textColor="#1E2E52"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</FrameLayout>

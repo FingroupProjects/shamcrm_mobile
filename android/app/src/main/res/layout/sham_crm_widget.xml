@@ -8,6 +8,31 @@
     android:background="@drawable/widget_background"
     android:padding="4dp">
 
+    <!-- Заголовок -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="8dp"
+        android:paddingBottom="4dp">
+
+        <ImageView
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:scaleType="fitCenter"
+            android:src="@mipmap/ic_launcher" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:text="shamCRM"
+            android:textColor="#1E2E52"
+            android:textSize="20sp"
+            android:textStyle="normal" />
+    </LinearLayout>
+
     <!-- Первый ряд (4 кнопки) -->
     <LinearLayout
         android:layout_width="match_parent"
@@ -26,20 +51,15 @@
             android:gravity="center"
             android:padding="1dp">
 
-            <FrameLayout
+            <ImageView
+                android:id="@+id/icon_dashboard"
                 android:layout_width="36dp"
                 android:layout_height="36dp"
                 android:background="@drawable/widget_button_bg"
-                android:padding="6dp">
-
-                <ImageView
-                    android:id="@+id/icon_dashboard"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:tint="@android:color/white"
-                    android:layout_gravity="center"
-                    android:contentDescription="Дашборд" />
-            </FrameLayout>
+                android:padding="6dp"
+                android:scaleType="fitCenter"
+                android:tint="@android:color/white"
+                android:contentDescription="Дашборд" />
 
             <TextView
                 android:id="@+id/label_dashboard"
@@ -63,20 +83,15 @@
             android:gravity="center"
             android:padding="1dp">
 
-            <FrameLayout
+            <ImageView
+                android:id="@+id/icon_tasks"
                 android:layout_width="36dp"
                 android:layout_height="36dp"
                 android:background="@drawable/widget_button_bg"
-                android:padding="6dp">
-
-                <ImageView
-                    android:id="@+id/icon_tasks"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:tint="@android:color/white"
-                    android:layout_gravity="center"
-                    android:contentDescription="Задачи" />
-            </FrameLayout>
+                android:padding="6dp"
+                android:scaleType="fitCenter"
+                android:tint="@android:color/white"
+                android:contentDescription="Задачи" />
 
             <TextView
                 android:id="@+id/label_tasks"
@@ -100,20 +115,15 @@
             android:gravity="center"
             android:padding="1dp">
 
-            <FrameLayout
+            <ImageView
+                android:id="@+id/icon_leads"
                 android:layout_width="36dp"
                 android:layout_height="36dp"
                 android:background="@drawable/widget_button_bg"
-                android:padding="6dp">
-
-                <ImageView
-                    android:id="@+id/icon_leads"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:tint="@android:color/white"
-                    android:layout_gravity="center"
-                    android:contentDescription="Лиды" />
-            </FrameLayout>
+                android:padding="6dp"
+                android:scaleType="fitCenter"
+                android:tint="@android:color/white"
+                android:contentDescription="Лиды" />
 
             <TextView
                 android:id="@+id/label_leads"
@@ -137,20 +147,15 @@
             android:gravity="center"
             android:padding="1dp">
 
-            <FrameLayout
+            <ImageView
+                android:id="@+id/icon_deals"
                 android:layout_width="36dp"
                 android:layout_height="36dp"
                 android:background="@drawable/widget_button_bg"
-                android:padding="6dp">
-
-                <ImageView
-                    android:id="@+id/icon_deals"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:tint="@android:color/white"
-                    android:layout_gravity="center"
-                    android:contentDescription="Сделки" />
-            </FrameLayout>
+                android:padding="6dp"
+                android:scaleType="fitCenter"
+                android:tint="@android:color/white"
+                android:contentDescription="Сделки" />
 
             <TextView
                 android:id="@+id/label_deals"
@@ -167,6 +172,7 @@
 
     <!-- Второй ряд (4 кнопки) -->
     <LinearLayout
+        android:id="@+id/second_row_layout"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
@@ -183,20 +189,15 @@
             android:gravity="center"
             android:padding="1dp">
 
-            <FrameLayout
+            <ImageView
+                android:id="@+id/icon_chats"
                 android:layout_width="36dp"
                 android:layout_height="36dp"
                 android:background="@drawable/widget_button_bg"
-                android:padding="6dp">
-
-                <ImageView
-                    android:id="@+id/icon_chats"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:tint="@android:color/white"
-                    android:layout_gravity="center"
-                    android:contentDescription="Чаты" />
-            </FrameLayout>
+                android:padding="6dp"
+                android:scaleType="fitCenter"
+                android:tint="@android:color/white"
+                android:contentDescription="Чаты" />
 
             <TextView
                 android:id="@+id/label_chats"
@@ -220,20 +221,15 @@
             android:gravity="center"
             android:padding="1dp">
 
-            <FrameLayout
+            <ImageView
+                android:id="@+id/icon_warehouse"
                 android:layout_width="36dp"
                 android:layout_height="36dp"
                 android:background="@drawable/widget_button_bg"
-                android:padding="6dp">
-
-                <ImageView
-                    android:id="@+id/icon_warehouse"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:tint="@android:color/white"
-                    android:layout_gravity="center"
-                    android:contentDescription="Учёт" />
-            </FrameLayout>
+                android:padding="6dp"
+                android:scaleType="fitCenter"
+                android:tint="@android:color/white"
+                android:contentDescription="Учёт" />
 
             <TextView
                 android:id="@+id/label_warehouse"
@@ -257,20 +253,15 @@
             android:gravity="center"
             android:padding="1dp">
 
-            <FrameLayout
+            <ImageView
+                android:id="@+id/icon_orders"
                 android:layout_width="36dp"
                 android:layout_height="36dp"
                 android:background="@drawable/widget_button_bg"
-                android:padding="6dp">
-
-                <ImageView
-                    android:id="@+id/icon_orders"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:tint="@android:color/white"
-                    android:layout_gravity="center"
-                    android:contentDescription="Заказы" />
-            </FrameLayout>
+                android:padding="6dp"
+                android:scaleType="fitCenter"
+                android:tint="@android:color/white"
+                android:contentDescription="Заказы" />
 
             <TextView
                 android:id="@+id/label_orders"
@@ -294,20 +285,15 @@
             android:gravity="center"
             android:padding="1dp">
 
-            <FrameLayout
+            <ImageView
+                android:id="@+id/icon_online_store"
                 android:layout_width="36dp"
                 android:layout_height="36dp"
                 android:background="@drawable/widget_button_bg"
-                android:padding="6dp">
-
-                <ImageView
-                    android:id="@+id/icon_online_store"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:tint="@android:color/white"
-                    android:layout_gravity="center"
-                    android:contentDescription="Магазин" />
-            </FrameLayout>
+                android:padding="6dp"
+                android:scaleType="fitCenter"
+                android:tint="@android:color/white"
+                android:contentDescription="Магазин" />
 
             <TextView
                 android:id="@+id/label_online_store"
