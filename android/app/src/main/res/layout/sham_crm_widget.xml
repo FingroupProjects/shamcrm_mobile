@@ -16,11 +16,11 @@
         android:paddingBottom="12dp">
 
         <ImageView
-            android:layout_width="32dp"
-            android:layout_height="32dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:src="@mipmap/ic_launcher"
             android:background="@drawable/circle_avatar"
-            android:padding="4dp" />
+            android:padding="6dp" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -56,12 +56,15 @@
                 android:layout_weight="1"
                 android:orientation="vertical"
                 android:gravity="center"
-                android:padding="8dp">
+                android:layout_margin="4dp"
+                android:padding="12dp"
+                android:background="@drawable/widget_button_bg">
 
                 <ImageView
                     android:id="@+id/icon_dashboard"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:tint="#1E2E52"
                     android:contentDescription="Дашборд" />
 
                 <TextView
@@ -70,7 +73,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:text="Дашборд"
-                    android:textSize="10sp"
+                    android:textSize="8sp"
                     android:textColor="#666666" />
             </LinearLayout>
 
@@ -82,12 +85,15 @@
                 android:layout_weight="1"
                 android:orientation="vertical"
                 android:gravity="center"
-                android:padding="8dp">
+                android:layout_margin="4dp"
+                android:padding="12dp"
+                android:background="@drawable/widget_button_bg">
 
                 <ImageView
                     android:id="@+id/icon_tasks"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:tint="#1E2E52"
                     android:contentDescription="Задачи" />
 
                 <TextView
@@ -96,7 +102,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:text="Задачи"
-                    android:textSize="10sp"
+                    android:textSize="8sp"
                     android:textColor="#666666" />
             </LinearLayout>
 
@@ -108,12 +114,15 @@
                 android:layout_weight="1"
                 android:orientation="vertical"
                 android:gravity="center"
-                android:padding="8dp">
+                android:layout_margin="4dp"
+                android:padding="12dp"
+                android:background="@drawable/widget_button_bg">
 
                 <ImageView
                     android:id="@+id/icon_leads"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:tint="#1E2E52"
                     android:contentDescription="Лиды" />
 
                 <TextView
@@ -122,7 +131,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:text="Лиды"
-                    android:textSize="10sp"
+                    android:textSize="8sp"
                     android:textColor="#666666" />
             </LinearLayout>
 
@@ -134,12 +143,15 @@
                 android:layout_weight="1"
                 android:orientation="vertical"
                 android:gravity="center"
-                android:padding="8dp">
+                android:layout_margin="4dp"
+                android:padding="12dp"
+                android:background="@drawable/widget_button_bg">
 
                 <ImageView
                     android:id="@+id/icon_deals"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:tint="#1E2E52"
                     android:contentDescription="Сделки" />
 
                 <TextView
@@ -148,7 +160,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:text="Сделки"
-                    android:textSize="10sp"
+                    android:textSize="8sp"
                     android:textColor="#666666" />
             </LinearLayout>
         </LinearLayout>
@@ -169,12 +181,15 @@
                 android:layout_weight="1"
                 android:orientation="vertical"
                 android:gravity="center"
-                android:padding="8dp">
+                android:layout_margin="4dp"
+                android:padding="12dp"
+                android:background="@drawable/widget_button_bg">
 
                 <ImageView
                     android:id="@+id/icon_chats"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:tint="#1E2E52"
                     android:contentDescription="Чаты" />
 
                 <TextView
@@ -183,7 +198,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:text="Чаты"
-                    android:textSize="10sp"
+                    android:textSize="8sp"
                     android:textColor="#666666" />
             </LinearLayout>
 
@@ -195,12 +210,15 @@
                 android:layout_weight="1"
                 android:orientation="vertical"
                 android:gravity="center"
-                android:padding="8dp">
+                android:layout_margin="4dp"
+                android:padding="12dp"
+                android:background="@drawable/widget_button_bg">
 
                 <ImageView
                     android:id="@+id/icon_warehouse"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:tint="#1E2E52"
                     android:contentDescription="Учёт" />
 
                 <TextView
@@ -209,7 +227,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:text="Учёт"
-                    android:textSize="10sp"
+                    android:textSize="8sp"
                     android:textColor="#666666" />
             </LinearLayout>
 
@@ -221,12 +239,15 @@
                 android:layout_weight="1"
                 android:orientation="vertical"
                 android:gravity="center"
-                android:padding="8dp">
+                android:layout_margin="4dp"
+                android:padding="12dp"
+                android:background="@drawable/widget_button_bg">
 
                 <ImageView
                     android:id="@+id/icon_orders"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:tint="#1E2E52"
                     android:contentDescription="Заказы" />
 
                 <TextView
@@ -235,7 +256,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:text="Заказы"
-                    android:textSize="10sp"
+                    android:textSize="8sp"
                     android:textColor="#666666" />
             </LinearLayout>
 
@@ -247,12 +268,15 @@
                 android:layout_weight="1"
                 android:orientation="vertical"
                 android:gravity="center"
-                android:padding="8dp">
+                android:layout_margin="4dp"
+                android:padding="12dp"
+                android:background="@drawable/widget_button_bg">
 
                 <ImageView
                     android:id="@+id/icon_online_store"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:tint="#1E2E52"
                     android:contentDescription="Магазин" />
 
                 <TextView
@@ -261,7 +285,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:text="Магазин"
-                    android:textSize="10sp"
+                    android:textSize="8sp"
                     android:textColor="#666666" />
             </LinearLayout>
         </LinearLayout>

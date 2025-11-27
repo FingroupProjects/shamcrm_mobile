@@ -506,6 +506,8 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> checkForNewVersion(BuildContext context) async {
+    // TODO remove on building ipa or apk files
+    return;
     try {
       final newVersionPlus = NewVersionPlus();
       final status = await newVersionPlus.getVersionStatus();
