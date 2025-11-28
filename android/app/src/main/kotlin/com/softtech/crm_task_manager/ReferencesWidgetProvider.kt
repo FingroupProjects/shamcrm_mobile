@@ -41,14 +41,14 @@ class ReferencesWidgetProvider : AppWidgetProvider() {
             // Define all 8 reference buttons
             // Note: Using simple icons that are available in all Android versions
             val allButtons = listOf(
-                ReferencesButton("reference_warehouse", android.R.drawable.ic_menu_manage, "storage.read"),
-                ReferencesButton("reference_supplier", android.R.drawable.ic_menu_agenda, "supplier.read"),
-                ReferencesButton("reference_product", android.R.drawable.ic_menu_gallery, "product.read"),
-                ReferencesButton("reference_category", android.R.drawable.ic_menu_sort_by_size, "category.read"),
-                ReferencesButton("reference_openings", android.R.drawable.ic_menu_info_details, "initial_balance.read"),
-                ReferencesButton("reference_cash_desk", android.R.drawable.ic_menu_preferences, "cash_register.read"),
-                ReferencesButton("reference_expense_article", android.R.drawable.ic_menu_delete, "rko_article.read"),
-                ReferencesButton("reference_income_article", android.R.drawable.ic_menu_add, "pko_article.read")
+                ReferencesButton("reference_warehouse", R.drawable.boxes, "storage.read"),
+                ReferencesButton("reference_supplier", R.drawable.supplier, "supplier.read"),
+                ReferencesButton("reference_product", R.drawable.box, "product.read"),
+                ReferencesButton("reference_category", R.drawable.categories, "category.read"),
+                ReferencesButton("reference_openings", R.drawable.conclusion, "initial_balance.read"),
+                ReferencesButton("reference_cash_desk", R.drawable.cash_register, "cash_register.read"),
+                ReferencesButton("reference_expense_article", R.drawable.downtrend, "rko_article.read"),
+                ReferencesButton("reference_income_article", R.drawable.trend, "pko_article.read")
             )
             
             // Filter visible buttons based on permissions
