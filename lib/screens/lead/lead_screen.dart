@@ -232,9 +232,9 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     // Загружаем воронки
     context.read<SalesFunnelBloc>().add(FetchSalesFunnels());
     
-    debugPrint('✅ Initialized with funnelId: $savedFunnelId');
+    // debugPrint('✅ Initialized with funnelId: $savedFunnelId');
   } catch (e) {
-    debugPrint('❌ _initializeSalesFunnel error: $e');
+    // debugPrint('❌ _initializeSalesFunnel error: $e');
   }
 }
 
