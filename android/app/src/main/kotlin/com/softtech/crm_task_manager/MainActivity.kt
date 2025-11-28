@@ -174,16 +174,16 @@ class MainActivity : FlutterFragmentActivity() {
             widgetProviders.forEach { provider ->
                 val component = ComponentName(this, provider)
                 val widgetIds = appWidgetManager.getAppWidgetIds(component)
-                
-                if (widgetIds.isNotEmpty()) {
+            
+            if (widgetIds.isNotEmpty()) {
                     val intent = Intent(this, provider).apply {
-                        action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
-                        putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, widgetIds)
-                    }
-                    sendBroadcast(intent)
-                    
+                    action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
+                    putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, widgetIds)
+                }
+                sendBroadcast(intent)
+                
                     Log.d("MainActivity", "Widget update triggered for ${provider.simpleName} (${widgetIds.size} instances)")
-                } else {
+            } else {
                     Log.d("MainActivity", "No widgets to update for ${provider.simpleName}")
                 }
             }
