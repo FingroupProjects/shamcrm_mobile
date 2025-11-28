@@ -164,20 +164,28 @@ class MainActivity : FlutterFragmentActivity() {
     private fun updateWidget() {
         try {
             val appWidgetManager = AppWidgetManager.getInstance(this)
-            val widgetComponent = ComponentName(this, ShamCRMWidgetProvider::class.java)
-            val widgetIds = appWidgetManager.getAppWidgetIds(widgetComponent)
             
-            if (widgetIds.isNotEmpty()) {
-                // Send broadcast to update all widget instances
-                val intent = Intent(this, ShamCRMWidgetProvider::class.java).apply {
-                    action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
-                    putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, widgetIds)
-                }
-                sendBroadcast(intent)
+            val widgetProviders = listOf(
+                ShamCRMWidgetProvider::class.java,
+                ReferencesWidgetProvider::class.java,
+                AccountingWidgetProvider::class.java
+            )
+            
+            widgetProviders.forEach { provider ->
+                val component = ComponentName(this, provider)
+                val widgetIds = appWidgetManager.getAppWidgetIds(component)
                 
-                Log.d("MainActivity", "Widget update triggered for ${widgetIds.size} widgets")
-            } else {
-                Log.d("MainActivity", "No widgets to update")
+                if (widgetIds.isNotEmpty()) {
+                    val intent = Intent(this, provider).apply {
+                        action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
+                        putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, widgetIds)
+                    }
+                    sendBroadcast(intent)
+                    
+                    Log.d("MainActivity", "Widget update triggered for ${provider.simpleName} (${widgetIds.size} instances)")
+                } else {
+                    Log.d("MainActivity", "No widgets to update for ${provider.simpleName}")
+                }
             }
         } catch (e: Exception) {
             Log.e("MainActivity", "Error updating widget: ${e.message}", e)

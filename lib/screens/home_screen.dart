@@ -93,6 +93,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // ✅ Подписываемся на события от виджета (legacy Android формат)
     WidgetService.onNavigateFromWidget = (group, screenIndex) {
       if (mounted) {
+        context.read<PermissionsBloc>().add(FetchPermissionsEvent());
         setState(() {
           if (group == 1 && screenIndex < _widgetOptionsGroup1.length) {
             _selectedIndexGroup1 = screenIndex;
@@ -108,6 +109,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // ✅ Подписываемся на события от виджета (screen identifier - iOS and Android)
     WidgetService.onNavigateFromWidgetByScreen = (screenIdentifier) {
       if (mounted) {
+        context.read<PermissionsBloc>().add(FetchPermissionsEvent());
         debugPrint('HomeScreen: Callback triggered for: $screenIdentifier');
         _navigateToScreenByIdentifier(screenIdentifier);
       }
@@ -152,6 +154,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     debugPrint('HomeScreen: pendingScreen from WidgetService: $pendingScreen');
     
     if (pendingScreen != null) {
+      context.read<PermissionsBloc>().add(FetchPermissionsEvent());
       debugPrint('HomeScreen: Found pending widget navigation: $pendingScreen');
       _navigateToScreenByIdentifier(pendingScreen);
     } else {

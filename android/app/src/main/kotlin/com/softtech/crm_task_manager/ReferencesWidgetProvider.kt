@@ -39,7 +39,6 @@ class ReferencesWidgetProvider : AppWidgetProvider() {
             val permissions = getPermissions(context)
             
             // Define all 8 reference buttons
-            // Note: Using simple icons that are available in all Android versions
             val allButtons = listOf(
                 ReferencesButton("reference_warehouse", R.drawable.boxes, "storage.read"),
                 ReferencesButton("reference_supplier", R.drawable.supplier, "supplier.read"),
@@ -223,33 +222,53 @@ class ReferencesWidgetProvider : AppWidgetProvider() {
      * Permissions are stored as JSON array string.
      */
     private fun getPermissions(context: Context): List<String> {
+        Log.d("ReferencesWidget", "========== getPermissions() START ==========")
+        
         val prefs = context.getSharedPreferences(
             "FlutterSharedPreferences",
             Context.MODE_PRIVATE
         )
         
+        // Debug: Print all keys in SharedPreferences
+        val allKeys = prefs.all.keys
+        Log.d("ReferencesWidget", "All SharedPreferences keys count: ${allKeys.size}")
+        Log.d("ReferencesWidget", "All keys: $allKeys")
+        
         // Flutter SharedPreferences prefixes keys with "flutter."
         val flutterKey = "flutter.user_permissions"
+        Log.d("ReferencesWidget", "Looking for key: '$flutterKey'")
+        
         val permissionsJson = prefs.getString(flutterKey, null)
+        
+        Log.d("ReferencesWidget", "Raw permissions JSON: $permissionsJson")
+        Log.d("ReferencesWidget", "JSON is null: ${permissionsJson == null}")
+        Log.d("ReferencesWidget", "JSON is empty: ${permissionsJson?.isEmpty()}")
         
         if (permissionsJson == null || permissionsJson.isEmpty()) {
             Log.d("ReferencesWidget", "No permissions found in SharedPreferences")
+            Log.d("ReferencesWidget", "========== getPermissions() END (empty) ==========")
             return emptyList()
         }
-        
+
         try {
             val jsonArray = JSONArray(permissionsJson)
+            Log.d("ReferencesWidget", "JSON array length: ${jsonArray.length()}")
+            
             val permissions = mutableListOf<String>()
             for (i in 0 until jsonArray.length()) {
-                permissions.add(jsonArray.getString(i))
+                val permission = jsonArray.getString(i)
+                permissions.add(permission)
+                Log.d("ReferencesWidget", "Permission [$i]: $permission")
             }
+            
             Log.d("ReferencesWidget", "Loaded ${permissions.size} permissions: $permissions")
+            Log.d("ReferencesWidget", "========== getPermissions() END (success) ==========")
             return permissions
         } catch (e: Exception) {
             Log.e("ReferencesWidget", "Error parsing permissions JSON: ${e.message}", e)
+            Log.e("ReferencesWidget", "Stack trace: ${e.stackTraceToString()}")
+            Log.d("ReferencesWidget", "========== getPermissions() END (error) ==========")
             return emptyList()
         }
     }
-    
 }
-
