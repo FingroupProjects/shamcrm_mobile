@@ -20,29 +20,12 @@
         android:paddingBottom="10dp">
 
         <!-- Header -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingBottom="8dp">
-
-            <ImageView
-                android:layout_width="44dp"
-                android:layout_height="44dp"
-                android:scaleType="fitCenter"
-                android:src="@drawable/sham_crm_logo" />
-
-            <TextView
-                android:id="@+id/widget_title"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:text="Справочники"
-                android:textColor="#1E2E52"
-                android:textSize="18sp"
-                android:textStyle="normal" />
-        </LinearLayout>
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/widget_logo_compact_size"
+            android:layout_gravity="start"
+            android:scaleType="fitCenter"
+            android:src="@drawable/sham_crm_logo" />
 
         <!-- Empty state (shown when no permissions) -->
         <LinearLayout
@@ -83,8 +66,8 @@
 
                 <ImageView
                     android:id="@+id/icon_reference_warehouse"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
+                    android:layout_width="@dimen/widget_icon_size"
+                    android:layout_height="@dimen/widget_icon_size"
                     android:background="@drawable/widget_button_bg"
                     android:padding="10dp"
                     android:scaleType="fitCenter"
@@ -97,7 +80,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:text="Склад"
-                    android:textSize="10sp"
+                    android:textSize="@dimen/widget_text_compact_size"
                     android:textColor="#1E2E52"
                     android:maxLines="1"
                     android:ellipsize="end" />
@@ -115,8 +98,8 @@
 
                 <ImageView
                     android:id="@+id/icon_reference_supplier"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
+                    android:layout_width="@dimen/widget_icon_size"
+                    android:layout_height="@dimen/widget_icon_size"
                     android:background="@drawable/widget_button_bg"
                     android:padding="10dp"
                     android:scaleType="fitCenter"
@@ -129,7 +112,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:text="Поставщик"
-                    android:textSize="10sp"
+                    android:textSize="@dimen/widget_text_compact_size"
                     android:textColor="#1E2E52"
                     android:maxLines="1"
                     android:ellipsize="end" />
@@ -147,8 +130,8 @@
 
                 <ImageView
                     android:id="@+id/icon_reference_product"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
+                    android:layout_width="@dimen/widget_icon_size"
+                    android:layout_height="@dimen/widget_icon_size"
                     android:background="@drawable/widget_button_bg"
                     android:padding="10dp"
                     android:scaleType="fitCenter"
@@ -161,7 +144,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:text="Товар"
-                    android:textSize="10sp"
+                    android:textSize="@dimen/widget_text_compact_size"
                     android:textColor="#1E2E52"
                     android:maxLines="1"
                     android:ellipsize="end" />
@@ -179,8 +162,8 @@
 
                 <ImageView
                     android:id="@+id/icon_reference_category"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
+                    android:layout_width="@dimen/widget_icon_size"
+                    android:layout_height="@dimen/widget_icon_size"
                     android:background="@drawable/widget_button_bg"
                     android:padding="10dp"
                     android:scaleType="fitCenter"
@@ -193,7 +176,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:text="Категории"
-                    android:textSize="10sp"
+                    android:textSize="@dimen/widget_text_compact_size"
                     android:textColor="#1E2E52"
                     android:maxLines="1"
                     android:ellipsize="end" />

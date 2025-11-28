@@ -9,30 +9,13 @@
     android:padding="4dp">
 
     <!-- Header -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingStart="8dp"
-        android:paddingBottom="2dp">
-
-        <ImageView
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:scaleType="fitCenter"
-            android:src="@drawable/sham_crm_logo" />
-
-        <TextView
-            android:id="@+id/widget_title"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="10dp"
-            android:text="Справочники"
-            android:textColor="#1E2E52"
-            android:textSize="20sp"
-            android:textStyle="normal" />
-    </LinearLayout>
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="@dimen/widget_logo_size"
+        android:layout_gravity="start"
+        android:layout_marginStart="-4dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/sham_crm_logo" />
 
     <!-- Empty state (shown when no permissions) -->
     <LinearLayout
@@ -77,8 +60,8 @@
 
             <ImageView
                 android:id="@+id/icon_reference_warehouse"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="@dimen/widget_icon_size"
+                android:layout_height="@dimen/widget_icon_size"
                 android:background="@drawable/widget_button_bg"
                 android:padding="10dp"
                 android:scaleType="fitCenter"
@@ -91,7 +74,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
                 android:text="Склад"
-                android:textSize="9sp"
+                android:textSize="@dimen/widget_text_size"
                 android:textColor="#1E2E52"
                 android:maxLines="1"
                 android:ellipsize="end" />
@@ -110,8 +93,8 @@
 
             <ImageView
                 android:id="@+id/icon_reference_supplier"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="@dimen/widget_icon_size"
+                android:layout_height="@dimen/widget_icon_size"
                 android:background="@drawable/widget_button_bg"
                 android:padding="10dp"
                 android:scaleType="fitCenter"
@@ -124,7 +107,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
                 android:text="Поставщик"
-                android:textSize="9sp"
+                android:textSize="@dimen/widget_text_size"
                 android:textColor="#1E2E52"
                 android:maxLines="1"
                 android:ellipsize="end" />
@@ -143,8 +126,8 @@
 
             <ImageView
                 android:id="@+id/icon_reference_product"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="@dimen/widget_icon_size"
+                android:layout_height="@dimen/widget_icon_size"
                 android:background="@drawable/widget_button_bg"
                 android:padding="10dp"
                 android:scaleType="fitCenter"
@@ -157,7 +140,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
                 android:text="Товар"
-                android:textSize="9sp"
+                android:textSize="@dimen/widget_text_size"
                 android:textColor="#1E2E52"
                 android:maxLines="1"
                 android:ellipsize="end" />
@@ -176,8 +159,8 @@
 
             <ImageView
                 android:id="@+id/icon_reference_category"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="@dimen/widget_icon_size"
+                android:layout_height="@dimen/widget_icon_size"
                 android:background="@drawable/widget_button_bg"
                 android:padding="10dp"
                 android:scaleType="fitCenter"
@@ -190,7 +173,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
                 android:text="Категории"
-                android:textSize="9sp"
+                android:textSize="@dimen/widget_text_size"
                 android:textColor="#1E2E52"
                 android:maxLines="1"
                 android:ellipsize="end" />
@@ -219,8 +202,8 @@
 
             <ImageView
                 android:id="@+id/icon_reference_openings"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="@dimen/widget_icon_size"
+                android:layout_height="@dimen/widget_icon_size"
                 android:background="@drawable/widget_button_bg"
                 android:padding="10dp"
                 android:scaleType="fitCenter"
@@ -233,7 +216,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
                 android:text="Первоначальный остаток"
-                android:textSize="9sp"
+                android:textSize="@dimen/widget_text_size"
                 android:textColor="#1E2E52"
                 android:maxLines="1"
                 android:ellipsize="end" />
@@ -252,8 +235,8 @@
 
             <ImageView
                 android:id="@+id/icon_reference_cash_desk"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="@dimen/widget_icon_size"
+                android:layout_height="@dimen/widget_icon_size"
                 android:background="@drawable/widget_button_bg"
                 android:padding="10dp"
                 android:scaleType="fitCenter"
@@ -266,7 +249,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
                 android:text="Касса"
-                android:textSize="9sp"
+                android:textSize="@dimen/widget_text_size"
                 android:textColor="#1E2E52"
                 android:maxLines="1"
                 android:ellipsize="end" />
@@ -285,8 +268,8 @@
 
             <ImageView
                 android:id="@+id/icon_reference_expense_article"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="@dimen/widget_icon_size"
+                android:layout_height="@dimen/widget_icon_size"
                 android:background="@drawable/widget_button_bg"
                 android:padding="10dp"
                 android:scaleType="fitCenter"
@@ -299,7 +282,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
                 android:text="Статья расхода"
-                android:textSize="9sp"
+                android:textSize="@dimen/widget_text_size"
                 android:textColor="#1E2E52"
                 android:maxLines="1"
                 android:ellipsize="end" />
@@ -318,8 +301,8 @@
 
             <ImageView
                 android:id="@+id/icon_reference_income_article"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="@dimen/widget_icon_size"
+                android:layout_height="@dimen/widget_icon_size"
                 android:background="@drawable/widget_button_bg"
                 android:padding="10dp"
                 android:scaleType="fitCenter"
@@ -332,7 +315,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
                 android:text="Статья дохода"
-                android:textSize="9sp"
+                android:textSize="@dimen/widget_text_size"
                 android:textColor="#1E2E52"
                 android:maxLines="1"
                 android:ellipsize="end" />

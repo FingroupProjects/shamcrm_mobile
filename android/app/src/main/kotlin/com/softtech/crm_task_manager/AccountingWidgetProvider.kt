@@ -91,8 +91,7 @@ class AccountingWidgetProvider : AppWidgetProvider() {
                 "money_outcome" to "Расход денег"
             )
             
-            // Set widget title (Russian)
-            views.setTextViewText(R.id.widget_title, "Учет торговли")
+            // Widget title removed - no longer needed
             
             if (visibleButtons.isEmpty()) {
                 // No permissions - show login prompt

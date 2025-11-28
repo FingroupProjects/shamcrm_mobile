@@ -89,8 +89,7 @@ class ReferencesWidgetProvider : AppWidgetProvider() {
                 "reference_income_article" to "Статья дохода"
             )
             
-            // Set widget title (Russian)
-            views.setTextViewText(R.id.widget_title, "Справочники")
+            // Widget title removed - no longer needed
             
             if (visibleButtons.isEmpty()) {
                 // No permissions - show login prompt
