@@ -6,7 +6,15 @@ import 'package:crm_task_manager/bloc/permission/permession_event.dart';
 import 'package:crm_task_manager/bloc/permission/permession_state.dart';
 import 'package:crm_task_manager/page_2/online_shop.dart';
 import 'package:crm_task_manager/page_2/order/order_screen.dart';
+import 'package:crm_task_manager/page_2/money/money_income/money_income_screen.dart';
+import 'package:crm_task_manager/page_2/money/money_outcome/money_outcome_screen.dart';
+import 'package:crm_task_manager/page_2/warehouse/client_return/client_return_screen.dart';
+import 'package:crm_task_manager/page_2/warehouse/client_sale/client_sales_screen.dart';
+import 'package:crm_task_manager/page_2/warehouse/incoming/incoming_screen.dart';
+import 'package:crm_task_manager/page_2/warehouse/movement/movement_screen.dart';
+import 'package:crm_task_manager/page_2/warehouse/supplier_return_document/supplier_return_document_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/warehouse_screen.dart';
+import 'package:crm_task_manager/page_2/warehouse/write_off/write_off_screen.dart';
 import 'package:crm_task_manager/screens/MyNavBar.dart';
 import 'package:crm_task_manager/screens/background_data_loader_service.dart';
 import 'package:crm_task_manager/screens/chats/chats_screen.dart';
@@ -177,6 +185,84 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // Маппинг идентификаторов экранов на их типы
     int? targetIndexGroup1;
     int? targetIndexGroup2;
+    
+    // Handle accounting document screen identifiers
+    final accountingScreenIdentifiers = [
+      'client_sale',
+      'client_return',
+      'income_goods',
+      'transfer',
+      'write_off',
+      'supplier_return',
+      'money_income',
+      'money_outcome'
+    ];
+    
+    if (accountingScreenIdentifiers.contains(screenIdentifier)) {
+      debugPrint('HomeScreen: Accounting screen identifier detected: $screenIdentifier');
+      
+      // First, navigate to warehouse screen
+      int? warehouseIndex;
+      for (int i = 0; i < _widgetOptionsGroup1.length; i++) {
+        final widget = _widgetOptionsGroup1[i];
+        if (widget is WarehouseAccountingScreen) {
+          warehouseIndex = i;
+          break;
+        }
+      }
+      
+      if (warehouseIndex != null) {
+        setState(() {
+          _selectedIndexGroup1 = warehouseIndex!;
+          _selectedIndexGroup2 = -1;
+        });
+        
+        // Then navigate to specific document screen after a short delay
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (!mounted) return;
+          
+          Widget? targetScreen;
+          switch (screenIdentifier) {
+            case 'client_sale':
+              targetScreen = ClientSaleScreen();
+              break;
+            case 'client_return':
+              targetScreen = ClientReturnScreen();
+              break;
+            case 'income_goods':
+              targetScreen = IncomingScreen();
+              break;
+            case 'transfer':
+              targetScreen = MovementScreen(organizationId: 1);
+              break;
+            case 'write_off':
+              targetScreen = WriteOffScreen();
+              break;
+            case 'supplier_return':
+              targetScreen = SupplierReturnScreen();
+              break;
+            case 'money_income':
+              targetScreen = MoneyIncomeScreen();
+              break;
+            case 'money_outcome':
+              targetScreen = MoneyOutcomeScreen();
+              break;
+          }
+          
+          if (targetScreen != null) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => targetScreen!),
+            );
+            debugPrint('HomeScreen: ✅ Navigated to accounting document: $screenIdentifier');
+          }
+        });
+        
+        return;
+      } else {
+        debugPrint('HomeScreen: ⚠️ Warehouse screen not found, cannot navigate to accounting document');
+      }
+    }
     
     debugPrint('HomeScreen: Searching in Group1 (${_widgetOptionsGroup1.length} screens)');
     
