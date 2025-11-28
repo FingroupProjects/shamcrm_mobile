@@ -198,6 +198,41 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       'money_outcome'
     ];
     
+    // Handle warehouse screen - close all document screens and return to warehouse
+    if (screenIdentifier == 'warehouse') {
+      debugPrint('HomeScreen: Warehouse screen identifier detected');
+      
+      // Find warehouse screen index
+      int? warehouseIndex;
+      for (int i = 0; i < _widgetOptionsGroup1.length; i++) {
+        final widget = _widgetOptionsGroup1[i];
+        if (widget is WarehouseAccountingScreen) {
+          warehouseIndex = i;
+          break;
+        }
+      }
+      
+      if (warehouseIndex != null) {
+        // Navigate to warehouse tab first
+        setState(() {
+          _selectedIndexGroup1 = warehouseIndex!;
+          _selectedIndexGroup2 = -1;
+        });
+        
+        // Close all pushed document screens and return to warehouse
+        // Pop until we reach the HomeScreen (which contains warehouse)
+        if (Navigator.canPop(context)) {
+          Navigator.popUntil(context, (route) => route.isFirst);
+        }
+        
+        debugPrint('HomeScreen: ✅ Navigated to warehouse screen');
+        return;
+      } else {
+        debugPrint('HomeScreen: ⚠️ Warehouse screen not found');
+      }
+    }
+    
+    // Handle accounting document screen identifiers
     if (accountingScreenIdentifiers.contains(screenIdentifier)) {
       debugPrint('HomeScreen: Accounting screen identifier detected: $screenIdentifier');
       
@@ -218,6 +253,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         });
         
         // Then navigate to specific document screen after a short delay
+        // Use pushReplacement to replace current screen instead of pushing
         Future.delayed(const Duration(milliseconds: 300), () {
           if (!mounted) return;
           
@@ -250,10 +286,20 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           }
           
           if (targetScreen != null) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => targetScreen!),
-            );
+            // Always use pushReplacement to replace current document screen
+            // This prevents stacking multiple document screens
+            if (Navigator.canPop(context)) {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => targetScreen!),
+              );
+            } else {
+              // If we can't pop, just push (first time opening a document)
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => targetScreen!),
+              );
+            }
             debugPrint('HomeScreen: ✅ Navigated to accounting document: $screenIdentifier');
           }
         });
