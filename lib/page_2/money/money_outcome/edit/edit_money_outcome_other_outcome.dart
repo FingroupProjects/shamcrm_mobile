@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../../utils/global_fun.dart';
+import '../../../../custom_widget/price_input_formatter.dart';
 import '../money_outcome_operation_type.dart';
 
 class EditMoneyOutcomeOtherOutcome extends StatefulWidget {
@@ -482,14 +483,14 @@ class _EditMoneyOutcomeOtherOutcomeState extends State<EditMoneyOutcomeOtherOutc
   Widget _buildAmountField(AppLocalizations localizations) {
     return CustomTextField(
         inputFormatters: [
-          MoneyInputFormatter(),
+          PriceInputFormatter(),
         ],
         controller: _amountController,
         label: AppLocalizations.of(context)!.translate('amount') ?? 'Сумма',
         hintText: AppLocalizations.of(context)!.translate('enter_amount') ?? 
         'Введите сумму',
         maxLines: 1,
-        keyboardType: TextInputType.number,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
         validator: (value) {
           if (value == null || value.isEmpty) {
             return AppLocalizations.of(context)!.translate('enter_amount') ?? 
