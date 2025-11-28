@@ -187,7 +187,7 @@ class _InternetOverlayWidgetState extends State<InternetOverlayWidget>
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'Ожидаем восстановления связи\nс сервером',
+                        'Проверьте подключение к интернету',
                         style: TextStyle(
                           fontSize: 15,
                           color: const Color(0xFF1E2E52).withOpacity(0.6),

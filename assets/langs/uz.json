@@ -1893,5 +1893,6 @@
   "change_status": "Holatni o'zgartirish",
   "save_hint": "Mahsulotlarni qo'shgandan keyin saqlash uchun 'Asosiy'ga o'ting",
   "users_who_can_view_deals": "Ushbu status bilan bitimlarni ko'rishi mumkin bo'lgan foydalanuvchilar",
-  "users_who_can_change_status": "Bitimni ushbu statusga o'zgartirishi mumkin bo'lgan foydalanuvchilar"
+  "users_who_can_change_status": "Bitimni ushbu statusga o'zgartirishi mumkin bo'lgan foydalanuvchilar",
+  "later": "Keyinroq"
 }
