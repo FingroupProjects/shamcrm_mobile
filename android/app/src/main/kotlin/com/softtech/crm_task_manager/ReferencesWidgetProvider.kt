@@ -10,10 +10,10 @@ import android.view.View
 import android.widget.RemoteViews
 import org.json.JSONArray
 
-class AccountingWidgetProvider : AppWidgetProvider() {
+class ReferencesWidgetProvider : AppWidgetProvider() {
     
     // Button configuration: key (screen identifier), drawable resource, permission required
-    private data class AccountingButton(
+    private data class ReferencesButton(
         val key: String,
         val drawableId: Int,
         val permission: String
@@ -38,18 +38,17 @@ class AccountingWidgetProvider : AppWidgetProvider() {
             // Read permissions from Flutter's SharedPreferences
             val permissions = getPermissions(context)
             
-            // Define all 8 accounting buttons
+            // Define all 8 reference buttons
             // Note: Using simple icons that are available in all Android versions
-            // For better icons, consider adding custom drawable resources later
             val allButtons = listOf(
-                AccountingButton("client_sale", R.drawable.ic_shop, "expense_document.read"),
-                AccountingButton("client_return", R.drawable.ic_return, "client_return_document.read"),
-                AccountingButton("income_goods", R.drawable.ic_goods_income, "income_document.read"),
-                AccountingButton("transfer", R.drawable.ic_transfer, "movement_document.read"),
-                AccountingButton("write_off", R.drawable.ic_box_return, "write_off_document.read"),
-                AccountingButton("supplier_return", R.drawable.ic_supplier_return, "supplier_return_document.read"),
-                AccountingButton("money_income", R.drawable.ic_money_income, "checking_account_pko.read"),
-                AccountingButton("money_outcome", R.drawable.ic_money_outcome, "checking_account_rko.read")
+                ReferencesButton("reference_warehouse", android.R.drawable.ic_menu_manage, "storage.read"),
+                ReferencesButton("reference_supplier", android.R.drawable.ic_menu_agenda, "supplier.read"),
+                ReferencesButton("reference_product", android.R.drawable.ic_menu_gallery, "product.read"),
+                ReferencesButton("reference_category", android.R.drawable.ic_menu_sort_by_size, "category.read"),
+                ReferencesButton("reference_openings", android.R.drawable.ic_menu_info_details, "initial_balance.read"),
+                ReferencesButton("reference_cash_desk", android.R.drawable.ic_menu_preferences, "cash_register.read"),
+                ReferencesButton("reference_expense_article", android.R.drawable.ic_menu_delete, "rko_article.read"),
+                ReferencesButton("reference_income_article", android.R.drawable.ic_menu_add, "pko_article.read")
             )
             
             // Filter visible buttons based on permissions
@@ -60,17 +59,17 @@ class AccountingWidgetProvider : AppWidgetProvider() {
             // Choose layout based on visible button count
             val isCompact = visibleButtons.size <= 4
             val layoutId = if (isCompact) {
-                R.layout.accounting_widget_compact
+                R.layout.references_widget_compact
             } else {
-                R.layout.accounting_widget
+                R.layout.references_widget
             }
             
-            Log.d("AccountingWidget", "Using ${if (isCompact) "COMPACT" else "FULL"} layout for ${visibleButtons.size} buttons")
+            Log.d("ReferencesWidget", "Using ${if (isCompact) "COMPACT" else "FULL"} layout for ${visibleButtons.size} buttons")
             
             val views = RemoteViews(context.packageName, layoutId)
 
-            // Root click opens warehouse screen
-            val rootIntent = createLaunchIntent(context, "warehouse")
+            // Root click opens references screen
+            val rootIntent = createLaunchIntent(context, "references")
             val rootPendingIntent = PendingIntent.getActivity(
                 context,
                 appWidgetId * 1000,
@@ -81,18 +80,18 @@ class AccountingWidgetProvider : AppWidgetProvider() {
             
             // Use Russian labels directly (hardcoded)
             val labelTextMap = mapOf(
-                "client_sale" to "Продажа",
-                "client_return" to "Возврат от клиента",
-                "income_goods" to "Приход товаров",
-                "transfer" to "Перемещение",
-                "write_off" to "Списание",
-                "supplier_return" to "Возврат поставщику",
-                "money_income" to "Приход денег",
-                "money_outcome" to "Расход денег"
+                "reference_warehouse" to "Склад",
+                "reference_supplier" to "Поставщик",
+                "reference_product" to "Товар",
+                "reference_category" to "Категории",
+                "reference_openings" to "Первоначальный остаток",
+                "reference_cash_desk" to "Касса",
+                "reference_expense_article" to "Статья расхода",
+                "reference_income_article" to "Статья дохода"
             )
             
             // Set widget title (Russian)
-            views.setTextViewText(R.id.widget_title, "Учет торговли")
+            views.setTextViewText(R.id.widget_title, "Справочники")
             
             if (visibleButtons.isEmpty()) {
                 // No permissions - show login prompt
@@ -107,10 +106,10 @@ class AccountingWidgetProvider : AppWidgetProvider() {
                 if (isCompact) {
                     // Compact layout: single row with 4 slots
                     val compactSlots = listOf(
-                        Triple(R.id.btn_client_sale, R.id.icon_client_sale, R.id.label_client_sale),
-                        Triple(R.id.btn_client_return, R.id.icon_client_return, R.id.label_client_return),
-                        Triple(R.id.btn_income_goods, R.id.icon_income_goods, R.id.label_income_goods),
-                        Triple(R.id.btn_transfer, R.id.icon_transfer, R.id.label_transfer)
+                        Triple(R.id.btn_reference_warehouse, R.id.icon_reference_warehouse, R.id.label_reference_warehouse),
+                        Triple(R.id.btn_reference_supplier, R.id.icon_reference_supplier, R.id.label_reference_supplier),
+                        Triple(R.id.btn_reference_product, R.id.icon_reference_product, R.id.label_reference_product),
+                        Triple(R.id.btn_reference_category, R.id.icon_reference_category, R.id.label_reference_category)
                     )
                     
                     for (i in 0 until 4) {
@@ -134,7 +133,7 @@ class AccountingWidgetProvider : AppWidgetProvider() {
                             )
                             views.setOnClickPendingIntent(containerId, pendingIntent)
                             
-                            Log.d("AccountingWidget", "Compact: Assigned ${button.key} to slot $i")
+                            Log.d("ReferencesWidget", "Compact: Assigned ${button.key} to slot $i")
                         } else {
                             views.setViewVisibility(containerId, View.INVISIBLE)
                         }
@@ -146,15 +145,15 @@ class AccountingWidgetProvider : AppWidgetProvider() {
                     // Full layout: two rows with 8 slots total
                     val fullSlots = listOf(
                         // First row
-                        Triple(R.id.btn_client_sale, R.id.icon_client_sale, R.id.label_client_sale),
-                        Triple(R.id.btn_client_return, R.id.icon_client_return, R.id.label_client_return),
-                        Triple(R.id.btn_income_goods, R.id.icon_income_goods, R.id.label_income_goods),
-                        Triple(R.id.btn_transfer, R.id.icon_transfer, R.id.label_transfer),
+                        Triple(R.id.btn_reference_warehouse, R.id.icon_reference_warehouse, R.id.label_reference_warehouse),
+                        Triple(R.id.btn_reference_supplier, R.id.icon_reference_supplier, R.id.label_reference_supplier),
+                        Triple(R.id.btn_reference_product, R.id.icon_reference_product, R.id.label_reference_product),
+                        Triple(R.id.btn_reference_category, R.id.icon_reference_category, R.id.label_reference_category),
                         // Second row
-                        Triple(R.id.btn_write_off, R.id.icon_write_off, R.id.label_write_off),
-                        Triple(R.id.btn_supplier_return, R.id.icon_supplier_return, R.id.label_supplier_return),
-                        Triple(R.id.btn_money_income, R.id.icon_money_income, R.id.label_money_income),
-                        Triple(R.id.btn_money_outcome, R.id.icon_money_outcome, R.id.label_money_outcome)
+                        Triple(R.id.btn_reference_openings, R.id.icon_reference_openings, R.id.label_reference_openings),
+                        Triple(R.id.btn_reference_cash_desk, R.id.icon_reference_cash_desk, R.id.label_reference_cash_desk),
+                        Triple(R.id.btn_reference_expense_article, R.id.icon_reference_expense_article, R.id.label_reference_expense_article),
+                        Triple(R.id.btn_reference_income_article, R.id.icon_reference_income_article, R.id.label_reference_income_article)
                     )
                     
                     for (i in 0 until 8) {
@@ -178,7 +177,7 @@ class AccountingWidgetProvider : AppWidgetProvider() {
                             )
                             views.setOnClickPendingIntent(containerId, pendingIntent)
                             
-                            Log.d("AccountingWidget", "Full: Assigned ${button.key} to slot $i")
+                            Log.d("ReferencesWidget", "Full: Assigned ${button.key} to slot $i")
                         } else {
                             views.setViewVisibility(containerId, View.INVISIBLE)
                         }
@@ -196,9 +195,9 @@ class AccountingWidgetProvider : AppWidgetProvider() {
             }
 
             appWidgetManager.updateAppWidget(appWidgetId, views)
-            Log.d("AccountingWidget", "Widget updated — ID=$appWidgetId, visible buttons: ${visibleButtons.size}, layout: ${if (isCompact) "compact" else "full"}")
+            Log.d("ReferencesWidget", "Widget updated — ID=$appWidgetId, visible buttons: ${visibleButtons.size}, layout: ${if (isCompact) "compact" else "full"}")
         } catch (e: Exception) {
-            Log.e("AccountingWidget", "Error updating widget: ${e.message}", e)
+            Log.e("ReferencesWidget", "Error updating widget: ${e.message}", e)
         }
     }
     
@@ -234,7 +233,7 @@ class AccountingWidgetProvider : AppWidgetProvider() {
         val permissionsJson = prefs.getString(flutterKey, null)
         
         if (permissionsJson == null || permissionsJson.isEmpty()) {
-            Log.d("AccountingWidget", "No permissions found in SharedPreferences")
+            Log.d("ReferencesWidget", "No permissions found in SharedPreferences")
             return emptyList()
         }
         
@@ -244,10 +243,10 @@ class AccountingWidgetProvider : AppWidgetProvider() {
             for (i in 0 until jsonArray.length()) {
                 permissions.add(jsonArray.getString(i))
             }
-            Log.d("AccountingWidget", "Loaded ${permissions.size} permissions: $permissions")
+            Log.d("ReferencesWidget", "Loaded ${permissions.size} permissions: $permissions")
             return permissions
         } catch (e: Exception) {
-            Log.e("AccountingWidget", "Error parsing permissions JSON: ${e.message}", e)
+            Log.e("ReferencesWidget", "Error parsing permissions JSON: ${e.message}", e)
             return emptyList()
         }
     }

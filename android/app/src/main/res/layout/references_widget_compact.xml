@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Accounting Widget Compact Layout: 1x4 size (single row) - UP TO 4 ITEMS -->
+<!-- References Widget Compact Layout: 1x4 size (single row) - UP TO 4 ITEMS -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
@@ -38,7 +38,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
-                android:text="shamCRM Учет"
+                android:text="Справочники"
                 android:textColor="#1E2E52"
                 android:textSize="14sp"
                 android:textStyle="normal" />
@@ -71,9 +71,9 @@
             android:orientation="horizontal"
             android:gravity="center">
 
-            <!-- Продажа -->
+            <!-- Склад -->
             <LinearLayout
-                android:id="@+id/btn_client_sale"
+                android:id="@+id/btn_reference_warehouse"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -82,30 +82,30 @@
                 android:padding="4dp">
 
                 <ImageView
-                    android:id="@+id/icon_client_sale"
+                    android:id="@+id/icon_reference_warehouse"
                     android:layout_width="40dp"
                     android:layout_height="40dp"
                     android:background="@drawable/widget_button_bg"
                     android:padding="10dp"
                     android:scaleType="fitCenter"
                     android:tint="@android:color/white"
-                    android:contentDescription="Продажа" />
+                    android:contentDescription="Склад" />
 
                 <TextView
-                    android:id="@+id/label_client_sale"
+                    android:id="@+id/label_reference_warehouse"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:text="Продажа"
+                    android:text="Склад"
                     android:textSize="10sp"
                     android:textColor="#1E2E52"
                     android:maxLines="1"
                     android:ellipsize="end" />
             </LinearLayout>
 
-            <!-- Возврат от клиента -->
+            <!-- Поставщик -->
             <LinearLayout
-                android:id="@+id/btn_client_return"
+                android:id="@+id/btn_reference_supplier"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -114,30 +114,30 @@
                 android:padding="4dp">
 
                 <ImageView
-                    android:id="@+id/icon_client_return"
+                    android:id="@+id/icon_reference_supplier"
                     android:layout_width="40dp"
                     android:layout_height="40dp"
                     android:background="@drawable/widget_button_bg"
                     android:padding="10dp"
                     android:scaleType="fitCenter"
                     android:tint="@android:color/white"
-                    android:contentDescription="Возврат от клиента" />
+                    android:contentDescription="Поставщик" />
 
                 <TextView
-                    android:id="@+id/label_client_return"
+                    android:id="@+id/label_reference_supplier"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:text="Возврат от клиента"
+                    android:text="Поставщик"
                     android:textSize="10sp"
                     android:textColor="#1E2E52"
                     android:maxLines="1"
                     android:ellipsize="end" />
             </LinearLayout>
 
-            <!-- Приход товаров -->
+            <!-- Товар -->
             <LinearLayout
-                android:id="@+id/btn_income_goods"
+                android:id="@+id/btn_reference_product"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -146,30 +146,30 @@
                 android:padding="4dp">
 
                 <ImageView
-                    android:id="@+id/icon_income_goods"
+                    android:id="@+id/icon_reference_product"
                     android:layout_width="40dp"
                     android:layout_height="40dp"
                     android:background="@drawable/widget_button_bg"
                     android:padding="10dp"
                     android:scaleType="fitCenter"
                     android:tint="@android:color/white"
-                    android:contentDescription="Приход товаров" />
+                    android:contentDescription="Товар" />
 
                 <TextView
-                    android:id="@+id/label_income_goods"
+                    android:id="@+id/label_reference_product"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:text="Приход товаров"
+                    android:text="Товар"
                     android:textSize="10sp"
                     android:textColor="#1E2E52"
                     android:maxLines="1"
                     android:ellipsize="end" />
             </LinearLayout>
 
-            <!-- Перемещение -->
+            <!-- Категории -->
             <LinearLayout
-                android:id="@+id/btn_transfer"
+                android:id="@+id/btn_reference_category"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -178,21 +178,21 @@
                 android:padding="4dp">
 
                 <ImageView
-                    android:id="@+id/icon_transfer"
+                    android:id="@+id/icon_reference_category"
                     android:layout_width="40dp"
                     android:layout_height="40dp"
                     android:background="@drawable/widget_button_bg"
                     android:padding="10dp"
                     android:scaleType="fitCenter"
                     android:tint="@android:color/white"
-                    android:contentDescription="Перемещение" />
+                    android:contentDescription="Категории" />
 
                 <TextView
-                    android:id="@+id/label_transfer"
+                    android:id="@+id/label_reference_category"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:text="Перемещение"
+                    android:text="Категории"
                     android:textSize="10sp"
                     android:textColor="#1E2E52"
                     android:maxLines="1"
