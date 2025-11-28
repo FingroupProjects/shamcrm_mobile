@@ -155,12 +155,18 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted && context.mounted) {
             UpdateDialog.show(
-              context: context,
-              status: status,
-              title: localizations?.translate('app_update_available_title') ?? 'Обновление',
-              message: localizations?.translate('app_update_available_message') ?? 'Доступна новая версия приложения',
-              updateButton: localizations?.translate('app_update_button') ?? 'Обновить',
-            );
+  context: context,
+  status: status,
+  title: localizations?.translate('app_update_available_title') ?? 'Обновление',
+  message: localizations?.translate('app_update_available_message') ?? 'Доступна новая версия приложения',
+  updateButton: localizations?.translate('app_update_button') ?? 'Обновить',
+  laterButton: localizations?.translate('later') ?? 'Позже', // ← Добавь перевод
+  onLaterPressed: () {
+    // Опционально: можно сохранить, что пользователь отложил обновление
+    // Например: SharedPreferences.setBool('update_later_shown', true);
+    debugPrint('Пользователь отложил обновление');
+  },
+);
           }
         });
       }
