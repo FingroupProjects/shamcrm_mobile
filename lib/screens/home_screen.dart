@@ -6,13 +6,22 @@ import 'package:crm_task_manager/bloc/permission/permession_event.dart';
 import 'package:crm_task_manager/bloc/permission/permession_state.dart';
 import 'package:crm_task_manager/page_2/online_shop.dart';
 import 'package:crm_task_manager/page_2/order/order_screen.dart';
+import 'package:crm_task_manager/page_2/category/category_screen.dart';
+import 'package:crm_task_manager/page_2/goods/goods_screen.dart';
 import 'package:crm_task_manager/page_2/money/money_income/money_income_screen.dart';
 import 'package:crm_task_manager/page_2/money/money_outcome/money_outcome_screen.dart';
+import 'package:crm_task_manager/page_2/money/money_references/cash_desk/cash_desk_screen.dart';
+import 'package:crm_task_manager/page_2/money/money_references/expense/expense_screen.dart';
+import 'package:crm_task_manager/page_2/money/money_references/income/income_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_return/client_return_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_sale/client_sales_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/incoming_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/movement/movement_screen.dart';
+import 'package:crm_task_manager/page_2/warehouse/openings/openings_screen.dart';
+import 'package:crm_task_manager/page_2/warehouse/references_screen.dart';
+import 'package:crm_task_manager/page_2/warehouse/supplier/supplier_creen.dart';
 import 'package:crm_task_manager/page_2/warehouse/supplier_return_document/supplier_return_document_screen.dart';
+import 'package:crm_task_manager/page_2/warehouse/ware_house/ware_house_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/warehouse_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/write_off/write_off_screen.dart';
 import 'package:crm_task_manager/screens/MyNavBar.dart';
@@ -198,6 +207,28 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       'money_outcome'
     ];
     
+    // Handle references screen - close all reference screens and return to references
+    if (screenIdentifier == 'references') {
+      debugPrint('HomeScreen: References screen identifier detected');
+      
+      // Close all pushed reference screens and navigate to ReferencesScreen
+      if (Navigator.canPop(context)) {
+        Navigator.popUntil(context, (route) => route.isFirst);
+      }
+      
+      // Navigate to ReferencesScreen
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (!mounted) return;
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => ReferencesScreen()),
+        );
+        debugPrint('HomeScreen: ✅ Navigated to references screen');
+      });
+      
+      return;
+    }
+    
     // Handle warehouse screen - close all document screens and return to warehouse
     if (screenIdentifier == 'warehouse') {
       debugPrint('HomeScreen: Warehouse screen identifier detected');
@@ -230,6 +261,79 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       } else {
         debugPrint('HomeScreen: ⚠️ Warehouse screen not found');
       }
+    }
+    
+    // Handle reference screen identifiers
+    final referenceScreenIdentifiers = [
+      'reference_warehouse',
+      'reference_supplier',
+      'reference_product',
+      'reference_category',
+      'reference_openings',
+      'reference_cash_desk',
+      'reference_expense_article',
+      'reference_income_article'
+    ];
+    
+    if (referenceScreenIdentifiers.contains(screenIdentifier)) {
+      debugPrint('HomeScreen: Reference screen identifier detected: $screenIdentifier');
+      
+      // Close all pushed screens first
+      if (Navigator.canPop(context)) {
+        Navigator.popUntil(context, (route) => route.isFirst);
+      }
+      
+      // Then navigate to specific reference screen after a short delay
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (!mounted) return;
+        
+        Widget? targetScreen;
+        switch (screenIdentifier) {
+          case 'reference_warehouse':
+            targetScreen = WareHouseScreen();
+            break;
+          case 'reference_supplier':
+            targetScreen = const SupplierCreen();
+            break;
+          case 'reference_product':
+            targetScreen = GoodsScreen();
+            break;
+          case 'reference_category':
+            targetScreen = CategoryScreen();
+            break;
+          case 'reference_openings':
+            targetScreen = const OpeningsScreen();
+            break;
+          case 'reference_cash_desk':
+            targetScreen = CashDeskScreen();
+            break;
+          case 'reference_expense_article':
+            targetScreen = ExpenseScreen();
+            break;
+          case 'reference_income_article':
+            targetScreen = IncomeScreen();
+            break;
+        }
+        
+        if (targetScreen != null) {
+          // Always use pushReplacement to replace current reference screen
+          if (Navigator.canPop(context)) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => targetScreen!),
+            );
+          } else {
+            // If we can't pop, just push (first time opening a reference)
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => targetScreen!),
+            );
+          }
+          debugPrint('HomeScreen: ✅ Navigated to reference: $screenIdentifier');
+        }
+      });
+      
+      return;
     }
     
     // Handle accounting document screen identifiers
