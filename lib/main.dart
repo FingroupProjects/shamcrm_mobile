@@ -148,6 +148,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
     GlobalKey<ScaffoldMessengerState>();
+    
 void main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
@@ -179,7 +180,7 @@ void main() async {
     
     await AppTrackingTransparency.requestTrackingAuthorization();
     await _initializeFirebaseMessaging(apiService);
-    
+
     RemoteMessage? initialMessage;
     try {
       if (Firebase.apps.isNotEmpty) {
@@ -516,12 +517,18 @@ class _MyAppState extends State<MyApp> {
       final localizations = AppLocalizations.of(context);
 
       await UpdateDialog.show(
-        context: context,
-        status: status,
-        title: localizations?.translate('app_update_available_title') ?? 'Обновление',
-        message: localizations?.translate('app_update_available_message') ?? 'Доступна новая версия приложения',
-        updateButton: localizations?.translate('app_update_button') ?? 'Обновить',
-      );
+  context: context,
+  status: status,
+  title: localizations?.translate('app_update_available_title') ?? 'Обновление',
+  message: localizations?.translate('app_update_available_message') ?? 'Доступна новая версия приложения',
+  updateButton: localizations?.translate('app_update_button') ?? 'Обновить',
+  laterButton: localizations?.translate('later') ?? 'Позже', // ← Добавь перевод
+  onLaterPressed: () {
+    // Опционально: можно сохранить, что пользователь отложил обновление
+    // Например: SharedPreferences.setBool('update_later_shown', true);
+    debugPrint('Пользователь отложил обновление');
+  },
+);
     } catch (e) {
       // print('MyApp: Error checking version: $e');
     }
