@@ -197,14 +197,11 @@ struct references_widgetEntryView : View {
                 // Header
                 HStack(spacing: 6) {
                     // App icon from widget assets
-                    Image("app_icon")
+                    Image("ic_logo")
                         .resizable()
-                        .frame(width: 24, height: 24)
+                        .scaledToFit()
+                        .frame(height: 24)
                         .cornerRadius(5)
-                    
-                    Text(ReferencesWidgetLocalizations.translate("references_title"))
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(Color(red: 0.12, green: 0.18, blue: 0.32))
                     
                     Spacer()
                 }
