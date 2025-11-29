@@ -7232,27 +7232,31 @@ Future<String> _appendQueryParams(String path) async {
     }
   }
 
-// Метод для прочтения всех Уведомлений
-  Future<int> DeleteAllNotifications() async {
-    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    String path = await _appendQueryParams('/notification/readAll');
-    if (kDebugMode) {
-      //debugPrint('ApiService: DeleteAllNotifications - Generated path: $path');
-    }
 
-    ////debugPrint('Sending POST request to API with path: $path');
 
-    final response = await _postRequest(path, {});
+// Замените метод DeleteAllNotifications на это:
 
-    // Успешные коды: 200, 201, 204, 429
-    final successCodes = [200, 201, 204, 429];
-    if (successCodes.contains(response.statusCode)) {
-      return response.statusCode;
-    } else {
-      throw Exception('Ошибка удаления уведомлений!');
-    }
+Future<int> DeleteAllNotifications() async {
+  // Используем эндпоинт /notification/readAll с POST методом
+  String path = await _appendQueryParams('/notification/readAll');
+  
+  if (kDebugMode) {
+    debugPrint('ApiService: DeleteAllNotifications - Generated path: $path');
   }
 
+  debugPrint('Sending POST request to API with path: $path');
+
+  // Используем POST метод как и раньше
+  final response = await _postRequest(path, {});
+
+  final successCodes = [200, 201, 204, 429];
+  if (successCodes.contains(response.statusCode)) {
+    debugPrint('✅ All notifications deleted successfully. Status: ${response.statusCode}');
+    return response.statusCode;
+  } else {
+    throw Exception('Ошибка удаления уведомлений! Status: ${response.statusCode}');
+  }
+}
 // Метод для удаления Уведомлений
   Future<int> DeleteNotifications({int? notificationId}) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id

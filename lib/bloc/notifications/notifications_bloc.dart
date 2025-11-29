@@ -5,6 +5,7 @@ import 'package:crm_task_manager/bloc/notifications/notifications_event.dart';
 import 'package:crm_task_manager/bloc/notifications/notifications_state.dart';
 import 'package:crm_task_manager/models/notifications_model.dart';
 import 'package:crm_task_manager/notification_cache.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
@@ -90,44 +91,56 @@ Future<void> _fetchNotifications(FetchNotifications event, Emitter<NotificationS
 }
 
 
-Future<void> _deleteAllNotification(DeleteAllNotification event, Emitter<NotificationState> emit) async {
-  ////print("🗑️ [DELETE ALL] Удаление всех уведомлений...");
+Future<void> _deleteAllNotification(
+    DeleteAllNotification event, Emitter<NotificationState> emit) async {
+  debugPrint("🗑️ [DELETE ALL] Удаление всех уведомлений...");
 
   // Проверяем, есть ли уведомления для удаления
   if (state is NotificationDataLoaded) {
     final currentState = state as NotificationDataLoaded;
     if (currentState.notifications.isEmpty) {
-      // Если список пустой, не отправляем запрос
+      debugPrint("⚠️ [DELETE ALL] Список уведомлений пуст, пропускаем запрос");
       return;
     }
   }
 
   if (await _checkInternetConnection()) {
-    ////print("🌐 [NETWORK] Интернет подключен. Отправляем запрос на удаление всех уведомлений...");
+    debugPrint("🌐 [NETWORK] Интернет подключен. Отправляем запрос на удаление всех уведомлений...");
+    
     try {
       final statusCode = await apiService.DeleteAllNotifications();
-      ////print("✅ [SERVER] Все уведомления успешно удалены. Status code: $statusCode");
+      debugPrint("✅ [SERVER] Все уведомления успешно удалены. Status code: $statusCode");
 
       // Очистка кэша
       await NotificationCacheHandler.clearCache();
-      ////print("💾 [CACHE] Кэш уведомлений очищен.");
+      debugPrint("💾 [CACHE] Кэш уведомлений очищен.");
 
-      // Успешные коды: 200, 201, 204, 429
       final successCodes = [200, 201, 204, 429];
       if (successCodes.contains(statusCode)) {
-        // Эмитим пустой список уведомлений, чтобы UI показал "no notifications yet"
+        // Сначала эмитим пустой список
         emit(NotificationDataLoaded([], currentPage: 1));
-        // Затем эмитим состояние удаления для показа snackbar в BlocListener
-        emit(NotificationDeleted('Все уведомления успешно удалены', statusCode: statusCode));
+        
+        // Небольшая задержка перед показом сообщения об успехе
+        await Future.delayed(Duration(milliseconds: 100));
+        
+        // Затем эмитим состояние успеха для snackbar
+        emit(NotificationDeleted(
+          'Все уведомления успешно удалены',
+          statusCode: statusCode,
+        ));
       } else {
-        emit(NotificationError('Ошибка удаления всех уведомлений', statusCode: statusCode));
+        emit(NotificationError(
+          'Ошибка удаления всех уведомлений',
+          statusCode: statusCode,
+        ));
       }
-    } catch (e) {
-      ////print("❌ [ERROR] Ошибка при удалении всех уведомлений!");
-      emit(NotificationError('Ошибка удаления всех уведомлений'));
+    } catch (e, stackTrace) {
+      debugPrint("❌ [ERROR] Ошибка при удалении всех уведомлений: $e");
+      debugPrint("StackTrace: $stackTrace");
+      emit(NotificationError('Ошибка удаления всех уведомлений: $e'));
     }
   } else {
-    ////print("🚫 [OFFLINE] Нет подключения к интернету. Удаление невозможно.");
+    debugPrint("🚫 [OFFLINE] Нет подключения к интернету. Удаление невозможно.");
     emit(NotificationError('Нет подключения к интернету'));
   }
 }

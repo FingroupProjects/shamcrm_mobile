@@ -154,7 +154,7 @@ void main() async {
     WidgetsFlutterBinding.ensureInitialized();
     WidgetService.initialize();
         await InternetMonitorService().initialize();
-
+          
     await _initializeFirebase();
 
     final apiService = ApiService();
