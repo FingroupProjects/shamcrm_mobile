@@ -2114,6 +2114,10 @@ Future<ForgotPinResponse> forgotPin(LoginModel loginModel) async {
       }
     }
 
+    if (data['price_type_id'] != null) {
+      request.fields['price_type_id'] = data['price_type_id'].toString();
+    }
+
   if (kDebugMode) {
     debugPrint('ApiService: createLeadWithData - Request fields:');
     request.fields.forEach((key, value) {
@@ -2165,6 +2169,9 @@ Future<ForgotPinResponse> forgotPin(LoginModel loginModel) async {
       }
       if (response.body.contains('lead_custom_fields')) {
         return {'success': false, 'message': 'invalid_custom_fields'};
+      }
+      if (response.body.contains('price_type_id')) {
+        return {'success': false, 'message': 'invalid_price_type_id'};
       }
       if (response.body.contains('directory_values')) {
         return {'success': false, 'message': 'invalid_directory_values'};

@@ -475,6 +475,7 @@ Future<void> _createLead(CreateLead event, Emitter<LeadState> emit) async {
     if (event.email != null) requestData['email'] = event.email;
     if (event.description != null) requestData['description'] = event.description;
     if (event.files != null && event.files!.isNotEmpty) requestData['files'] = event.files;
+    if (event.priceTypeId != null) requestData['price_type_id'] = event.priceTypeId; // Добавляем price_type_id
 
     final result = await apiService.createLeadWithData(
       requestData,

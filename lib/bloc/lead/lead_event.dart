@@ -120,6 +120,8 @@ class CreateLead extends LeadEvent {
   final AppLocalizations localizations;
   final bool isSystemManager;
   final List<FileHelper>? files;
+  final String? priceTypeId; // Новое поле
+
 
 
   CreateLead({
@@ -141,6 +143,7 @@ class CreateLead extends LeadEvent {
     this.files,
     this.isSystemManager = false,
     required this.localizations,
+    this.priceTypeId, // Новое поле
   });
 }
 

@@ -38,6 +38,8 @@ import 'package:uuid/uuid.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 
+import 'lead_details/price_type_widget.dart';
+
 class LeadAddScreen extends StatefulWidget {
   final int statusId;
 
@@ -66,6 +68,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
   String? selectedRegion;
   String? selectedManager;
   String? selectedSourceLead;
+  String? _selectedPriceType;
   String selectedDialCode = '';
   String selectedDialCodeWhatsapp = '';
   int? _selectedStatuses;
@@ -209,6 +212,16 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
   // Метод для построения стандартных системных полей
   Widget _buildStandardField(FieldConfiguration config) {
     switch (config.fieldName) {
+      case 'price_type_id':
+        return PriceTypeWidget(
+          selectedPriceType: _selectedPriceType,
+          onChanged: (String? newValue) {
+            setState(() {
+              _selectedPriceType = newValue;
+            });
+          },
+        );
+
       case 'name':
         return CustomTextField(
           controller: titleController,
@@ -1745,6 +1758,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
       bool isSystemManager = selectedManager == "-1";
 
       context.read<LeadBloc>().add(CreateLead(
+        priceTypeId: _selectedPriceType,
         name: name,
         leadStatusId: _selectedStatuses ?? widget.statusId,
         phone: phone,

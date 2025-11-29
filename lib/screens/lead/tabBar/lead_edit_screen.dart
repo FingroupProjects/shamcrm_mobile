@@ -42,6 +42,7 @@ import '../../../page_2/dashboard/detailed_report/contents/goods_content.dart';
 import 'lead_details/add_custom_directory_dialog.dart';
 import 'lead_details/lead_create_custom.dart' show AddCustomFieldDialog;
 import 'lead_details/lead_status_list_edit.dart';
+import 'lead_details/price_type_widget.dart';
 import 'lead_details/sales_funnel_list.dart';
 
 class LeadEditScreen extends StatefulWidget {
@@ -583,6 +584,17 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
   // Метод для построения стандартных системных полей
   Widget _buildStandardField(FieldConfiguration config) {
     switch (config.fieldName) {
+
+    case 'price_type_id':
+        return PriceTypeWidget(
+          selectedPriceType: _selectedPriceType,
+          onChanged: (String? newValue) {
+            setState(() {
+              _selectedPriceType = newValue;
+            });
+          },
+        );
+
       case 'name':
         return CustomTextField(
           controller: titleController,
@@ -845,6 +857,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
     switch (config.fieldName) {
       case 'name':
         return localizations!.translate('name_list');
+      case 'price_type_id':
+        return localizations!.translate('price_type');
       case 'phone':
         return localizations!.translate('phone');
       case 'manager_id':
