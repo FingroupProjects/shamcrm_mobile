@@ -8,19 +8,17 @@ class UpdateDialog {
     required String title,
     required String message,
     required String updateButton,
+    String laterButton = 'Позже', // Новый параметр
+    VoidCallback? onLaterPressed,   // Опциональный колбэк
   }) async {
     if (!context.mounted) return;
 
     await showDialog(
       context: context,
-      barrierDismissible: false,
-
+      barrierDismissible: true, // ← Теперь можно закрыть тапом вне диалога
       builder: (BuildContext context) {
         return PopScope(
-          onPopInvokedWithResult: (didPop, obj) async {
-            if (didPop) return;
-          },
-          canPop: false, // Блокируем кнопку "Назад" на Android
+          canPop: true, // ← Разрешаем кнопку "Назад"
           child: Dialog(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(24),
@@ -28,133 +26,140 @@ class UpdateDialog {
             elevation: 0,
             backgroundColor: Colors.transparent,
             child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
-                  blurRadius: 40,
-                  offset: Offset(0, 20),
-                ),
-              ],
-            ),
-            padding: EdgeInsets.all(28),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Icon with gradient
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Color(0xFF2196F3),
-                        Color(0xFF1976D2),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 40,
+                    offset: const Offset(0, 20),
+                  ),
+                ],
+              ),
+              padding: const EdgeInsets.all(28),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Иконка с градиентом
+                  Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Color(0xFF2196F3),
+                          Color(0xFF1976D2),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF2196F3).withOpacity(0.3),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
                       ],
                     ),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Color(0xFF2196F3).withOpacity(0.3),
-                        blurRadius: 20,
-                        offset: Offset(0, 8),
+                    child: const Icon(
+                      Icons.system_update_rounded,
+                      size: 36,
+                      color: Colors.white,
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Заголовок
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF1A1A1A),
+                      letterSpacing: -0.3,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Описание
+                  Text(
+                    message,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFF666666),
+                      height: 1.5,
+                      letterSpacing: 0.1,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // === ДВЕ КНОПКИ ===
+                  Row(
+                    children: [
+                      // Кнопка "Позже" — текстовая, слева
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () {
+                            onLaterPressed?.call();
+                            Navigator.of(context).pop();
+                          },
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Text(
+                            laterButton,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF666666),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(width: 12),
+
+                      // Кнопка "Обновить" — акцентная, справа
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            NewVersionPlus().launchAppStore(status.appStoreLink);
+                            // Не закрываем диалог — пусть пользователь сам уйдёт в магазин
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF2196F3),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: Text(
+                            updateButton,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                        ),
                       ),
                     ],
                   ),
-                  child: Icon(
-                    Icons.system_update_rounded,
-                    size: 36,
-                    color: Colors.white,
-                  ),
-                ),
-
-                SizedBox(height: 24),
-
-                // Title
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF1A1A1A),
-                    letterSpacing: -0.3,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-
-                // SizedBox(height: 8),
-
-                // // Version badge
-                // Container(
-                //   padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                //   decoration: BoxDecoration(
-                //     color: Color(0xFFF5F5F5),
-                //     borderRadius: BorderRadius.circular(8),
-                //   ),
-                //   child: Text(
-                //     '${status.localVersion} → ${status.storeVersion}',
-                //     style: TextStyle(
-                //       fontSize: 13,
-                //       fontWeight: FontWeight.w600,
-                //       color: Color(0xFF666666),
-                //       letterSpacing: 0.3,
-                //     ),
-                //   ),
-                // ),
-
-                SizedBox(height: 16),
-
-                // Description
-                Text(
-                  message,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF666666),
-                    height: 1.5,
-                    letterSpacing: 0.1,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-
-                SizedBox(height: 28),
-
-                // Update button
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      // Не закрываем диалог - принудительное обновление
-                      NewVersionPlus().launchAppStore(status.appStoreLink);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFF2196F3),
-                      foregroundColor: Colors.white,
-                      padding: EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
-                      shadowColor: Colors.transparent,
-                    ),
-                    child: Text(
-                      updateButton,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.2,
-                      ),
-                    ),
-                  ),
-                ),
-
-                SizedBox(height: 10),
-              ],
+                ],
+              ),
             ),
-          ),
           ),
         );
       },

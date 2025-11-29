@@ -599,7 +599,7 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          localizations.translate('supplier_return'),
+                          localizations.translate('supplier_payment'),
                           style: const TextStyle(
                             fontSize: 14,
                             fontFamily: 'Gilroy',
