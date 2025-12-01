@@ -21,25 +21,21 @@ class DashboardTaskChartBloc
     Emitter<DashboardTaskChartState> emit,
   ) async {
     try {
-      print("🚀 Загрузка данных о графике задач...");
       emit(DashboardTaskChartLoading());
 
       // 1. Показываем данные из кэша (если они есть)
       List<double>? cachedData = await TaskChartCacheHandler.getTaskChartData();
       if (cachedData != null) {
-        print("📦 Найдены данные в кеше.");
         emit(DashboardTaskChartLoaded(taskChartData: TaskChart(data: cachedData)));
       }
 
       // 2. Асинхронно проверяем сервер
       if (await _checkInternetConnection()) {
-        print("🌐 Интернет подключен. Получаем данные с сервера...");
 
         final taskChartData = await _apiService.getTaskChartData();
 
         // Если данные с сервера не совпадают с кэшированными, обновляем кэш и UI
         if (cachedData == null || !_areListsEqual(taskChartData.data, cachedData)) {
-          print("✅ ЗАДАЧИ Данные с сервера отличаются. Обновляем кэш и UI.");
 
           // Сохраняем новые данные в кэш
           await TaskChartCacheHandler.saveTaskChartData(taskChartData.data);
@@ -47,16 +43,13 @@ class DashboardTaskChartBloc
           // Обновляем UI
           emit(DashboardTaskChartLoaded(taskChartData: taskChartData));
         } else {
-          print("🔄 ЗАДАЧИ Данные с сервера совпадают с кешированными. Обновление не требуется.");
         }
       } else {
-        print("🚫 Нет подключения к интернету.");
         if (cachedData == null) {
           emit(DashboardTaskChartError(message: "Нет данных и отсутствует подключение к интернету."));
         }
       }
     } catch (e) {
-      print("❌ Произошла ошибка: $e");
       emit(DashboardTaskChartError(message: e.toString()));
     }
   }

@@ -144,11 +144,11 @@ void DropdownBottomSheet(
                                 );
                                 Navigator.pop(context);
                               } else {
-                                print('Ошибка обновления статуса задачи!rror');
+                                //print('Ошибка обновления статуса задачи!rror');
                               }
                             });
                           } else {
-                            print('Статус не выбран');
+                            //print('Статус не выбран');
                           }
                         },
                       ),

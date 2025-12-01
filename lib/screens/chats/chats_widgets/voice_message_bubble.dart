@@ -1,109 +1,140 @@
-import 'package:flutter/material.dart';
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
+import 'package:crm_task_manager/utils/global_fun.dart';
+import 'package:flutter/material.dart';
+import 'package:voice_message_package/voice_message_package.dart';
+import 'package:crm_task_manager/models/chats_model.dart';
 
-class VoiceMessageBubble extends StatelessWidget {
-  final String time;
-  final bool isSender;
-  final String filePath;
-  final String fileName;
-  final String senderName;
-  final String? replyMessage;
-  final Function onTap;
+class VoiceMessageWidget extends StatefulWidget {
+  final Message message;
+  final String baseUrl;
 
-  const VoiceMessageBubble({
+  const VoiceMessageWidget({
     Key? key,
-    required this.time,
-    required this.isSender,
-    required this.filePath,
-    required this.fileName,
-    required this.onTap,
-    required this.senderName,
-    this.replyMessage,
+    required this.message,
+    required this.baseUrl,
   }) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    String fileExtension = fileName.split('.').last.toLowerCase();
-    String iconPath;
+  _VoiceMessageWidgetState createState() => _VoiceMessageWidgetState();
+}
 
-    switch (fileExtension) {
-      case 'pdf':
-        iconPath = 'assets/icons/chats/pdf.png';
-        break;
-      case 'jpg':
-      case 'jpeg':
-      case 'png':
-        iconPath = 'assets/icons/chats/jpg-file.png';
-        break;
-      case 'doc':
-      case 'docx':
-        iconPath = 'assets/icons/chats/doc.png';
-        break;
-      case 'xls':
-      case 'xlsx':
-        iconPath = 'assets/icons/chats/xls.png';
-        break;
-      case 'webp':
-        iconPath = 'assets/icons/chats/webp.png';
-        break;
-      case 'svg':
-        iconPath = 'assets/icons/chats/svg-file.png';
-        break;
-      default:
-        iconPath = 'assets/icons/chats/file.png';
+class _VoiceMessageWidgetState extends State<VoiceMessageWidget>
+    with AutomaticKeepAliveClientMixin {
+  late VoiceController _audioController;
+
+  @override
+  void initState() {
+    super.initState();
+    // Формируем источник аудио в зависимости от filePath
+    final String audioSource = _getAudioSource();
+
+    _audioController = VoiceController(
+      audioSrc: audioSource,
+      onComplete: () {
+        // Действия при завершении воспроизведения
+      },
+      onPause: () {
+        // Действия при паузе
+      },
+      onPlaying: () {
+        // Действия при воспроизведении
+      },
+      onError: (err) {
+        // Обработка ошибок воспроизведения
+        debugPrint('Ошибка воспроизведения аудио: $err, filePath: ${widget.message.filePath}');
+      },
+      maxDuration: widget.message.duration.inSeconds > 0
+          ? widget.message.duration
+          : const Duration(seconds: 5),
+      isFile: false, // Ссылка, а не локальный файл
+    );
+  }
+
+  // Метод для определения источника аудио
+  String _getAudioSource() {
+    final filePath = widget.message.filePath ?? '';
+    // Если filePath начинается с https://, используем его как есть
+    if (filePath.startsWith('https://')) {
+      return filePath;
     }
+    // Иначе формируем путь через baseUrl
+    return '${widget.baseUrl.replaceAll('/api', '')}/storage/$filePath';
+  }
 
-    return Align(
-      alignment: isSender ? Alignment.centerRight : Alignment.centerLeft,
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return Container(
+      margin: EdgeInsets.only(
+        top: 8,
+        bottom: 8,
+        right: widget.message.isMyMessage == false ? 60 : 0,
+        left: widget.message.isMyMessage ? 60 : 0,
+      ),
       child: Column(
-        crossAxisAlignment:
-            isSender ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        crossAxisAlignment: widget.message.isMyMessage
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
         children: [
-          SizedBox(height: 8),
-          if(!isSender) Text(
-            senderName,
-            style: TextStyle(fontWeight: FontWeight.w600),
-          ),
-          GestureDetector(
-            onTap: () => onTap(),
-            child: Container(
-              margin: const EdgeInsets.symmetric(vertical: 5),
-              padding: const EdgeInsets.all(12),
-              constraints: BoxConstraints(maxWidth: 220),
-              decoration: BoxDecoration(
-                color: isSender
-                    ? ChatSmsStyles.messageBubbleSenderColor
-                    : ChatSmsStyles.messageBubbleReceiverColor,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Image.asset(iconPath, width: 32, height: 32),
-                  SizedBox(width: 8),
-                  Flexible(
-                    child: Text(
-                      fileName,
-                      style: TextStyle(
-                      color: isSender ? Colors.white : Colors.black),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
+          SizedBox(height: 4),
+          if (widget.message.isMyMessage == false)
+            Text(
+              widget.message.senderName,
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+          VoiceMessageView(
+            innerPadding: 8,
+            backgroundColor: widget.message.isMyMessage
+                ? ChatSmsStyles.messageBubbleSenderColor
+                : ChatSmsStyles.messageBubbleReceiverColor,
+            activeSliderColor: widget.message.isMyMessage
+                ? Colors.white
+                : ChatSmsStyles.messageBubbleSenderColor,
+            circlesColor: widget.message.isMyMessage
+                ? Colors.white.withOpacity(.2)
+                : ChatSmsStyles.messageBubbleSenderColor,
+            controller: _audioController,
+            counterTextStyle: TextStyle(
+              color: widget.message.isMyMessage
+                  ? Colors.white
+                  : ChatSmsStyles.messageBubbleSenderColor,
             ),
           ),
-          Text(
-            time,
-            style: const TextStyle(
-              fontSize: 12,
-              color: ChatSmsStyles.appBarTitleColor,
-              fontWeight: FontWeight.w400,
-              fontFamily: 'Gilroy',
-            ),
+          SizedBox(height: 4),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                time(widget.message.createMessateTime),
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: ChatSmsStyles.appBarTitleColor,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'Gilroy',
+                ),
+              ),
+              const SizedBox(width: 3),
+              if (widget.message.isMyMessage)
+                Icon(
+                  widget.message.isRead ? Icons.done_all : Icons.done_all,
+                  size: 18,
+                  color: widget.message.isRead
+                      ? const Color.fromARGB(255, 45, 28, 235)
+                      : Colors.grey.shade400,
+                ),
+            ],
           ),
         ],
       ),
     );
   }
+
+  @override
+  void dispose() {
+    _audioController.dispose();
+    super.dispose();
+  }
+
+  @override
+  bool get wantKeepAlive => true;
 }

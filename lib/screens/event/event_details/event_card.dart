@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/event_model.dart';
 import 'package:crm_task_manager/screens/event/event_details/event_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -25,7 +26,7 @@ class _EventCardState extends State<EventCard> {
     }
     try {
       DateTime dateTime = DateTime.parse(dateString);
-      return DateFormat('dd.MM.yyyy').format(dateTime);
+      return DateFormat('dd.MM.yyyy HH:mm').format(dateTime);
     } catch (e) {
       return AppLocalizations.of(context)!.translate('Invalid_date_format');
     }
@@ -33,6 +34,18 @@ class _EventCardState extends State<EventCard> {
 
   @override
   Widget build(BuildContext context) {
+    Color getStatusBackgroundColor() {
+      return widget.event.isFinished
+          ? Color(0x1F18C964) // #18C9641F для "Успешно"
+          : Color(0x1F3B82F6); // #3B82F61F для "В процессе"
+    }
+
+    Color getStatusTextColor() {
+      return widget.event.isFinished
+          ? Color(0xFF22C55E) // #22c55e для "Успешно"
+          : Color(0xFF3B82F6); // #3b82f6 для "В процессе"
+    }
+
     String? extractImageUrlFromSvg(String svg) {
       if (svg.contains('href="')) {
         final start = svg.indexOf('href="') + 6;
@@ -124,15 +137,33 @@ class _EventCardState extends State<EventCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              widget.event.title,
-              style: const TextStyle(
-                fontSize: 16,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w600,
-                color: Color(0xff1E2E52),
-              ),
-              overflow: TextOverflow.ellipsis,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text.rich(
+                    TextSpan(
+                      text: widget.event.title ??
+                          AppLocalizations.of(context)!.translate('no_name'),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xff1E2E52),
+                      ),
+                      children: const <TextSpan>[
+                        TextSpan(
+                          text:
+                              '\n\u200B', // Невидимый пробел (Zero Width Space)
+                          style: TaskCardStyles.titleStyle,
+                        ),
+                      ],
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 5),
             Row(
@@ -140,7 +171,7 @@ class _EventCardState extends State<EventCard> {
               children: [
                 Expanded(
                   child: Text(
-        '${AppLocalizations.of(context)!.translate('lead_deal_card')} ${widget.event.lead.name}',
+                    '${AppLocalizations.of(context)!.translate('lead_deal_card')} ${widget.event.lead.name}',
                     style: TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
@@ -167,12 +198,12 @@ class _EventCardState extends State<EventCard> {
             const SizedBox(height: 5),
             Row(
               children: [
-                // Instead of widget.event.users.image
-                widget.event.users.isNotEmpty // Check if there are any users
+                widget.event.users.isNotEmpty // Проверяем, есть ли пользователи
                     ? Stack(
                         children: [
                           if (widget.event.users.isNotEmpty &&
-                              widget.event.users[0].image != null)
+                              widget.event.users[0].image != null &&
+                              widget.event.users[0].image!.isNotEmpty)
                             Padding(
                               padding: const EdgeInsets.only(right: 20),
                               child: widget.event.users[0].image!
@@ -192,37 +223,34 @@ class _EventCardState extends State<EventCard> {
                                     ),
                             ),
                           if (widget.event.users.length > 1 &&
-                              widget.event.users[1].image != null)
+                              widget.event.users[1].image != null &&
+                              widget.event.users[1].image!.isNotEmpty)
                             Positioned(
                               left: 20,
                               child: Padding(
                                 padding: const EdgeInsets.only(right: 10),
-                                child: widget.event.users[1].image!.isNotEmpty
-                                    ? widget.event.users[1].image!
-                                            .startsWith('<svg')
-                                        ? buildSvgAvatar(
-                                            widget.event.users[1].image!)
-                                        : Container(
-                                            width: 32,
-                                            height: 32,
-                                            decoration: BoxDecoration(
-                                              shape: BoxShape.circle,
-                                              image: DecorationImage(
-                                                image: NetworkImage(widget
-                                                    .event.users[1].image!),
-                                                fit: BoxFit.cover,
-                                              ),
-                                            ),
-                                          )
-                                    : const CircleAvatar(
-                                        radius: 16,
-                                        backgroundColor: Colors.purple,
+                                child: widget.event.users[1].image!
+                                        .startsWith('<svg')
+                                    ? buildSvgAvatar(
+                                        widget.event.users[1].image!)
+                                    : Container(
+                                        width: 32,
+                                        height: 32,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          image: DecorationImage(
+                                            image: NetworkImage(
+                                                widget.event.users[1].image!),
+                                            fit: BoxFit.cover,
+                                          ),
+                                        ),
                                       ),
                               ),
                             ),
                         ],
                       )
-                    : const SizedBox(),
+                    : const SizedBox(
+                        width: 32, height: 32), // Оставляем место пустым
                 if (widget.event.users.length > 2)
                   Padding(
                     padding: const EdgeInsets.only(left: 2),
@@ -248,7 +276,28 @@ class _EventCardState extends State<EventCard> {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  ' ${formatDate(widget.event.date?.toString())}',
+                  ' ${formatDate(widget.event.createdAt.toString())}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xff99A4BA),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 5),
+            if (widget.event.date != null)  const SizedBox(height: 5),
+            if (widget.event.date != null) Row(
+              children: [
+                // Image.asset(
+                //   'assets/icons/tabBar/date.png',
+                //   width: 17,
+                //   height: 17,
+                // ),
+                // const SizedBox(width: 4),
+                Text(
+                  '${AppLocalizations.of(context)?.translate('reminder_date') ?? 'Напоминание'}: ${formatDate(widget.event.date?.toString())}',
                   style: const TextStyle(
                     fontSize: 12,
                     fontFamily: 'Gilroy',
@@ -260,25 +309,57 @@ class _EventCardState extends State<EventCard> {
             ),
             const SizedBox(height: 5),
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-            AppLocalizations.of(context)!.translate('author_contact'),
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xff1E2E52),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Text(
+                        AppLocalizations.of(context)!
+                            .translate('author_contact'),
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xff1E2E52),
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          widget.event.author.name,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xff1E2E52),
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                Expanded(
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: getStatusBackgroundColor(),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
                   child: Text(
-                    widget.event.author.name,
+                    widget.event.isFinished
+                        ? AppLocalizations.of(context)!.translate('finished')
+                        : AppLocalizations.of(context)!
+                            .translate('in_progress'),
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 12,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
-                      color: Color(0xff1E2E52),
+                      color: getStatusTextColor(),
                     ),
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),

@@ -66,6 +66,10 @@ class _EditNotesDialogState extends State<EditNotesDialog> {
           );
         }
       },
+      child: GestureDetector(
+      onTap: () {
+        FocusScope.of(context).unfocus();
+      },
       child: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -183,6 +187,7 @@ class _EditNotesDialogState extends State<EditNotesDialog> {
             ),
           ),
         ),
+      ),
       ),
     );
   }

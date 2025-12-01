@@ -12,7 +12,8 @@ class ImageMessageBubble extends StatefulWidget {
   final String fileName;
   final String senderName;
   final String? replyMessage;
-  final bool isHighlighted;  
+  final bool isHighlighted;
+  final bool isRead;
 
   const ImageMessageBubble({
     Key? key,
@@ -22,7 +23,8 @@ class ImageMessageBubble extends StatefulWidget {
     required this.filePath,
     required this.fileName,
     this.replyMessage,
-    this.isHighlighted = false,  
+    this.isHighlighted = false,
+    required this.isRead,
     required Message message,
   }) : super(key: key);
 
@@ -42,21 +44,32 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
 
   Future<void> _initializeBaseUrl() async {
     try {
-      final enteredDomainMap = await _apiService.getEnteredDomain();
+      final staticBaseUrl = await _apiService.getStaticBaseUrl();
       setState(() {
-        baseUrl = 'https://${enteredDomainMap['enteredMainDomain']}/storage/';
+        baseUrl = staticBaseUrl;
       });
     } catch (error) {
-      // Handle error or set a default URL
       setState(() {
-        baseUrl = 'https://shamcrm.com/storage/';
+        baseUrl = 'https://info1fingrouptj-back.shamcrm.com'; // Обновляем fallback URL
       });
+      debugPrint('Error fetching baseUrl: $error');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final String? fullUrl = baseUrl != null ? '$baseUrl${widget.filePath}' : null;
+    // Исправление: Добавляем /storage к пути, если его нет в filePath
+    final String normalizedFilePath = widget.filePath.startsWith('storage/') 
+        ? widget.filePath 
+        : 'storage/${widget.filePath.startsWith('/') ? widget.filePath.substring(1) : widget.filePath}';
+    
+    // Формируем полный URL с помощью Uri для корректной обработки слешей
+    final String? fullUrl = baseUrl != null 
+        ? Uri.parse(baseUrl!).resolve(normalizedFilePath).toString() 
+        : null;
+
+    // Отладка: Логируем URL
+    debugPrint('ImageMessageBubble: baseUrl=$baseUrl, filePath=${widget.filePath}, fullUrl=$fullUrl');
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -74,8 +87,7 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
       child: Align(
         alignment: widget.isSender ? Alignment.centerRight : Alignment.centerLeft,
         child: Column(
-          crossAxisAlignment:
-              widget.isSender ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          crossAxisAlignment: widget.isSender ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 8),
             if (!widget.isSender)
@@ -100,6 +112,7 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
                     }
                   : null,
               child: Column(
+                crossAxisAlignment: widget.isSender ? CrossAxisAlignment.end : CrossAxisAlignment.start,
                 children: [
                   Container(
                     margin: const EdgeInsets.symmetric(vertical: 5),
@@ -123,13 +136,13 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
                               height: 200,
                               fit: BoxFit.cover,
                               errorBuilder: (context, error, stackTrace) {
+                                debugPrint('Error loading image: $error, StackTrace: $stackTrace');
                                 return Container(
                                   width: 200,
                                   height: 200,
                                   color: Colors.grey,
                                   child: Center(
-                                    child: Text(AppLocalizations.of(context)!
-                                        .translate('error_loading')),
+                                    child: Text(AppLocalizations.of(context)!.translate('error_loading')),
                                   ),
                                 );
                               },
@@ -139,20 +152,37 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
                               height: 200,
                               color: Colors.grey,
                               child: Center(
-                                child: Text(AppLocalizations.of(context)!
-                                    .translate('loading')),
+                                child: Text(AppLocalizations.of(context)!.translate('loading')),
                               ),
                             ),
                     ),
                   ),
-                  Text(
-                    widget.time,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: ChatSmsStyles.appBarTitleColor,
-                      fontWeight: FontWeight.w400,
-                      fontFamily: 'Gilroy',
-                    ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Padding(
+                        padding: EdgeInsets.only(
+                          right: widget.isSender ? 0 : 10,
+                          left: widget.isSender ? 10 : 0,
+                        ),
+                        child: Text(
+                          widget.time,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: ChatSmsStyles.appBarTitleColor,
+                            fontWeight: FontWeight.w400,
+                            fontFamily: 'Gilroy',
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 3),
+                      if (widget.isSender)
+                        Icon(
+                          widget.isRead ? Icons.done_all : Icons.done_all,
+                          size: 18,
+                          color: widget.isRead ? const Color.fromARGB(255, 45, 28, 235) : Colors.grey.shade400,
+                        ),
+                    ],
                   ),
                 ],
               ),

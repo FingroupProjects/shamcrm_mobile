@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 class MyTaskHistory {
   final int id;
   final User user;
@@ -26,7 +28,7 @@ class MyTaskHistory {
       changes: _parseChanges(json['changes']),
     );
   } catch (e) {
-    print('Ошибка при парсинге MyTaskHistory!');
+    debugPrint('Ошибка при парсинге MyTaskHistory!');
     return MyTaskHistory(
       id: 0,
       user: User(id: 0, name: 'Система', email: 'Не указано', phone: 'Не указано'),
