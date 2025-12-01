@@ -1,4 +1,3 @@
-
 import 'dart:convert';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
@@ -27,6 +26,7 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_status_add.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
@@ -116,8 +116,9 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   Map<String, dynamic>? tutorialProgress;
   SalesFunnel? _selectedFunnel;
   List<int>? _selectedManagerIds;
-  bool _isFilterLoading = false; // НОВЫЙ флаг для отслеживания загрузки после фильтрации
-  bool _shouldShowLoader = false; // НОВЫЙ флаг для принудительного показа лоадера
+  bool _isFilterLoading = false;
+  bool _shouldShowLoader = false;
+  bool _skipNextTabListener = false;
 
 
   Map<String, List<String>> _cloneCustomFieldFilters(Map<String, List<String>> source) {
@@ -147,8 +148,11 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    
+    // ← КРИТИЧНО: Инициализируем пустой TabController
+    _tabController = TabController(length: 0, vsync: this);
+    
     _initializeSalesFunnel();
-    //print('LeadScreen: initState started');
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     context.read<GetAllRegionBloc>().add(GetAllRegionEv());
     context.read<GetAllSourceBloc>().add(GetAllSourceEv());
@@ -177,100 +181,54 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         setState(() {
           _selectedFunnel = state.selectedFunnel ?? state.funnels.firstOrNull;
         });
-        LeadCache.getLeadStatuses().then((cachedStatuses) {
-          if (cachedStatuses.isNotEmpty && mounted) {
-            setState(() {
-              _tabTitles = cachedStatuses
-                  .map((status) => {'id': status['id'], 'title': status['title']})
-                  .toList();
-              _tabController = TabController(length: _tabTitles.length, vsync: this);
-              _tabController.index = _currentTabIndex;
-
-              _tabController.addListener(() {
-                if (!_tabController.indexIsChanging) {
-                  setState(() {
-                    _currentTabIndex = _tabController.index;
-                    //print('LeadScreen: Tab changed to index: $_currentTabIndex');
-                  });
-                  _scrollToActiveTab();
-                  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-                  context.read<LeadBloc>().add(FetchLeads(
-                    currentStatusId,
-                    salesFunnelId: _selectedFunnel?.id,
-                    ignoreCache: true,
-                  ));
-                  //print('LeadScreen: FetchLeads dispatched for statusId: $currentStatusId');
-                }
-              });
-
-              final currentStatusId = _tabTitles.isNotEmpty ? _tabTitles[_currentTabIndex]['id'] : 0;
-              context.read<LeadBloc>().add(FetchLeads(
-                currentStatusId,
-                salesFunnelId: _selectedFunnel?.id,
-                ignoreCache: true,
-              ));
-            });
-          } else {
-            context.read<LeadBloc>().add(FetchLeadStatuses());
-          }
-        });
+        
+        // Просто загружаем статусы, listener будет создан в BlocListener
+        context.read<LeadBloc>().add(FetchLeadStatuses());
       }
     });
 
     _checkPermissions();
   }
+
   Future<void> _initializeSalesFunnel() async {
-  try {
-    final savedFunnelId = await _apiService.getSelectedSalesFunnel();
-    
-    if (savedFunnelId == null || savedFunnelId.isEmpty) {
-      debugPrint('⚠️ No saved funnel, will use first available');
-      // Воронка установится автоматически из SalesFunnelBloc.stream
-      return;
+    try {
+      final savedFunnelId = await _apiService.getSelectedSalesFunnel();
+      
+      if (savedFunnelId == null || savedFunnelId.isEmpty) {
+        debugPrint('⚠️ No saved funnel, will use first available');
+        return;
+      }
+      
+      context.read<SalesFunnelBloc>().add(FetchSalesFunnels());
+    } catch (e) {
+      debugPrint('❌ _initializeSalesFunnel error: $e');
     }
-    
-    // Загружаем воронки
-    context.read<SalesFunnelBloc>().add(FetchSalesFunnels());
-    
-    // debugPrint('✅ Initialized with funnelId: $savedFunnelId');
-  } catch (e) {
-    // debugPrint('❌ _initializeSalesFunnel error: $e');
   }
-}
 
   Future<void> _loadFeatureState() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
       _isSwitch = prefs.getBool('switchContact') ?? false;
-      //print('LeadScreen: _loadFeatureState - _isSwitch set to: $_isSwitch');
     });
   }
 
   void _onScroll() {
     // Логика прокрутки табов
   }
-// Заменить метод _onRefresh в LeadScreen на этот:
 
   Future<void> _onRefresh(int currentStatusId) async {
-    //print('LeadScreen: _onRefresh - RADICAL FULL REFRESH - clearing everything');
-
     try {
-      // РАДИКАЛЬНАЯ очистка - удаляем ВСЕ данные связанные с лидами
       await LeadCache.clearAllData();
-      await LeadCache.clearPersistentCounts(); // Очищаем и постоянные счетчики
-      //print('LeadScreen: _onRefresh - Cleared ALL cache data including persistent counts');
+      await LeadCache.clearPersistentCounts();
 
-      // Полный сброс состояния приложения
       if (mounted) {
         setState(() {
-          // Сбрасываем ВЕСЬ UI в исходное состояние
           _isSearching = false;
           _lastSearchQuery = '';
           _searchController.clear();
           _showCustomTabBar = true;
           _isSwitchingFunnel = false;
 
-          // Полный сброс всех фильтров
           _selectedManagers.clear();
           _selectedRegions.clear();
           _selectedSources.clear();
@@ -290,7 +248,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           _daysWithoutActivity = null;
           _directoryValues.clear();
 
-          // Сбрасываем и initial значения
           _initialSelectedManagers.clear();
           _initialSelectedRegions.clear();
           _initialSelectedSources.clear();
@@ -310,37 +267,22 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           _initialDaysWithoutActivity = null;
           _initialDirectoryValues.clear();
 
-          // Очищаем табы - начинаем с чистого листа
           _tabTitles.clear();
           _tabKeys.clear();
           _currentTabIndex = 0;
 
-          // Создаем пустой контроллер табов
           if (_tabController.length > 0) {
             _tabController.dispose();
           }
           _tabController = TabController(length: 0, vsync: this);
-
-          //print('LeadScreen: _onRefresh - Reset all UI state to initial');
         });
       }
 
-      // Очищаем состояние LeadBloc полностью
       final leadBloc = BlocProvider.of<LeadBloc>(context);
       await leadBloc.clearAllCountsAndCache();
-      //print('LeadScreen: _onRefresh - Cleared LeadBloc state');
-
-      // ПРИНУДИТЕЛЬНАЯ загрузка ВСЕХ данных с сервера
-      // Никаких кэшей, никаких сохраненных данных - все с нуля
       leadBloc.add(FetchLeadStatuses(forceRefresh: true));
-      //print('LeadScreen: _onRefresh - Initiated FORCED reload of all data from server');
-
-      //print('LeadScreen: _onRefresh - RADICAL refresh completed successfully');
 
     } catch (e) {
-      //print('LeadScreen: _onRefresh error: $e');
-
-      // При ошибке показываем пользователю и пытаемся восстановить хотя бы базовое состояние
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -363,7 +305,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           ),
         );
 
-        // Пытаемся восстановить минимальное рабочее состояние
         final leadBloc = BlocProvider.of<LeadBloc>(context);
         leadBloc.add(FetchLeadStatuses(forceRefresh: false));
       }
@@ -412,7 +353,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           tutorialProgress!['leads']?['index'] == false &&
           !_isTutorialShown &&
           mounted) {
-        // _initTutorialTargets();
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
             // showTutorial();
@@ -420,107 +360,20 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         });
       }
     } catch (e) {
-      //print('LeadScreen: Error fetching tutorial progress: $e');
+      debugPrint('LeadScreen: Error fetching tutorial progress: $e');
     }
   }
-
-  // void _initTutorialTargets() {
-  //   targets.clear();
-  //   targets.addAll([
-  //     createTarget(
-  //       identify: "LeadSearchIcon",
-  //       keyTarget: keySearchIcon,
-  //       title: AppLocalizations.of(context)!
-  //           .translate('tutorial_task_screen_search_title'),
-  //       description: AppLocalizations.of(context)!
-  //           .translate('tutorial_lead_screen_search_description'),
-  //       align: ContentAlign.bottom,
-  //       context: context,
-  //       contentPosition: ContentPosition.above,
-  //     ),
-  //     createTarget(
-  //       identify: "LeadMenuIcon",
-  //       keyTarget: keyMenuIcon,
-  //       title: AppLocalizations.of(context)!
-  //           .translate('tutorial_task_screen_menu_title'),
-  //       description: AppLocalizations.of(context)!
-  //           .translate('tutorial_lead_screen_menu_description'),
-  //       align: ContentAlign.bottom,
-  //       context: context,
-  //       contentPosition: ContentPosition.above,
-  //     ),
-  //     createTarget(
-  //       identify: "FloatingActionButton",
-  //       keyTarget: keyFloatingActionButton,
-  //       title: AppLocalizations.of(context)!.translate('tutorial_lead_button_title'),
-  //       description: AppLocalizations.of(context)!.translate('tutorial_lead_button_description'),
-  //       align: ContentAlign.top,
-  //       context: context,
-  //     ),
-  //   ]);
-  // }
-
-  // void showTutorial() async {
-  //   if (_isTutorialShown) {
-  //     //print('LeadScreen: Tutorial already shown for LeadScreen, skipping');
-  //     return;
-  //   }
-
-  //   SharedPreferences prefs = await SharedPreferences.getInstance();
-  //   await Future.delayed(const Duration(milliseconds: 500));
-
-  //   TutorialCoachMark(
-  //     targets: targets,
-  //     textSkip: AppLocalizations.of(context)!.translate('skip'),
-  //     textStyleSkip: TextStyle(
-  //       color: Colors.white,
-  //       fontFamily: 'Gilroy',
-  //       fontSize: 20,
-  //       fontWeight: FontWeight.w600,
-  //       shadows: [
-  //         Shadow(offset: Offset(-1.5, -1.5), color: Colors.black),
-  //         Shadow(offset: Offset(1.5, -1.5), color: Colors.black),
-  //         Shadow(offset: Offset(1.5, 1.5), color: Colors.black),
-  //         Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
-  //       ],
-  //     ),
-  //     colorShadow: Color(0xff1E2E52),
-  //     onSkip: () {
-  //       //print('LeadScreen: Tutorial skipped for LeadScreen');
-  //       prefs.setBool('isTutorialShownLeadSearchIconAppBar', true);
-  //       if (mounted) {
-  //         setState(() {
-  //           _isTutorialShown = true;
-  //           _isLeadScreenTutorialCompleted = true;
-  //         });
-  //       }
-  //       return true;
-  //     },
-  //     onFinish: () {
-  //       //print('LeadScreen: Tutorial finished for LeadScreen');
-  //       prefs.setBool('isTutorialShownLeadSearchIconAppBar', true);
-  //       if (mounted) {
-  //         setState(() {
-  //           _isTutorialShown = true;
-  //           _isLeadScreenTutorialCompleted = true;
-  //         });
-  //       }
-  //     },
-  //   ).show(context: context);
-  // }
 
   Future<void> _searchLeads(String query, int currentStatusId) async {
     if (mounted) {
       setState(() {
-        _isFilterLoading = true; // ← НОВОЕ
-        _shouldShowLoader = true; // ← НОВОЕ: принудительно показываем лоадер
-
+        _isFilterLoading = true;
+        _shouldShowLoader = true;
       });
     }
 
     final leadBloc = BlocProvider.of<LeadBloc>(context);
     await LeadCache.clearLeadsForStatus(currentStatusId);
-    //print('LeadScreen: Searching leads with query: $query');
     leadBloc.add(FetchLeads(
       currentStatusId,
       query: query,
@@ -543,7 +396,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       daysWithoutActivity: _daysWithoutActivity,
       directoryValues: _directoryValues,
       salesFunnelId: _selectedFunnel?.id,
-      ignoreCache: true, // ← ВАЖНО!
+      ignoreCache: true,
     ));
   }
 
@@ -570,6 +423,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         _daysWithoutActivity = null;
         _directoryValues = [];
         _selectedCustomFieldFilters = {};
+        
         _initialSelectedManagers = [];
         _initialSelectedRegions = [];
         _initialSelectedSources = [];
@@ -593,23 +447,29 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         _searchController.clear();
       });
     }
+    
     final leadBloc = BlocProvider.of<LeadBloc>(context);
     leadBloc.add(FetchLeadStatuses());
   }
 
   Future<void> _handleManagerSelected(Map managers) async {
-    //print('LeadScreen: _handleManagerSelected - START');
+    debugPrint('LeadScreen: _handleManagerSelected - START WITH NEW LOGIC');
+    debugPrint('LeadScreen: Received managers: ${managers['managers']}');
+    debugPrint('LeadScreen: Received regions: ${managers['regions']}');
+    debugPrint('LeadScreen: Received sources: ${managers['sources']}');
+    debugPrint('LeadScreen: hasContact: ${managers['hasContact']}');
+    debugPrint('LeadScreen: hasOrders: ${managers['hasOrders']}');
 
-    // КРИТИЧНО: Сначала показываем лоадер и скрываем старые данные
-    final customFieldFiltersRaw =
-    managers['custom_field_filters'] as Map<String, dynamic>?;
-    final parsedCustomFieldFilters =
-    _parseCustomFieldFilters(customFieldFiltersRaw);
+    final customFieldFiltersRaw = managers['custom_field_filters'] as Map<String, dynamic>?;
+    final parsedCustomFieldFilters = _parseCustomFieldFilters(customFieldFiltersRaw);
+    
     if (mounted) {
       setState(() {
         _isFilterLoading = true;
-        _shouldShowLoader = true; // ← НОВОЕ: принудительно показываем лоадер
-        _showCustomTabBar = false;
+        _shouldShowLoader = true;
+        _showCustomTabBar = true;
+        _skipNextTabListener = true; // ← КРИТИЧНО: Пропускаем следующий TabListener!
+        
         _selectedManagers = managers['managers'];
         _selectedRegions = managers['regions'];
         _selectedSources = managers['sources'];
@@ -628,8 +488,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         _hasOrders = managers['hasOrders'];
         _daysWithoutActivity = managers['daysWithoutActivity'];
         _directoryValues = managers['directory_values'] ?? [];
-        _selectedCustomFieldFilters =
-            _cloneCustomFieldFilters(parsedCustomFieldFilters);
+        _selectedCustomFieldFilters = _cloneCustomFieldFilters(parsedCustomFieldFilters);
+        
         _initialSelectedManagers = managers['managers'];
         _initialSelectedRegions = managers['regions'];
         _initialSelectedSources = managers['sources'];
@@ -648,30 +508,23 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         _initialHasOrders = managers['hasOrders'];
         _initialDaysWithoutActivity = managers['daysWithoutActivity'];
         _initialDirectoryValues = managers['directory_values'] ?? [];
-        _initialCustomFieldFilters =
-            _cloneCustomFieldFilters(parsedCustomFieldFilters);
+        _initialCustomFieldFilters = _cloneCustomFieldFilters(parsedCustomFieldFilters);
       });
     }
 
-    //print('LeadScreen: _handleManagerSelected - Loader shown, clearing cache');
-
-    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-
-    // Очищаем кэш
-    await LeadCache.clearLeadsForStatus(currentStatusId);
-
-    //print('LeadScreen: _handleManagerSelected - Cache cleared, dispatching FetchLeads');
-
-    // Небольшая задержка для гарантии отображения лоадера
     await Future.delayed(Duration(milliseconds: 50));
 
     final leadBloc = BlocProvider.of<LeadBloc>(context);
-    leadBloc.add(FetchLeads(
-      currentStatusId,
-      managerIds: _selectedManagers.map((manager) => manager.id).toList(),
-      regionsIds: _selectedRegions.map((region) => region.id).toList(),
-      sourcesIds: _selectedSources.map((source) => source.id).toList(),
-      statusIds: _selectedStatuses,
+    leadBloc.add(FetchLeadStatusesWithFilters(
+      managerIds: _selectedManagers.isNotEmpty 
+          ? _selectedManagers.map((manager) => manager.id).toList() 
+          : null,
+      regionsIds: _selectedRegions.isNotEmpty 
+          ? _selectedRegions.map((region) => region.id).toList() 
+          : null,
+      sourcesIds: _selectedSources.isNotEmpty 
+          ? _selectedSources.map((source) => source.id).toList() 
+          : null,
       fromDate: _fromDate,
       toDate: _toDate,
       hasSuccessDeals: _hasSuccessDeals,
@@ -687,11 +540,9 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       daysWithoutActivity: _daysWithoutActivity,
       directoryValues: _directoryValues,
       salesFunnelId: _selectedFunnel?.id,
-      query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-      ignoreCache: true,
     ));
 
-    //print('LeadScreen: _handleManagerSelected - FetchLeads dispatched');
+    debugPrint('LeadScreen: _handleManagerSelected - Dispatched FetchLeadStatusesWithFilters');
   }
 
   void _onSearch(String query) {
@@ -699,104 +550,102 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
     _searchLeads(query, currentStatusId);
   }
+
   FocusNode focusNode = FocusNode();
   TextEditingController textEditingController = TextEditingController();
   ValueChanged<String>? onChangedSearchInput;
-
   bool isClickAvatarIcon = false;
 
-Widget _buildTitleWidget(BuildContext context) {
-  return BlocBuilder<SalesFunnelBloc, SalesFunnelState>(
-    builder: (context, state) {
-      String title = AppLocalizations.of(context)!.translate('appbar_leads');
-      SalesFunnel? selectedFunnel;
+  Widget _buildTitleWidget(BuildContext context) {
+    return BlocBuilder<SalesFunnelBloc, SalesFunnelState>(
+      builder: (context, state) {
+        String title = AppLocalizations.of(context)!.translate('appbar_leads');
+        SalesFunnel? selectedFunnel;
 
-      if (state is SalesFunnelLoaded) {
-        selectedFunnel = state.selectedFunnel ?? state.funnels.firstOrNull;
-        _selectedFunnel = selectedFunnel;
-        if (selectedFunnel != null) {
-          title = selectedFunnel.name;
+        if (state is SalesFunnelLoaded) {
+          selectedFunnel = state.selectedFunnel ?? state.funnels.firstOrNull;
+          _selectedFunnel = selectedFunnel;
+          if (selectedFunnel != null) {
+            title = selectedFunnel.name;
+          }
         }
-      }
-      // Loading / Error → просто "Лиды"
 
-      return Row(
-        children: [
-          Expanded(
-            child: Text(
-              title,
-              style: const TextStyle(
-                fontSize: 20,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w600,
-                color: Color(0xff1E2E52),
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          if (state is SalesFunnelLoaded && state.funnels.length > 1)
-            Padding(
-              padding: const EdgeInsets.only(left: 8.0),
-              child: PopupMenuButton<SalesFunnel>(
-                icon: const Icon(Icons.arrow_drop_down, color: Color(0xff1E2E52)),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                color: Colors.white,
-                elevation: 8,
-                offset: const Offset(0, 40),
-                onSelected: (funnel) async {
-                  try {
-                    setState(() => _isSwitchingFunnel = true);
-                    await _apiService.saveSelectedSalesFunnel(funnel.id.toString());
-                    await LeadCache.clearAllLeads();
-                    await LeadCache.clearCache();
-                    _resetFilters();
-
-                    if (mounted) {
-                      setState(() {
-                        _selectedFunnel = funnel;
-                        _isSearching = false;
-                        _searchController.clear();
-                        _lastSearchQuery = '';
-                      });
-                    }
-
-                    context.read<SalesFunnelBloc>().add(SelectSalesFunnel(funnel));
-                    await Future.delayed(const Duration(milliseconds: 100));
-                    if (mounted) {
-                      setState(() {
-                        _tabTitles.clear();
-                        _tabController = TabController(length: 0, vsync: this);
-                      });
-                    }
-                    context.read<LeadBloc>().add(FetchLeadStatuses());
-                  } catch (e) {
-                    setState(() => _isSwitchingFunnel = false);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Ошибка при смене воронки'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                },
-                itemBuilder: (context) => state.funnels
-                    .map((f) => PopupMenuItem<SalesFunnel>(
-                          value: f,
-                          child: Text(f.name, style: const TextStyle(fontFamily: 'Gilroy')),
-                        ))
-                    .toList(),
+        return Row(
+          children: [
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xff1E2E52),
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-        ],
-      );
-    },
-  );
-}
+            if (state is SalesFunnelLoaded && state.funnels.length > 1)
+              Padding(
+                padding: const EdgeInsets.only(left: 8.0),
+                child: PopupMenuButton<SalesFunnel>(
+                  icon: const Icon(Icons.arrow_drop_down, color: Color(0xff1E2E52)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  color: Colors.white,
+                  elevation: 8,
+                  offset: const Offset(0, 40),
+                  onSelected: (funnel) async {
+                    try {
+                      setState(() => _isSwitchingFunnel = true);
+                      await _apiService.saveSelectedSalesFunnel(funnel.id.toString());
+                      await LeadCache.clearAllLeads();
+                      await LeadCache.clearCache();
+                      _resetFilters();
+
+                      if (mounted) {
+                        setState(() {
+                          _selectedFunnel = funnel;
+                          _isSearching = false;
+                          _searchController.clear();
+                          _lastSearchQuery = '';
+                        });
+                      }
+
+                      context.read<SalesFunnelBloc>().add(SelectSalesFunnel(funnel));
+                      await Future.delayed(const Duration(milliseconds: 100));
+                      if (mounted) {
+                        setState(() {
+                          _tabTitles.clear();
+                          _tabController = TabController(length: 0, vsync: this);
+                        });
+                      }
+                      context.read<LeadBloc>().add(FetchLeadStatuses());
+                    } catch (e) {
+                      setState(() => _isSwitchingFunnel = false);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Ошибка при смене воронки'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  },
+                  itemBuilder: (context) => state.funnels
+                      .map((f) => PopupMenuItem<SalesFunnel>(
+                            value: f,
+                            child: Text(f.name, style: const TextStyle(fontFamily: 'Gilroy')),
+                          ))
+                      .toList(),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    //print('LeadScreen: Building widget tree, _tabTitles: $_tabTitles, _currentTabIndex: $_currentTabIndex');
     final localizations = AppLocalizations.of(context);
     return MultiBlocProvider(
       providers: [
@@ -822,7 +671,6 @@ Widget _buildTitleWidget(BuildContext context) {
             )
                 : _buildTitleWidget(context),
             onClickProfileAvatar: () {
-              //print('LeadScreen: Profile avatar clicked, isClickAvatarIcon: $isClickAvatarIcon');
               if (mounted) {
                 setState(() {
                   isClickAvatarIcon = !isClickAvatarIcon;
@@ -830,14 +678,12 @@ Widget _buildTitleWidget(BuildContext context) {
               }
             },
             onChangedSearchInput: (String value) {
-              //print('LeadScreen: Search input changed: $value');
               if (value.isNotEmpty) {
                 if (mounted) {
                   setState(() {
                     _isSearching = true;
                   });
                 }
-                //print('LeadScreen: Search mode activated');
               }
               _onSearch(value);
             },
@@ -873,14 +719,12 @@ Widget _buildTitleWidget(BuildContext context) {
             showFilterIconDeal: false,
             showEvent: true,
             clearButtonClick: (value) {
-              //print('LeadScreen: Clear button clicked, isSearching: $value');
               if (value == false) {
                 if (mounted) {
                   setState(() {
                     _isSearching = false;
                     _searchController.clear();
                     _lastSearchQuery = '';
-                    //print('LeadScreen: Search cleared, resetting state');
                   });
                 }
                 if (_searchController.text.isEmpty) {
@@ -907,10 +751,8 @@ Widget _buildTitleWidget(BuildContext context) {
                         _showCustomTabBar = true;
                       });
                     }
-                    //print('LeadScreen: Showing custom tab bar after clear');
                     final taskBloc = BlocProvider.of<LeadBloc>(context);
                     taskBloc.add(FetchLeadStatuses());
-                    //print('LeadScreen: FetchLeadStatuses dispatched after clear');
                   } else {
                     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
                     final taskBloc = BlocProvider.of<LeadBloc>(context);
@@ -942,7 +784,6 @@ Widget _buildTitleWidget(BuildContext context) {
                       directoryValues: _directoryValues,
                       salesFunnelId: _selectedFunnel?.id,
                     ));
-                    //print('LeadScreen: FetchLeads dispatched with filters after clear, salesFunnelId: ${_selectedFunnel?.id}');
                   }
                 } else if (_selectedManagerIds != null && _selectedManagerIds!.isNotEmpty) {
                   final currentStatusId = _tabTitles[_currentTabIndex]['id'];
@@ -954,13 +795,10 @@ Widget _buildTitleWidget(BuildContext context) {
                     directoryValues: _directoryValues,
                     salesFunnelId: _selectedFunnel?.id,
                   ));
-                  //print('LeadScreen: FetchLeads dispatched with managerIds after clear, salesFunnelId: ${_selectedFunnel?.id}');
                 }
               }
             },
-            clearButtonClickFiltr: (value) {
-              //print('LeadScreen: Filter clear button clicked: $value');
-            },
+            clearButtonClickFiltr: (value) {},
           ),
         ),
         body: isClickAvatarIcon
@@ -981,7 +819,6 @@ Widget _buildTitleWidget(BuildContext context) {
             ? FloatingActionButton(
           key: keyFloatingActionButton,
           onPressed: () {
-            //print('LeadScreen: FloatingActionButton pressed');
             final currentStatusId = _tabTitles[_currentTabIndex]['id'];
             if (_isSwitch) {
               showModalBottomSheet(
@@ -1099,7 +936,6 @@ Widget _buildTitleWidget(BuildContext context) {
         ? _tabTitles[_currentTabIndex]['id']
         : 0;
 
-    // Показываем лоадер если флаги активны
     if (_isFilterLoading || _shouldShowLoader) {
       return const Center(
         child: PlayStoreImageLoading(
@@ -1181,14 +1017,12 @@ Widget _buildTitleWidget(BuildContext context) {
   Widget _buildManagerView() {
     return BlocListener<LeadBloc, LeadState>(
       listener: (context, state) {
-        // Сбрасываем флаги когда данные загружены или произошла ошибка
         if ((state is LeadDataLoaded || state is LeadError) &&
             mounted &&
             (_isFilterLoading || _shouldShowLoader)) {
           setState(() {
             _isFilterLoading = false;
             _shouldShowLoader = false;
-            //print('LeadScreen: _buildManagerView - Loader flags reset');
           });
         }
       },
@@ -1198,9 +1032,7 @@ Widget _buildTitleWidget(BuildContext context) {
               ? _tabTitles[_tabController.index]['id']
               : 0;
 
-          // Показываем лоадер только если флаги активны ИЛИ состояние - LeadLoading
           if (_shouldShowLoader || _isFilterLoading || state is LeadLoading) {
-            //print('LeadScreen: _buildManagerView - Showing loader');
             return const Center(
               child: PlayStoreImageLoading(
                 size: 80.0,
@@ -1272,7 +1104,6 @@ Widget _buildTitleWidget(BuildContext context) {
             );
           }
 
-          // Если состояние LeadError - показываем ошибку
           if (state is LeadError) {
             return Center(
               child: Text(
@@ -1394,21 +1225,17 @@ Widget _buildTitleWidget(BuildContext context) {
     });
   }
 
-// Обновленный метод _buildTabButton в LeadScreen
   Widget _buildTabButton(int index) {
     bool isActive = _tabController.index == index;
 
     return FutureBuilder<int>(
       future: LeadCache.getPersistentLeadCount(_tabTitles[index]['id']),
       builder: (context, snapshot) {
-        // Сначала пробуем получить count из постоянного кэша
         int leadCount = snapshot.data ?? 0;
 
-        // Если в постоянном кэше нет данных, пробуем другие источники
         if (leadCount == 0) {
           return BlocBuilder<LeadBloc, LeadState>(
             builder: (context, state) {
-              // Используем данные из состояния только если нет постоянного счетчика
               if (state is LeadLoaded) {
                 final statusId = _tabTitles[index]['id'];
                 final leadStatus = state.leadStatuses.firstWhere(
@@ -1423,13 +1250,9 @@ Widget _buildTitleWidget(BuildContext context) {
                   ),
                 );
                 leadCount = leadStatus.leadsCount;
-
-                // Сразу сохраняем в постоянный кэш
                 LeadCache.setPersistentLeadCount(statusId, leadCount);
               } else if (state is LeadDataLoaded && state.leadCounts.containsKey(_tabTitles[index]['id'])) {
                 leadCount = state.leadCounts[_tabTitles[index]['id']] ?? 0;
-
-                // Сразу сохраняем в постоянный кэш
                 LeadCache.setPersistentLeadCount(_tabTitles[index]['id'], leadCount);
               }
 
@@ -1438,19 +1261,16 @@ Widget _buildTitleWidget(BuildContext context) {
           );
         }
 
-        // Если есть постоянный счетчик, используем его напрямую
         return _buildTabButtonUI(index, isActive, leadCount);
       },
     );
   }
 
-// Вспомогательный метод для построения UI кнопки табы
   Widget _buildTabButtonUI(int index, bool isActive, int leadCount) {
     return GestureDetector(
       key: _tabKeys[index],
       onTap: () {
         _tabController.animateTo(index);
-        //print('LeadScreen: Tab button tapped, index: $index');
       },
       onLongPress: () {
         _showStatusOptions(context, index);
@@ -1546,29 +1366,23 @@ Widget _buildTitleWidget(BuildContext context) {
   }
 
   Widget _buildTabBarView() {
-    //print('LeadScreen: _buildTabBarView called, _tabTitles length: ${_tabTitles.length}');
     return BlocListener<LeadBloc, LeadState>(
       listener: (context, state) async {
-        //print('LeadScreen: BlocListener received state: ${state.runtimeType}');
-        // Сбрасываем флаг загрузки когда получены данные
         if (state is LeadDataLoaded || state is LeadError) {
           if (mounted && _isFilterLoading) {
             setState(() {
-              _isFilterLoading = false; // ← НОВОЕ: сбрасываем флаг после загрузки
-              _shouldShowLoader = false; // ← НОВОЕ: разрешаем показывать данные
-              _isSwitchingFunnel = false; // На всякий случай
-
-
+              _isFilterLoading = false;
+              _shouldShowLoader = false;
+              _isSwitchingFunnel = false;
             });
           }
         }
+        
         if (state is LeadLoaded) {
-          //print('LeadScreen: LeadLoaded state, caching lead statuses: ${state.leadStatuses}');
           await LeadCache.cacheLeadStatuses(state.leadStatuses);
 
           if (mounted) {
             setState(() {
-              // Обновляем табы с новыми данными
               _tabTitles = state.leadStatuses
                   .where((status) => _canReadLeadStatus)
                   .map((status) => {
@@ -1581,29 +1395,29 @@ Widget _buildTitleWidget(BuildContext context) {
               _isSwitchingFunnel = false;
 
               if (_tabTitles.isNotEmpty) {
-                //print('LeadScreen: Initializing TabController with length: ${_tabTitles.length}');
-
-                // Проверяем, нужно ли создавать новый контроллер
                 bool needNewController = _tabController.length != _tabTitles.length;
 
                 if (needNewController) {
-                  // Сохраняем текущий индекс перед созданием нового контроллера
-                  int savedTabIndex = _currentTabIndex;
-
-                  // Dispose старого контроллера если он существует
                   if (_tabController.length > 0) {
                     _tabController.dispose();
                   }
-
-                  // Создаем новый контроллер
                   _tabController = TabController(length: _tabTitles.length, vsync: this);
-                  //print('LeadScreen: Created new TabController with length: ${_tabTitles.length}');
                 }
 
-                // Настраиваем слушатель (всегда обновляем)
+                // ← ЕДИНСТВЕННЫЙ LISTENER С ПРОВЕРКОЙ _skipNextTabListener
                 _tabController.addListener(() {
                   if (!_tabController.indexIsChanging) {
-                    //print('LeadScreen: TabController listener triggered, new index: ${_tabController.index}');
+                    // ← КРИТИЧНО: Проверяем флаг пропуска!
+                    if (_skipNextTabListener) {
+                      debugPrint('LeadScreen: TabController listener - SKIPPED (filter just applied)');
+                      setState(() {
+                        _skipNextTabListener = false;
+                        _currentTabIndex = _tabController.index;
+                      });
+                      return; // ← ВЫХОДИМ БЕЗ ЗАПРОСА!
+                    }
+
+                    debugPrint('LeadScreen: TabController listener triggered, new index: ${_tabController.index}');
                     setState(() {
                       _currentTabIndex = _tabController.index;
                     });
@@ -1612,80 +1426,98 @@ Widget _buildTitleWidget(BuildContext context) {
                       _scrollToActiveTab();
                     }
 
-                    // Загружаем лиды для выбранного статуса
+                    bool hasActiveFilters = _selectedManagers.isNotEmpty ||
+                        _selectedRegions.isNotEmpty ||
+                        _selectedSources.isNotEmpty ||
+                        _selectedStatuses != null ||
+                        _fromDate != null ||
+                        _toDate != null ||
+                        _hasSuccessDeals == true ||
+                        _hasInProgressDeals == true ||
+                        _hasFailureDeals == true ||
+                        _hasNotices == true ||
+                        _hasContact == true ||
+                        _hasChat == true ||
+                        _hasNoReplies == true ||
+                        _hasUnreadMessages == true ||
+                        _hasDeal == true ||
+                        _hasOrders == true ||
+                        _daysWithoutActivity != null ||
+                        _directoryValues.isNotEmpty;
+
                     context.read<LeadBloc>().add(FetchLeads(
                       currentStatusId,
                       salesFunnelId: _selectedFunnel?.id,
                       ignoreCache: false,
                       query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-                      managerIds: _selectedManagers.isNotEmpty
+                      
+                      managerIds: hasActiveFilters && _selectedManagers.isNotEmpty
                           ? _selectedManagers.map((manager) => manager.id).toList()
                           : null,
-                      regionsIds: _selectedRegions.isNotEmpty
+                      regionsIds: hasActiveFilters && _selectedRegions.isNotEmpty
                           ? _selectedRegions.map((region) => region.id).toList()
                           : null,
-                      sourcesIds: _selectedSources.isNotEmpty
+                      sourcesIds: hasActiveFilters && _selectedSources.isNotEmpty
                           ? _selectedSources.map((source) => source.id).toList()
                           : null,
-                      statusIds: _selectedStatuses,
-                      fromDate: _fromDate,
-                      toDate: _toDate,
-                      hasSuccessDeals: _hasSuccessDeals,
-                      hasInProgressDeals: _hasInProgressDeals,
-                      hasFailureDeals: _hasFailureDeals,
-                      hasNotices: _hasNotices,
-                      hasContact: _hasContact,
-                      hasChat: _hasChat,
-                      hasNoReplies: _hasNoReplies,
-                      hasUnreadMessages: _hasUnreadMessages,
-                      hasDeal: _hasDeal,
-                      hasOrders: _hasOrders,
-                      daysWithoutActivity: _daysWithoutActivity,
-                      directoryValues: _directoryValues,
+                      statusIds: hasActiveFilters ? _selectedStatuses : null,
+                      fromDate: hasActiveFilters ? _fromDate : null,
+                      toDate: hasActiveFilters ? _toDate : null,
+                      hasSuccessDeals: hasActiveFilters ? _hasSuccessDeals : null,
+                      hasInProgressDeals: hasActiveFilters ? _hasInProgressDeals : null,
+                      hasFailureDeals: hasActiveFilters ? _hasFailureDeals : null,
+                      hasNotices: hasActiveFilters ? _hasNotices : null,
+                      hasContact: hasActiveFilters ? _hasContact : null,
+                      hasChat: hasActiveFilters ? _hasChat : null,
+                      hasNoReplies: hasActiveFilters ? _hasNoReplies : null,
+                      hasUnreadMessages: hasActiveFilters ? _hasUnreadMessages : null,
+                      hasDeal: hasActiveFilters ? _hasDeal : null,
+                      hasOrders: hasActiveFilters ? _hasOrders : null,
+                      daysWithoutActivity: hasActiveFilters ? _daysWithoutActivity : null,
+                      directoryValues: hasActiveFilters && _directoryValues.isNotEmpty 
+                          ? _directoryValues 
+                          : null,
                     ));
-                    //print('LeadScreen: FetchLeads dispatched for statusId: $currentStatusId');
+                    
+                    if (kDebugMode) {
+                      debugPrint('LeadScreen: FetchLeads dispatched for statusId: $currentStatusId');
+                      debugPrint('LeadScreen: hasActiveFilters: $hasActiveFilters');
+                      if (hasActiveFilters) {
+                        debugPrint('LeadScreen: Applied filters - managers: ${_selectedManagers.length}, regions: ${_selectedRegions.length}');
+                      }
+                    }
                   }
                 });
 
-                // Установка правильного индекса
                 if (needNewController) {
-                  // При создании нового контроллера восстанавливаем индекс или ставим 0
                   if (_currentTabIndex < _tabTitles.length && _currentTabIndex >= 0) {
                     _tabController.index = _currentTabIndex;
-                    //print('LeadScreen: Restored tab index to: $_currentTabIndex');
                   } else {
                     _tabController.index = 0;
                     _currentTabIndex = 0;
-                    //print('LeadScreen: Reset tab index to: 0');
                   }
                 } else {
-                  // При обновлении существующего контроллера проверяем initialStatusId
                   int initialIndex = state.leadStatuses
                       .indexWhere((status) => status.id == widget.initialStatusId);
                   if (initialIndex != -1 && initialIndex != _currentTabIndex) {
                     _tabController.index = initialIndex;
                     _currentTabIndex = initialIndex;
-                    //print('LeadScreen: Set initial tab index to: $initialIndex');
                   } else if (_tabTitles.isNotEmpty) {
                     int safeIndex = _currentTabIndex < _tabTitles.length ? _currentTabIndex : 0;
                     _tabController.index = safeIndex;
                     _currentTabIndex = safeIndex;
-                    //print('LeadScreen: Set safe tab index to: $safeIndex');
                   }
                 }
 
-                // Прокручиваем к активному табу
                 if (tabScrollController.hasClients) {
                   _scrollToActiveTab();
                 }
 
-                // Обрабатываем специальные навигации
                 if (navigateToEnd) {
                   navigateToEnd = false;
                   Future.delayed(Duration(milliseconds: 100), () {
                     if (mounted && _tabTitles.isNotEmpty) {
                       _tabController.animateTo(_tabTitles.length - 1);
-                      //print('LeadScreen: Navigated to last tab');
                     }
                   });
                 }
@@ -1699,39 +1531,32 @@ Widget _buildTitleWidget(BuildContext context) {
                       if (mounted) {
                         _tabController.animateTo(newIndex);
                         _currentTabIndex = newIndex;
-                        //print('LeadScreen: Navigated to tab $newIndex after delete');
                       }
                     });
                   }
                 }
 
-                // При радикальном обновлении (после refresh) автоматически загружаем лиды для активного статуса
                 Future.delayed(Duration(milliseconds: 150), () {
                   if (mounted && _tabTitles.isNotEmpty) {
                     final activeStatusId = _tabTitles[_currentTabIndex]['id'];
-                    //print('LeadScreen: Auto-loading leads for active status after refresh: $activeStatusId');
                     context.read<LeadBloc>().add(FetchLeads(
                       activeStatusId,
                       salesFunnelId: _selectedFunnel?.id,
-                      ignoreCache: true, // При обновлении после refresh принудительно загружаем с сервера
+                      ignoreCache: true,
                     ));
                   }
                 });
 
               } else {
-                // Если табы пустые, создаем пустой контроллер
                 if (_tabController.length > 0) {
                   _tabController.dispose();
                 }
                 _tabController = TabController(length: 0, vsync: this);
                 _currentTabIndex = 0;
-                //print('LeadScreen: TabController reset to length 0 (no statuses available)');
               }
             });
           }
         } else if (state is LeadError) {
-          //print('LeadScreen: LeadError state received: ${state.message}');
-
           if (state.message.contains(
             AppLocalizations.of(context)!.translate('unauthorized_access'),
           )) {
@@ -1760,7 +1585,6 @@ Widget _buildTitleWidget(BuildContext context) {
                     label: 'Повторить',
                     textColor: Colors.white,
                     onPressed: () {
-                      // При ошибке пробуем еще раз с принудительным обновлением
                       context.read<LeadBloc>().add(FetchLeadStatuses(forceRefresh: true));
                     },
                   ),
@@ -1781,7 +1605,6 @@ Widget _buildTitleWidget(BuildContext context) {
         controller: _tabController,
         physics: const AlwaysScrollableScrollPhysics(),
         children: _tabTitles.map((status) {
-          //print('LeadScreen: Building TabBarView child for status: ${status['title']}');
           return RefreshIndicator(
             onRefresh: () => _onRefresh(status['id']),
             color: const Color(0xff1E2E52),
@@ -1791,19 +1614,15 @@ Widget _buildTitleWidget(BuildContext context) {
               statusId: status['id'],
               title: status['title'],
               onStatusId: (newStatusId) {
-                //print('LeadScreen: onStatusId called with id: $newStatusId');
                 final index = _tabTitles.indexWhere((s) => s['id'] == newStatusId);
                 if (index != -1) {
                   _tabController.animateTo(index);
-                  //print('LeadScreen: Animated to tab index: $index for statusId: $newStatusId');
 
-                  // Проверяем, есть ли уже данные для этого статуса
                   final currentLeadBloc = context.read<LeadBloc>();
                   if (currentLeadBloc.state is LeadDataLoaded) {
                     final currentState = currentLeadBloc.state as LeadDataLoaded;
                     final hasLeadsForStatus = currentState.leads.any((lead) => lead.statusId == newStatusId);
 
-                    // Загружаем только если нет данных для этого статуса
                     if (!hasLeadsForStatus) {
                       currentLeadBloc.add(FetchLeads(
                         newStatusId,
@@ -1835,18 +1654,13 @@ Widget _buildTitleWidget(BuildContext context) {
                         daysWithoutActivity: _daysWithoutActivity,
                         directoryValues: _directoryValues,
                       ));
-                      //print('LeadScreen: FetchLeads dispatched for statusId: $newStatusId (no cached data found)');
-                    } else {
-                      //print('LeadScreen: Using cached data for statusId: $newStatusId');
                     }
                   } else {
-                    // Если нет состояния LeadDataLoaded, загружаем данные
                     currentLeadBloc.add(FetchLeads(
                       newStatusId,
                       salesFunnelId: _selectedFunnel?.id,
                       ignoreCache: false,
                     ));
-                    //print('LeadScreen: FetchLeads dispatched for statusId: $newStatusId (no LeadDataLoaded state)');
                   }
                 }
               },
@@ -1856,6 +1670,7 @@ Widget _buildTitleWidget(BuildContext context) {
       ),
     );
   }
+
   void _scrollToActiveTab() {
     final keyContext = _tabKeys[_currentTabIndex].currentContext;
     if (keyContext != null && tabScrollController.hasClients) {
@@ -1885,4 +1700,3 @@ Widget _buildTitleWidget(BuildContext context) {
     super.dispose();
   }
 }
-
