@@ -59,8 +59,6 @@ class _InputFieldState extends State<InputField>
 
   // НОВОЕ: Таймеры для дебаунсинга
   Timer? _selectionDebounce;
-  Timer? _longPressTimer;
-  bool _isLongPressing = false;
 
   @override
   void initState() {
@@ -86,8 +84,7 @@ class _InputFieldState extends State<InputField>
     _removeOverlay();
     _removeFormattingOverlay();
     _animationController.dispose();
-    _selectionDebounce?.cancel(); // НОВОЕ
-    _longPressTimer?.cancel(); // НОВОЕ
+    _selectionDebounce?.cancel();
     widget.messageController.removeListener(_handleSelectionChange);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
@@ -152,8 +149,7 @@ class _InputFieldState extends State<InputField>
 
     if (selection.isValid &&
         selection.start != selection.end &&
-        widget.focusNode.hasFocus &&
-        !_isLongPressing) {
+        widget.focusNode.hasFocus) {
       _selectionDebounce = Timer(const Duration(milliseconds: 100), () {
         if (mounted) {
           // ИСПРАВЛЕНО: Скрываем только системный тулбар, НЕ клавиатуру
@@ -175,9 +171,10 @@ class _InputFieldState extends State<InputField>
   void _showFormattingPanelOnLongPress() {
     // ИСПРАВЛЕНО: hideToolbar вместо hide
     SystemChannels.textInput.invokeMethod('TextInput.hideToolbar');
+    // Обновляем overlay вне setState для корректной работы
+    _showFormattingPanel = true;
+    _updateFormattingOverlay();
     setState(() {
-      _showFormattingPanel = true;
-      _updateFormattingOverlay();
       _animationController.forward();
     });
   }
@@ -868,56 +865,38 @@ class _InputFieldState extends State<InputField>
                               child: CircularProgressIndicator(
                                   color: Color(0xff1E2E52)),
                             )
-                          : GestureDetector(
-                              // НОВОЕ: Обработка долгого нажатия
-                              onLongPressStart: (_) {
-                                _isLongPressing = true;
-                                _longPressTimer = Timer(
-                                    const Duration(milliseconds: 500), () {
-                                  _showFormattingPanelOnLongPress();
-                                });
-                              },
-                              onLongPressEnd: (_) {
-                                _isLongPressing = false;
-                                _longPressTimer?.cancel();
-                              },
-                              onLongPressCancel: () {
-                                _isLongPressing = false;
-                                _longPressTimer?.cancel();
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.only(left: 16),
-                                child: AnimatedTextField(
-                                  controller: widget.messageController,
-                                  focusNode: widget.focusNode,
-                                  onChanged: _handleTextChange,
-                                  htmlContent:
-                                      _htmlContent, // ДОБАВЬ ЭТУ СТРОКУ
-                                  hintText: AppLocalizations.of(context)!
-                                      .translate('enter_your_sms'),
-                                  style: ChatSmsStyles.messageTextStyle,
-                                  hintStyle: TextStyle(
-                                    fontSize: 14,
-                                    color: ChatSmsStyles.hintTextColor,
-                                    fontWeight: FontWeight.w500,
-                                    fontFamily: 'Gilroy',
-                                  ),
-                                  fillColor: ChatSmsStyles.inputBackgroundColor,
-                                  borderRadius: ChatSmsStyles.inputBorderRadius,
-                                  contentPadding: widget.isLeadChat
-                                      ? EdgeInsets.only(
-                                          left: 10,
-                                          right: 65,
-                                          top: 12,
-                                          bottom: 12)
-                                      : EdgeInsets.only(
-                                          left: 10,
-                                          right: 40,
-                                          top: 12,
-                                          bottom: 12),
-                                  maxVisibleLines: 6,
-                                  lineHeight: 20.0,
+                          : Container(
+                              padding: const EdgeInsets.only(left: 16),
+                              child: AnimatedTextField(
+                                controller: widget.messageController,
+                                focusNode: widget.focusNode,
+                                onChanged: _handleTextChange,
+                                htmlContent: _htmlContent,
+                                onLongPress: _showFormattingPanelOnLongPress,
+                                hintText: AppLocalizations.of(context)!
+                                    .translate('enter_your_sms'),
+                                style: ChatSmsStyles.messageTextStyle,
+                                hintStyle: TextStyle(
+                                  fontSize: 14,
+                                  color: ChatSmsStyles.hintTextColor,
+                                  fontWeight: FontWeight.w500,
+                                  fontFamily: 'Gilroy',
                                 ),
+                                fillColor: ChatSmsStyles.inputBackgroundColor,
+                                borderRadius: ChatSmsStyles.inputBorderRadius,
+                                contentPadding: widget.isLeadChat
+                                    ? EdgeInsets.only(
+                                        left: 10,
+                                        right: 65,
+                                        top: 12,
+                                        bottom: 12)
+                                    : EdgeInsets.only(
+                                        left: 10,
+                                        right: 40,
+                                        top: 12,
+                                        bottom: 12),
+                                maxVisibleLines: 6,
+                                lineHeight: 20.0,
                               ),
                             ),
                       if (widget.isLeadChat)
