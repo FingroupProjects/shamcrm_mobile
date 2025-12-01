@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Widget Icon Sizes (scaled by density) -->
+<!--    &lt;!&ndash; Widget min sizes &ndash;&gt;-->
+<!--    <dimen name="widget_min_width">180dp</dimen>-->
+<!--    <dimen name="widget_min_height">80dp</dimen>-->
+
+<!--    &lt;!&ndash; Widget Icon Sizes (scaled by density) &ndash;&gt;-->
     <dimen name="widget_icon_size">38dp</dimen>
     <dimen name="widget_logo_size">25dp</dimen>
     <dimen name="widget_logo_compact_size">23dp</dimen>
