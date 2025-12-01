@@ -8,6 +8,7 @@ import 'package:crm_task_manager/page_2/money/widgets/cash_register_radio_group.
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
+import 'package:crm_task_manager/custom_widget/price_input_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -266,13 +267,13 @@ class _AddMoneyIncomeFromClientState extends State<AddMoneyIncomeFromClient> {
   Widget _buildAmountField(AppLocalizations localizations) {
     return CustomTextField(
         inputFormatters: [
-          MoneyInputFormatter(),
+          PriceInputFormatter(),
         ],
         controller: _amountController,
         label: AppLocalizations.of(context)!.translate('amount') ?? 'Сумма',
         hintText: AppLocalizations.of(context)!.translate('enter_amount') ?? 'Введите сумму',
         maxLines: 1,
-        keyboardType: TextInputType.number,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
         validator: (value) {
           if (value == null || value.isEmpty) {
             return AppLocalizations.of(context)!.translate('enter_amount') ?? 'Введите сумму';

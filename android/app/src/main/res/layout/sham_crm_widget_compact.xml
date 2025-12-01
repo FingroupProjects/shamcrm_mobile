@@ -20,28 +20,13 @@
         android:paddingBottom="10dp">
 
         <!-- Заголовок -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingBottom="8dp">
-
-            <ImageView
-                android:layout_width="28dp"
-                android:layout_height="28dp"
-                android:scaleType="fitCenter"
-                android:src="@mipmap/ic_launcher" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:text="shamCRM"
-                android:textColor="#1E2E52"
-                android:textSize="18sp"
-                android:textStyle="normal" />
-        </LinearLayout>
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/widget_logo_compact_size"
+            android:layout_gravity="start"
+            android:adjustViewBounds="true"
+            android:scaleType="fitCenter"
+            android:src="@drawable/sham_crm_logo" />
 
         <!-- Кнопки (одна строка, до 4 элементов) -->
         <LinearLayout
@@ -62,8 +47,8 @@
 
             <ImageView
                 android:id="@+id/icon_dashboard"
-                android:layout_width="44dp"
-                android:layout_height="44dp"
+                android:layout_width="@dimen/widget_icon_size"
+                android:layout_height="@dimen/widget_icon_size"
                 android:background="@drawable/widget_button_bg"
                 android:padding="10dp"
                 android:scaleType="fitCenter"
@@ -76,7 +61,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:text="Дашборд"
-                    android:textSize="10sp"
+                    android:textSize="@dimen/widget_text_compact_size"
                     android:textColor="#1E2E52"
                     android:maxLines="1"
                     android:ellipsize="end" />
@@ -94,8 +79,8 @@
 
             <ImageView
                 android:id="@+id/icon_tasks"
-                android:layout_width="44dp"
-                android:layout_height="44dp"
+                android:layout_width="@dimen/widget_icon_size"
+                android:layout_height="@dimen/widget_icon_size"
                 android:background="@drawable/widget_button_bg"
                 android:padding="10dp"
                 android:scaleType="fitCenter"
@@ -108,7 +93,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:text="Задачи"
-                    android:textSize="10sp"
+                    android:textSize="@dimen/widget_text_compact_size"
                     android:textColor="#1E2E52"
                     android:maxLines="1"
                     android:ellipsize="end" />
@@ -126,8 +111,8 @@
 
             <ImageView
                 android:id="@+id/icon_leads"
-                android:layout_width="44dp"
-                android:layout_height="44dp"
+                android:layout_width="@dimen/widget_icon_size"
+                android:layout_height="@dimen/widget_icon_size"
                 android:background="@drawable/widget_button_bg"
                 android:padding="10dp"
                 android:scaleType="fitCenter"
@@ -140,7 +125,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:text="Лиды"
-                    android:textSize="10sp"
+                    android:textSize="@dimen/widget_text_compact_size"
                     android:textColor="#1E2E52"
                     android:maxLines="1"
                     android:ellipsize="end" />
@@ -158,8 +143,8 @@
 
             <ImageView
                 android:id="@+id/icon_deals"
-                android:layout_width="44dp"
-                android:layout_height="44dp"
+                android:layout_width="@dimen/widget_icon_size"
+                android:layout_height="@dimen/widget_icon_size"
                 android:background="@drawable/widget_button_bg"
                 android:padding="10dp"
                 android:scaleType="fitCenter"
@@ -172,7 +157,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:text="Сделки"
-                    android:textSize="10sp"
+                    android:textSize="@dimen/widget_text_compact_size"
                     android:textColor="#1E2E52"
                     android:maxLines="1"
                     android:ellipsize="end" />

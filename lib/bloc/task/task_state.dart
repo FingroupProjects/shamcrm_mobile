@@ -6,6 +6,15 @@ class TaskInitial extends TaskState {}
 
 class TaskLoading extends TaskState {}
 
+// Новое состояние: показываем кэш, но индицируем что идёт обновление
+class TaskLoadingWithCache extends TaskState {
+  final List<TaskStatus> cachedStatuses;
+  final Map<int, int> taskCounts;
+
+  TaskLoadingWithCache(this.cachedStatuses, {Map<int, int>? taskCounts})
+      : this.taskCounts = taskCounts ?? {};
+}
+
 class TaskLoaded extends TaskState {
   final List<TaskStatus> taskStatuses;
   final Map<int, int> taskCounts;
@@ -13,7 +22,6 @@ class TaskLoaded extends TaskState {
   TaskLoaded(this.taskStatuses, {Map<int, int>? taskCounts})
       : this.taskCounts = taskCounts ?? {};
 
-  // Добавляем метод copyWith
   TaskLoaded copyWith({
     List<TaskStatus>? taskStatuses,
     Map<int, int>? taskCounts,
@@ -24,6 +32,7 @@ class TaskLoaded extends TaskState {
     );
   }
 }
+
 class TaskStatusLoaded extends TaskState {
   final TaskStatus taskStatus;
   TaskStatusLoaded(this.taskStatus);
@@ -42,10 +51,11 @@ class TaskDataLoaded extends TaskState {
   }
 }
 
-
 class TaskError extends TaskState {
   final String message;
-  TaskError(this.message);
+  final bool hasCachedData; // Флаг наличия кэшированных данных
+  
+  TaskError(this.message, {this.hasCachedData = false});
 }
 
 class TaskSuccess extends TaskState {
@@ -63,9 +73,7 @@ class TaskStatusDeleted extends TaskState {
   TaskStatusDeleted(this.message);
 }
 
-// State для успешного обновления статуса лида
 class TaskStatusUpdatedEdit extends TaskState {
   final String message;
-
   TaskStatusUpdatedEdit(this.message);
 }

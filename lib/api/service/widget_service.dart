@@ -120,42 +120,67 @@ class WidgetService {
   /// Sync permissions to iOS widget via App Groups
   /// This allows the widget to show/hide icons based on user permissions
   static Future<void> syncPermissionsToWidget(List<String> permissions) async {
-    // Only sync on iOS
-    if (!Platform.isIOS) {
-      debugPrint('WidgetService: Skipping permission sync (not iOS)');
-      return;
+    // Sync to iOS widget via App Groups
+    if (Platform.isIOS) {
+      try {
+        final result = await platform.invokeMethod('syncPermissionsToWidget', {
+          'permissions': permissions,
+        });
+        debugPrint('WidgetService: Synced ${permissions.length} permissions to iOS widget: $result');
+      } on PlatformException catch (e) {
+        debugPrint('WidgetService: Failed to sync permissions to iOS widget: ${e.message}');
+      } catch (e) {
+        debugPrint('WidgetService: Error syncing permissions to iOS widget: $e');
+      }
     }
-
-    try {
-      final result = await platform.invokeMethod('syncPermissionsToWidget', {
-        'permissions': permissions,
-      });
-      debugPrint('WidgetService: Synced ${permissions.length} permissions to widget: $result');
-    } on PlatformException catch (e) {
-      debugPrint('WidgetService: Failed to sync permissions to widget: ${e.message}');
-    } catch (e) {
-      debugPrint('WidgetService: Error syncing permissions: $e');
+    
+    // Also sync to Android SharedPreferences for accounting widget
+    if (Platform.isAndroid) {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        // Store permissions as JSON array string (Flutter SharedPreferences format)
+        final permissionsJson = '[' + permissions.map((p) => '"$p"').join(',') + ']';
+        await prefs.setString('user_permissions', permissionsJson);
+        debugPrint('WidgetService: Synced ${permissions.length} permissions to Android widget');
+        
+        // Trigger widget update
+        await triggerAndroidWidgetUpdate();
+      } catch (e) {
+        debugPrint('WidgetService: Error syncing permissions to Android widget: $e');
+      }
     }
   }
 
-  /// Sync language to iOS widget via App Groups
+  /// Sync language to widget (iOS via App Groups, Android via SharedPreferences)
   /// This allows the widget to display labels in the correct language
   static Future<void> syncLanguageToWidget(String languageCode) async {
-    // Only sync on iOS
-    if (!Platform.isIOS) {
-      debugPrint('WidgetService: Skipping language sync (not iOS)');
-      return;
+    // Sync to iOS widget via App Groups
+    if (Platform.isIOS) {
+      try {
+        final result = await platform.invokeMethod('syncLanguageToWidget', {
+          'languageCode': languageCode,
+        });
+        debugPrint('WidgetService: Synced language to iOS widget: $languageCode, result: $result');
+      } on PlatformException catch (e) {
+        debugPrint('WidgetService: Failed to sync language to iOS widget: ${e.message}');
+      } catch (e) {
+        debugPrint('WidgetService: Error syncing language to iOS widget: $e');
+      }
     }
-
-    try {
-      final result = await platform.invokeMethod('syncLanguageToWidget', {
-        'languageCode': languageCode,
-      });
-      debugPrint('WidgetService: Synced language to widget: $languageCode, result: $result');
-    } on PlatformException catch (e) {
-      debugPrint('WidgetService: Failed to sync language to widget: ${e.message}');
-    } catch (e) {
-      debugPrint('WidgetService: Error syncing language: $e');
+    
+    // Also sync to Android SharedPreferences for accounting widget
+    if (Platform.isAndroid) {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        // Store language code (Flutter SharedPreferences will add "flutter." prefix)
+        await prefs.setString('app_language', languageCode);
+        debugPrint('WidgetService: Synced language to Android widget: $languageCode');
+        
+        // Trigger widget update
+        await triggerAndroidWidgetUpdate();
+      } catch (e) {
+        debugPrint('WidgetService: Error syncing language to Android widget: $e');
+      }
     }
   }
 

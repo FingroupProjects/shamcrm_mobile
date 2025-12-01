@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Widget Icon Sizes (scaled by density) -->
+    <dimen name="widget_icon_size">40dp</dimen>
+    <dimen name="widget_logo_size">26dp</dimen>
+    <dimen name="widget_logo_compact_size">24dp</dimen>
+    
+    <!-- Widget Text Sizes (sp - same across all densities) -->
+    <dimen name="widget_text_size">9sp</dimen>
+    <dimen name="widget_text_compact_size">10sp</dimen>
+    <dimen name="widget_title_size">20sp</dimen>
+    <dimen name="widget_title_compact_size">18sp</dimen>
+</resources>
+

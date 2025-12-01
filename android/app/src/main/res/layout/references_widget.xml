@@ -1,0 +1,326 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- References Widget Layout: 2x4 grid (two rows, 4 buttons each) -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/widget_background"
+    android:padding="4dp">
+
+    <!-- Header -->
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="@dimen/widget_logo_size"
+        android:layout_gravity="start"
+        android:adjustViewBounds="true"
+        android:scaleType="fitCenter"
+        android:src="@drawable/sham_crm_logo" />
+
+    <!-- Empty state (shown when no permissions) -->
+    <LinearLayout
+        android:id="@+id/empty_state"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/empty_state_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Войдите в приложение"
+            android:textColor="#666666"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+    <!-- First row (4 buttons) -->
+    <LinearLayout
+        android:id="@+id/first_row_layout"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingTop="1dp"
+        android:paddingBottom="1dp">
+
+        <!-- Склад -->
+        <LinearLayout
+            android:id="@+id/btn_reference_warehouse"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:paddingTop="1dp"
+            android:paddingBottom="1dp">
+
+            <ImageView
+                android:id="@+id/icon_reference_warehouse"
+                android:layout_width="@dimen/widget_icon_size"
+                android:layout_height="@dimen/widget_icon_size"
+                android:background="@drawable/widget_button_bg"
+                android:padding="10dp"
+                android:scaleType="fitCenter"
+                android:tint="@android:color/white"
+                android:contentDescription="Склад" />
+
+            <TextView
+                android:id="@+id/label_reference_warehouse"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Склад"
+                android:textSize="@dimen/widget_text_size"
+                android:textColor="#1E2E52"
+                android:maxLines="1"
+                android:ellipsize="end" />
+        </LinearLayout>
+
+        <!-- Поставщик -->
+        <LinearLayout
+            android:id="@+id/btn_reference_supplier"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:paddingTop="1dp"
+            android:paddingBottom="1dp">
+
+            <ImageView
+                android:id="@+id/icon_reference_supplier"
+                android:layout_width="@dimen/widget_icon_size"
+                android:layout_height="@dimen/widget_icon_size"
+                android:background="@drawable/widget_button_bg"
+                android:padding="10dp"
+                android:scaleType="fitCenter"
+                android:tint="@android:color/white"
+                android:contentDescription="Поставщик" />
+
+            <TextView
+                android:id="@+id/label_reference_supplier"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Поставщик"
+                android:textSize="@dimen/widget_text_size"
+                android:textColor="#1E2E52"
+                android:maxLines="1"
+                android:ellipsize="end" />
+        </LinearLayout>
+
+        <!-- Товар -->
+        <LinearLayout
+            android:id="@+id/btn_reference_product"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:paddingTop="1dp"
+            android:paddingBottom="1dp">
+
+            <ImageView
+                android:id="@+id/icon_reference_product"
+                android:layout_width="@dimen/widget_icon_size"
+                android:layout_height="@dimen/widget_icon_size"
+                android:background="@drawable/widget_button_bg"
+                android:padding="10dp"
+                android:scaleType="fitCenter"
+                android:tint="@android:color/white"
+                android:contentDescription="Товар" />
+
+            <TextView
+                android:id="@+id/label_reference_product"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Товар"
+                android:textSize="@dimen/widget_text_size"
+                android:textColor="#1E2E52"
+                android:maxLines="1"
+                android:ellipsize="end" />
+        </LinearLayout>
+
+        <!-- Категории -->
+        <LinearLayout
+            android:id="@+id/btn_reference_category"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:paddingTop="1dp"
+            android:paddingBottom="1dp">
+
+            <ImageView
+                android:id="@+id/icon_reference_category"
+                android:layout_width="@dimen/widget_icon_size"
+                android:layout_height="@dimen/widget_icon_size"
+                android:background="@drawable/widget_button_bg"
+                android:padding="10dp"
+                android:scaleType="fitCenter"
+                android:tint="@android:color/white"
+                android:contentDescription="Категории" />
+
+            <TextView
+                android:id="@+id/label_reference_category"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Категории"
+                android:textSize="@dimen/widget_text_size"
+                android:textColor="#1E2E52"
+                android:maxLines="1"
+                android:ellipsize="end" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Second row (4 buttons) -->
+    <LinearLayout
+        android:id="@+id/second_row_layout"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <!-- Первоначальный остаток -->
+        <LinearLayout
+            android:id="@+id/btn_reference_openings"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:paddingTop="1dp"
+            android:paddingBottom="1dp">
+
+            <ImageView
+                android:id="@+id/icon_reference_openings"
+                android:layout_width="@dimen/widget_icon_size"
+                android:layout_height="@dimen/widget_icon_size"
+                android:background="@drawable/widget_button_bg"
+                android:padding="10dp"
+                android:scaleType="fitCenter"
+                android:tint="@android:color/white"
+                android:contentDescription="Первоначальный остаток" />
+
+            <TextView
+                android:id="@+id/label_reference_openings"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Первоначальный остаток"
+                android:textSize="@dimen/widget_text_size"
+                android:textColor="#1E2E52"
+                android:maxLines="1"
+                android:ellipsize="end" />
+        </LinearLayout>
+
+        <!-- Касса -->
+        <LinearLayout
+            android:id="@+id/btn_reference_cash_desk"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:paddingTop="1dp"
+            android:paddingBottom="1dp">
+
+            <ImageView
+                android:id="@+id/icon_reference_cash_desk"
+                android:layout_width="@dimen/widget_icon_size"
+                android:layout_height="@dimen/widget_icon_size"
+                android:background="@drawable/widget_button_bg"
+                android:padding="10dp"
+                android:scaleType="fitCenter"
+                android:tint="@android:color/white"
+                android:contentDescription="Касса" />
+
+            <TextView
+                android:id="@+id/label_reference_cash_desk"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Касса"
+                android:textSize="@dimen/widget_text_size"
+                android:textColor="#1E2E52"
+                android:maxLines="1"
+                android:ellipsize="end" />
+        </LinearLayout>
+
+        <!-- Статья расхода -->
+        <LinearLayout
+            android:id="@+id/btn_reference_expense_article"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:paddingTop="1dp"
+            android:paddingBottom="1dp">
+
+            <ImageView
+                android:id="@+id/icon_reference_expense_article"
+                android:layout_width="@dimen/widget_icon_size"
+                android:layout_height="@dimen/widget_icon_size"
+                android:background="@drawable/widget_button_bg"
+                android:padding="10dp"
+                android:scaleType="fitCenter"
+                android:tint="@android:color/white"
+                android:contentDescription="Статья расхода" />
+
+            <TextView
+                android:id="@+id/label_reference_expense_article"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Статья расхода"
+                android:textSize="@dimen/widget_text_size"
+                android:textColor="#1E2E52"
+                android:maxLines="1"
+                android:ellipsize="end" />
+        </LinearLayout>
+
+        <!-- Статья дохода -->
+        <LinearLayout
+            android:id="@+id/btn_reference_income_article"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:paddingTop="1dp"
+            android:paddingBottom="1dp">
+
+            <ImageView
+                android:id="@+id/icon_reference_income_article"
+                android:layout_width="@dimen/widget_icon_size"
+                android:layout_height="@dimen/widget_icon_size"
+                android:background="@drawable/widget_button_bg"
+                android:padding="10dp"
+                android:scaleType="fitCenter"
+                android:tint="@android:color/white"
+                android:contentDescription="Статья дохода" />
+
+            <TextView
+                android:id="@+id/label_reference_income_article"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Статья дохода"
+                android:textSize="@dimen/widget_text_size"
+                android:textColor="#1E2E52"
+                android:maxLines="1"
+                android:ellipsize="end" />
+        </LinearLayout>
+    </LinearLayout>
+
+</LinearLayout>
+

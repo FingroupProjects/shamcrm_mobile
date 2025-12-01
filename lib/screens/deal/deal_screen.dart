@@ -207,128 +207,87 @@ void initState() {
     });
   }
 
-  Widget _buildTitleWidget(BuildContext context) {
-    ////debugPrint('DealScreen: Entering _buildTitleWidget');
-    return BlocBuilder<SalesFunnelBloc, SalesFunnelState>(
-      builder: (context, state) {
-        ////debugPrint('DealScreen: _buildTitleWidget - Current SalesFunnelBloc state: $state');
-        String title = AppLocalizations.of(context)!.translate('appbar_deals');
-        SalesFunnel? selectedFunnel;
-        if (state is SalesFunnelLoading) {
-          ////debugPrint('DealScreen: _buildTitleWidget - State is SalesFunnelLoading');
-          title = AppLocalizations.of(context)!.translate('appbar_deals');
-        } else if (state is SalesFunnelLoaded) {
-          ////debugPrint('DealScreen: _buildTitleWidget - State is SalesFunnelLoaded, funnels: ${state.funnels}, selectedFunnel: ${state.selectedFunnel}');
-          selectedFunnel = state.selectedFunnel ?? state.funnels.firstOrNull;
-          _selectedFunnel = selectedFunnel;
-          ////debugPrint('DealScreen: _buildTitleWidget - Selected funnel set to: $selectedFunnel');
-          title = selectedFunnel?.name ??
-              AppLocalizations.of(context)!.translate('appbar_deals');
-          ////debugPrint('DealScreen: _buildTitleWidget - Title set to: $title');
-        } else if (state is SalesFunnelError) {
-          ////debugPrint('DealScreen: _buildTitleWidget - State is SalesFunnelError: ${state.message}');
-          title = 'Ошибка загрузки';
+ Widget _buildTitleWidget(BuildContext context) {
+  return BlocBuilder<SalesFunnelBloc, SalesFunnelState>(
+    builder: (context, state) {
+      String title = AppLocalizations.of(context)!.translate('appbar_deals');
+      SalesFunnel? selectedFunnel;
+
+      if (state is SalesFunnelLoaded) {
+        selectedFunnel = state.selectedFunnel ?? state.funnels.firstOrNull;
+        _selectedFunnel = selectedFunnel;
+        if (selectedFunnel != null) {
+          title = selectedFunnel.name;
         }
-        ////debugPrint('DealScreen: _buildTitleWidget - Rendering title: $title');
-        return Row(
-          children: [
-            Expanded(
-              child: Text(
-                title,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xff1E2E52),
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+      }
+      // Если Loading или Error — просто оставляем "Сделки", без паники
+
+      return Row(
+        children: [
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontSize: 20,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w600,
+                color: Color(0xff1E2E52),
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (state is SalesFunnelLoaded && state.funnels.length > 1)
+            Padding(
+              padding: const EdgeInsets.only(left: 8.0),
+              child: PopupMenuButton<SalesFunnel>(
+                icon: const Icon(Icons.arrow_drop_down, color: Color(0xff1E2E52)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                color: Colors.white,
+                elevation: 8,
+                offset: const Offset(0, 40),
+                onSelected: (SalesFunnel funnel) async {
+                  try {
+                    await _apiService.saveSelectedDealSalesFunnel(funnel.id.toString());
+                    await DealCache.clearAllDeals();
+                    await DealCache.clearCache();
+                    _resetFilters();
+
+                    setState(() {
+                      _selectedFunnel = funnel;
+                      _isSearching = false;
+                      _searchController.clear();
+                      _lastSearchQuery = '';
+                    });
+
+                    context.read<SalesFunnelBloc>().add(SelectSalesFunnel(funnel));
+                    setState(() {
+                      _tabTitles.clear();
+                      _tabController = TabController(length: 0, vsync: this);
+                    });
+                    _dealBloc.add(FetchDealStatuses(salesFunnelId: funnel.id));
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Ошибка при смене воронки'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                },
+                itemBuilder: (context) => state.funnels
+                    .map((f) => PopupMenuItem<SalesFunnel>(
+                          value: f,
+                          child: Text(f.name, style: const TextStyle(fontFamily: 'Gilroy')),
+                        ))
+                    .toList(),
               ),
             ),
-            if (state is SalesFunnelLoaded && state.funnels.length > 1)
-              Padding(
-                padding: const EdgeInsets.only(left: 8.0),
-                child: PopupMenuButton<SalesFunnel>(
-                  icon: Icon(Icons.arrow_drop_down, color: Color(0xff1E2E52)),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12.0),
-                  ),
-                  color: Colors.white,
-                  elevation: 8,
-                  shadowColor: Colors.black.withOpacity(0.2),
-                  offset: Offset(0, 40),
-                  onSelected: (SalesFunnel funnel) async {
-                    ////debugPrint('DealScreen: _buildTitleWidget - Selected new funnel: ${funnel.name} (ID: ${funnel.id})');
-                    try {
-                      await _apiService
-                          .saveSelectedDealSalesFunnel(funnel.id.toString());
-                      ////debugPrint('DealScreen: _buildTitleWidget - Saved funnel ID ${funnel.id} to SharedPreferences');
-                      await DealCache.clearAllDeals();
-                      await DealCache.clearCache();
-                      ////debugPrint('DealScreen: _buildTitleWidget - Cleared deal cache and statuses');
-                      _resetFilters();
-                      ////debugPrint('DealScreen: _buildTitleWidget - Reset filters');
-                      setState(() {
-                        _selectedFunnel = funnel;
-                        _isSearching = false;
-                        _searchController.clear();
-                        _lastSearchQuery = '';
-                        ////debugPrint('DealScreen: _buildTitleWidget - Updated _selectedFunnel: $_selectedFunnel, cleared search');
-                      });
-                      context
-                          .read<SalesFunnelBloc>()
-                          .add(SelectSalesFunnel(funnel));
-                      setState(() {
-                        _tabTitles.clear();
-                        _tabController = TabController(length: 0, vsync: this);
-                      });
-                      _dealBloc
-                          .add(FetchDealStatuses(salesFunnelId: funnel.id));
-                    } catch (e) {
-                      ////debugPrint('DealScreen: Error switching funnel: $e');
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Ошибка при смене воронки',
-                            style: TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white,
-                            ),
-                          ),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
-                  },
-                  itemBuilder: (BuildContext context) {
-                    ////debugPrint('DealScreen: _buildTitleWidget - Building PopupMenu with funnels: ${state.funnels}');
-                    return state.funnels
-                        .map((funnel) => PopupMenuItem<SalesFunnel>(
-                              value: funnel,
-                              child: Text(
-                                funnel.name,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontFamily: 'Gilroy',
-                                  fontWeight: FontWeight.w500,
-                                  color: Color(0xff1E2E52),
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ))
-                        .toList();
-                  },
-                ),
-              ),
-          ],
-        );
-      },
-    );
-  }
-
+        ],
+      );
+    },
+  );
+}
   Future<void> _loadFilterState() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {

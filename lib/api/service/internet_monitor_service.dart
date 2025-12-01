@@ -27,7 +27,7 @@ class InternetMonitorService with WidgetsBindingObserver {
 
   /// Инициализация мониторинга
   Future<void> initialize() async {
-    debugPrint('🌐 InternetMonitor: Инициализация...');
+    //debugPrint('🌐 InternetMonitor: Инициализация...');
     
     // ✅ Регистрируем observer для отслеживания состояния приложения
     WidgetsBinding.instance.addObserver(this);
@@ -39,7 +39,7 @@ class InternetMonitorService with WidgetsBindingObserver {
     // Подписка на изменения connectivity
     _connectivitySubscription = Connectivity().onConnectivityChanged.listen(
       (List<ConnectivityResult> results) {
-        debugPrint('🌐 InternetMonitor: Connectivity изменился: $results');
+        //debugPrint('🌐 InternetMonitor: Connectivity изменился: $results');
         // ✅ Проверяем только если приложение активно
         if (_isAppInForeground) {
           _checkInternetConnection();
@@ -50,18 +50,18 @@ class InternetMonitorService with WidgetsBindingObserver {
     // Периодическая проверка каждые 5 секунд
     _startPeriodicChecks();
 
-    debugPrint('🌐 InternetMonitor: Инициализирован успешно');
+    //debugPrint('🌐 InternetMonitor: Инициализирован успешно');
   }
 
   // ✅ НОВЫЙ МЕТОД: Отслеживание состояния приложения
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    debugPrint('🌐 InternetMonitor: App lifecycle changed to $state');
+    //debugPrint('🌐 InternetMonitor: App lifecycle changed to $state');
     
     if (state == AppLifecycleState.resumed) {
       // ✅ Приложение вернулось - ВОЗОБНОВЛЯЕМ проверки
       _isAppInForeground = true;
-      debugPrint('🌐 InternetMonitor: Приложение resumed - возобновляем проверки');
+      //debugPrint('🌐 InternetMonitor: Приложение resumed - возобновляем проверки');
       
       // Мгновенная проверка при возврате
       _checkInternetConnection();
@@ -73,7 +73,7 @@ class InternetMonitorService with WidgetsBindingObserver {
                state == AppLifecycleState.inactive) {
       // ✅ Приложение в фоне - ОСТАНАВЛИВАЕМ проверки
       _isAppInForeground = false;
-      debugPrint('🌐 InternetMonitor: Приложение paused - останавливаем проверки');
+      //debugPrint('🌐 InternetMonitor: Приложение paused - останавливаем проверки');
       
       // Останавливаем таймер
       _stopPeriodicChecks();
@@ -124,7 +124,7 @@ class InternetMonitorService with WidgetsBindingObserver {
       
       return false;
     } catch (e) {
-      debugPrint('🌐 InternetMonitor: Ошибка быстрой проверки: $e');
+      //debugPrint('🌐 InternetMonitor: Ошибка быстрой проверки: $e');
       return false;
     }
   }
@@ -133,7 +133,7 @@ class InternetMonitorService with WidgetsBindingObserver {
   Future<void> _checkInternetConnection() async {
     // ✅ НЕ проверяем если приложение в фоне
     if (!_isAppInForeground) {
-      debugPrint('🌐 InternetMonitor: Пропускаем проверку - приложение в фоне');
+      //debugPrint('🌐 InternetMonitor: Пропускаем проверку - приложение в фоне');
       return;
     }
 
@@ -148,7 +148,7 @@ class InternetMonitorService with WidgetsBindingObserver {
         hasConnection = await _pingHosts();
       }
     } catch (e) {
-      debugPrint('🌐 InternetMonitor: Ошибка проверки: $e');
+      //debugPrint('🌐 InternetMonitor: Ошибка проверки: $e');
       hasConnection = false;
     }
 
@@ -156,7 +156,7 @@ class InternetMonitorService with WidgetsBindingObserver {
       _isConnected = hasConnection;
       _internetStatusController.add(_isConnected);
       
-      debugPrint('🌐 InternetMonitor: Статус изменился -> ${_isConnected ? "ПОДКЛЮЧЕН ✅" : "ОТКЛЮЧЕН ❌"}');
+      //debugPrint('🌐 InternetMonitor: Статус изменился -> ${_isConnected ? "ПОДКЛЮЧЕН ✅" : "ОТКЛЮЧЕН ❌"}');
     }
   }
 
@@ -175,11 +175,11 @@ class InternetMonitorService with WidgetsBindingObserver {
           );
           socket.destroy();
           
-          debugPrint('🌐 InternetMonitor: Ping успешен к ${host.address}');
+          //debugPrint('🌐 InternetMonitor: Ping успешен к ${host.address}');
           return true;
         }
       } catch (e) {
-        debugPrint('🌐 InternetMonitor: Ping неудачен к ${host.address}: $e');
+        //debugPrint('🌐 InternetMonitor: Ping неудачен к ${host.address}: $e');
         continue;
       }
     }
@@ -199,6 +199,6 @@ class InternetMonitorService with WidgetsBindingObserver {
     _stopPeriodicChecks();
     _connectivitySubscription?.cancel();
     _internetStatusController.close();
-    debugPrint('🌐 InternetMonitor: Disposed');
+    //debugPrint('🌐 InternetMonitor: Disposed');
   }
 }

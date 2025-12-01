@@ -3,4 +3,17 @@
     <string name="permission_contacts">Мы используем ваши контакты, чтобы вы могли легко выбрать номер клиента и быстро добавить его как лида. Мы загружаем на сервер только данные выбранного контакта — ваша полная адресная книга никогда не загружается автоматически.</string>
     <string name="app_name">shamCRM</string>
     <string name="widget_description">Быстрый доступ к разделам shamCRM</string>
+    
+    <!-- Accounting Widget - Russian (default) -->
+    <string name="accounting_widget_title_ru">Учет торговли</string>
+    <string name="accounting_widget_description">Быстрый доступ к навигации учета</string>
+    <string name="accounting_widget_login_prompt_ru">Войдите в приложение</string>
+    <string name="accounting_client_sale_ru">Продажа</string>
+    <string name="accounting_client_return_ru">Возврат от клиента</string>
+    <string name="accounting_income_goods_ru">Приход товаров</string>
+    <string name="accounting_transfer_ru">Перемещение</string>
+    <string name="accounting_write_off_ru">Списание</string>
+    <string name="accounting_supplier_return_ru">Возврат поставщику</string>
+    <string name="accounting_money_income_ru">Приход денег</string>
+    <string name="accounting_money_outcome_ru">Расход денег</string>
 </resources>
